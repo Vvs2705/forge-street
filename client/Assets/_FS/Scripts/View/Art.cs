@@ -39,6 +39,12 @@ namespace FS
         });
         public static Sprite Disc() => Get("disc", (x, y) => x * x + y * y <= 0.96f);
         public static Sprite Ring() => Get("ring", (x, y) => { float d = x * x + y * y; return d <= 0.96f && d >= 0.62f; });
+        /// <summary>Anel tracejado (12 tracos): marca de obra no chao dos pads de construcao.</summary>
+        public static Sprite DashedRing() => Get("dashring", (x, y) =>
+        {
+            float d = x * x + y * y;
+            return d <= 0.96f && d >= 0.7f && Mathf.Repeat(Mathf.Atan2(y, x) / (Mathf.PI * 2f) * 12f, 1f) < 0.62f;
+        });
         public static Sprite Triangle() => Get("tri", (x, y) => y > -0.8f && Mathf.Abs(x) < (0.9f - y) * 0.58f);
         public static Sprite Diamond() => Get("dia", (x, y) => Mathf.Abs(x) + Mathf.Abs(y) < 0.98f);
         public static Sprite Plus() => Get("plus", (x, y) => (Mathf.Abs(x) < 0.3f || Mathf.Abs(y) < 0.3f) && Mathf.Abs(x) < 0.9f && Mathf.Abs(y) < 0.9f);

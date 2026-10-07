@@ -700,3 +700,187 @@ precos (F / P / J)  | fachada        piso           joalheria real | volta no te
   - **Proposta: 16.000 / 20.000 / 24.000.** Ela repete a forma aprovada em §11: Fachada ~+10 min, intervalos crescentes de 9,8 / 12,3 / 15,0 min e Joalheria real aos ~80 min, dentro dos 90. Um retorno no teto (18.000) compra um luxo só.
   - **Alternativa: 14.000 / 18.000 / 22.000**, com a Fachada em +8,5 min.
 - **Preço do Mineiro pela regra de retorno remedida:** ~500 (Δ +53 a +58), com o Joalheiro 2 em 2.400. A produção completa cai para **40:01**, fora da janela 42–48. O coordenador decide entre a regra de retorno e a janela.
+
+## 15. Leva 11: menu inferior de melhorias, bocas laterais e luxo 14/18/22 mil (contrato `docs/FASE6_MENU_MELHORIAS.md`, medido 2026-10-07)
+
+**Vigente.** Os 9 upgrades do personagem e dos itens são comprados por toque no menu inferior (`UpgradeDef.InMenu`, `Sim.TryBuyMenu`), sem pad e sem dreno de 1 s: Fole, Fole duplo, Mochila, Botas, Vitrine, Ajudantes ágeis, Martelo veloz, Lupa e Vitrine de joias. As construções continuam pads. Fornalha, Bigorna e Joalheria passaram a ter entrada à esquerda e saída à direita. Os números de §14.4 viram **históricos**.
+
+Harness: cópia do core em `%TEMP%\claude\…\scratchpad\l11` (`h/Program.cs`; preços de luxo e do par como `static` só na cópia), bot humano, 90 min, Dt 1/30 · 1/60. A base "antes" reproduz §14.4 ao segundo (produção 42:24, Fachada 49:08), o que valida o harness.
+
+### 15.1 O que mudou no core
+- **Menu:** `Pad.Current` devolve −1 para upgrade do menu. Os 8 pads desses upgrades (slots 0, 6, 7, 8, 10, 11, 15 e 16) ficam na lista, porque o save é por slot, e ficam invisíveis para sempre. No `Load`, o parcial pago neles volta para o `Gold`, com teto em `int.MaxValue` (mesmo laço do parcial do luxo escondido).
+- **Política de compra** (dica e bot): a compra mais barata que o ouro já paga, comparando o preço do menu com o restante do pad. No empate fica o menu, que não exige andar (`Sim.CheapestAffordableMenu`).
+  - O bot compra o upgrade do menu parado: ele lê a tela por `Reaction` (0,7 s, como em toda troca de alvo) e toca.
+  - A compra acontece depois do `Tick`, para o `Ev.Bought` ficar em `Events` igual ao do pad.
+- **`WalkNoDecision` continua contando só pad pagável:** comprar no menu não exige andar.
+- **Teto offline (`CheapestLockedCost`):** não muda, porque menu e pad contam igual.
+- **Bocas** (as outras estações não mudam; tabela completa em §13.1):
+
+| estação | ENTRADA | SAÍDA | antes (§13.1) |
+|---|---|---|---|
+| Fornalha (1,5; 5,5) | esquerda (0,6; 5,5) | direita (2,4; 5,5) | abaixo (1,5; 4,85) / acima (1,5; 6,15) |
+| Bigorna (1,5; 9,5) | esquerda (0,6; 9,5) | direita (2,4; 9,5) | abaixo (1,5; 8,85) / acima (1,5; 10,15) |
+| Joalheria (12; 6,5) | esquerda (11,1; 6,5) | direita (12,9; 6,5) | abaixo (12; 5,85) / acima (12; 7,15) |
+
+- **Distâncias conferidas** (`Bocas_Laterais_…` e `Bocas_Tabela_…`):
+  - boca × pad que fica no mundo: ≥ 1,5 m. A menor é a entrada da Bigorna × pad da Esteira, 1,70 m. Antes era a saída da Fornalha × pad do Fole, 1,06 m;
+  - boca × baú, × vaga das filas e × ponto de contratação: ≥ 2 m;
+  - boca × parede e obstáculos: fora de corpo. A entrada da Joalheria fica a 1,5 m da face da parede, na frente da porta lateral;
+  - zonas de bocas vizinhas: a saída da Fornalha e a entrada da Fornalha 2 ficam a 1,2 m, como a Fornalha 2 e as Ferramentas.
+- **Colisão achada e ajustada: pad da Esteira (0,5; 7,8) → (0,5; 11,2)**, no mesmo slot 9.
+  - Com as entradas da Fornalha e da Bigorna na parede esquerda, o pad ficou a 0,10 m do corredor entre elas. O bot humano passou por cima 5 vezes em 90 min, com até 0,43 s em cima (o limite de cobrança é `PadDwell` 0,5 s). Antes era 1 vez.
+  - Um humano mais lento ou que pare ali pagaria sem querer.
+  - Candidatos medidos:
+
+| posição | travessias (1/30) | máx. em cima | pagamento acidental (1/30 · 1/60) |
+|---|---|---|---|
+| (0,5; 7,8) antiga | 5 | 0,43 s | 0 · 0 |
+| (2,9; 7,6) | 29 | 1,17 s | **145** · 0 |
+| (0,5; 11,0) · (0,5; 12,0) · (1,2; 11,2) | 0 | — | 0 · 0 |
+| **(0,5; 11,2) aplicada** | **0** | — | **0 · 0** |
+
+  - Escolha: o ponto mais perto da Bigorna, a ponta da esteira, mantendo a mesma folga de antes até a entrada (1,70 m).
+  - Mineiro (0,5; 3,5): fica a 0,62 m da linha Depósito → entrada da Fornalha (raio do pad 0,6). Nenhuma travessia medida.
+- **Bug achado e corrigido (`Sim.Via`):**
+  - Sintoma: quem chegava ao ponto de passagem da porta com x 9,29999 (arredondamento) mirava o próprio lugar, o `Steer` devolvia direção zero e ele travava no vão para sempre.
+  - Com a entrada nova da Joalheria, o Joalheiro travou aos 30 s em `Joalheiro2_Papel3Extra_…`.
+  - Correção: `Via` devolve o alvo quando o personagem já está no meio do vão (|x − 9,3| < 0,01).
+  - A mesma rotina serve ajudantes e bot (raiz, não sintoma).
+
+### 15.2 Primeiros 10 min (bot humano; §3 do GDD)
+| marco | antes (§14.4) | Leva 11 (Dt 1/30) | Dt 1/60 | GDD | fração do GDD |
+|---|---|---|---|---|---|
+| 1ª venda | 0:21 | **0:22** | 0:22 | < 1:30 | 24% |
+| Fole (menu) | 1:04 | **1:07** | 1:07 | 2:30 | 45% |
+| 2ª bigorna | 1:57 | **2:17** | 2:17 | 3:30 | 65% |
+| Ajudante | 2:38 | **2:59** | 3:00 | 4:30 | 66% |
+| Escudos | 3:45 | **4:00** | 4:01 | 5:30 | 73% |
+| Esteira | 7:03 | **7:20** | 7:11 | 8:30 | 86% |
+| comprados / receita em 10 min | 9 / 1.485 | **9 / 1.460** | 9 / 1.450 | — | — |
+| desistiram / sem vaga | 0 / 71 | **1 / 65** | 0 / 68 | — | — |
+| andar sem decisão | 34% | **34%** | 33% | < 50% | — |
+
+- **A §3 continua verde** (`Bot_Primeiros10Minutos_BatemASecao3`). A Esteira tem 70 s de folga.
+- **Bot ideal:** fole 0:56 · 2ª bigorna 2:10 · esteira 7:30 (antes 0:52 / 2:00 / 7:05).
+- **Offline depois de 10 min:** 1.060, igual.
+- **Contra a hipótese do contrato, os upgrades NÃO saíram mais cedo.** O A/B isolado (mesmo harness, antes da mudança do pad da Esteira) separa os dois efeitos:
+
+| variante | 2ª bigorna | esteira | receita 10 min | produção completa (1/30 · 1/60) |
+|---|---|---|---|---|
+| antes (§14.4) | 1:57 | 7:03 | 1.485 | 42:24 · 42:16 |
+| só o menu (bocas antigas) | 1:55 | 6:59 | 1.565 | **42:03 · 41:25** |
+| menu + bocas laterais | 2:17 | 7:22 | 1.450 | **43:41 · 43:23** |
+| final (Esteira em (0,5; 11,2)) | 2:17 | 7:20 | 1.460 | **43:37 · 43:29** |
+
+  - **O menu sozinho adianta** a produção completa em 21–51 s.
+  - **As bocas laterais atrasam** ~1:40–2:00. O laço do começo fica mais longo: a ida da saída da Fornalha à entrada da Bigorna passa de 2,7 m em linha reta para 4,4 m na diagonal, e do Depósito à entrada da Fornalha é preciso contornar a quina.
+  - A variante "só bocas, sem menu" não é uma configuração real: os pads do Fole e do Martelo continuam no mundo e o bot paga 101–103 de ouro sem querer. Ela não entra na tabela.
+
+### 15.3 Bot humano, 45/60/90 min (vigente)
+- **Compras (Dt 1/30):** Fole 1:07\* · 2ª bigorna 2:17 · Ajudante 2:59 · Escudos 4:00 · Mochila 5:27\* · Ajudante 2 6:52 · Esteira 7:20 · Fole duplo 8:17\* · Botas 9:38\* · Ferramentas 10:55 · Vitrine 12:40\* · Corredor 13:26 · 2ª fornalha 13:49 · Ajudante 3 16:41 · Ajudantes ágeis 20:20\* · Joalheria 23:01 · Martelo veloz 25:21\* · Joalheiro 27:10 · Mineiro 30:04 · Joalheiro 2 32:16 · Lupa 36:50\* · **Vitrine de joias 43:37\* = produção completa**. (\* = menu.)
+- **Dt 1/60:** produção completa **43:29**.
+- **Janela 42–48:** a produção completa fica dentro dela nas duas bases. Mineiro 3.000 / Joalheiro 2 2.400 ficam e **não há proposta** de preço do par.
+- **Baús:** 2:53 / 7:18 / 25:46 / 13:23.
+- **Pagamento acidental em pad:** 0 nas duas bases.
+
+| ouro/min (janela de 5 min) | 0–5 | 5–10 | 10–15 | 15–20 | 20–25 | 25–30 | 30–35 | 35–40 | 40–45 | 45–50 | 50–55 | 55–60 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| antes (§14.4) | 78 | 219 | 442 | 463 | 729 | 1.093 | 1.155 | 1.298 | 1.492 | 1.655 | 1.621 | 1.682 |
+| **Leva 11** | 67 | 225 | 384 | 410 | 658 | 986 | 1.162 | 1.245 | 1.439 | 1.583 | 1.631 | 1.623 |
+
+| métrica (Dt 1/30 · 1/60) | antes (§14.4) | Leva 11 |
+|---|---|---|
+| ouro/min 41–60 | 1.625 · 1.636 | 1.584 · 1.574 |
+| ouro/min 60–90 | 1.638 · 1.668 | 1.629 · 1.613 (−0,5% · −3,3%) |
+| joias/min 60–90 | 14,3 · 14,7 | 14,0 · 13,9 |
+| bancada de joias sem lingote, Joalheiro → 60 min | 12% · 12% | 16% · 15% |
+| bancada de joias sem lingote, 60–90 min | 14% · 12% | 16% · 17% |
+| receita em 90 min (luxo vigente de cada época) | 108.807 · 110.082 | 105.956 · 105.607 |
+
+- **Fome da joalheria:** 15–17%, longe do critério da fase 4 (≤ 35%). **HIPÓTESE:** a pequena alta vem do atraso de ~1 min na Joalheria e no par.
+- **45 min:** Corredor 13:26 · Joalheria 23:01 · 10,1 joias/min · ouro/min 490 → 968 com a Joalheria (+98%).
+
+### 15.4 Luxo: varredura e preço APLICADO (14.000 / 18.000 / 22.000)
+Com o menu e as bocas, a Fachada a 11.000 sai **+6,9 · +6,8 min** depois da produção completa, abaixo dos 8 min. Pela autorização do coordenador, apliquei preço novo pela regra: Fachada entre +8 e +12 min, intervalos crescentes, partindo de 14.000 / 18.000 / 22.000.
+
+Varredura no core final, bot humano, 90 min (arquivos `logs/final/lux/<F>_<P>_<J>_<dt>.txt`):
+```
+precos (F / P / J)  | Dt 1/30: fachada  piso           joalheria real  | Dt 1/60: fachada  piso           joalheria real
+11000/14000/18000   | 50:34 (+6,9)  59:00 (+15,4)  70:06 (+26,5)      | 50:19 (+6,8)  58:56 (+15,5)  69:53 (+26,4)   <- antigo
+12000/15000/18000   | 51:05 (+7,5)  60:13 (+16,6)  71:16 (+27,7)      | 50:58 (+7,5)  60:17 (+16,8)  71:24 (+27,9)
+13000/16000/20000   | 51:44 (+8,1)  61:43 (+18,1)  74:13 (+30,6)      | 51:35 (+8,1)  61:31 (+18,0)  73:54 (+30,4)
+13000/17000/22000   | 51:44 (+8,1)  62:15 (+18,6)  75:50 (+32,2)      | 51:35 (+8,1)  62:07 (+18,6)  75:57 (+32,5)
+14000/18000/22000   | 52:20 (+8,7)  63:22 (+19,7)  76:56 (+33,3)      | 52:12 (+8,7)  63:18 (+19,8)  76:53 (+33,4)   <- APLICADO
+14000/19000/24000   | 52:20 (+8,7)  63:57 (+20,3)  78:42 (+35,1)      | 52:12 (+8,7)  63:55 (+20,4)  78:46 (+35,3)
+15000/18000/22000   | 52:58 (+9,4)  63:55 (+20,3)  77:29 (+33,9)      | 52:49 (+9,3)  63:48 (+20,3)  77:30 (+34,0)
+15000/19000/24000   | 52:58 (+9,4)  64:35 (+21,0)  79:31 (+35,9)      | 52:49 (+9,3)  64:25 (+20,9)  79:10 (+35,7)
+16000/20000/24000   | 53:35 (+10,0) 66:00 (+22,4)  81:03 (+37,4)      | 53:28 (+10,0) 66:05 (+22,6)  80:54 (+37,4)
+```
+- **Aplicado: 14.000 / 18.000 / 22.000** (`Balance.WorkshopFacadeCost/WorkshopFloorCost/JewelryDecorCost`).
+  - É o ponto de partida pedido e já cumpre a regra nas duas bases.
+  - Fachada **+8,7 min** depois da produção completa.
+  - Intervalos crescentes: 8,7 → 11,0 → 13,6 min (Dt 1/60: 8,7 → 11,1 → 13,6).
+  - Joalheria real aos **76:56 · 76:53**, dentro dos 90 min.
+- 16.000 / 20.000 / 24.000 (+10,0) também cabe na regra. Fica como alternativa se o playtest pedir o luxo mais espaçado.
+- **Retorno no teto logo depois da produção completa** (Save → Load → `ApplyOffline` 18.000 → bot por 10 s): compra **1** luxo nas duas bases (Fachada 14.000; o troco não paga o Piso).
+- **Com × sem luxo, de 44 a 90 min** (`Bot_90Minutos_Luxo`): ouro/min +0,5%, vendas/min +0,1%. Não há bônus.
+  - Receita aos 90 min: 105.956 com luxo × 105.587 sem.
+  - Saldo aos 90 min: 21.391 × 75.022.
+- Isto substitui a proposta de §14.6 (16/20/24 mil) e a alternativa dela.
+
+### 15.5 Portões remedidos (medido × 1,3, arredondado para cima em 10 s; pisos ~70%)
+- **`Bot_45Minutos…`:**
+  - Corredor ≤ 17:30;
+  - Joalheria ≤ 30:00;
+  - joias/min > 7,0;
+  - a Joalheria aumenta a renda (medido +98%).
+- **`Bot_60Minutos_Fase2`:**
+  - tempos: Joalheiro ≤ 35:20, Mineiro ≤ 39:10, Joalheiro 2 ≤ 42:00, Lupa ≤ 48:00, Vitrine de joias ≤ 56:50;
+  - baús: ≤ 3:50 / 9:30 / 33:30 / 17:30;
+  - joias/min depois da produção > 9,5 (medido 13,6);
+  - bancada de joias sem lingote ≤ 35% (medido 16%);
+  - ouro/min 55–60 > 1.136 (medido 1.623).
+- **`Bot_90Minutos_Luxo`:** Fachada ≤ 68:10, Piso ≤ 82:30, Joalheria real ≤ 90:00, com e sem luxo dentro de ±3%.
+- **`Bot_Primeiros10Minutos_BatemASecao3`:** sem mudança (janelas do GDD).
+
+### 15.6 Testes e prova vermelha
+- **Novos em `CoreTests` (7):**
+  - `Menu_OsNoveDoContrato_SemPadVisivel_PadsContinuamNaLista`
+  - `TryBuyMenu_Ouro_PreRequisito_Idempotente_PadRecusado_Evento`
+  - `TryBuyMenu_AplicaOMesmoEfeitoDaCompraPeloPad`
+  - `Save_Antigo_ParcialEmPadQueVirouMenu_VoltaParaOOuro`
+  - `Dica_BuyMenu_QuandoOMaisBaratoPagavelEDoMenu_BuyPadQuandoEDoPad`
+  - `Bot_CompraNoMenuSemAndar_MesmaPoliticaDoPad`
+  - `Bocas_Laterais_FornalhaBigornaJoalheria_LongeDosPadsQueFicam`
+  - Mais uma asserção de regressão do `Via` em `Parede_…`.
+- **Ajustados ao contrato novo:**
+  - o teste de pad usa a cadeia da contratação e o pad da 2ª bigorna (Fole e Mochila saíram do mundo);
+  - curva de custo: todo upgrade fica à venda no pad OU no menu;
+  - dicas: `BuyMenu` para o Fole;
+  - Lupa: à venda no menu;
+  - saves de 15 e 20 flags: o parcial das Botas (30) e da Vitrine de joias (450) volta ao ouro;
+  - tabela das bocas;
+  - luxo: 14/18/22 mil, e o ralo é lido de `Upgrades.Cost`.
+- **Suíte: 66/66.** `viewcheck`: 0 erros, 0 avisos.
+- **Prova vermelha:** cópia isolada `scratchpad\l11\red` (`red.py`), rebuild `--no-incremental` a cada mutação, logs em `red/logs`. Cada teste novo ficou vermelho em pelo menos uma mutação. Restaurado: verde, e o SHA-256 da cópia é igual ao dos 5 arquivos reais.
+
+| mutação na cópia | testes vermelhos |
+|---|---|
+| M1 `Pad.Current` mostra upgrade do menu | Menu_OsNove, Save_Antigo_Parcial |
+| M2 `TryBuyMenu` aceita upgrade de pad | TryBuyMenu_Ouro, Dica_BuyMenu, Bot_CompraNoMenu |
+| M3 `TryBuyMenu` ignora pré-requisito | TryBuyMenu_Ouro |
+| M4 `TryBuyMenu` não cobra | TryBuyMenu_Ouro, TryBuyMenu_AplicaOMesmoEfeito, Bot_CompraNoMenu |
+| M5 `TryBuyMenu` marca o flag sem `Buy`/`Recompute` | TryBuyMenu_AplicaOMesmoEfeito |
+| M6 `Ev.Bought` do menu na posição do pad antigo | TryBuyMenu_Ouro |
+| M7 dica sem `BuyMenu` | Dica_BuyMenu |
+| M8 empate menu × pad vai ao pad | Dica_BuyMenu |
+| M9 bot ignora o menu | Bot_CompraNoMenu |
+| M10 bot compra antes do `Tick` (o evento some) | Bot_CompraNoMenu |
+| M11 Fornalha com entrada embaixo | Bocas_Laterais |
+| M12 Joalheria com entrada embaixo | Bocas_Laterais |
+| M13 Esteira em (0,5; 7,8) | Bocas_Laterais |
+| M14 `Load` não devolve o parcial escondido | Save_Antigo_Parcial |
+| M15 `Load` sem teto `int.MaxValue` | Save_Antigo_Parcial |
+| M16 `Via` sem a correção do vão | Parede, Joalheiro2_Papel3Extra |
+| M17 Lupa sem a marca `menu` | Menu_OsNove, Save_Antigo_Parcial, TryBuyMenu_AplicaOMesmoEfeito, Bocas_Laterais |
+| restaurado (SHA = core real) | verde |

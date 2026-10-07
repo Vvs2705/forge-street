@@ -17,7 +17,7 @@ namespace FS
     /// jogador com a camera em retrato, monta a HUD por codigo e grava o diario de playtest
     /// (persistentDataPath/diario.csv). Nasce sozinho em qualquer cena.
     /// Flags de dev: -autoplay [min] (bot sem render, loga AUTOPLAY por minuto, sai 0/1) | -shot foto.png
-    /// [-shotdelay s] [-shotchest] [-bot] | -speed N | -reset (apaga o save) | -testsession (sem persistencia).
+    /// [-shotdelay s] [-shotchest] [-bot] [-menu] | -speed N | -reset (apaga o save) | -testsession (sem persistencia).
     /// </summary>
     public sealed class Game : MonoBehaviour
     {
@@ -35,6 +35,7 @@ namespace FS
         Bot _bot;
         WorldView _view;
         Joystick _joy;
+        MenuBar _menu;
         Camera _cam;
         float _speed = 1f, _saveT, _hintT, _minuteT;
         bool _botDrive, _headless, _firstSaleLogged, _testSession;
@@ -75,6 +76,9 @@ namespace FS
             BuildHud();
             _view = new GameObject("Mundo").AddComponent<WorldView>();
             _view.Init(_sim, _cam, _labels);
+            _menu = new MenuBar(_safe, _sim, u => Bought(u, Upgrades.Cost(u), _sim.Player.Pos));
+            _panel.SetAsLastSibling();   // o painel modal cobre a barra de melhorias
+            if (Arg("-menu") != null) _menu.Toggle();   // foto com a fileira aberta
             _joy = new Joystick(_joyCanvas.transform);
             _joy.TopBand = HudBand;
             Fit();
@@ -113,6 +117,7 @@ namespace FS
 
             bool modal = _panel.gameObject.activeSelf;
             _joy.Blocked = modal;
+            _joy.BottomPx = _menu.TopPx;
             _joy.Tick();
             Vector2 input = _joy.Direction;
             Keyboard k = Keyboard.current;
@@ -136,6 +141,7 @@ namespace FS
             _view.Refresh(Time.deltaTime);
             FollowCamera(Time.deltaTime);
             RefreshHud();
+            _menu.Refresh(Time.deltaTime);
 
             _saveT += Time.deltaTime;
             if (_saveT >= SaveEvery) { _saveT = 0f; Save(); }
@@ -168,11 +174,7 @@ namespace FS
                         _view.Float(e.Pos, "+" + e.B, Art.Accent);
                         Log("product_sold", Balance.ItemName[e.A], e.B.ToString());
                         break;
-                    case Ev.Bought:
-                        Sfx.Play("upgrade");
-                        _view.Float(e.Pos, Upgrades.All[e.A].Name + "!", Art.Good, 44);
-                        Log("upgrade_buy", ((Upgrade)e.A).ToString(), e.B.ToString());
-                        break;
+                    case Ev.Bought: Bought(e.A, e.B, e.Pos); break;
                     case Ev.ClientArrived: Sfx.Play("client", 1f, 0.2f); break;
                     case Ev.ClientLeft:
                         if (e.B == 0) { Sfx.Play("leave"); _view.Float(e.Pos, "...", Art.Bad); }
@@ -202,6 +204,14 @@ namespace FS
             }
         }
 
+        /// <summary>Compra (pad, bot ou toque no menu): som, "+nome!" no mundo e diario.</summary>
+        void Bought(int u, int price, V2 pos)
+        {
+            Sfx.Play("upgrade");
+            _view.Float(pos, Upgrades.All[u].Name + "!", Art.Good, 44);
+            Log("upgrade_buy", ((Upgrade)u).ToString(), price.ToString());
+        }
+
         // ---------- camera e HUD ----------
 
         void Fit()
@@ -226,7 +236,7 @@ namespace FS
             V2 p = _sim.Player.Pos;
             float right = _sim.Bought[(int)Upgrade.SideCorridor] ? Balance.WorldW : Balance.WorkshopW;
             float minX = halfW - Margin, maxX = right - halfW + Margin;
-            float minY = halfH - Margin;                                  // borda de baixo em -Margin
+            float minY = halfH - Margin - 2f * halfH * MenuBar.Band;     // borda de baixo em -Margin, acima da barra de melhorias
             float maxY = ContentTop - halfH + 2f * halfH * HudBand;       // topo do conteudo encosta na base da faixa da HUD
             float tx = minX > maxX ? right / 2f : Mathf.Clamp(p.X, minX, maxX);
             float ty = minY > maxY ? (minY + maxY) / 2f : Mathf.Clamp(p.Y + 0.6f, minY, maxY);
@@ -294,6 +304,7 @@ namespace FS
                     Pad p = _sim.Pads[arg];
                     int u = p.Current(_sim);
                     return u < 0 ? "" : $"Pise no pad: {Upgrades.All[u].Name} ({Upgrades.Cost(u) - p.Paid} de ouro)";
+                case Hint.BuyMenu: return $"Toque em Melhorias: {Upgrades.All[arg].Name} ({Upgrades.Cost(arg)} de ouro)";
                 case Hint.ProductToCounter: return arg == (int)Item.Jewel ? "Leve joias à loja de joias" : $"Leve {Balance.ItemName[arg]}s ao balcão";
                 case Hint.IngotToCrafter: return "Leve os lingotes à bigorna";
                 case Hint.OreToFurnace: return "Leve o minério à fornalha";

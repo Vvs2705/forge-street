@@ -55,12 +55,13 @@ namespace FS.Core
         public int Slot; public V2 Pos; public Upgrade[] Chain; public int Paid; public double Acc;
         public bool Armed = true;   // depois de comprar, so volta a cobrar quando o jogador sai de cima (nao engole o proximo nivel)
 
-        /// <summary>Upgrade a venda neste pad agora, ou -1 (cadeia esgotada ou pre-requisito faltando = pad invisivel).</summary>
+        /// <summary>Upgrade a venda neste pad agora, ou -1 (cadeia esgotada, pre-requisito faltando ou upgrade do menu = pad invisivel).</summary>
         public int Current(Sim s)
         {
             foreach (Upgrade u in Chain)
             {
                 if (s.Bought[(int)u]) continue;
+                if (Upgrades.All[(int)u].InMenu) return -1;   // FASE6: vendido no menu inferior; cadeia so de menu = pad invisivel para sempre
                 if (Upgrades.IsLuxury((int)u) && !s.ProductionComplete) return -1;
                 int req = Upgrades.All[(int)u].Requires;
                 return req < 0 || s.Bought[req] ? (int)u : -1;
@@ -124,22 +125,24 @@ namespace FS.Core
         public Sim()
         {
             for (int i = 0; i < Upgrades.Count; i++) UpgradeTime[i] = -1f;
-            // Bocas (FASE5 §2b): (inX, inY) = lado da ENTRADA; a SAIDA fica no lado oposto. Padrao entrada a esquerda/saida a
-            // direita (pilhas da view). Coluna x=1,5 e joalheria em baixo/cima: a esquerda caia no pad do Martelo veloz (0,5; 9,5),
-            // da Lupa (10,2; 6,5) e encostava no do Fole (0,5; 6,5); em pe' o fluxo sobe (deposito -> esteira -> balcao/loja).
+            // Bocas (FASE5 §2b): (inX, inY) = lado da ENTRADA; a SAIDA fica no lado oposto. Toda estacao que produz: entrada a
+            // esquerda, saida a direita (pilhas da view InPile -1,05 / OutPile +1,05). Fornalha, Bigorna e Joalheria eram
+            // embaixo/em cima por causa dos pads do Fole, do Martelo veloz e da Lupa, que foram para o menu (FASE6 §2).
             Deposit = Add(Kind.Deposit, 1.5f, 1.5f, "Depósito", 0f, 1f);             // zona unica acima (lado das fornalhas)
-            FurnaceA = Add(Kind.Furnace, 1.5f, 5.5f, "Fornalha", 0f, -1f);
+            FurnaceA = Add(Kind.Furnace, 1.5f, 5.5f, "Fornalha", -1f, 0f);
             FurnaceB = Add(Kind.Furnace, 4.5f, 5.5f, "Fornalha 2", -1f, 0f, (int)Upgrade.Furnace2);
-            AnvilA = Add(Kind.Crafter, 1.5f, 9.5f, "Bigorna", 0f, -1f, -1, Item.Sword);
+            AnvilA = Add(Kind.Crafter, 1.5f, 9.5f, "Bigorna", -1f, 0f, -1, Item.Sword);
             AnvilB = Add(Kind.Crafter, 4.5f, 9.5f, "Bigorna 2", -1f, 0f, (int)Upgrade.Anvil2, Item.Sword);
             ShieldBench = Add(Kind.Crafter, 7.5f, 9.5f, "Escudos", -1f, 0f, (int)Upgrade.Shields, Item.Shield);
             ToolBench = Add(Kind.Crafter, 7.5f, 5.5f, "Ferramentas", -1f, 0f, (int)Upgrade.Tools, Item.Tool);
             Counter = Add(Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f);                // zona unica embaixo (fila fica em cima)
             // 2a area: ANEXADAS ao fim (indices 8 e 9) para os indices e o save antigos nao mudarem
-            JewelBench = Add(Kind.Crafter, 12f, 6.5f, "Joalheria", 0f, -1f, (int)Upgrade.Jewelry, Item.Jewel);
+            JewelBench = Add(Kind.Crafter, 12f, 6.5f, "Joalheria", -1f, 0f, (int)Upgrade.Jewelry, Item.Jewel);
             JewelShop = Add(Kind.Counter, 12f, 11.5f, "Loja de joias", 0f, -1f, (int)Upgrade.Jewelry);
 
             // Pads fora das linhas de caminhada (coluna x=1,5 e diagonais ate o balcao): atravessar um pad nao pode gastar.
+            // FASE6: os pads de upgrades do menu (Fole, Mochila, Botas, Vitrine, Ajudantes ageis, Martelo veloz, Lupa, Vitrine de
+            // joias) continuam na lista porque o save e' por indice de slot, mas ficam invisiveis para sempre (Pad.Current).
             Slot(0.5f, 6.5f, Upgrade.FurnaceSpeed1, Upgrade.FurnaceSpeed2);
             Slot(FurnaceB.Pos.X, FurnaceB.Pos.Y, Upgrade.Furnace2);
             Slot(AnvilB.Pos.X, AnvilB.Pos.Y, Upgrade.Anvil2);
@@ -149,7 +152,7 @@ namespace FS.Core
             Slot(6.5f, 0.6f, Upgrade.HelperSpeed);
             Slot(4.5f, 0.6f, Upgrade.PlayerCapacity);
             Slot(2.8f, 0.6f, Upgrade.PlayerSpeed);
-            Slot(0.5f, 7.8f, Upgrade.Conveyor);
+            Slot(0.5f, 11.2f, Upgrade.Conveyor);                     // era (0,5; 7,8): com as bocas laterais caiu no corredor da parede entre as entradas da Fornalha e da Bigorna (BALANCE §15)
             Slot(8.4f, 3.4f, Upgrade.HammerSpeed);                    // era (0,5; 9,5): rotulo sobre o da Bigorna e corredor da fisica (FASE4 §3, BALANCE §14)
             Slot(6.5f, 13f, Upgrade.CounterCapacity);
             Slot(8.4f, 11.6f, Upgrade.SideCorridor);                 // 2a area, pads 12 e 13: lado direito da oficina, fora das linhas
@@ -328,6 +331,9 @@ namespace FS.Core
         {
             float x = (Balance.SideWallX0 + Balance.SideWallX1) / 2f;
             if (!(from.X < x && target.X > x) && !(from.X > x && target.X < x)) return target;
+            // ja no meio do vao (so da para estar em x 9,3 dentro de uma abertura): segue direto. Sem isso, quem chega ao ponto
+            // de passagem com x 9,29999 (arredondamento) mira o proprio lugar, o Steer devolve direcao zero e trava ali (Leva 11)
+            if (Math.Abs(from.X - x) < 0.01f) return target;
             float cross = from.Y + (target.Y - from.Y) * (x - from.X) / (target.X - from.X), m = Balance.CharRadius + 0.1f;
             V2 best = target; float bestLen = float.MaxValue;
             for (int i = 0; i + 1 < Balance.SideWallOpenings.Length; i += 2)
@@ -561,8 +567,29 @@ namespace FS.Core
             return true;
         }
 
+        /// <summary>
+        /// Compra pelo menu inferior (FASE6): so upgrade InMenu, nao comprado, com o pre-requisito comprado e Gold >= Cost. Cobra
+        /// na hora (sem dreno) e aplica pelo MESMO Buy do pad (Ev.Bought na posicao do jogador). Senao devolve false e nada muda.
+        /// Fora do Tick o evento entra em Events na hora; o proximo Tick limpa a lista.
+        /// </summary>
+        public bool TryBuyMenu(Upgrade u)
+        {
+            int cost = Upgrades.Cost(u);
+            if (!MenuAvailable((int)u) || Gold < cost || !Buy(u)) return false;
+            Gold -= cost;
+            return true;
+        }
+
+        /// <summary>Upgrade do menu a venda agora (com ou sem ouro): InMenu, nao comprado e pre-requisito comprado.</summary>
+        public bool MenuAvailable(int u)
+        {
+            UpgradeDef d = Upgrades.All[u];
+            return d.InMenu && !Bought[u] && (d.Requires < 0 || Bought[d.Requires]);
+        }
+
         V2 PadOf(Upgrade u)
         {
+            if (Upgrades.All[(int)u].InMenu) return Player.Pos;   // menu: o efeito sai do jogador, nao do pad antigo
             foreach (Pad p in Pads) foreach (Upgrade c in p.Chain) if (c == u) return p.Pos;
             return Player.Pos;
         }
@@ -772,10 +799,25 @@ namespace FS.Core
             return best;
         }
 
+        /// <summary>
+        /// Upgrade do menu que e' a compra mais barata que o ouro atual ja paga, ou -1 (nenhum pagavel, ou um pad visivel
+        /// pagavel custa menos). Empate com pad: o menu, que nao precisa andar. Mesma regra da dica e do bot.
+        /// </summary>
+        public int CheapestAffordableMenu()
+        {
+            int best = -1;
+            for (int u = 0; u < Upgrades.Count; u++)
+                if (MenuAvailable(u) && Upgrades.Cost(u) <= Gold && (best < 0 || Upgrades.Cost(u) < Upgrades.Cost(best))) best = u;
+            Pad pad = best >= 0 ? CheapestAffordablePad() : null;
+            return pad != null && Upgrades.Cost(pad.Current(this)) - pad.Paid < Upgrades.Cost(best) ? -1 : best;
+        }
+
         public int HintArg;
 
         public Hint CurrentHint()
         {
+            int menu = CheapestAffordableMenu();
+            if (menu >= 0) { HintArg = menu; return Hint.BuyMenu; }
             Pad pad = CheapestAffordablePad();
             if (pad != null) { HintArg = pad.Slot; return Hint.BuyPad; }
             foreach (Chest c in Chests) if (c.State == 1) { HintArg = c.Index; return Hint.OpenChest; }   // o 1o disponivel, na ordem dos marcos
@@ -921,7 +963,8 @@ namespace FS.Core
             sim.Recompute();
             for (int i = 2; i < sim.Stock.Length; i++) sim.Stock[i] = Math.Min(sim.Stock[i], sim.CounterCap);   // teto so' e' conhecido depois dos upgrades
             sim.Player.Pos = sim.Collide(Clamp(sim.Player.Pos, sim.MaxX));   // save antigo com o jogador dentro de um corpo: sai pela borda
-            // pad escondido devolve o parcial: o save da v0.3 com produtivos novos (Mineiro, Joalheiro 2) esconde o luxo ate completar de novo
+            // pad escondido devolve o parcial: o save da v0.3 com produtivos novos (Mineiro, Joalheiro 2) esconde o luxo ate completar
+            // de novo, e o pad cujo upgrade foi para o menu (FASE6) nunca mais aparece
             foreach (Pad p in sim.Pads) if (p.Current(sim) < 0) { sim.Gold = (int)Math.Min(int.MaxValue, (long)sim.Gold + p.Paid); p.Paid = 0; }
             return sim;
         }

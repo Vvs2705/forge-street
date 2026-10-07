@@ -12,9 +12,11 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 ### Alterado
 - **Paciência dos clientes** proporcional ao tempo de produção: 30 s + 3 × produção (espada 57 s, escudo 76,5 s, ferramenta 57 s, joia 84 s). Desistências em 10 min: 27 → 1.
 - Pads do Martelo veloz (8,4; 3,4) e da Lupa (14,2; 6,8) fora das linhas de caminhada.
-- Produção completa (bot) 40:41 → 42:24; fome da joalheria 52% → 12% (`docs/BALANCE.md` §13–§14).
-### Em andamento
-- **Leva 12:** melhorias do ferreiro e dos itens num menu na barra inferior, compradas por toque (`docs/FASE6_MENU_MELHORIAS.md`).
+- Produção completa (bot) 40:41 → 43:37; fome da joalheria 52% → 15% (`docs/BALANCE.md` §13–§15).
+- **Menu de melhorias** (Leva 12): 9 melhorias do ferreiro e das estações saem dos pads e viram cartões na barra inferior, comprados por toque; botão dourado com a contagem do que dá para comprar; joystick não começa na barra (`docs/FASE6_MENU_MELHORIAS.md`).
+- Pads de construção redesenhados como canteiro de obra (anel tracejado e "+").
+- Luxo 11 000 / 14 000 / 18 000 → **14 000 / 18 000 / 22 000**.
+- Fornalha, Bigorna e Joalheria com entrada à esquerda e saída à direita, como as outras; pad da Esteira para (0,5; 11,2).
 
 ## [0.3.0] — 2026-10-07
 ### Adicionado

@@ -1,20 +1,19 @@
-# Forge Street — protótipo v0.2 (oficina + joalheria)
+# Forge Street — protótipo v0.4 (oficina + joalheria, física e menu de melhorias)
 
-Idle/tycoon arcade em retrato. Você é o ferreiro: pega **minério** no depósito, derrete na **fornalha**, martela na **bigorna**, leva ao **balcão** onde os clientes pagam, e **pisa em pads** para comprar os 20 upgrades que mudam o fluxo (fole, 2ª bigorna, ajudantes, escudos, mochila, esteira, 2ª fornalha, vitrine…). A produção é física e legível: cada pilha de entrada/saída aparece no chão, a fornalha com saída cheia pisca vermelho ("travada"), a bigorna sem lingote fica apagada ("fome"). A decisão é ler qual estágio é o gargalo agora e investir ali.
+Idle/tycoon arcade em retrato. Você é o ferreiro: pega **minério** no depósito, derrete na **fornalha**, martela na **bigorna**, leva ao **balcão** onde os clientes pagam, **pisa em pads** para construir (2ª bigorna, escudos, ajudantes, esteira, 2ª fornalha, corredor, joalheria…) e compra no **menu da barra de baixo**, por toque, as melhorias do ferreiro e das estações (fole, mochila, botas, martelo veloz, vitrine…). A produção é física e legível: cada pilha de entrada/saída aparece no chão, a fornalha com saída cheia pisca vermelho ("travada"), a bigorna sem lingote fica apagada ("fome"). A decisão é ler qual estágio é o gargalo agora e investir ali.
 
 - **GDD:** `docs/GDD.md` (§3 primeiros 10 min e §18 MVP são o alvo desta v0.1).
 - **Balance medido pelo bot:** `docs/BALANCE.md`.
 - **Por que este jogo:** `../00_PESQUISA/VEREDITO_VALIDACAO.md` (slot idle disputado com o Underground Inc.; este greybox existe para o teste de criativos e o playtest Camada 0).
 
-## Estado (2026-10-07, v0.3.0 — fase 3 luxo)
+## Estado (2026-10-07, v0.4.0 — física, bocas, menu de melhorias)
 
 | Item | Estado |
 |---|---|
-| Núcleo C# puro (`FS.Core`: simulação por tick, oficina + joalheria, 4 papéis de ajudante, clientes, 20 upgrades produtivos + 3 de luxo, esteira, offline, save, marcos, dicas, métricas, bot) | **43/43 dotnet e EditMode no Unity** (v0.3.0); testes novos provados vermelhos em cópia isolada |
-| Balance da §3 (1ª venda, fole, 2ª bigorna, ajudante, escudos, esteira) | bate com o bot "humano"; números em `docs/BALANCE.md` |
-| View procedural (`FS`: sprites gerados, joystick flutuante de um dedo, câmera fixa em retrato com a oficina inteira visível, pilha na cabeça, pads com preço, clientes com balão, HUD de 2 linhas com dica, painel offline, SFX sintetizado, diário CSV) | pronta; compilada e fotografada no Unity pelo coordenador (`client/Builds/shots/`) |
-| `Editor/Setup.cs` (settings, cena vazia, BuildWindows, BuildAndroidDev) | pronto, executado em batch |
-| Build Windows / APK Android | `client/Builds/win/ForgeStreet.exe` e `client/Builds/android/ForgeStreet-dev.apk` (dev, IL2CPP ARM64) |
+| Núcleo C# puro (`FS.Core`: simulação por tick, oficina + joalheria, física de caixas e círculos, 2 bocas por estação, paciência por item, 5 papéis de ajudante, 22 upgrades produtivos + 3 de luxo, menu de melhorias, esteira, offline, save, marcos, dicas, métricas, bot) | **66/66 dotnet** (v0.4.0); testes novos provados vermelhos em cópia isolada |
+| Balance da §3 (1ª venda, fole, 2ª bigorna, ajudante, escudos, esteira) | bate com o bot "humano"; produção completa 43:37; números em `docs/BALANCE.md` §13–§15 |
+| View (`FS`: sprites pré-renderizados do Tripo/Mixamo/Blender, chão/paredes texturizados, porta lateral, bocas no chão, pads de construção, barra inferior de melhorias, joystick flutuante, câmera em retrato, HUD com dica, painel offline, SFX, diário CSV) | compilada e fotografada no Unity (`client/Builds/validation_*/shots/`) |
+| Build Windows / APK Android | `client/Builds/win/ForgeStreet.exe` e `client/Builds/android/ForgeStreet-dev.apk` (dev, IL2CPP ARM64); v0.3.0 validada num POCO F4 a 60 fps |
 | Rewarded, IAP, interstitial, pedidos, remote config, gems | **não implementados**; pagamentos e publicação dependem de autorização específica |
 
 ## Como rodar
@@ -27,7 +26,7 @@ Núcleo + testes em ~1 s, sem abrir o Unity. `--logger "console;verbosity=detail
 ```bash
 "/c/Program Files/Unity/Hub/Editor/6000.3.23f1/Editor/Unity.exe" -batchmode -nographics -projectPath "$(pwd -W)/client" -runTests -testPlatform EditMode -testResults "$(pwd -W)/client/Builds/editmode.xml" -logFile "$(pwd -W)/client/Builds/editmode.log"
 ```
-Mesmos 37 testes dentro do Unity. O veredito vem do XML, não do código de saída.
+Mesmos testes do núcleo dentro do Unity. O veredito vem do XML, não do código de saída.
 
 ```bash
 "/c/Program Files/Unity/Hub/Editor/6000.3.23f1/Editor/Unity.exe" -batchmode -nographics -quit -projectPath "$(pwd -W)/client" -executeMethod FS.EditorTools.Setup.BuildWindows -logFile "$(pwd -W)/client/Builds/build_win.log"
@@ -45,8 +44,10 @@ Flags de dev do executável:
 - `-reset`: apaga o save (`PlayerPrefs["fs.save"]`).
 - `-testsession`: estado novo em memória; não lê, apaga ou grava o save nem o diário normal. Use nas fotos de QA, sem `-reset`. O autoplay também isola automaticamente.
 - `-shotchest`: com `-shot`, espera um baú real ficar disponível (até 180 s), para fotografá-lo antes de o bot abrir.
+- `-menu`: abre a fileira de melhorias (fotos).
+- `-buy N` / `-gold G` / `-px x,y`: compra os N primeiros upgrades (produtivos antes do luxo), põe G de ouro, põe o ferreiro em (x, y).
 
-Controles: toque e arraste em qualquer lugar fora da faixa de cima da tela (joystick flutuante); no PC também WASD/setas; Esc salva e sai. Pads cobram quando você **para** em cima (ou depois de 0,5 s andando por cima); atravessar correndo não gasta.
+Controles: toque e arraste em qualquer lugar entre a faixa de cima e a barra de melhorias (joystick flutuante); no PC também WASD/setas; Esc salva e sai. Pads de construção cobram quando você **para** em cima (ou depois de 0,5 s andando por cima); atravessar correndo não gasta. Melhorias: toque em **Melhorias** na barra de baixo e no cartão (dourado = dá para comprar). Estações e paredes são sólidas: encoste na **boca de entrada** (seta para dentro) para depositar e na **boca de saída** (seta para fora) para recolher.
 
 Diário de playtest: `persistentDataPath/diario.csv` com `utc,sessao,evento,t_jogo,a,b`. Eventos (GDD §14): `session_start, first_sale, product_crafted, product_sold, upgrade_buy, worker_hired, station_unlock, client_left(cansou|fila_cheia), bottleneck, offline_claim` e, por minuto, `queue_length, bottleneck_seconds(travada,fome), walk_no_decision`.
 
@@ -79,6 +80,17 @@ Bot humano, 60 min: Joalheiro 25:25, Lupa 31:12, Vitrine 40:41; receita online 4
 
 Evidências da continuação: `client/Builds/validation_phase2/`. Core 37/37, prova vermelha isolada e restauração verde, EditMode Unity 37/37, viewcheck 0 erros/0 avisos. Builds Windows/Android `Succeeded`, zero erros; autoplay Windows 60 min OK. APK dev 0.2.0: **46.898.468 bytes (46,9 MB)**, gerado em 07/10 às 15:07:54. Fotos em `shots/` e relatório/comandos em `docs/VALIDACAO_FASE2.md`. Android real e métricas humanas continuam sem validação.
 
+## v0.4.0 — playtest no aparelho: física, duas bocas, paciência, ambiente e menu (2026-10-07)
+
+Pedidos do Vinicius depois de jogar a v0.3.0 num POCO F4:
+- **"O tempo de cada personagem aguardar é muito curto"** → paciência por item = 30 s + 3 × tempo de produção (espada 57 s, escudo 76,5 s, ferramenta 57 s, joia 84 s). Desistências em 10 min: 27 → 1 (`docs/FASE5_FISICA_PACIENCIA.md`).
+- **"Precisa existir física; ele atravessa tudo"** → estações, paredes e decoração sólidas; o ferreiro desliza nas quinas; bot e ajudantes contornam.
+- **"Cada local de criação com dois acessos"** → entrada (só deposita) à esquerda e saída (só recolhe) à direita de cada estação de produção, marcadas no chão com anel e seta na cor do item.
+- **"Chão, paredes, coisas estéticas"** → pedra, assoalho, tijolo, calçamento, tochas e props; parede direita com porta lateral (fechada até o Corredor) e o arco.
+- **"Melhorias no menu da barra abaixo"** → 9 melhorias (Fole, Fole duplo, Mochila, Botas, Vitrine, Ajudantes ágeis, Martelo veloz, Lupa, Vitrine de joias) saem dos pads e viram cartões tocáveis na barra inferior (`docs/FASE6_MENU_MELHORIAS.md`). Construções continuam pads.
+- Fase 4: **Mineiro 3 000 → Joalheiro 2 2 400** (`docs/FASE4_MINERIO.md`); fome da joalheria 52% → 15%.
+- Luxo repreçado para **14 000 / 18 000 / 22 000** (Fachada sai +8,7 min depois da produção completa).
+
 ## v0.3.0 — fase 3: luxo visual, destino do ouro (2026-10-07)
 
 - Contrato e evidência: `docs/FASE3_LUXO.md`; números do bot 90 min: `docs/BALANCE.md` §11; validação: `docs/VALIDACAO_FASE3.md` (fotos em `client/Builds/validation_phase3/shots/`).
@@ -110,7 +122,7 @@ Evidências da continuação: `client/Builds/validation_phase2/`. Core 37/37, pr
 
 ## Próximos passos
 
-1. **Validar o APK em Android real:** joystick/diagonal, rótulos, halos ASTC, som, suspensão/retomada, cofre e progresso salvo. FPS e memória ainda não foram medidos em aparelho. O portão de PC não substitui essa etapa.
+1. **Retestar a v0.4.0 no POCO F4:** barra de melhorias (toque, joystick fora da faixa), bocas de 0,4 m no polegar, contornar estações sem desvio automático, porta lateral, paciência nova.
 2. **Playtest Camada 0** (10–20 pessoas, teste interno do Play) lendo `diario.csv`: `first_sale` <90 s em ≥90% (GDD §15); `upgrade_buy` × a §3 (calibra o fator humano do bot); `walk_no_decision` (kill criterion "andar entre pilhas"); `client_left`. Hipótese de passagem: ≥70% compram a 2ª linha (escudos) sem dica e ≥50% dizem qual estação era o gargalo.
 3. **8 criativos 9:16** (GDD §17): #2 fila gigante → fole resolve, #3 "onde investir 100 moedas?", #8 erro proposital (bigornas demais, 1 fornalha): o greybox já mostra fome/travada.
 4. **Decisão do slot idle** pelo playtest e criativos do Forge; Underground continua como alternativa.

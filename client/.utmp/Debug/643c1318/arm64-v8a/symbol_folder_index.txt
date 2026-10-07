@@ -1,1 +1,0 @@
-C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\build\intermediates\cxx\Debug\643c1318\obj\arm64-v8a

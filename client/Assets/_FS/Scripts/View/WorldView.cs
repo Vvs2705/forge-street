@@ -26,7 +26,7 @@ namespace FS
             public SpriteRenderer[] InPile, OutPile, Stock; public Item[] StockItems; public Text Label;   // Stock: 6 por item vendido
             public bool Baked;   // Base e' o sprite pre-renderizado (sem icone)
         }
-        sealed class PadV { public Pad P; public Transform Root; public SpriteRenderer Ring, Fill; public Text Label; }
+        sealed class PadV { public Pad P; public Transform Root; public SpriteRenderer Ring, Fill, Plus; public Text Label; }
         sealed class CarrierV { public Carrier C; public Transform Root; public SpriteRenderer[] Stack, StackBg; public Body Body; public float CheerT; }
         sealed class ClientV
         {
@@ -351,9 +351,11 @@ namespace FS
             var v = new PadV { P = p, Root = new GameObject("Pad " + p.Slot).transform };
             v.Root.SetParent(transform, false);
             v.Root.localPosition = W(p.Pos);
-            Art.NewSprite(v.Root, "Fundo", Art.Disc(), Art.Pad, 2, Vector2.zero, Vector2.one * 1.15f);
+            // canteiro de obra: chao aparece por baixo, anel tracejado, "+" no meio; o pago enche de ouro do centro para fora
+            Art.NewSprite(v.Root, "Fundo", Art.Disc(), Art.ComAlfa(Art.Pad, 0.5f), 2, Vector2.zero, Vector2.one * 1.15f);
             v.Fill = Art.NewSprite(v.Root, "Pago", Art.Disc(), Art.PadFill, 3, Vector2.zero, Vector2.zero);
-            v.Ring = Art.NewSprite(v.Root, "Anel", Art.Ring(), Art.Accent, 4, Vector2.zero, Vector2.one * 1.15f);
+            v.Ring = Art.NewSprite(v.Root, "Anel", Art.DashedRing(), Art.Accent, 4, Vector2.zero, Vector2.one * 1.15f);
+            v.Plus = Art.NewSprite(v.Root, "Obra", Art.Plus(), Art.Accent, 4, Vector2.zero, Vector2.one * 0.3f);
             v.Label = Art.FreeText(_labels, "PadLabel", 24, new Vector2(300f, 70f));
             return v;
         }
@@ -728,7 +730,9 @@ namespace FS
             bool affordable = _sim.Gold >= remaining;
             float frac = cost > 0 ? v.P.Paid / (float)cost : 0f;
             v.Fill.transform.localScale = Vector3.one * (1.0f * Mathf.Sqrt(frac));
-            v.Ring.color = affordable ? Art.ComAlfa(Art.Accent, pulse) : Art.ComAlfa(Art.Dim, 0.9f);
+            v.Ring.color = affordable ? Art.ComAlfa(Art.Accent, pulse) : Art.ComAlfa(Art.Ink, 0.45f);
+            v.Plus.color = v.Ring.color;
+            if (affordable) v.Ring.transform.localRotation = Quaternion.Euler(0f, 0f, -Time.time * 20f);   // gira devagar quando da para pagar
             v.Label.text = Upgrades.All[u].Name + "\n" + remaining;
             v.Label.color = affordable ? Art.Accent : Art.ComAlfa(Art.Ink, 0.75f);
             PlaceLabel(v.Label, W(v.P.Pos) + new Vector3(0f, 0.95f, 0f), Vector2.zero);

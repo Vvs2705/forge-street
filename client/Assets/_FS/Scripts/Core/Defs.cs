@@ -48,8 +48,9 @@ namespace FS.Core
     /// Milestone: bau de marco apareceu (A = indice em Balance.Milestones, B = ouro); ChestOpened: o jogador abriu (A = indice, B = ouro).</summary>
     public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened }
 
-    /// <summary>Dica contextual da HUD (a view so traduz). Arg = indice do pad, do item ou (OpenChest) do bau.</summary>
-    public enum Hint { GrabOre, OreToFurnace, PickIngots, IngotToCrafter, PickProducts, ProductToCounter, BuyPad, ClientWaiting, OpenChest }
+    /// <summary>Dica contextual da HUD (a view so traduz). Arg = indice do pad (BuyPad), do item, do bau (OpenChest) ou do upgrade (BuyMenu).
+    /// BuyMenu ANEXADO no fim (FASE6): a compra mais barata pagavel agora e' um upgrade do menu inferior.</summary>
+    public enum Hint { GrabOre, OreToFurnace, PickIngots, IngotToCrafter, PickProducts, ProductToCounter, BuyPad, ClientWaiting, OpenChest, BuyMenu }
 
     public struct V2
     {
@@ -123,7 +124,7 @@ namespace FS.Core
         public const int SideCorridorCost = 690, JewelryCost = 1515;          // 2a area: fora da formula (coordenador 2026-10-07, BALANCE.md §9)
         public const int JewelerCost = 2200, JewelSpeedCost = 5500, JewelVitrineCost = 9000;   // fase 2: decisao aprovada (BALANCE.md §10.7)
         public const int JewelPriceUp = 80;                     // Vitrine de joias: nobres pagam mais, sem mudar as outras linhas
-        public const int WorkshopFacadeCost = 11000, WorkshopFloorCost = 14000, JewelryDecorCost = 18000;   // luxo: aprovado 2026-10-07 (BALANCE.md §11)
+        public const int WorkshopFacadeCost = 14000, WorkshopFloorCost = 18000, JewelryDecorCost = 22000;   // luxo: Leva 11, Fachada +8,7 min depois da producao (BALANCE.md §15)
         public const int MinerCost = 3000, Jeweler2Cost = 2400;   // fase 4: regra de retorno 8-12 min, varredura em BALANCE.md §14
         public const int OfflineCapSeconds = 7200; public const float OfflineFactor = 0.25f;   // raia B §5 + coordenador 2026-10-06: teto 2 h, 25% da taxa online
         public const float OfflineMaxNextUpgrades = 2f;         // e nunca mais que 2x o preco do upgrade mais barato ainda travado
@@ -189,7 +190,8 @@ namespace FS.Core
         public readonly int Requires;   // indice de outro upgrade ou -1
         public readonly string Name, Desc;
         public readonly bool Luxury;    // luxo: so depois de TODOS os produtivos, fora de ProductionComplete e do teto offline
-        public UpgradeDef(Upgrade id, int requires, string name, string desc, bool luxury = false) { Id = id; Requires = requires; Name = name; Desc = desc; Luxury = luxury; }
+        public readonly bool InMenu;    // FASE6: comprado por toque no menu inferior (Sim.TryBuyMenu), nunca em pad; o pad antigo fica na lista (save por indice)
+        public UpgradeDef(Upgrade id, int requires, string name, string desc, bool luxury = false, bool menu = false) { Id = id; Requires = requires; Name = name; Desc = desc; Luxury = luxury; InMenu = menu; }
     }
 
     public static class Upgrades
@@ -201,26 +203,26 @@ namespace FS.Core
 
         public static readonly UpgradeDef[] All =
         {
-            new UpgradeDef(Upgrade.FurnaceSpeed1, -1, "Fole", "Fornalha mais rápida"),
+            new UpgradeDef(Upgrade.FurnaceSpeed1, -1, "Fole", "Fornalha mais rápida", menu: true),
             new UpgradeDef(Upgrade.Anvil2, -1, "2ª bigorna", "Mais espadas por minuto"),
             new UpgradeDef(Upgrade.Helper1, -1, "Ajudante", "Leva minério à fornalha"),
             new UpgradeDef(Upgrade.Shields, -1, "Escudos", "Nova linha: 2 lingotes, paga 25"),
-            new UpgradeDef(Upgrade.PlayerCapacity, -1, "Mochila", "Carrega 6 em vez de 3"),
+            new UpgradeDef(Upgrade.PlayerCapacity, -1, "Mochila", "Carrega 6 em vez de 3", menu: true),
             new UpgradeDef(Upgrade.Helper2, (int)Upgrade.Helper1, "Ajudante 2", "Leva lingotes às bancadas"),
             new UpgradeDef(Upgrade.Conveyor, -1, "Esteira", "Fornalha → bigorna sem andar"),
-            new UpgradeDef(Upgrade.FurnaceSpeed2, (int)Upgrade.FurnaceSpeed1, "Fole duplo", "Fornalha ainda mais rápida"),
-            new UpgradeDef(Upgrade.PlayerSpeed, -1, "Botas", "Você anda mais rápido"),
+            new UpgradeDef(Upgrade.FurnaceSpeed2, (int)Upgrade.FurnaceSpeed1, "Fole duplo", "Fornalha ainda mais rápida", menu: true),
+            new UpgradeDef(Upgrade.PlayerSpeed, -1, "Botas", "Você anda mais rápido", menu: true),
             new UpgradeDef(Upgrade.Tools, (int)Upgrade.Shields, "Ferramentas", "Nova linha: 1 lingote, paga 16"),
-            new UpgradeDef(Upgrade.CounterCapacity, -1, "Vitrine", "Mais estoque, fila e clientes"),
+            new UpgradeDef(Upgrade.CounterCapacity, -1, "Vitrine", "Mais estoque, fila e clientes", menu: true),
             new UpgradeDef(Upgrade.Furnace2, (int)Upgrade.Anvil2, "2ª fornalha", "Dobra os lingotes"),
             new UpgradeDef(Upgrade.Helper3, (int)Upgrade.Helper2, "Ajudante 3", "Leva produtos ao balcão"),
-            new UpgradeDef(Upgrade.HelperSpeed, (int)Upgrade.Helper1, "Ajudantes ágeis", "Mais rápidos e carregam 4"),
-            new UpgradeDef(Upgrade.HammerSpeed, -1, "Martelo veloz", "Bancadas mais rápidas"),
+            new UpgradeDef(Upgrade.HelperSpeed, (int)Upgrade.Helper1, "Ajudantes ágeis", "Mais rápidos e carregam 4", menu: true),
+            new UpgradeDef(Upgrade.HammerSpeed, -1, "Martelo veloz", "Bancadas mais rápidas", menu: true),
             new UpgradeDef(Upgrade.SideCorridor, -1, "Corredor", "Abre a rua lateral"),
             new UpgradeDef(Upgrade.Jewelry, (int)Upgrade.SideCorridor, "Joalheria", "Nova linha: 2 lingotes, paga 60"),
             new UpgradeDef(Upgrade.Jeweler, (int)Upgrade.Jewelry, "Joalheiro", "Ajudante leva lingotes à joalheria e joias à loja"),
-            new UpgradeDef(Upgrade.JewelSpeed, (int)Upgrade.Jewelry, "Lupa", "Joalheria mais rápida"),
-            new UpgradeDef(Upgrade.JewelVitrine, (int)Upgrade.Jewelry, "Vitrine de joias", "Nobres pagam 80 e a fila cresce"),
+            new UpgradeDef(Upgrade.JewelSpeed, (int)Upgrade.Jewelry, "Lupa", "Joalheria mais rápida", menu: true),
+            new UpgradeDef(Upgrade.JewelVitrine, (int)Upgrade.Jewelry, "Vitrine de joias", "Nobres pagam 80 e a fila cresce", menu: true),
             new UpgradeDef(Upgrade.WorkshopFacade, (int)Upgrade.JewelVitrine, "Fachada nobre", "Entrada dourada e bandeirolas", luxury: true),
             new UpgradeDef(Upgrade.WorkshopFloor, (int)Upgrade.WorkshopFacade, "Piso de oficina", "Ladrilhos para valorizar a oficina", luxury: true),
             new UpgradeDef(Upgrade.JewelryDecor, (int)Upgrade.WorkshopFloor, "Joalheria real", "Tapetes e adornos para a joalheria", luxury: true),

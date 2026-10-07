@@ -41,6 +41,7 @@ namespace FS
 
         /// <summary>Fracao de cima da tela reservada a HUD: toque ali nao abre o joystick.</summary>
         public float TopBand = 0.16f;
+        public float BottomPx;   // topo da barra de melhorias (px): toque abaixo e' do menu, nao do joystick
         public bool Blocked;   // painel modal aberto
 
         readonly JoystickLogica _logic = new JoystickLogica(0.12f, 1f);
@@ -75,7 +76,7 @@ namespace FS
             bool pressed = p.press.isPressed;
             if (!Active)
             {
-                if (!p.press.wasPressedThisFrame || pos.y > Screen.height * (1f - TopBand)) return;
+                if (!p.press.wasPressedThisFrame || pos.y > Screen.height * (1f - TopBand) || pos.y < BottomPx) return;
                 Active = true;
                 _anchor = pos;
                 _base.anchoredPosition = pos;

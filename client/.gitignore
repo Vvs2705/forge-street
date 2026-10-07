@@ -8,6 +8,7 @@
 !/Builds/validation_device/
 !/Builds/validation_ambiente/
 !/Builds/validation_portas/
+!/Builds/validation_menu/
 !/Builds/shots/
 !/Builds/shots_art/
 !/Builds/sprites_contact/
@@ -20,3 +21,4 @@
 !/tools/phase2_core_proof_20261007/*.csproj
 *.sln
 /Builds/**/*.log
+/.utmp/

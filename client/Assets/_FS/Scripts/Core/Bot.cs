@@ -3,7 +3,7 @@ using System;
 namespace FS.Core
 {
     /// <summary>
-    /// Autoplay: joga sozinho com uma heuristica simples (pad mais barato que ja da para pagar > entregar o que
+    /// Autoplay: joga sozinho com uma heuristica simples (compra mais barata que ja da para pagar, no menu na hora ou indo ao pad > entregar o que
     /// carrega > pegar produto pronto > pegar lingote pronto > buscar minerio). Serve para balancear a §3 do GDD
     /// (BalanceTests) e para o smoke `-autoplay` do build. Nao e' IA de jogo: e' um jogador mediano previsivel.
     /// </summary>
@@ -17,16 +17,28 @@ namespace FS.Core
         /// </summary>
         public float Reaction = 0.7f, Stick = 0.85f;
 
-        V2 _target; bool _has; float _wait;
+        V2 _target; bool _has, _menu; float _wait;
 
         public static Bot Ideal() => new Bot { Reaction = 0f, Stick = 1f };
 
-        /// <summary>Um tick do jogo com o bot no joystick.</summary>
+        /// <summary>
+        /// Um tick do jogo com o bot no joystick. Menu inferior (FASE6): mesma politica do pad (a compra mais barata que ja da
+        /// para pagar), so que sem andar: para, "le a tela" (Reaction, como em toda troca de alvo) e toca. Compra depois do
+        /// Tick para o Ev.Bought ficar em Events como o do pad.
+        /// </summary>
         public void Step(Sim s, float dt)
         {
-            V2 t = Target(s);
-            if (!_has || V2.Dist(t, _target) > 0.01f) { _target = t; _has = true; _wait = Reaction; }
-            if (_wait > 0f) { _wait -= dt; s.Tick(dt, 0f, 0f); return; }
+            int menu = s.CheapestAffordableMenu();
+            bool buy = menu >= 0;
+            V2 t = buy ? s.Player.Pos : Target(s);
+            if (!_has || buy != _menu || (!buy && V2.Dist(t, _target) > 0.01f)) { _target = t; _menu = buy; _has = true; _wait = Reaction; }
+            if (_wait > 0f || buy)
+            {
+                _wait -= dt;
+                s.Tick(dt, 0f, 0f);
+                if (buy && _wait <= 0f) s.TryBuyMenu((Upgrade)menu);
+                return;
+            }
             V2 d = Toward(s, t);
             s.Tick(dt, d.X * Stick, d.Y * Stick);
         }

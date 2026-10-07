@@ -127,12 +127,12 @@ namespace FS.Tests
                 Clock(corridor), Clock(jewelry), jewels, jewelGold, jewelry < 0f ? 0f : 100f * jewelGold / Math.Max(1, earned[45] - earned[Math.Min(45, mj)]), jewelsPerMin,
                 jewelTired, jewelAway, s.Crafted[(int)Item.Jewel], PerMin(Math.Max(0, mc - 5), mc), before, after, PerMin(40, 45)));
 
-            // Limites folgados (fase 5 + fase 4: fisica, bocas, parede, paciencia por item, Mineiro e Joalheiro 2; medido 2026-10-07:
-            // corredor 13:06, joalheria 21:56, 10,5 joias/min, ouro/min 496 -> 935; BALANCE.md §14). Tempos x1,3 arredondados para cima em 10 s; piso 70%.
-            Assert.That(corridor, Is.InRange(1f, 1030f), "Corredor ate ~medido + 30%");
-            Assert.That(jewelry, Is.InRange(corridor, 1720f), "Joalheria depois do Corredor, ate ~medido + 30%");
-            Assert.Greater(jewelsPerMin, 7.3f, "a linha de joias anda (medido 10,5/min; piso 70%)");
-            Assert.Greater(after, before, "a Joalheria aumenta a renda (medido +89%)");
+            // Limites folgados (Leva 11: menu inferior + bocas laterais, por cima das fases 5 e 4; medido 2026-10-07: corredor 13:26,
+            // joalheria 23:01, 10,1 joias/min, ouro/min 490 -> 968; BALANCE.md §15). Tempos x1,3 arredondados para cima em 10 s; piso 70%.
+            Assert.That(corridor, Is.InRange(1f, 1050f), "Corredor ate ~medido + 30%");
+            Assert.That(jewelry, Is.InRange(corridor, 1800f), "Joalheria depois do Corredor, ate ~medido + 30%");
+            Assert.Greater(jewelsPerMin, 7.0f, "a linha de joias anda (medido 10,1/min; piso 70%)");
+            Assert.Greater(after, before, "a Joalheria aumenta a renda (medido +98%)");
         }
 
         /// <summary>
@@ -188,29 +188,29 @@ namespace FS.Tests
                 Clock(tJeweler), Clock(tLupa), Clock(tVitrine), all ? Clock(lastBuy) : "nao", before, afterJeweler, afterAll, starveBefore, starveJewelerToLupa, starveAfter, jewels,
                 string.Join(" ", Array.ConvertAll(chestOpen, Clock))));
 
-            // Limites folgados (fase 5 + fase 4, medido 2026-10-07: joalheiro 26:06, mineiro 28:41, joalheiro 2 30:57, lupa 35:41,
-            // vitrine 42:24 = producao completa; baus 2:32 / 6:59 / 24:52 / 13:03; joias/min 5,3 -> 14,3; sem lingote joalheiro -> 60 min 12%;
-            // ouro/min 55-60 = 1682). Tempos medidos x1,3 arredondados para cima em 10 s; pisos ~70% do medido (BALANCE.md §14).
+            // Limites folgados (Leva 11: menu inferior + bocas laterais; medido 2026-10-07: joalheiro 27:10, mineiro 30:04, joalheiro 2 32:16,
+            // lupa 36:50, vitrine 43:37 = producao completa; baus 2:53 / 7:18 / 25:46 / 13:23; joias/min 5,3 -> 13,6; sem lingote joalheiro -> 60 min 16%;
+            // ouro/min 55-60 = 1623). Tempos medidos x1,3 arredondados para cima em 10 s; pisos ~70% do medido (BALANCE.md §15).
             Assert.IsTrue(all, "nenhum dos 22 produtivos inalcancavel em 60 min");
-            Assert.That(tJeweler, Is.InRange(tJewelry, 2040f), "Joalheiro depois da Joalheria, ate ~medido + 30%");
-            Assert.That(U(Upgrade.Miner), Is.InRange(tJeweler, 2240f), "Mineiro depois do Joalheiro, ate ~medido + 30%");
-            Assert.That(U(Upgrade.Jeweler2), Is.InRange(U(Upgrade.Miner), 2420f), "Joalheiro 2 depois do Mineiro, ate ~medido + 30%");
-            Assert.That(tLupa, Is.InRange(tJewelry, 2790f), "Lupa ate ~medido + 30%");
-            Assert.That(tVitrine, Is.InRange(tJewelry, 3310f), "Vitrine de joias ate ~medido + 30%");
-            float[] chestMax = { 200f, 550f, 1940f, 1020f };
+            Assert.That(tJeweler, Is.InRange(tJewelry, 2120f), "Joalheiro depois da Joalheria, ate ~medido + 30%");
+            Assert.That(U(Upgrade.Miner), Is.InRange(tJeweler, 2350f), "Mineiro depois do Joalheiro, ate ~medido + 30%");
+            Assert.That(U(Upgrade.Jeweler2), Is.InRange(U(Upgrade.Miner), 2520f), "Joalheiro 2 depois do Mineiro, ate ~medido + 30%");
+            Assert.That(tLupa, Is.InRange(tJewelry, 2880f), "Lupa ate ~medido + 30%");
+            Assert.That(tVitrine, Is.InRange(tJewelry, 3410f), "Vitrine de joias ate ~medido + 30%");
+            float[] chestMax = { 230f, 570f, 2010f, 1050f };
             for (int i = 0; i < chestOpen.Length; i++)
                 Assert.That(chestOpen[i], Is.InRange(1f, chestMax[i]), $"bau {i} ({s.Chests[i].Label}) aberto ate ~medido + 30%");
-            Assert.Greater(afterAll, before, "joalheiro + par + lupa + vitrine aumentam as joias/min (medido 5,3 -> 14,3)");
-            Assert.Greater(afterAll, 10.0f, "piso ~70% do medido (14,3 joias/min)");
-            Assert.LessOrEqual(starveAfter, 35f, "criterio da fase 4: bancada de joias sem lingote <= 35% (medido 12%)");
-            Assert.Greater((earned[60] - earned[55]) / 5f, 1177f, "piso ~70% do ouro/min medido no fim (1682)");
+            Assert.Greater(afterAll, before, "joalheiro + par + lupa + vitrine aumentam as joias/min (medido 5,3 -> 13,6)");
+            Assert.Greater(afterAll, 9.5f, "piso ~70% do medido (13,6 joias/min)");
+            Assert.LessOrEqual(starveAfter, 35f, "criterio da fase 4: bancada de joias sem lingote <= 35% (medido 16%)");
+            Assert.Greater((earned[60] - earned[55]) / 5f, 1136f, "piso ~70% do ouro/min medido no fim (1623)");
         }
 
         /// <summary>
         /// Fase 3 (docs/FASE3_LUXO.md): o bot humano joga 90 min duas vezes no mesmo passo, com e sem os pads de luxo.
-        /// Luxo e' so ralo: os 20 produtivos saem no mesmo tick, as partidas sao identicas ate a 1a compra de luxo e, dali
-        /// em diante, ouro/min e vendas/min so diferem pelo desvio do bot ate o pad (medido +0,7% / -0,5%). O saldo final
-        /// difere exatamente pelos 43.000 do luxo. Limites folgados (medido + 30%, BALANCE.md §11): portao de regressao.
+        /// Luxo e' so ralo: os 22 produtivos saem no mesmo tick, as partidas sao identicas ate a 1a compra de luxo e, dali
+        /// em diante, ouro/min e vendas/min so diferem pelo desvio do bot ate o pad (medido +0,5% / +0,1%). O saldo final
+        /// difere exatamente pelo preco do luxo (54.000 desde a Leva 11). Limites folgados (medido + 30%, BALANCE.md §15): portao de regressao.
         /// </summary>
         [Test]
         public void Bot_90Minutos_Luxo()
@@ -250,15 +250,15 @@ namespace FS.Tests
                 Clock(tProd), Clock(tF), (tF - tProd) / 60f, Clock(tW), (tW - tProd) / 60f, Clock(tJ), (tJ - tProd) / 60f, mp, M, gL, gP, 100f * (gL / gP - 1f), sL, sP, 100f * (sL / sP - 1f),
                 lux.GoldEarned, plain.GoldEarned, lux.Gold, plain.Gold));
 
-            // medido 2026-10-07 (fase 5 + fase 4; luxo 11.000/14.000/18.000): producao 42:24, fachada 49:08, piso 57:37, joalheria real 68:41;
-            // tempos x1,3 arredondados para cima em 10 s; o 3o fica no teto de 90 min pedido pelo contrato (BALANCE.md §14)
-            Assert.That(tF, Is.InRange(tProd, 3840f), "Fachada nobre depois da producao completa, ate ~medido + 30%");
-            Assert.That(tW, Is.InRange(tF, 4500f), "Piso de oficina depois da Fachada, ate ~medido + 30%");
+            // medido 2026-10-07 (Leva 11: menu + bocas laterais; luxo 14.000/18.000/22.000): producao 43:37, fachada 52:20, piso 63:22,
+            // joalheria real 76:56; tempos x1,3 arredondados para cima em 10 s; o 3o fica no teto de 90 min pedido pelo contrato (BALANCE.md §15)
+            Assert.That(tF, Is.InRange(tProd, 4090f), "Fachada nobre depois da producao completa, ate ~medido + 30%");
+            Assert.That(tW, Is.InRange(tF, 4950f), "Piso de oficina depois da Fachada, ate ~medido + 30%");
             Assert.That(tJ, Is.InRange(tW, M * 60f), "Joalheria real depois do Piso, dentro dos 90 min");
             for (int m = 1; m * 60f <= tF; m++)
                 Assert.AreEqual((earnedP[m], salesP[m]), (earnedL[m], salesL[m]), $"identicas ate a 1a compra de luxo (minuto {m})");
-            Assert.That(gL / gP, Is.InRange(0.97f, 1.03f), "luxo nao altera ouro/min (medido +0,7%)");
-            Assert.That(sL / sP, Is.InRange(0.97f, 1.03f), "luxo nao altera vendas/min (medido -0,5%)");
+            Assert.That(gL / gP, Is.InRange(0.97f, 1.03f), "luxo nao altera ouro/min (medido +0,5%)");
+            Assert.That(sL / sP, Is.InRange(0.97f, 1.03f), "luxo nao altera vendas/min (medido +0,1%)");
             int luxuryCost = Upgrades.Cost(Upgrade.WorkshopFacade) + Upgrades.Cost(Upgrade.WorkshopFloor) + Upgrades.Cost(Upgrade.JewelryDecor);
             Assert.AreEqual(plain.Gold + (lux.GoldEarned - plain.GoldEarned) - luxuryCost, lux.Gold, "o luxo cobra exatamente o preco, uma vez, sem devolver ouro");
             Assert.AreEqual((Upgrades.Count, Upgrades.ProductionCount), (lux.UpgradesBought, plain.UpgradesBought));
