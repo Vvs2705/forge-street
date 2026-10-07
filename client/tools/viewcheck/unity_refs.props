@@ -1,0 +1,20 @@
+<Project>
+  <!-- Verificacao rapida sem abrir o Unity: compila o Core das fontes e View/Editor contra as DLLs do Unity 6000.3.23f1.
+       Unity.InputSystem/UnityEngine.UI vem de client/Library/ScriptAssemblies (abrir o projeto no Unity 1 vez se faltar).
+       Uso: dotnet build client/tools/viewcheck/view -nologo -v q   -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <UnityManaged>C:\Program Files\Unity\Hub\Editor\6000.3.23f1\Editor\Data\Managed</UnityManaged>
+    <ProjClient>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..'))</ProjClient>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(UnityManaged)\UnityEngine\*.dll" Exclude="$(UnityManaged)\UnityEngine\UnityEditor.*.dll" Private="false" />
+    <Reference Include="$(ProjClient)\Library\ScriptAssemblies\Unity.InputSystem.dll" Private="false" />
+    <Reference Include="$(ProjClient)\Library\ScriptAssemblies\UnityEngine.UI.dll" Private="false" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)core\FS.Core.csproj" />
+  </ItemGroup>
+</Project>

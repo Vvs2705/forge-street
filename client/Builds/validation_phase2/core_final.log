@@ -1,0 +1,495 @@
+  Determinando os projetos a serem restaurados...
+  Todos os projetos estão atualizados para restauração.
+  FSCore.Tests -> C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll
+Execução de teste para C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll (.NETCoreApp,Version=v10.0)
+1 arquivos de teste no total corresponderam ao padrão especificado.
+C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll
+NUnit Adapter 4.6.0.0: Test execution started
+Running all tests in C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll
+   NUnit3TestExecutor discovered 37 of 37 NUnit test cases using Current Discovery mode, Non-Explicit run
+AUTOPLAY t=1:00 gold=10 earned=60 upgrades=1 sales=6 lost=0 away=0 maxq=4 walk=16s ema=0.72/s joias=0
+AUTOPLAY t=2:00 gold=5 earned=120 upgrades=2 sales=12 lost=3 away=2 maxq=4 walk=35s ema=0.96/s joias=0
+AUTOPLAY t=3:00 gold=50 earned=190 upgrades=3 sales=19 lost=6 away=3 maxq=4 walk=55s ema=1.19/s joias=0
+AUTOPLAY t=4:00 gold=40 earned=290 upgrades=4 sales=29 lost=6 away=4 maxq=4 walk=73s ema=1.50/s joias=0
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s joias=0
+AUTOPLAY t=6:00 gold=130 earned=525 upgrades=5 sales=48 lost=12 away=20 maxq=4 walk=111s ema=1.88/s joias=0
+AUTOPLAY t=7:00 gold=125 earned=695 upgrades=7 sales=59 lost=16 away=29 maxq=4 walk=127s ema=2.64/s joias=0
+AUTOPLAY t=8:00 gold=90 earned=975 upgrades=8 sales=78 lost=18 away=32 maxq=4 walk=146s ema=3.95/s joias=0
+AUTOPLAY t=9:00 gold=415 earned=1300 upgrades=8 sales=100 lost=19 away=36 maxq=4 walk=163s ema=4.80/s joias=0
+AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s joias=0
+AUTOPLAY t=11:00 gold=323 earned=2148 upgrades=10 sales=159 lost=23 away=54 maxq=4 walk=194s ema=7.30/s joias=0
+AUTOPLAY t=12:00 gold=33 earned=2548 upgrades=11 sales=190 lost=24 away=83 maxq=6 walk=211s ema=6.95/s joias=0
+AUTOPLAY t=13:00 gold=61 earned=2961 upgrades=13 sales=219 lost=28 away=136 maxq=6 walk=226s ema=6.74/s joias=0
+AUTOPLAY t=14:00 gold=564 earned=3464 upgrades=13 sales=251 lost=32 away=185 maxq=6 walk=244s ema=7.74/s joias=0
+AUTOPLAY t=15:00 gold=1014 earned=3914 upgrades=13 sales=281 lost=33 away=241 maxq=6 walk=263s ema=7.55/s joias=0
+AUTOPLAY t=16:00 gold=274 earned=4339 upgrades=14 sales=310 lost=39 away=292 maxq=6 walk=279s ema=7.29/s joias=0
+AUTOPLAY t=17:00 gold=734 earned=4799 upgrades=14 sales=341 lost=43 away=344 maxq=6 walk=298s ema=7.47/s joias=0
+AUTOPLAY t=18:00 gold=1166 earned=5231 upgrades=14 sales=371 lost=48 away=394 maxq=6 walk=317s ema=7.30/s joias=0
+AUTOPLAY t=19:00 gold=1 earned=5581 upgrades=15 sales=394 lost=55 away=451 maxq=6 walk=332s ema=6.01/s joias=0
+AUTOPLAY t=20:00 gold=601 earned=6181 upgrades=15 sales=436 lost=59 away=493 maxq=6 walk=349s ema=8.56/s joias=0
+AUTOPLAY t=21:00 gold=1226 earned=6806 upgrades=15 sales=479 lost=64 away=530 maxq=6 walk=367s ema=9.74/s joias=0
+AUTOPLAY t=22:00 gold=323 earned=7418 upgrades=16 sales=521 lost=67 away=572 maxq=6 walk=382s ema=9.99/s joias=0
+AUTOPLAY t=23:00 gold=1228 earned=8323 upgrades=16 sales=565 lost=73 away=626 maxq=6 walk=398s ema=13.52/s joias=6
+AUTOPLAY t=24:00 gold=132 earned=9197 upgrades=17 sales=610 lost=78 away=676 maxq=6 walk=415s ema=14.20/s joias=11
+AUTOPLAY t=25:00 gold=1745 earned=10210 upgrades=17 sales=657 lost=82 away=726 maxq=6 walk=435s ema=16.07/s joias=17
+AUTOPLAY t=26:00 gold=654 earned=11319 upgrades=18 sales=706 lost=84 away=777 maxq=6 walk=451s ema=17.45/s joias=25
+AUTOPLAY t=27:00 gold=1558 earned=12223 upgrades=18 sales=749 lost=88 away=832 maxq=6 walk=468s ema=15.98/s joias=31
+AUTOPLAY t=28:00 gold=2494 earned=13159 upgrades=18 sales=792 lost=95 away=884 maxq=6 walk=485s ema=15.45/s joias=38
+AUTOPLAY t=29:00 gold=3433 earned=14098 upgrades=18 sales=835 lost=101 away=935 maxq=6 walk=505s ema=15.51/s joias=45
+AUTOPLAY t=30:00 gold=4386 earned=15051 upgrades=18 sales=880 lost=104 away=989 maxq=6 walk=525s ema=15.47/s joias=52
+AUTOPLAY t=31:00 gold=5425 earned=16090 upgrades=18 sales=925 lost=109 away=1042 maxq=6 walk=542s ema=17.00/s joias=60
+AUTOPLAY t=32:00 gold=796 earned=16961 upgrades=19 sales=968 lost=113 away=1095 maxq=6 walk=559s ema=15.53/s joias=66
+AUTOPLAY t=33:00 gold=1664 earned=17829 upgrades=19 sales=1008 lost=118 away=1152 maxq=6 walk=576s ema=14.63/s joias=72
+AUTOPLAY t=34:00 gold=2741 earned=18906 upgrades=19 sales=1053 lost=123 away=1205 maxq=6 walk=593s ema=16.75/s joias=81
+AUTOPLAY t=35:00 gold=3638 earned=19803 upgrades=19 sales=1096 lost=133 away=1253 maxq=6 walk=612s ema=15.55/s joias=88
+AUTOPLAY t=36:00 gold=4744 earned=20909 upgrades=19 sales=1143 lost=138 away=1303 maxq=6 walk=629s ema=17.77/s joias=97
+AUTOPLAY t=37:00 gold=5669 earned=21834 upgrades=19 sales=1182 lost=146 away=1357 maxq=6 walk=647s ema=16.72/s joias=105
+AUTOPLAY t=38:00 gold=6580 earned=22745 upgrades=19 sales=1224 lost=151 away=1410 maxq=6 walk=664s ema=15.64/s joias=112
+AUTOPLAY t=39:00 gold=7576 earned=23741 upgrades=19 sales=1270 lost=158 away=1458 maxq=6 walk=682s ema=16.10/s joias=119
+AUTOPLAY t=40:00 gold=8492 earned=24657 upgrades=19 sales=1311 lost=163 away=1516 maxq=6 walk=700s ema=15.83/s joias=126
+AUTOPLAY t=41:00 gold=426 earned=25591 upgrades=20 sales=1351 lost=166 away=1572 maxq=6 walk=716s ema=15.94/s joias=132
+AUTOPLAY t=42:00 gold=1520 earned=26685 upgrades=20 sales=1394 lost=172 away=1630 maxq=6 walk=736s ema=17.12/s joias=139
+AUTOPLAY t=43:00 gold=2527 earned=27692 upgrades=20 sales=1435 lost=178 away=1691 maxq=6 walk=756s ema=16.55/s joias=145
+AUTOPLAY t=44:00 gold=3684 earned=28849 upgrades=20 sales=1480 lost=187 away=1746 maxq=6 walk=772s ema=18.57/s joias=153
+AUTOPLAY t=45:00 gold=4873 earned=30038 upgrades=20 sales=1523 lost=197 away=1801 maxq=6 walk=790s ema=19.91/s joias=162
+
+primeira venda: 0:19
+  0:53  FurnaceSpeed1 (50 ouro)
+  1:59  Anvil2 (65 ouro)
+  2:31  Helper1 (85 ouro)
+  3:39  Shields (110 ouro)
+  5:08  PlayerCapacity (145 ouro)
+  6:26  Helper2 (185 ouro)
+  6:31  Conveyor (240 ouro)
+  7:42  FurnaceSpeed2 (315 ouro)
+  9:01  PlayerSpeed (410 ouro)
+  10:20  Tools (530 ouro)
+  11:54  CounterCapacity (690 ouro)
+  12:52  Furnace2 (895 ouro)
+  15:29  Helper3 (1165 ouro)
+  18:55  HelperSpeed (1515 ouro)
+  23:57  HammerSpeed (1970 ouro)
+  12:21  SideCorridor (690 ouro)
+  21:32  Jewelry (1515 ouro)
+  25:25  Jeweler (2200 ouro)
+  31:12  JewelSpeed (5500 ouro)
+  40:41  JewelVitrine (9000 ouro)
+  Fornalha     fome=  416s travada=  188s feitos=1224
+  Fornalha 2   fome=  625s travada=   69s feitos=754
+  Bigorna      fome=  202s travada=  100s feitos=639
+  Bigorna 2    fome= 1935s travada=    3s feitos=129
+  Escudos      fome=  841s travada=   17s feitos=276
+  Ferramentas  fome=  824s travada=   47s feitos=320
+  Joalheria    fome=  589s travada=   38s feitos=162
+  andar sem decisao: 790s de 2700s (29%)
+  clientes perdidos=197 sem vaga=1801 fila max=6 vendas=1523
+  pads parciais:
+
+corredor=12:21 joalheria=21:32 | joias: vendidas=162 (10380 ouro = 45% do ganho depois da joalheria, 6.9/min) cansaram=7 sem vaga=210 feitas=162
+ouro/min: 5 min antes do corredor=371 | 5 min antes da joalheria=493 | 5 min depois da joalheria=961 | min 40-45=1076
+
+  2:23 marco 0 (15 espadas!) bateu
+  2:24 bau 0 (15 espadas!) aberto, +60
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s joias=0
+  6:18 marco 1 (50 vendas!) bateu
+  6:20 bau 1 (50 vendas!) aberto, +250
+AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s joias=0
+  12:17 marco 3 (200 vendas!) bateu
+  12:18 bau 3 (200 vendas!) aberto, +1200
+AUTOPLAY t=15:00 gold=1014 earned=3914 upgrades=13 sales=281 lost=33 away=241 maxq=6 walk=263s ema=7.55/s joias=0
+AUTOPLAY t=20:00 gold=601 earned=6181 upgrades=15 sales=436 lost=59 away=493 maxq=6 walk=349s ema=8.56/s joias=0
+  23:54 marco 2 (10 joias!) bateu
+  24:02 bau 2 (10 joias!) aberto, +600
+AUTOPLAY t=25:00 gold=1745 earned=10210 upgrades=17 sales=657 lost=82 away=726 maxq=6 walk=435s ema=16.07/s joias=17
+AUTOPLAY t=30:00 gold=4386 earned=15051 upgrades=18 sales=880 lost=104 away=989 maxq=6 walk=525s ema=15.47/s joias=52
+AUTOPLAY t=35:00 gold=3638 earned=19803 upgrades=19 sales=1096 lost=133 away=1253 maxq=6 walk=612s ema=15.55/s joias=88
+AUTOPLAY t=40:00 gold=8492 earned=24657 upgrades=19 sales=1311 lost=163 away=1516 maxq=6 walk=700s ema=15.83/s joias=126
+AUTOPLAY t=45:00 gold=4873 earned=30038 upgrades=20 sales=1523 lost=197 away=1801 maxq=6 walk=790s ema=19.91/s joias=162
+AUTOPLAY t=50:00 gold=10290 earned=35455 upgrades=20 sales=1739 lost=235 away=2085 maxq=6 walk=876s ema=17.03/s joias=197
+AUTOPLAY t=55:00 gold=15736 earned=40901 upgrades=20 sales=1957 lost=274 away=2367 maxq=6 walk=969s ema=17.91/s joias=232
+AUTOPLAY t=60:00 gold=21212 earned=46377 upgrades=20 sales=2167 lost=310 away=2660 maxq=6 walk=1062s ema=17.51/s joias=269
+
+primeira venda: 0:19
+  0:53  FurnaceSpeed1 (50 ouro)
+  1:59  Anvil2 (65 ouro)
+  2:31  Helper1 (85 ouro)
+  3:39  Shields (110 ouro)
+  5:08  PlayerCapacity (145 ouro)
+  6:26  Helper2 (185 ouro)
+  6:31  Conveyor (240 ouro)
+  7:42  FurnaceSpeed2 (315 ouro)
+  9:01  PlayerSpeed (410 ouro)
+  10:20  Tools (530 ouro)
+  11:54  CounterCapacity (690 ouro)
+  12:52  Furnace2 (895 ouro)
+  15:29  Helper3 (1165 ouro)
+  18:55  HelperSpeed (1515 ouro)
+  23:57  HammerSpeed (1970 ouro)
+  12:21  SideCorridor (690 ouro)
+  21:32  Jewelry (1515 ouro)
+  25:25  Jeweler (2200 ouro)
+  31:12  JewelSpeed (5500 ouro)
+  40:41  JewelVitrine (9000 ouro)
+  Fornalha     fome=  616s travada=  188s feitos=1651
+  Fornalha 2   fome=  821s travada=   71s feitos=1181
+  Bigorna      fome=  202s travada=  125s feitos=930
+  Bigorna 2    fome= 2834s travada=    3s feitos=129
+  Escudos      fome= 1266s travada=   22s feitos=379
+  Ferramentas  fome= 1286s travada=   58s feitos=462
+  Joalheria    fome= 1095s travada=   38s feitos=271
+  andar sem decisao: 1062s de 3600s (29%)
+  clientes perdidos=310 sem vaga=2660 fila max=6 vendas=2167
+  pads parciais:
+
+ouro/min por janela de 5 min: 0-5=78 5-10=258 10-15=446 15-20=453 20-25=805 25-30=968 30-35=950 35-40=970 40-45=1076 45-50=1083 50-55=1089 55-60=1095
+joalheiro=25:25 lupa=31:12 vitrine de joias=40:41 | tudo comprado=40:41 | joias/min: joalheria->joalheiro=5.7 joalheiro->lupa=7.0 depois de tudo=7.2 | bancada de joias sem lingote: antes do joalheiro=7% joalheiro->lupa=33% joalheiro->60 min=52% | joias=269 | baus abertos: 2:24 6:20 24:02 12:18
+
+--- bot ideal (sem handicap): limite inferior ---
+primeira venda: 0:17
+  0:52  FurnaceSpeed1 (50 ouro)
+  1:56  Anvil2 (65 ouro)
+  2:26  Helper1 (85 ouro)
+  3:26  Shields (110 ouro)
+  4:43  PlayerCapacity (145 ouro)
+  6:07  Helper2 (185 ouro)
+  6:14  Conveyor (240 ouro)
+  7:35  FurnaceSpeed2 (315 ouro)
+  8:50  PlayerSpeed (410 ouro)
+  --:--  Tools (530 ouro)
+  --:--  CounterCapacity (690 ouro)
+  --:--  Furnace2 (895 ouro)
+  --:--  Helper3 (1165 ouro)
+  --:--  HelperSpeed (1515 ouro)
+  --:--  HammerSpeed (1970 ouro)
+  --:--  SideCorridor (690 ouro)
+  --:--  Jewelry (1515 ouro)
+  --:--  Jeweler (2200 ouro)
+  --:--  JewelSpeed (5500 ouro)
+  --:--  JewelVitrine (9000 ouro)
+  Fornalha     fome=  102s travada=  110s feitos=180
+  Fornalha 2   fome=    0s travada=    0s feitos=0
+  Bigorna      fome=  179s travada=    4s feitos=82
+  Bigorna 2    fome=  383s travada=    0s feitos=19
+  Escudos      fome=  147s travada=    2s feitos=32
+  Ferramentas  fome=    0s travada=    0s feitos=0
+  Joalheria    fome=    0s travada=    0s feitos=0
+  andar sem decisao: 301s de 600s (50%)
+  clientes perdidos=16 sem vaga=46 fila max=4 vendas=129
+  pads parciais:
+
+--- bot humano (0,7 s de reacao, 85% de stick) ---
+AUTOPLAY t=1:00 gold=10 earned=60 upgrades=1 sales=6 lost=0 away=0 maxq=4 walk=16s ema=0.72/s
+AUTOPLAY t=2:00 gold=5 earned=120 upgrades=2 sales=12 lost=3 away=2 maxq=4 walk=35s ema=0.96/s
+AUTOPLAY t=3:00 gold=50 earned=190 upgrades=3 sales=19 lost=6 away=3 maxq=4 walk=55s ema=1.19/s
+AUTOPLAY t=4:00 gold=40 earned=290 upgrades=4 sales=29 lost=6 away=4 maxq=4 walk=73s ema=1.50/s
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s
+AUTOPLAY t=6:00 gold=130 earned=525 upgrades=5 sales=48 lost=12 away=20 maxq=4 walk=111s ema=1.88/s
+AUTOPLAY t=7:00 gold=125 earned=695 upgrades=7 sales=59 lost=16 away=29 maxq=4 walk=127s ema=2.64/s
+AUTOPLAY t=8:00 gold=90 earned=975 upgrades=8 sales=78 lost=18 away=32 maxq=4 walk=146s ema=3.95/s
+AUTOPLAY t=9:00 gold=415 earned=1300 upgrades=8 sales=100 lost=19 away=36 maxq=4 walk=163s ema=4.80/s
+AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s
+
+primeira venda: 0:19
+  0:53  FurnaceSpeed1 (50 ouro)
+  1:59  Anvil2 (65 ouro)
+  2:31  Helper1 (85 ouro)
+  3:39  Shields (110 ouro)
+  5:08  PlayerCapacity (145 ouro)
+  6:26  Helper2 (185 ouro)
+  6:31  Conveyor (240 ouro)
+  7:42  FurnaceSpeed2 (315 ouro)
+  9:01  PlayerSpeed (410 ouro)
+  --:--  Tools (530 ouro)
+  --:--  CounterCapacity (690 ouro)
+  --:--  Furnace2 (895 ouro)
+  --:--  Helper3 (1165 ouro)
+  --:--  HelperSpeed (1515 ouro)
+  --:--  HammerSpeed (1970 ouro)
+  --:--  SideCorridor (690 ouro)
+  --:--  Jewelry (1515 ouro)
+  --:--  Jeweler (2200 ouro)
+  --:--  JewelSpeed (5500 ouro)
+  --:--  JewelVitrine (9000 ouro)
+  Fornalha     fome=  101s travada=  114s feitos=178
+  Fornalha 2   fome=    0s travada=    0s feitos=0
+  Bigorna      fome=  202s travada=    8s feitos=77
+  Bigorna 2    fome=  334s travada=    1s feitos=29
+  Escudos      fome=  149s travada=    9s feitos=29
+  Ferramentas  fome=    0s travada=    0s feitos=0
+  Joalheria    fome=    0s travada=    0s feitos=0
+  andar sem decisao: 179s de 600s (30%)
+  clientes perdidos=21 sem vaga=41 fila max=4 vendas=126
+  pads parciais:
+
+
+offline 8 h depois de 10 min de jogo: 1060 ouro (taxa 5,93/s; pela taxa seriam 10672; proximo upgrade travado custa 530)
+
+  Aprovado Bot_45Minutos_SegundaArea_CorredorEJoalheria [182 ms]
+  Mensagens de saída padrão:
+ AUTOPLAY t=1:00 gold=10 earned=60 upgrades=1 sales=6 lost=0 away=0 maxq=4 walk=16s ema=0.72/s joias=0
+ AUTOPLAY t=2:00 gold=5 earned=120 upgrades=2 sales=12 lost=3 away=2 maxq=4 walk=35s ema=0.96/s joias=0
+ AUTOPLAY t=3:00 gold=50 earned=190 upgrades=3 sales=19 lost=6 away=3 maxq=4 walk=55s ema=1.19/s joias=0
+ AUTOPLAY t=4:00 gold=40 earned=290 upgrades=4 sales=29 lost=6 away=4 maxq=4 walk=73s ema=1.50/s joias=0
+ AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s joias=0
+ AUTOPLAY t=6:00 gold=130 earned=525 upgrades=5 sales=48 lost=12 away=20 maxq=4 walk=111s ema=1.88/s joias=0
+ AUTOPLAY t=7:00 gold=125 earned=695 upgrades=7 sales=59 lost=16 away=29 maxq=4 walk=127s ema=2.64/s joias=0
+ AUTOPLAY t=8:00 gold=90 earned=975 upgrades=8 sales=78 lost=18 away=32 maxq=4 walk=146s ema=3.95/s joias=0
+ AUTOPLAY t=9:00 gold=415 earned=1300 upgrades=8 sales=100 lost=19 away=36 maxq=4 walk=163s ema=4.80/s joias=0
+ AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s joias=0
+ AUTOPLAY t=11:00 gold=323 earned=2148 upgrades=10 sales=159 lost=23 away=54 maxq=4 walk=194s ema=7.30/s joias=0
+ AUTOPLAY t=12:00 gold=33 earned=2548 upgrades=11 sales=190 lost=24 away=83 maxq=6 walk=211s ema=6.95/s joias=0
+ AUTOPLAY t=13:00 gold=61 earned=2961 upgrades=13 sales=219 lost=28 away=136 maxq=6 walk=226s ema=6.74/s joias=0
+ AUTOPLAY t=14:00 gold=564 earned=3464 upgrades=13 sales=251 lost=32 away=185 maxq=6 walk=244s ema=7.74/s joias=0
+ AUTOPLAY t=15:00 gold=1014 earned=3914 upgrades=13 sales=281 lost=33 away=241 maxq=6 walk=263s ema=7.55/s joias=0
+ AUTOPLAY t=16:00 gold=274 earned=4339 upgrades=14 sales=310 lost=39 away=292 maxq=6 walk=279s ema=7.29/s joias=0
+ AUTOPLAY t=17:00 gold=734 earned=4799 upgrades=14 sales=341 lost=43 away=344 maxq=6 walk=298s ema=7.47/s joias=0
+ AUTOPLAY t=18:00 gold=1166 earned=5231 upgrades=14 sales=371 lost=48 away=394 maxq=6 walk=317s ema=7.30/s joias=0
+ AUTOPLAY t=19:00 gold=1 earned=5581 upgrades=15 sales=394 lost=55 away=451 maxq=6 walk=332s ema=6.01/s joias=0
+ AUTOPLAY t=20:00 gold=601 earned=6181 upgrades=15 sales=436 lost=59 away=493 maxq=6 walk=349s ema=8.56/s joias=0
+ AUTOPLAY t=21:00 gold=1226 earned=6806 upgrades=15 sales=479 lost=64 away=530 maxq=6 walk=367s ema=9.74/s joias=0
+ AUTOPLAY t=22:00 gold=323 earned=7418 upgrades=16 sales=521 lost=67 away=572 maxq=6 walk=382s ema=9.99/s joias=0
+ AUTOPLAY t=23:00 gold=1228 earned=8323 upgrades=16 sales=565 lost=73 away=626 maxq=6 walk=398s ema=13.52/s joias=6
+ AUTOPLAY t=24:00 gold=132 earned=9197 upgrades=17 sales=610 lost=78 away=676 maxq=6 walk=415s ema=14.20/s joias=11
+ AUTOPLAY t=25:00 gold=1745 earned=10210 upgrades=17 sales=657 lost=82 away=726 maxq=6 walk=435s ema=16.07/s joias=17
+ AUTOPLAY t=26:00 gold=654 earned=11319 upgrades=18 sales=706 lost=84 away=777 maxq=6 walk=451s ema=17.45/s joias=25
+ AUTOPLAY t=27:00 gold=1558 earned=12223 upgrades=18 sales=749 lost=88 away=832 maxq=6 walk=468s ema=15.98/s joias=31
+ AUTOPLAY t=28:00 gold=2494 earned=13159 upgrades=18 sales=792 lost=95 away=884 maxq=6 walk=485s ema=15.45/s joias=38
+ AUTOPLAY t=29:00 gold=3433 earned=14098 upgrades=18 sales=835 lost=101 away=935 maxq=6 walk=505s ema=15.51/s joias=45
+ AUTOPLAY t=30:00 gold=4386 earned=15051 upgrades=18 sales=880 lost=104 away=989 maxq=6 walk=525s ema=15.47/s joias=52
+ AUTOPLAY t=31:00 gold=5425 earned=16090 upgrades=18 sales=925 lost=109 away=1042 maxq=6 walk=542s ema=17.00/s joias=60
+ AUTOPLAY t=32:00 gold=796 earned=16961 upgrades=19 sales=968 lost=113 away=1095 maxq=6 walk=559s ema=15.53/s joias=66
+ AUTOPLAY t=33:00 gold=1664 earned=17829 upgrades=19 sales=1008 lost=118 away=1152 maxq=6 walk=576s ema=14.63/s joias=72
+ AUTOPLAY t=34:00 gold=2741 earned=18906 upgrades=19 sales=1053 lost=123 away=1205 maxq=6 walk=593s ema=16.75/s joias=81
+ AUTOPLAY t=35:00 gold=3638 earned=19803 upgrades=19 sales=1096 lost=133 away=1253 maxq=6 walk=612s ema=15.55/s joias=88
+ AUTOPLAY t=36:00 gold=4744 earned=20909 upgrades=19 sales=1143 lost=138 away=1303 maxq=6 walk=629s ema=17.77/s joias=97
+ AUTOPLAY t=37:00 gold=5669 earned=21834 upgrades=19 sales=1182 lost=146 away=1357 maxq=6 walk=647s ema=16.72/s joias=105
+ AUTOPLAY t=38:00 gold=6580 earned=22745 upgrades=19 sales=1224 lost=151 away=1410 maxq=6 walk=664s ema=15.64/s joias=112
+ AUTOPLAY t=39:00 gold=7576 earned=23741 upgrades=19 sales=1270 lost=158 away=1458 maxq=6 walk=682s ema=16.10/s joias=119
+ AUTOPLAY t=40:00 gold=8492 earned=24657 upgrades=19 sales=1311 lost=163 away=1516 maxq=6 walk=700s ema=15.83/s joias=126
+ AUTOPLAY t=41:00 gold=426 earned=25591 upgrades=20 sales=1351 lost=166 away=1572 maxq=6 walk=716s ema=15.94/s joias=132
+ AUTOPLAY t=42:00 gold=1520 earned=26685 upgrades=20 sales=1394 lost=172 away=1630 maxq=6 walk=736s ema=17.12/s joias=139
+ AUTOPLAY t=43:00 gold=2527 earned=27692 upgrades=20 sales=1435 lost=178 away=1691 maxq=6 walk=756s ema=16.55/s joias=145
+ AUTOPLAY t=44:00 gold=3684 earned=28849 upgrades=20 sales=1480 lost=187 away=1746 maxq=6 walk=772s ema=18.57/s joias=153
+ AUTOPLAY t=45:00 gold=4873 earned=30038 upgrades=20 sales=1523 lost=197 away=1801 maxq=6 walk=790s ema=19.91/s joias=162
+ 
+ primeira venda: 0:19
+   0:53  FurnaceSpeed1 (50 ouro)
+   1:59  Anvil2 (65 ouro)
+   2:31  Helper1 (85 ouro)
+   3:39  Shields (110 ouro)
+   5:08  PlayerCapacity (145 ouro)
+   6:26  Helper2 (185 ouro)
+   6:31  Conveyor (240 ouro)
+   7:42  FurnaceSpeed2 (315 ouro)
+   9:01  PlayerSpeed (410 ouro)
+   10:20  Tools (530 ouro)
+   11:54  CounterCapacity (690 ouro)
+   12:52  Furnace2 (895 ouro)
+   15:29  Helper3 (1165 ouro)
+   18:55  HelperSpeed (1515 ouro)
+   23:57  HammerSpeed (1970 ouro)
+   12:21  SideCorridor (690 ouro)
+   21:32  Jewelry (1515 ouro)
+   25:25  Jeweler (2200 ouro)
+   31:12  JewelSpeed (5500 ouro)
+   40:41  JewelVitrine (9000 ouro)
+   Fornalha     fome=  416s travada=  188s feitos=1224
+   Fornalha 2   fome=  625s travada=   69s feitos=754
+   Bigorna      fome=  202s travada=  100s feitos=639
+   Bigorna 2    fome= 1935s travada=    3s feitos=129
+   Escudos      fome=  841s travada=   17s feitos=276
+   Ferramentas  fome=  824s travada=   47s feitos=320
+   Joalheria    fome=  589s travada=   38s feitos=162
+   andar sem decisao: 790s de 2700s (29%)
+   clientes perdidos=197 sem vaga=1801 fila max=6 vendas=1523
+   pads parciais:
+ 
+ corredor=12:21 joalheria=21:32 | joias: vendidas=162 (10380 ouro = 45% do ganho depois da joalheria, 6.9/min) cansaram=7 sem vaga=210 feitas=162
+ ouro/min: 5 min antes do corredor=371 | 5 min antes da joalheria=493 | 5 min depois da joalheria=961 | min 40-45=1076
+
+
+  Aprovado Bot_60Minutos_Fase2 [230 ms]
+  Mensagens de saída padrão:
+   2:23 marco 0 (15 espadas!) bateu
+   2:24 bau 0 (15 espadas!) aberto, +60
+ AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s joias=0
+   6:18 marco 1 (50 vendas!) bateu
+   6:20 bau 1 (50 vendas!) aberto, +250
+ AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s joias=0
+   12:17 marco 3 (200 vendas!) bateu
+   12:18 bau 3 (200 vendas!) aberto, +1200
+ AUTOPLAY t=15:00 gold=1014 earned=3914 upgrades=13 sales=281 lost=33 away=241 maxq=6 walk=263s ema=7.55/s joias=0
+ AUTOPLAY t=20:00 gold=601 earned=6181 upgrades=15 sales=436 lost=59 away=493 maxq=6 walk=349s ema=8.56/s joias=0
+   23:54 marco 2 (10 joias!) bateu
+   24:02 bau 2 (10 joias!) aberto, +600
+ AUTOPLAY t=25:00 gold=1745 earned=10210 upgrades=17 sales=657 lost=82 away=726 maxq=6 walk=435s ema=16.07/s joias=17
+ AUTOPLAY t=30:00 gold=4386 earned=15051 upgrades=18 sales=880 lost=104 away=989 maxq=6 walk=525s ema=15.47/s joias=52
+ AUTOPLAY t=35:00 gold=3638 earned=19803 upgrades=19 sales=1096 lost=133 away=1253 maxq=6 walk=612s ema=15.55/s joias=88
+ AUTOPLAY t=40:00 gold=8492 earned=24657 upgrades=19 sales=1311 lost=163 away=1516 maxq=6 walk=700s ema=15.83/s joias=126
+ AUTOPLAY t=45:00 gold=4873 earned=30038 upgrades=20 sales=1523 lost=197 away=1801 maxq=6 walk=790s ema=19.91/s joias=162
+ AUTOPLAY t=50:00 gold=10290 earned=35455 upgrades=20 sales=1739 lost=235 away=2085 maxq=6 walk=876s ema=17.03/s joias=197
+ AUTOPLAY t=55:00 gold=15736 earned=40901 upgrades=20 sales=1957 lost=274 away=2367 maxq=6 walk=969s ema=17.91/s joias=232
+ AUTOPLAY t=60:00 gold=21212 earned=46377 upgrades=20 sales=2167 lost=310 away=2660 maxq=6 walk=1062s ema=17.51/s joias=269
+ 
+ primeira venda: 0:19
+   0:53  FurnaceSpeed1 (50 ouro)
+   1:59  Anvil2 (65 ouro)
+   2:31  Helper1 (85 ouro)
+   3:39  Shields (110 ouro)
+   5:08  PlayerCapacity (145 ouro)
+   6:26  Helper2 (185 ouro)
+   6:31  Conveyor (240 ouro)
+   7:42  FurnaceSpeed2 (315 ouro)
+   9:01  PlayerSpeed (410 ouro)
+   10:20  Tools (530 ouro)
+   11:54  CounterCapacity (690 ouro)
+   12:52  Furnace2 (895 ouro)
+   15:29  Helper3 (1165 ouro)
+   18:55  HelperSpeed (1515 ouro)
+   23:57  HammerSpeed (1970 ouro)
+   12:21  SideCorridor (690 ouro)
+   21:32  Jewelry (1515 ouro)
+   25:25  Jeweler (2200 ouro)
+   31:12  JewelSpeed (5500 ouro)
+   40:41  JewelVitrine (9000 ouro)
+   Fornalha     fome=  616s travada=  188s feitos=1651
+   Fornalha 2   fome=  821s travada=   71s feitos=1181
+   Bigorna      fome=  202s travada=  125s feitos=930
+   Bigorna 2    fome= 2834s travada=    3s feitos=129
+   Escudos      fome= 1266s travada=   22s feitos=379
+   Ferramentas  fome= 1286s travada=   58s feitos=462
+   Joalheria    fome= 1095s travada=   38s feitos=271
+   andar sem decisao: 1062s de 3600s (29%)
+   clientes perdidos=310 sem vaga=2660 fila max=6 vendas=2167
+   pads parciais:
+ 
+ ouro/min por janela de 5 min: 0-5=78 5-10=258 10-15=446 15-20=453 20-25=805 25-30=968 30-35=950 35-40=970 40-45=1076 45-50=1083 50-55=1089 55-60=1095
+ joalheiro=25:25 lupa=31:12 vitrine de joias=40:41 | tudo comprado=40:41 | joias/min: joalheria->joalheiro=5.7 joalheiro->lupa=7.0 depois de tudo=7.2 | bancada de joias sem lingote: antes do joalheiro=7% joalheiro->lupa=33% joalheiro->60 min=52% | joias=269 | baus abertos: 2:24 6:20 24:02 12:18
+
+
+  Aprovado Bot_Primeiros10Minutos_BatemASecao3 [68 ms]
+  Mensagens de saída padrão:
+ --- bot ideal (sem handicap): limite inferior ---
+ primeira venda: 0:17
+   0:52  FurnaceSpeed1 (50 ouro)
+   1:56  Anvil2 (65 ouro)
+   2:26  Helper1 (85 ouro)
+   3:26  Shields (110 ouro)
+   4:43  PlayerCapacity (145 ouro)
+   6:07  Helper2 (185 ouro)
+   6:14  Conveyor (240 ouro)
+   7:35  FurnaceSpeed2 (315 ouro)
+   8:50  PlayerSpeed (410 ouro)
+   --:--  Tools (530 ouro)
+   --:--  CounterCapacity (690 ouro)
+   --:--  Furnace2 (895 ouro)
+   --:--  Helper3 (1165 ouro)
+   --:--  HelperSpeed (1515 ouro)
+   --:--  HammerSpeed (1970 ouro)
+   --:--  SideCorridor (690 ouro)
+   --:--  Jewelry (1515 ouro)
+   --:--  Jeweler (2200 ouro)
+   --:--  JewelSpeed (5500 ouro)
+   --:--  JewelVitrine (9000 ouro)
+   Fornalha     fome=  102s travada=  110s feitos=180
+   Fornalha 2   fome=    0s travada=    0s feitos=0
+   Bigorna      fome=  179s travada=    4s feitos=82
+   Bigorna 2    fome=  383s travada=    0s feitos=19
+   Escudos      fome=  147s travada=    2s feitos=32
+   Ferramentas  fome=    0s travada=    0s feitos=0
+   Joalheria    fome=    0s travada=    0s feitos=0
+   andar sem decisao: 301s de 600s (50%)
+   clientes perdidos=16 sem vaga=46 fila max=4 vendas=129
+   pads parciais:
+ 
+ --- bot humano (0,7 s de reacao, 85% de stick) ---
+ AUTOPLAY t=1:00 gold=10 earned=60 upgrades=1 sales=6 lost=0 away=0 maxq=4 walk=16s ema=0.72/s
+ AUTOPLAY t=2:00 gold=5 earned=120 upgrades=2 sales=12 lost=3 away=2 maxq=4 walk=35s ema=0.96/s
+ AUTOPLAY t=3:00 gold=50 earned=190 upgrades=3 sales=19 lost=6 away=3 maxq=4 walk=55s ema=1.19/s
+ AUTOPLAY t=4:00 gold=40 earned=290 upgrades=4 sales=29 lost=6 away=4 maxq=4 walk=73s ema=1.50/s
+ AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s
+ AUTOPLAY t=6:00 gold=130 earned=525 upgrades=5 sales=48 lost=12 away=20 maxq=4 walk=111s ema=1.88/s
+ AUTOPLAY t=7:00 gold=125 earned=695 upgrades=7 sales=59 lost=16 away=29 maxq=4 walk=127s ema=2.64/s
+ AUTOPLAY t=8:00 gold=90 earned=975 upgrades=8 sales=78 lost=18 away=32 maxq=4 walk=146s ema=3.95/s
+ AUTOPLAY t=9:00 gold=415 earned=1300 upgrades=8 sales=100 lost=19 away=36 maxq=4 walk=163s ema=4.80/s
+ AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s
+ 
+ primeira venda: 0:19
+   0:53  FurnaceSpeed1 (50 ouro)
+   1:59  Anvil2 (65 ouro)
+   2:31  Helper1 (85 ouro)
+   3:39  Shields (110 ouro)
+   5:08  PlayerCapacity (145 ouro)
+   6:26  Helper2 (185 ouro)
+   6:31  Conveyor (240 ouro)
+   7:42  FurnaceSpeed2 (315 ouro)
+   9:01  PlayerSpeed (410 ouro)
+   --:--  Tools (530 ouro)
+   --:--  CounterCapacity (690 ouro)
+   --:--  Furnace2 (895 ouro)
+   --:--  Helper3 (1165 ouro)
+   --:--  HelperSpeed (1515 ouro)
+   --:--  HammerSpeed (1970 ouro)
+   --:--  SideCorridor (690 ouro)
+   --:--  Jewelry (1515 ouro)
+   --:--  Jeweler (2200 ouro)
+   --:--  JewelSpeed (5500 ouro)
+   --:--  JewelVitrine (9000 ouro)
+   Fornalha     fome=  101s travada=  114s feitos=178
+   Fornalha 2   fome=    0s travada=    0s feitos=0
+   Bigorna      fome=  202s travada=    8s feitos=77
+   Bigorna 2    fome=  334s travada=    1s feitos=29
+   Escudos      fome=  149s travada=    9s feitos=29
+   Ferramentas  fome=    0s travada=    0s feitos=0
+   Joalheria    fome=    0s travada=    0s feitos=0
+   andar sem decisao: 179s de 600s (30%)
+   clientes perdidos=21 sem vaga=41 fila max=4 vendas=126
+   pads parciais:
+ 
+
+
+  Aprovado Determinismo_MesmaEntradaMesmoResultado [37 ms]
+  Aprovado Offline_DepoisDe10Min_RendeAlgoMasNaoMaisQueOTeto [35 ms]
+  Mensagens de saída padrão:
+ offline 8 h depois de 10 min de jogo: 1060 ouro (taxa 5,93/s; pela taxa seriam 10672; proximo upgrade travado custa 530)
+
+
+  Aprovado Ajudantes_Papel1AbasteceAJoalheria_Papel2LevaJoiaALoja [3 ms]
+  Aprovado Cadeia_MinerioLingoteEspada_VendePagaOuro [3 ms]
+  Aprovado Capacidade_LimitaPilha [1 ms]
+  Aprovado Cliente_PagaEVaiEmbora_OuCansaESai [1 ms]
+  Aprovado Corredor_SoltaOJogadorNaRuaLateral [2 ms]
+  Aprovado Curva_DeCusto_Dos20Upgrades [2 ms]
+  Aprovado Dica_BauDisponivel_LogoDepoisDoPad_EFilaDeJoiasNoChao [1 ms]
+  Aprovado Dica_SegueOEstado [< 1 ms]
+  Aprovado Escudo_Consome2Lingotes_EPaga25 [< 1 ms]
+  Aprovado Esteira_MoveLingotesSemCaminhar [< 1 ms]
+  Aprovado Fila_Cheia_ClienteNaoEntra_EEscudoSoDepoisDoUpgrade [3 ms]
+  Aprovado FilaCheia_ProdutoNaVitrine_ClienteCompraDireto_NaoTrava [< 1 ms]
+  Aprovado FilaDaJoalheria_CompraPor60_Teto3_Paciencia40 [4 ms]
+  Aprovado Gargalo_FornalhaLenta_AcumulaFila_UpgradeResolve [2 ms]
+  Aprovado Joalheiro_NaoAtrapalhaOsPapeis0a2 [12 ms]
+  Aprovado Joalheiro_Papel3_AbasteceSoABancadaDeJoias_ELevaJoiaALoja [2 ms]
+  Aprovado Joalheria_FechadaSemUpgrade_2LingotesViram1Joia [1 ms]
+  Aprovado Joia_SoNaLojaDeJoias_EspadaNuncaLa [< 1 ms]
+  Aprovado Lupa_BancadaDeJoias_x06_SoNaJoalheria [< 1 ms]
+  Aprovado Marco_DisparaUmaVez_BauPagaUmaVez_UmPorLugar [1 ms]
+  Aprovado Metrica_AndarSemDecisao_SoContaSemPadPagavel [< 1 ms]
+  Aprovado Offline_NuncaPagaMaisQue2xOUpgradeMaisBaratoTravado [< 1 ms]
+  Aprovado Offline_Teto2h_25Porcento_NegativoZero_Idempotente [< 1 ms]
+  Aprovado Pad_DrenaOuro_ECompra_AplicaEfeito [< 1 ms]
+  Aprovado Save_Antigo15Flags_Stock3_CarregaComASegundaAreaFechada [11 ms]
+  Aprovado Save_Antigo17Flags_SemMarcos_Carrega [< 1 ms]
+  Aprovado Save_IdaEVolta_ELixoViraInicial [1 ms]
+  Aprovado Save_Marcos_IdaEVolta_NaoPagaDeNovo [< 1 ms]
+  Aprovado Save_SegundaArea_17Flags_EstoqueDeJoia_IdaEVolta [< 1 ms]
+  Aprovado VitrineDeJoias_Fila5_NobresX07_SoNaJoalheria [2 ms]
+  Aprovado VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita [1 ms]
+NUnit Adapter 4.6.0.0: Test execution complete
+  Aprovado Worker_CompletaOCicloSozinho [7 ms]
+
+Execução de Teste Bem-sucedida.
+Total de testes: 37
+     Aprovados: 37
+Tempo total: 1,1284 Segundos
+Arquivo de resultados: C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\Builds\validation_phase2\core_final.trx

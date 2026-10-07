@@ -1,0 +1,153 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="4928e299-3d40-42db-a345-eae4a9099311" name="VINICIUS@DESKTOP-4VDN6JG 2026-10-07 14:54:24" runUser="DESKTOP-4VDN6JG\VINICIUS" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-07T14:54:24.4651620-03:00" queuing="2026-10-07T14:54:24.4651622-03:00" start="2026-10-07T14:54:23.6269668-03:00" finish="2026-10-07T14:54:24.4730551-03:00" />
+  <TestSettings name="default" id="baa7c4f9-455f-4bee-8687-83db35432a4f">
+    <Deployment runDeploymentRoot="VINICIUS_DESKTOP-4VDN6JG_2026-10-07_14_54_24" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="8549109e-afec-4667-907e-9ab9046a31d5" testId="cf9ebe90-2115-c529-a56e-5de9d37009f5" testName="Bot_60Minutos_Fase2" computerName="DESKTOP-4VDN6JG" duration="00:00:00.2452460" startTime="2026-10-07T14:54:24.1226964-03:00" endTime="2026-10-07T14:54:24.3678881-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8549109e-afec-4667-907e-9ab9046a31d5">
+      <Output>
+        <StdOut>2:23 marco 0 (15 espadas!) bateu&#xD;
+  2:24 bau 0 (15 espadas!) aberto, +60&#xD;
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s joias=0&#xD;
+  6:18 marco 1 (50 vendas!) bateu&#xD;
+  6:20 bau 1 (50 vendas!) aberto, +250&#xD;
+AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s joias=0&#xD;
+  12:17 marco 3 (200 vendas!) bateu&#xD;
+  12:18 bau 3 (200 vendas!) aberto, +1200&#xD;
+AUTOPLAY t=15:00 gold=1014 earned=3914 upgrades=13 sales=281 lost=33 away=241 maxq=6 walk=263s ema=7.55/s joias=0&#xD;
+AUTOPLAY t=20:00 gold=601 earned=6181 upgrades=15 sales=436 lost=59 away=493 maxq=6 walk=349s ema=8.56/s joias=0&#xD;
+  23:54 marco 2 (10 joias!) bateu&#xD;
+  24:02 bau 2 (10 joias!) aberto, +600&#xD;
+AUTOPLAY t=25:00 gold=1745 earned=10210 upgrades=17 sales=657 lost=82 away=726 maxq=6 walk=435s ema=16.07/s joias=17&#xD;
+AUTOPLAY t=30:00 gold=4386 earned=15051 upgrades=18 sales=880 lost=104 away=989 maxq=6 walk=525s ema=15.47/s joias=52&#xD;
+AUTOPLAY t=35:00 gold=3638 earned=19803 upgrades=19 sales=1096 lost=133 away=1253 maxq=6 walk=612s ema=15.55/s joias=88&#xD;
+AUTOPLAY t=40:00 gold=8492 earned=24657 upgrades=19 sales=1311 lost=163 away=1516 maxq=6 walk=700s ema=15.83/s joias=126&#xD;
+AUTOPLAY t=45:00 gold=4873 earned=30038 upgrades=20 sales=1523 lost=197 away=1801 maxq=6 walk=790s ema=19.91/s joias=162&#xD;
+AUTOPLAY t=50:00 gold=10290 earned=35455 upgrades=20 sales=1739 lost=235 away=2085 maxq=6 walk=876s ema=17.03/s joias=197&#xD;
+AUTOPLAY t=55:00 gold=15736 earned=40901 upgrades=20 sales=1957 lost=274 away=2367 maxq=6 walk=969s ema=17.91/s joias=232&#xD;
+AUTOPLAY t=60:00 gold=21212 earned=46377 upgrades=20 sales=2167 lost=310 away=2660 maxq=6 walk=1062s ema=17.51/s joias=269&#xD;
+&#xD;
+primeira venda: 0:19&#xD;
+  0:53  FurnaceSpeed1 (50 ouro)&#xD;
+  1:59  Anvil2 (65 ouro)&#xD;
+  2:31  Helper1 (85 ouro)&#xD;
+  3:39  Shields (110 ouro)&#xD;
+  5:08  PlayerCapacity (145 ouro)&#xD;
+  6:26  Helper2 (185 ouro)&#xD;
+  6:31  Conveyor (240 ouro)&#xD;
+  7:42  FurnaceSpeed2 (315 ouro)&#xD;
+  9:01  PlayerSpeed (410 ouro)&#xD;
+  10:20  Tools (530 ouro)&#xD;
+  11:54  CounterCapacity (690 ouro)&#xD;
+  12:52  Furnace2 (895 ouro)&#xD;
+  15:29  Helper3 (1165 ouro)&#xD;
+  18:55  HelperSpeed (1515 ouro)&#xD;
+  23:57  HammerSpeed (1970 ouro)&#xD;
+  12:21  SideCorridor (690 ouro)&#xD;
+  21:32  Jewelry (1515 ouro)&#xD;
+  25:25  Jeweler (2200 ouro)&#xD;
+  31:12  JewelSpeed (5500 ouro)&#xD;
+  40:41  JewelVitrine (9000 ouro)&#xD;
+  Fornalha     fome=  616s travada=  188s feitos=1651&#xD;
+  Fornalha 2   fome=  821s travada=   71s feitos=1181&#xD;
+  Bigorna      fome=  202s travada=  125s feitos=930&#xD;
+  Bigorna 2    fome= 2834s travada=    3s feitos=129&#xD;
+  Escudos      fome= 1266s travada=   22s feitos=379&#xD;
+  Ferramentas  fome= 1286s travada=   58s feitos=462&#xD;
+  Joalheria    fome= 1095s travada=   38s feitos=271&#xD;
+  andar sem decisao: 1062s de 3600s (29%)&#xD;
+  clientes perdidos=310 sem vaga=2660 fila max=6 vendas=2167&#xD;
+  pads parciais:&#xD;
+&#xD;
+ouro/min por janela de 5 min: 0-5=78 5-10=258 10-15=446 15-20=453 20-25=805 25-30=968 30-35=950 35-40=970 40-45=1076 45-50=1083 50-55=1089 55-60=1095&#xD;
+joalheiro=25:25 lupa=31:12 vitrine de joias=40:41 | tudo comprado=40:41 | joias/min: joalheria-&gt;joalheiro=5.7 joalheiro-&gt;lupa=7.0 depois de tudo=7.2 | bancada de joias sem lingote: antes do joalheiro=7% joalheiro-&gt;lupa=33% joalheiro-&gt;60 min=52% | joias=269 | baus abertos: 2:24 6:20 24:02 12:18</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="de77ba2f-1871-4519-b61d-2003b87c4a2d" testId="ccffae8d-71c6-cc34-8c59-4d8e251ea8cf" testName="VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0106120" startTime="2026-10-07T14:54:24.3705409-03:00" endTime="2026-10-07T14:54:24.3811529-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="de77ba2f-1871-4519-b61d-2003b87c4a2d" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Bot_60Minutos_Fase2" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="cf9ebe90-2115-c529-a56e-5de9d37009f5">
+      <Execution id="8549109e-afec-4667-907e-9ab9046a31d5" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.BalanceTests" name="Bot_60Minutos_Fase2" />
+    </UnitTest>
+    <UnitTest name="VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="ccffae8d-71c6-cc34-8c59-4d8e251ea8cf">
+      <Execution id="de77ba2f-1871-4519-b61d-2003b87c4a2d" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="cf9ebe90-2115-c529-a56e-5de9d37009f5" executionId="8549109e-afec-4667-907e-9ab9046a31d5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ccffae8d-71c6-cc34-8c59-4d8e251ea8cf" executionId="de77ba2f-1871-4519-b61d-2003b87c4a2d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Resultados que não estão em uma lista" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="Todos os resultados carregados" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="2" executed="2" passed="2" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 4.6.0.0: Test execution started&#xD;
+Running selected tests in C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 2 of 2 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+  2:23 marco 0 (15 espadas!) bateu&#xD;
+  2:24 bau 0 (15 espadas!) aberto, +60&#xD;
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s joias=0&#xD;
+  6:18 marco 1 (50 vendas!) bateu&#xD;
+  6:20 bau 1 (50 vendas!) aberto, +250&#xD;
+AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s joias=0&#xD;
+  12:17 marco 3 (200 vendas!) bateu&#xD;
+  12:18 bau 3 (200 vendas!) aberto, +1200&#xD;
+AUTOPLAY t=15:00 gold=1014 earned=3914 upgrades=13 sales=281 lost=33 away=241 maxq=6 walk=263s ema=7.55/s joias=0&#xD;
+AUTOPLAY t=20:00 gold=601 earned=6181 upgrades=15 sales=436 lost=59 away=493 maxq=6 walk=349s ema=8.56/s joias=0&#xD;
+  23:54 marco 2 (10 joias!) bateu&#xD;
+  24:02 bau 2 (10 joias!) aberto, +600&#xD;
+AUTOPLAY t=25:00 gold=1745 earned=10210 upgrades=17 sales=657 lost=82 away=726 maxq=6 walk=435s ema=16.07/s joias=17&#xD;
+AUTOPLAY t=30:00 gold=4386 earned=15051 upgrades=18 sales=880 lost=104 away=989 maxq=6 walk=525s ema=15.47/s joias=52&#xD;
+AUTOPLAY t=35:00 gold=3638 earned=19803 upgrades=19 sales=1096 lost=133 away=1253 maxq=6 walk=612s ema=15.55/s joias=88&#xD;
+AUTOPLAY t=40:00 gold=8492 earned=24657 upgrades=19 sales=1311 lost=163 away=1516 maxq=6 walk=700s ema=15.83/s joias=126&#xD;
+AUTOPLAY t=45:00 gold=4873 earned=30038 upgrades=20 sales=1523 lost=197 away=1801 maxq=6 walk=790s ema=19.91/s joias=162&#xD;
+AUTOPLAY t=50:00 gold=10290 earned=35455 upgrades=20 sales=1739 lost=235 away=2085 maxq=6 walk=876s ema=17.03/s joias=197&#xD;
+AUTOPLAY t=55:00 gold=15736 earned=40901 upgrades=20 sales=1957 lost=274 away=2367 maxq=6 walk=969s ema=17.91/s joias=232&#xD;
+AUTOPLAY t=60:00 gold=21212 earned=46377 upgrades=20 sales=2167 lost=310 away=2660 maxq=6 walk=1062s ema=17.51/s joias=269&#xD;
+&#xD;
+primeira venda: 0:19&#xD;
+  0:53  FurnaceSpeed1 (50 ouro)&#xD;
+  1:59  Anvil2 (65 ouro)&#xD;
+  2:31  Helper1 (85 ouro)&#xD;
+  3:39  Shields (110 ouro)&#xD;
+  5:08  PlayerCapacity (145 ouro)&#xD;
+  6:26  Helper2 (185 ouro)&#xD;
+  6:31  Conveyor (240 ouro)&#xD;
+  7:42  FurnaceSpeed2 (315 ouro)&#xD;
+  9:01  PlayerSpeed (410 ouro)&#xD;
+  10:20  Tools (530 ouro)&#xD;
+  11:54  CounterCapacity (690 ouro)&#xD;
+  12:52  Furnace2 (895 ouro)&#xD;
+  15:29  Helper3 (1165 ouro)&#xD;
+  18:55  HelperSpeed (1515 ouro)&#xD;
+  23:57  HammerSpeed (1970 ouro)&#xD;
+  12:21  SideCorridor (690 ouro)&#xD;
+  21:32  Jewelry (1515 ouro)&#xD;
+  25:25  Jeweler (2200 ouro)&#xD;
+  31:12  JewelSpeed (5500 ouro)&#xD;
+  40:41  JewelVitrine (9000 ouro)&#xD;
+  Fornalha     fome=  616s travada=  188s feitos=1651&#xD;
+  Fornalha 2   fome=  821s travada=   71s feitos=1181&#xD;
+  Bigorna      fome=  202s travada=  125s feitos=930&#xD;
+  Bigorna 2    fome= 2834s travada=    3s feitos=129&#xD;
+  Escudos      fome= 1266s travada=   22s feitos=379&#xD;
+  Ferramentas  fome= 1286s travada=   58s feitos=462&#xD;
+  Joalheria    fome= 1095s travada=   38s feitos=271&#xD;
+  andar sem decisao: 1062s de 3600s (29%)&#xD;
+  clientes perdidos=310 sem vaga=2660 fila max=6 vendas=2167&#xD;
+  pads parciais:&#xD;
+&#xD;
+ouro/min por janela de 5 min: 0-5=78 5-10=258 10-15=446 15-20=453 20-25=805 25-30=968 30-35=950 35-40=970 40-45=1076 45-50=1083 50-55=1089 55-60=1095&#xD;
+joalheiro=25:25 lupa=31:12 vitrine de joias=40:41 | tudo comprado=40:41 | joias/min: joalheria-&gt;joalheiro=5.7 joalheiro-&gt;lupa=7.0 depois de tudo=7.2 | bancada de joias sem lingote: antes do joalheiro=7% joalheiro-&gt;lupa=33% joalheiro-&gt;60 min=52% | joias=269 | baus abertos: 2:24 6:20 24:02 12:18&#xD;
+&#xD;
+NUnit Adapter 4.6.0.0: Test execution complete&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

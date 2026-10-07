@@ -1,0 +1,54 @@
+{
+ "size": 128,
+ "fps": 12.0,
+ "dirs": 4,
+ "dir_order": [
+  "S",
+  "W",
+  "N",
+  "E"
+ ],
+ "row0": "top",
+ "elev": 60.0,
+ "yaw": 0.0,
+ "ppu": 117.42,
+ "pivot_px": [
+  64.0,
+  41.2
+ ],
+ "pivot": [
+  0.5,
+  0.3217
+ ],
+ "light": "flat",
+ "src_fps": 30,
+ "clips": [
+  {
+   "name": "Idle",
+   "file": "Idle.png",
+   "frames": 32,
+   "loop": true,
+   "fps": 3.221,
+   "duration_s": 9.933,
+   "src_frames": 298
+  },
+  {
+   "name": "LookingAround",
+   "file": "LookingAround.png",
+   "frames": 32,
+   "loop": false,
+   "fps": 5.053,
+   "duration_s": 6.333,
+   "src_frames": 190
+  },
+  {
+   "name": "Walking",
+   "file": "Walking.png",
+   "frames": 16,
+   "loop": true,
+   "fps": 11.707,
+   "duration_s": 1.367,
+   "src_frames": 41
+  }
+ ]
+}

@@ -1,0 +1,690 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="b3298b23-3674-4eb7-aead-55a60d2d8036" name="VINICIUS@DESKTOP-4VDN6JG 2026-10-07 14:55:32" runUser="DESKTOP-4VDN6JG\VINICIUS" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-07T14:55:32.9855549-03:00" queuing="2026-10-07T14:55:32.9855551-03:00" start="2026-10-07T14:55:31.9082008-03:00" finish="2026-10-07T14:55:33.0457516-03:00" />
+  <TestSettings name="default" id="62bd2c1d-ffe7-423b-80ce-30d53000cd5f">
+    <Deployment runDeploymentRoot="VINICIUS_DESKTOP-4VDN6JG_2026-10-07_14_55_32" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="a286c35c-0486-4503-afd0-e10ceed12c69" testId="5c9476be-8358-d71e-abc6-c02b4cdcfecc" testName="Save_Antigo15Flags_Stock3_CarregaComASegundaAreaFechada" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0111370" startTime="2026-10-07T14:55:32.9726200-03:00" endTime="2026-10-07T14:55:32.9837561-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a286c35c-0486-4503-afd0-e10ceed12c69" />
+    <UnitTestResult executionId="297b7776-a1b0-4f80-ac8b-05ebc58e9792" testId="05050300-21de-6d52-e6dd-217b113f97c9" testName="Save_Marcos_IdaEVolta_NaoPagaDeNovo" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0006830" startTime="2026-10-07T14:55:32.9859037-03:00" endTime="2026-10-07T14:55:32.9865869-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="297b7776-a1b0-4f80-ac8b-05ebc58e9792" />
+    <UnitTestResult executionId="bae6ef4c-45cc-429f-8a5e-2dc935a69543" testId="948e59b8-3338-0bf0-63e0-0e0be914ef0d" testName="Offline_DepoisDe10Min_RendeAlgoMasNaoMaisQueOTeto" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0354370" startTime="2026-10-07T14:55:32.8851370-03:00" endTime="2026-10-07T14:55:32.9205732-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bae6ef4c-45cc-429f-8a5e-2dc935a69543">
+      <Output>
+        <StdOut>offline 8 h depois de 10 min de jogo: 1060 ouro (taxa 5,93/s; pela taxa seriam 10672; proximo upgrade travado custa 530)</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="4d5a4141-4cbc-40a3-bd4c-edc4ceefc986" testId="ccffae8d-71c6-cc34-8c59-4d8e251ea8cf" testName="VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0018080" startTime="2026-10-07T14:55:32.9893083-03:00" endTime="2026-10-07T14:55:32.9911165-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4d5a4141-4cbc-40a3-bd4c-edc4ceefc986" />
+    <UnitTestResult executionId="8f009167-893e-496f-80b4-1a50e4b891d7" testId="1521bf1d-e147-7bae-c9e5-93e2a87f5573" testName="Dica_SegueOEstado" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0001730" startTime="2026-10-07T14:55:32.9387528-03:00" endTime="2026-10-07T14:55:32.9389254-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8f009167-893e-496f-80b4-1a50e4b891d7" />
+    <UnitTestResult executionId="954e231e-8687-408f-ad76-1837ac4b92ab" testId="282652d9-58ec-ec8e-2868-1b6a838da6f1" testName="Joalheiro_NaoAtrapalhaOsPapeis0a2" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0126620" startTime="2026-10-07T14:55:32.9513138-03:00" endTime="2026-10-07T14:55:32.9639754-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="954e231e-8687-408f-ad76-1837ac4b92ab" />
+    <UnitTestResult executionId="a49a6572-25b5-4761-aa6c-4aebeb9a5204" testId="cf9ebe90-2115-c529-a56e-5de9d37009f5" testName="Bot_60Minutos_Fase2" computerName="DESKTOP-4VDN6JG" duration="00:00:00.2301280" startTime="2026-10-07T14:55:32.5489969-03:00" endTime="2026-10-07T14:55:32.7791246-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a49a6572-25b5-4761-aa6c-4aebeb9a5204">
+      <Output>
+        <StdOut>2:23 marco 0 (15 espadas!) bateu&#xD;
+  2:24 bau 0 (15 espadas!) aberto, +60&#xD;
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s joias=0&#xD;
+  6:18 marco 1 (50 vendas!) bateu&#xD;
+  6:20 bau 1 (50 vendas!) aberto, +250&#xD;
+AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s joias=0&#xD;
+  12:17 marco 3 (200 vendas!) bateu&#xD;
+  12:18 bau 3 (200 vendas!) aberto, +1200&#xD;
+AUTOPLAY t=15:00 gold=1014 earned=3914 upgrades=13 sales=281 lost=33 away=241 maxq=6 walk=263s ema=7.55/s joias=0&#xD;
+AUTOPLAY t=20:00 gold=601 earned=6181 upgrades=15 sales=436 lost=59 away=493 maxq=6 walk=349s ema=8.56/s joias=0&#xD;
+  23:54 marco 2 (10 joias!) bateu&#xD;
+  24:02 bau 2 (10 joias!) aberto, +600&#xD;
+AUTOPLAY t=25:00 gold=1745 earned=10210 upgrades=17 sales=657 lost=82 away=726 maxq=6 walk=435s ema=16.07/s joias=17&#xD;
+AUTOPLAY t=30:00 gold=4386 earned=15051 upgrades=18 sales=880 lost=104 away=989 maxq=6 walk=525s ema=15.47/s joias=52&#xD;
+AUTOPLAY t=35:00 gold=3638 earned=19803 upgrades=19 sales=1096 lost=133 away=1253 maxq=6 walk=612s ema=15.55/s joias=88&#xD;
+AUTOPLAY t=40:00 gold=8492 earned=24657 upgrades=19 sales=1311 lost=163 away=1516 maxq=6 walk=700s ema=15.83/s joias=126&#xD;
+AUTOPLAY t=45:00 gold=4873 earned=30038 upgrades=20 sales=1523 lost=197 away=1801 maxq=6 walk=790s ema=19.91/s joias=162&#xD;
+AUTOPLAY t=50:00 gold=10290 earned=35455 upgrades=20 sales=1739 lost=235 away=2085 maxq=6 walk=876s ema=17.03/s joias=197&#xD;
+AUTOPLAY t=55:00 gold=15736 earned=40901 upgrades=20 sales=1957 lost=274 away=2367 maxq=6 walk=969s ema=17.91/s joias=232&#xD;
+AUTOPLAY t=60:00 gold=21212 earned=46377 upgrades=20 sales=2167 lost=310 away=2660 maxq=6 walk=1062s ema=17.51/s joias=269&#xD;
+&#xD;
+primeira venda: 0:19&#xD;
+  0:53  FurnaceSpeed1 (50 ouro)&#xD;
+  1:59  Anvil2 (65 ouro)&#xD;
+  2:31  Helper1 (85 ouro)&#xD;
+  3:39  Shields (110 ouro)&#xD;
+  5:08  PlayerCapacity (145 ouro)&#xD;
+  6:26  Helper2 (185 ouro)&#xD;
+  6:31  Conveyor (240 ouro)&#xD;
+  7:42  FurnaceSpeed2 (315 ouro)&#xD;
+  9:01  PlayerSpeed (410 ouro)&#xD;
+  10:20  Tools (530 ouro)&#xD;
+  11:54  CounterCapacity (690 ouro)&#xD;
+  12:52  Furnace2 (895 ouro)&#xD;
+  15:29  Helper3 (1165 ouro)&#xD;
+  18:55  HelperSpeed (1515 ouro)&#xD;
+  23:57  HammerSpeed (1970 ouro)&#xD;
+  12:21  SideCorridor (690 ouro)&#xD;
+  21:32  Jewelry (1515 ouro)&#xD;
+  25:25  Jeweler (2200 ouro)&#xD;
+  31:12  JewelSpeed (5500 ouro)&#xD;
+  40:41  JewelVitrine (9000 ouro)&#xD;
+  Fornalha     fome=  616s travada=  188s feitos=1651&#xD;
+  Fornalha 2   fome=  821s travada=   71s feitos=1181&#xD;
+  Bigorna      fome=  202s travada=  125s feitos=930&#xD;
+  Bigorna 2    fome= 2834s travada=    3s feitos=129&#xD;
+  Escudos      fome= 1266s travada=   22s feitos=379&#xD;
+  Ferramentas  fome= 1286s travada=   58s feitos=462&#xD;
+  Joalheria    fome= 1095s travada=   38s feitos=271&#xD;
+  andar sem decisao: 1062s de 3600s (29%)&#xD;
+  clientes perdidos=310 sem vaga=2660 fila max=6 vendas=2167&#xD;
+  pads parciais:&#xD;
+&#xD;
+ouro/min por janela de 5 min: 0-5=78 5-10=258 10-15=446 15-20=453 20-25=805 25-30=968 30-35=950 35-40=970 40-45=1076 45-50=1083 50-55=1089 55-60=1095&#xD;
+joalheiro=25:25 lupa=31:12 vitrine de joias=40:41 | tudo comprado=40:41 | joias/min: joalheria-&gt;joalheiro=5.7 joalheiro-&gt;lupa=7.0 depois de tudo=7.2 | bancada de joias sem lingote: antes do joalheiro=7% joalheiro-&gt;lupa=33% joalheiro-&gt;60 min=52% | joias=269 | baus abertos: 2:24 6:20 24:02 12:18</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="5abe094c-307a-4372-8fb4-a752506134f4" testId="f2c7a38b-79c3-d1ba-cb5e-9942c7a297eb" testName="VitrineDeJoias_Fila5_NobresX07_SoNaJoalheria" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0023130" startTime="2026-10-07T14:55:32.9869817-03:00" endTime="2026-10-07T14:55:32.9892950-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5abe094c-307a-4372-8fb4-a752506134f4" />
+    <UnitTestResult executionId="5eaf127e-62f7-4a17-a84e-18870a31abee" testId="b7efddb6-0492-f028-bde0-b65b52d709aa" testName="Lupa_BancadaDeJoias_x06_SoNaJoalheria" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0005080" startTime="2026-10-07T14:55:32.9689608-03:00" endTime="2026-10-07T14:55:32.9694684-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5eaf127e-62f7-4a17-a84e-18870a31abee" />
+    <UnitTestResult executionId="ec57c223-9788-492d-82fa-e95099cd7da1" testId="3cb91f48-131d-728c-cf20-3f1444501757" testName="Save_SegundaArea_17Flags_EstoqueDeJoia_IdaEVolta" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0003630" startTime="2026-10-07T14:55:32.9866049-03:00" endTime="2026-10-07T14:55:32.9869681-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ec57c223-9788-492d-82fa-e95099cd7da1" />
+    <UnitTestResult executionId="fabd11b6-c887-43ea-9c78-92c297aaae01" testId="dd76b401-de9c-8df9-2209-0d4ea3d8c122" testName="Capacidade_LimitaPilha" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0012070" startTime="2026-10-07T14:55:32.9291069-03:00" endTime="2026-10-07T14:55:32.9303136-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="fabd11b6-c887-43ea-9c78-92c297aaae01" />
+    <UnitTestResult executionId="4a14f0e1-f710-4fc9-a1aa-8137059b70bb" testId="2c980e2d-ced3-4c83-5e5e-f62e35e52a72" testName="Dica_BauDisponivel_LogoDepoisDoPad_EFilaDeJoiasNoChao" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0012250" startTime="2026-10-07T14:55:32.9375151-03:00" endTime="2026-10-07T14:55:32.9387398-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4a14f0e1-f710-4fc9-a1aa-8137059b70bb" />
+    <UnitTestResult executionId="1df4e7a7-64d6-4a48-b0bb-325eb516a07b" testId="2bf681cb-d5b8-9b23-48bc-d70299950962" testName="Marco_DisparaUmaVez_BauPagaUmaVez_UmPorLugar" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0015530" startTime="2026-10-07T14:55:32.9694836-03:00" endTime="2026-10-07T14:55:32.9710360-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1df4e7a7-64d6-4a48-b0bb-325eb516a07b" />
+    <UnitTestResult executionId="ced6ca8f-6336-4398-bb47-b955eeaf3a44" testId="eee943e9-69d5-a9fd-68f8-2eab123289da" testName="Joalheiro_Papel3_AbasteceSoABancadaDeJoias_ELevaJoiaALoja" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0023090" startTime="2026-10-07T14:55:32.9639873-03:00" endTime="2026-10-07T14:55:32.9662956-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ced6ca8f-6336-4398-bb47-b955eeaf3a44" />
+    <UnitTestResult executionId="59527e77-3a3f-42a5-a274-6835e49cc239" testId="320c2bca-e5e1-c438-8324-b6e4d99c5bb5" testName="Joalheria_FechadaSemUpgrade_2LingotesViram1Joia" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0019990" startTime="2026-10-07T14:55:32.9663134-03:00" endTime="2026-10-07T14:55:32.9683127-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="59527e77-3a3f-42a5-a274-6835e49cc239" />
+    <UnitTestResult executionId="08dc3df5-8367-4f07-80b2-71fbcc755d76" testId="61931bac-ee41-859f-da47-0c73f858c1bd" testName="Corredor_SoltaOJogadorNaRuaLateral" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0029420" startTime="2026-10-07T14:55:32.9318510-03:00" endTime="2026-10-07T14:55:32.9347923-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="08dc3df5-8367-4f07-80b2-71fbcc755d76" />
+    <UnitTestResult executionId="3a0ba8ff-eb2b-458d-9004-94e26ed4fc76" testId="3bc61c52-331e-6eef-0c4b-cdeca8153515" testName="Metrica_AndarSemDecisao_SoContaSemPadPagavel" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0004340" startTime="2026-10-07T14:55:32.9710525-03:00" endTime="2026-10-07T14:55:32.9714867-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3a0ba8ff-eb2b-458d-9004-94e26ed4fc76" />
+    <UnitTestResult executionId="94345a5d-3ac0-4a93-a654-fe23ec511cc1" testId="eb3dda7c-28b5-d654-77c0-1d4b3f88b5a3" testName="Escudo_Consome2Lingotes_EPaga25" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0007560" startTime="2026-10-07T14:55:32.9389343-03:00" endTime="2026-10-07T14:55:32.9396896-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="94345a5d-3ac0-4a93-a654-fe23ec511cc1" />
+    <UnitTestResult executionId="c8a5c5ce-f2ca-4003-adca-b15af14fe310" testId="abf6894d-042a-602b-e5d9-bff0b346f996" testName="Bot_Primeiros10Minutos_BatemASecao3" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0685950" startTime="2026-10-07T14:55:32.7791615-03:00" endTime="2026-10-07T14:55:32.8477562-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c8a5c5ce-f2ca-4003-adca-b15af14fe310">
+      <Output>
+        <StdOut>--- bot ideal (sem handicap): limite inferior ---&#xD;
+primeira venda: 0:17&#xD;
+  0:52  FurnaceSpeed1 (50 ouro)&#xD;
+  1:56  Anvil2 (65 ouro)&#xD;
+  2:26  Helper1 (85 ouro)&#xD;
+  3:26  Shields (110 ouro)&#xD;
+  4:43  PlayerCapacity (145 ouro)&#xD;
+  6:07  Helper2 (185 ouro)&#xD;
+  6:14  Conveyor (240 ouro)&#xD;
+  7:35  FurnaceSpeed2 (315 ouro)&#xD;
+  8:50  PlayerSpeed (410 ouro)&#xD;
+  --:--  Tools (530 ouro)&#xD;
+  --:--  CounterCapacity (690 ouro)&#xD;
+  --:--  Furnace2 (895 ouro)&#xD;
+  --:--  Helper3 (1165 ouro)&#xD;
+  --:--  HelperSpeed (1515 ouro)&#xD;
+  --:--  HammerSpeed (1970 ouro)&#xD;
+  --:--  SideCorridor (690 ouro)&#xD;
+  --:--  Jewelry (1515 ouro)&#xD;
+  --:--  Jeweler (2200 ouro)&#xD;
+  --:--  JewelSpeed (5500 ouro)&#xD;
+  --:--  JewelVitrine (9000 ouro)&#xD;
+  Fornalha     fome=  102s travada=  110s feitos=180&#xD;
+  Fornalha 2   fome=    0s travada=    0s feitos=0&#xD;
+  Bigorna      fome=  179s travada=    4s feitos=82&#xD;
+  Bigorna 2    fome=  383s travada=    0s feitos=19&#xD;
+  Escudos      fome=  147s travada=    2s feitos=32&#xD;
+  Ferramentas  fome=    0s travada=    0s feitos=0&#xD;
+  Joalheria    fome=    0s travada=    0s feitos=0&#xD;
+  andar sem decisao: 301s de 600s (50%)&#xD;
+  clientes perdidos=16 sem vaga=46 fila max=4 vendas=129&#xD;
+  pads parciais:&#xD;
+&#xD;
+--- bot humano (0,7 s de reacao, 85% de stick) ---&#xD;
+AUTOPLAY t=1:00 gold=10 earned=60 upgrades=1 sales=6 lost=0 away=0 maxq=4 walk=16s ema=0.72/s&#xD;
+AUTOPLAY t=2:00 gold=5 earned=120 upgrades=2 sales=12 lost=3 away=2 maxq=4 walk=35s ema=0.96/s&#xD;
+AUTOPLAY t=3:00 gold=50 earned=190 upgrades=3 sales=19 lost=6 away=3 maxq=4 walk=55s ema=1.19/s&#xD;
+AUTOPLAY t=4:00 gold=40 earned=290 upgrades=4 sales=29 lost=6 away=4 maxq=4 walk=73s ema=1.50/s&#xD;
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s&#xD;
+AUTOPLAY t=6:00 gold=130 earned=525 upgrades=5 sales=48 lost=12 away=20 maxq=4 walk=111s ema=1.88/s&#xD;
+AUTOPLAY t=7:00 gold=125 earned=695 upgrades=7 sales=59 lost=16 away=29 maxq=4 walk=127s ema=2.64/s&#xD;
+AUTOPLAY t=8:00 gold=90 earned=975 upgrades=8 sales=78 lost=18 away=32 maxq=4 walk=146s ema=3.95/s&#xD;
+AUTOPLAY t=9:00 gold=415 earned=1300 upgrades=8 sales=100 lost=19 away=36 maxq=4 walk=163s ema=4.80/s&#xD;
+AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s&#xD;
+&#xD;
+primeira venda: 0:19&#xD;
+  0:53  FurnaceSpeed1 (50 ouro)&#xD;
+  1:59  Anvil2 (65 ouro)&#xD;
+  2:31  Helper1 (85 ouro)&#xD;
+  3:39  Shields (110 ouro)&#xD;
+  5:08  PlayerCapacity (145 ouro)&#xD;
+  6:26  Helper2 (185 ouro)&#xD;
+  6:31  Conveyor (240 ouro)&#xD;
+  7:42  FurnaceSpeed2 (315 ouro)&#xD;
+  9:01  PlayerSpeed (410 ouro)&#xD;
+  --:--  Tools (530 ouro)&#xD;
+  --:--  CounterCapacity (690 ouro)&#xD;
+  --:--  Furnace2 (895 ouro)&#xD;
+  --:--  Helper3 (1165 ouro)&#xD;
+  --:--  HelperSpeed (1515 ouro)&#xD;
+  --:--  HammerSpeed (1970 ouro)&#xD;
+  --:--  SideCorridor (690 ouro)&#xD;
+  --:--  Jewelry (1515 ouro)&#xD;
+  --:--  Jeweler (2200 ouro)&#xD;
+  --:--  JewelSpeed (5500 ouro)&#xD;
+  --:--  JewelVitrine (9000 ouro)&#xD;
+  Fornalha     fome=  101s travada=  114s feitos=178&#xD;
+  Fornalha 2   fome=    0s travada=    0s feitos=0&#xD;
+  Bigorna      fome=  202s travada=    8s feitos=77&#xD;
+  Bigorna 2    fome=  334s travada=    1s feitos=29&#xD;
+  Escudos      fome=  149s travada=    9s feitos=29&#xD;
+  Ferramentas  fome=    0s travada=    0s feitos=0&#xD;
+  Joalheria    fome=    0s travada=    0s feitos=0&#xD;
+  andar sem decisao: 179s de 600s (30%)&#xD;
+  clientes perdidos=21 sem vaga=41 fila max=4 vendas=126&#xD;
+  pads parciais:</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="a456c783-d2dc-46d2-9fd8-cea0782b23ca" testId="1bd614b6-1f03-ba3b-4aca-678af73c4bf0" testName="Determinismo_MesmaEntradaMesmoResultado" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0373230" startTime="2026-10-07T14:55:32.8477847-03:00" endTime="2026-10-07T14:55:32.8851071-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a456c783-d2dc-46d2-9fd8-cea0782b23ca" />
+    <UnitTestResult executionId="a8cc5ce5-ed88-4a4c-be84-f91850b63a02" testId="96b99011-cd46-5105-3299-5f57b18f2b39" testName="Cadeia_MinerioLingoteEspada_VendePagaOuro" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0036720" startTime="2026-10-07T14:55:32.9254200-03:00" endTime="2026-10-07T14:55:32.9290914-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a8cc5ce5-ed88-4a4c-be84-f91850b63a02" />
+    <UnitTestResult executionId="c6efca75-21d9-423e-bf74-eec939580cf4" testId="9418928e-6e00-afbc-d225-dbc2621b53d7" testName="Gargalo_FornalhaLenta_AcumulaFila_UpgradeResolve" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0024430" startTime="2026-10-07T14:55:32.9488589-03:00" endTime="2026-10-07T14:55:32.9513021-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c6efca75-21d9-423e-bf74-eec939580cf4" />
+    <UnitTestResult executionId="801ece82-26c3-4e76-b9b6-71b6a68cfb7c" testId="b4867679-22eb-764f-3112-44380196193b" testName="Esteira_MoveLingotesSemCaminhar" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0004150" startTime="2026-10-07T14:55:32.9397017-03:00" endTime="2026-10-07T14:55:32.9401168-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="801ece82-26c3-4e76-b9b6-71b6a68cfb7c" />
+    <UnitTestResult executionId="8b8ed4ad-be59-4127-94f6-d389390a5a3f" testId="9b1f13a5-f49e-573f-6d38-9d5145e43162" testName="Ajudantes_Papel1AbasteceAJoalheria_Papel2LevaJoiaALoja" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0031610" startTime="2026-10-07T14:55:32.9222423-03:00" endTime="2026-10-07T14:55:32.9254030-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8b8ed4ad-be59-4127-94f6-d389390a5a3f" />
+    <UnitTestResult executionId="18a56ec5-5932-4412-87a9-a4ef48855af0" testId="4f27cff8-3649-8d23-a1b3-329d4f7f3c70" testName="Fila_Cheia_ClienteNaoEntra_EEscudoSoDepoisDoUpgrade" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0031679" startTime="2026-10-07T14:55:32.9401255-03:00" endTime="2026-10-07T14:55:32.9432932-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="18a56ec5-5932-4412-87a9-a4ef48855af0" />
+    <UnitTestResult executionId="f554b4d3-7279-4e56-94c0-bde908e95fd7" testId="57577c59-93a9-8c84-0af1-12dab89e5973" testName="Save_Antigo17Flags_SemMarcos_Carrega" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0009570" startTime="2026-10-07T14:55:32.9837837-03:00" endTime="2026-10-07T14:55:32.9847400-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f554b4d3-7279-4e56-94c0-bde908e95fd7" />
+    <UnitTestResult executionId="ad93a58c-df8c-434b-a5f4-1995c52dd367" testId="c878e278-302e-c935-ec6a-5e0676f84646" testName="FilaDaJoalheria_CompraPor60_Teto3_Paciencia40" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0047920" startTime="2026-10-07T14:55:32.9440562-03:00" endTime="2026-10-07T14:55:32.9488486-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ad93a58c-df8c-434b-a5f4-1995c52dd367" />
+    <UnitTestResult executionId="355a4fff-4bbc-438f-a05f-bffc0f157111" testId="9ab3821a-da2c-f173-3771-6772eb422928" testName="FilaCheia_ProdutoNaVitrine_ClienteCompraDireto_NaoTrava" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0007000" startTime="2026-10-07T14:55:32.9433043-03:00" endTime="2026-10-07T14:55:32.9440036-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="355a4fff-4bbc-438f-a05f-bffc0f157111" />
+    <UnitTestResult executionId="f43c7940-7bd2-4d59-9714-5b2d8293a972" testId="d5f1cbf7-06fc-350a-f87c-2567a2c65279" testName="Offline_NuncaPagaMaisQue2xOUpgradeMaisBaratoTravado" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0003220" startTime="2026-10-07T14:55:32.9714992-03:00" endTime="2026-10-07T14:55:32.9718207-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f43c7940-7bd2-4d59-9714-5b2d8293a972" />
+    <UnitTestResult executionId="e6e36a59-cca5-4a73-ab36-599c57a0e6c0" testId="fbc4c7c8-3e64-7419-9acd-f994983d0a18" testName="Offline_Teto2h_25Porcento_NegativoZero_Idempotente" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0002350" startTime="2026-10-07T14:55:32.9718342-03:00" endTime="2026-10-07T14:55:32.9720687-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e6e36a59-cca5-4a73-ab36-599c57a0e6c0" />
+    <UnitTestResult executionId="48a6015d-9cf1-4808-aaff-4a3ad0e96bb3" testId="12bb3be6-b292-3b7a-be4d-abdd9c627b27" testName="Worker_CompletaOCicloSozinho" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0079670" startTime="2026-10-07T14:55:32.9911309-03:00" endTime="2026-10-07T14:55:32.9990976-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="48a6015d-9cf1-4808-aaff-4a3ad0e96bb3" />
+    <UnitTestResult executionId="9151ef30-ef40-4bed-b3ef-d06a21e2c32b" testId="031be3db-b5fc-22a1-84af-6cf3452bd86a" testName="Save_IdaEVolta_ELixoViraInicial" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0011329" startTime="2026-10-07T14:55:32.9847565-03:00" endTime="2026-10-07T14:55:32.9858891-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9151ef30-ef40-4bed-b3ef-d06a21e2c32b" />
+    <UnitTestResult executionId="d490d015-b836-46f9-bac1-af18d4a6b499" testId="cd20eef8-7589-a6be-c8cc-219918ae79cc" testName="Pad_DrenaOuro_ECompra_AplicaEfeito" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0005280" startTime="2026-10-07T14:55:32.9720786-03:00" endTime="2026-10-07T14:55:32.9726064-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d490d015-b836-46f9-bac1-af18d4a6b499" />
+    <UnitTestResult executionId="1dd7f59b-b0a0-498c-a3b3-1988c83b3592" testId="04269c25-d2c4-af9f-07f5-1fef8da36b98" testName="Bot_45Minutos_SegundaArea_CorredorEJoalheria" computerName="DESKTOP-4VDN6JG" duration="00:00:00.1822960" startTime="2026-10-07T14:55:32.3653407-03:00" endTime="2026-10-07T14:55:32.5475931-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1dd7f59b-b0a0-498c-a3b3-1988c83b3592">
+      <Output>
+        <StdOut>AUTOPLAY t=1:00 gold=10 earned=60 upgrades=1 sales=6 lost=0 away=0 maxq=4 walk=16s ema=0.72/s joias=0&#xD;
+AUTOPLAY t=2:00 gold=5 earned=120 upgrades=2 sales=12 lost=3 away=2 maxq=4 walk=35s ema=0.96/s joias=0&#xD;
+AUTOPLAY t=3:00 gold=50 earned=190 upgrades=3 sales=19 lost=6 away=3 maxq=4 walk=55s ema=1.19/s joias=0&#xD;
+AUTOPLAY t=4:00 gold=40 earned=290 upgrades=4 sales=29 lost=6 away=4 maxq=4 walk=73s ema=1.50/s joias=0&#xD;
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s joias=0&#xD;
+AUTOPLAY t=6:00 gold=130 earned=525 upgrades=5 sales=48 lost=12 away=20 maxq=4 walk=111s ema=1.88/s joias=0&#xD;
+AUTOPLAY t=7:00 gold=125 earned=695 upgrades=7 sales=59 lost=16 away=29 maxq=4 walk=127s ema=2.64/s joias=0&#xD;
+AUTOPLAY t=8:00 gold=90 earned=975 upgrades=8 sales=78 lost=18 away=32 maxq=4 walk=146s ema=3.95/s joias=0&#xD;
+AUTOPLAY t=9:00 gold=415 earned=1300 upgrades=8 sales=100 lost=19 away=36 maxq=4 walk=163s ema=4.80/s joias=0&#xD;
+AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s joias=0&#xD;
+AUTOPLAY t=11:00 gold=323 earned=2148 upgrades=10 sales=159 lost=23 away=54 maxq=4 walk=194s ema=7.30/s joias=0&#xD;
+AUTOPLAY t=12:00 gold=33 earned=2548 upgrades=11 sales=190 lost=24 away=83 maxq=6 walk=211s ema=6.95/s joias=0&#xD;
+AUTOPLAY t=13:00 gold=61 earned=2961 upgrades=13 sales=219 lost=28 away=136 maxq=6 walk=226s ema=6.74/s joias=0&#xD;
+AUTOPLAY t=14:00 gold=564 earned=3464 upgrades=13 sales=251 lost=32 away=185 maxq=6 walk=244s ema=7.74/s joias=0&#xD;
+AUTOPLAY t=15:00 gold=1014 earned=3914 upgrades=13 sales=281 lost=33 away=241 maxq=6 walk=263s ema=7.55/s joias=0&#xD;
+AUTOPLAY t=16:00 gold=274 earned=4339 upgrades=14 sales=310 lost=39 away=292 maxq=6 walk=279s ema=7.29/s joias=0&#xD;
+AUTOPLAY t=17:00 gold=734 earned=4799 upgrades=14 sales=341 lost=43 away=344 maxq=6 walk=298s ema=7.47/s joias=0&#xD;
+AUTOPLAY t=18:00 gold=1166 earned=5231 upgrades=14 sales=371 lost=48 away=394 maxq=6 walk=317s ema=7.30/s joias=0&#xD;
+AUTOPLAY t=19:00 gold=1 earned=5581 upgrades=15 sales=394 lost=55 away=451 maxq=6 walk=332s ema=6.01/s joias=0&#xD;
+AUTOPLAY t=20:00 gold=601 earned=6181 upgrades=15 sales=436 lost=59 away=493 maxq=6 walk=349s ema=8.56/s joias=0&#xD;
+AUTOPLAY t=21:00 gold=1226 earned=6806 upgrades=15 sales=479 lost=64 away=530 maxq=6 walk=367s ema=9.74/s joias=0&#xD;
+AUTOPLAY t=22:00 gold=323 earned=7418 upgrades=16 sales=521 lost=67 away=572 maxq=6 walk=382s ema=9.99/s joias=0&#xD;
+AUTOPLAY t=23:00 gold=1228 earned=8323 upgrades=16 sales=565 lost=73 away=626 maxq=6 walk=398s ema=13.52/s joias=6&#xD;
+AUTOPLAY t=24:00 gold=132 earned=9197 upgrades=17 sales=610 lost=78 away=676 maxq=6 walk=415s ema=14.20/s joias=11&#xD;
+AUTOPLAY t=25:00 gold=1745 earned=10210 upgrades=17 sales=657 lost=82 away=726 maxq=6 walk=435s ema=16.07/s joias=17&#xD;
+AUTOPLAY t=26:00 gold=654 earned=11319 upgrades=18 sales=706 lost=84 away=777 maxq=6 walk=451s ema=17.45/s joias=25&#xD;
+AUTOPLAY t=27:00 gold=1558 earned=12223 upgrades=18 sales=749 lost=88 away=832 maxq=6 walk=468s ema=15.98/s joias=31&#xD;
+AUTOPLAY t=28:00 gold=2494 earned=13159 upgrades=18 sales=792 lost=95 away=884 maxq=6 walk=485s ema=15.45/s joias=38&#xD;
+AUTOPLAY t=29:00 gold=3433 earned=14098 upgrades=18 sales=835 lost=101 away=935 maxq=6 walk=505s ema=15.51/s joias=45&#xD;
+AUTOPLAY t=30:00 gold=4386 earned=15051 upgrades=18 sales=880 lost=104 away=989 maxq=6 walk=525s ema=15.47/s joias=52&#xD;
+AUTOPLAY t=31:00 gold=5425 earned=16090 upgrades=18 sales=925 lost=109 away=1042 maxq=6 walk=542s ema=17.00/s joias=60&#xD;
+AUTOPLAY t=32:00 gold=796 earned=16961 upgrades=19 sales=968 lost=113 away=1095 maxq=6 walk=559s ema=15.53/s joias=66&#xD;
+AUTOPLAY t=33:00 gold=1664 earned=17829 upgrades=19 sales=1008 lost=118 away=1152 maxq=6 walk=576s ema=14.63/s joias=72&#xD;
+AUTOPLAY t=34:00 gold=2741 earned=18906 upgrades=19 sales=1053 lost=123 away=1205 maxq=6 walk=593s ema=16.75/s joias=81&#xD;
+AUTOPLAY t=35:00 gold=3638 earned=19803 upgrades=19 sales=1096 lost=133 away=1253 maxq=6 walk=612s ema=15.55/s joias=88&#xD;
+AUTOPLAY t=36:00 gold=4744 earned=20909 upgrades=19 sales=1143 lost=138 away=1303 maxq=6 walk=629s ema=17.77/s joias=97&#xD;
+AUTOPLAY t=37:00 gold=5669 earned=21834 upgrades=19 sales=1182 lost=146 away=1357 maxq=6 walk=647s ema=16.72/s joias=105&#xD;
+AUTOPLAY t=38:00 gold=6580 earned=22745 upgrades=19 sales=1224 lost=151 away=1410 maxq=6 walk=664s ema=15.64/s joias=112&#xD;
+AUTOPLAY t=39:00 gold=7576 earned=23741 upgrades=19 sales=1270 lost=158 away=1458 maxq=6 walk=682s ema=16.10/s joias=119&#xD;
+AUTOPLAY t=40:00 gold=8492 earned=24657 upgrades=19 sales=1311 lost=163 away=1516 maxq=6 walk=700s ema=15.83/s joias=126&#xD;
+AUTOPLAY t=41:00 gold=426 earned=25591 upgrades=20 sales=1351 lost=166 away=1572 maxq=6 walk=716s ema=15.94/s joias=132&#xD;
+AUTOPLAY t=42:00 gold=1520 earned=26685 upgrades=20 sales=1394 lost=172 away=1630 maxq=6 walk=736s ema=17.12/s joias=139&#xD;
+AUTOPLAY t=43:00 gold=2527 earned=27692 upgrades=20 sales=1435 lost=178 away=1691 maxq=6 walk=756s ema=16.55/s joias=145&#xD;
+AUTOPLAY t=44:00 gold=3684 earned=28849 upgrades=20 sales=1480 lost=187 away=1746 maxq=6 walk=772s ema=18.57/s joias=153&#xD;
+AUTOPLAY t=45:00 gold=4873 earned=30038 upgrades=20 sales=1523 lost=197 away=1801 maxq=6 walk=790s ema=19.91/s joias=162&#xD;
+&#xD;
+primeira venda: 0:19&#xD;
+  0:53  FurnaceSpeed1 (50 ouro)&#xD;
+  1:59  Anvil2 (65 ouro)&#xD;
+  2:31  Helper1 (85 ouro)&#xD;
+  3:39  Shields (110 ouro)&#xD;
+  5:08  PlayerCapacity (145 ouro)&#xD;
+  6:26  Helper2 (185 ouro)&#xD;
+  6:31  Conveyor (240 ouro)&#xD;
+  7:42  FurnaceSpeed2 (315 ouro)&#xD;
+  9:01  PlayerSpeed (410 ouro)&#xD;
+  10:20  Tools (530 ouro)&#xD;
+  11:54  CounterCapacity (690 ouro)&#xD;
+  12:52  Furnace2 (895 ouro)&#xD;
+  15:29  Helper3 (1165 ouro)&#xD;
+  18:55  HelperSpeed (1515 ouro)&#xD;
+  23:57  HammerSpeed (1970 ouro)&#xD;
+  12:21  SideCorridor (690 ouro)&#xD;
+  21:32  Jewelry (1515 ouro)&#xD;
+  25:25  Jeweler (2200 ouro)&#xD;
+  31:12  JewelSpeed (5500 ouro)&#xD;
+  40:41  JewelVitrine (9000 ouro)&#xD;
+  Fornalha     fome=  416s travada=  188s feitos=1224&#xD;
+  Fornalha 2   fome=  625s travada=   69s feitos=754&#xD;
+  Bigorna      fome=  202s travada=  100s feitos=639&#xD;
+  Bigorna 2    fome= 1935s travada=    3s feitos=129&#xD;
+  Escudos      fome=  841s travada=   17s feitos=276&#xD;
+  Ferramentas  fome=  824s travada=   47s feitos=320&#xD;
+  Joalheria    fome=  589s travada=   38s feitos=162&#xD;
+  andar sem decisao: 790s de 2700s (29%)&#xD;
+  clientes perdidos=197 sem vaga=1801 fila max=6 vendas=1523&#xD;
+  pads parciais:&#xD;
+&#xD;
+corredor=12:21 joalheria=21:32 | joias: vendidas=162 (10380 ouro = 45% do ganho depois da joalheria, 6.9/min) cansaram=7 sem vaga=210 feitas=162&#xD;
+ouro/min: 5 min antes do corredor=371 | 5 min antes da joalheria=493 | 5 min depois da joalheria=961 | min 40-45=1076</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="6f2650b7-f409-4975-be08-35685578aa66" testId="0636e9e8-ae02-a009-b25d-500e7cda063b" testName="Joia_SoNaLojaDeJoias_EspadaNuncaLa" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0006140" startTime="2026-10-07T14:55:32.9683286-03:00" endTime="2026-10-07T14:55:32.9689420-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6f2650b7-f409-4975-be08-35685578aa66" />
+    <UnitTestResult executionId="34f7069f-aed8-43d9-ae67-5161e7c88bd0" testId="1b59fc85-69b6-4ba7-c1dc-ab0d28b48394" testName="Cliente_PagaEVaiEmbora_OuCansaESai" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0015080" startTime="2026-10-07T14:55:32.9303287-03:00" endTime="2026-10-07T14:55:32.9318366-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="34f7069f-aed8-43d9-ae67-5161e7c88bd0" />
+    <UnitTestResult executionId="74caa881-df67-4b09-bdf6-ff14dbaf2c66" testId="d641964b-6f56-08ba-b4b2-2382cfd6c899" testName="Curva_DeCusto_Dos20Upgrades" computerName="DESKTOP-4VDN6JG" duration="00:00:00.0026700" startTime="2026-10-07T14:55:32.9348085-03:00" endTime="2026-10-07T14:55:32.9374746-03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="74caa881-df67-4b09-bdf6-ff14dbaf2c66" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Offline_Teto2h_25Porcento_NegativoZero_Idempotente" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="fbc4c7c8-3e64-7419-9acd-f994983d0a18">
+      <Execution id="e6e36a59-cca5-4a73-ab36-599c57a0e6c0" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Offline_Teto2h_25Porcento_NegativoZero_Idempotente" />
+    </UnitTest>
+    <UnitTest name="Worker_CompletaOCicloSozinho" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="12bb3be6-b292-3b7a-be4d-abdd9c627b27">
+      <Execution id="48a6015d-9cf1-4808-aaff-4a3ad0e96bb3" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Worker_CompletaOCicloSozinho" />
+    </UnitTest>
+    <UnitTest name="Capacidade_LimitaPilha" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="dd76b401-de9c-8df9-2209-0d4ea3d8c122">
+      <Execution id="fabd11b6-c887-43ea-9c78-92c297aaae01" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Capacidade_LimitaPilha" />
+    </UnitTest>
+    <UnitTest name="Joalheiro_NaoAtrapalhaOsPapeis0a2" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="282652d9-58ec-ec8e-2868-1b6a838da6f1">
+      <Execution id="954e231e-8687-408f-ad76-1837ac4b92ab" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Joalheiro_NaoAtrapalhaOsPapeis0a2" />
+    </UnitTest>
+    <UnitTest name="Pad_DrenaOuro_ECompra_AplicaEfeito" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="cd20eef8-7589-a6be-c8cc-219918ae79cc">
+      <Execution id="d490d015-b836-46f9-bac1-af18d4a6b499" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Pad_DrenaOuro_ECompra_AplicaEfeito" />
+    </UnitTest>
+    <UnitTest name="Fila_Cheia_ClienteNaoEntra_EEscudoSoDepoisDoUpgrade" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="4f27cff8-3649-8d23-a1b3-329d4f7f3c70">
+      <Execution id="18a56ec5-5932-4412-87a9-a4ef48855af0" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Fila_Cheia_ClienteNaoEntra_EEscudoSoDepoisDoUpgrade" />
+    </UnitTest>
+    <UnitTest name="VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="ccffae8d-71c6-cc34-8c59-4d8e251ea8cf">
+      <Execution id="4d5a4141-4cbc-40a3-bd4c-edc4ceefc986" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita" />
+    </UnitTest>
+    <UnitTest name="Esteira_MoveLingotesSemCaminhar" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="b4867679-22eb-764f-3112-44380196193b">
+      <Execution id="801ece82-26c3-4e76-b9b6-71b6a68cfb7c" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Esteira_MoveLingotesSemCaminhar" />
+    </UnitTest>
+    <UnitTest name="Joalheiro_Papel3_AbasteceSoABancadaDeJoias_ELevaJoiaALoja" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="eee943e9-69d5-a9fd-68f8-2eab123289da">
+      <Execution id="ced6ca8f-6336-4398-bb47-b955eeaf3a44" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Joalheiro_Papel3_AbasteceSoABancadaDeJoias_ELevaJoiaALoja" />
+    </UnitTest>
+    <UnitTest name="Escudo_Consome2Lingotes_EPaga25" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="eb3dda7c-28b5-d654-77c0-1d4b3f88b5a3">
+      <Execution id="94345a5d-3ac0-4a93-a654-fe23ec511cc1" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Escudo_Consome2Lingotes_EPaga25" />
+    </UnitTest>
+    <UnitTest name="Offline_NuncaPagaMaisQue2xOUpgradeMaisBaratoTravado" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="d5f1cbf7-06fc-350a-f87c-2567a2c65279">
+      <Execution id="f43c7940-7bd2-4d59-9714-5b2d8293a972" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Offline_NuncaPagaMaisQue2xOUpgradeMaisBaratoTravado" />
+    </UnitTest>
+    <UnitTest name="Curva_DeCusto_Dos20Upgrades" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="d641964b-6f56-08ba-b4b2-2382cfd6c899">
+      <Execution id="74caa881-df67-4b09-bdf6-ff14dbaf2c66" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Curva_DeCusto_Dos20Upgrades" />
+    </UnitTest>
+    <UnitTest name="Save_Antigo17Flags_SemMarcos_Carrega" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="57577c59-93a9-8c84-0af1-12dab89e5973">
+      <Execution id="f554b4d3-7279-4e56-94c0-bde908e95fd7" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Save_Antigo17Flags_SemMarcos_Carrega" />
+    </UnitTest>
+    <UnitTest name="Joalheria_FechadaSemUpgrade_2LingotesViram1Joia" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="320c2bca-e5e1-c438-8324-b6e4d99c5bb5">
+      <Execution id="59527e77-3a3f-42a5-a274-6835e49cc239" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Joalheria_FechadaSemUpgrade_2LingotesViram1Joia" />
+    </UnitTest>
+    <UnitTest name="VitrineDeJoias_Fila5_NobresX07_SoNaJoalheria" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="f2c7a38b-79c3-d1ba-cb5e-9942c7a297eb">
+      <Execution id="5abe094c-307a-4372-8fb4-a752506134f4" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="VitrineDeJoias_Fila5_NobresX07_SoNaJoalheria" />
+    </UnitTest>
+    <UnitTest name="Bot_45Minutos_SegundaArea_CorredorEJoalheria" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="04269c25-d2c4-af9f-07f5-1fef8da36b98">
+      <Execution id="1dd7f59b-b0a0-498c-a3b3-1988c83b3592" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.BalanceTests" name="Bot_45Minutos_SegundaArea_CorredorEJoalheria" />
+    </UnitTest>
+    <UnitTest name="Joia_SoNaLojaDeJoias_EspadaNuncaLa" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="0636e9e8-ae02-a009-b25d-500e7cda063b">
+      <Execution id="6f2650b7-f409-4975-be08-35685578aa66" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Joia_SoNaLojaDeJoias_EspadaNuncaLa" />
+    </UnitTest>
+    <UnitTest name="Cliente_PagaEVaiEmbora_OuCansaESai" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="1b59fc85-69b6-4ba7-c1dc-ab0d28b48394">
+      <Execution id="34f7069f-aed8-43d9-ae67-5161e7c88bd0" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Cliente_PagaEVaiEmbora_OuCansaESai" />
+    </UnitTest>
+    <UnitTest name="Gargalo_FornalhaLenta_AcumulaFila_UpgradeResolve" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="9418928e-6e00-afbc-d225-dbc2621b53d7">
+      <Execution id="c6efca75-21d9-423e-bf74-eec939580cf4" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Gargalo_FornalhaLenta_AcumulaFila_UpgradeResolve" />
+    </UnitTest>
+    <UnitTest name="Offline_DepoisDe10Min_RendeAlgoMasNaoMaisQueOTeto" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="948e59b8-3338-0bf0-63e0-0e0be914ef0d">
+      <Execution id="bae6ef4c-45cc-429f-8a5e-2dc935a69543" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.BalanceTests" name="Offline_DepoisDe10Min_RendeAlgoMasNaoMaisQueOTeto" />
+    </UnitTest>
+    <UnitTest name="Ajudantes_Papel1AbasteceAJoalheria_Papel2LevaJoiaALoja" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="9b1f13a5-f49e-573f-6d38-9d5145e43162">
+      <Execution id="8b8ed4ad-be59-4127-94f6-d389390a5a3f" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Ajudantes_Papel1AbasteceAJoalheria_Papel2LevaJoiaALoja" />
+    </UnitTest>
+    <UnitTest name="Marco_DisparaUmaVez_BauPagaUmaVez_UmPorLugar" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="2bf681cb-d5b8-9b23-48bc-d70299950962">
+      <Execution id="1df4e7a7-64d6-4a48-b0bb-325eb516a07b" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Marco_DisparaUmaVez_BauPagaUmaVez_UmPorLugar" />
+    </UnitTest>
+    <UnitTest name="FilaCheia_ProdutoNaVitrine_ClienteCompraDireto_NaoTrava" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="9ab3821a-da2c-f173-3771-6772eb422928">
+      <Execution id="355a4fff-4bbc-438f-a05f-bffc0f157111" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="FilaCheia_ProdutoNaVitrine_ClienteCompraDireto_NaoTrava" />
+    </UnitTest>
+    <UnitTest name="Save_IdaEVolta_ELixoViraInicial" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="031be3db-b5fc-22a1-84af-6cf3452bd86a">
+      <Execution id="9151ef30-ef40-4bed-b3ef-d06a21e2c32b" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Save_IdaEVolta_ELixoViraInicial" />
+    </UnitTest>
+    <UnitTest name="Save_SegundaArea_17Flags_EstoqueDeJoia_IdaEVolta" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="3cb91f48-131d-728c-cf20-3f1444501757">
+      <Execution id="ec57c223-9788-492d-82fa-e95099cd7da1" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Save_SegundaArea_17Flags_EstoqueDeJoia_IdaEVolta" />
+    </UnitTest>
+    <UnitTest name="Cadeia_MinerioLingoteEspada_VendePagaOuro" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="96b99011-cd46-5105-3299-5f57b18f2b39">
+      <Execution id="a8cc5ce5-ed88-4a4c-be84-f91850b63a02" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Cadeia_MinerioLingoteEspada_VendePagaOuro" />
+    </UnitTest>
+    <UnitTest name="Save_Marcos_IdaEVolta_NaoPagaDeNovo" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="05050300-21de-6d52-e6dd-217b113f97c9">
+      <Execution id="297b7776-a1b0-4f80-ac8b-05ebc58e9792" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Save_Marcos_IdaEVolta_NaoPagaDeNovo" />
+    </UnitTest>
+    <UnitTest name="Bot_60Minutos_Fase2" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="cf9ebe90-2115-c529-a56e-5de9d37009f5">
+      <Execution id="a49a6572-25b5-4761-aa6c-4aebeb9a5204" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.BalanceTests" name="Bot_60Minutos_Fase2" />
+    </UnitTest>
+    <UnitTest name="Bot_Primeiros10Minutos_BatemASecao3" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="abf6894d-042a-602b-e5d9-bff0b346f996">
+      <Execution id="c8a5c5ce-f2ca-4003-adca-b15af14fe310" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.BalanceTests" name="Bot_Primeiros10Minutos_BatemASecao3" />
+    </UnitTest>
+    <UnitTest name="Lupa_BancadaDeJoias_x06_SoNaJoalheria" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="b7efddb6-0492-f028-bde0-b65b52d709aa">
+      <Execution id="5eaf127e-62f7-4a17-a84e-18870a31abee" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Lupa_BancadaDeJoias_x06_SoNaJoalheria" />
+    </UnitTest>
+    <UnitTest name="Metrica_AndarSemDecisao_SoContaSemPadPagavel" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="3bc61c52-331e-6eef-0c4b-cdeca8153515">
+      <Execution id="3a0ba8ff-eb2b-458d-9004-94e26ed4fc76" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Metrica_AndarSemDecisao_SoContaSemPadPagavel" />
+    </UnitTest>
+    <UnitTest name="Save_Antigo15Flags_Stock3_CarregaComASegundaAreaFechada" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="5c9476be-8358-d71e-abc6-c02b4cdcfecc">
+      <Execution id="a286c35c-0486-4503-afd0-e10ceed12c69" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Save_Antigo15Flags_Stock3_CarregaComASegundaAreaFechada" />
+    </UnitTest>
+    <UnitTest name="FilaDaJoalheria_CompraPor60_Teto3_Paciencia40" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="c878e278-302e-c935-ec6a-5e0676f84646">
+      <Execution id="ad93a58c-df8c-434b-a5f4-1995c52dd367" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="FilaDaJoalheria_CompraPor60_Teto3_Paciencia40" />
+    </UnitTest>
+    <UnitTest name="Dica_SegueOEstado" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="1521bf1d-e147-7bae-c9e5-93e2a87f5573">
+      <Execution id="8f009167-893e-496f-80b4-1a50e4b891d7" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Dica_SegueOEstado" />
+    </UnitTest>
+    <UnitTest name="Corredor_SoltaOJogadorNaRuaLateral" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="61931bac-ee41-859f-da47-0c73f858c1bd">
+      <Execution id="08dc3df5-8367-4f07-80b2-71fbcc755d76" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Corredor_SoltaOJogadorNaRuaLateral" />
+    </UnitTest>
+    <UnitTest name="Determinismo_MesmaEntradaMesmoResultado" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="1bd614b6-1f03-ba3b-4aca-678af73c4bf0">
+      <Execution id="a456c783-d2dc-46d2-9fd8-cea0782b23ca" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.BalanceTests" name="Determinismo_MesmaEntradaMesmoResultado" />
+    </UnitTest>
+    <UnitTest name="Dica_BauDisponivel_LogoDepoisDoPad_EFilaDeJoiasNoChao" storage="c:\users\vinicius\videos\meus projetos\jogos novos\03_forge_street\client\tools\coretests\bin\debug\net10.0\fscore.tests.dll" id="2c980e2d-ced3-4c83-5e5e-f62e35e52a72">
+      <Execution id="4a14f0e1-f710-4fc9-a1aa-8137059b70bb" />
+      <TestMethod codeBase="C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll" adapterTypeName="executor://nunit3testexecutor/" className="FS.Tests.CoreTests" name="Dica_BauDisponivel_LogoDepoisDoPad_EFilaDeJoiasNoChao" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="5c9476be-8358-d71e-abc6-c02b4cdcfecc" executionId="a286c35c-0486-4503-afd0-e10ceed12c69" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="05050300-21de-6d52-e6dd-217b113f97c9" executionId="297b7776-a1b0-4f80-ac8b-05ebc58e9792" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="948e59b8-3338-0bf0-63e0-0e0be914ef0d" executionId="bae6ef4c-45cc-429f-8a5e-2dc935a69543" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ccffae8d-71c6-cc34-8c59-4d8e251ea8cf" executionId="4d5a4141-4cbc-40a3-bd4c-edc4ceefc986" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1521bf1d-e147-7bae-c9e5-93e2a87f5573" executionId="8f009167-893e-496f-80b4-1a50e4b891d7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="282652d9-58ec-ec8e-2868-1b6a838da6f1" executionId="954e231e-8687-408f-ad76-1837ac4b92ab" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cf9ebe90-2115-c529-a56e-5de9d37009f5" executionId="a49a6572-25b5-4761-aa6c-4aebeb9a5204" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f2c7a38b-79c3-d1ba-cb5e-9942c7a297eb" executionId="5abe094c-307a-4372-8fb4-a752506134f4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b7efddb6-0492-f028-bde0-b65b52d709aa" executionId="5eaf127e-62f7-4a17-a84e-18870a31abee" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3cb91f48-131d-728c-cf20-3f1444501757" executionId="ec57c223-9788-492d-82fa-e95099cd7da1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="dd76b401-de9c-8df9-2209-0d4ea3d8c122" executionId="fabd11b6-c887-43ea-9c78-92c297aaae01" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2c980e2d-ced3-4c83-5e5e-f62e35e52a72" executionId="4a14f0e1-f710-4fc9-a1aa-8137059b70bb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2bf681cb-d5b8-9b23-48bc-d70299950962" executionId="1df4e7a7-64d6-4a48-b0bb-325eb516a07b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="eee943e9-69d5-a9fd-68f8-2eab123289da" executionId="ced6ca8f-6336-4398-bb47-b955eeaf3a44" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="320c2bca-e5e1-c438-8324-b6e4d99c5bb5" executionId="59527e77-3a3f-42a5-a274-6835e49cc239" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="61931bac-ee41-859f-da47-0c73f858c1bd" executionId="08dc3df5-8367-4f07-80b2-71fbcc755d76" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3bc61c52-331e-6eef-0c4b-cdeca8153515" executionId="3a0ba8ff-eb2b-458d-9004-94e26ed4fc76" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="eb3dda7c-28b5-d654-77c0-1d4b3f88b5a3" executionId="94345a5d-3ac0-4a93-a654-fe23ec511cc1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="abf6894d-042a-602b-e5d9-bff0b346f996" executionId="c8a5c5ce-f2ca-4003-adca-b15af14fe310" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1bd614b6-1f03-ba3b-4aca-678af73c4bf0" executionId="a456c783-d2dc-46d2-9fd8-cea0782b23ca" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="96b99011-cd46-5105-3299-5f57b18f2b39" executionId="a8cc5ce5-ed88-4a4c-be84-f91850b63a02" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9418928e-6e00-afbc-d225-dbc2621b53d7" executionId="c6efca75-21d9-423e-bf74-eec939580cf4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b4867679-22eb-764f-3112-44380196193b" executionId="801ece82-26c3-4e76-b9b6-71b6a68cfb7c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9b1f13a5-f49e-573f-6d38-9d5145e43162" executionId="8b8ed4ad-be59-4127-94f6-d389390a5a3f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4f27cff8-3649-8d23-a1b3-329d4f7f3c70" executionId="18a56ec5-5932-4412-87a9-a4ef48855af0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="57577c59-93a9-8c84-0af1-12dab89e5973" executionId="f554b4d3-7279-4e56-94c0-bde908e95fd7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c878e278-302e-c935-ec6a-5e0676f84646" executionId="ad93a58c-df8c-434b-a5f4-1995c52dd367" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9ab3821a-da2c-f173-3771-6772eb422928" executionId="355a4fff-4bbc-438f-a05f-bffc0f157111" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d5f1cbf7-06fc-350a-f87c-2567a2c65279" executionId="f43c7940-7bd2-4d59-9714-5b2d8293a972" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="fbc4c7c8-3e64-7419-9acd-f994983d0a18" executionId="e6e36a59-cca5-4a73-ab36-599c57a0e6c0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="12bb3be6-b292-3b7a-be4d-abdd9c627b27" executionId="48a6015d-9cf1-4808-aaff-4a3ad0e96bb3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="031be3db-b5fc-22a1-84af-6cf3452bd86a" executionId="9151ef30-ef40-4bed-b3ef-d06a21e2c32b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cd20eef8-7589-a6be-c8cc-219918ae79cc" executionId="d490d015-b836-46f9-bac1-af18d4a6b499" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="04269c25-d2c4-af9f-07f5-1fef8da36b98" executionId="1dd7f59b-b0a0-498c-a3b3-1988c83b3592" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0636e9e8-ae02-a009-b25d-500e7cda063b" executionId="6f2650b7-f409-4975-be08-35685578aa66" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1b59fc85-69b6-4ba7-c1dc-ab0d28b48394" executionId="34f7069f-aed8-43d9-ae67-5161e7c88bd0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d641964b-6f56-08ba-b4b2-2382cfd6c899" executionId="74caa881-df67-4b09-bdf6-ff14dbaf2c66" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Resultados que não estão em uma lista" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="Todos os resultados carregados" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="37" executed="37" passed="37" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 4.6.0.0: Test execution started&#xD;
+Running all tests in C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\coretests\bin\Debug\net10.0\FSCore.Tests.dll&#xD;
+   NUnit3TestExecutor discovered 37 of 37 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+AUTOPLAY t=1:00 gold=10 earned=60 upgrades=1 sales=6 lost=0 away=0 maxq=4 walk=16s ema=0.72/s joias=0&#xD;
+AUTOPLAY t=2:00 gold=5 earned=120 upgrades=2 sales=12 lost=3 away=2 maxq=4 walk=35s ema=0.96/s joias=0&#xD;
+AUTOPLAY t=3:00 gold=50 earned=190 upgrades=3 sales=19 lost=6 away=3 maxq=4 walk=55s ema=1.19/s joias=0&#xD;
+AUTOPLAY t=4:00 gold=40 earned=290 upgrades=4 sales=29 lost=6 away=4 maxq=4 walk=73s ema=1.50/s joias=0&#xD;
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s joias=0&#xD;
+AUTOPLAY t=6:00 gold=130 earned=525 upgrades=5 sales=48 lost=12 away=20 maxq=4 walk=111s ema=1.88/s joias=0&#xD;
+AUTOPLAY t=7:00 gold=125 earned=695 upgrades=7 sales=59 lost=16 away=29 maxq=4 walk=127s ema=2.64/s joias=0&#xD;
+AUTOPLAY t=8:00 gold=90 earned=975 upgrades=8 sales=78 lost=18 away=32 maxq=4 walk=146s ema=3.95/s joias=0&#xD;
+AUTOPLAY t=9:00 gold=415 earned=1300 upgrades=8 sales=100 lost=19 away=36 maxq=4 walk=163s ema=4.80/s joias=0&#xD;
+AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s joias=0&#xD;
+AUTOPLAY t=11:00 gold=323 earned=2148 upgrades=10 sales=159 lost=23 away=54 maxq=4 walk=194s ema=7.30/s joias=0&#xD;
+AUTOPLAY t=12:00 gold=33 earned=2548 upgrades=11 sales=190 lost=24 away=83 maxq=6 walk=211s ema=6.95/s joias=0&#xD;
+AUTOPLAY t=13:00 gold=61 earned=2961 upgrades=13 sales=219 lost=28 away=136 maxq=6 walk=226s ema=6.74/s joias=0&#xD;
+AUTOPLAY t=14:00 gold=564 earned=3464 upgrades=13 sales=251 lost=32 away=185 maxq=6 walk=244s ema=7.74/s joias=0&#xD;
+AUTOPLAY t=15:00 gold=1014 earned=3914 upgrades=13 sales=281 lost=33 away=241 maxq=6 walk=263s ema=7.55/s joias=0&#xD;
+AUTOPLAY t=16:00 gold=274 earned=4339 upgrades=14 sales=310 lost=39 away=292 maxq=6 walk=279s ema=7.29/s joias=0&#xD;
+AUTOPLAY t=17:00 gold=734 earned=4799 upgrades=14 sales=341 lost=43 away=344 maxq=6 walk=298s ema=7.47/s joias=0&#xD;
+AUTOPLAY t=18:00 gold=1166 earned=5231 upgrades=14 sales=371 lost=48 away=394 maxq=6 walk=317s ema=7.30/s joias=0&#xD;
+AUTOPLAY t=19:00 gold=1 earned=5581 upgrades=15 sales=394 lost=55 away=451 maxq=6 walk=332s ema=6.01/s joias=0&#xD;
+AUTOPLAY t=20:00 gold=601 earned=6181 upgrades=15 sales=436 lost=59 away=493 maxq=6 walk=349s ema=8.56/s joias=0&#xD;
+AUTOPLAY t=21:00 gold=1226 earned=6806 upgrades=15 sales=479 lost=64 away=530 maxq=6 walk=367s ema=9.74/s joias=0&#xD;
+AUTOPLAY t=22:00 gold=323 earned=7418 upgrades=16 sales=521 lost=67 away=572 maxq=6 walk=382s ema=9.99/s joias=0&#xD;
+AUTOPLAY t=23:00 gold=1228 earned=8323 upgrades=16 sales=565 lost=73 away=626 maxq=6 walk=398s ema=13.52/s joias=6&#xD;
+AUTOPLAY t=24:00 gold=132 earned=9197 upgrades=17 sales=610 lost=78 away=676 maxq=6 walk=415s ema=14.20/s joias=11&#xD;
+AUTOPLAY t=25:00 gold=1745 earned=10210 upgrades=17 sales=657 lost=82 away=726 maxq=6 walk=435s ema=16.07/s joias=17&#xD;
+AUTOPLAY t=26:00 gold=654 earned=11319 upgrades=18 sales=706 lost=84 away=777 maxq=6 walk=451s ema=17.45/s joias=25&#xD;
+AUTOPLAY t=27:00 gold=1558 earned=12223 upgrades=18 sales=749 lost=88 away=832 maxq=6 walk=468s ema=15.98/s joias=31&#xD;
+AUTOPLAY t=28:00 gold=2494 earned=13159 upgrades=18 sales=792 lost=95 away=884 maxq=6 walk=485s ema=15.45/s joias=38&#xD;
+AUTOPLAY t=29:00 gold=3433 earned=14098 upgrades=18 sales=835 lost=101 away=935 maxq=6 walk=505s ema=15.51/s joias=45&#xD;
+AUTOPLAY t=30:00 gold=4386 earned=15051 upgrades=18 sales=880 lost=104 away=989 maxq=6 walk=525s ema=15.47/s joias=52&#xD;
+AUTOPLAY t=31:00 gold=5425 earned=16090 upgrades=18 sales=925 lost=109 away=1042 maxq=6 walk=542s ema=17.00/s joias=60&#xD;
+AUTOPLAY t=32:00 gold=796 earned=16961 upgrades=19 sales=968 lost=113 away=1095 maxq=6 walk=559s ema=15.53/s joias=66&#xD;
+AUTOPLAY t=33:00 gold=1664 earned=17829 upgrades=19 sales=1008 lost=118 away=1152 maxq=6 walk=576s ema=14.63/s joias=72&#xD;
+AUTOPLAY t=34:00 gold=2741 earned=18906 upgrades=19 sales=1053 lost=123 away=1205 maxq=6 walk=593s ema=16.75/s joias=81&#xD;
+AUTOPLAY t=35:00 gold=3638 earned=19803 upgrades=19 sales=1096 lost=133 away=1253 maxq=6 walk=612s ema=15.55/s joias=88&#xD;
+AUTOPLAY t=36:00 gold=4744 earned=20909 upgrades=19 sales=1143 lost=138 away=1303 maxq=6 walk=629s ema=17.77/s joias=97&#xD;
+AUTOPLAY t=37:00 gold=5669 earned=21834 upgrades=19 sales=1182 lost=146 away=1357 maxq=6 walk=647s ema=16.72/s joias=105&#xD;
+AUTOPLAY t=38:00 gold=6580 earned=22745 upgrades=19 sales=1224 lost=151 away=1410 maxq=6 walk=664s ema=15.64/s joias=112&#xD;
+AUTOPLAY t=39:00 gold=7576 earned=23741 upgrades=19 sales=1270 lost=158 away=1458 maxq=6 walk=682s ema=16.10/s joias=119&#xD;
+AUTOPLAY t=40:00 gold=8492 earned=24657 upgrades=19 sales=1311 lost=163 away=1516 maxq=6 walk=700s ema=15.83/s joias=126&#xD;
+AUTOPLAY t=41:00 gold=426 earned=25591 upgrades=20 sales=1351 lost=166 away=1572 maxq=6 walk=716s ema=15.94/s joias=132&#xD;
+AUTOPLAY t=42:00 gold=1520 earned=26685 upgrades=20 sales=1394 lost=172 away=1630 maxq=6 walk=736s ema=17.12/s joias=139&#xD;
+AUTOPLAY t=43:00 gold=2527 earned=27692 upgrades=20 sales=1435 lost=178 away=1691 maxq=6 walk=756s ema=16.55/s joias=145&#xD;
+AUTOPLAY t=44:00 gold=3684 earned=28849 upgrades=20 sales=1480 lost=187 away=1746 maxq=6 walk=772s ema=18.57/s joias=153&#xD;
+AUTOPLAY t=45:00 gold=4873 earned=30038 upgrades=20 sales=1523 lost=197 away=1801 maxq=6 walk=790s ema=19.91/s joias=162&#xD;
+&#xD;
+primeira venda: 0:19&#xD;
+  0:53  FurnaceSpeed1 (50 ouro)&#xD;
+  1:59  Anvil2 (65 ouro)&#xD;
+  2:31  Helper1 (85 ouro)&#xD;
+  3:39  Shields (110 ouro)&#xD;
+  5:08  PlayerCapacity (145 ouro)&#xD;
+  6:26  Helper2 (185 ouro)&#xD;
+  6:31  Conveyor (240 ouro)&#xD;
+  7:42  FurnaceSpeed2 (315 ouro)&#xD;
+  9:01  PlayerSpeed (410 ouro)&#xD;
+  10:20  Tools (530 ouro)&#xD;
+  11:54  CounterCapacity (690 ouro)&#xD;
+  12:52  Furnace2 (895 ouro)&#xD;
+  15:29  Helper3 (1165 ouro)&#xD;
+  18:55  HelperSpeed (1515 ouro)&#xD;
+  23:57  HammerSpeed (1970 ouro)&#xD;
+  12:21  SideCorridor (690 ouro)&#xD;
+  21:32  Jewelry (1515 ouro)&#xD;
+  25:25  Jeweler (2200 ouro)&#xD;
+  31:12  JewelSpeed (5500 ouro)&#xD;
+  40:41  JewelVitrine (9000 ouro)&#xD;
+  Fornalha     fome=  416s travada=  188s feitos=1224&#xD;
+  Fornalha 2   fome=  625s travada=   69s feitos=754&#xD;
+  Bigorna      fome=  202s travada=  100s feitos=639&#xD;
+  Bigorna 2    fome= 1935s travada=    3s feitos=129&#xD;
+  Escudos      fome=  841s travada=   17s feitos=276&#xD;
+  Ferramentas  fome=  824s travada=   47s feitos=320&#xD;
+  Joalheria    fome=  589s travada=   38s feitos=162&#xD;
+  andar sem decisao: 790s de 2700s (29%)&#xD;
+  clientes perdidos=197 sem vaga=1801 fila max=6 vendas=1523&#xD;
+  pads parciais:&#xD;
+&#xD;
+corredor=12:21 joalheria=21:32 | joias: vendidas=162 (10380 ouro = 45% do ganho depois da joalheria, 6.9/min) cansaram=7 sem vaga=210 feitas=162&#xD;
+ouro/min: 5 min antes do corredor=371 | 5 min antes da joalheria=493 | 5 min depois da joalheria=961 | min 40-45=1076&#xD;
+&#xD;
+  2:23 marco 0 (15 espadas!) bateu&#xD;
+  2:24 bau 0 (15 espadas!) aberto, +60&#xD;
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s joias=0&#xD;
+  6:18 marco 1 (50 vendas!) bateu&#xD;
+  6:20 bau 1 (50 vendas!) aberto, +250&#xD;
+AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s joias=0&#xD;
+  12:17 marco 3 (200 vendas!) bateu&#xD;
+  12:18 bau 3 (200 vendas!) aberto, +1200&#xD;
+AUTOPLAY t=15:00 gold=1014 earned=3914 upgrades=13 sales=281 lost=33 away=241 maxq=6 walk=263s ema=7.55/s joias=0&#xD;
+AUTOPLAY t=20:00 gold=601 earned=6181 upgrades=15 sales=436 lost=59 away=493 maxq=6 walk=349s ema=8.56/s joias=0&#xD;
+  23:54 marco 2 (10 joias!) bateu&#xD;
+  24:02 bau 2 (10 joias!) aberto, +600&#xD;
+AUTOPLAY t=25:00 gold=1745 earned=10210 upgrades=17 sales=657 lost=82 away=726 maxq=6 walk=435s ema=16.07/s joias=17&#xD;
+AUTOPLAY t=30:00 gold=4386 earned=15051 upgrades=18 sales=880 lost=104 away=989 maxq=6 walk=525s ema=15.47/s joias=52&#xD;
+AUTOPLAY t=35:00 gold=3638 earned=19803 upgrades=19 sales=1096 lost=133 away=1253 maxq=6 walk=612s ema=15.55/s joias=88&#xD;
+AUTOPLAY t=40:00 gold=8492 earned=24657 upgrades=19 sales=1311 lost=163 away=1516 maxq=6 walk=700s ema=15.83/s joias=126&#xD;
+AUTOPLAY t=45:00 gold=4873 earned=30038 upgrades=20 sales=1523 lost=197 away=1801 maxq=6 walk=790s ema=19.91/s joias=162&#xD;
+AUTOPLAY t=50:00 gold=10290 earned=35455 upgrades=20 sales=1739 lost=235 away=2085 maxq=6 walk=876s ema=17.03/s joias=197&#xD;
+AUTOPLAY t=55:00 gold=15736 earned=40901 upgrades=20 sales=1957 lost=274 away=2367 maxq=6 walk=969s ema=17.91/s joias=232&#xD;
+AUTOPLAY t=60:00 gold=21212 earned=46377 upgrades=20 sales=2167 lost=310 away=2660 maxq=6 walk=1062s ema=17.51/s joias=269&#xD;
+&#xD;
+primeira venda: 0:19&#xD;
+  0:53  FurnaceSpeed1 (50 ouro)&#xD;
+  1:59  Anvil2 (65 ouro)&#xD;
+  2:31  Helper1 (85 ouro)&#xD;
+  3:39  Shields (110 ouro)&#xD;
+  5:08  PlayerCapacity (145 ouro)&#xD;
+  6:26  Helper2 (185 ouro)&#xD;
+  6:31  Conveyor (240 ouro)&#xD;
+  7:42  FurnaceSpeed2 (315 ouro)&#xD;
+  9:01  PlayerSpeed (410 ouro)&#xD;
+  10:20  Tools (530 ouro)&#xD;
+  11:54  CounterCapacity (690 ouro)&#xD;
+  12:52  Furnace2 (895 ouro)&#xD;
+  15:29  Helper3 (1165 ouro)&#xD;
+  18:55  HelperSpeed (1515 ouro)&#xD;
+  23:57  HammerSpeed (1970 ouro)&#xD;
+  12:21  SideCorridor (690 ouro)&#xD;
+  21:32  Jewelry (1515 ouro)&#xD;
+  25:25  Jeweler (2200 ouro)&#xD;
+  31:12  JewelSpeed (5500 ouro)&#xD;
+  40:41  JewelVitrine (9000 ouro)&#xD;
+  Fornalha     fome=  616s travada=  188s feitos=1651&#xD;
+  Fornalha 2   fome=  821s travada=   71s feitos=1181&#xD;
+  Bigorna      fome=  202s travada=  125s feitos=930&#xD;
+  Bigorna 2    fome= 2834s travada=    3s feitos=129&#xD;
+  Escudos      fome= 1266s travada=   22s feitos=379&#xD;
+  Ferramentas  fome= 1286s travada=   58s feitos=462&#xD;
+  Joalheria    fome= 1095s travada=   38s feitos=271&#xD;
+  andar sem decisao: 1062s de 3600s (29%)&#xD;
+  clientes perdidos=310 sem vaga=2660 fila max=6 vendas=2167&#xD;
+  pads parciais:&#xD;
+&#xD;
+ouro/min por janela de 5 min: 0-5=78 5-10=258 10-15=446 15-20=453 20-25=805 25-30=968 30-35=950 35-40=970 40-45=1076 45-50=1083 50-55=1089 55-60=1095&#xD;
+joalheiro=25:25 lupa=31:12 vitrine de joias=40:41 | tudo comprado=40:41 | joias/min: joalheria-&gt;joalheiro=5.7 joalheiro-&gt;lupa=7.0 depois de tudo=7.2 | bancada de joias sem lingote: antes do joalheiro=7% joalheiro-&gt;lupa=33% joalheiro-&gt;60 min=52% | joias=269 | baus abertos: 2:24 6:20 24:02 12:18&#xD;
+&#xD;
+--- bot ideal (sem handicap): limite inferior ---&#xD;
+primeira venda: 0:17&#xD;
+  0:52  FurnaceSpeed1 (50 ouro)&#xD;
+  1:56  Anvil2 (65 ouro)&#xD;
+  2:26  Helper1 (85 ouro)&#xD;
+  3:26  Shields (110 ouro)&#xD;
+  4:43  PlayerCapacity (145 ouro)&#xD;
+  6:07  Helper2 (185 ouro)&#xD;
+  6:14  Conveyor (240 ouro)&#xD;
+  7:35  FurnaceSpeed2 (315 ouro)&#xD;
+  8:50  PlayerSpeed (410 ouro)&#xD;
+  --:--  Tools (530 ouro)&#xD;
+  --:--  CounterCapacity (690 ouro)&#xD;
+  --:--  Furnace2 (895 ouro)&#xD;
+  --:--  Helper3 (1165 ouro)&#xD;
+  --:--  HelperSpeed (1515 ouro)&#xD;
+  --:--  HammerSpeed (1970 ouro)&#xD;
+  --:--  SideCorridor (690 ouro)&#xD;
+  --:--  Jewelry (1515 ouro)&#xD;
+  --:--  Jeweler (2200 ouro)&#xD;
+  --:--  JewelSpeed (5500 ouro)&#xD;
+  --:--  JewelVitrine (9000 ouro)&#xD;
+  Fornalha     fome=  102s travada=  110s feitos=180&#xD;
+  Fornalha 2   fome=    0s travada=    0s feitos=0&#xD;
+  Bigorna      fome=  179s travada=    4s feitos=82&#xD;
+  Bigorna 2    fome=  383s travada=    0s feitos=19&#xD;
+  Escudos      fome=  147s travada=    2s feitos=32&#xD;
+  Ferramentas  fome=    0s travada=    0s feitos=0&#xD;
+  Joalheria    fome=    0s travada=    0s feitos=0&#xD;
+  andar sem decisao: 301s de 600s (50%)&#xD;
+  clientes perdidos=16 sem vaga=46 fila max=4 vendas=129&#xD;
+  pads parciais:&#xD;
+&#xD;
+--- bot humano (0,7 s de reacao, 85% de stick) ---&#xD;
+AUTOPLAY t=1:00 gold=10 earned=60 upgrades=1 sales=6 lost=0 away=0 maxq=4 walk=16s ema=0.72/s&#xD;
+AUTOPLAY t=2:00 gold=5 earned=120 upgrades=2 sales=12 lost=3 away=2 maxq=4 walk=35s ema=0.96/s&#xD;
+AUTOPLAY t=3:00 gold=50 earned=190 upgrades=3 sales=19 lost=6 away=3 maxq=4 walk=55s ema=1.19/s&#xD;
+AUTOPLAY t=4:00 gold=40 earned=290 upgrades=4 sales=29 lost=6 away=4 maxq=4 walk=73s ema=1.50/s&#xD;
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=39 lost=8 away=12 maxq=4 walk=92s ema=1.53/s&#xD;
+AUTOPLAY t=6:00 gold=130 earned=525 upgrades=5 sales=48 lost=12 away=20 maxq=4 walk=111s ema=1.88/s&#xD;
+AUTOPLAY t=7:00 gold=125 earned=695 upgrades=7 sales=59 lost=16 away=29 maxq=4 walk=127s ema=2.64/s&#xD;
+AUTOPLAY t=8:00 gold=90 earned=975 upgrades=8 sales=78 lost=18 away=32 maxq=4 walk=146s ema=3.95/s&#xD;
+AUTOPLAY t=9:00 gold=415 earned=1300 upgrades=8 sales=100 lost=19 away=36 maxq=4 walk=163s ema=4.80/s&#xD;
+AUTOPLAY t=10:00 gold=385 earned=1680 upgrades=9 sales=126 lost=21 away=41 maxq=4 walk=179s ema=5.93/s&#xD;
+&#xD;
+primeira venda: 0:19&#xD;
+  0:53  FurnaceSpeed1 (50 ouro)&#xD;
+  1:59  Anvil2 (65 ouro)&#xD;
+  2:31  Helper1 (85 ouro)&#xD;
+  3:39  Shields (110 ouro)&#xD;
+  5:08  PlayerCapacity (145 ouro)&#xD;
+  6:26  Helper2 (185 ouro)&#xD;
+  6:31  Conveyor (240 ouro)&#xD;
+  7:42  FurnaceSpeed2 (315 ouro)&#xD;
+  9:01  PlayerSpeed (410 ouro)&#xD;
+  --:--  Tools (530 ouro)&#xD;
+  --:--  CounterCapacity (690 ouro)&#xD;
+  --:--  Furnace2 (895 ouro)&#xD;
+  --:--  Helper3 (1165 ouro)&#xD;
+  --:--  HelperSpeed (1515 ouro)&#xD;
+  --:--  HammerSpeed (1970 ouro)&#xD;
+  --:--  SideCorridor (690 ouro)&#xD;
+  --:--  Jewelry (1515 ouro)&#xD;
+  --:--  Jeweler (2200 ouro)&#xD;
+  --:--  JewelSpeed (5500 ouro)&#xD;
+  --:--  JewelVitrine (9000 ouro)&#xD;
+  Fornalha     fome=  101s travada=  114s feitos=178&#xD;
+  Fornalha 2   fome=    0s travada=    0s feitos=0&#xD;
+  Bigorna      fome=  202s travada=    8s feitos=77&#xD;
+  Bigorna 2    fome=  334s travada=    1s feitos=29&#xD;
+  Escudos      fome=  149s travada=    9s feitos=29&#xD;
+  Ferramentas  fome=    0s travada=    0s feitos=0&#xD;
+  Joalheria    fome=    0s travada=    0s feitos=0&#xD;
+  andar sem decisao: 179s de 600s (30%)&#xD;
+  clientes perdidos=21 sem vaga=41 fila max=4 vendas=126&#xD;
+  pads parciais:&#xD;
+&#xD;
+&#xD;
+offline 8 h depois de 10 min de jogo: 1060 ouro (taxa 5,93/s; pela taxa seriam 10672; proximo upgrade travado custa 530)&#xD;
+&#xD;
+NUnit Adapter 4.6.0.0: Test execution complete&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>
