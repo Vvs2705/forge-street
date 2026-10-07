@@ -1,0 +1,680 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="59" result="Passed" total="59" passed="59" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-10-07 20:02:13Z" end-time="2026-10-07 20:02:24Z" duration="11,5845952">
+  <test-suite type="TestSuite" id="1000" name="Forge Street" fullname="Forge Street" runstate="Runnable" testcasecount="59" result="Passed" start-time="2026-10-07 20:02:13Z" end-time="2026-10-07 20:02:24Z" duration="11.584595" total="59" passed="59" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1062" name="FS.Tests.dll" fullname="C:/Users/VINICIUS/Videos/MEUS PROJETOS/JOGOS NOVOS/03_FORGE_STREET/client/Library/ScriptAssemblies/FS.Tests.dll" runstate="Runnable" testcasecount="59" result="Passed" start-time="2026-10-07 20:02:13Z" end-time="2026-10-07 20:02:24Z" duration="11.578975" total="59" passed="59" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="24336" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1063" name="FS" fullname="FS" runstate="Runnable" testcasecount="59" result="Passed" start-time="2026-10-07 20:02:13Z" end-time="2026-10-07 20:02:24Z" duration="11.578805" total="59" passed="59" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1064" name="Tests" fullname="FS.Tests" runstate="Runnable" testcasecount="59" result="Passed" start-time="2026-10-07 20:02:13Z" end-time="2026-10-07 20:02:24Z" duration="11.578713" total="59" passed="59" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestFixture" id="1001" name="BalanceTests" fullname="FS.Tests.BalanceTests" classname="FS.Tests.BalanceTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-10-07 20:02:13Z" end-time="2026-10-07 20:02:23Z" duration="10.069099" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1003" name="Bot_45Minutos_SegundaArea_CorredorEJoalheria" fullname="FS.Tests.BalanceTests.Bot_45Minutos_SegundaArea_CorredorEJoalheria" methodname="Bot_45Minutos_SegundaArea_CorredorEJoalheria" classname="FS.Tests.BalanceTests" runstate="Runnable" seed="908113585" result="Passed" start-time="2026-10-07 20:02:13Z" end-time="2026-10-07 20:02:14Z" duration="1.249771" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+              <output><![CDATA[AUTOPLAY t=1:00 gold=40 earned=40 upgrades=0 sales=4 lost=0 away=1 maxq=4 walk=24s ema=0.44/s joias=0
+AUTOPLAY t=2:00 gold=5 earned=120 upgrades=2 sales=12 lost=0 away=4 maxq=4 walk=49s ema=0.99/s joias=0
+AUTOPLAY t=3:00 gold=40 earned=180 upgrades=3 sales=18 lost=0 away=9 maxq=4 walk=71s ema=1.04/s joias=0
+AUTOPLAY t=4:00 gold=40 earned=290 upgrades=4 sales=29 lost=0 away=10 maxq=4 walk=89s ema=1.62/s joias=0
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=36 lost=0 away=22 maxq=4 walk=109s ema=1.68/s joias=0
+AUTOPLAY t=6:00 gold=100 earned=495 upgrades=5 sales=45 lost=0 away=33 maxq=4 walk=130s ema=1.67/s joias=0
+AUTOPLAY t=7:00 gold=290 earned=620 upgrades=6 sales=50 lost=0 away=51 maxq=4 walk=150s ema=1.98/s joias=0
+AUTOPLAY t=8:00 gold=260 earned=830 upgrades=7 sales=68 lost=0 away=55 maxq=4 walk=170s ema=2.91/s joias=0
+AUTOPLAY t=9:00 gold=215 earned=1100 upgrades=8 sales=86 lost=0 away=64 maxq=4 walk=188s ema=3.91/s joias=0
+AUTOPLAY t=10:00 gold=190 earned=1485 upgrades=9 sales=111 lost=0 away=71 maxq=4 walk=202s ema=5.72/s joias=0
+AUTOPLAY t=11:00 gold=45 earned=1870 upgrades=10 sales=139 lost=0 away=75 maxq=4 walk=217s ema=6.26/s joias=0
+AUTOPLAY t=12:00 gold=515 earned=2340 upgrades=10 sales=171 lost=0 away=102 maxq=4 walk=236s ema=7.28/s joias=0
+AUTOPLAY t=13:00 gold=255 earned=2770 upgrades=11 sales=199 lost=0 away=146 maxq=6 walk=253s ema=7.09/s joias=0
+AUTOPLAY t=14:00 gold=307 earned=3207 upgrades=13 sales=231 lost=0 away=201 maxq=6 walk=268s ema=7.45/s joias=0
+AUTOPLAY t=15:00 gold=795 earned=3695 upgrades=13 sales=263 lost=0 away=255 maxq=6 walk=285s ema=7.90/s joias=0
+AUTOPLAY t=16:00 gold=66 earned=4131 upgrades=14 sales=291 lost=0 away=314 maxq=6 walk=302s ema=7.49/s joias=0
+AUTOPLAY t=17:00 gold=566 earned=4631 upgrades=14 sales=326 lost=0 away=364 maxq=6 walk=319s ema=7.80/s joias=0
+AUTOPLAY t=18:00 gold=977 earned=5042 upgrades=14 sales=353 lost=0 away=423 maxq=6 walk=336s ema=7.08/s joias=0
+AUTOPLAY t=19:00 gold=1473 earned=5538 upgrades=14 sales=387 lost=0 away=478 maxq=6 walk=353s ema=8.07/s joias=0
+AUTOPLAY t=20:00 gold=434 earned=6014 upgrades=15 sales=419 lost=0 away=533 maxq=6 walk=368s ema=8.39/s joias=0
+AUTOPLAY t=21:00 gold=1030 earned=6610 upgrades=15 sales=460 lost=0 away=577 maxq=6 walk=384s ema=9.55/s joias=0
+AUTOPLAY t=22:00 gold=91 earned=7186 upgrades=16 sales=502 lost=0 away=620 maxq=6 walk=399s ema=9.54/s joias=0
+AUTOPLAY t=23:00 gold=725 earned=7820 upgrades=16 sales=538 lost=0 away=680 maxq=6 walk=417s ema=9.86/s joias=2
+AUTOPLAY t=24:00 gold=1688 earned=8783 upgrades=16 sales=581 lost=0 away=741 maxq=6 walk=437s ema=13.52/s joias=9
+AUTOPLAY t=25:00 gold=1196 earned=9661 upgrades=17 sales=622 lost=0 away=803 maxq=6 walk=453s ema=14.76/s joias=15
+AUTOPLAY t=26:00 gold=2188 earned=10653 upgrades=17 sales=669 lost=0 away=856 maxq=6 walk=470s ema=15.49/s joias=21
+AUTOPLAY t=27:00 gold=1198 earned=11863 upgrades=18 sales=720 lost=0 away=906 maxq=6 walk=490s ema=18.00/s joias=32
+AUTOPLAY t=28:00 gold=2277 earned=12942 upgrades=18 sales=764 lost=0 away=964 maxq=6 walk=507s ema=18.06/s joias=41
+AUTOPLAY t=29:00 gold=374 earned=14039 upgrades=19 sales=811 lost=0 away=1018 maxq=6 walk=523s ema=18.24/s joias=50
+AUTOPLAY t=30:00 gold=1464 earned=15129 upgrades=19 sales=855 lost=0 away=1076 maxq=6 walk=540s ema=18.33/s joias=60
+AUTOPLAY t=31:00 gold=26 earned=16091 upgrades=20 sales=895 lost=0 away=1137 maxq=6 walk=554s ema=16.86/s joias=68
+AUTOPLAY t=32:00 gold=1245 earned=17310 upgrades=20 sales=945 lost=0 away=1189 maxq=6 walk=572s ema=18.82/s joias=78
+AUTOPLAY t=33:00 gold=2438 earned=18503 upgrades=20 sales=993 lost=0 away=1242 maxq=6 walk=589s ema=19.53/s joias=88
+AUTOPLAY t=34:00 gold=3674 earned=19739 upgrades=20 sales=1045 lost=0 away=1293 maxq=6 walk=607s ema=20.13/s joias=98
+AUTOPLAY t=35:00 gold=4842 earned=20907 upgrades=20 sales=1092 lost=0 away=1347 maxq=6 walk=623s ema=19.84/s joias=108
+AUTOPLAY t=36:00 gold=686 earned=22251 upgrades=21 sales=1146 lost=0 away=1395 maxq=6 walk=640s ema=22.34/s joias=120
+AUTOPLAY t=37:00 gold=1820 earned=23385 upgrades=21 sales=1190 lost=0 away=1451 maxq=6 walk=658s ema=20.07/s joias=131
+AUTOPLAY t=38:00 gold=3127 earned=24692 upgrades=21 sales=1238 lost=0 away=1504 maxq=6 walk=675s ema=20.95/s joias=144
+AUTOPLAY t=39:00 gold=4554 earned=26119 upgrades=21 sales=1288 lost=0 away=1556 maxq=6 walk=693s ema=22.64/s joias=159
+AUTOPLAY t=40:00 gold=5833 earned=27398 upgrades=21 sales=1338 lost=0 away=1608 maxq=6 walk=710s ema=21.80/s joias=172
+AUTOPLAY t=41:00 gold=7210 earned=28775 upgrades=21 sales=1386 lost=0 away=1661 maxq=6 walk=727s ema=22.57/s joias=187
+AUTOPLAY t=42:00 gold=8506 earned=30071 upgrades=21 sales=1435 lost=0 away=1712 maxq=6 walk=743s ema=22.01/s joias=200
+AUTOPLAY t=43:00 gold=998 earned=31563 upgrades=22 sales=1482 lost=0 away=1769 maxq=6 walk=758s ema=24.05/s joias=214
+AUTOPLAY t=44:00 gold=2576 earned=33141 upgrades=22 sales=1532 lost=0 away=1826 maxq=6 walk=776s ema=24.99/s joias=227
+AUTOPLAY t=45:00 gold=4294 earned=34859 upgrades=22 sales=1582 lost=0 away=1883 maxq=6 walk=792s ema=27.13/s joias=242
+
+primeira venda: 0:21
+  1:04  FurnaceSpeed1 (50 ouro)
+  1:57  Anvil2 (65 ouro)
+  2:38  Helper1 (85 ouro)
+  3:45  Shields (110 ouro)
+  5:08  PlayerCapacity (145 ouro)
+  6:51  Helper2 (185 ouro)
+  7:03  Conveyor (240 ouro)
+  8:20  FurnaceSpeed2 (315 ouro)
+  9:39  PlayerSpeed (410 ouro)
+  10:54  Tools (530 ouro)
+  12:25  CounterCapacity (690 ouro)
+  13:24  Furnace2 (895 ouro)
+  15:54  Helper3 (1165 ouro)
+  19:14  HelperSpeed (1515 ouro)
+  24:27  HammerSpeed (1970 ouro)
+  13:06  SideCorridor (690 ouro)
+  21:56  Jewelry (1515 ouro)
+  26:06  Jeweler (2200 ouro)
+  35:41  JewelSpeed (5500 ouro)
+  42:24  JewelVitrine (9000 ouro)
+  --:--  WorkshopFacade (11000 ouro)
+  --:--  WorkshopFloor (14000 ouro)
+  --:--  JewelryDecor (18000 ouro)
+  28:41  Miner (3000 ouro)
+  30:57  Jeweler2 (2400 ouro)
+  Fornalha     fome=  239s travada=  221s feitos=1309
+  Fornalha 2   fome=  238s travada=  282s feitos=841
+  Bigorna      fome=  245s travada=  124s feitos=617
+  Bigorna 2    fome= 1872s travada=   21s feitos=145
+  Escudos      fome=  667s travada=   23s feitos=306
+  Ferramentas  fome=  933s travada=   76s feitos=274
+  Joalheria    fome=  152s travada=   24s feitos=243
+  andar sem decisao: 792s de 2700s (29%)
+  clientes perdidos=0 sem vaga=1883 fila max=6 vendas=1582
+  pads parciais:
+
+corredor=13:06 joalheria=21:56 | joias: vendidas=242 (15240 ouro = 54% do ganho depois da joalheria, 10.5/min) cansaram=0 sem vaga=119 feitas=243
+ouro/min: 5 min antes do corredor=388 | 5 min antes da joalheria=496 | 5 min depois da joalheria=935 | min 40-45=1492
+]]></output>
+            </test-case>
+            <test-case id="1004" name="Bot_60Minutos_Fase2" fullname="FS.Tests.BalanceTests.Bot_60Minutos_Fase2" methodname="Bot_60Minutos_Fase2" classname="FS.Tests.BalanceTests" runstate="Runnable" seed="265858016" result="Passed" start-time="2026-10-07 20:02:14Z" end-time="2026-10-07 20:02:16Z" duration="1.882380" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+              <output><![CDATA[  2:31 marco 0 (15 espadas!) bateu
+  2:32 bau 0 (15 espadas!) aberto, +60
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=36 lost=0 away=22 maxq=4 walk=109s ema=1.68/s joias=0
+  6:58 marco 1 (50 vendas!) bateu
+  6:59 bau 1 (50 vendas!) aberto, +250
+AUTOPLAY t=10:00 gold=190 earned=1485 upgrades=9 sales=111 lost=0 away=71 maxq=4 walk=202s ema=5.72/s joias=0
+  13:01 marco 3 (200 vendas!) bateu
+  13:03 bau 3 (200 vendas!) aberto, +1200
+AUTOPLAY t=15:00 gold=795 earned=3695 upgrades=13 sales=263 lost=0 away=255 maxq=6 walk=285s ema=7.90/s joias=0
+AUTOPLAY t=20:00 gold=434 earned=6014 upgrades=15 sales=419 lost=0 away=533 maxq=6 walk=368s ema=8.39/s joias=0
+  24:02 marco 2 (10 joias!) bateu
+  24:52 bau 2 (10 joias!) aberto, +600
+AUTOPLAY t=25:00 gold=1196 earned=9661 upgrades=17 sales=622 lost=0 away=803 maxq=6 walk=453s ema=14.76/s joias=15
+AUTOPLAY t=30:00 gold=1464 earned=15129 upgrades=19 sales=855 lost=0 away=1076 maxq=6 walk=540s ema=18.33/s joias=60
+AUTOPLAY t=35:00 gold=4842 earned=20907 upgrades=20 sales=1092 lost=0 away=1347 maxq=6 walk=623s ema=19.84/s joias=108
+AUTOPLAY t=40:00 gold=5833 earned=27398 upgrades=21 sales=1338 lost=0 away=1608 maxq=6 walk=710s ema=21.80/s joias=172
+AUTOPLAY t=45:00 gold=4294 earned=34859 upgrades=22 sales=1582 lost=0 away=1883 maxq=6 walk=792s ema=27.13/s joias=242
+AUTOPLAY t=50:00 gold=1572 earned=43137 upgrades=23 sales=1829 lost=0 away=2177 maxq=6 walk=877s ema=27.53/s joias=314
+AUTOPLAY t=55:00 gold=9681 earned=51246 upgrades=23 sales=2072 lost=0 away=2471 maxq=6 walk=966s ema=26.95/s joias=383
+AUTOPLAY t=60:00 gold=4094 earned=59659 upgrades=24 sales=2317 lost=0 away=2765 maxq=6 walk=1055s ema=28.02/s joias=457
+
+primeira venda: 0:21
+  1:04  FurnaceSpeed1 (50 ouro)
+  1:57  Anvil2 (65 ouro)
+  2:38  Helper1 (85 ouro)
+  3:45  Shields (110 ouro)
+  5:08  PlayerCapacity (145 ouro)
+  6:51  Helper2 (185 ouro)
+  7:03  Conveyor (240 ouro)
+  8:20  FurnaceSpeed2 (315 ouro)
+  9:39  PlayerSpeed (410 ouro)
+  10:54  Tools (530 ouro)
+  12:25  CounterCapacity (690 ouro)
+  13:24  Furnace2 (895 ouro)
+  15:54  Helper3 (1165 ouro)
+  19:14  HelperSpeed (1515 ouro)
+  24:27  HammerSpeed (1970 ouro)
+  13:06  SideCorridor (690 ouro)
+  21:56  Jewelry (1515 ouro)
+  26:06  Jeweler (2200 ouro)
+  35:41  JewelSpeed (5500 ouro)
+  42:24  JewelVitrine (9000 ouro)
+  49:08  WorkshopFacade (11000 ouro)
+  57:37  WorkshopFloor (14000 ouro)
+  --:--  JewelryDecor (18000 ouro)
+  28:41  Miner (3000 ouro)
+  30:57  Jeweler2 (2400 ouro)
+  Fornalha     fome=  239s travada=  238s feitos=1847
+  Fornalha 2   fome=  238s travada=  321s feitos=1366
+  Bigorna      fome=  245s travada=  160s feitos=904
+  Bigorna 2    fome= 2769s travada=   21s feitos=146
+  Escudos      fome= 1064s travada=   23s feitos=417
+  Ferramentas  fome= 1442s travada=   95s feitos=397
+  Joalheria    fome=  276s travada=   24s feitos=458
+  andar sem decisao: 1055s de 3600s (29%)
+  clientes perdidos=0 sem vaga=2765 fila max=6 vendas=2317
+  pads parciais:
+
+ouro/min por janela de 5 min: 0-5=78 5-10=219 10-15=442 15-20=463 20-25=729 25-30=1093 30-35=1155 35-40=1298 40-45=1492 45-50=1655 50-55=1621 55-60=1682
+joalheiro=26:06 lupa=35:41 vitrine de joias=42:24 | producao completa=42:24 | joias/min: joalheria->joalheiro=5.3 joalheiro->lupa=9.5 depois da producao=14.3 | bancada de joias sem lingote: antes do joalheiro=9% joalheiro->lupa=5% joalheiro->60 min=12% | joias=457 | baus abertos: 2:32 6:59 24:52 13:03
+]]></output>
+            </test-case>
+            <test-case id="1005" name="Bot_90Minutos_Luxo" fullname="FS.Tests.BalanceTests.Bot_90Minutos_Luxo" methodname="Bot_90Minutos_Luxo" classname="FS.Tests.BalanceTests" runstate="Runnable" seed="469079457" result="Passed" start-time="2026-10-07 20:02:16Z" end-time="2026-10-07 20:02:22Z" duration="6.459120" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+              <output><![CDATA[primeira venda: 0:21
+  1:04  FurnaceSpeed1 (50 ouro)
+  1:57  Anvil2 (65 ouro)
+  2:38  Helper1 (85 ouro)
+  3:45  Shields (110 ouro)
+  5:08  PlayerCapacity (145 ouro)
+  6:51  Helper2 (185 ouro)
+  7:03  Conveyor (240 ouro)
+  8:20  FurnaceSpeed2 (315 ouro)
+  9:39  PlayerSpeed (410 ouro)
+  10:54  Tools (530 ouro)
+  12:25  CounterCapacity (690 ouro)
+  13:24  Furnace2 (895 ouro)
+  15:54  Helper3 (1165 ouro)
+  19:14  HelperSpeed (1515 ouro)
+  24:27  HammerSpeed (1970 ouro)
+  13:06  SideCorridor (690 ouro)
+  21:56  Jewelry (1515 ouro)
+  26:06  Jeweler (2200 ouro)
+  35:41  JewelSpeed (5500 ouro)
+  42:24  JewelVitrine (9000 ouro)
+  49:08  WorkshopFacade (11000 ouro)
+  57:37  WorkshopFloor (14000 ouro)
+  68:41  JewelryDecor (18000 ouro)
+  28:41  Miner (3000 ouro)
+  30:57  Jeweler2 (2400 ouro)
+  Fornalha     fome=  239s travada=  281s feitos=2926
+  Fornalha 2   fome=  238s travada=  465s feitos=2381
+  Bigorna      fome=  245s travada=  331s feitos=1448
+  Bigorna 2    fome= 4483s travada=   26s feitos=175
+  Escudos      fome= 1831s travada=   72s feitos=636
+  Ferramentas  fome= 2485s travada=  197s feitos=617
+  Joalheria    fome=  530s travada=   24s feitos=888
+  andar sem decisao: 1578s de 5400s (29%)
+  clientes perdidos=0 sem vaga=4574 fila max=6 vendas=3761
+  pads parciais:
+
+janela | ouro/min luxo|sem | saldo luxo|sem | vendas/min luxo|sem
+  0-5: 78|78  140|140  7,2|7,2
+  5-10: 219|219  190|190  15,0|15,0
+  10-15: 442|442  795|795  30,4|30,4
+  15-20: 463|463  434|434  31,2|31,2
+  20-25: 729|729  1196|1196  40,6|40,6
+  25-30: 1093|1093  1464|1464  46,6|46,6
+  30-35: 1155|1155  4842|4842  47,4|47,4
+  35-40: 1298|1298  5833|5833  49,2|49,2
+  40-45: 1492|1492  4294|4294  48,8|48,8
+  45-50: 1655|1659  1572|12591  49,4|49,6
+  50-55: 1621|1609  9681|20640  48,6|47,8
+  55-60: 1682|1576  4094|28524  49,0|48,6
+  60-65: 1671|1587  12449|36462  49,0|47,6
+  65-70: 1586|1576  2383|44345  49,8|47,6
+  70-75: 1627|1637  10519|52534  47,4|47,8
+  75-80: 1654|1661  18791|60840  47,2|48,0
+  80-85: 1662|1609  27104|68888  48,2|47,6
+  85-90: 1627|1662  35242|77198  47,2|48,4
+
+producao completa=42:24 | fachada=49:08 (+6.7 min) piso=57:37 (+15.2) joalheria real=68:41 (+26.3) | 43-90 min: ouro/min 1643.5 x 1621.3 (+1.4%), vendas/min 48.49 x 48.19 (+0.6%) | 90 min: receita 108807 x 107763, saldo 35242 x 77198
+]]></output>
+            </test-case>
+            <test-case id="1002" name="Bot_Primeiros10Minutos_BatemASecao3" fullname="FS.Tests.BalanceTests.Bot_Primeiros10Minutos_BatemASecao3" methodname="Bot_Primeiros10Minutos_BatemASecao3" classname="FS.Tests.BalanceTests" runstate="Runnable" seed="1482737086" result="Passed" start-time="2026-10-07 20:02:22Z" end-time="2026-10-07 20:02:23Z" duration="0.259756" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+              <output><![CDATA[--- bot ideal (sem handicap): limite inferior ---
+primeira venda: 0:17
+  0:52  FurnaceSpeed1 (50 ouro)
+  2:00  Anvil2 (65 ouro)
+  2:33  Helper1 (85 ouro)
+  3:42  Shields (110 ouro)
+  4:59  PlayerCapacity (145 ouro)
+  6:44  Helper2 (185 ouro)
+  7:05  Conveyor (240 ouro)
+  8:10  FurnaceSpeed2 (315 ouro)
+  9:36  PlayerSpeed (410 ouro)
+  --:--  Tools (530 ouro)
+  --:--  CounterCapacity (690 ouro)
+  --:--  Furnace2 (895 ouro)
+  --:--  Helper3 (1165 ouro)
+  --:--  HelperSpeed (1515 ouro)
+  --:--  HammerSpeed (1970 ouro)
+  --:--  SideCorridor (690 ouro)
+  --:--  Jewelry (1515 ouro)
+  --:--  Jeweler (2200 ouro)
+  --:--  JewelSpeed (5500 ouro)
+  --:--  JewelVitrine (9000 ouro)
+  --:--  WorkshopFacade (11000 ouro)
+  --:--  WorkshopFloor (14000 ouro)
+  --:--  JewelryDecor (18000 ouro)
+  --:--  Miner (3000 ouro)
+  --:--  Jeweler2 (2400 ouro)
+  Fornalha     fome=  106s travada=  139s feitos=160
+  Fornalha 2   fome=    0s travada=    0s feitos=0
+  Bigorna      fome=  249s travada=    7s feitos=68
+  Bigorna 2    fome=  373s travada=    6s feitos=19
+  Escudos      fome=  156s travada=   11s feitos=27
+  Ferramentas  fome=    0s travada=    0s feitos=0
+  Joalheria    fome=    0s travada=    0s feitos=0
+  andar sem decisao: 301s de 600s (50%)
+  clientes perdidos=1 sem vaga=70 fila max=4 vendas=107
+  pads parciais:
+
+--- bot humano (0,7 s de reacao, 85% de stick) ---
+AUTOPLAY t=1:00 gold=40 earned=40 upgrades=0 sales=4 lost=0 away=1 maxq=4 walk=24s ema=0.44/s
+AUTOPLAY t=2:00 gold=5 earned=120 upgrades=2 sales=12 lost=0 away=4 maxq=4 walk=49s ema=0.99/s
+AUTOPLAY t=3:00 gold=40 earned=180 upgrades=3 sales=18 lost=0 away=9 maxq=4 walk=71s ema=1.04/s
+AUTOPLAY t=4:00 gold=40 earned=290 upgrades=4 sales=29 lost=0 away=10 maxq=4 walk=89s ema=1.62/s
+AUTOPLAY t=5:00 gold=140 earned=390 upgrades=4 sales=36 lost=0 away=22 maxq=4 walk=109s ema=1.68/s
+AUTOPLAY t=6:00 gold=100 earned=495 upgrades=5 sales=45 lost=0 away=33 maxq=4 walk=130s ema=1.67/s
+AUTOPLAY t=7:00 gold=290 earned=620 upgrades=6 sales=50 lost=0 away=51 maxq=4 walk=150s ema=1.98/s
+AUTOPLAY t=8:00 gold=260 earned=830 upgrades=7 sales=68 lost=0 away=55 maxq=4 walk=170s ema=2.91/s
+AUTOPLAY t=9:00 gold=215 earned=1100 upgrades=8 sales=86 lost=0 away=64 maxq=4 walk=188s ema=3.91/s
+AUTOPLAY t=10:00 gold=190 earned=1485 upgrades=9 sales=111 lost=0 away=71 maxq=4 walk=202s ema=5.72/s
+
+primeira venda: 0:21
+  1:04  FurnaceSpeed1 (50 ouro)
+  1:57  Anvil2 (65 ouro)
+  2:38  Helper1 (85 ouro)
+  3:45  Shields (110 ouro)
+  5:08  PlayerCapacity (145 ouro)
+  6:51  Helper2 (185 ouro)
+  7:03  Conveyor (240 ouro)
+  8:20  FurnaceSpeed2 (315 ouro)
+  9:39  PlayerSpeed (410 ouro)
+  --:--  Tools (530 ouro)
+  --:--  CounterCapacity (690 ouro)
+  --:--  Furnace2 (895 ouro)
+  --:--  Helper3 (1165 ouro)
+  --:--  HelperSpeed (1515 ouro)
+  --:--  HammerSpeed (1970 ouro)
+  --:--  SideCorridor (690 ouro)
+  --:--  Jewelry (1515 ouro)
+  --:--  Jeweler (2200 ouro)
+  --:--  JewelSpeed (5500 ouro)
+  --:--  JewelVitrine (9000 ouro)
+  --:--  WorkshopFacade (11000 ouro)
+  --:--  WorkshopFloor (14000 ouro)
+  --:--  JewelryDecor (18000 ouro)
+  --:--  Miner (3000 ouro)
+  --:--  Jeweler2 (2400 ouro)
+  Fornalha     fome=  106s travada=  137s feitos=157
+  Fornalha 2   fome=    0s travada=    0s feitos=0
+  Bigorna      fome=  245s travada=   17s feitos=67
+  Bigorna 2    fome=  351s travada=    7s feitos=24
+  Escudos      fome=  178s travada=    2s feitos=25
+  Ferramentas  fome=    0s travada=    0s feitos=0
+  Joalheria    fome=    0s travada=    0s feitos=0
+  andar sem decisao: 202s de 600s (34%)
+  clientes perdidos=0 sem vaga=71 fila max=4 vendas=111
+  pads parciais:
+
+]]></output>
+            </test-case>
+            <test-case id="1006" name="Determinismo_MesmaEntradaMesmoResultado" fullname="FS.Tests.BalanceTests.Determinismo_MesmaEntradaMesmoResultado" methodname="Determinismo_MesmaEntradaMesmoResultado" classname="FS.Tests.BalanceTests" runstate="Runnable" seed="1264374306" result="Passed" start-time="2026-10-07 20:02:23Z" end-time="2026-10-07 20:02:23Z" duration="0.080166" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1007" name="Offline_DepoisDe10Min_RendeAlgoMasNaoMaisQueOTeto" fullname="FS.Tests.BalanceTests.Offline_DepoisDe10Min_RendeAlgoMasNaoMaisQueOTeto" methodname="Offline_DepoisDe10Min_RendeAlgoMasNaoMaisQueOTeto" classname="FS.Tests.BalanceTests" runstate="Runnable" seed="2096956572" result="Passed" start-time="2026-10-07 20:02:23Z" end-time="2026-10-07 20:02:23Z" duration="0.129358" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+              <output><![CDATA[offline 8 h depois de 10 min de jogo: 1060 ouro (taxa 5,72/s; pela taxa seriam 10289; proximo upgrade travado custa 530)
+]]></output>
+            </test-case>
+          </test-suite>
+          <test-suite type="TestFixture" id="1008" name="CoreTests" fullname="FS.Tests.CoreTests" classname="FS.Tests.CoreTests" runstate="Runnable" testcasecount="53" result="Passed" start-time="2026-10-07 20:02:23Z" end-time="2026-10-07 20:02:24Z" duration="1.508749" total="53" passed="53" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-case id="1053" name="Ajudantes_CompletamCiclos_10Min_SemTravar" fullname="FS.Tests.CoreTests.Ajudantes_CompletamCiclos_10Min_SemTravar" methodname="Ajudantes_CompletamCiclos_10Min_SemTravar" classname="FS.Tests.CoreTests" runstate="Runnable" seed="549896395" result="Passed" start-time="2026-10-07 20:02:23Z" end-time="2026-10-07 20:02:23Z" duration="0.704626" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1029" name="Ajudantes_Papel1AbasteceAJoalheria_Papel2LevaJoiaALoja" fullname="FS.Tests.CoreTests.Ajudantes_Papel1AbasteceAJoalheria_Papel2LevaJoiaALoja" methodname="Ajudantes_Papel1AbasteceAJoalheria_Papel2LevaJoiaALoja" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1590848185" result="Passed" start-time="2026-10-07 20:02:23Z" end-time="2026-10-07 20:02:23Z" duration="0.013731" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1050" name="Bocas_EntradaSoDeposita_SaidaSoRecolhe" fullname="FS.Tests.CoreTests.Bocas_EntradaSoDeposita_SaidaSoRecolhe" methodname="Bocas_EntradaSoDeposita_SaidaSoRecolhe" classname="FS.Tests.CoreTests" runstate="Runnable" seed="2130337012" result="Passed" start-time="2026-10-07 20:02:23Z" end-time="2026-10-07 20:02:23Z" duration="0.003031" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1051" name="Bocas_Tabela_LadosOpostos_ForaDeCorposEPads" fullname="FS.Tests.CoreTests.Bocas_Tabela_LadosOpostos_ForaDeCorposEPads" methodname="Bocas_Tabela_LadosOpostos_ForaDeCorposEPads" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1751492407" result="Passed" start-time="2026-10-07 20:02:23Z" end-time="2026-10-07 20:02:23Z" duration="0.003372" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1009" name="Cadeia_MinerioLingoteEspada_VendePagaOuro" fullname="FS.Tests.CoreTests.Cadeia_MinerioLingoteEspada_VendePagaOuro" methodname="Cadeia_MinerioLingoteEspada_VendePagaOuro" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1140224114" result="Passed" start-time="2026-10-07 20:02:23Z" end-time="2026-10-07 20:02:24Z" duration="0.004467" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1010" name="Capacidade_LimitaPilha" fullname="FS.Tests.CoreTests.Capacidade_LimitaPilha" methodname="Capacidade_LimitaPilha" classname="FS.Tests.CoreTests" runstate="Runnable" seed="483371265" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.002882" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1013" name="Cliente_PagaEVaiEmbora_OuCansaESai" fullname="FS.Tests.CoreTests.Cliente_PagaEVaiEmbora_OuCansaESai" methodname="Cliente_PagaEVaiEmbora_OuCansaESai" classname="FS.Tests.CoreTests" runstate="Runnable" seed="738592550" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.008096" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1025" name="Corredor_SoltaOJogadorNaRuaLateral" fullname="FS.Tests.CoreTests.Corredor_SoltaOJogadorNaRuaLateral" methodname="Corredor_SoltaOJogadorNaRuaLateral" classname="FS.Tests.CoreTests" runstate="Runnable" seed="606895280" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.004265" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1017" name="Curva_DeCusto_Dos25Upgrades_22ProdutivosELuxo" fullname="FS.Tests.CoreTests.Curva_DeCusto_Dos25Upgrades_22ProdutivosELuxo" methodname="Curva_DeCusto_Dos25Upgrades_22ProdutivosELuxo" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1152714325" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.002021" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1038" name="Dica_BauDisponivel_LogoDepoisDoPad_EFilaDeJoiasNoChao" fullname="FS.Tests.CoreTests.Dica_BauDisponivel_LogoDepoisDoPad_EFilaDeJoiasNoChao" methodname="Dica_BauDisponivel_LogoDepoisDoPad_EFilaDeJoiasNoChao" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1779398015" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.001402" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1023" name="Dica_SegueOEstado" fullname="FS.Tests.CoreTests.Dica_SegueOEstado" methodname="Dica_SegueOEstado" classname="FS.Tests.CoreTests" runstate="Runnable" seed="124949100" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000171" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1015" name="Escudo_Consome2Lingotes_EPaga25" fullname="FS.Tests.CoreTests.Escudo_Consome2Lingotes_EPaga25" methodname="Escudo_Consome2Lingotes_EPaga25" classname="FS.Tests.CoreTests" runstate="Runnable" seed="334017290" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.002147" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1021" name="Esteira_MoveLingotesSemCaminhar" fullname="FS.Tests.CoreTests.Esteira_MoveLingotesSemCaminhar" methodname="Esteira_MoveLingotesSemCaminhar" classname="FS.Tests.CoreTests" runstate="Runnable" seed="443292925" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000898" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1014" name="Fila_Cheia_ClienteNaoEntra_EEscudoSoDepoisDoUpgrade" fullname="FS.Tests.CoreTests.Fila_Cheia_ClienteNaoEntra_EEscudoSoDepoisDoUpgrade" methodname="Fila_Cheia_ClienteNaoEntra_EEscudoSoDepoisDoUpgrade" classname="FS.Tests.CoreTests" runstate="Runnable" seed="765935643" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.010965" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1052" name="Fila_VagasEPadsEBaus_ForaDosCorpos" fullname="FS.Tests.CoreTests.Fila_VagasEPadsEBaus_ForaDosCorpos" methodname="Fila_VagasEPadsEBaus_ForaDosCorpos" classname="FS.Tests.CoreTests" runstate="Runnable" seed="10264024" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.001059" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1024" name="FilaCheia_ProdutoNaVitrine_ClienteCompraDireto_NaoTrava" fullname="FS.Tests.CoreTests.FilaCheia_ProdutoNaVitrine_ClienteCompraDireto_NaoTrava" methodname="FilaCheia_ProdutoNaVitrine_ClienteCompraDireto_NaoTrava" classname="FS.Tests.CoreTests" runstate="Runnable" seed="51430528" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.001917" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1028" name="FilaDaJoalheria_CompraPor60_Teto3_PacienciaDaJoia" fullname="FS.Tests.CoreTests.FilaDaJoalheria_CompraPor60_Teto3_PacienciaDaJoia" methodname="FilaDaJoalheria_CompraPor60_Teto3_PacienciaDaJoia" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1002538819" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.015835" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1049" name="Fisica_DeslizaNaQuina_EAjudanteContornaEstacaoNoCaminho" fullname="FS.Tests.CoreTests.Fisica_DeslizaNaQuina_EAjudanteContornaEstacaoNoCaminho" methodname="Fisica_DeslizaNaQuina_EAjudanteContornaEstacaoNoCaminho" classname="FS.Tests.CoreTests" runstate="Runnable" seed="697107215" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000787" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1048" name="Fisica_EmpurrandoContraQualquerCorpo_NuncaEntra" fullname="FS.Tests.CoreTests.Fisica_EmpurrandoContraQualquerCorpo_NuncaEntra" methodname="Fisica_EmpurrandoContraQualquerCorpo_NuncaEntra" classname="FS.Tests.CoreTests" runstate="Runnable" seed="272448344" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.158505" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1011" name="Gargalo_FornalhaLenta_AcumulaFila_UpgradeResolve" fullname="FS.Tests.CoreTests.Gargalo_FornalhaLenta_AcumulaFila_UpgradeResolve" methodname="Gargalo_FornalhaLenta_AcumulaFila_UpgradeResolve" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1553441276" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.007373" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1033" name="Joalheiro_NaoAtrapalhaOsPapeis0a2" fullname="FS.Tests.CoreTests.Joalheiro_NaoAtrapalhaOsPapeis0a2" methodname="Joalheiro_NaoAtrapalhaOsPapeis0a2" classname="FS.Tests.CoreTests" runstate="Runnable" seed="262133097" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.059804" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1032" name="Joalheiro_Papel3_AbasteceSoABancadaDeJoias_ELevaJoiaALoja" fullname="FS.Tests.CoreTests.Joalheiro_Papel3_AbasteceSoABancadaDeJoias_ELevaJoiaALoja" methodname="Joalheiro_Papel3_AbasteceSoABancadaDeJoias_ELevaJoiaALoja" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1164153926" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.009653" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1058" name="Joalheiro2_Papel3Extra_AbasteceAJoalheriaELevaJoias" fullname="FS.Tests.CoreTests.Joalheiro2_Papel3Extra_AbasteceAJoalheriaELevaJoias" methodname="Joalheiro2_Papel3Extra_AbasteceAJoalheriaELevaJoias" classname="FS.Tests.CoreTests" runstate="Runnable" seed="277227542" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.043796" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1026" name="Joalheria_FechadaSemUpgrade_2LingotesViram1Joia" fullname="FS.Tests.CoreTests.Joalheria_FechadaSemUpgrade_2LingotesViram1Joia" methodname="Joalheria_FechadaSemUpgrade_2LingotesViram1Joia" classname="FS.Tests.CoreTests" runstate="Runnable" seed="495492233" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.005348" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1027" name="Joia_SoNaLojaDeJoias_EspadaNuncaLa" fullname="FS.Tests.CoreTests.Joia_SoNaLojaDeJoias_EspadaNuncaLa" methodname="Joia_SoNaLojaDeJoias_EspadaNuncaLa" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1251063849" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000877" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1034" name="Lupa_BancadaDeJoias_x06_SoNaJoalheria" fullname="FS.Tests.CoreTests.Lupa_BancadaDeJoias_x06_SoNaJoalheria" methodname="Lupa_BancadaDeJoias_x06_SoNaJoalheria" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1662152523" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.001018" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1056" name="Luxo_EsperaOs22Produtivos_InclusiveMineiroEJoalheiro2" fullname="FS.Tests.CoreTests.Luxo_EsperaOs22Produtivos_InclusiveMineiroEJoalheiro2" methodname="Luxo_EsperaOs22Produtivos_InclusiveMineiroEJoalheiro2" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1220413531" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000239" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1040" name="Luxo_ExigeTodosOsProdutivos_MesmoVitrineForaDaOrdem" fullname="FS.Tests.CoreTests.Luxo_ExigeTodosOsProdutivos_MesmoVitrineForaDaOrdem" methodname="Luxo_ExigeTodosOsProdutivos_MesmoVitrineForaDaOrdem" classname="FS.Tests.CoreTests" runstate="Runnable" seed="2003256202" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.001193" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1044" name="Luxo_NaoMudaProducaoDemandaReceitaOuCapacidade" fullname="FS.Tests.CoreTests.Luxo_NaoMudaProducaoDemandaReceitaOuCapacidade" methodname="Luxo_NaoMudaProducaoDemandaReceitaOuCapacidade" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1662351087" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.291798" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1042" name="Luxo_PadsCobramUmaVez_ParcialETroco_RearmamAoSair" fullname="FS.Tests.CoreTests.Luxo_PadsCobramUmaVez_ParcialETroco_RearmamAoSair" methodname="Luxo_PadsCobramUmaVez_ParcialETroco_RearmamAoSair" classname="FS.Tests.CoreTests" runstate="Runnable" seed="107675319" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.001510" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1041" name="Marca_ProdutivoAnexadoDepoisDosLuxos_ETratadoComoProdutivo" fullname="FS.Tests.CoreTests.Marca_ProdutivoAnexadoDepoisDosLuxos_ETratadoComoProdutivo" methodname="Marca_ProdutivoAnexadoDepoisDosLuxos_ETratadoComoProdutivo" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1716494772" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000705" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1037" name="Marco_DisparaUmaVez_BauPagaUmaVez_UmPorLugar" fullname="FS.Tests.CoreTests.Marco_DisparaUmaVez_BauPagaUmaVez_UmPorLugar" methodname="Marco_DisparaUmaVez_BauPagaUmaVez_UmPorLugar" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1688425014" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.003269" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1022" name="Metrica_AndarSemDecisao_SoContaSemPadPagavel" fullname="FS.Tests.CoreTests.Metrica_AndarSemDecisao_SoContaSemPadPagavel" methodname="Metrica_AndarSemDecisao_SoContaSemPadPagavel" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1242721976" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000998" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1057" name="Mineiro_Papel0Extra_SoCarregaMinerioAsFornalhas" fullname="FS.Tests.CoreTests.Mineiro_Papel0Extra_SoCarregaMinerioAsFornalhas" methodname="Mineiro_Papel0Extra_SoCarregaMinerioAsFornalhas" classname="FS.Tests.CoreTests" runstate="Runnable" seed="731432232" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.020162" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1045" name="Offline_IgnoraLuxo_TetoProdutivo18000_ClaimMaxIdempotente" fullname="FS.Tests.CoreTests.Offline_IgnoraLuxo_TetoProdutivo18000_ClaimMaxIdempotente" methodname="Offline_IgnoraLuxo_TetoProdutivo18000_ClaimMaxIdempotente" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1987146524" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000638" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1019" name="Offline_NuncaPagaMaisQue2xOUpgradeMaisBaratoTravado" fullname="FS.Tests.CoreTests.Offline_NuncaPagaMaisQue2xOUpgradeMaisBaratoTravado" methodname="Offline_NuncaPagaMaisQue2xOUpgradeMaisBaratoTravado" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1128922899" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000300" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1018" name="Offline_Teto2h_25Porcento_NegativoZero_Idempotente" fullname="FS.Tests.CoreTests.Offline_Teto2h_25Porcento_NegativoZero_Idempotente" methodname="Offline_Teto2h_25Porcento_NegativoZero_Idempotente" classname="FS.Tests.CoreTests" runstate="Runnable" seed="125391106" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000206" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1047" name="Paciencia_PorItem_ProporcionalAProducaoInicial" fullname="FS.Tests.CoreTests.Paciencia_PorItem_ProporcionalAProducaoInicial" methodname="Paciencia_PorItem_ProporcionalAProducaoInicial" classname="FS.Tests.CoreTests" runstate="Runnable" seed="824337668" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.043678" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1016" name="Pad_DrenaOuro_ECompra_AplicaEfeito" fullname="FS.Tests.CoreTests.Pad_DrenaOuro_ECompra_AplicaEfeito" methodname="Pad_DrenaOuro_ECompra_AplicaEfeito" classname="FS.Tests.CoreTests" runstate="Runnable" seed="978451604" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.001072" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1060" name="Pad_MarteloVeloz_LongeDaBigornaDasBocasEDasLinhas" fullname="FS.Tests.CoreTests.Pad_MarteloVeloz_LongeDaBigornaDasBocasEDasLinhas" methodname="Pad_MarteloVeloz_LongeDaBigornaDasBocasEDasLinhas" classname="FS.Tests.CoreTests" runstate="Runnable" seed="253706557" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.001580" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1061" name="Parede_SoPassaPelaPortaEPeloArco_AjudanteUsaAAbertura" fullname="FS.Tests.CoreTests.Parede_SoPassaPelaPortaEPeloArco_AjudanteUsaAAbertura" methodname="Parede_SoPassaPelaPortaEPeloArco_AjudanteUsaAAbertura" classname="FS.Tests.CoreTests" runstate="Runnable" seed="498956006" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.003672" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1055" name="Requisitos_Joalheiro_Mineiro_Joalheiro2_ProdutivosAnexados" fullname="FS.Tests.CoreTests.Requisitos_Joalheiro_Mineiro_Joalheiro2_ProdutivosAnexados" methodname="Requisitos_Joalheiro_Mineiro_Joalheiro2_ProdutivosAnexados" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1400213775" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000439" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1031" name="Save_Antigo15Flags_Stock3_CarregaComASegundaAreaFechada" fullname="FS.Tests.CoreTests.Save_Antigo15Flags_Stock3_CarregaComASegundaAreaFechada" methodname="Save_Antigo15Flags_Stock3_CarregaComASegundaAreaFechada" classname="FS.Tests.CoreTests" runstate="Runnable" seed="543392815" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.012954" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1046" name="Save_Antigo17Flags_SemMarcos_Carrega" fullname="FS.Tests.CoreTests.Save_Antigo17Flags_SemMarcos_Carrega" methodname="Save_Antigo17Flags_SemMarcos_Carrega" classname="FS.Tests.CoreTests" runstate="Runnable" seed="422853233" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000838" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1043" name="Save_Antigo20Flags17Pads_ELuxoIdaEVolta" fullname="FS.Tests.CoreTests.Save_Antigo20Flags17Pads_ELuxoIdaEVolta" methodname="Save_Antigo20Flags17Pads_ELuxoIdaEVolta" classname="FS.Tests.CoreTests" runstate="Runnable" seed="152621771" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000770" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1059" name="Save_Antigo23Flags_CarregaComOParNovoTravadoEDevolveParcialDoLuxo" fullname="FS.Tests.CoreTests.Save_Antigo23Flags_CarregaComOParNovoTravadoEDevolveParcialDoLuxo" methodname="Save_Antigo23Flags_CarregaComOParNovoTravadoEDevolveParcialDoLuxo" classname="FS.Tests.CoreTests" runstate="Runnable" seed="400591887" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000441" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1020" name="Save_IdaEVolta_ELixoViraInicial" fullname="FS.Tests.CoreTests.Save_IdaEVolta_ELixoViraInicial" methodname="Save_IdaEVolta_ELixoViraInicial" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1875384890" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.001029" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1054" name="Save_JogadorDentroDeUmCorpo_SaiPelaBorda" fullname="FS.Tests.CoreTests.Save_JogadorDentroDeUmCorpo_SaiPelaBorda" methodname="Save_JogadorDentroDeUmCorpo_SaiPelaBorda" classname="FS.Tests.CoreTests" runstate="Runnable" seed="1968079584" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000255" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1039" name="Save_Marcos_IdaEVolta_NaoPagaDeNovo" fullname="FS.Tests.CoreTests.Save_Marcos_IdaEVolta_NaoPagaDeNovo" methodname="Save_Marcos_IdaEVolta_NaoPagaDeNovo" classname="FS.Tests.CoreTests" runstate="Runnable" seed="2035274260" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000785" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1030" name="Save_SegundaArea_17Flags_EstoqueDeJoia_IdaEVolta" fullname="FS.Tests.CoreTests.Save_SegundaArea_17Flags_EstoqueDeJoia_IdaEVolta" methodname="Save_SegundaArea_17Flags_EstoqueDeJoia_IdaEVolta" classname="FS.Tests.CoreTests" runstate="Runnable" seed="660236504" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.000369" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1035" name="VitrineDeJoias_Fila5_NobresX07_SoNaJoalheria" fullname="FS.Tests.CoreTests.VitrineDeJoias_Fila5_NobresX07_SoNaJoalheria" methodname="VitrineDeJoias_Fila5_NobresX07_SoNaJoalheria" classname="FS.Tests.CoreTests" runstate="Runnable" seed="473922515" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.007158" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1036" name="VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita" fullname="FS.Tests.CoreTests.VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita" methodname="VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita" classname="FS.Tests.CoreTests" runstate="Runnable" seed="869879609" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.004397" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+            </test-case>
+            <test-case id="1012" name="Worker_CompletaOCicloSozinho" fullname="FS.Tests.CoreTests.Worker_CompletaOCicloSozinho" methodname="Worker_CompletaOCicloSozinho" classname="FS.Tests.CoreTests" runstate="Runnable" seed="544410918" result="Passed" start-time="2026-10-07 20:02:24Z" end-time="2026-10-07 20:02:24Z" duration="0.034913" asserts="0">
+              <properties>
+                <property name="retryIteration" value="0" />
+                <property name="repeatIteration" value="0" />
+              </properties>
+              <output><![CDATA[Saving results to: C:/Users/VINICIUS/Videos/MEUS PROJETOS/JOGOS NOVOS/03_FORGE_STREET/client/Builds/validation_portas/editmode.xml
+]]></output>
+            </test-case>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

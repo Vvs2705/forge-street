@@ -1,0 +1,8 @@
+Os possíveis motivos para isso incluem:
+  * Você digitou incorretamente um comando dotnet interno.
+  * Você pretendia executar um programa .NET, mas dotnet-bin_new/sweep.dll não existe.
+  * Você pretendia executar uma ferramenta global, mas não foi possível encontrar um executável com prefixo dotnet com esse nome no PATH.
+Os possíveis motivos para isso incluem:
+  * Você digitou incorretamente um comando dotnet interno.
+  * Você pretendia executar um programa .NET, mas dotnet-bin_new/sweep.dll não existe.
+  * Você pretendia executar uma ferramenta global, mas não foi possível encontrar um executável com prefixo dotnet com esse nome no PATH.

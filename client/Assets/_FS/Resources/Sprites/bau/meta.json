@@ -1,0 +1,33 @@
+{
+ "size": 256,
+ "fps": 12.0,
+ "dirs": 1,
+ "dir_order": [
+  "S"
+ ],
+ "row0": "top",
+ "elev": 45.0,
+ "yaw": -25.0,
+ "ppu": 177.47,
+ "pivot_px": [
+  128.0,
+  78.7
+ ],
+ "pivot": [
+  0.5,
+  0.3072
+ ],
+ "light": "flat",
+ "src_fps": 30,
+ "clips": [
+  {
+   "name": "Static",
+   "file": "Static.png",
+   "frames": 1,
+   "loop": false,
+   "fps": 30.0,
+   "duration_s": 0.033,
+   "src_frames": 0
+  }
+ ]
+}

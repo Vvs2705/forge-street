@@ -2,6 +2,8 @@
 
 **Data:** 2026-10-07. **Raia:** economia/QA. **Estado:** diagnóstico MEDIDO; A/B MEDIDO numa cópia temporária do core. **Nada implementado no jogo**: nenhuma linha de `client/Assets` mudou. Os números de luxo ficam em [BALANCE.md §11](BALANCE.md) e não entram aqui.
 
+> **Atualização Leva 10 (2026-10-07):** o par Mineiro → Joalheiro 2 foi **implementado** por cima da física da fase 5. O resultado, com o A/B refeito com física, está em §6.
+>
 > **Atualização Leva 9 (2026-10-07, raia core/economia):** A/B do **2º ajudante de minério isolado** medido em §5. **Nenhuma variante do escopo passa os 4 critérios** (genérico 1/4 bases, dedicado à Fornalha 2 0/4), então **nada de logística foi implementado**. A pendência de arquitetura de §4 está resolvida: a marca de luxo agora é por upgrade (`UpgradeDef.Luxury`, [BALANCE.md §12](BALANCE.md)), sem mudança de comportamento.
 
 ## Fonte congelada e método
@@ -164,3 +166,27 @@ Para o próximo A/B (HIPÓTESE, não preço): pela regra `custo ≈ Δouro/min �
 4. **Já resolvido para qualquer opção:** a marca por upgrade da Leva 9 permite anexar esses produtivos como IDs 23+ sem quebrar o bloqueio do luxo, `ProductionComplete` ou o teto offline. Depois da produção completa, o teto segue em 18.000 (o produtivo mais caro).
 
 **Logs** (`%TEMP%\fs_ab9\logs\`): `ab9_todas_bases.txt` (tabela das 4 bases, com as exploratórias), `ab9_detalhe_base_A.txt` (fluxo e ocupação por variante) e `core_sha256.txt` (SHA da fonte e da cópia). Para repetir: `dotnet build -c Release %TEMP%\fs_ab9\ab` e depois `dotnet %TEMP%\fs_ab9\ab\bin\Release\net10.0\AB.dll <dtDen> <inicioMin> <fimMin> [detail]`.
+
+## 6. Resultado da implementação (Leva 10, 2026-10-07, raia core/economia)
+
+**Estado:** o par **Mineiro → Joalheiro 2** está IMPLEMENTADO e TESTADO no core (`docs/FASE4_MINERIO.md` §5, [BALANCE.md §14](BALANCE.md)). Mineiro 3.000, Joalheiro 2 2.400, IDs 23/24. Foi feito por cima da física da fase 5 (`docs/FASE5_FISICA_PACIENCIA.md`: corpos sólidos, duas bocas por estação, parede lateral com porta e arco, paciência por item). **NÃO COMPILADO no Unity.**
+
+**A premissa do estudo mudou com a física.** Na mesma partida do bot humano, a bancada de joias sem lingote (Joalheiro → 60 min) foi de:
+- 52% antes da física (§1, janela 41–60: 56%);
+- **33%** com a física, sem o par ([BALANCE §13.4](BALANCE.md));
+- **12%** com o par.
+
+A parede lateral sozinha custa +2 pp de fome (31% → 33%).
+
+**A/B de §5 refeito com física** (mesmo método de controle × variante, sem luxo, janela 60–90, bases Dt 1/30 e Dt 1/60; harness `%TEMP%\fs_l10\sweepb`):
+
+| variante | ouro/min Δ | joias/min | fome da joalheria | outras vendas/min | 4 critérios |
+|---|---|---|---|---|---|
+| controle | — (1.326 · 1.355) | 10,67 · 11,17 | 36% · 33% | 32,93 · 32,10 | — |
+| só Mineiro | +53 · +58 | 11,27 · 11,57 | 32% · 31% | +0,7% · +6,8% | não (joias/min +6% e +4%; meta ≥ +15%) |
+| Mineiro + Joalheiro 2 | +296 · +291 | 14,13 · 14,00 (+32% · +25%) | **15% · 16%** | +2,3% · +12,4% | **sim nas 2 bases** |
+
+**Leitura:**
+- Com a física, o 2º ajudante de minério sozinho quase não rende. O ganho dele no estudo de antes (+27 a +34% de ouro/min) vinha das fornalhas sem minério, e com bocas separadas elas já se alimentam melhor.
+- O par continua vencendo, e quase todo o ganho vem do Joalheiro 2: +233 a +243 ouro/min sobre o Mineiro.
+- A regra de retorno remedida dá Mineiro 420–700 e Joalheiro 2 1.860–2.920. O preço aplicado do Mineiro (3.000) segue a faixa do contrato e a janela de fim de produção em 42–48 min. Proposta alternativa e decisão pendente em `FASE4_MINERIO.md` §5.

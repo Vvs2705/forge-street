@@ -1,0 +1,29 @@
+  Determinando os projetos a serem restaurados...
+  C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\phase2_core_proof_20261007\Phase2Proof.csproj restaurado (em 1,19 seg).
+  Phase2Proof -> C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\phase2_core_proof_20261007\bin\Debug\net10.0\Phase2Proof.dll
+Execução de teste para C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\phase2_core_proof_20261007\bin\Debug\net10.0\Phase2Proof.dll (.NETCoreApp,Version=v10.0)
+1 arquivos de teste no total corresponderam ao padrão especificado.
+C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\phase2_core_proof_20261007\bin\Debug\net10.0\Phase2Proof.dll
+NUnit Adapter 4.6.0.0: Test execution started
+Running selected tests in C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\phase2_core_proof_20261007\bin\Debug\net10.0\Phase2Proof.dll
+   NUnit3TestExecutor discovered 1 of 1 NUnit test cases using Current Discovery mode, Non-Explicit run
+NUnit Adapter 4.6.0.0: Test execution complete
+  Com falha VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita [34 ms]
+  Mensagem de erro:
+     Expected: (80, 80, 1, 1, 0)
+  But was:  (60, 60, 1, 1, 0)
+
+  Rastreamento de pilha:
+     at FS.Tests.CoreTests.<VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita>g__Check|35_0(Boolean upgraded, Boolean direct) in C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\phase2_core_proof_20261007\Tests\CoreTests.cs:line 683
+   at FS.Tests.CoreTests.VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita() in C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\phase2_core_proof_20261007\Tests\CoreTests.cs:line 695
+
+1)    at FS.Tests.CoreTests.<VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita>g__Check|35_0(Boolean upgraded, Boolean direct) in C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\phase2_core_proof_20261007\Tests\CoreTests.cs:line 683
+   at FS.Tests.CoreTests.VitrineDeJoias_Preco60Antes80Depois_FilaEDireta_EventoEReceita() in C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\tools\phase2_core_proof_20261007\Tests\CoreTests.cs:line 695
+
+
+
+Total de testes: 1
+     Com falha: 1
+Falha na Execução de Teste.
+Tempo total: 1,0084 Segundos
+Arquivo de resultados: C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\client\Builds\validation_phase2\core_red.trx

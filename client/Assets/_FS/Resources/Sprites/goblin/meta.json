@@ -1,0 +1,81 @@
+{
+ "size": 128,
+ "fps": 12.0,
+ "dirs": 4,
+ "dir_order": [
+  "S",
+  "W",
+  "N",
+  "E"
+ ],
+ "row0": "top",
+ "elev": 60.0,
+ "yaw": 0.0,
+ "ppu": 108.11,
+ "pivot_px": [
+  64.0,
+  33.2
+ ],
+ "pivot": [
+  0.5,
+  0.2596
+ ],
+ "light": "flat",
+ "src_fps": 30,
+ "clips": [
+  {
+   "name": "Angry",
+   "file": "Angry.png",
+   "frames": 32,
+   "loop": false,
+   "fps": 1.67,
+   "duration_s": 19.167,
+   "src_frames": 575
+  },
+  {
+   "name": "Idle",
+   "file": "Idle.png",
+   "frames": 32,
+   "loop": true,
+   "fps": 3.221,
+   "duration_s": 9.933,
+   "src_frames": 298
+  },
+  {
+   "name": "LookingAround",
+   "file": "LookingAround.png",
+   "frames": 32,
+   "loop": false,
+   "fps": 5.053,
+   "duration_s": 6.333,
+   "src_frames": 190
+  },
+  {
+   "name": "Thankful",
+   "file": "Thankful.png",
+   "frames": 32,
+   "loop": false,
+   "fps": 10.667,
+   "duration_s": 3.0,
+   "src_frames": 90
+  },
+  {
+   "name": "Walking",
+   "file": "Walking.png",
+   "frames": 16,
+   "loop": true,
+   "fps": 11.707,
+   "duration_s": 1.367,
+   "src_frames": 41
+  },
+  {
+   "name": "Waving",
+   "file": "Waving.png",
+   "frames": 6,
+   "loop": false,
+   "fps": 11.25,
+   "duration_s": 0.533,
+   "src_frames": 16
+  }
+ ]
+}
