@@ -119,3 +119,13 @@ Prompts usados: os da tabela de `ASSETS.md` (assunto + `[S]`/`[P]` + `[I]`), Nan
 | carroca | Prop — Lote 3 #34 | #3 de 4 (barris + sacos + lona dobrada em cima) | `148da6c7-fe33-4560-a17f-401bfb9b99ff` | 45 | `arte/tripo/carroca/carroca.zip` `0b2026d51a85f4e3a14e9ed91270f799362e640f3ce864381fe8e9909417390b` | `5488a86b946416983add1c857ae0312eb505a7e5937578ff74c8917a79ff2ac1` |
 | arco | Ambiente — Lote 3 #35 | #1 de 4 (arco robusto; #4 tinha telhado que esconde a rua de cima) | `e3c9eed0-cd99-4703-8de7-7e3134b90997` | 45 | `arte/tripo/arco/arco.zip` `2c589331ec2f9ceab07a081b3eab1a0f57b8c1001f91eb6516301118c8742fb3` | `fbc720fec3478316d87a8cfeeff3774f0852e4bf7a3057197366179e52ca5294` |
 | nobre | Personagem (cliente 2ª área) — Lote 3 #36 | #3 de 4 (pena grande no chapéu, monóculo, caixinha de anel) | `d8980357-6fbb-4172-8c26-e3cc085a5887` | 65 | `arte/tripo/nobre/nobre_mixamo.zip` `26ad2a7ddb6ee81203122469b2540ca61de52c506ad8cea9621e39c80c286b4f` | `cb54e757d0b34dd688024063474a37ca4ebfc7e9a261e9eb0835fd30f32c5314` |
+
+## 4. Texturas de ambiente (2026-10-07, imagem grátis do Tripo — 0 crédito)
+- Ferramenta: Tripo Studio, gerador de imagem embutido (Nano Banana 2, 1:1, 4 imagens grátis), conta do estúdio (plano pago), Chrome "PC de casa". Uso: texturas repetidas do chão/rua/parede/assoalho (pedido do Vinicius: "essa cor sólida cinza não passa credibilidade").
+- Processamento: `arte/texturas/fonte/*_src.png` (1024², originais) → mistura com cópia deslocada pela metade (sem emenda) → brilho 0,62–0,75, saturação 0,80–0,90 → 256² em `client/Assets/_FS/Resources/Textures/`.
+| textura | prompt (resumo) | escolhida |
+|---|---|---|
+| `piso_oficina` | lajes de pedra quente, vista de cima, juntas escuras finas, pintado à mão, baixo contraste | #3 de 4 |
+| `rua` | calçamento medieval, pedras arredondadas cinza-azuladas | #1 de 4 |
+| `parede` | parede de oficina, blocos de pedra cinza quente + tijolos vermelho-marrom, vista frontal | #4 de 4 |
+| `madeira` | assoalho de tábuas marrom quente com pregos | #2 de 4 |
