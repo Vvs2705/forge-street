@@ -19,3 +19,4 @@
 !/tools/viewcheck/**/*.csproj
 !/tools/phase2_core_proof_20261007/*.csproj
 *.sln
+/Builds/**/*.log
