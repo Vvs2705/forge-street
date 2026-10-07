@@ -93,7 +93,10 @@ namespace FS
         // frente para a camera), face escura logo abaixo. Oficina x 0-9: parede alta de pedra quente com a abertura do arco; rua
         // lateral x 9-15: muro baixo da pedra fria da rua. A borda de cima (rua dos clientes) fica aberta.
         const float WallT = 0.6f, WallFace = 0.6f, MuroT = 0.4f, MuroFace = 0.35f;
-        const float GapLo = 11.6f, GapHi = 13.4f;   // abertura da parede direita, onde fica o arco (ArchPos y 12,6)
+        // Parede direita da oficina = Balance.SideWallX0-X1 com as aberturas de Balance.SideWallOpenings (porta lateral 5,6-7,4 e arco
+        // 11,6-13,4; a mesma geometria solida da simulacao). Porta: batentes de madeira e folha fechada ate o Corredor.
+        const float JambW = 0.18f;
+        static readonly Color DoorTint = new Color(0.95f, 0.8f, 0.62f, 1f), JambTint = new Color(0.55f, 0.42f, 0.3f, 1f);
         const float DeckY = 12f;                     // assoalho (madeira) na frente da loja: balcao, bau e fila; o luxo Piso cobre so a pedra
         const int ExteriorOrder = -8, FloorOrder = -7, LuxOrder = -6, ShadeOrder = -5, WallOrder = -4, GlowOrder = -3;   // abaixo do tapete (-1), sombras e pads (1-4)
         static readonly Color ExteriorTint = Gray(0.42f), FaceTint = Gray(0.55f), ShadeColor = new Color(0f, 0f, 0f, 0.35f);
@@ -132,7 +135,7 @@ namespace FS
         readonly List<ClientV> _clients = new List<ClientV>();
         readonly List<SpriteSheet> _clientSheets = new List<SpriteSheet>();
         SpriteSheet _nobre;
-        SpriteRenderer _street, _shopTeaser; Text _streetLabel, _shopLabel;
+        SpriteRenderer _street, _shopTeaser, _door; Text _streetLabel, _shopLabel;
         readonly List<Floater> _floaters = new List<Floater>();
         readonly List<LuxV> _lux = new List<LuxV>();
         readonly List<SpriteRenderer> _glows = new List<SpriteRenderer>();
@@ -217,11 +220,21 @@ namespace FS
             // sombra de contato: luz-chave de baixo-esquerda (ART_BIBLE s7) -> a parede projeta para a direita/para cima
             Shade(Vector2.zero, new Vector2(0.35f, h), false);
             Shade(Vector2.zero, new Vector2(w, 0.3f), true);
-            Shade(new Vector2(ws + WallT, 0f), new Vector2(ws + WallT + 0.35f, GapLo), false);
             // oficina: esquerda e direita so o tampo (de lado nao ha face para a camera); embaixo tampo + face
             Tiled("ParedeEsq", parede, Color.white, WallOrder, new Vector2(-WallT, 0f), new Vector2(0f, h), true);
-            Tiled("ParedeDir", parede, Color.white, WallOrder, new Vector2(ws, 0f), new Vector2(ws + WallT, GapLo), true);
-            Tiled("ParedeDirArco", parede, Color.white, WallOrder, new Vector2(ws, GapHi), new Vector2(ws + WallT, h), true);
+            float x0 = Balance.SideWallX0, x1 = Balance.SideWallX1;
+            float[] gaps = Balance.SideWallOpenings;
+            for (int i = 0; i <= gaps.Length; i += 2)   // segmentos entre as aberturas: [0, g0], [g1, g2], [g3, h]
+            {
+                float y0 = i == 0 ? 0f : gaps[i - 1], y1 = i < gaps.Length ? gaps[i] : h;
+                Tiled("ParedeDir", parede, Color.white, WallOrder, new Vector2(x0, y0), new Vector2(x1, y1), true);
+                Shade(new Vector2(x1, y0), new Vector2(x1 + 0.35f, y1), false);
+            }
+            // porta lateral (1a abertura): batentes nas pontas do vao e a folha, que some com o Corredor (RefreshArea)
+            float d0 = gaps[0], d1 = gaps[1];
+            Tiled("Batente", Art.Ground("madeira"), JambTint, WallOrder, new Vector2(x0 - 0.05f, d0), new Vector2(x1 + 0.05f, d0 + JambW), true);
+            Tiled("Batente", Art.Ground("madeira"), JambTint, WallOrder, new Vector2(x0 - 0.05f, d1 - JambW), new Vector2(x1 + 0.05f, d1), true);
+            _door = Tiled("Porta", Art.Ground("madeira"), DoorTint, WallOrder, new Vector2(x0 + 0.04f, d0 + JambW), new Vector2(x1 - 0.04f, d1 - JambW), true);
             Tiled("ParedeBaixo", parede, Color.white, WallOrder, new Vector2(-WallT, -WallT), new Vector2(ws + WallT, 0f));
             Tiled("ParedeFace", parede, FaceTint, WallOrder, new Vector2(-WallT, -WallT - WallFace), new Vector2(ws + WallT, -WallT));
             // rua lateral: muro baixo, a mesma alvenaria esfriada (calcamento no tampo lia como chao, nao como muro)
@@ -280,6 +293,10 @@ namespace FS
             v.Label = Art.FreeText(_labels, s.Name, 26, new Vector2(320f, 40f));
             v.Label.text = s.Name;
             v.Label.color = Art.ComAlfa(Art.Ink, 0.8f);
+            // bocas no chao (FASE5 s2b), na cor do que passa por ela: deposito so entrega, balcoes so recebem, quem produz tem as duas
+            if (s.Kind == Kind.Deposit) Mouth(v.Root, s.OutAt - s.Pos, Art.ItemColor[(int)Item.Ore], false);
+            else Mouth(v.Root, s.InAt - s.Pos, s.Produces ? Art.ItemColor[(int)s.InItem] : Art.Accent, true);
+            if (s.Produces) Mouth(v.Root, s.OutAt - s.Pos, Art.ItemColor[(int)s.OutItem], false);
             if (s.Produces)
             {
                 v.InPile = Pile(v.Root, s.InItem, s.InCap, -1.05f);
@@ -304,6 +321,16 @@ namespace FS
             }
             v.Root.gameObject.SetActive(s.Unlocked);
             return v;
+        }
+
+        /// <summary>Boca no chao: anel da zona (Balance.MouthRadius) e seta apontando para a estacao (entra) ou para fora (sai).</summary>
+        static void Mouth(Transform root, V2 off, Color c, bool into)
+        {
+            var at = new Vector2(off.X, off.Y);
+            float ang = Mathf.Atan2(off.Y, off.X) * Mathf.Rad2Deg + (into ? 90f : -90f);   // Triangle aponta para +y
+            Art.NewSprite(root, into ? "BocaEntra" : "BocaSai", Art.Disc(), Art.ComAlfa(c, 0.18f), 1, at, Vector2.one * Balance.MouthRadius * 2f);
+            Art.NewSprite(root, "BocaAnel", Art.Ring(), Art.ComAlfa(c, 0.6f), 1, at, Vector2.one * Balance.MouthRadius * 2f);
+            Art.NewSprite(root, "BocaSeta", Art.Triangle(), Art.ComAlfa(c, 0.9f), 1, at, Vector2.one * 0.32f, ang);
         }
 
         /// <summary>Pilha visivel ao lado da estacao: 2 colunas, de baixo para cima.</summary>
@@ -586,6 +613,7 @@ namespace FS
         {
             bool corridor = _sim.Bought[(int)Upgrade.SideCorridor], teaser = corridor && !_sim.Bought[(int)Upgrade.Jewelry];
             _street.color = corridor ? StreetOpen : StreetShut;
+            _door.enabled = !corridor;
             _streetLabel.enabled = !corridor;
             if (!corridor) PlaceLabel(_streetLabel, new Vector3(Balance.WorkshopW + 0.6f, Balance.WorldH / 2f, 0f), Vector2.zero);
             if (_shopTeaser != null && _shopTeaser.transform.parent.gameObject.activeSelf != teaser) _shopTeaser.transform.parent.gameObject.SetActive(teaser);

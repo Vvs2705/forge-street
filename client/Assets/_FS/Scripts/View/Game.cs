@@ -335,11 +335,13 @@ namespace FS
         void OnApplicationFocus(bool focus) { if (!focus) Save(); }
         void OnApplicationQuit() { Save(); }
 
-        /// <summary>Fotos/teste (dev): -buy N compra os N primeiros upgrades na ordem do tier, -gold G, -px x,y.</summary>
+        /// <summary>Fotos/teste (dev): -buy N compra os produtivos entre os N primeiros upgrades (ordem do tier) e depois os luxos, -gold G, -px x,y.</summary>
         void DevArgs()
         {
             if (int.TryParse(Arg("-buy"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
-                for (int i = 0; i < Math.Min(n, Upgrades.Count); i++) _sim.Buy((Upgrade)i);
+                for (int pass = 0; pass < 2; pass++)   // o Buy recusa luxo antes da producao completa, e ha produtivos (Mineiro, Joalheiro 2) depois dos luxos
+                    for (int i = 0; i < Math.Min(n, Upgrades.Count); i++)
+                        if (Upgrades.IsLuxury(i) == (pass == 1)) _sim.Buy((Upgrade)i);
             if (int.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int g)) _sim.Gold = Math.Max(0, g);
             string[] px = (Arg("-px") ?? "").Split(',');
             if (px.Length == 2 && float.TryParse(px[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x)

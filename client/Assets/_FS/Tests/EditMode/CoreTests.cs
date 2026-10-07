@@ -208,12 +208,13 @@ namespace FS.Tests
         }
 
         [Test]
-        public void Curva_DeCusto_Dos23Upgrades_20ProdutivosELuxo()
+        public void Curva_DeCusto_Dos25Upgrades_22ProdutivosELuxo()
         {
-            Assert.AreEqual(20, Upgrades.ProductionCount);
-            Assert.AreEqual(23, Upgrades.Count);
-            Assert.AreEqual(23, Upgrades.All.Length);
-            Assert.AreEqual(23, Enum.GetValues(typeof(Upgrade)).Length);
+            Assert.AreEqual(22, Upgrades.ProductionCount);
+            Assert.AreEqual(25, Upgrades.Count);
+            Assert.AreEqual(25, Upgrades.All.Length);
+            Assert.AreEqual(25, Enum.GetValues(typeof(Upgrade)).Length);
+            Assert.AreEqual((3000, 2400), (Upgrades.Cost(Upgrade.Miner), Upgrades.Cost(Upgrade.Jeweler2)), "fase 4: medido na Leva 10 (BALANCE.md §14)");
             Assert.AreEqual((11000, 14000, 18000), (Upgrades.Cost(Upgrade.WorkshopFacade), Upgrades.Cost(Upgrade.WorkshopFloor), Upgrades.Cost(Upgrade.JewelryDecor)));
             Assert.AreEqual((690, 1515), (Upgrades.Cost(Upgrade.SideCorridor), Upgrades.Cost(Upgrade.Jewelry)), "2a area fora da formula (coordenador 2026-10-07)");
             Assert.AreEqual((2200, 5500, 9000), (Upgrades.Cost(Upgrade.Jeweler), Upgrades.Cost(Upgrade.JewelSpeed), Upgrades.Cost(Upgrade.JewelVitrine)), "fase 2: custos aprovados (AREA2_FASE2 §6)");
@@ -236,9 +237,12 @@ namespace FS.Tests
                 Assert.That(ratio, Is.InRange(1.15, 1.5), $"tier {i}: {Upgrades.Cost(i - 1)} -> {Upgrades.Cost(i)}");
             }
             Assert.Greater(Upgrades.Cost(Upgrade.Jewelry), Upgrades.Cost(Upgrade.SideCorridor), "a Joalheria custa mais que o Corredor que ela exige");
-            // todo pad acaba visivel: pre-requisitos sao alcancaveis comprando em ordem de tier
+            // todo pad acaba visivel: pre-requisitos sao alcancaveis comprando os produtivos em ordem de tier e depois os luxos
             var s = new Sim();
-            for (int i = 0; i < Upgrades.Count; i++)
+            var order = new List<int>();
+            for (int pass = 0; pass < 2; pass++)
+                for (int i = 0; i < Upgrades.Count; i++) if (Upgrades.IsLuxury(i) == (pass == 1)) order.Add(i);
+            foreach (int i in order)
             {
                 bool visible = false;
                 foreach (Pad p in s.Pads) visible |= p.Current(s) == i;
@@ -400,7 +404,7 @@ namespace FS.Tests
         public void Corredor_SoltaOJogadorNaRuaLateral()
         {
             var s = new Sim();
-            s.Player.Pos = new V2(4.5f, 4.5f);   // faixa livre ate o fim da rua (a carroca fica em y 3,0)
+            s.Player.Pos = new V2(4.5f, 6.5f);   // faixa da porta lateral: livre ate o fim da rua (parede solida fora das aberturas)
             Run(s, 5f, 1f, 0f);
             Assert.AreEqual(Balance.WorkshopW - 0.3f, s.Player.Pos.X, 1e-3f, "sem Corredor o jogador para na parede da oficina");
             Assert.AreEqual((int)Upgrade.SideCorridor, PadFor(s, Upgrade.SideCorridor).Current(s), "pad do Corredor a venda dentro da oficina");
@@ -529,7 +533,7 @@ namespace FS.Tests
             s.Stock[(int)Item.Jewel] = 2; s.JewelBench.In = 3; s.JewelBench.Out = 1;
             s.Player.Pos = new V2(13f, 6f);
             string text = s.Save(5);
-            StringAssert.Contains("up=00100000000000011000000\n", text);
+            StringAssert.Contains("up=0010000000000001100000000\n", text);
             StringAssert.Contains("stock=0,0,0,2\n", text);
             StringAssert.Contains("st8=3,1,", text, "bancada de joias = estacao 8");
             Sim b = Sim.Load(text);
@@ -560,7 +564,7 @@ namespace FS.Tests
             Assert.AreEqual(Balance.WorkshopW - 0.3f, s.Player.Pos.X, 1e-3f, "sem Corredor o save nao poe o jogador na rua");
             Assert.AreEqual((int)Upgrade.SideCorridor, PadFor(s, Upgrade.SideCorridor).Current(s));
             string again = s.Save(1001);
-            StringAssert.Contains("up=11111111000000000000000\n", again);
+            StringAssert.Contains("up=1111111100000000000000000\n", again);
             StringAssert.Contains("stock=5,1,0,0\n", again);
             Run(s, 60f);
             Assert.AreEqual(0, s.JewelQueue.Count, "nenhum nobre com a area fechada");
@@ -794,23 +798,24 @@ namespace FS.Tests
         static Sim CompleteProduction()
         {
             var s = Rich();
-            for (int i = 0; i < Upgrades.ProductionCount; i++) s.Buy((Upgrade)i);
+            for (int i = 0; i < Upgrades.Count; i++) if (!Upgrades.IsLuxury(i)) s.Buy((Upgrade)i);
             return s;
         }
 
         [Test]
-        public void Luxo_ExigeTodos20Produtivos_MesmoVitrineForaDaOrdem()
+        public void Luxo_ExigeTodosOsProdutivos_MesmoVitrineForaDaOrdem()
         {
-            for (int missing = 0; missing < Upgrades.ProductionCount; missing++)
+            for (int missing = 0; missing < Upgrades.Count; missing++)
             {
+                if (Upgrades.IsLuxury(missing)) continue;
                 var s = Rich();
                 if (missing != (int)Upgrade.JewelVitrine) s.Buy(Upgrade.JewelVitrine);
-                for (int i = 0; i < Upgrades.ProductionCount; i++) if (i != missing) s.Buy((Upgrade)i);
+                for (int i = 0; i < Upgrades.Count; i++) if (i != missing && !Upgrades.IsLuxury(i)) s.Buy((Upgrade)i);
                 Assert.IsFalse(s.ProductionComplete, "falta " + (Upgrade)missing);
                 foreach (Upgrade u in Luxury)
                 {
                     Assert.AreEqual(-1, PadFor(s, u).Current(s), "pad bloqueado: " + (Upgrade)missing);
-                    Assert.IsFalse(s.Buy(u), "nem compra direta burla os 20 produtivos");
+                    Assert.IsFalse(s.Buy(u), "nem compra direta burla os 22 produtivos");
                 }
             }
             var full = CompleteProduction();
@@ -820,7 +825,7 @@ namespace FS.Tests
             Assert.AreEqual(-1, full.Pads[19].Current(full));
             Assert.IsFalse(full.Buy(Upgrade.WorkshopFloor));
             Assert.IsFalse(full.Buy(Upgrade.JewelryDecor));
-            Assert.AreEqual((20, 10), (full.Pads.Count, full.Stations.Count), "pads anexados, estacoes preservadas");
+            Assert.AreEqual((22, 10), (full.Pads.Count, full.Stations.Count), "pads anexados, estacoes preservadas");
             Assert.AreEqual((6.5f, 3.2f), (full.Pads[17].Pos.X, full.Pads[17].Pos.Y));
             Assert.AreEqual((4.5f, 3.2f), (full.Pads[18].Pos.X, full.Pads[18].Pos.Y));
             Assert.AreEqual((14.2f, 5.1f), (full.Pads[19].Pos.X, full.Pads[19].Pos.Y));
@@ -902,7 +907,7 @@ namespace FS.Tests
                 Assert.IsFalse(s.Buy(u), "compra repetida e' no-op");
                 Assert.AreEqual(0, Count(s, Ev.Bought));
             }
-            Assert.AreEqual((333, 0, 23, 3), (s.Gold, s.GoldEarned, s.UpgradesBought, bought), "43000 de ralo, sem receita ou compra duplicada");
+            Assert.AreEqual((333, 0, 25, 3), (s.Gold, s.GoldEarned, s.UpgradesBought, bought), "43000 de ralo, sem receita ou compra duplicada");
         }
 
         [Test]
@@ -910,18 +915,18 @@ namespace FS.Tests
         {
             const string old = "v=1\nt=3600\ngold=7000\nup=11111111111111111110\npads=0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,450,\nstock=2,3,1,4\nsold=200,40,30,10\nms=2,2,1,2\nema=17\nsaved=500\nclaim=400\npx=12,9\n";
             Sim s = Sim.Load(old);
-            Assert.AreEqual((19, 20, 450), (s.UpgradesBought, s.Pads.Count, s.Pads[16].Paid));
+            Assert.AreEqual((19, 22, 450), (s.UpgradesBought, s.Pads.Count, s.Pads[16].Paid));
             Assert.IsFalse(s.ProductionComplete);
             foreach (Upgrade u in Luxury) { Assert.IsFalse(s.Bought[(int)u]); Assert.AreEqual(0, PadFor(s, u).Paid); }
             Assert.AreEqual((2, 3, 1, 4), (s.Stock[2], s.Stock[3], s.Stock[4], s.Stock[5]));
-            s.Buy(Upgrade.JewelVitrine); s.Buy(Upgrade.WorkshopFacade); s.Buy(Upgrade.WorkshopFloor);
+            s.Buy(Upgrade.JewelVitrine); s.Buy(Upgrade.Miner); s.Buy(Upgrade.Jeweler2); s.Buy(Upgrade.WorkshopFacade); s.Buy(Upgrade.WorkshopFloor);
             s.Pads[19].Paid = 750;
             s.Pads[16].Paid = 0;
             string text = s.Save(501);
-            StringAssert.Contains("up=11111111111111111111110\n", text);
+            StringAssert.Contains("up=1111111111111111111111011\n", text);
             Sim again = Sim.Load(text);
             Assert.AreEqual(text, again.Save(501), "flags, ouro, marcos e pad parcial fazem roundtrip estavel");
-            Assert.AreEqual((22, 750, (int)Upgrade.JewelryDecor), (again.UpgradesBought, again.Pads[19].Paid, again.Pads[19].Current(again)));
+            Assert.AreEqual((24, 750, (int)Upgrade.JewelryDecor), (again.UpgradesBought, again.Pads[19].Paid, again.Pads[19].Current(again)));
             Assert.AreEqual((400L, 501L), (again.LastClaim, again.SavedAt));
         }
 
@@ -950,13 +955,13 @@ namespace FS.Tests
             CollectionAssert.AreEqual(plain.SoldItems, luxury.SoldItems);
             Assert.AreEqual((plain.Gold, plain.GoldEarned, plain.Sales, plain.ClientsLost, plain.ClientsTurnedAway, plain.RateEma),
                             (luxury.Gold, luxury.GoldEarned, luxury.Sales, luxury.ClientsLost, luxury.ClientsTurnedAway, luxury.RateEma));
-            Assert.AreEqual(4, luxury.Workers.Count, "luxo nao contrata");
+            Assert.AreEqual(6, luxury.Workers.Count, "luxo nao contrata (4 ajudantes + Mineiro + Joalheiro 2)");
         }
 
         [Test]
         public void Offline_IgnoraLuxo_TetoProdutivo18000_ClaimMaxIdempotente()
         {
-            int[] bought = { 0, 11, 17, 20 }, expected = { 100, 1380, 4400, 18000 };
+            int[] bought = { 0, 11, 17, 20, Upgrades.Count }, expected = { 100, 1380, 4400, 4800, 18000 };   // 20 = falta o par da fase 4: 2x Joalheiro 2
             for (int j = 0; j < bought.Length; j++)
             {
                 var s = new Sim(); s.RateEma = 100;
@@ -997,11 +1002,367 @@ namespace FS.Tests
             Assert.AreEqual((int)Upgrade.Jeweler, PadFor(s, Upgrade.Jeweler).Current(s), "pad novo visivel (Joalheria comprada) e zerado");
             Assert.AreEqual(13f, s.Player.Pos.X, 0.01f);
             string again = s.Save(1001);
-            StringAssert.Contains("up=11111111111111111000000\n", again);
+            StringAssert.Contains("up=1111111111111111100000000\n", again);
             StringAssert.Contains("ms=0,0,0,0\n", again);
             Run(s, 0.1f);
             CollectionAssert.AreEqual(new[] { 0, 1, 0, 0 }, s.Chests.ConvertAll(c => c.State),
                 "783 vendas: o bau de 50 aparece no 1o tick (o de 200 espera ele abrir; espadas por item contam do zero)");
+        }
+
+        // ------------------------------------------------------------------ fase 5: paciencia por item, fisica e bocas (docs/FASE5_FISICA_PACIENCIA.md)
+
+        [Test]
+        public void Paciencia_PorItem_ProporcionalAProducaoInicial()
+        {
+            Assert.AreEqual((57f, 76.5f, 57f, 84f), (Balance.PatienceFor(Item.Sword), Balance.PatienceFor(Item.Shield), Balance.PatienceFor(Item.Tool), Balance.PatienceFor(Item.Jewel)),
+                "30 + 3 x (fornalha 4 s x lingotes + bancada 5 s x multiplicador)");
+            var s = new Sim();
+            s.Buy(Upgrade.Shields); s.Buy(Upgrade.Tools); s.Buy(Upgrade.SideCorridor); s.Buy(Upgrade.Jewelry);
+            var seen = new HashSet<Item>();
+            float shieldIn = -1f, shieldOut = -1f;
+            for (float t = 0f; t < 120f; t += Dt)
+            {
+                s.Tick(Dt, 0f, 0f);
+                foreach (Client c in s.Queue) { seen.Add(c.Want); Assert.AreEqual(Balance.PatienceFor(c.Want), c.MaxPatience, "fila do balcao: paciencia do proprio item"); }
+                foreach (Client c in s.JewelQueue) { seen.Add(c.Want); Assert.AreEqual(Balance.PatienceFor(Item.Jewel), c.MaxPatience); }
+                foreach (SimEvent e in s.Events)
+                {
+                    if (e.A != (int)Item.Shield) continue;
+                    if (e.Kind == Ev.ClientArrived && shieldIn < 0f) shieldIn = s.Time;
+                    if (e.Kind == Ev.ClientLeft && e.B == 0 && shieldOut < 0f) shieldOut = s.Time;
+                }
+            }
+            Assert.AreEqual(4, seen.Count, "espada, escudo, ferramenta e joia passaram pelas filas");
+            Assert.AreEqual(Balance.PatienceFor(Item.Shield), shieldOut - shieldIn, 0.1f, "o 1o cliente de escudo, sem escudo, cansa em 76,5 s");
+        }
+
+        /// <summary>Todos os corpos possiveis: estacoes desbloqueadas, loja e a decoracao inteira (luxo comprado).</summary>
+        static Sim AllBodies()
+        {
+            var s = CompleteProduction();
+            foreach (Upgrade u in Luxury) s.Buy(u);
+            s.Workers.Clear();
+            return s;
+        }
+
+        /// <summary>Menor distancia de `p` a um corpo solido (0 = dentro).</summary>
+        static float Inside(Sim s, V2 p)
+        {
+            float worst = float.MaxValue;
+            foreach (Box b in s.Solids) worst = Math.Min(worst, b.Dist(p));
+            return worst;
+        }
+
+        [Test]
+        public void Fisica_EmpurrandoContraQualquerCorpo_NuncaEntra()
+        {
+            var s = AllBodies();
+            Assert.AreEqual(s.Stations.Count + Balance.Obstacles.Length, s.Solids.Count, "10 estacoes + carroca, 3 segmentos da parede, 4 pedestais e 2 postes");
+            var dirs = new[] { new V2(1f, 0f), new V2(-1f, 0f), new V2(0f, 1f), new V2(0f, -1f), new V2(0.7f, 0.7f), new V2(-0.7f, 0.7f), new V2(0.7f, -0.7f), new V2(-0.7f, -0.7f) };
+            foreach (Box b in s.Solids.ToArray())
+                foreach (V2 d in dirs)
+                {
+                    s.Player.Pos = b.Pos + d * 1.5f;
+                    for (int i = 0; i < 90; i++)
+                    {
+                        s.Tick(Dt, -d.X, -d.Y);
+                        Assert.GreaterOrEqual(Inside(s, s.Player.Pos), Balance.CharRadius - 1e-3f, $"empurrando {d} contra o corpo em {b.Pos}: dentro em {s.Player.Pos}");
+                    }
+                }
+        }
+
+        [Test]
+        public void Fisica_DeslizaNaQuina_EAjudanteContornaEstacaoNoCaminho()
+        {
+            var s = new Sim();
+            s.Buy(Upgrade.Anvil2); s.Buy(Upgrade.Furnace2);
+            Box b = s.FurnaceB.Body;
+            s.Player.Pos = new V2(3.2f, 5.6f);   // a esquerda da Fornalha 2, indo para a direita e um pouco para cima
+            Run(s, 1.5f, 1f, 0.4f);
+            Assert.Greater(s.Player.Pos.X, b.Pos.X + b.Half.X, "deslizou pela face e contornou a quina (sem deslize parava em x 3,6)");
+            Assert.GreaterOrEqual(b.Dist(s.Player.Pos), Balance.CharRadius - 1e-3f);
+            // ajudante encostado embaixo do centro da fornalha, alvo exatamente atras dela: contorna e chega
+            var w = new Carrier { Pos = new V2(b.Pos.X, b.Pos.Y - b.Half.Y - Balance.CharRadius), Speed = Balance.WorkerSpeed };
+            V2 target = new V2(b.Pos.X, b.Pos.Y + b.Half.Y + 1f);
+            bool arrived = false;
+            for (int i = 0; i < 300 && !arrived; i++)
+            {
+                arrived = s.MoveTowards(w, target, Dt, Balance.WorkerReach);
+                Assert.GreaterOrEqual(Inside(s, w.Pos), Balance.CharRadius - 1e-3f, "ajudante nunca dentro de um corpo");
+            }
+            Assert.IsTrue(arrived, $"ajudante contornou a fornalha e chegou (parou em {w.Pos})");
+        }
+
+        [Test]
+        public void Bocas_EntradaSoDeposita_SaidaSoRecolhe()
+        {
+            var s = new Sim();
+            s.FurnaceA.Out = 2;
+            s.Player.Item = Item.Ore; s.Player.Count = 3;
+            StandAt(s, s.FurnaceA.InAt, 2f);
+            Assert.AreEqual((0, 2), (s.Player.Count, s.FurnaceA.Out), "entrada: depositou os 3 e nao recolheu os 2 lingotes prontos");
+            int fornalha = s.FurnaceA.In + (s.FurnaceA.Busy ? 1 : 0);
+            s.Player.Item = Item.Ore; s.Player.Count = 3;
+            StandAt(s, s.FurnaceA.OutAt, 1f);
+            Assert.AreEqual((Item.Ore, 3), (s.Player.Item, s.Player.Count), "saida: com minerio na mao nao deposita");
+            Assert.AreEqual(fornalha, s.FurnaceA.In + (s.FurnaceA.Busy ? 1 : 0));
+            s.Player.Count = 0;
+            StandAt(s, s.FurnaceA.OutAt, 1f);
+            Assert.AreEqual((Item.Ingot, 2), (s.Player.Item, s.Player.Count), "saida: de maos vazias recolhe");
+            StandAt(s, s.FurnaceA.Pos + new V2(3f, 0f), 0.1f);
+            Assert.AreEqual(2, s.Player.Count, "longe das bocas nada acontece");
+        }
+
+        /// <summary>Tabela das bocas (API da view): lado da ENTRADA por estacao; a SAIDA e' o oposto. Deposito/balcoes: zona unica.</summary>
+        [Test]
+        public void Bocas_Tabela_LadosOpostos_ForaDeCorposEPads()
+        {
+            var s = AllBodies();
+            var side = new Dictionary<Station, V2>
+            {
+                { s.Deposit, new V2(0, 1) }, { s.FurnaceA, new V2(0, -1) }, { s.FurnaceB, new V2(-1, 0) }, { s.AnvilA, new V2(0, -1) }, { s.AnvilB, new V2(-1, 0) },
+                { s.ShieldBench, new V2(-1, 0) }, { s.ToolBench, new V2(-1, 0) }, { s.Counter, new V2(0, -1) }, { s.JewelBench, new V2(0, -1) }, { s.JewelShop, new V2(0, -1) },
+            };
+            foreach (Station st in s.Stations)
+            {
+                V2 d = st.InAt - st.Pos;
+                Assert.AreEqual((Math.Sign(side[st].X), Math.Sign(side[st].Y)), (Math.Sign(Math.Round(d.X, 3)), Math.Sign(Math.Round(d.Y, 3))), st.Name + ": lado da entrada");
+                if (st.Produces) Assert.IsTrue(At(st.OutAt - st.Pos, d * -1f), st.Name + ": saida no lado oposto");
+                else Assert.IsTrue(At(st.OutAt, st.InAt), st.Name + ": zona unica");
+                foreach (V2 m in new[] { st.InAt, st.OutAt })
+                {
+                    Assert.AreEqual(Balance.CharRadius, st.Body.Dist(m), 1e-4f, st.Name + ": boca = encostado na face");
+                    Assert.GreaterOrEqual(Inside(s, m), Balance.CharRadius - 1e-4f, st.Name + ": boca fora de outro corpo");
+                    foreach (Pad p in s.Pads)
+                        if (!At(p.Pos, st.Pos)) Assert.GreaterOrEqual(V2.Dist(m, p.Pos), Balance.MouthRadius + Balance.PadRadius, $"{st.Name}: zona da boca encosta no pad {p.Chain[0]}");
+                    foreach (Station o in s.Stations)
+                        if (o != st) Assert.Greater(Math.Min(V2.Dist(m, o.InAt), V2.Dist(m, o.OutAt)), 2f * Balance.MouthRadius, $"{st.Name}: zona sobreposta a de {o.Name}");
+                }
+            }
+        }
+
+        [Test]
+        public void Fila_VagasEPadsEBaus_ForaDosCorpos()
+        {
+            var s = AllBodies();
+            // vaga = onde o cliente pisa: nao pode cair DENTRO de um corpo (a da compra direta do balcao, x 9,6, fica na quina da parede)
+            bool Within(V2 p) => s.Solids.Exists(b => Math.Abs(p.X - b.Pos.X) < b.Half.X && Math.Abs(p.Y - b.Pos.Y) < b.Half.Y);
+            for (int i = 0; i <= Balance.QueueCap1; i++) Assert.IsFalse(Within(s.ClientSlot(i)), $"vaga {i} do balcao");
+            for (int i = 0; i <= Balance.JewelQueueCapUp; i++) Assert.IsFalse(Within(s.JewelSlot(i)), $"vaga {i} da loja de joias");
+            foreach (Pad p in s.Pads)   // pad no lugar de estacao some quando ela abre
+                if (s.Stations.TrueForAll(st => !At(st.Pos, p.Pos))) Assert.GreaterOrEqual(Inside(s, p.Pos), Balance.CharRadius, $"pad {p.Chain[0]} pisavel");
+            foreach (Chest c in s.Chests) Assert.GreaterOrEqual(Inside(s, c.Pos), Balance.CharRadius, "bau pisavel");
+            Assert.GreaterOrEqual(Inside(s, Sim.HireSpot), Balance.CharRadius, "ajudante nasce fora dos corpos");
+        }
+
+        [Test]
+        public void Ajudantes_CompletamCiclos_10Min_SemTravar()
+        {
+            var s = CompleteProduction();
+            s.Player.Pos = new V2(4.5f, 3.5f);
+            int n = s.Workers.Count;
+            var moved = new int[n];
+            var last = new int[n];
+            for (int k = 0; k < n; k++) last[k] = s.Workers[k].Count;
+            int sales = s.Sales;
+            for (int minute = 1; minute <= 10; minute++)
+            {
+                Array.Clear(moved, 0, n);
+                for (float t = 0f; t < 60f; t += Dt)
+                {
+                    s.Tick(Dt, 0f, 0f);
+                    for (int k = 0; k < n; k++)
+                    {
+                        Carrier w = s.Workers[k];
+                        if (w.Count != last[k]) { moved[k]++; last[k] = w.Count; }
+                        Assert.GreaterOrEqual(Inside(s, w.Pos), Balance.CharRadius - 1e-3f, $"ajudante {k} (papel {w.Role}) dentro de um corpo");
+                    }
+                }
+                for (int k = 0; k < n; k++) Assert.Greater(moved[k], 4, $"minuto {minute}: ajudante {k} (papel {s.Workers[k].Role}) travou");
+            }
+            Assert.Greater(s.Sales - sales, 300, "jogador parado: os ajudantes fecham o ciclo e vendem");
+        }
+
+        [Test]
+        public void Save_JogadorDentroDeUmCorpo_SaiPelaBorda()
+        {
+            // save de antes da fisica: o jogador parado no centro da fornalha (antes era o lugar de interagir)
+            const string old = "v=1\nt=600\ngold=190\nup=11111111000000000000000\npx=1.50,5.50\n";
+            Sim s = Sim.Load(old);
+            Assert.GreaterOrEqual(Inside(s, s.Player.Pos), Balance.CharRadius - 1e-3f, $"saiu do corpo (em {s.Player.Pos})");
+            Assert.AreEqual(1.5f, s.Player.Pos.X, 1e-3f, "sai pelo lado mais perto (empate: por baixo)");
+            Assert.AreEqual(s.Save(1), Sim.Load(s.Save(1)).Save(1), "save estavel depois de sair");
+        }
+
+        // ------------------------------------------------------------------ fase 4: Mineiro + Joalheiro 2 (docs/FASE4_MINERIO.md)
+
+        [Test]
+        public void Requisitos_Joalheiro_Mineiro_Joalheiro2_ProdutivosAnexados()
+        {
+            Assert.AreEqual(((int)Upgrade.Jeweler, (int)Upgrade.Miner), (Upgrades.All[(int)Upgrade.Miner].Requires, Upgrades.All[(int)Upgrade.Jeweler2].Requires));
+            Assert.IsFalse(Upgrades.IsLuxury((int)Upgrade.Miner) || Upgrades.IsLuxury((int)Upgrade.Jeweler2), "produtivos, mesmo com ID depois dos luxos");
+            Assert.AreEqual((23, 24), ((int)Upgrade.Miner, (int)Upgrade.Jeweler2), "anexados ao fim do enum");
+            Assert.AreEqual((20, 21), (PadFor(new Sim(), Upgrade.Miner).Slot, PadFor(new Sim(), Upgrade.Jeweler2).Slot), "pads anexados ao fim");
+            var s = Rich();
+            s.Buy(Upgrade.SideCorridor); s.Buy(Upgrade.Jewelry);
+            Assert.AreEqual((-1, -1), (PadFor(s, Upgrade.Miner).Current(s), PadFor(s, Upgrade.Jeweler2).Current(s)), "sem Joalheiro: os dois escondidos");
+            s.Buy(Upgrade.Jeweler);
+            Assert.AreEqual(((int)Upgrade.Miner, -1), (PadFor(s, Upgrade.Miner).Current(s), PadFor(s, Upgrade.Jeweler2).Current(s)), "Joalheiro abre o Mineiro");
+            s.Buy(Upgrade.Miner);
+            Assert.AreEqual((-1, (int)Upgrade.Jeweler2), (PadFor(s, Upgrade.Miner).Current(s), PadFor(s, Upgrade.Jeweler2).Current(s)), "Mineiro abre o Joalheiro 2");
+            Assert.AreEqual(new V2(0.5f, 3.5f).ToString(), PadFor(s, Upgrade.Miner).Pos.ToString(), "parede esquerda entre Deposito e Fornalha");
+            Assert.AreEqual(new V2(12f, 3.5f).ToString(), PadFor(s, Upgrade.Jeweler2).Pos.ToString(), "rua lateral, embaixo da Joalheria");
+        }
+
+        [Test]
+        public void Luxo_EsperaOs22Produtivos_InclusiveMineiroEJoalheiro2()
+        {
+            var s = Rich();
+            for (int i = 0; i <= (int)Upgrade.JewelVitrine; i++) s.Buy((Upgrade)i);
+            Assert.IsFalse(s.ProductionComplete, "os 20 de antes nao bastam");
+            Assert.AreEqual(-1, PadFor(s, Upgrade.WorkshopFacade).Current(s));
+            Assert.IsFalse(s.Buy(Upgrade.WorkshopFacade));
+            Assert.AreEqual(2 * Upgrades.Cost(Upgrade.Jeweler2), s.OfflineMaxGold(), "teto offline: 2x o menor travado (Joalheiro 2)");
+            s.Buy(Upgrade.Miner);
+            Assert.IsFalse(s.ProductionComplete || s.Buy(Upgrade.WorkshopFacade), "so o Mineiro tambem nao");
+            s.Buy(Upgrade.Jeweler2);
+            Assert.IsTrue(s.ProductionComplete);
+            Assert.AreEqual(18000, s.OfflineMaxGold(), "producao completa: 2x o produtivo mais caro (Vitrine de joias)");
+            Assert.AreEqual((int)Upgrade.WorkshopFacade, PadFor(s, Upgrade.WorkshopFacade).Current(s));
+            Assert.IsTrue(s.Buy(Upgrade.WorkshopFacade));
+        }
+
+        [Test]
+        public void Mineiro_Papel0Extra_SoCarregaMinerioAsFornalhas()
+        {
+            var s = new Sim();
+            s.Buy(Upgrade.Furnace2); s.Buy(Upgrade.SideCorridor); s.Buy(Upgrade.Jewelry); s.Buy(Upgrade.Jeweler);
+            s.Buy(Upgrade.Miner);
+            CollectionAssert.AreEqual(new[] { 3, 0 }, Roles(s), "Mineiro = papel 0, mesmo sem o Ajudante 1");
+            s.Buy(Upgrade.Helper1);
+            CollectionAssert.AreEqual(new[] { 3, 0, 0 }, Roles(s), "com o Ajudante 1: dois papeis 0");
+            Carrier miner = s.Workers[1];
+            Assert.AreEqual((Balance.WorkerSpeed, Balance.WorkerCap), (miner.Speed, miner.Cap));
+            int ore = 0, wrong = 0;
+            for (float t = 0f; t < 60f; t += Dt)
+            {
+                s.Tick(Dt, 0f, 0f);
+                foreach (SimEvent e in s.Events)
+                {
+                    if (e.B != 0 || (e.Kind != Ev.Picked && e.Kind != Ev.Deposited)) continue;
+                    bool ok = e.A == (int)Item.Ore && (e.Kind == Ev.Picked ? At(e.Pos, s.Deposit.Pos) : At(e.Pos, s.FurnaceA.Pos) || At(e.Pos, s.FurnaceB.Pos));
+                    if (ok) ore++; else wrong++;
+                }
+                Assert.IsTrue(miner.Count == 0 || miner.Item == Item.Ore, "o Mineiro so carrega minerio");
+            }
+            Assert.AreEqual(0, wrong, "papel 0 nunca pega/entrega outra coisa");
+            Assert.Greater(ore, 30, "os dois papeis 0 levaram minerio do deposito as fornalhas");
+            s.Buy(Upgrade.HelperSpeed);
+            Assert.AreEqual((Balance.WorkerSpeedUp, Balance.WorkerCapUp), (miner.Speed, miner.Cap), "Ajudantes ageis valem para o Mineiro");
+            CollectionAssert.AreEqual(new[] { 0, 3, 0 }, Roles(Sim.Load(s.Save(1))), "do save: um ajudante por upgrade de contratacao");
+        }
+
+        [Test]
+        public void Joalheiro2_Papel3Extra_AbasteceAJoalheriaELevaJoias()
+        {
+            var s = new Sim();
+            s.Buy(Upgrade.SideCorridor); s.Buy(Upgrade.Jewelry); s.Buy(Upgrade.Jeweler); s.Buy(Upgrade.Miner); s.Buy(Upgrade.Jeweler2);
+            CollectionAssert.AreEqual(new[] { 3, 0, 3 }, Roles(s), "Joalheiro 2 = 2o papel 3");
+            var moves = new int[3]; var last = new int[3];
+            for (float t = 0f; t < 120f; t += Dt)
+            {
+                s.Tick(Dt, 0f, 0f);
+                for (int k = 0; k < 3; k++)
+                {
+                    Carrier w = s.Workers[k];
+                    if (w.Count != last[k]) { moves[k]++; last[k] = w.Count; }
+                    if (w.Role == 3) Assert.IsTrue(w.Count == 0 || w.Item == Item.Ingot || w.Item == Item.Jewel, "joalheiro so leva lingote e joia");
+                }
+            }
+            Assert.Greater(moves[0], 5, "Joalheiro trabalha");
+            Assert.Greater(moves[2], 5, "Joalheiro 2 trabalha");
+            Assert.Greater(s.SoldItems[(int)Item.Jewel], 3, "joias chegaram a loja e foram vendidas, jogador parado");
+            Assert.AreEqual(0, s.ToolBench.In + s.AnvilB.In, "nao abastece outras bancadas");
+        }
+
+        [Test]
+        public void Save_Antigo23Flags_CarregaComOParNovoTravadoEDevolveParcialDoLuxo()
+        {
+            // save da v0.3: 20 produtivos + Fachada + Piso, 20 pads, Joalheria real com 750 pagos
+            const string v03 = "v=1\nt=4800\ngold=9000\nup=11111111111111111111110\npads=0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,750,\nstock=2,3,1,4\nsold=300,60,40,90\nms=2,2,2,2\nema=17\nsaved=900\nclaim=800\npx=12,9\n";
+            Sim s = null;
+            Assert.DoesNotThrow(() => s = Sim.Load(v03));
+            Assert.AreEqual((22, 22), (s.UpgradesBought, s.Pads.Count));
+            Assert.IsTrue(s.Bought[(int)Upgrade.WorkshopFacade] && s.Bought[(int)Upgrade.WorkshopFloor], "luxo comprado continua comprado (decoracao fica)");
+            Assert.IsFalse(s.Bought[(int)Upgrade.Miner] || s.Bought[(int)Upgrade.Jeweler2]);
+            Assert.IsFalse(s.ProductionComplete, "o par novo reabre a producao");
+            Assert.AreEqual(((int)Upgrade.Miner, -1, -1), (PadFor(s, Upgrade.Miner).Current(s), PadFor(s, Upgrade.Jeweler2).Current(s), PadFor(s, Upgrade.JewelryDecor).Current(s)));
+            Assert.AreEqual((9750, 0), (s.Gold, PadFor(s, Upgrade.JewelryDecor).Paid), "o parcial do luxo escondido volta para o ouro, nao some");
+            CollectionAssert.AreEqual(new[] { 0, 1, 2, 3 }, Roles(s));
+            StringAssert.Contains("up=1111111111111111111111000\n", s.Save(901));
+        }
+
+        [Test]
+        public void Pad_MarteloVeloz_LongeDaBigornaDasBocasEDasLinhas()
+        {
+            var s = AllBodies();
+            Pad hammer = PadFor(s, Upgrade.HammerSpeed);
+            Assert.AreEqual((10, new V2(8.4f, 3.4f).ToString()), (hammer.Slot, hammer.Pos.ToString()), "mesmo indice (save), posicao nova");
+            foreach (Station st in s.Stations)
+                Assert.GreaterOrEqual(V2.Dist(hammer.Pos, st.Pos), 1.5f, $"rotulo do pad longe do rotulo de {st.Name} (era 1,0 m da Bigorna)");
+            // fora das linhas boca -> boca (por onde o jogador anda entre estacoes): a sugestao (8,4; 7,5) ficava entre as saidas de Ferramentas e Escudos
+            var mouths = new List<V2>();
+            foreach (Station st in s.Stations) { mouths.Add(st.InAt); mouths.Add(st.OutAt); }
+            for (int i = 0; i < mouths.Count; i++)
+                for (int j = i + 1; j < mouths.Count; j++)
+                    Assert.Greater(SegDist(hammer.Pos, mouths[i], mouths[j]), Balance.PadRadius, $"pad na linha {mouths[i]} -> {mouths[j]}");
+        }
+
+        /// <summary>FASE5 §2 (decisao do coordenador): parede direita da oficina solida, so passa pela porta lateral e pelo arco.</summary>
+        [Test]
+        public void Parede_SoPassaPelaPortaEPeloArco_AjudanteUsaAAbertura()
+        {
+            Assert.AreEqual((9.0f, 9.6f), (Balance.SideWallX0, Balance.SideWallX1));
+            CollectionAssert.AreEqual(new[] { 5.6f, 7.4f, 11.6f, 13.4f }, Balance.SideWallOpenings, "porta lateral e arco (pares y0, y1)");
+            var s = new Sim();
+            s.Buy(Upgrade.SideCorridor);
+            foreach (float y in new[] { 2f, 4f, 9.5f, 11f, 13.6f })   // fora das aberturas: para na parede
+            {
+                s.Player.Pos = new V2(7.5f, y);
+                Run(s, 2f, 1f, 0f);
+                Assert.AreEqual(Balance.SideWallX0 - Balance.CharRadius, s.Player.Pos.X, 0.01f, $"y {y}: parede solida");
+            }
+            foreach (float y in new[] { 6.5f, 12.5f })   // nas aberturas: atravessa
+            {
+                s.Player.Pos = new V2(7.5f, y);
+                Run(s, 2f, 1f, 0f);
+                Assert.Greater(s.Player.Pos.X, 12f, $"y {y}: passou pela abertura");
+            }
+            // ajudante da oficina para a rua com o alvo atras da parede: vai pela abertura de menor caminho e chega
+            foreach (V2 from in new[] { new V2(8.3f, 1.5f), new V2(8.0f, 10f), new V2(4.5f, 12f) })
+            {
+                var w = new Carrier { Pos = from, Speed = Balance.WorkerSpeed };
+                V2 target = new V2(12f, 3.5f);
+                bool arrived = false; float minY = 99f, maxY = -99f;
+                for (int i = 0; i < 900 && !arrived; i++)
+                {
+                    arrived = s.MoveTowards(w, target, Dt, Balance.WorkerReach);
+                    if (Math.Abs(w.Pos.X - 9.3f) < 0.3f) { minY = Math.Min(minY, w.Pos.Y); maxY = Math.Max(maxY, w.Pos.Y); }
+                    Assert.GreaterOrEqual(Inside(s, w.Pos), Balance.CharRadius - 1e-3f);
+                }
+                Assert.IsTrue(arrived, $"de {from}: chegou (parou em {w.Pos})");
+                Assert.IsTrue(minY >= 5.6f && maxY <= 7.4f, $"de {from}: cruzou x 9,3 pela porta lateral (y {minY}-{maxY})");
+            }
+            Assert.AreEqual(new V2(9.3f, 11.95f).ToString(), Sim.Via(new V2(4.5f, 12.35f), new V2(12f, 10.85f)).ToString(), "balcao -> loja de joias: pelo arco");
+            Assert.AreEqual(new V2(9.3f, 5.95f).ToString(), Sim.Via(new V2(5.4f, 5.5f), new V2(12f, 5.85f)).ToString(), "fornalha 2 -> joalheria: pela porta");
+            Assert.AreEqual(new V2(12f, 5.85f).ToString(), Sim.Via(new V2(10f, 2f), new V2(12f, 5.85f)).ToString(), "mesmo lado: direto");
+        }
+
+        static float SegDist(V2 p, V2 a, V2 b)
+        {
+            V2 ab = b - a; float l2 = ab.X * ab.X + ab.Y * ab.Y;
+            float t = l2 < 1e-6f ? 0f : Math.Max(0f, Math.Min(1f, ((p.X - a.X) * ab.X + (p.Y - a.Y) * ab.Y) / l2));
+            return V2.Dist(p, a + ab * t);
         }
     }
 }

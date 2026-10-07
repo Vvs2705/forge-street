@@ -38,7 +38,10 @@ namespace FS.Core
         JewelVitrine,    // vitrine de joias: fila 3 -> 5, nobres x0,7
         WorkshopFacade, // luxo, anexado: entrada nobre, sem bonus de producao
         WorkshopFloor,  // luxo: piso de oficina
-        JewelryDecor    // luxo: adornos da joalheria
+        JewelryDecor,   // luxo: adornos da joalheria
+        // fase 4 (docs/FASE4_MINERIO.md): PRODUTIVOS anexados depois dos luxos; saves de 15/17/20/23 flags continuam validos
+        Miner,          // mineiro: 2o ajudante papel 0 (deposito -> fornalhas)
+        Jeweler2        // joalheiro 2: 2o ajudante papel 3
     }
 
     /// <summary>Eventos de um tick, para a view (SFX, particulas, diario). A = item/upgrade/estacao, B = detalhe.
@@ -121,6 +124,7 @@ namespace FS.Core
         public const int JewelerCost = 2200, JewelSpeedCost = 5500, JewelVitrineCost = 9000;   // fase 2: decisao aprovada (BALANCE.md §10.7)
         public const int JewelPriceUp = 80;                     // Vitrine de joias: nobres pagam mais, sem mudar as outras linhas
         public const int WorkshopFacadeCost = 11000, WorkshopFloorCost = 14000, JewelryDecorCost = 18000;   // luxo: aprovado 2026-10-07 (BALANCE.md §11)
+        public const int MinerCost = 3000, Jeweler2Cost = 2400;   // fase 4: regra de retorno 8-12 min, varredura em BALANCE.md §14
         public const int OfflineCapSeconds = 7200; public const float OfflineFactor = 0.25f;   // raia B §5 + coordenador 2026-10-06: teto 2 h, 25% da taxa online
         public const float OfflineMaxNextUpgrades = 2f;         // e nunca mais que 2x o preco do upgrade mais barato ainda travado
         public const float RateTau = 60f;                       // s da media movel de ouro/s (taxa online)
@@ -133,15 +137,23 @@ namespace FS.Core
         public static float PatienceFor(Item item) => PatienceBase + PatiencePerSecond *
             (FurnaceTime0 * IngotsPer[(int)item] + HammerTime0 * (item == Item.Shield ? ShieldTimeMul : item == Item.Jewel ? JewelTimeMul : 1f));
 
+        /// <summary>Parede direita da oficina (x 9,0-9,6, y 0-14), solida, com duas aberturas em pares y0, y1: a porta lateral na
+        /// altura da joalheria (5,6-7,4) e o arco (11,6-13,4). As pontas dos segmentos sao os batentes (o arco nao tem poste solto).</summary>
+        public const float SideWallX0 = 9.0f, SideWallX1 = 9.6f;
+        public static readonly float[] SideWallOpenings = { 5.6f, 7.4f, 11.6f, 13.4f };
+
+        static ObstacleDef Wall(float y0, float y1) => new ObstacleDef("parede", (SideWallX0 + SideWallX1) / 2f, (y0 + y1) / 2f, (SideWallX1 - SideWallX0) / 2f, (y1 - y0) / 2f);
+
         /// <summary>
-        /// Decoracao solida (FASE5 §2), mesma geometria da view: carroca e postes do arco sempre; pedestais da Joalheria real e
-        /// postes da Fachada nobre so depois da compra. Medidas = pe do sprite no chao (WorldView: CartPos, ArchPos, Pedestals, Fachada).
+        /// Decoracao solida (FASE5 §2), mesma geometria da view: carroca e os 3 segmentos da parede sempre; pedestais da Joalheria
+        /// real e postes da Fachada nobre so depois da compra. Medidas = pe do sprite no chao (WorldView: CartPos, Pedestals, Fachada).
         /// </summary>
         public static readonly ObstacleDef[] Obstacles =
         {
             new ObstacleDef("carroca", 14.2f, 3.0f, 0.65f, 0.40f),
-            new ObstacleDef("arco", 8.4f, 12.6f, 0.15f, 0.12f),
-            new ObstacleDef("arco", 9.6f, 12.6f, 0.15f, 0.12f),
+            Wall(0f, SideWallOpenings[0]),
+            Wall(SideWallOpenings[1], SideWallOpenings[2]),
+            Wall(SideWallOpenings[3], WorldH),
             new ObstacleDef("pedestal", 10.95f, 8.4f, 0.2f, 0.1f, (int)Upgrade.JewelryDecor),
             new ObstacleDef("pedestal", 13.05f, 8.4f, 0.2f, 0.1f, (int)Upgrade.JewelryDecor),
             new ObstacleDef("pedestal", 10.95f, 10.9f, 0.2f, 0.1f, (int)Upgrade.JewelryDecor),
@@ -182,7 +194,7 @@ namespace FS.Core
 
     public static class Upgrades
     {
-        public const int ProductionCount = 20, Count = 23;   // ProductionCount = quantos NAO sao luxo (os IDs nao precisam ser contiguos)
+        public const int ProductionCount = 22, Count = 25;   // ProductionCount = quantos NAO sao luxo (os IDs nao precisam ser contiguos)
 
         /// <summary>Marca por upgrade, nao por ID: um produtivo anexado depois dos luxos continua produtivo.</summary>
         public static bool IsLuxury(int u) => All[u].Luxury;
@@ -212,6 +224,8 @@ namespace FS.Core
             new UpgradeDef(Upgrade.WorkshopFacade, (int)Upgrade.JewelVitrine, "Fachada nobre", "Entrada dourada e bandeirolas", luxury: true),
             new UpgradeDef(Upgrade.WorkshopFloor, (int)Upgrade.WorkshopFacade, "Piso de oficina", "Ladrilhos para valorizar a oficina", luxury: true),
             new UpgradeDef(Upgrade.JewelryDecor, (int)Upgrade.WorkshopFloor, "Joalheria real", "Tapetes e adornos para a joalheria", luxury: true),
+            new UpgradeDef(Upgrade.Miner, (int)Upgrade.Jeweler, "Mineiro", "Mais um ajudante leva minério às fornalhas"),
+            new UpgradeDef(Upgrade.Jeweler2, (int)Upgrade.Miner, "Joalheiro 2", "Mais um ajudante na joalheria"),
         };
 
         /// <summary>custo(tier) = CostBase * CostGrowth^tier, arredondado ao multiplo de 5 (preco legivel no pad).</summary>
@@ -229,6 +243,8 @@ namespace FS.Core
                 case Upgrade.WorkshopFacade: return Balance.WorkshopFacadeCost;
                 case Upgrade.WorkshopFloor: return Balance.WorkshopFloorCost;
                 case Upgrade.JewelryDecor: return Balance.JewelryDecorCost;
+                case Upgrade.Miner: return Balance.MinerCost;
+                case Upgrade.Jeweler2: return Balance.Jeweler2Cost;
             }
             double c = Balance.CostBase * Math.Pow(Balance.CostGrowth, tier);
             return Math.Max(5, (int)(Math.Round(c / 5.0) * 5.0));

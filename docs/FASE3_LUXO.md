@@ -41,7 +41,9 @@ Bloquear pads de luxo até a produção completa, inclusive quando Vitrine de jo
 
 **2 e 3: fora desta raia.** A suíte dotnet com os testes de luxo do núcleo está verde (**43/43**, já com os preços vigentes). A prova vermelha desses testes, Unity EditMode, builds, autoplay e fotos não foram verificados por esta raia. Com os novos preços, o Unity EditMode precisa rodar de novo.
 
-## Pendência técnica
+## Pendência técnica — RESOLVIDA (Leva 9, 2026-10-07)
+
+**Resolvida na Leva 9:** a marca produtivo/luxo agora é por upgrade (`UpgradeDef.Luxury` / `Upgrades.IsLuxury`), com teste ([BALANCE.md §12](BALANCE.md)). Na Leva 10 ela foi usada de verdade: Mineiro (23) e Joalheiro 2 (24) entraram como produtivos depois dos luxos, e o save de 23 flags tem teste (`Save_Antigo23Flags_…`, [BALANCE.md §14](BALANCE.md)). O texto abaixo é o registro histórico.
 
 **IDs produtivos ≥ 23.** O core assume que os produtivos são os IDs contíguos 0..19 e os luxos 20..22: `Upgrades.ProductionCount`, `Pad.Current`, `Sim.Buy`, `ProductionComplete` e `CheapestLockedCost` (teto offline). Um upgrade produtivo futuro, como o 2º ajudante de minério se vencer o A/B, teria de ser anexado como ID 23 por causa do save, e então seria tratado como luxo: ficaria bloqueado até a produção completa, fora do teto offline e fora de `ProductionComplete`. Antes de anexar qualquer produtivo, o dono do core precisa de uma marca produtivo/luxo por upgrade (tabela ou flag em `UpgradeDef`), com teste de save antigo de 23 flags.
 

@@ -114,7 +114,8 @@ namespace FS.Core
 
         public readonly Station Deposit, FurnaceA, FurnaceB, AnvilA, AnvilB, ShieldBench, ToolBench, Counter, JewelBench, JewelShop;
         public static readonly V2 HireSpot = new V2(8.3f, 1.5f);
-        static readonly Upgrade[] HireBy = { Upgrade.Helper1, Upgrade.Helper2, Upgrade.Helper3, Upgrade.Jeweler };   // papel 0..3
+        static readonly Upgrade[] HireBy = { Upgrade.Helper1, Upgrade.Helper2, Upgrade.Helper3, Upgrade.Jeweler, Upgrade.Miner, Upgrade.Jeweler2 };
+        static readonly int[] HireRole = { 0, 1, 2, 3, 0, 3 };   // Mineiro = 2o papel 0, Joalheiro 2 = 2o papel 3 (FASE4_MINERIO)
 
         readonly float[] _clientT = { 0, 0, Balance.FirstClientAt, Balance.ClientInterval[3], Balance.ClientInterval[4], Balance.ClientInterval[5] };
         float _serveT, _serveJ, _convT, _padDwell;
@@ -149,16 +150,18 @@ namespace FS.Core
             Slot(4.5f, 0.6f, Upgrade.PlayerCapacity);
             Slot(2.8f, 0.6f, Upgrade.PlayerSpeed);
             Slot(0.5f, 7.8f, Upgrade.Conveyor);
-            Slot(0.5f, 9.5f, Upgrade.HammerSpeed);
+            Slot(8.4f, 3.4f, Upgrade.HammerSpeed);                    // era (0,5; 9,5): rotulo sobre o da Bigorna e corredor da fisica (FASE4 §3, BALANCE §14)
             Slot(6.5f, 13f, Upgrade.CounterCapacity);
             Slot(8.4f, 11.6f, Upgrade.SideCorridor);                 // 2a area, pads 12 e 13: lado direito da oficina, fora das linhas
             Slot(JewelBench.Pos.X, JewelBench.Pos.Y, Upgrade.Jewelry);
             Slot(14.2f, 8.5f, Upgrade.Jeweler);                      // fase 2, pads 14-16: rua lateral, fora da linha bancada -> loja (x=12)
-            Slot(10.2f, 6.5f, Upgrade.JewelSpeed);
+            Slot(14.2f, 6.8f, Upgrade.JewelSpeed);                   // era (10,2; 6,5): ficou na boca da porta lateral (FASE5 §2, BALANCE §13)
             Slot(14.2f, 11.5f, Upgrade.JewelVitrine);
-            Slot(6.5f, 3.2f, Upgrade.WorkshopFacade);               // luxo, pads 17-19: so depois dos 20 produtivos
+            Slot(6.5f, 3.2f, Upgrade.WorkshopFacade);               // luxo, pads 17-19: so depois de todos os produtivos
             Slot(4.5f, 3.2f, Upgrade.WorkshopFloor);
             Slot(14.2f, 5.1f, Upgrade.JewelryDecor);
+            Slot(0.5f, 3.5f, Upgrade.Miner);                         // fase 4, pads 20-21: parede esquerda entre Deposito e Fornalha
+            Slot(12f, 3.5f, Upgrade.Jeweler2);                       // rua lateral embaixo da Joalheria: longe das bocas, fila, bau e decoracao
             foreach (MilestoneDef m in Balance.Milestones) Chests.Add(new Chest { Index = Chests.Count, Pos = m.Pos, Gold = m.Gold, Label = m.Label });
             Recompute();
         }
@@ -260,9 +263,9 @@ namespace FS.Core
 
         /// <summary>
         /// Direcao (unitaria) de quem anda sozinho rumo a `target` (ajudante e bot; o jogador humano nao): encostado num corpo
-        /// que fica na frente da linha reta ate o alvo, anda pela face rumo a quina com o caminho mais curto ate o alvo. Sem
-        /// isso o empurrao so anula o passo e ele trava atras da estacao. A escolha nao oscila: andar para a quina escolhida
-        /// so encurta o caminho por ela.
+        /// que fica na frente da linha reta ate o alvo, contorna pelas quinas (caixa inflada pelo raio) no sentido de menor
+        /// caminho, que soma quina a quina ate o alvo ficar visivel. Sem isso o empurrao so anula o passo e ele trava atras da
+        /// estacao. Nao oscila: andar no sentido escolhido so encurta o caminho por ele (empate: anti-horario).
         /// </summary>
         public V2 Steer(V2 from, V2 target)
         {
@@ -272,17 +275,33 @@ namespace FS.Core
             float r = Balance.CharRadius;
             foreach (Box b in Solids)
             {
-                V2 n = from - b.Closest(from);
-                float len = n.Len;
-                if (len > r + 0.01f || len < 1e-5f || !Crosses(from, target, b.Pos, b.Half + new V2(r - 0.02f, r - 0.02f))) continue;
-                n = n * (1f / len);
-                V2 t = new V2(-n.Y, n.X), rel = from - b.Pos;
-                float ext = Math.Abs(t.X) * (b.Half.X + r) + Math.Abs(t.Y) * (b.Half.Y + r), at = rel.X * t.X + rel.Y * t.Y;
-                V2 plus = from + t * (ext - at), minus = from - t * (ext + at);   // fim da face nos dois sentidos
-                return V2.Dist(from, plus) + V2.Dist(plus, target) <= V2.Dist(from, minus) + V2.Dist(minus, target) ? t : t * -1f;
+                V2 n = from - b.Closest(from), shrunk = b.Half + new V2(r - 0.02f, r - 0.02f);
+                if (n.Len > r + 0.01f || !Crosses(from, target, b.Pos, shrunk)) continue;
+                V2 h = b.Half + new V2(r, r);
+                int face = Math.Abs(n.Y) >= Math.Abs(n.X) ? (n.Y < 0f ? 0 : 2) : (n.X > 0f ? 1 : 3);   // 0 baixo, 1 direita, 2 cima, 3 esquerda
+                V2 bestStep = d; float bestLen = float.MaxValue;
+                for (int turn = 1; turn <= 3; turn += 2)   // quinas em ordem anti-horaria; +1 = anti-horario, +3 = horario
+                {
+                    int i = turn == 1 ? (face + 1) % 4 : face;
+                    V2 step = Corner(b.Pos, h, i) - from;
+                    if (step.Len < 0.05f) step = Corner(b.Pos, h, (i + turn) % 4) - from;   // ja na quina: rumo a proxima
+                    float len = V2.Dist(from, Corner(b.Pos, h, i));
+                    for (int k = 0; k < 4 && Crosses(Corner(b.Pos, h, i), target, b.Pos, shrunk); k++)
+                    {
+                        int j = (i + turn) % 4;
+                        len += V2.Dist(Corner(b.Pos, h, i), Corner(b.Pos, h, j));
+                        i = j;
+                    }
+                    len += V2.Dist(Corner(b.Pos, h, i), target);
+                    if (len < bestLen) { bestLen = len; bestStep = step; }
+                }
+                return bestStep * (1f / bestStep.Len);
             }
             return d * (1f / dl);
         }
+
+        /// <summary>Quina `i` (0 baixo-esquerda, 1 baixo-direita, 2 cima-direita, 3 cima-esquerda) da caixa de centro `c` e meia-medida `h`.</summary>
+        static V2 Corner(V2 c, V2 h, int i) => new V2(i == 1 || i == 2 ? c.X + h.X : c.X - h.X, i >= 2 ? c.Y + h.Y : c.Y - h.Y);
 
         /// <summary>O segmento a -> b atravessa a caixa (centro c, meia-medida h)? Teste das faixas.</summary>
         static bool Crosses(V2 a, V2 b, V2 c, V2 h)
@@ -300,6 +319,26 @@ namespace FS.Core
             return t0 < t1;
         }
 
+        /// <summary>
+        /// Ponto intermediario para cruzar a parede lateral (x 9,0-9,6): alvo do outro lado = o meio da abertura (porta ou
+        /// arco) com o caminho mais curto, na altura em que a reta cruzaria, dentro da faixa livre; alvo do mesmo lado = o alvo.
+        /// ponytail: regra de 2 aberturas, sem pathfinding; mais paredes pedem grafo de waypoints.
+        /// </summary>
+        public static V2 Via(V2 from, V2 target)
+        {
+            float x = (Balance.SideWallX0 + Balance.SideWallX1) / 2f;
+            if (!(from.X < x && target.X > x) && !(from.X > x && target.X < x)) return target;
+            float cross = from.Y + (target.Y - from.Y) * (x - from.X) / (target.X - from.X), m = Balance.CharRadius + 0.1f;
+            V2 best = target; float bestLen = float.MaxValue;
+            for (int i = 0; i + 1 < Balance.SideWallOpenings.Length; i += 2)
+            {
+                var p = new V2(x, Math.Max(Balance.SideWallOpenings[i] + m, Math.Min(Balance.SideWallOpenings[i + 1] - m, cross)));
+                float len = V2.Dist(from, p) + V2.Dist(p, target);
+                if (len < bestLen) { bestLen = len; best = p; }
+            }
+            return best;
+        }
+
         /// <summary>Move `c` em direcao a `target` desviando dos corpos; devolve true quando chegou (dentro de `reach`).</summary>
         public bool MoveTowards(Carrier c, V2 target, float dt, float reach)
         {
@@ -307,8 +346,9 @@ namespace FS.Core
             float len = d.Len;
             c.Moving = len > reach;
             if (!c.Moving) return true;
-            V2 dir = Steer(c.Pos, target);
-            c.Pos = Collide(Clamp(c.Pos + dir * Math.Min(len, c.Speed * dt), Balance.WorldW - 0.3f));   // ponytail: ajudante usa o mapa inteiro; so mira estacao desbloqueada, entao nunca entra na rua fechada
+            V2 goal = Via(c.Pos, target);
+            V2 dir = Steer(c.Pos, goal);
+            c.Pos = Collide(Clamp(c.Pos + dir * Math.Min(V2.Dist(c.Pos, goal), c.Speed * dt), Balance.WorldW - 0.3f));   // ponytail: ajudante usa o mapa inteiro; so mira estacao desbloqueada, entao nunca entra na rua fechada
             return false;
         }
 
@@ -550,9 +590,15 @@ namespace FS.Core
             QueueCap = Bought[(int)Upgrade.CounterCapacity] ? Balance.QueueCap1 : Balance.QueueCap0;
             JewelQueueCap = Bought[(int)Upgrade.JewelVitrine] ? Balance.JewelQueueCapUp : Balance.JewelQueueCap;
             HasConveyor = Bought[(int)Upgrade.Conveyor];
-            // papel = indice do upgrade que contrata; a lista so cresce, na ordem da compra (o Joalheiro nao exige o Ajudante 3)
-            for (int r = 0; r < HireBy.Length; r++)
-                if (Bought[(int)HireBy[r]] && !Workers.Exists(w => w.Role == r)) Workers.Add(new Carrier { Pos = HireSpot, Role = r });
+            // um ajudante por upgrade de contratacao (papel em HireRole); a lista so cresce, na ordem da compra (o Joalheiro nao exige o Ajudante 3)
+            for (int k = 0; k < HireBy.Length; k++)
+            {
+                if (!Bought[(int)HireBy[k]]) continue;
+                int role = HireRole[k], want = 0, have = 0;
+                for (int j = 0; j <= k; j++) if (HireRole[j] == role && Bought[(int)HireBy[j]]) want++;
+                foreach (Carrier w in Workers) if (w.Role == role) have++;
+                if (have < want) Workers.Add(new Carrier { Pos = HireSpot, Role = role });
+            }
             bool fast = Bought[(int)Upgrade.HelperSpeed];
             foreach (Carrier w in Workers) { w.Speed = fast ? Balance.WorkerSpeedUp : Balance.WorkerSpeed; w.Cap = fast ? Balance.WorkerCapUp : Balance.WorkerCap; }
         }
@@ -875,7 +921,8 @@ namespace FS.Core
             sim.Recompute();
             for (int i = 2; i < sim.Stock.Length; i++) sim.Stock[i] = Math.Min(sim.Stock[i], sim.CounterCap);   // teto so' e' conhecido depois dos upgrades
             sim.Player.Pos = sim.Collide(Clamp(sim.Player.Pos, sim.MaxX));   // save antigo com o jogador dentro de um corpo: sai pela borda
-            foreach (Pad p in sim.Pads) if (p.Current(sim) < 0) p.Paid = 0;
+            // pad escondido devolve o parcial: o save da v0.3 com produtivos novos (Mineiro, Joalheiro 2) esconde o luxo ate completar de novo
+            foreach (Pad p in sim.Pads) if (p.Current(sim) < 0) { sim.Gold = (int)Math.Min(int.MaxValue, (long)sim.Gold + p.Paid); p.Paid = 0; }
             return sim;
         }
 

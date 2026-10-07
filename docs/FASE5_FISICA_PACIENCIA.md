@@ -31,3 +31,47 @@ Origem: playtest do Vinicius no POCO F4 (APK 0.3.0):
 
 ## 4. Testes
 Paciência por item (valores e fila); personagem não entra no corpo de nenhuma estação/obstáculo após N ticks empurrando contra; desliza na quina; interação funciona encostado; ajudantes completam ciclos (sem travar) em 10 min; save antigo carrega; bot 10/60/90 min remedidos (limites medido + 30%).
+
+## 5. Estado — Etapa A IMPLEMENTADA e TESTADA no core (Leva 10, raia core/economia, 2026-10-07)
+- **Core:** `Defs.cs`, `Sim.cs`, `Bot.cs`. **NÃO COMPILADO no Unity**: só dotnet (59/59 com a Etapa B) e `viewcheck` (0 erros).
+- **View:** marcar as bocas e desenhar a parede, a porta e os obstáculos pela geometria do core fica com o coordenador.
+- **Onde estão os números:** medição da Etapa A sozinha, varredura de paciência, efeito da parede e prova vermelha em [BALANCE.md §13](BALANCE.md). Etapa B por cima em §14.
+- **Paciência:** base 30 s + 3 × produção inicial. Espada 57 s, escudo 76,5 s, ferramenta 57 s, joia 84 s.
+  - Desistências em 10 min: 26 → 1.
+  - A fila fica cheia 57% do tempo; com 25 s eram 39%. A parede de clientes é a mesma para qualquer paciência que corte a desistência, porque o limite é a oferta.
+- **Bocas** (tabela completa em BALANCE §13.1):
+  - Fornalha, Bigorna e Joalheria: entrada embaixo e saída em cima. À esquerda, as zonas caíam nos pads do Fole, do Martelo veloz (antigo) e da Lupa (antigo).
+  - Fornalha 2, Bigorna 2, Escudos e Ferramentas: entrada à esquerda e saída à direita, como as pilhas da view.
+  - Depósito: zona única acima. Balcão e Loja de joias: zona única abaixo.
+- **Parede lateral (decisão do coordenador):**
+  - Sólida em x 9,0–9,6, com a porta lateral (y 5,6–7,4) e o arco (y 11,6–13,4).
+  - Os postes soltos do arco saíram dos obstáculos: em (8,4 e 9,6; 12,6) eles ficavam dentro da passagem. Os batentes agora são as pontas dos segmentos.
+  - O pad da **Lupa** foi de (10,2; 6,5) para **(14,2; 6,8)**: na boca da porta, o bot pagou 81 de ouro nele sem querer.
+  - Efeito na fome da joalheria (Etapa A, Joalheiro → 60 min): 31% sem parede, **33%** com parede.
+
+### API para a view (mesma geometria da simulação)
+| membro | o que é |
+|---|---|
+| `Balance.StationHalf` (0,65; 0,40) · `Station.Body` (`Box`) | corpo sólido de toda estação, centrado em `Station.Pos` |
+| `Box.Pos`, `Box.Half`, `Box.Closest(p)`, `Box.Dist(p)` | caixa alinhada aos eixos (centro, meia-medida, m) |
+| `Balance.SideWallX0` (9,0) · `Balance.SideWallX1` (9,6) · `Balance.SideWallOpenings` {5,6, 7,4, 11,6, 13,4} | parede direita da oficina; aberturas em pares y0, y1 (porta lateral, arco) |
+| `Balance.Obstacles` (`ObstacleDef`: `Name`, `Body`, `Requires`) | `"carroca"`; `"parede"` ×3 (y 0–5,6 · 7,4–11,6 · 13,4–14); `"pedestal"` ×4 (`Requires` = JewelryDecor); `"poste_fachada"` ×2 (`Requires` = WorkshopFacade); `-1` = sempre |
+| `Sim.Solids` (`List<Box>`) | corpos ativos agora (estações desbloqueadas, balcões, obstáculos comprados); refeito no `Recompute` |
+| `Station.InAt` / `Station.OutAt` | ponto da boca de ENTRADA (só deposita) e de SAÍDA (só recolhe); depósito e balcões: `InAt == OutAt` (zona única) |
+| `Balance.MouthRadius` (0,4) · `Balance.CharRadius` (0,25) | raio da zona da boca; raio do personagem |
+| `Sim.StationAt(p, out bool outZone)` | estação cuja zona contém `p` (`outZone` = saída) |
+| `Sim.Via(from, to)` (estático) · `Sim.Steer(from, to)` · `Sim.Collide(p)` | ponto de passagem pela abertura; direção que contorna corpos; empurra o círculo para fora |
+| `Balance.PatienceFor(item)` · `Client.MaxPatience` | paciência do item; a barra já usa `Patience / MaxPatience` |
+| removidos | `Balance.StationRadius`, `Balance.Patience`, `Balance.JewelPatience`, `Sim.StationAt(p)` sem `out`, obstáculos `"arco"` soltos; `Sim.MoveTowards` virou método de instância (passa pela abertura, desvia e colide) |
+
+### Riscos e pendências da Etapa A
+- A saída da Fornalha fica a 1,06 m do pad do Fole (o limite do teste é 1,0).
+- A vaga de compra direta do balcão (9,6; 14,0) fica na quina da parede. Não está dentro, mas a view vai mostrar o cliente encostado nela; o poste direito da Fachada também fica a 0,04 m da vaga 5.
+- O vão de 0,2 m entre a loja de joias e os pedestais de baixo não deixa ninguém passar (2 passes do `Collide`). Ninguém roteia por ali.
+- `Via` resolve só 2 aberturas numa parede vertical. Outra parede pede um grafo de waypoints. Sem `Via`, um ajudante prende num segmento que encosta na borda do mundo (provado pela mutação W2).
+- O fim de jogo rende +20% com a física (§13.4). A causa não foi isolada (HIPÓTESE: entrada e saída separadas).
+- Validar no aparelho:
+  - zona de 0,4 m com o polegar;
+  - contornar estação com o joystick (o humano não tem desvio automático);
+  - porta lateral de 1,8 m;
+  - ordem de desenho do personagem encostado.

@@ -31,7 +31,7 @@ Produção completa 40:41 (igual com e sem luxo) → Fachada 50:45 · Piso 63:46
 ## RISCOS
 - Rótulo "Balcão" encosta no varal da fachada; rua de cima muito cheia no fim de jogo (só a foto/playtest decide se incomoda).
 - Bot comprar luxo não prova interesse humano: validar com pessoas antes de mais conteúdo cosmético.
-- IDs ≥ 20 são tratados como luxo (`ProductionCount`): marcar produtivo/luxo por upgrade antes de anexar um produtivo novo.
+- ~~IDs ≥ 20 são tratados como luxo (`ProductionCount`): marcar produtivo/luxo por upgrade antes de anexar um produtivo novo.~~ **RESOLVIDA na Leva 9:** a marca agora é por upgrade (`UpgradeDef.Luxury`, BALANCE §12). Na Leva 10 os produtivos 23/24 (Mineiro, Joalheiro 2) entraram depois dos luxos (BALANCE §14).
 - Android real (toque, ASTC, FPS, memória) ainda não validado.
 
 ## PRÓXIMO PASSO
