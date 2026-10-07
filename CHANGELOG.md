@@ -2,10 +2,19 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões do Forge Street em [SemVer](https://semver.org/lang/pt-BR/). O histórico anterior ao repositório (2026-10-06 → 2026-10-07) foi reconstruído a partir dos documentos de validação.
 
-## [Não lançado] — em andamento
-- **Leva 10:** física (estações e decoração sólidas, interação encostando), duas bocas por estação (entrada só deposita, saída só recolhe), paciência dos clientes proporcional ao tempo de produção; depois o par Mineiro → Joalheiro 2. Origem: playtest do Vinicius no aparelho. Contratos: `docs/FASE5_FISICA_PACIENCIA.md`, `docs/FASE4_MINERIO.md`.
-- **Leva 11:** ambientação — paredes, chão texturizado (texturas pintadas geradas no Tripo, grátis), props de cenário modelados no Blender.
-- **Próxima:** melhorias do ferreiro e dos itens num menu na barra inferior (sem pisar em pads).
+## [Não lançado] — em andamento (v0.4.0)
+### Adicionado
+- **Física** (Leva 10): estações, parede e decoração sólidas (caixa 0,65 × 0,40 m); personagem círculo de 0,25 m que desliza nas quinas; bot e ajudantes contornam as estações.
+- **Duas bocas por estação de produção**: entrada só deposita, saída só recolhe; marcadas no chão com anel e seta na cor do item. Depósito e balcões com zona única.
+- **Parede direita sólida** com porta lateral (y 5,6–7,4, fechada até o Corredor) e o arco (y 11,6–13,4).
+- **Mineiro** (3 000) → **Joalheiro 2** (2 400): mais um ajudante de minério e mais um na joalheria (`docs/FASE4_MINERIO.md`).
+- **Ambientação** (Leva 11): chão de pedra, assoalho na frente do balcão, paredes de tijolo, calçamento, tochas e 8 props de cenário.
+### Alterado
+- **Paciência dos clientes** proporcional ao tempo de produção: 30 s + 3 × produção (espada 57 s, escudo 76,5 s, ferramenta 57 s, joia 84 s). Desistências em 10 min: 27 → 1.
+- Pads do Martelo veloz (8,4; 3,4) e da Lupa (14,2; 6,8) fora das linhas de caminhada.
+- Produção completa (bot) 40:41 → 42:24; fome da joalheria 52% → 12% (`docs/BALANCE.md` §13–§14).
+### Em andamento
+- **Leva 12:** melhorias do ferreiro e dos itens num menu na barra inferior, compradas por toque (`docs/FASE6_MENU_MELHORIAS.md`).
 
 ## [0.3.0] — 2026-10-07
 ### Adicionado
