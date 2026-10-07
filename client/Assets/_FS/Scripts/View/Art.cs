@@ -13,11 +13,9 @@ namespace FS
     /// </summary>
     public static class Art
     {
-        public static readonly Color Bg = Hex(0x121622), Floor = Hex(0x232A3B), FloorEdge = Hex(0x1A2030), Ink = Hex(0xEEF1F8),
+        public static readonly Color Bg = Hex(0x121622), Ink = Hex(0xEEF1F8),
             Accent = Hex(0xFFE08A), Bad = Hex(0xFF3B4E), Dim = Hex(0x4A5370), Pad = Hex(0x2C3550), PadFill = Hex(0x6B5F2E),
             Player = Hex(0xFFE08A), Worker = Hex(0x9ED0C8), Client = Hex(0xE8C9A8), Bubble = Hex(0xF4F6FA), Good = Hex(0x4CD964);
-        /// <summary>Pedra fria da rua lateral (ART_BIBLE s2: base #55607A).</summary>
-        public static readonly Color Street = Hex(0x3A4256);
         /// <summary>Ouro (ART_BIBLE s2: base #E0B23A, sombra #9C7520, luz = Accent): luxos da fase 3.</summary>
         public static readonly Color Gold = Hex(0xE0B23A), GoldDark = Hex(0x9C7520);
 
@@ -94,20 +92,27 @@ namespace FS
             }
         }
 
-        static Sprite Get(string key, Func<float, float, bool> inside)
+        /// <summary>Mascara com 4 amostras de antialias por pixel (x, y em [-1, 1]).</summary>
+        static Sprite Get(string key, Func<float, float, bool> inside) => Mask(key, (x, y) =>
+        {
+            int n = 0;
+            for (int sy = 0; sy < 2; sy++)
+                for (int sx = 0; sx < 2; sx++)
+                    if (inside((x + 0.25f + sx * 0.5f) / Side * 2f - 1f, (y + 0.25f + sy * 0.5f) / Side * 2f - 1f)) n++;
+            return (byte)(n * 63);
+        });
+
+        /// <summary>Degrade: alfa = f(x, y) em [0, 1], com x, y em [-1, 1] no centro do pixel.</summary>
+        static Sprite Soft(string key, Func<float, float, float> f) =>
+            Mask(key, (x, y) => (byte)(255f * Mathf.Clamp01(f((x + 0.5f) / Side * 2f - 1f, (y + 0.5f) / Side * 2f - 1f))));
+
+        static Sprite Mask(string key, Func<int, int, byte> alpha)
         {
             if (Cache.TryGetValue(key, out Sprite s) && s != null) return s;
             var tex = new Texture2D(Side, Side, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
             var px = new Color32[Side * Side];
             for (int y = 0; y < Side; y++)
-                for (int x = 0; x < Side; x++)
-                {
-                    int n = 0;
-                    for (int sy = 0; sy < 2; sy++)
-                        for (int sx = 0; sx < 2; sx++)
-                            if (inside((x + 0.25f + sx * 0.5f) / Side * 2f - 1f, (y + 0.25f + sy * 0.5f) / Side * 2f - 1f)) n++;
-                    px[y * Side + x] = new Color32(255, 255, 255, (byte)(n * 63));
-                }
+                for (int x = 0; x < Side; x++) px[y * Side + x] = new Color32(255, 255, 255, alpha(x, y));
             tex.SetPixels32(px);
             tex.Apply();
             s = Sprite.Create(tex, new Rect(0, 0, Side, Side), new Vector2(0.5f, 0.5f), Side);
@@ -115,27 +120,77 @@ namespace FS
             return s;
         }
 
+        /// <summary>Brilho de tocha: disco com queda quadratica ate a borda.</summary>
+        public static Sprite Glow() => Soft("glow", (x, y) => { float d = 1f - Mathf.Sqrt(x * x + y * y); return d * d; });
+        /// <summary>Sombra de contato: opaca na esquerda (x = -1), transparente na direita.</summary>
+        public static Sprite Fade() => Soft("fade", (x, y) => (1f - x) * 0.5f);
+
+        // ---------- superficies (chao/parede) em modo Tiled ----------
+        public const float GroundTileM = 2f;   // 1 repeticao da textura a cada 2 m (coordenador, 2026-10-07; ajustar pela foto)
+
         /// <summary>
-        /// Piso de ladrilhos de 1 m (luxo Piso de oficina): xadrez `a`/`b` com junta `joint` na borda de baixo/esquerda de
-        /// cada ladrilho, `cols` x `rows` m numa textura so (1 renderer). `inside(x, y)` em m a partir do canto de baixo-esquerdo
-        /// recorta o contorno (fora = transparente). Pivo no centro.
+        /// Textura de chao/parede para SpriteRenderer Tiled: Resources/Textures/&lt;name&gt;.png (pintada pelo coordenador:
+        /// piso_oficina, rua, parede, madeira) ou, sem o arquivo, blocos procedurais nas mesmas cores medias. Escurecer e
+        /// face de parede sao tinta no renderer, igual para as duas fontes.
         /// </summary>
-        public static Sprite Tiles(int cols, int rows, Color a, Color b, Color joint, Func<float, float, bool> inside)
+        public static Sprite Ground(string name)
         {
-            const int ppm = 32, jointPx = 2;   // ponytail: 32 px/m = ~3 px de tela por texel na camera de 11,4 m; ~0,5 MB (9 x 14 m), sem mipmap
-            int w = cols * ppm, h = rows * ppm;
-            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
-            var px = new Color32[w * h];
-            Color32 ca = a, cb = b, cj = joint;
-            for (int y = 0; y < h; y++)
-                for (int x = 0; x < w; x++)
+            string key = "chao:" + name;
+            if (Cache.TryGetValue(key, out Sprite s) && s != null) return s;
+            Texture2D tex = Resources.Load<Texture2D>("Textures/" + name);
+            if (tex == null) tex = Blocks(name);
+            tex.wrapMode = TextureWrapMode.Repeat;
+            tex.filterMode = FilterMode.Bilinear;
+            s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), tex.width / GroundTileM, 0, SpriteMeshType.FullRect);
+            Cache[key] = s;
+            return s;
+        }
+
+        /// <summary>Reserva procedural de Ground: blocos w x h px, junta de 2 px, fiada desencontrada, 2 tons por hash do bloco.</summary>
+        static Texture2D Blocks(string name)
+        {
+            const int n = 128, jp = 2, r = 4;   // 128 px = GroundTileM (64 px/m); calcamento com canto de 4 px
+            int bw = 64, bh = 32; bool round = false;
+            Color32 a = Hex(0x4E4539), b = Hex(0x463E34), j = Hex(0x2E2824);   // piso_oficina: lajes de pedra quente (ART_BIBLE s2)
+            switch (name)
+            {
+                case "rua": bw = bh = 16; round = true; a = Hex(0x46525A); b = Hex(0x3C474F); j = Hex(0x262D35); break;
+                case "parede": bw = 32; bh = 16; a = Hex(0x6B5F55); b = Hex(0x7A5048); j = Hex(0x3A322C); break;
+                case "madeira": bh = 16; a = Hex(0x4A3220); b = Hex(0x402B1C); j = Hex(0x24180F); break;
+            }
+            var px = new Color32[n * n];
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
                 {
-                    if (!inside((x + 0.5f) / ppm, (y + 0.5f) / ppm)) continue;   // Color32 padrao = transparente
-                    px[y * w + x] = x % ppm < jointPx || y % ppm < jointPx ? cj : (x / ppm + y / ppm) % 2 == 0 ? ca : cb;
+                    int row = y / bh, sx = x + (row & 1) * bw / 2, col = sx / bw % (n / bw), lx = sx % bw, ly = y % bh;
+                    bool joint = lx < jp || ly < jp;
+                    if (round && !joint)
+                    {
+                        float qx = Mathf.Max(Mathf.Abs(lx + 0.5f - (bw + jp) * 0.5f) - ((bw - jp) * 0.5f - r), 0f);
+                        float qy = Mathf.Max(Mathf.Abs(ly + 0.5f - (bh + jp) * 0.5f) - ((bh - jp) * 0.5f - r), 0f);
+                        joint = qx * qx + qy * qy > r * r;
+                    }
+                    px[y * n + x] = joint ? j : (row * 7 + col * 13) % 3 == 0 ? b : a;
                 }
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { name = name };
             tex.SetPixels32(px);
-            tex.Apply();
-            return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), ppm);
+            tex.Apply(false, true);
+            return tex;
+        }
+
+        /// <summary>Ladrilhos de 1 m (luxo Piso de oficina): xadrez `a`/`b` com junta na borda de baixo/esquerda; 1 repeticao = 2 x 2 m, desenhar Tiled.</summary>
+        public static Sprite Tiles(Color a, Color b, Color joint)
+        {
+            const int ppm = 32, jointPx = 2, n = 2 * ppm;
+            var px = new Color32[n * n];
+            Color32 ca = a, cb = b, cj = joint;
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                    px[y * n + x] = x % ppm < jointPx || y % ppm < jointPx ? cj : (x / ppm + y / ppm) % 2 == 0 ? ca : cb;
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Repeat };
+            tex.SetPixels32(px);
+            tex.Apply(false, true);
+            return Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), ppm, 0, SpriteMeshType.FullRect);
         }
 
         public static SpriteRenderer NewSprite(Transform parent, string name, Sprite sprite, Color color, int order,

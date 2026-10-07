@@ -129,3 +129,7 @@ Prompts usados: os da tabela de `ASSETS.md` (assunto + `[S]`/`[P]` + `[I]`), Nan
 | `rua` | calçamento medieval, pedras arredondadas cinza-azuladas | #1 de 4 |
 | `parede` | parede de oficina, blocos de pedra cinza quente + tijolos vermelho-marrom, vista frontal | #4 de 4 |
 | `madeira` | assoalho de tábuas marrom quente com pregos | #2 de 4 |
+
+## 5. Props de cenário (2026-10-07, Blender por primitivas — 0 crédito)
+- `client/tools/props_blender.py` (Blender 5.2 headless) modela por primitivas/bmesh com materiais chapados da paleta da ART_BIBLE §2; FBX em `arte/props/<nome>/<nome>.fbx`; sprites estáticos (`render_sprites.py --dirs 1 --size 256`) em `client/Assets/_FS/Resources/Sprites/<nome>/`.
+- Peças: barril, caixote, sacos, tocha, prateleira, suporte_armas, lenha, balde. Autoria: raia de ambiente (personas 30/31/32) sob coordenação; licença: própria do estúdio (sem asset de terceiros).

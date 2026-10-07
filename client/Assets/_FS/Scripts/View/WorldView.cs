@@ -15,6 +15,8 @@ namespace FS
     /// o Corredor; loja de joias escurecida "fechada" ate a Joalheria; clientes da JewelQueue com a folha `nobre`.
     /// Fase 2 (docs/AREA2_FASE2.md s4): joalheiro (papel 3) com tinta roxa; bau de marco disponivel pulsando com o rotulo.
     /// Fase 3 (docs/FASE3_LUXO.md): fachada nobre, piso de ladrilhos e joalheria real, procedurais, ligados pelas flags de luxo.
+    /// Cenario: chaos com textura repetida (Resources/Textures ou reserva procedural), paredes 2,5D fora da area andavel e props
+    /// pre-renderizados (tools/props_blender.py) encostados nelas, com tochas de brilho tremulo.
     /// </summary>
     public sealed class WorldView : MonoBehaviour
     {
@@ -73,7 +75,7 @@ namespace FS
         // 2a area (AREA2 s7). Carroca na celula das estacoes; arco maior (entrada da rua: ~1,4 m de largura, pes acima do pad do Corredor).
         const float ArchCell = 2.0f, CartCell = StationCell;
         static readonly V2 ArchPos = new V2(9.0f, 12.6f), CartPos = new V2(14.2f, 3.0f);
-        static readonly Color StreetShut = Color.Lerp(Art.Street, Art.Bg, 0.75f);   // rua antes do Corredor: escurecida
+        static readonly Color StreetOpen = Gray(0.8f), StreetShut = Gray(0.35f);    // tinta da rua lateral: aberta / escurecida ate o Corredor
         static readonly Color Shut = new Color(0.42f, 0.42f, 0.48f, 1f);             // loja fechada (teaser): mais escura que a "fome"
         // Bau de marco (AREA2_FASE2 s3/s4): o bau ocupa 179 de 256 px da folha, entao celula 1,1 m da ~0,77 m de largura (menor
         // que a estacao de 1,5 m, maior que o item da pilha). Pulsa 1 <-> 1,08 pelo pe (pivo da folha) enquanto disponivel.
@@ -84,9 +86,35 @@ namespace FS
         // Atras do balcao, da fila (pe em y 14,0 = Depth 300) e do jogador; na frente de quem passa pela rua (y 14,7).
         const float FacadeY = 14.1f, PostH = 0.85f, PostInset = 0.15f, Sag = 0.3f;
         const int FacadeArcs = 3, FacadeSeg = 6;   // 18 bandeirolas, ~0,48 m entre elas
-        // Piso: ladrilho 1 m, contraste baixo, levemente quente (pedra quente luz #6B5F55, ART_BIBLE s2) sobre Art.Floor.
-        static readonly Color TileA = Color.Lerp(Art.Floor, Art.Hex(0x6B5F55), 0.2f), TileB = Color.Lerp(Art.Floor, Art.Hex(0x6B5F55), 0.06f);
-        const int TileOrder = 0;   // entre o Chao (-1) e sombras/pads (1-4); a Rua (0) comeca em y 14,2, o piso acaba em 14
+        // Luxo Piso de oficina: ladrilho de 1 m limpo, xadrez de pedra quente base/luz (ART_BIBLE s2) com junta de ouro apagado.
+        static readonly Color TileA = Art.Hex(0x574C43), TileB = Art.Hex(0x483F38), TileJoint = Art.Hex(0x7A6232);
+        // Cenario (Vinicius 2026-10-07: "chao, paredes, outras coisas esteticas"). Chaos em textura repetida (Art.Ground) e paredes
+        // 2,5D FORA da area andavel (jogador preso em [0,3; W-0,3] x [0,3; 13,7]): tampo claro e, so na parede de baixo (a unica de
+        // frente para a camera), face escura logo abaixo. Oficina x 0-9: parede alta de pedra quente com a abertura do arco; rua
+        // lateral x 9-15: muro baixo da pedra fria da rua. A borda de cima (rua dos clientes) fica aberta.
+        const float WallT = 0.6f, WallFace = 0.6f, MuroT = 0.4f, MuroFace = 0.35f;
+        const float GapLo = 11.6f, GapHi = 13.4f;   // abertura da parede direita, onde fica o arco (ArchPos y 12,6)
+        const float DeckY = 12f;                     // assoalho (madeira) na frente da loja: balcao, bau e fila; o luxo Piso cobre so a pedra
+        const int ExteriorOrder = -8, FloorOrder = -7, LuxOrder = -6, ShadeOrder = -5, WallOrder = -4, GlowOrder = -3;   // abaixo do tapete (-1), sombras e pads (1-4)
+        static readonly Color ExteriorTint = Gray(0.42f), FaceTint = Gray(0.55f), ShadeColor = new Color(0f, 0f, 0f, 0.35f);
+        static readonly Color MuroTint = new Color(0.72f, 0.8f, 0.95f), MuroFaceTint = new Color(0.4f, 0.44f, 0.52f);   // pedra fria (ART_BIBLE s2) sobre a parede quente
+        // Props (tools/props_blender.py; escala real, 1 m do Blender = 1 m do mundo) encostados nas paredes, fora do clamp e longe de
+        // pads, estacoes, filas, baus e rotulos: tampo da parede esquerda (x -0,3 a -0,45), quintal atras da parede de baixo (y < -1,2),
+        // muro da rua lateral (x 15,2-15,45) e quintal atras do muro de baixo da rua. Borda de cada prop <= x 0,05 / >= x 14,95: o corpo
+        // do jogador encostado no clamp (raio ~0,25) nao entra nele. Tocha: pivo no pe da parede, chama 0,46 m acima.
+        static readonly (string Name, float X, float Y)[] Props =
+        {
+            ("balde", 0f, 0.1f), ("prateleira", -0.42f, 2.75f), ("tocha", -0.3f, 4.0f), ("tocha", -0.3f, 11.0f),
+            ("suporte_armas", -0.45f, 12.4f), ("barril", -0.3f, 13.55f),
+            ("lenha", 0.6f, -1.45f), ("tocha", 2.0f, -1.2f), ("barril", 3.0f, -1.35f), ("caixote", 4.1f, -1.4f), ("sacos", 5.3f, -1.4f),
+            ("tocha", 6.6f, -1.2f), ("barril", 7.6f, -1.35f), ("balde", 8.3f, -1.3f),
+            ("barril", 15.4f, 0.6f), ("caixote", 15.45f, 1.6f), ("tocha", 15.2f, 7.0f), ("sacos", 15.4f, 10.2f), ("tocha", 15.2f, 13.0f),
+            ("lenha", 11.2f, -0.95f), ("barril", 13.4f, -0.9f), ("balde", 14.0f, -0.85f),
+        };
+        const float FlameY = 0.46f, GlowSize = 1.5f, GlowAlpha = 0.3f;   // brilho alfa (Sprites/Default): aditivo pediria shader fora do APK
+        static readonly Color GlowColor = Art.Hex(0xFF9A3D);
+        static float PropShadow(string n) => n switch { "tocha" => 0f, "balde" => 0.4f, "barril" => 0.6f, "prateleira" or "suporte_armas" or "lenha" => 0.9f, _ => 0.75f };
+        static Color Gray(float v) => new Color(v, v, v, 1f);
         // Joalheria real: tapete roxo da bancada a loja (x 11,45-12,55) e 4 pedestais de gema fora dos pads, da fila e do bau.
         static readonly Color Carpet = Color.Lerp(Art.ItemColor[(int)Item.Jewel], Art.Bg, 0.55f);   // #59447F: a joia do estoque ainda le por cima
         const float CarpetW = 1.1f;
@@ -107,6 +135,7 @@ namespace FS
         SpriteRenderer _street, _shopTeaser; Text _streetLabel, _shopLabel;
         readonly List<Floater> _floaters = new List<Floater>();
         readonly List<LuxV> _lux = new List<LuxV>();
+        readonly List<SpriteRenderer> _glows = new List<SpriteRenderer>();
         Transform _conveyor; SpriteRenderer[] _convDots; float _convLen;
         int _clientSeq, _bought;
 
@@ -119,19 +148,13 @@ namespace FS
             foreach (string n in ClientArt)
                 if (SpriteSheet.TryGet(n, out SpriteSheet sh)) { sh.Scale = CharScale(n); _clientSheets.Add(sh); }
             if (SpriteSheet.TryGet("nobre", out _nobre)) _nobre.Scale = CharScale("nobre");
-            float ws = Balance.WorkshopW, w = Balance.WorldW, h = Balance.WorldH;
-            Art.NewSprite(transform, "Borda", Art.Rounded(), Art.FloorEdge, -3, new Vector2(w / 2f, h / 2f), new Vector2(w + 1f, h + 1f));
-            // rua lateral (x 9-15) embaixo; a oficina por cima com a borda direita reta (a Junta tira os cantos arredondados da juncao)
-            _street = Art.NewSprite(transform, "RuaLateral", Art.Square(), StreetShut, -2, new Vector2((ws + w + 0.3f) / 2f, h / 2f), new Vector2(w + 0.3f - ws, h + 0.6f));
-            Art.NewSprite(transform, "Chao", Art.Rounded(), Art.Floor, -1, new Vector2((ws - 0.3f) / 2f, h / 2f), new Vector2(ws + 0.3f, h + 0.6f));
-            Art.NewSprite(transform, "ChaoJunta", Art.Square(), Art.Floor, -1, new Vector2(ws - 0.8f, h / 2f), new Vector2(1.6f, h + 0.6f));
-            Art.NewSprite(transform, "Rua", Art.Square(), Art.FloorEdge, 0, new Vector2(w / 2f, h + 1.0f), new Vector2(w + 1f, 1.6f));
+            BuildScenery();
             _streetLabel = Art.FreeText(_labels, "RuaLateral", 26, new Vector2(200f, 80f));
             _streetLabel.text = "Rua\nlateral";   // 2 linhas: so 1,2 m da rua cabe na tela antes do Corredor
             _streetLabel.color = Art.ComAlfa(Art.Ink, 0.55f);
-            Deco("arco", ArchPos, ArchCell, false);
-            Deco("carroca", CartPos, CartCell, true);
-            _shopTeaser = Deco("loja_joalheria", sim.JewelShop.Pos, StationCell, true);   // mesma folha e celula da estacao
+            Deco("arco", ArchPos, ArchCell, 0f);
+            Deco("carroca", CartPos, CartCell, 1.3f);
+            _shopTeaser = Deco("loja_joalheria", sim.JewelShop.Pos, StationCell, 1.3f);   // mesma folha e celula da estacao
             if (_shopTeaser != null) _shopTeaser.color = Shut;
             _shopLabel = Art.FreeText(_labels, "JoalheriaFechada", 26, new Vector2(400f, 40f));
             _shopLabel.text = "Joalheria — fechada";
@@ -167,16 +190,67 @@ namespace FS
             return sh.Frame("Static", 0, 0f);
         }
 
-        /// <summary>Decoracao estatica ordenada pelo pe como os corpos; devolve o sprite (o pai liga/desliga junto com a sombra), ou null sem folha.</summary>
-        SpriteRenderer Deco(string name, V2 pos, float cell, bool shadow)
+        /// <summary>Decoracao estatica ordenada pelo pe como os corpos, com sombra de `shadow` m de largura (0 = sem); devolve o sprite (o pai liga/desliga junto com a sombra), ou null sem folha.</summary>
+        SpriteRenderer Deco(string name, V2 pos, float cell, float shadow)
         {
             Sprite art = StaticArt(name, cell);
             if (art == null) return null;   // ponytail: sem folha a decoracao nao existe (o greybox nao precisa dela)
             var root = new GameObject(name).transform;
             root.SetParent(transform, false);
             root.localPosition = W(pos);
-            if (shadow) Art.NewSprite(root, "Sombra", Art.Disc(), new Color(0f, 0f, 0f, 0.25f), 1, Vector2.zero, new Vector2(1.3f, 0.6f));
+            if (shadow > 0f) Art.NewSprite(root, "Sombra", Art.Disc(), new Color(0f, 0f, 0f, 0.25f), 1, Vector2.zero, new Vector2(shadow, shadow * 0.46f));
             return Art.NewSprite(root, "Arte", art, Color.white, Depth(pos.Y), Vector2.zero, Vector2.one);
+        }
+
+        // ------------------------------------------------------------------ cenario: chao, paredes, props
+
+        /// <summary>Chaos, paredes, sombra de contato e props. Nada muda com o jogo, so a tinta da rua lateral (RefreshArea) e o brilho das tochas.</summary>
+        void BuildScenery()
+        {
+            float ws = Balance.WorkshopW, w = Balance.WorldW, h = Balance.WorldH;
+            Sprite rua = Art.Ground("rua"), parede = Art.Ground("parede");
+            Tiled("Exterior", rua, ExteriorTint, ExteriorOrder, new Vector2(-4f, -6f), new Vector2(w + 4f, h + 7f));   // fundo de toda a camera
+            Tiled("Rua", rua, StreetOpen, FloorOrder, new Vector2(-4f, h), new Vector2(w + 4f, h + 2.6f));             // rua dos clientes, aberta
+            _street = Tiled("RuaLateral", rua, StreetShut, FloorOrder, new Vector2(ws, 0f), new Vector2(w, h));
+            Tiled("Chao", Art.Ground("piso_oficina"), Color.white, FloorOrder, Vector2.zero, new Vector2(ws, DeckY));
+            Tiled("Assoalho", Art.Ground("madeira"), Color.white, FloorOrder, new Vector2(0f, DeckY), new Vector2(ws, h));
+            // sombra de contato: luz-chave de baixo-esquerda (ART_BIBLE s7) -> a parede projeta para a direita/para cima
+            Shade(Vector2.zero, new Vector2(0.35f, h), false);
+            Shade(Vector2.zero, new Vector2(w, 0.3f), true);
+            Shade(new Vector2(ws + WallT, 0f), new Vector2(ws + WallT + 0.35f, GapLo), false);
+            // oficina: esquerda e direita so o tampo (de lado nao ha face para a camera); embaixo tampo + face
+            Tiled("ParedeEsq", parede, Color.white, WallOrder, new Vector2(-WallT, 0f), new Vector2(0f, h), true);
+            Tiled("ParedeDir", parede, Color.white, WallOrder, new Vector2(ws, 0f), new Vector2(ws + WallT, GapLo), true);
+            Tiled("ParedeDirArco", parede, Color.white, WallOrder, new Vector2(ws, GapHi), new Vector2(ws + WallT, h), true);
+            Tiled("ParedeBaixo", parede, Color.white, WallOrder, new Vector2(-WallT, -WallT), new Vector2(ws + WallT, 0f));
+            Tiled("ParedeFace", parede, FaceTint, WallOrder, new Vector2(-WallT, -WallT - WallFace), new Vector2(ws + WallT, -WallT));
+            // rua lateral: muro baixo, a mesma alvenaria esfriada (calcamento no tampo lia como chao, nao como muro)
+            Tiled("MuroDir", parede, MuroTint, WallOrder, new Vector2(w, 0f), new Vector2(w + MuroT, h), true);
+            Tiled("MuroBaixo", parede, MuroTint, WallOrder, new Vector2(ws + WallT, -MuroT), new Vector2(w + MuroT, 0f));
+            Tiled("MuroFace", parede, MuroFaceTint, WallOrder, new Vector2(ws + WallT, -MuroT - MuroFace), new Vector2(w + MuroT, -MuroT));
+            foreach ((string n, float x, float y) in Props)
+            {
+                SpriteRenderer art = Deco(n, new V2(x, y), SpriteSheet.TryGet(n, out SpriteSheet sh) ? sh.Size / sh.Ppu : 1f, PropShadow(n));
+                if (art != null && n == "tocha")
+                    _glows.Add(Art.NewSprite(art.transform.parent, "Brilho", Art.Glow(), Art.ComAlfa(GlowColor, GlowAlpha), GlowOrder, new Vector2(0f, FlameY), Vector2.one * GlowSize));
+            }
+        }
+
+        /// <summary>Retangulo [min, max] com a textura repetida (1 renderer, modo Tiled); `along` gira 90 graus (parede vertical: fiadas ao longo dela).</summary>
+        SpriteRenderer Tiled(string name, Sprite s, Color c, int order, Vector2 min, Vector2 max, bool along = false, Transform parent = null)
+        {
+            Vector2 size = max - min;
+            SpriteRenderer r = Art.NewSprite(parent != null ? parent : transform, name, s, c, order, (min + max) * 0.5f, Vector2.one, along ? 90f : 0f);
+            r.drawMode = SpriteDrawMode.Tiled;
+            r.size = along ? new Vector2(size.y, size.x) : size;
+            return r;
+        }
+
+        /// <summary>Sombra de contato no chao ao pe de uma parede: degrade escuro saindo dela (`up` = parede embaixo; senao a esquerda).</summary>
+        void Shade(Vector2 min, Vector2 max, bool up)
+        {
+            Vector2 size = max - min;
+            Art.NewSprite(transform, "SombraParede", Art.Fade(), ShadeColor, ShadeOrder, (min + max) * 0.5f, up ? new Vector2(size.y, size.x) : size, up ? 90f : 0f);
         }
 
         // cor do papel: o que ele carrega (3 = joalheiro, roxo #B07CF2 da joia; AREA2_FASE2 s4)
@@ -293,20 +367,12 @@ namespace FS
             _lux.Add(new LuxV { U = u, Root = root });
         }
 
-        /// <summary>Piso de oficina: ladrilhos x 0-9, y 0-14, cantos esquerdos arredondados como o "Chao" recuados a mesma borda de 0,3 m.</summary>
+        /// <summary>Piso de oficina (luxo): ladrilhos limpos de 1 m com junta dourada sobre a pedra (x 0-9, y 0-12); o assoalho da frente fica.</summary>
         Transform BuildTiles()
         {
-            float ws = Balance.WorkshopW, h = Balance.WorldH;
-            Transform root = Group("PisoLadrilhos", new V2(ws / 2f, h / 2f));
-            // o Chao e' Rounded de (ws + 0,3) x (h + 0,6) m com raio 0,28 da meia-medida: elipse 1,30 x 2,04 m nos cantos
-            float rx = 0.28f * (ws + 0.3f) / 2f, ry = 0.28f * (h + 0.6f) / 2f, cx = rx - 0.3f, lo = ry - 0.3f, hi = h + 0.3f - ry;
-            Sprite tiles = Art.Tiles((int)ws, (int)h, TileA, TileB, Art.FloorEdge, (x, y) =>
-            {
-                if (x >= cx || (y >= lo && y <= hi)) return true;   // lado direito e' reto (ChaoJunta)
-                float dx = (x - cx) / (rx - 0.3f), dy = (y - (y < lo ? lo : hi)) / (ry - 0.3f);
-                return dx * dx + dy * dy <= 1f;
-            });
-            Art.NewSprite(root, "Ladrilhos", tiles, Color.white, TileOrder, Vector2.zero, Vector2.one);
+            Vector2 half = new Vector2(Balance.WorkshopW, DeckY) * 0.5f;
+            Transform root = Group("PisoLadrilhos", new V2(half.x, half.y));
+            Tiled("Ladrilhos", Art.Tiles(TileA, TileB, TileJoint), Color.white, LuxOrder, -half, half, false, root);
             return root;
         }
 
@@ -477,6 +543,8 @@ namespace FS
         {
             float pulse = 0.75f + 0.25f * Mathf.Sin(Time.time * 6f);
             RefreshArea();
+            for (int i = 0; i < _glows.Count; i++)   // tochas tremulam: 2 senos fora de fase por tocha
+                _glows[i].color = Art.ComAlfa(GlowColor, GlowAlpha + 0.05f * Mathf.Sin(Time.time * 9f + i * 2.1f) + 0.03f * Mathf.Sin(Time.time * 23f + i));
             foreach (StationV v in _stations) RefreshStation(v, pulse);
             foreach (PadV v in _pads) RefreshPad(v, pulse);
             foreach (ChestV v in _chests) RefreshChest(v);
@@ -517,7 +585,7 @@ namespace FS
         void RefreshArea()
         {
             bool corridor = _sim.Bought[(int)Upgrade.SideCorridor], teaser = corridor && !_sim.Bought[(int)Upgrade.Jewelry];
-            _street.color = corridor ? Art.Street : StreetShut;
+            _street.color = corridor ? StreetOpen : StreetShut;
             _streetLabel.enabled = !corridor;
             if (!corridor) PlaceLabel(_streetLabel, new Vector3(Balance.WorkshopW + 0.6f, Balance.WorldH / 2f, 0f), Vector2.zero);
             if (_shopTeaser != null && _shopTeaser.transform.parent.gameObject.activeSelf != teaser) _shopTeaser.transform.parent.gameObject.SetActive(teaser);

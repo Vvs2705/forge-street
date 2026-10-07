@@ -12,20 +12,22 @@ namespace FS.EditorTools
     public sealed class SpriteImport : AssetPostprocessor
     {
         const string Root = "Assets/_FS/Resources/Sprites/";
+        const string Tex = "Assets/_FS/Resources/Textures/";   // chao/rua/parede/madeira: repetidas em Tiled (Art.Ground)
 
-        public override uint GetVersion() => 1;
+        public override uint GetVersion() => 2;
 
         void OnPreprocessTexture()
         {
             string path = assetPath.Replace('\\', '/');
-            if (!path.StartsWith(Root, StringComparison.OrdinalIgnoreCase) || !path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) return;
+            bool tiled = path.StartsWith(Tex, StringComparison.OrdinalIgnoreCase);
+            if (!(tiled || path.StartsWith(Root, StringComparison.OrdinalIgnoreCase)) || !path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) return;
             var ti = (TextureImporter)assetImporter;
             ti.textureType = TextureImporterType.Default;
             ti.maxTextureSize = 4096;
             ti.mipmapEnabled = false;
             ti.filterMode = FilterMode.Bilinear;
-            ti.wrapMode = TextureWrapMode.Clamp;
-            ti.alphaIsTransparency = true;
+            ti.wrapMode = tiled ? TextureWrapMode.Repeat : TextureWrapMode.Clamp;   // textura de chao repete; folha de sprite nao vaza celula
+            ti.alphaIsTransparency = !tiled;
             ti.npotScale = TextureImporterNPOTScale.None;
             ti.textureCompression = TextureImporterCompression.Uncompressed;
             ti.SetPlatformTextureSettings(new TextureImporterPlatformSettings
