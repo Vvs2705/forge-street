@@ -1,0 +1,122 @@
+# Forge Street — Assets do MVP (PROPOSTO, 2026-10-06)
+
+Status: PROPOSTO pela raia 2; nada gerado ainda. Estilo e paleta em `ART_BIBLE.md`. Cadeia: **Tripo3D** (texto → imagem gerada dentro do site → 3D → rig) → **Blender** (orientar −Y, escalar em metros, decimar, limpar emissivo preto, Mixamo) → **sprites** (§6). Preços Tripo: **45 créditos/modelo, 20/rig** (LICOES 2026-10-01). "Min" = tempo de mão do dev solo (site + Blender + Mixamo), sem contar fila de geração. Estações contadas uma vez: Fornalha 2 e Bigorna 2 são instâncias.
+
+Sufixos de prompt (colar ao fim do assunto):
+- `[S]` personagem = "stylized low-poly game asset, chibi proportions 3 heads tall, flat colors with soft two-tone shading, clean readable silhouette, single character, centered, no background, no text, no logo"
+- `[T]` pose = "T-pose, arms straight out horizontal, legs slightly apart, neutral face, symmetrical"
+- `[P]` prop/estação = "stylized low-poly game prop, flat colors with soft two-tone shading, chunky beveled shapes, single object, centered, no background, no text"
+- `[I]` **imagem-primeiro** (gerar DENTRO do Tripo antes do 3D; mesmo assunto da linha + este sufixo): personagem = "full body front view, T-pose arms horizontal, soft even studio light, plain light grey background, 3D render look, no ground shadow"; prop = "3/4 front view product shot, plain light grey background, soft even light, no ground shadow". Frontal verdadeira no slot frontal (lição Arkana 2026-08-26).
+
+Alvos (saída do Tripo vem com 100–300 k tris; decimar no Blender antes de salvar o `.blend`): personagem 4–6 k tris / textura 512; estação 2–3 k / 512; item ≤ 300 / 128. Para sprites o polycount só pesa no repositório; os alvos valem se a opção 3D no Unity (§6-B) for escolhida depois.
+
+## 1. Lote 1 — mínimo para o criativo de 3 s e o playtest
+
+| # | Asset | Tipo | Prompt (assunto + sufixos) | Tris | Tex | Rig Mixamo | Cr | Min |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Ferreiro (jogador) | Personagem | young blacksmith hero, broad shoulders, dark brown leather apron to the knees over cream shirt with rolled sleeves, oversized grey gloves, red bandana, big smithing hammer hooked on the belt, friendly round face, short dark hair `[S][T]` | 5 000 | 512 | sim | 65 | 45 |
+| 2 | Ajudante (base única) | Personagem | small apprentice helper, round cloth cap, short leather apron, cream tunic, rolled sleeves, big simple boots, cheerful face `[S][T]` | 4 000 | 512 | sim | 65 | 40 |
+| 3 | Cliente: Guerreira | Personagem | warrior woman adventurer, high ponytail, round wooden shield with iron rim on her back, shoulder pauldrons, blue tunic, leather belt, short sword at the hip `[S][T]` | 5 000 | 512 | sim | 65 | 40 |
+| 4 | Cliente: Anão | Personagem | dwarf adventurer, short and wide body, long braided wedge-shaped auburn beard, round iron helmet with nose guard, heavy belt with pouches, big boots `[S][T]` | 5 000 | 512 | sim | 65 | 40 |
+| 5 | Fornalha | Estação | stone brick smelting furnace, square body, arched mouth with glowing orange embers, short chimney with iron cap, iron hoops, small leather bellows on the side, small red lantern on the top-right corner `[P]` | 3 000 | 512 | — | 45 | 20 |
+| 6 | Bigorna | Estação | iron anvil on a thick oak stump, wooden trip-hammer frame above it, wooden water bucket beside, small red lantern on a post `[P]` (pilão separado em objeto no Blender para animar) | 2 500 | 512 | — | 45 | 25 |
+| 7 | Balcão | Estação | wooden shop counter with striped gold and cream awning canopy, gold trim, coin tray on top, blank hanging sign `[P]` | 2 500 | 512 | — | 45 | 20 |
+| 8 | Depósito de minério | Estação | wooden mine cart full of brown ore rocks with orange glints, iron wheels, on a short rail piece `[P]` | 2 000 | 512 | — | 45 | 20 |
+| 9 | Item: Minério | Item | Blender: ico-esfera + displace, 5–6 faces, cores §3 da bíblia (Tripo opcional 45: chunk of brown iron ore rock with orange veins `[P]`) | 120 | flat | — | 0 | 10 |
+| 10 | Item: Lingote | Item | Blender: cubo trapezoidal chanfrado (Tripo opcional 45: beveled steel ingot bar `[P]`) | 60 | flat | — | 0 | 5 |
+| 11 | Item: Espada | Item | Blender ou Tripo opcional 45: short broad fantasy sword, steel-blue blade, wide gold crossguard, dark wood grip, round pommel `[P]` | 300 | 128 | — | 0 | 15 |
+| 12 | Item: Escudo | Item | Blender ou Tripo opcional 45: round red wooden shield, gold center boss, iron rim `[P]` | 200 | 128 | — | 0 | 10 |
+| 13 | Item: Ferramenta | Item | Blender ou Tripo opcional 45: blacksmith hammer, steel head, green-wrapped wooden handle `[P]` | 150 | 128 | — | 0 | 10 |
+| 14 | Pad de upgrade | Prop | Blender: cilindro baixo de pedra + torus de ouro; preenchimento continua procedural | 200 | flat | — | 0 | 10 |
+| 15 | Chão da oficina + rua | Ambiente | Blender: plano com tile de pedra quente e tile de pedra fria (2 materiais, 256 px, sem costura) | 2 | 256 | — | 0 | 20 |
+| 16 | Faíscas, fumaça, brilho da brasa | VFX | Unity `ParticleSystem` com 1 sprite (disco 16 px); glow aditivo na boca da fornalha | — | 16–32 | — | 0 | 30 |
+| 17 | Ícones HUD (5 itens + moeda) | UI | render frontal dos próprios modelos a 128 px, fundo transparente | — | 128 | — | 0 | 20 |
+
+**Subtotal Lote 1:** 8 modelos Tripo (4 personagens + 4 estações) + 4 rigs = **440 créditos** (665 se os 5 itens forem ao Tripo) · ≈ 6 h 20 de mão + ≈ 1 h 40 de render de sprites (§6).
+
+## 2. Lote 2 — resto do MVP (GDD §18: 5 estações, 3 ajudantes, 15 upgrades)
+
+| # | Asset | Tipo | Prompt (assunto + sufixos) | Tris | Tex | Rig Mixamo | Cr | Min |
+|---|---|---|---|---|---|---|---|---|
+| 18 | Cliente: Mago | Personagem | wizard, very tall pointed hat, long purple robe with wide sleeves, wooden staff with a green gem on top, short grey beard, leather satchel `[S][T]` | 5 000 | 512 | sim | 65 | 40 |
+| 19 | Cliente: Elfa | Personagem | elf ranger woman, long pointed ears, moss-green hooded cape with pointed hood, wooden bow on her back, quiver, slim boots `[S][T]` | 5 000 | 512 | sim | 65 | 40 |
+| 20 | Cliente: Mercador goblin | Personagem | goblin merchant, green skin, big pointed ears, long nose, huge backpack of goods bigger than his body (rolled rugs, pots, sacks), wide-brim hat, coin pouch `[S][T]` | 5 000 | 512 | sim | 65 | 40 |
+| 21 | Cliente: Cavaleiro | Personagem | knight in full plate armor, closed helmet with a tall vertical red plume, kite shield on the left arm, blue tabard with a plain anvil emblem, sword at the hip `[S][T]` | 5 000 | 512 | sim | 65 | 40 |
+| 22 | Bancada de escudos | Estação | blacksmith workbench with a rack holding three round red shields, bench vise, red cloth, small red lantern on the top-right corner `[P]` | 3 000 | 512 | — | 45 | 20 |
+| 23 | Bancada de ferramentas | Estação | blacksmith workbench with a grindstone wheel, rack of hammers and tongs, green cloth, small red lantern on the top-right corner `[P]` | 3 000 | 512 | — | 45 | 20 |
+| 24 | Fornalha 2, Bigorna 2 | Estação | instâncias de #5 e #6 | — | — | — | 0 | 0 |
+| 25 | Ajudantes 1, 2, 3 | Personagem | base #2 + prop no Blender: cesto de vime (A1), pinças (A2), bandeja (A3); touca na cor do papel (§5 da bíblia) | +150 cada | 512 | herda | 0 | 30 |
+| 26 | Esteira | Prop | Blender: módulo reto de 1 m, roletes (cilindros) + correia de couro (Tripo opcional 45: wooden roller conveyor with leather belt, straight modular segment `[P]`) | 400 | 128 | — | 0 | 20 |
+| 27 | Pilhas de chão e na cabeça | Prop | reaproveitam os itens #9–13; 2 colunas como hoje | — | — | — | 0 | 0 |
+| 28 | Balão do pedido | UI | 9-slice creme `#F4F6FA` com rabicho; ícone #17 dentro | — | 64 | — | 0 | 10 |
+| 29 | VFX de compra e milestone | VFX | confete de moedas (sprite da moeda) + anel de ouro expandindo no pad | — | 32 | — | 0 | 20 |
+| 30 | Skin da HUD e painel offline | UI | 9-slice madeira + ouro (2 tons); fonte continua a embutida | — | 128 | — | 0 | 30 |
+
+**Subtotal Lote 2:** 6 modelos + 4 rigs = **350 créditos** (395 com a esteira no Tripo) · ≈ 5 h 10 de mão + ≈ 1 h de render.
+
+## 3. Lote 3 — 2ª área (corredor lateral e joalheria: GDD §3 9:30, §5 D3, §20)
+
+| # | Asset | Tipo | Prompt (assunto + sufixos) | Tris | Tex | Rig Mixamo | Cr | Min |
+|---|---|---|---|---|---|---|---|---|
+| 31 | Bancada de joalheria | Estação | jeweler's workbench with magnifier lamp, gem tray with colorful gems, small polishing wheel, purple cloth, small red lantern on the top-right corner `[P]` | 3 000 | 512 | — | 45 | 20 |
+| 32 | Loja de joalheria (fachada) | Estação | small jewelry shop front with an opaque pale display case showing gems, purple awning, gold trim, blank sign `[P]` | 3 000 | 512 | — | 45 | 20 |
+| 33 | Baú de milestone | Prop | ornate wooden treasure chest with iron bands, lid slightly open with warm gold glow inside `[P]` | 800 | 256 | — | 45 | 15 |
+| 34 | Carroça de rua | Prop | wooden merchant cart with two spoked wheels, barrels and sacks, folded canvas `[P]` | 1 500 | 256 | — | 45 | 15 |
+| 35 | Arco de entrada da rua | Ambiente | wooden street entrance arch with two hanging lanterns and a blank hanging sign `[P]` | 1 500 | 256 | — | 45 | 15 |
+| 36 | Cliente: Nobre colecionador | Personagem | noble collector, velvet cape with gold trim, feathered cap, monocle, holding a small ring box `[S][T]` | 5 000 | 512 | sim | 65 | 40 |
+| 37 | Postes, lampiões, barris, cercas | Prop | Blender: primitivas (cilindro, torus, caixa) com a paleta §2 | ≤ 300 | flat | — | 0 | 30 |
+| 38 | Item: Joia (anel) | Item | Blender: torus + gema em losango; 6º matiz da cadeia: roxo `#B07CF2` | 150 | flat | — | 0 | 10 |
+| 39 | Ajudantes 4–6 (visuais) | Personagem | base #2 + prop/cor novos | +150 | 512 | herda | 0 | 30 |
+
+**Subtotal Lote 3:** 6 modelos + 1 rig = **290 créditos** · ≈ 3 h 15 de mão + ≈ 40 min de render.
+
+## 4. Totais
+
+| Lote | Modelos Tripo | Rigs | Créditos (rota recomendada) | Créditos (tudo no Tripo) | Mão de obra |
+|---|---|---|---|---|---|
+| 1 | 8 | 4 | **440** | 665 | ≈ 8 h |
+| 2 | 6 | 4 | **350** | 395 | ≈ 6 h |
+| 3 | 6 | 1 | **290** | 290 | ≈ 4 h |
+| **Total** | **20** | **9** | **1 080** | 1 350 | ≈ 18 h |
+
+39 linhas de asset; 20 geradas no Tripo, 19 feitas no Blender/Unity sem crédito. Cada geração entra em `docs/PROVENIENCIA.md` (ferramenta, plano pago, prompt, data, SHA-256).
+
+## 5. Animações Mixamo por personagem
+
+Fluxo: FBX já rigado pelo Tripo → Mixamo "Upload character" → baixar cada clip "With Skin" para o Blender (sprites) ou "Without Skin" para o Unity. ≈ 10 min por personagem para 5 clips.
+
+| Personagem | Clip (nome no Mixamo) | Uso no jogo | Status do nome |
+|---|---|---|---|
+| Todos | `Idle` | parado na estação / na fila | confirmado |
+| Todos | `Walking` | andar; jogador e ajudantes em 8 direções, clientes em 1 (descem a rua) | confirmado |
+| Ferreiro, ajudantes | `Walking` + pose própria "braços erguidos" (1 quadro no Blender, camada NLA só nos ossos do tronco e braços) | carregar pilha na cabeça | pose própria: os clips de carregar do Mixamo seguram caixa à frente do peito, não na cabeça |
+| Ferreiro | martelada própria: 3 keyframes no braço direito, 0,5 s, laço | criativo de 3 s (close na bigorna); no jogo a bigorna trabalha sozinha (martelo-pilão, 4 quadros) | `Hammering` a confirmar no catálogo; substituto confirmado: `Standing Melee Attack Downward` |
+| Ferreiro | `Cheering` | comprou upgrade / milestone | confirmado |
+| Ajudantes | `Looking Around` | espera na fonte vazia (`WorkerPatience` 1,2 s) | confirmado |
+| Clientes | `Looking Around` → `Angry` | paciência < 50% → < 20% (barra continua) | confirmados; `Impatient Idle` / `Bored` a confirmar |
+| Clientes | `Thankful` ou `Clapping` | recebeu o produto | confirmados |
+| Clientes | `Waving` | sai feliz (opcional) | confirmado |
+| Entregar / despejar (pouring, handing) | nenhum: o item voa da cabeça à pilha em 0,2 s (`TransferTime`) com squash do personagem | — | pulado de propósito: 0,2 s não comporta clip |
+
+Lição aplicada: a pose T em jogo vinha dos CLIPS do placeholder, não do rig (LICOES 2026-09-30); em sprites isso vira um quadro em T no atlas, então cada atlas é conferido na foto `-shot` antes de entrar.
+
+## 6. Render para sprites 2D ou cena 3D no Unity
+
+| Critério | A) Blender renderiza sprites (view 2D atual) | B) Cena 3D no Unity |
+|---|---|---|
+| Dev solo | 1 script Blender (câmera 60°, 8 rotações, PNG transparente) + `SpriteAtlas`; sem importador de rig, Animator ou materiais | import FBX Humanoid, Animator Controller por papel, materiais URP, luz, sombras, LOD, ciclo de medição no aparelho |
+| Android médio | ~300 quads, ≤ 10 draw calls, 8 atlases 2048² ASTC ≈ 12 MB; 60 fps sem medir | 15 skinned Humanoid (30–50% mais CPU que Generic) + 10 estações ≈ 100 k tris; 60 fps provável, mas é o "ajuste no aparelho" que deu CLI 5/10 ao Forge na raia C |
+| Código atual | `WorldView` troca `Art.Disc()`/`Rounded()` por `atlas[anim][dir][frame]` em `BuildCarrier`, `BuildClient`, `BuildStation` (~120 linhas); `Sim`, `Game`, câmera, HUD e joystick intactos | `WorldView` reescrita (~400 linhas), câmera nova, XY → XZ, sorting por Y some; `Sim` intacto |
+| Criativo 9:16 | renderizado no Blender com os mesmos modelos (câmera livre, bloom): melhor que in-game | filmável in-game; bloom/pós no URP mobile a configurar |
+| Limites | zoom > 1,5× borra (render a 256 px se a 2ª área exigir zoom); luz e ângulo fixos; direção nova = re-render | zoom, câmera que segue e luz dinâmica de graça; temas cosméticos de forja mais baratos |
+| Retrabalho | os modelos 3D servem aos dois; migrar para B depois não perde asset | — |
+
+**Escolha:** **A) sprites pré-renderizados no Blender** — mantém view 2D e `Sim` como estão, roda em qualquer Android e os mesmos modelos rendem o criativo direto no Blender; B só se a 2ª área exigir zoom ou câmera livre, depois do gate de criativos.
+
+Pipeline A, resumido:
+1. `arte/forge_render.blend`: câmera ortográfica a 60° do chão, luz-chave quente + preenchimento frio fixos (bíblia §7), chão invisível (a sombra elipse continua no Unity).
+2. Personagem: 8 rotações × (Idle 1 + Walking 8 + carregar 8 + Cheering 6 + Looking Around 4 + Angry 4 = 31 quadros) a 12 fps, 128 px de altura → 248 quadros num atlas 2048² (256 slots). Clientes: 1 direção de andar + 1 de fila ≈ 50 quadros.
+3. Estações: 2 estados (ligada / apagada) × 1 ângulo; pilão da bigorna em 4 quadros; "travada" = tint vermelho em runtime, como hoje.
+4. Itens: 1 quadro a 64 px (pilha, cabeça, balão) + 128 px (HUD).
+5. Unity: um `SpriteRenderer` por portador; `frame = (int)(t × 12) % n`; direção = `atan2` do movimento quantizado em 8; `SpriteAtlas` por personagem.
+6. Portão: foto `-shot` do APK no aparelho, silhuetas em preto a 30%, ícones a 24 px (bíblia §10).

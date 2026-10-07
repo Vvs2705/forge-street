@@ -1,0 +1,17 @@
+# arte-fonte crua (licença Mixamo/Tripo + tamanho); SHA-256 de cada arquivo em docs/PROVENIENCIA.md
+arte/tripo/
+arte/mixamo/
+# segredos / SO / IDE (o client/.gitignore cuida do Unity e dos builds)
+.env
+.env.*
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+**/bin/
+**/obj/
+**/TestResults/
+*.apk
+*.aab
+**/logcat.txt
