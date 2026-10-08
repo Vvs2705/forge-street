@@ -72,7 +72,9 @@ namespace FS
         const float LeaveSpeed = 2.5f;     // m/s do cliente indo embora pela rua
         const float OneShotMax = 3f;       // ponytail: teto de Thankful (3,0 s no Lote 1) e Waving (0,5 s) para clipe longo futuro nao empilhar a rua no pico de vendas
         const int StackOrder = 2000, BubbleOrder = 3000;   // acima de todo corpo ordenado por Depth
-        static readonly Color Dimmed = new Color(0.78f, 0.78f, 0.78f, 1f);   // estacao parada: "fome" = apagar (ART_BIBLE §6)
+        // estacao parada: "fome" = apagada e cinza (ART_BIBLE §6). Era 0,78: no video do criativo #8 (docs/CRIATIVOS.md) a bigorna
+        // com fome ficava igual a que trabalhava; 0,55 frio le a 1 m do celular e continua mais clara que a loja fechada (Shut).
+        static readonly Color Dimmed = new Color(0.55f, 0.55f, 0.6f, 1f);
         static readonly string[] ClientArt = { "guerreira", "anao", "mago", "elfa", "goblin", "cavaleiro" };   // clientes do balcao; nobre = so a loja de joias
         // 2a area (AREA2 s7). Carroca na celula das estacoes; arco maior (entrada da rua: ~1,4 m de largura, pes acima do pad do Corredor).
         const float ArchCell = 2.0f, CartCell = StationCell;

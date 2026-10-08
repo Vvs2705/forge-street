@@ -46,10 +46,18 @@ Flags de dev do executável:
 - `-shotchest`: com `-shot`, espera um baú real ficar disponível (até 180 s), para fotografá-lo antes de o bot abrir.
 - `-menu`: abre a fileira de melhorias (fotos).
 - `-buy N` / `-gold G` / `-px x,y`: compra os N primeiros upgrades (produtivos antes do luxo), põe G de ouro, põe o ferreiro em (x, y).
+- `-record pasta [-recordsec S] [-recordfps F]`: grava quadros JPG 1080×1920 (janela 540×960, supersample ×2) com o relógio do jogo travado em 1/F s por quadro e sai; liga `-testsession` sozinha. A janela precisa estar visível. Receita: `docs/CRIATIVOS.md`.
+- `-buyids 1,5,0@300`: compra esses ids do enum `Upgrade` fora da ordem do `-buy`; `id@t` compra aos t s de jogo, cobrando o preço.
+- `-warmup S`: simula S s antes do 1º quadro (jogador parado, sem bot).
 
 Controles: toque e arraste em qualquer lugar entre a faixa de cima e a barra de melhorias (joystick flutuante); no PC também WASD/setas; Esc salva e sai. Pads de construção cobram quando você **para** em cima (ou depois de 0,5 s andando por cima); atravessar correndo não gasta. Melhorias: toque em **Melhorias** na barra de baixo e no cartão (dourado = dá para comprar). Estações e paredes são sólidas: encoste na **boca de entrada** (seta para dentro) para depositar e na **boca de saída** (seta para fora) para recolher.
 
 Diário de playtest: `persistentDataPath/diario.csv` com `utc,sessao,evento,t_jogo,a,b`. Eventos (GDD §14): `session_start, first_sale, product_crafted, product_sold, upgrade_buy, worker_hired, station_unlock, client_left(cansou|fila_cheia), bottleneck, offline_claim` e, por minuto, `queue_length, bottleneck_seconds(travada,fome), walk_no_decision`.
+
+### Playtest (Camada 0)
+Colete um `diario.csv` por testador (um arquivo = uma pessoa): Android `adb pull /sdcard/Android/data/br.com.vstack.forgestreet/files/diario.csv playtest/testador01.csv`; Windows `%USERPROFILE%/AppData/LocalLow/V-STACK/Forge Street/diario.csv`.
+`python client/tools/diario_report.py playtest/` imprime a 1ª venda, cada `upgrade_buy` humano × bot (BALANCE §15.3) com a razão, `client_left` por motivo, andar sem decisão e travada/fome por minuto, a duração das sessões e o bloco PORTÕES (GDD §3/§15/§26, README).
+O que o diário não mede sai como MANUAL: pergunte a cada testador qual estação era o gargalo. Linha truncada é contada e ignorada. `--autoteste` prova o cálculo. Lacunas conhecidas: sem evento de dica, de tutorial nem de fim de sessão (o "escudos sem dica" não sai do diário).
 
 Ao abrir no Editor, a cena `Assets/_FS/Scenes/Main.unity` é vazia de propósito: o `Game` nasce sozinho.
 
@@ -123,8 +131,8 @@ Pedidos do Vinicius depois de jogar a v0.3.0 num POCO F4:
 ## Próximos passos
 
 1. **Retestar a v0.4.0 no POCO F4:** barra de melhorias (toque, joystick fora da faixa), bocas de 0,4 m no polegar, contornar estações sem desvio automático, porta lateral, paciência nova.
-2. **Playtest Camada 0** (10–20 pessoas, teste interno do Play) lendo `diario.csv`: `first_sale` <90 s em ≥90% (GDD §15); `upgrade_buy` × a §3 (calibra o fator humano do bot); `walk_no_decision` (kill criterion "andar entre pilhas"); `client_left`. Hipótese de passagem: ≥70% compram a 2ª linha (escudos) sem dica e ≥50% dizem qual estação era o gargalo.
-3. **8 criativos 9:16** (GDD §17): #2 fila gigante → fole resolve, #3 "onde investir 100 moedas?", #8 erro proposital (bigornas demais, 1 fornalha): o greybox já mostra fome/travada.
+2. **Playtest Camada 0** (10–20 pessoas, teste interno do Play) lendo `diario.csv` com `python client/tools/diario_report.py playtest/` (seção Playtest abaixo): `first_sale` <90 s em ≥90% (GDD §15); `upgrade_buy` × a §3 (calibra o fator humano do bot); `walk_no_decision` (kill criterion "andar entre pilhas"); `client_left`. Hipótese de passagem: ≥70% compram a 2ª linha (escudos) sem dica e ≥50% dizem qual estação era o gargalo.
+3. **8 criativos 9:16** (GDD §17). **3 gravados** do build real: #1 bigorna vazia → oficina lotada, #2 fila gigante → fole resolve, #8 erro proposital (`client/Builds/creatives/`, `docs/CRIATIVOS.md`). Faltam 5; #3 "onde investir 100 moedas?" é o próximo.
 4. **Decisão do slot idle** pelo playtest e criativos do Forge; Underground continua como alternativa.
 5. **Backlog proposto:** A/B do 2º ajudante de minério (`docs/ESTUDO_LOGISTICA.md`); validar com pessoas se o luxo é desejado (bot comprar não prova interesse). Não ampliar conteúdo antes de medir. Ads/IAP e publicação exigem autorização específica.
 
