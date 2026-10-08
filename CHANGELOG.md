@@ -2,7 +2,13 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões do Forge Street em [SemVer](https://semver.org/lang/pt-BR/). O histórico anterior ao repositório (2026-10-06 → 2026-10-07) foi reconstruído a partir dos documentos de validação.
 
-## [Não lançado] — em andamento (v0.4.0)
+## [0.4.1] — 2026-10-07
+### Alterado
+- Arte das estações 18% maior (célula 1,65 → 1,95 m): agora cobre o corpo sólido de 1,3 m, sem borda invisível; sombra e rótulos acompanham.
+- Pad do Mineiro de (0,5; 3,5) para (2,8; 0,6), embaixo do Depósito: saiu da rota Depósito → Fornalha. Balance inalterado (produção completa 43:37).
+- Rótulo "Rua lateral" na parede entre a porta e o arco, não mais em cima da porta.
+
+## [0.4.0] — 2026-10-07
 ### Adicionado
 - **Física** (Leva 10): estações, parede e decoração sólidas (caixa 0,65 × 0,40 m); personagem círculo de 0,25 m que desliza nas quinas; bot e ajudantes contornam as estações.
 - **Duas bocas por estação de produção**: entrada só deposita, saída só recolhe; marcadas no chão com anel e seta na cor do item. Depósito e balcões com zona única.
