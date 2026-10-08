@@ -70,7 +70,7 @@ TryBuyMenu (ouro, pré-requisito, idempotência, evento); upgrade de menu não t
 ### Pendências
 - **Validar no aparelho:** a barra, o toque e o joystick fora da faixa de baixo (`BottomBand`).
 - **Ainda sem medição de humano:** o tempo do humano para abrir o menu e tocar. O bot usa 0,7 s.
-- **Mineiro (0,5; 3,5):** fica a 0,62 m da linha Depósito → entrada da Fornalha (raio do pad 0,6). O bot nunca passou por cima, mas o humano pode passar raspando enquanto o pad está à venda (entre o Joalheiro e o Mineiro, ~3 min).
+- ~~**Mineiro (0,5; 3,5):** fica a 0,62 m da linha Depósito → entrada da Fornalha.~~ **RESOLVIDO na v0.4.1:** pad do Mineiro em (2,8; 0,6), embaixo do Depósito; produção completa inalterada (43:37).
 
 ## 6. Estado da VIEW (coordenador, 2026-10-07)
 - `View/MenuBar.cs`: barra fixa (8,5% da altura) com o botão "Melhorias (N)" — dourado quando há N compráveis — e fileira rolável (17%) de cartões ordenados por preço: ícone sobre disco escuro, nome, efeito, preço. Comprável = cartão dourado; sem ouro = escuro com preço em vermelho; travado = apagado com "requer X"; comprado = some.

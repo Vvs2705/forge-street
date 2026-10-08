@@ -27,7 +27,7 @@ Feito **por cima da Etapa A** de `FASE5_FISICA_PACIENCIA.md` (física, bocas, pa
 
 | ID | enum | preço APLICADO | requer | pad | por quê |
 |---|---|---|---|---|---|
-| 23 | `Miner` | **3.000** (`Balance.MinerCost`) | `Jeweler` | **(0,5; 3,5)**, slot 20 | posição do contrato; a ≥ 1,68 m das bocas do Depósito e da Fornalha |
+| 23 | `Miner` | **3.000** (`Balance.MinerCost`) | `Jeweler` | **(2,8; 0,6)**, slot 20 (v0.4.1; era (0,5; 3,5)) | embaixo do Depósito, no lugar das Botas (pad invisível desde o menu); fora da rota Depósito → entrada da Fornalha |
 | 24 | `Jeweler2` | **2.400** (`Balance.Jeweler2Cost`) | `Miner` | **(12; 3,5)**, slot 21 | rua lateral, embaixo da Joalheria; longe das bocas (2,35 m), da porta lateral, da fila, do baú, dos pedestais e dos outros pads |
 | 14 | `HammerSpeed` (pad) | — | — | (0,5; 9,5) → **(8,4; 3,4)**, mesmo slot 10 | a sugestão (8,4; 7,5) caiu na linha entre as SAÍDAS de Ferramentas e Escudos criadas pela Etapa A; (8,4; 3,4) fica fora de toda linha boca → boca e a ≥ 1,5 m de qualquer estação |
 

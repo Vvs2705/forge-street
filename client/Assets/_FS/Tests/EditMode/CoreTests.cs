@@ -1213,7 +1213,7 @@ namespace FS.Tests
             Assert.AreEqual(((int)Upgrade.Miner, -1), (PadFor(s, Upgrade.Miner).Current(s), PadFor(s, Upgrade.Jeweler2).Current(s)), "Joalheiro abre o Mineiro");
             s.Buy(Upgrade.Miner);
             Assert.AreEqual((-1, (int)Upgrade.Jeweler2), (PadFor(s, Upgrade.Miner).Current(s), PadFor(s, Upgrade.Jeweler2).Current(s)), "Mineiro abre o Joalheiro 2");
-            Assert.AreEqual(new V2(0.5f, 3.5f).ToString(), PadFor(s, Upgrade.Miner).Pos.ToString(), "parede esquerda entre Deposito e Fornalha");
+            Assert.AreEqual(new V2(2.8f, 0.6f).ToString(), PadFor(s, Upgrade.Miner).Pos.ToString(), "embaixo do Deposito, fora da rota ate a Fornalha");
             Assert.AreEqual(new V2(12f, 3.5f).ToString(), PadFor(s, Upgrade.Jeweler2).Pos.ToString(), "rua lateral, embaixo da Joalheria");
         }
 

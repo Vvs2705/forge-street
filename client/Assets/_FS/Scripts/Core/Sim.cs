@@ -163,7 +163,7 @@ namespace FS.Core
             Slot(6.5f, 3.2f, Upgrade.WorkshopFacade);               // luxo, pads 17-19: so depois de todos os produtivos
             Slot(4.5f, 3.2f, Upgrade.WorkshopFloor);
             Slot(14.2f, 5.1f, Upgrade.JewelryDecor);
-            Slot(0.5f, 3.5f, Upgrade.Miner);                         // fase 4, pads 20-21: parede esquerda entre Deposito e Fornalha
+            Slot(2.8f, 0.6f, Upgrade.Miner);                         // fase 4, pads 20-21. Era (0,5; 3,5): raspava a rota Deposito -> entrada da Fornalha; agora no lugar das Botas (menu, pad invisivel)
             Slot(12f, 3.5f, Upgrade.Jeweler2);                       // rua lateral embaixo da Joalheria: longe das bocas, fila, bau e decoracao
             foreach (MilestoneDef m in Balance.Milestones) Chests.Add(new Chest { Index = Chests.Count, Pos = m.Pos, Gold = m.Gold, Label = m.Label });
             Recompute();

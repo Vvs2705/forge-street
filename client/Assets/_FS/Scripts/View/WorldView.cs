@@ -65,7 +65,9 @@ namespace FS
         {
             "ajudante" => 1.19f, "guerreira" => 1.24f, "anao" => 1.08f, "elfa" => 1.03f, "goblin" => 1.11f, "cavaleiro" => 0.79f, "nobre" => 0.91f, _ => 1f,
         };
-        const float StationCell = 1.65f;   // m do mundo por celula de estacao: maior dimensao da peca ~ celula/1,1 = 1,5 m (largura da base procedural)
+        // m do mundo por celula de estacao. Com 1,65 a peca ocupava 0,9-1,24 m de largura e o corpo solido tem 1,3 m (FASE5): o
+        // ferreiro batia numa borda invisivel. Com 1,95 a arte cobre o corpo (1,08-1,47 m de largura, 1,06-1,49 m de altura).
+        const float StationCell = 1.95f;
         const float HeadY = 0.95f;         // topo da cabeca (m acima do pe): pilha e balao comecam aqui
         const float LeaveSpeed = 2.5f;     // m/s do cliente indo embora pela rua
         const float OneShotMax = 3f;       // ponytail: teto de Thankful (3,0 s no Lote 1) e Waving (0,5 s) para clipe longo futuro nao empilhar a rua no pico de vendas
@@ -277,7 +279,7 @@ namespace FS
             Sprite art = StaticArt(StationArt(s), StationCell);
             if (art != null)
             {
-                Art.NewSprite(v.Root, "Sombra", Art.Disc(), new Color(0f, 0f, 0f, 0.25f), 1, Vector2.zero, new Vector2(1.3f, 0.6f));
+                Art.NewSprite(v.Root, "Sombra", Art.Disc(), new Color(0f, 0f, 0f, 0.25f), 1, Vector2.zero, new Vector2(1.55f, 0.7f));
                 v.Base = Art.NewSprite(v.Root, "Arte", art, Color.white, Depth(s.Pos.Y), Vector2.zero, Vector2.one);
                 v.Baked = true;
             }
@@ -617,7 +619,7 @@ namespace FS
             _street.color = corridor ? StreetOpen : StreetShut;
             _door.enabled = !corridor;
             _streetLabel.enabled = !corridor;
-            if (!corridor) PlaceLabel(_streetLabel, new Vector3(Balance.WorkshopW + 0.6f, Balance.WorldH / 2f, 0f), Vector2.zero);
+            if (!corridor) PlaceLabel(_streetLabel, new Vector3(Balance.WorkshopW + 0.6f, (Balance.SideWallOpenings[1] + Balance.SideWallOpenings[2]) / 2f, 0f), Vector2.zero);   // na parede entre a porta e o arco, nao em cima da porta
             if (_shopTeaser != null && _shopTeaser.transform.parent.gameObject.activeSelf != teaser) _shopTeaser.transform.parent.gameObject.SetActive(teaser);
             _shopLabel.enabled = teaser;
             if (teaser) PlaceLabel(_shopLabel, W(_sim.JewelShop.Pos) + new Vector3(0f, 1.2f, 0f), Vector2.zero);
@@ -696,7 +698,7 @@ namespace FS
             if (v.Root.gameObject.activeSelf != s.Unlocked) v.Root.gameObject.SetActive(s.Unlocked);
             if (!s.Unlocked) { v.Label.enabled = false; return; }
             v.Label.enabled = true;
-            float labelY = s == _sim.Counter ? 0.8f : v.Baked ? 1.2f : 0.95f;   // balcao: abaixo do varal da Fachada nobre (y 14,1)
+            float labelY = s == _sim.Counter ? 0.9f : v.Baked ? 1.35f : 0.95f;   // balcao: abaixo do varal da Fachada nobre (y 14,1)
             PlaceLabel(v.Label, W(s.Pos) + new Vector3(0f, labelY, 0f), Vector2.zero);
             if (s.Produces)
             {

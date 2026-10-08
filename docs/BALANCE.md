@@ -884,3 +884,8 @@ precos (F / P / J)  | Dt 1/30: fachada  piso           joalheria real  | Dt 1/60
 | M16 `Via` sem a correção do vão | Parede, Joalheiro2_Papel3Extra |
 | M17 Lupa sem a marca `menu` | Menu_OsNove, Save_Antigo_Parcial, TryBuyMenu_AplicaOMesmoEfeito, Bocas_Laterais |
 | restaurado (SHA = core real) | verde |
+
+## 16. v0.4.1 — ajustes visuais e pad do Mineiro (coordenador, 2026-10-07)
+- **Pad do Mineiro** (0,5; 3,5) → **(2,8; 0,6)**, slot 20, no lugar das Botas (pad do menu, invisível; `Sim` ignora pad invisível na busca por posição). Motivo: a 0,62 m da linha Depósito → entrada da Fornalha, o humano pisaria nele de passagem. Bot: produção completa **43:37** (igual), Fachada +8,8 min, ouro/min 44–90 1.626; dotnet 66/66.
+- **Arte das estações** de célula 1,65 m para 1,95 m: com 1,65 a peça tinha 0,9–1,24 m de largura e o corpo sólido 1,3 m (o ferreiro batia numa borda invisível). Só view; nenhum número muda.
+
