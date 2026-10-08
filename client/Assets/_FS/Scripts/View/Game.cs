@@ -17,7 +17,9 @@ namespace FS
     /// jogador com a camera em retrato, monta a HUD por codigo e grava o diario de playtest
     /// (persistentDataPath/diario.csv). Nasce sozinho em qualquer cena.
     /// Flags de dev: -autoplay [min] (bot sem render, loga AUTOPLAY por minuto, sai 0/1) | -shot foto.png
-    /// [-shotdelay s] [-shotchest] [-bot] [-menu] | -speed N | -reset (apaga o save) | -testsession (sem persistencia).
+    /// [-shotdelay s] [-shotchest] [-bot] [-menu] | -speed N | -reset (apaga o save) | -testsession (sem persistencia) |
+    /// -record pasta [-recordsec S] [-recordfps F] (quadros 1080x1920 para os criativos, docs/CRIATIVOS.md) | -buyids 1,5,0@300 |
+    /// -warmup S.
     /// </summary>
     public sealed class Game : MonoBehaviour
     {
@@ -41,6 +43,7 @@ namespace FS
         bool _botDrive, _headless, _firstSaleLogged, _testSession;
         string _diary, _sid;
         Vector2Int _screen;
+        readonly System.Collections.Generic.List<(int u, float t)> _buyAt = new System.Collections.Generic.List<(int u, float t)>();   // -buyids id@t
 
         Canvas _joyCanvas;
         RectTransform _canvas, _labels, _safe, _panel;
@@ -56,7 +59,8 @@ namespace FS
         void Awake()
         {
             Application.targetFrameRate = 60;
-            _testSession = Arg("-testsession") != null || Arg("-autoplay") != null;
+            _testSession = Arg("-testsession") != null || Arg("-autoplay") != null || Arg("-record") != null;
+            if (Arg("-record") != null) Time.captureFramerate = Mathf.Max(1, (int)ArgF("-recordfps", 30f));   // relogio do jogo = quadro do video
             _sid = Guid.NewGuid().ToString("N").Substring(0, 8);
             _diary = Path.Combine(Application.persistentDataPath, "diario.csv");
             Sfx.Init(gameObject);
@@ -93,6 +97,8 @@ namespace FS
             _botDrive = Arg("-bot") != null;
             string shot = Arg("-shot");
             if (!string.IsNullOrEmpty(shot)) StartCoroutine(Shot(shot));
+            string rec = Arg("-record");
+            if (!string.IsNullOrEmpty(rec)) StartCoroutine(Record(rec));
         }
 
         /// <summary>Cofre: o claim e' idempotente pelo SavedAt do save (o Core recusa id repetido ou mais antigo).</summary>
@@ -135,6 +141,7 @@ namespace FS
                 dt -= step;
                 if (_botDrive) _bot.Step(_sim, step);
                 else _sim.Tick(step, input.x, input.y);
+                TimedBuys();   // depois do Tick: o Ev.Bought fica em Events e o HandleEvents toca o som e o "+nome!"
                 HandleEvents();
             }
 
@@ -265,7 +272,7 @@ namespace FS
             _gold = Art.NewText(band.transform, "Ouro", 64, new Vector2(0.12f, 0.5f), new Vector2(0.6f, 1f), TextAnchor.MiddleLeft);
             _gold.fontStyle = FontStyle.Bold;
             Text title = Art.NewText(band.transform, "Titulo", 30, new Vector2(0.55f, 0.5f), new Vector2(0.97f, 1f), TextAnchor.MiddleRight);
-            title.text = "Forge Street v" + Application.version;
+            title.text = Arg("-record") != null ? "Forge Street" : "Forge Street v" + Application.version;   // criativo sem versao
             title.color = Art.ComAlfa(Art.Ink, 0.55f);
             _hint = Art.NewText(band.transform, "Dica", 36, new Vector2(0.03f, 0.04f), new Vector2(0.97f, 0.5f));
             _hint.color = Art.Accent;
@@ -353,11 +360,38 @@ namespace FS
                 for (int pass = 0; pass < 2; pass++)   // o Buy recusa luxo antes da producao completa, e ha produtivos (Mineiro, Joalheiro 2) depois dos luxos
                     for (int i = 0; i < Math.Min(n, Upgrades.Count); i++)
                         if (Upgrades.IsLuxury(i) == (pass == 1)) _sim.Buy((Upgrade)i);
+            // -buyids 1,5,0@300 (criativos): compra estes ids do enum Upgrade fora da ordem do -buy (ex.: 4 bancadas e 1 fornalha
+            // sem fole); "id@t" compra quando o relogio do jogo passa de t s, na ordem dada, cobrando o preco (TimedBuys).
+            foreach (string tok in (Arg("-buyids") ?? "").Split(','))
+            {
+                string[] p = tok.Split('@');
+                if (!int.TryParse(p[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int id) || id < 0 || id >= Upgrades.Count) continue;
+                if (p.Length == 1) _sim.Buy((Upgrade)id);
+                else if (float.TryParse(p[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float at)) _buyAt.Add((id, at));
+            }
             if (int.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int g)) _sim.Gold = Math.Max(0, g);
             string[] px = (Arg("-px") ?? "").Split(',');
             if (px.Length == 2 && float.TryParse(px[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x)
                 && float.TryParse(px[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y)) _sim.Player.Pos = new V2(x, y);
+            // -warmup S: simula S s antes do 1o quadro (jogador parado, sem bot): a fila e a fome ja estao montadas quando a gravacao comeca
+            float warm = ArgF("-warmup", 0f);
+            for (float t = 0f; t < warm; t += MaxStep) { _sim.Tick(MaxStep, 0f, 0f); TimedBuys(); }
         }
+
+        /// <summary>-buyids id@t: compra quando _sim.Time passa de t e cobra o preco (sem ouro bastante fica em 0).</summary>
+        void TimedBuys()
+        {
+            for (int i = 0; i < _buyAt.Count;)
+            {
+                if (_sim.Time < _buyAt[i].t) { i++; continue; }
+                var u = (Upgrade)_buyAt[i].u;
+                _buyAt.RemoveAt(i);
+                // ponytail: cheat de dev, o Buy nao confere pre-requisito; a ordem da lista e' responsabilidade de quem grava
+                if (_sim.Buy(u)) _sim.Gold = Math.Max(0, _sim.Gold - Upgrades.Cost(u));
+            }
+        }
+
+        static float ArgF(string name, float def) => float.TryParse(Arg(name), NumberStyles.Float, CultureInfo.InvariantCulture, out float v) ? v : def;
 
         static string Arg(string name)
         {
@@ -386,6 +420,31 @@ namespace FS
             ScreenCapture.CaptureScreenshot(path);
             yield return null;
             yield return null;
+            Application.Quit(0);
+        }
+
+        /// <summary>
+        /// -record pasta [-recordsec S] [-recordfps F]: grava round(S x F) quadros (pasta/fNNNNN.jpg) e sai 0. O relogio do jogo anda
+        /// 1/F s por quadro (Time.captureFramerate no Awake), entao maquina lenta nao muda o video; com -speed N cada quadro avanca
+        /// N/F s de simulacao (F baixo = time-lapse). Supersample ate ~1920 px de altura: janela 540x960 sai 1080x1920. A janela
+        /// precisa estar visivel (-batchmode/-nographics nao tem tela para capturar).
+        /// </summary>
+        IEnumerator Record(string dir)
+        {
+            Directory.CreateDirectory(dir);
+            int frames = Mathf.RoundToInt(ArgF("-recordsec", 15f) * Time.captureFramerate);
+            int k = Mathf.Max(1, Mathf.RoundToInt(1920f / Screen.height));
+            var eof = new WaitForEndOfFrame();
+            for (int n = 0; n < frames; n++)
+            {
+                yield return eof;
+                Texture2D tex = ScreenCapture.CaptureScreenshotAsTexture(k);
+                // ponytail: JPG 95 em vez de PNG; 1080x1920 em PNG passa de 2 MB por quadro e 900 quadros pesam no disco
+                File.WriteAllBytes(Path.Combine(dir, $"f{n:00000}.jpg"), tex.EncodeToJPG(95));
+                if (n == 0) Debug.Log($"RECORD {tex.width}x{tex.height} x{k} {frames} quadros -> {dir}");
+                Destroy(tex);
+            }
+            Debug.Log($"RECORD OK t={_sim.Time:0.0} fila={_sim.Queue.Count}/{_sim.QueueCap} upgrades={_sim.UpgradesBought} ouro={_sim.Gold}");
             Application.Quit(0);
         }
 

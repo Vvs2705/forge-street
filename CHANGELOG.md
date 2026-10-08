@@ -2,6 +2,14 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões do Forge Street em [SemVer](https://semver.org/lang/pt-BR/). O histórico anterior ao repositório (2026-10-06 → 2026-10-07) foi reconstruído a partir dos documentos de validação.
 
+## [Unreleased]
+### Adicionado
+- Criativos de UA 9:16 #1, #2 e #8 (GDD §17) gravados do build real, em `client/Builds/creatives/`, com os comandos em `docs/CRIATIVOS.md`.
+- Flags de dev `-record` (quadros 1080×1920 com relógio travado), `-buyids` e `-warmup`.
+- `client/tools/diario_report.py`: relatório do playtest Camada 0 (1ª venda, upgrades humano × bot, clientes perdidos, andar sem decisão, travada/fome por minuto, portões do GDD) com `--autoteste`.
+### Corrigido
+- "Fome" visível: estação parada escurece para cinza frio 0,55 (antes 0,78, quase igual à ativa), como pede a ART_BIBLE §6.
+
 ## [0.4.1] — 2026-10-07
 ### Alterado
 - Arte das estações 18% maior (célula 1,65 → 1,95 m): agora cobre o corpo sólido de 1,3 m, sem borda invisível; sombra e rótulos acompanham.
