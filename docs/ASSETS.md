@@ -120,3 +120,36 @@ Pipeline A, resumido:
 4. Itens: 1 quadro a 64 px (pilha, cabeça, balão) + 128 px (HUD).
 5. Unity: um `SpriteRenderer` por portador; `frame = (int)(t × 12) % n`; direção = `atan2` do movimento quantizado em 8; `SpriteAtlas` por personagem.
 6. Portão: foto `-shot` do APK no aparelho, silhuetas em preto a 30%, ícones a 24 px (bíblia §10).
+
+## 7. v0.5 — leva 1 de arte procedural (2026-10-08, 0 crédito)
+
+Pedido do Vinicius (2026-10-08): "a espada é apenas um triângulo azul nos pedidos [...] precisam parecer realmente espadas", balcão **sem toldo**, evolutivo de 4 a 8 vagas (+1 por evolução), e portão lateral certo. Direção: `BENCHMARK_VISUAL.md` §3–4 (PROPOSTO) + ajustes do coordenador. Tudo modelado por script no Blender 5.2 (primitivas, sem Tripo nem Mixamo), com a câmera e a luz dos props (Workbench FLAT + contorno + cavidade, AA 8, ortográfica a 60° sobre o chão). Substitui o toldo do #7 e as formas de `Art.ItemSprite` (#9–13, #38); a integração na View é a leva 2.
+
+Regenerar tudo (raiz do projeto, ~8 s; grupos opcionais `itens balcao portao`):
+```
+"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup --python-exit-code 1 --python client/tools/arte_v05_blender.py -- --check <pasta temporária>
+python client/tools/folhas_v05.py --check <a mesma pasta>
+```
+O 1º grava 27 PNG + `meta.json` em `client/Assets/_FS/Resources/Sprites/<nome>/` (formato do `render_sprites.py`, lido pelo `SpriteSheet.cs`) e a prova de emenda do balcão na pasta temporária. O 2º (Python 3 + Pillow, só QA) grava `client/Builds/sprites_contact/v05_itens.png`, `v05_balcao_4e8.png` e `v05_portao.png`, cenas falsas na escala do aparelho (1 m = 95 px) com as texturas e o elenco reais.
+
+| Pasta | Clipes | px | ppu | Pivô | Uso |
+|---|---|---|---|---|---|
+| `item_minerio`, `item_lingote`, `item_espada`, `item_escudo`, `item_ferramenta`, `item_joia`, `moeda` | `icone` (3/4 na diagonal), `deitado` (de lado na câmera de 60°) | 128×128 | 128 (1 célula = 1 unidade, como `Art.cs`) | centro | `icone`: balão do pedido, cartão do menu, HUD, moedas voando. `deitado`: pilha na cabeça, pilhas das estações, bocas |
+| `item_espada_em_pe`, `item_escudo_em_pe`, `item_ferramenta_em_pe` | `Static` | 36×106, 72×70, 60×84 | 160 (escala real) | borda de baixo do item (apoio) | estoque físico no painel do estande, 1 por encaixe |
+| `balcao_ponta_esq`, `balcao_ponta_dir` | `Static` | 64×269 | 160 | centro dos 0,2 m da ponta, no chão (`pivot` x 0,75 / 0,25) | pontas do estande (`Balance.CounterEnd` = 0,2 m) |
+| `balcao_meio` (4 espadas), `balcao_escudos` (2), `balcao_ferramentas` (3) | `Static` | 136×269 | 160 | centro da vaga (0,85 m), no chão | 1 módulo por vaga; `meta.json` traz `encaixes` [x0, y0, …] em m relativos ao pivô, no plano do sprite |
+| `pilar` | `Static` | 142×207 | 160 | centro da base | batente de pedra nas 4 pontas das aberturas da parede direita |
+| `portao_fechado`, `portao_aberto` | `Static` | 104×380, 336×591 | 160 | centro do vão na linha da parede (x 9,3), no chão | abertura de cima (y 11,6–13,4): fechado com tranca até o Corredor; aberto = folhas giradas para a rua |
+| `porta_servico_fechada`, `porta_servico_aberta` | `Static` | 62×356, 308×567 | 160 | idem | abertura de baixo (y 5,6–7,4), mais baixa, com trinco |
+
+Forma e cor (matiz de `Art.ItemColor` mantido; contorno `#1E1612` de 3 px + sombra de 4 px a 35% nos itens):
+- **Espada:** lâmina azul-aço `#7FC4FF` de 0,40 m com fio claro chanfrado e sulco, guarda dourada de 0,155 m (39% da lâmina), punho de couro com tiras, pomo de ouro; ícone a 45°. Lê como espada a 48 px e a 24 px (ampliação na `v05_itens.png`).
+- **Escudo:** redondo, face `#F2545B` abaulada, aro de aço com 8 rebites, umbo dourado. **Ferramenta:** martelo de forja na diagonal oposta à espada, pano verde `#4CD964` no cabo e faixa verde no olho. **Joia:** anel de ouro com gema roxa `#B07CF2` grande (cintura 0,17 m). **Minério:** pedra marrom facetada `#9C8468` com veio e 5 cristais `#FF7A1F` de ponta amarela na silhueta. **Lingote:** barra trapezoidal prata com tampo `#EEF1F8`, 2 riscos de brilho e bigorna carimbada. **Moeda:** ouro com aro alto e bigorna em relevo.
+- **Estande:** balcão de tábuas com postes e cantoneiras de ferro a cada vaga, faixa de ferro com rebites, tampo claro de 2 tábuas e **painel inclinado de expor** (37,5° da vertical) na metade de trás. O item deitado no painel aparece 1,7× mais alto que em pé a 60°, e o tampo da frente fica livre. Painel escuro (`#5C3A1E`) para o estoque saltar. Sem matiz de item na madeira (regra dos props). Sombra de contato a 35% já assada.
+- **Emenda:** os módulos são recortes de um render contínuo, com tábuas por módulo sempre no mesmo padrão, então qualquer módulo encaixa em qualquer posição. Prova: render direto de 4 e de 8 vagas × montagem dos recortes, diferença máx. 9–10/255 e p99,9 4–5/255 (ruído de AA do Workbench, sem estrutura nas juntas).
+- **Portões vistos DE LADO** (parede norte–sul, modelo já girado, mesma câmera de 60°). Fechado: folhas no meio da parede, grossas (0,30 m), com tampas de ferro sobre as tábuas e tranca do lado da oficina; de lado só o tampo aparece, e ele preenche o vão entre os pilares. Aberto: folhas giradas 150° na face de fora, rentes ao muro do lado da rua, e o vão fica livre. Não há soleira: o chão da View aparece no vão.
+
+Integração (leva 2, `WorldView`; nada disto foi feito nesta leva):
+1. **Itens:** `ItemArt(item, "icone"|"deitado")` com reserva em `Art.ItemSprite`. Cor `Color.white`; tirar o `StackBg` (o contorno já vem no PNG) e o `ItemScale` achatado do lingote (a barra já é barra). Tamanhos sugeridos na tela: balão 0,9 m (~85 px) dentro de um balão de 1,3 × 1,1 m, pilha na cabeça 0,5 m (48 px, passo de 0,2 m), pilhas das estações 0,4 m, bocas 0,45 m a 50% de alfa. A célula de 128 px tem o item em ~110 px, então a escala do `SpriteRenderer` = tamanho desejado × 1,16.
+2. **Estande:** para N = `QueueCap` vagas, centro (4,5; 13): `xl = 4,5 − (0,85·N + 0,4)/2`. A ponta esquerda fica em `xl + 0,1`, a vaga i em `xl + 0,625 + 0,85·i` e a ponta direita em `xl + 0,85·N + 0,3`, todas em y 13 com escala 1 (`Deco` já faz: célula = `Size/Ppu`). Ordem de desenho pelo pé (y 13) e, sem elipse, a sombra está no PNG. Itens em pé: em `(x_módulo + enc[2k], 13)` com deslocamento de tela `+enc[2k+1]` m para cima, ordem logo acima do módulo; 1 encaixe por unidade de estoque (Vitrine 10). Distribuição sugerida para 4 vagas: [espadas, escudos (ao comprar Escudos), espadas, ferramentas (ao comprar Ferramentas)]. Encaixe vazio = rack vazio (lê como falta).
+3. **Portões:** `pilar` em (9,3; 11,37), (9,3; 13,63), (9,3; 5,37) e (9,3; 7,63), ordenados pelo pé. `portao_*` em (9,3; 12,5) e `porta_servico_*` em (9,3; 6,5), com ordem logo acima de `WallOrder` (abaixo de todo corpo). Troca fechado → aberto quando o Corredor é comprado (`RefreshArea`, onde hoje some o `_door`). Os batentes `Batente` e a `Porta` tingida e o `arco` Tripo em (9,0; 12,6) saem.

@@ -15,7 +15,8 @@ namespace FS
     public sealed class SpriteSheet
     {
         [Serializable] public sealed class ClipMeta { public string name, file; public int frames; public bool loop; public float fps; }
-        [Serializable] public sealed class Meta { public int size, dirs; public string[] dir_order; public float ppu; public float[] pivot; public List<ClipMeta> clips; }
+        // encaixes (v0.5, modulos do estande): [x0, y0, x1, y1, ...] em m relativos ao pivo, no plano do sprite
+        [Serializable] public sealed class Meta { public int size, dirs; public string[] dir_order; public float ppu; public float[] pivot, encaixes; public List<ClipMeta> clips; }
 
         static readonly Dictionary<string, SpriteSheet> Cache = new Dictionary<string, SpriteSheet>();
         static readonly string[] Compass4 = { "S", "W", "N", "E" }, Compass8 = { "S", "SW", "W", "NW", "N", "NE", "E", "SE" };
@@ -85,6 +86,8 @@ namespace FS
         }
 
         public bool Has(string clip) => Index(clip) >= 0;
+        /// <summary>Encaixes do meta.json (estoque em pe no estande); vazio se a folha nao tem.</summary>
+        public float[] Slots => _m.encaixes ?? Array.Empty<float>();
 
         /// <summary>Duracao de 1 passada do clipe, em s (0 se a folha nao tem o clipe).</summary>
         public float Length(string clip)

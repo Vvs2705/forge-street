@@ -4,6 +4,19 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Adicionado
+- **Carga sem bloqueio:** o ferreiro carrega todos os tipos de item ao mesmo tempo, até 3 de cada (6 com a Mochila); ajudantes continuam com um tipo só. Corrige a trava "lingotes na mão + bigornas cheias = não pega espada" (`docs/FASE7_CARGA_BALCAO.md`).
+- **Balcão evolutivo 4 → 8 vagas:** 4 evoluções no menu (150/175/200/225; a 1ª exige a Vitrine), estande sem toldo que cresce com as vagas e mostra o estoque em pé nos encaixes.
+- **Arte v0.5 (Blender, 0 crédito):** ícones de minério, lingote, espada, escudo, martelo, anel e moeda; estande modular; portão e porta de serviço vistos de lado com pilares (`docs/ASSETS.md` §7).
+- **Leitura de venda:** balão grande só no 1º da fila com anel de paciência; mini-ícones nos demais; moedas voando até o contador; quem chega com a fila cheia aparece indo embora.
+- **16 clientes:** 10 novos do Lote 4 (Tripo, 650 créditos) e sorteio embaralhado sem repetir em seguida.
+- O save guarda a carga da mão do ferreiro e dos ajudantes.
+- `docs/BENCHMARK_MERCADO.md` e `docs/BENCHMARK_VISUAL.md`: análise de 10 jogos similares.
+### Corrigido
+- **Vendas fantasma:** a "compra direta" com fila cheia vendia sem cliente visível (18,7% das vendas aos 10 min, 28,5% aos 45); saiu. Toda venda tem cliente na vaga.
+- **Cofre ao voltar de outro app:** antes só a abertura pagava; agora a volta de pausa ≥ 60 s também paga.
+- `Steer` preso entre a Loja de joias e um pedestal; teto do cofre derrubado por upgrade ainda não à venda.
+### Alterado
+- Vitrine: só estoque 5 → 10 e clientes ×0,7 (as vagas passaram para as evoluções do balcão). Produção completa do bot 43:37 → 48:24 (sem a receita invisível).
 - Criativos de UA 9:16 #1, #2 e #8 (GDD §17) gravados do build real, em `client/Builds/creatives/`, com os comandos em `docs/CRIATIVOS.md`.
 - Flags de dev `-record` (quadros 1080×1920 com relógio travado), `-buyids` e `-warmup`.
 - `client/tools/diario_report.py`: relatório do playtest Camada 0 (1ª venda, upgrades humano × bot, clientes perdidos, andar sem decisão, travada/fome por minuto, portões do GDD) com `--autoteste`.

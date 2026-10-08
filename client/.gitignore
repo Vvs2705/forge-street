@@ -14,6 +14,8 @@
 !/Builds/shots_art/
 !/Builds/sprites_contact/
 !/Builds/creatives/
+!/Builds/validation_v05/
+__pycache__/
 /UserSettings/
 /tools/coretests/bin/
 /tools/coretests/obj/

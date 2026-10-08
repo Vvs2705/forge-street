@@ -19,7 +19,7 @@ namespace FS
     /// Flags de dev: -autoplay [min] (bot sem render, loga AUTOPLAY por minuto, sai 0/1) | -shot foto.png
     /// [-shotdelay s] [-shotchest] [-bot] [-menu] | -speed N | -reset (apaga o save) | -testsession (sem persistencia) |
     /// -record pasta [-recordsec S] [-recordfps F] (quadros 1080x1920 para os criativos, docs/CRIATIVOS.md) | -buyids 1,5,0@300 |
-    /// -warmup S.
+    /// -warmup S | -hold 0,3,3,3,0,0 | -stock 10,10,10 (fotos de validacao).
     /// </summary>
     public sealed class Game : MonoBehaviour
     {
@@ -31,7 +31,12 @@ namespace FS
         // 2a area (docs/AREA2_JOALHERIA.md s1): mesma escala; a rua lateral entra seguindo o jogador depois do Corredor.
         const float VisibleWidth = Balance.WorkshopW + 2f * Margin;
         const float HudBand = 0.15f;                             // fracao da tela reservada ao painel de cima; o mundo nao chega la (fotos 02-04)
-        const float ContentTop = Balance.WorldH + 1.6f;         // topo do conteudo: fila de clientes + balao + "+10"
+        // topo do conteudo: fila de clientes (pe em y 14) + balao grande do 1o da fila (v0.5: topo do anel em ~16,05 m) + "+10"
+        const float ContentTop = Balance.WorldH + 2.1f;
+        // Moedas da venda (BENCHMARK_VISUAL P0-5, versao visual): saem do cliente e voam ate a moeda da HUD; o numero so sobe quando
+        // elas chegam (o ouro do Sim ja mudou: mostra Gold - _pending) e a moeda e o numero pulsam 1 -> 1,15 -> 1.
+        const float CoinFlight = 0.4f, CoinGap = 0.04f, CoinPx = 56f, PunchTime = 0.2f;
+        const int CoinPool = 30;
 
         Sim _sim;
         Bot _bot;
@@ -40,15 +45,19 @@ namespace FS
         MenuBar _menu;
         Camera _cam;
         float _speed = 1f, _saveT, _hintT, _minuteT;
-        bool _botDrive, _headless, _firstSaleLogged, _testSession;
+        bool _botDrive, _headless, _firstSaleLogged, _testSession, _started;
         string _diary, _sid;
         Vector2Int _screen;
         readonly System.Collections.Generic.List<(int u, float t)> _buyAt = new System.Collections.Generic.List<(int u, float t)>();   // -buyids id@t
 
         Canvas _joyCanvas;
-        RectTransform _canvas, _labels, _safe, _panel;
+        RectTransform _canvas, _labels, _safe, _panel, _fx;
         Text _gold, _hint, _panelTitle, _panelBody, _panelBtn;
         Action _panelAction;
+        Image _coinIcon;
+        sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
+        readonly System.Collections.Generic.List<Coin> _coins = new System.Collections.Generic.List<Coin>();
+        int _pending; float _punchT;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -94,6 +103,7 @@ namespace FS
             if (Arg("-autoplay") != null) { Autoplay(); return; }
             Log("session_start", Application.version, SystemInfo.deviceModel.Replace(",", " "));
             Offline();
+            _started = true;
             _botDrive = Arg("-bot") != null;
             string shot = Arg("-shot");
             if (!string.IsNullOrEmpty(shot)) StartCoroutine(Shot(shot));
@@ -178,13 +188,15 @@ namespace FS
                         break;
                     case Ev.Sold:
                         Sfx.Play("coin", 1f + 0.05f * (_sim.Sales % 5), 0.1f);
-                        _view.Float(e.Pos, "+" + e.B, Art.Accent);
+                        _view.Float(new V2(e.Pos.X, e.Pos.Y - 0.9f), "+" + e.B, Art.Accent);   // v0.5: sobe pela frente do estande, fora do balao do 1o
+                        FlyCoins(e.Pos, e.B);
                         Log("product_sold", Balance.ItemName[e.A], e.B.ToString());
                         break;
                     case Ev.Bought: Bought(e.A, e.B, e.Pos); break;
                     case Ev.ClientArrived: Sfx.Play("client", 1f, 0.2f); break;
                     case Ev.ClientLeft:
                         if (e.B == 0) { Sfx.Play("leave"); _view.Float(e.Pos, "...", Art.Bad); }
+                        else _view.TurnedAway(e.Pos, e.A == (int)Item.Jewel);   // fila cheia: aparece passando e vai embora
                         Log("client_left", Balance.ItemName[e.A], e.B == 0 ? "cansou" : "fila_cheia");
                         break;
                     case Ev.Bottleneck: Log("bottleneck", _sim.Stations[e.A].Name, "saida_cheia"); break;
@@ -200,6 +212,7 @@ namespace FS
                     case Ev.ChestOpened:
                         Sfx.Play("coin", 1f + 0.05f * (_sim.Sales % 5), 0.1f);
                         _view.Float(e.Pos, "+" + e.B, Art.Accent, 44);
+                        FlyCoins(e.Pos, e.B);
                         Log("chest_opened", e.A.ToString(), e.B.ToString());
                         break;
                 }
@@ -267,10 +280,13 @@ namespace FS
             // Painel de cima com 2 linhas (ouro | dica). Ocupa a faixa HudBand da tela, que a camera reserva: nada do mundo passa aqui.
             Image band = Art.Panel(_safe, "Topo", Art.ComAlfa(Art.Bg, 0.88f), new Vector2(0.02f, 1f - HudBand + 0.01f), new Vector2(0.98f, 0.99f));
             band.raycastTarget = false;
-            Image coin = Art.Node(band.transform, "Moeda", new Vector2(0.03f, 0.56f), new Vector2(0.1f, 0.94f)).gameObject.AddComponent<Image>();
-            coin.sprite = Art.Disc(); coin.color = Art.Accent; coin.preserveAspect = true; coin.raycastTarget = false;
+            _coinIcon = Art.Node(band.transform, "Moeda", new Vector2(0.03f, 0.56f), new Vector2(0.1f, 0.94f)).gameObject.AddComponent<Image>();
+            Sprite moeda = Art.Icon("moeda", "icone");   // v0.5: moeda renderizada; sem a folha, o disco amarelo de sempre
+            _coinIcon.sprite = moeda != null ? moeda : Art.Disc(); _coinIcon.color = moeda != null ? Color.white : Art.Accent;
+            _coinIcon.preserveAspect = true; _coinIcon.raycastTarget = false;
             _gold = Art.NewText(band.transform, "Ouro", 64, new Vector2(0.12f, 0.5f), new Vector2(0.6f, 1f), TextAnchor.MiddleLeft);
             _gold.fontStyle = FontStyle.Bold;
+            _gold.rectTransform.pivot = new Vector2(0f, 0.5f);   // o pulso cresce a partir da moeda, sem empurrar o numero
             Text title = Art.NewText(band.transform, "Titulo", 30, new Vector2(0.55f, 0.5f), new Vector2(0.97f, 1f), TextAnchor.MiddleRight);
             title.text = Arg("-record") != null ? "Forge Street" : "Forge Street v" + Application.version;   // criativo sem versao
             title.color = Art.ComAlfa(Art.Ink, 0.55f);
@@ -286,6 +302,7 @@ namespace FS
             Button ok = Art.NewButton(box.transform, "OK", 52, Art.Accent, new Vector2(0.22f, 0.07f), new Vector2(0.78f, 0.3f), () => _panelAction?.Invoke());
             _panelBtn = ok.GetComponentInChildren<Text>();
             _panel.gameObject.SetActive(false);
+            _fx = Art.Node(_canvas, "Moedas", Vector2.zero, Vector2.one);   // depois da AreaSegura: as moedas passam por cima da faixa da HUD
 
             // Canvas do joystick em escala 1 (px = px): o dp do ARKANA vale direto.
             var joyGo = new GameObject("JoystickCanvas", typeof(Canvas));
@@ -294,9 +311,60 @@ namespace FS
             _joyCanvas.sortingOrder = 2;
         }
 
+        /// <summary>3-6 moedas saem do ponto da venda (acima do cliente) em fila de 0,04 s; o valor e' dividido entre elas.</summary>
+        void FlyCoins(V2 at, int value)
+        {
+            int n = Mathf.Clamp(value / 8, 3, 6), given = 0;
+            Vector3 from = _cam.WorldToScreenPoint(new Vector3(at.X, at.Y + 0.8f, 0f));
+            from.z = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                int share = i == n - 1 ? value - given : value / n;
+                Coin c = null;
+                foreach (Coin x in _coins) if (!x.I.enabled) { c = x; break; }
+                if (c == null && _coins.Count < CoinPool)
+                {
+                    Image img = Art.Node(_fx, "Moeda", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f)).gameObject.AddComponent<Image>();
+                    img.sprite = _coinIcon.sprite; img.color = _coinIcon.color; img.raycastTarget = false;
+                    img.rectTransform.sizeDelta = Vector2.one * CoinPx;
+                    _coins.Add(c = new Coin { I = img });
+                }
+                if (c == null) break;   // ponytail: pico de vendas sem moeda livre = o resto entra direto no numero
+                given += share;
+                c.I.enabled = true; c.From = from; c.T = -i * CoinGap; c.Value = share;
+                c.I.rectTransform.position = from;
+                c.I.transform.localScale = Vector3.zero;   // aparece quando chega a vez dela
+            }
+            _pending += given;
+        }
+
+        /// <summary>Voo em arco (quadratica, pico 18% da tela acima da reta) ate a moeda da HUD; chegou = soma no numero e pulsa.</summary>
+        void TickCoins(float dt)
+        {
+            Vector3 to = _coinIcon.rectTransform.position;   // canvas overlay: posicao = px de tela
+            foreach (Coin c in _coins)
+            {
+                if (!c.I.enabled) continue;
+                c.T += dt;
+                if (c.T < 0f) continue;
+                float t = Mathf.Clamp01(c.T / CoinFlight), u = 1f - t;
+                Vector3 mid = (c.From + to) * 0.5f + new Vector3(0f, Screen.height * 0.18f, 0f);
+                c.I.rectTransform.position = u * u * c.From + 2f * u * t * mid + t * t * to;
+                c.I.transform.localScale = Vector3.one * Mathf.Lerp(1f, 0.7f, t);
+                if (t < 1f) continue;
+                c.I.enabled = false;
+                _pending = Mathf.Max(0, _pending - c.Value);
+                _punchT = PunchTime;
+            }
+            _punchT = Mathf.Max(0f, _punchT - dt);
+            float s = 1f + 0.15f * Mathf.Sin(Mathf.PI * (1f - _punchT / PunchTime));
+            _coinIcon.transform.localScale = _gold.transform.localScale = Vector3.one * s;
+        }
+
         void RefreshHud()
         {
-            _gold.text = _sim.Gold.ToString();
+            TickCoins(Time.deltaTime);
+            _gold.text = Mathf.Max(0, _sim.Gold - _pending).ToString();
             _hintT -= Time.deltaTime;
             if (_hintT > 0f) return;
             _hintT = 0.25f;
@@ -349,7 +417,14 @@ namespace FS
             PlayerPrefs.Save();
         }
 
-        void OnApplicationPause(bool paused) { if (paused) Save(); }
+        // Voltar de outro app tambem paga o cofre (antes so a abertura pagava: quem trocava de app perdia o tempo fora).
+        // _started: a Unity chama OnApplicationPause(false) logo apos o Awake, e na abertura quem paga e' o Start.
+        // ponytail: < 60 s fora nao paga nem mostra painel (perde no maximo 15 s de producao); vira Balance se o playtest pedir.
+        void OnApplicationPause(bool paused)
+        {
+            if (paused) Save();
+            else if (_started && _sim != null && _sim.SavedAt > 0 && Now() - _sim.SavedAt >= 60) Offline();
+        }
         void OnApplicationFocus(bool focus) { if (!focus) Save(); }
         void OnApplicationQuit() { Save(); }
 
@@ -376,6 +451,13 @@ namespace FS
             // -warmup S: simula S s antes do 1o quadro (jogador parado, sem bot): a fila e a fome ja estao montadas quando a gravacao comeca
             float warm = ArgF("-warmup", 0f);
             for (float t = 0f; t < warm; t += MaxStep) { _sim.Tick(MaxStep, 0f, 0f); TimedBuys(); }
+            // fotos da v0.5, depois do warmup: -hold 0,3,3,3,0,0 = carga mista do ferreiro (por Item, ate o teto de cada tipo) e
+            // -stock 10,10,10 = estoque do balcao (espada, escudo, ferramenta, joia; ate o teto). A fila do warmup compra ja no 1o tick.
+            string[] hold = (Arg("-hold") ?? "").Split(','), stock = (Arg("-stock") ?? "").Split(',');
+            for (int i = 0; i < Math.Min(hold.Length, 6); i++)
+                if (int.TryParse(hold[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out int h)) _sim.Player.Held[i] = Math.Max(0, Math.Min(h, _sim.Player.Cap));
+            for (int i = 0; i < Math.Min(stock.Length, 4); i++)
+                if (int.TryParse(stock[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out int s)) _sim.Stock[2 + i] = Math.Max(0, Math.Min(s, _sim.CounterCap));
         }
 
         /// <summary>-buyids id@t: compra quando _sim.Time passa de t e cobra o preco (sem ouro bastante fica em 0).</summary>

@@ -17,6 +17,8 @@ namespace FS
     /// Fase 3 (docs/FASE3_LUXO.md): fachada nobre, piso de ladrilhos e joalheria real, procedurais, ligados pelas flags de luxo.
     /// Cenario: chaos com textura repetida (Resources/Textures ou reserva procedural), paredes 2,5D fora da area andavel e props
     /// pre-renderizados (tools/props_blender.py) encostados nelas, com tochas de brilho tremulo.
+    /// v0.5 (docs/ASSETS.md s7, BENCHMARK_VISUAL s4): itens renderizados (icone/deitado, mascaras so de reserva), balao grande so no
+    /// 1o da fila, estande do balcao montado por vaga com o estoque em pe, portoes vistos de lado e quem acha a fila cheia passando.
     /// </summary>
     public sealed class WorldView : MonoBehaviour
     {
@@ -25,12 +27,15 @@ namespace FS
             public Station S; public Transform Root; public SpriteRenderer Base, BarBg, BarFill;
             public SpriteRenderer[] InPile, OutPile, Stock; public Item[] StockItems; public Text Label;   // Stock: 6 por item vendido
             public bool Baked;   // Base e' o sprite pre-renderizado (sem icone)
+            public bool Stand;   // balcao principal desenhado pelo estande modular (BuildStand), sem Base nem grade de estoque
         }
         sealed class PadV { public Pad P; public Transform Root; public SpriteRenderer Ring, Fill, Plus; public Text Label; }
-        sealed class CarrierV { public Carrier C; public Transform Root; public SpriteRenderer[] Stack, StackBg; public Body Body; public float CheerT; }
+        sealed class CarrierV { public Carrier C; public Transform Root; public SpriteRenderer[] Stack; public Body Body; public float CheerT, StackY; }   // StackY: onde a pilha apoia
+        /// <summary>Balao grande do 1o da fila (um por fila, segue o cliente): trilho escuro, anel de paciencia, corpo, rabicho e icone.</summary>
+        sealed class BubbleV { public Transform Root; public SpriteRenderer Ring, Icon; }
         sealed class ClientV
         {
-            public Client C; public int Id; public Transform Root; public SpriteRenderer Bubble, Want, Patience; public float PatY;
+            public Client C; public int Id; public Transform Root; public SpriteRenderer Want, Patience; public float TopY;   // TopY: topo da cabeca
             public Body Body; public int Phase; public float LeaveT; public bool Served; public Vector3 Lane, Exit;   // saida (so com arte)
             public bool Jewel;   // fila da loja de joias (JewelQueue/JewelSlot) em vez da do balcao
         }
@@ -52,7 +57,20 @@ namespace FS
             }
         }
 
-        const float StackStep = 0.2f, ItemS = 0.34f;   // pilha na cabeca: item grande com contorno escuro (legivel na foto 04)
+        // Pilha na cabeca: item deitado de 0,5 m (~48 px no aparelho), sem disco de fundo (o contorno vem no PNG). Empilha do mais
+        // grosso (embaixo) ao mais fino (em cima), cada um sobre o anterior com 25% de sobreposicao: a espada deitada (0,15 m) nao some
+        // sob um escudo. Altura do deitado / lado, medida nos PNG da v0.5 (bbox x 1,1 / 128; arte nova = remedir). Coluna > StackMax encolhe.
+        const float ItemS = 0.5f, StackMax = 1.6f;
+        static readonly Item[] PileOrder = { Item.Ore, Item.Shield, Item.Jewel, Item.Tool, Item.Ingot, Item.Sword };
+        static readonly float[] LyingH = { 0.88f, 0.57f, 0.3f, 0.95f, 0.61f, 0.95f };
+        readonly float[] _pileY = new float[Balance.PlayerCapUp * 6];
+        const float PileS = 0.4f, PileStep = 0.2f;   // pilhas das estacoes (2 colunas de itens deitados)
+        // Balao do pedido (BENCHMARK_VISUAL P0-2): 1o da fila com balao 1,32 x 1,12 m e icone de 0,9 m, deslocado 0,2 m para a esquerda
+        // (o 1o e' a vaga mais a esquerda) para nao encostar no mini-icone do 2o; o rabicho fica sobre a cabeca. Anel = borda de 0,1 m.
+        const float BubbleIcon = 0.9f, BubbleDX = -0.2f, BubbleUp = 0.77f, TailY = -0.62f;   // ponta do rabicho ~0,02 m acima de ClientTop
+        static readonly Vector2 BalloonSize = new Vector2(1.32f, 1.12f), RingSize = new Vector2(1.53f, 1.33f), TailSize = new Vector2(0.32f, 0.28f);
+        // demais clientes: mini-icone de 0,42 m (~40 px) acima da cabeca e a paciencia numa barrinha logo acima dele
+        const float MiniIcon = 0.42f, MiniY = 0.24f, PatY = 0.51f, PatW = 0.36f;
 
         // Arte pre-renderizada. 1 m do Blender = 1/CharPpuMul m do mundo para TODOS os personagens (o anao fica menor que o
         // ferreiro, como no modelo). O ferreiro (0,98 m) mede 75-80 px de altura com ppu 109,9: a camera a 60 graus achata a
@@ -68,17 +86,21 @@ namespace FS
         // m do mundo por celula de estacao. Com 1,65 a peca ocupava 0,9-1,24 m de largura e o corpo solido tem 1,3 m (FASE5): o
         // ferreiro batia numa borda invisivel. Com 1,95 a arte cobre o corpo (1,08-1,47 m de largura, 1,06-1,49 m de altura).
         const float StationCell = 1.95f;
-        const float HeadY = 0.95f;         // topo da cabeca (m acima do pe): pilha e balao comecam aqui
+        // Topo da cabeca na tela, medido na foto v0.5 (validation_v05/shots, 47,4 px/m): ferreiro ~0,65 m acima do pe, clientes
+        // 0,5-0,65 (chapeu do mago e da elfa). Antes era 0,95 "no olho": pilha e balao flutuavam ~0,3 m acima da cabeca.
+        const float HeadY = 0.65f, ClientTop = 0.6f;
         const float LeaveSpeed = 2.5f;     // m/s do cliente indo embora pela rua
         const float OneShotMax = 3f;       // ponytail: teto de Thankful (3,0 s no Lote 1) e Waving (0,5 s) para clipe longo futuro nao empilhar a rua no pico de vendas
         const int StackOrder = 2000, BubbleOrder = 3000;   // acima de todo corpo ordenado por Depth
         // estacao parada: "fome" = apagada e cinza (ART_BIBLE §6). Era 0,78: no video do criativo #8 (docs/CRIATIVOS.md) a bigorna
         // com fome ficava igual a que trabalhava; 0,55 frio le a 1 m do celular e continua mais clara que a loja fechada (Shut).
         static readonly Color Dimmed = new Color(0.55f, 0.55f, 0.6f, 1f);
-        static readonly string[] ClientArt = { "guerreira", "anao", "mago", "elfa", "goblin", "cavaleiro" };   // clientes do balcao; nobre = so a loja de joias
-        // 2a area (AREA2 s7). Carroca na celula das estacoes; arco maior (entrada da rua: ~1,4 m de largura, pes acima do pad do Corredor).
-        const float ArchCell = 2.0f, CartCell = StationCell;
-        static readonly V2 ArchPos = new V2(9.0f, 12.6f), CartPos = new V2(14.2f, 3.0f);
+        // clientes do balcao (Lote 1-2 + Lote 4 de 2026-10-08); nobre = so a loja de joias. Nome sem folha em Resources e' ignorado.
+        static readonly string[] ClientArt = { "guerreira", "anao", "mago", "elfa", "goblin", "cavaleiro",
+            "minerador", "bardo", "alquimista", "monge", "ladina", "paladina", "orc", "barbaro", "pirata", "cacadora" };
+        // 2a area (AREA2 s7). Carroca na celula das estacoes (o arco Tripo saiu na v0.5: o portao de lado ocupa a abertura de cima).
+        const float CartCell = StationCell;
+        static readonly V2 CartPos = new V2(14.2f, 3.0f);
         static readonly Color StreetOpen = Gray(0.8f), StreetShut = Gray(0.35f);    // tinta da rua lateral: aberta / escurecida ate o Corredor
         static readonly Color Shut = new Color(0.42f, 0.42f, 0.48f, 1f);             // loja fechada (teaser): mais escura que a "fome"
         // Bau de marco (AREA2_FASE2 s3/s4): o bau ocupa 179 de 256 px da folha, entao celula 1,1 m da ~0,77 m de largura (menor
@@ -97,10 +119,10 @@ namespace FS
         // frente para a camera), face escura logo abaixo. Oficina x 0-9: parede alta de pedra quente com a abertura do arco; rua
         // lateral x 9-15: muro baixo da pedra fria da rua. A borda de cima (rua dos clientes) fica aberta.
         const float WallT = 0.6f, WallFace = 0.6f, MuroT = 0.4f, MuroFace = 0.35f;
-        // Parede direita da oficina = Balance.SideWallX0-X1 com as aberturas de Balance.SideWallOpenings (porta lateral 5,6-7,4 e arco
-        // 11,6-13,4; a mesma geometria solida da simulacao). Porta: batentes de madeira e folha fechada ate o Corredor.
-        const float JambW = 0.18f;
-        static readonly Color DoorTint = new Color(0.95f, 0.8f, 0.62f, 1f), JambTint = new Color(0.55f, 0.42f, 0.3f, 1f);
+        // Parede direita da oficina = Balance.SideWallX0-X1 com as aberturas de Balance.SideWallOpenings (porta de servico 5,6-7,4 e
+        // portao 11,6-13,4; a mesma geometria solida da simulacao). v0.5 (ASSETS s7): portoes vistos DE LADO, fechados ate o Corredor,
+        // com pilar de pedra nas 4 pontas (centro 0,23 m alem da ponta: o pe de 0,6 m encosta 0,07 m no vao).
+        const float PillarOut = 0.23f;
         const float DeckY = 12f;                     // assoalho (madeira) na frente da loja: balcao, bau e fila; o luxo Piso cobre so a pedra
         const int ExteriorOrder = -8, FloorOrder = -7, LuxOrder = -6, ShadeOrder = -5, WallOrder = -4, GlowOrder = -3;   // abaixo do tapete (-1), sombras e pads (1-4)
         static readonly Color ExteriorTint = Gray(0.42f), FaceTint = Gray(0.55f), ShadeColor = new Color(0f, 0f, 0f, 0.35f);
@@ -138,8 +160,25 @@ namespace FS
         readonly List<CarrierV> _workers = new List<CarrierV>();
         readonly List<ClientV> _clients = new List<ClientV>();
         readonly List<SpriteSheet> _clientSheets = new List<SpriteSheet>();
+        // Elenco "rotacionando" (pedido do Vinicius): saco embaralhado, usa todos antes de repetir e nao repete o ultimo na virada.
+        // ponytail: semente fixa = mesma ordem a cada sessao (fotos/criativos reproduziveis); ninguem decora 16 clientes.
+        readonly List<int> _artBag = new List<int>();
+        readonly System.Random _artRng = new System.Random(7);
+        int _lastArt = -1;
         SpriteSheet _nobre;
-        SpriteRenderer _street, _shopTeaser, _door; Text _streetLabel, _shopLabel;
+        SpriteRenderer _street, _shopTeaser; Text _streetLabel, _shopLabel;
+        readonly List<(GameObject Shut, GameObject Open)> _gates = new List<(GameObject, GameObject)>();   // portao e porta de servico
+        BubbleV _bubble, _jewelBubble;
+        // Estande do balcao (ASSETS s7, integracao 2): modulos de 0,85 m (um por vaga) entre pontas de 0,2 m, na largura do corpo do
+        // balcao (Balance.CounterHalfX); estoque em pe nos encaixes do meta.json, 1 item por unidade de estoque ate encher os encaixes.
+        // Modulos = os N primeiros desta ordem; linha ainda nao comprada vira rack de espadas (encaixe vazio leria como "falta").
+        // ponytail: com a Vitrine (estoque 10) os encaixes de escudo/ferramenta (2-6) mostram so parte do estoque; 1 por unidade
+        // pediria 12 modulos. Se o playtest ler "cheio" errado, uma pilula "n/10" no modulo resolve.
+        static readonly Item[] StandOrder = { Item.Sword, Item.Shield, Item.Sword, Item.Tool, Item.Shield, Item.Sword, Item.Tool, Item.Shield };
+        static readonly string[] StandPieces = { "balcao_ponta_esq", "balcao_meio", "balcao_escudos", "balcao_ferramentas", "balcao_ponta_dir" };
+        bool _hasStand; Transform _stand; int _standKey = -1; float _standPop = -1f;
+        readonly List<(Item It, SpriteRenderer R)> _standStock = new List<(Item, SpriteRenderer)>();
+        readonly int[] _shown = new int[6];
         readonly List<Floater> _floaters = new List<Floater>();
         readonly List<LuxV> _lux = new List<LuxV>();
         readonly List<SpriteRenderer> _glows = new List<SpriteRenderer>();
@@ -159,7 +198,6 @@ namespace FS
             _streetLabel = Art.FreeText(_labels, "RuaLateral", 26, new Vector2(200f, 80f));
             _streetLabel.text = "Rua\nlateral";   // 2 linhas: so 1,2 m da rua cabe na tela antes do Corredor
             _streetLabel.color = Art.ComAlfa(Art.Ink, 0.55f);
-            Deco("arco", ArchPos, ArchCell, 0f);
             Deco("carroca", CartPos, CartCell, 1.3f);
             _shopTeaser = Deco("loja_joalheria", sim.JewelShop.Pos, StationCell, 1.3f);   // mesma folha e celula da estacao
             if (_shopTeaser != null) _shopTeaser.color = Shut;
@@ -169,11 +207,15 @@ namespace FS
             Lux(Upgrade.WorkshopFloor, BuildTiles());
             Lux(Upgrade.WorkshopFacade, BuildFacade());
             Lux(Upgrade.JewelryDecor, BuildJewelryDecor());
+            _hasStand = true;
+            foreach (string n in StandPieces) _hasStand &= SpriteSheet.TryGet(n, out _);   // sem os modulos: balcao procedural de sempre
+            _bubble = BuildBubble("BalaoFila");
+            _jewelBubble = BuildBubble("BalaoJoias");
             foreach (Station s in sim.Stations) _stations.Add(BuildStation(s));
             foreach (Pad p in sim.Pads) _pads.Add(BuildPad(p));
             foreach (Chest c in sim.Chests) _chests.Add(BuildChest(c));
             BuildConveyor();
-            _player = BuildCarrier(sim.Player, Art.Player, 0.62f, Balance.PlayerCapUp);
+            _player = BuildCarrier(sim.Player, Art.Player, 0.62f, Balance.PlayerCapUp * sim.Player.Held.Length);   // FASE7: ate o teto de CADA tipo
         }
 
         // ------------------------------------------------------------------ construcao
@@ -184,7 +226,7 @@ namespace FS
             {
                 case Kind.Deposit: return "deposito";
                 case Kind.Furnace: return "fornalha";
-                case Kind.Counter: return s == _sim.JewelShop ? "loja_joalheria" : "balcao";
+                case Kind.Counter: return s == _sim.JewelShop ? "loja_joalheria" : null;   // balcao: estande modular (o toldo saiu na v0.5)
                 default: return s.OutItem switch { Item.Sword => "bigorna", Item.Shield => "bancada_escudos", Item.Tool => "bancada_ferramentas", Item.Jewel => "bancada_joalheria", _ => null };
             }
         }
@@ -208,6 +250,9 @@ namespace FS
             if (shadow > 0f) Art.NewSprite(root, "Sombra", Art.Disc(), new Color(0f, 0f, 0f, 0.25f), 1, Vector2.zero, new Vector2(shadow, shadow * 0.46f));
             return Art.NewSprite(root, "Arte", art, Color.white, Depth(pos.Y), Vector2.zero, Vector2.one);
         }
+
+        /// <summary>Celula da folha na escala real (1 m do Blender = 1 m do mundo): props, estande, portoes.</summary>
+        static float RealCell(string name) => SpriteSheet.TryGet(name, out SpriteSheet sh) ? sh.Size / sh.Ppu : 1f;
 
         // ------------------------------------------------------------------ cenario: chao, paredes, props
 
@@ -234,11 +279,11 @@ namespace FS
                 Tiled("ParedeDir", parede, Color.white, WallOrder, new Vector2(x0, y0), new Vector2(x1, y1), true);
                 Shade(new Vector2(x1, y0), new Vector2(x1 + 0.35f, y1), false);
             }
-            // porta lateral (1a abertura): batentes nas pontas do vao e a folha, que some com o Corredor (RefreshArea)
-            float d0 = gaps[0], d1 = gaps[1];
-            Tiled("Batente", Art.Ground("madeira"), JambTint, WallOrder, new Vector2(x0 - 0.05f, d0), new Vector2(x1 + 0.05f, d0 + JambW), true);
-            Tiled("Batente", Art.Ground("madeira"), JambTint, WallOrder, new Vector2(x0 - 0.05f, d1 - JambW), new Vector2(x1 + 0.05f, d1), true);
-            _door = Tiled("Porta", Art.Ground("madeira"), DoorTint, WallOrder, new Vector2(x0 + 0.04f, d0 + JambW), new Vector2(x1 - 0.04f, d1 - JambW), true);
+            // pilares nas pontas das aberturas (ordem pelo pe) e as folhas de lado: portao em cima, porta de servico embaixo (RefreshArea)
+            float wx = (x0 + x1) / 2f;
+            for (int i = 0; i < gaps.Length; i++) Deco("pilar", new V2(wx, gaps[i] + (i % 2 == 0 ? -PillarOut : PillarOut)), RealCell("pilar"), 0f);
+            _gates.Add(Gate("portao_fechado", "portao_aberto", new V2(wx, (gaps[2] + gaps[3]) / 2f)));
+            _gates.Add(Gate("porta_servico_fechada", "porta_servico_aberta", new V2(wx, (gaps[0] + gaps[1]) / 2f)));
             Tiled("ParedeBaixo", parede, Color.white, WallOrder, new Vector2(-WallT, -WallT), new Vector2(ws + WallT, 0f));
             Tiled("ParedeFace", parede, FaceTint, WallOrder, new Vector2(-WallT, -WallT - WallFace), new Vector2(ws + WallT, -WallT));
             // rua lateral: muro baixo, a mesma alvenaria esfriada (calcamento no tampo lia como chao, nao como muro)
@@ -247,10 +292,22 @@ namespace FS
             Tiled("MuroFace", parede, MuroFaceTint, WallOrder, new Vector2(ws + WallT, -MuroT - MuroFace), new Vector2(w + MuroT, -MuroT));
             foreach ((string n, float x, float y) in Props)
             {
-                SpriteRenderer art = Deco(n, new V2(x, y), SpriteSheet.TryGet(n, out SpriteSheet sh) ? sh.Size / sh.Ppu : 1f, PropShadow(n));
+                SpriteRenderer art = Deco(n, new V2(x, y), RealCell(n), PropShadow(n));
                 if (art != null && n == "tocha")
                     _glows.Add(Art.NewSprite(art.transform.parent, "Brilho", Art.Glow(), Art.ComAlfa(GlowColor, GlowAlpha), GlowOrder, new Vector2(0f, FlameY), Vector2.one * GlowSize));
             }
+        }
+
+        /// <summary>
+        /// Folhas fechada e aberta de uma abertura da parede direita (raizes; RefreshArea liga uma ou outra), logo acima da parede e
+        /// abaixo de todo corpo: o fechado fica na linha da parede, o aberto encostado nela do lado da rua. Sem folha: nada (greybox).
+        /// </summary>
+        (GameObject Shut, GameObject Open) Gate(string shut, string open, V2 pos)
+        {
+            SpriteRenderer a = Deco(shut, pos, RealCell(shut), 0f), b = Deco(open, pos, RealCell(open), 0f);
+            if (a != null) a.sortingOrder = WallOrder + 1;
+            if (b != null) b.sortingOrder = WallOrder + 1;
+            return (a != null ? a.transform.parent.gameObject : null, b != null ? b.transform.parent.gameObject : null);
         }
 
         /// <summary>Retangulo [min, max] com a textura repetida (1 renderer, modo Tiled); `along` gira 90 graus (parede vertical: fiadas ao longo dela).</summary>
@@ -275,11 +332,12 @@ namespace FS
 
         StationV BuildStation(Station s)
         {
-            var v = new StationV { S = s, Root = new GameObject(s.Name).transform };
+            var v = new StationV { S = s, Root = new GameObject(s.Name).transform, Stand = s == _sim.Counter && _hasStand };
             v.Root.SetParent(transform, false);
             v.Root.localPosition = W(s.Pos);
             Sprite art = StaticArt(StationArt(s), StationCell);
-            if (art != null)
+            if (v.Stand) { }   // estande: modulos por vaga (BuildStand, refeito quando as vagas mudam)
+            else if (art != null)
             {
                 Art.NewSprite(v.Root, "Sombra", Art.Disc(), new Color(0f, 0f, 0f, 0.25f), 1, Vector2.zero, new Vector2(1.55f, 0.7f));
                 v.Base = Art.NewSprite(v.Root, "Arte", art, Color.white, Depth(s.Pos.Y), Vector2.zero, Vector2.one);
@@ -298,9 +356,9 @@ namespace FS
             v.Label.text = s.Name;
             v.Label.color = Art.ComAlfa(Art.Ink, 0.8f);
             // bocas no chao (FASE5 s2b), na cor do que passa por ela: deposito so entrega, balcoes so recebem, quem produz tem as duas
-            if (s.Kind == Kind.Deposit) Mouth(v.Root, s.OutAt - s.Pos, Art.ItemColor[(int)Item.Ore], false);
-            else Mouth(v.Root, s.InAt - s.Pos, s.Produces ? Art.ItemColor[(int)s.InItem] : Art.Accent, true);
-            if (s.Produces) Mouth(v.Root, s.OutAt - s.Pos, Art.ItemColor[(int)s.OutItem], false);
+            if (s.Kind == Kind.Deposit) Mouth(v.Root, s.OutAt - s.Pos, Art.ItemColor[(int)Item.Ore], false, (int)Item.Ore);
+            else Mouth(v.Root, s.InAt - s.Pos, s.Produces ? Art.ItemColor[(int)s.InItem] : Art.Accent, true, s.Produces ? (int)s.InItem : s == _sim.JewelShop ? (int)Item.Jewel : -1);
+            if (s.Produces) Mouth(v.Root, s.OutAt - s.Pos, Art.ItemColor[(int)s.OutItem], false, (int)s.OutItem);
             if (s.Produces)
             {
                 v.InPile = Pile(v.Root, s.InItem, s.InCap, -1.05f);
@@ -308,9 +366,9 @@ namespace FS
                 v.BarBg = Art.NewSprite(v.Root, "BarraFundo", Art.Square(), Art.Dim, 3, new Vector2(0f, -0.72f), new Vector2(1.3f, 0.12f));
                 v.BarFill = Art.NewSprite(v.Root, "Barra", Art.Square(), Art.Accent, 4, new Vector2(-0.65f, -0.72f), new Vector2(0f, 0.12f));
             }
-            if (s.Kind == Kind.Counter)
+            if (s.Kind == Kind.Counter && !v.Stand)
             {
-                var sold = new List<Item>();   // balcao: espada/escudo/ferramenta; loja de joias: so joia
+                var sold = new List<Item>();   // loja de joias: so joia; balcao sem os modulos do estande: espada/escudo/ferramenta
                 for (Item it = Item.Sword; it <= Item.Jewel; it++) if (_sim.Sells(s, it)) sold.Add(it);
                 v.StockItems = sold.ToArray();
                 v.Stock = new SpriteRenderer[sold.Count * 6];   // 6 visiveis por produto, colunas centradas na estacao
@@ -319,7 +377,8 @@ namespace FS
                     {
                         Item item = sold[p];
                         var pos = new Vector2((p - (sold.Count - 1) * 0.5f) * 0.95f + (i % 3) * 0.26f - 0.26f, -0.62f - (i / 3) * 0.26f);
-                        v.Stock[p * 6 + i] = Art.NewSprite(v.Root, "Estoque", Art.ItemSprite(item), Art.ItemColor[(int)item], 3, pos, Art.ItemScale(item, 0.22f));
+                        v.Stock[p * 6 + i] = Art.NewSprite(v.Root, "Estoque", null, Color.white, 3, pos, Vector2.one);
+                        Art.PaintItem(v.Stock[p * 6 + i], item, false, 0.25f);
                         v.Stock[p * 6 + i].enabled = false;
                     }
             }
@@ -327,24 +386,35 @@ namespace FS
             return v;
         }
 
-        /// <summary>Boca no chao: anel da zona (Balance.MouthRadius) e seta apontando para a estacao (entra) ou para fora (sai).</summary>
-        static void Mouth(Transform root, V2 off, Color c, bool into)
+        /// <summary>
+        /// Boca no chao: anel da zona (Balance.MouthRadius) com o item que entra/sai (arte deitada de 0,45 m a 50%); sem item (balcao,
+        /// que recebe 3 produtos) ou sem arte, a seta de sempre apontando para a estacao (entra) ou para fora (sai).
+        /// </summary>
+        static void Mouth(Transform root, V2 off, Color c, bool into, int item)
         {
             var at = new Vector2(off.X, off.Y);
-            float ang = Mathf.Atan2(off.Y, off.X) * Mathf.Rad2Deg + (into ? 90f : -90f);   // Triangle aponta para +y
             Art.NewSprite(root, into ? "BocaEntra" : "BocaSai", Art.Disc(), Art.ComAlfa(c, 0.18f), 1, at, Vector2.one * Balance.MouthRadius * 2f);
             Art.NewSprite(root, "BocaAnel", Art.Ring(), Art.ComAlfa(c, 0.6f), 1, at, Vector2.one * Balance.MouthRadius * 2f);
+            if (item >= 0 && Art.ItemArt((Item)item, false) != null)
+            {
+                SpriteRenderer r = Art.NewSprite(root, "BocaItem", null, Color.white, 2, at, Vector2.one);
+                Art.PaintItem(r, (Item)item, false, 0.45f);
+                r.color = Art.ComAlfa(Color.white, 0.5f);
+                return;
+            }
+            float ang = Mathf.Atan2(off.Y, off.X) * Mathf.Rad2Deg + (into ? 90f : -90f);   // Triangle aponta para +y
             Art.NewSprite(root, "BocaSeta", Art.Triangle(), Art.ComAlfa(c, 0.9f), 1, at, Vector2.one * 0.32f, ang);
         }
 
-        /// <summary>Pilha visivel ao lado da estacao: 2 colunas, de baixo para cima.</summary>
+        /// <summary>Pilha visivel ao lado da estacao: 2 colunas de itens deitados, de baixo para cima (a fileira de cima cobre a de baixo).</summary>
         SpriteRenderer[] Pile(Transform root, Item item, int cap, float x)
         {
             var arr = new SpriteRenderer[cap];
             for (int i = 0; i < cap; i++)
             {
-                var pos = new Vector2(x + (i % 2) * 0.27f - 0.13f, -0.38f + (i / 2) * 0.27f);
-                arr[i] = Art.NewSprite(root, "Pilha", Art.ItemSprite(item), Art.ItemColor[(int)item], 3, pos, Art.ItemScale(item, 0.24f));
+                var pos = new Vector2(x + (i % 2) * 0.27f - 0.13f, -0.38f + (i / 2) * PileStep);
+                arr[i] = Art.NewSprite(root, "Pilha", null, Color.white, 3 + i / 2, pos, Vector2.one);
+                Art.PaintItem(arr[i], item, false, PileS);
                 arr[i].enabled = false;
             }
             return arr;
@@ -486,7 +556,11 @@ namespace FS
             _conveyor.localPosition = (a + b) * 0.5f + new Vector3(0.45f, 0f, 0f);
             Art.NewSprite(_conveyor, "Trilho", Art.Square(), Art.Dim, 1, Vector2.zero, new Vector2(0.34f, _convLen));
             _convDots = new SpriteRenderer[4];
-            for (int i = 0; i < 4; i++) _convDots[i] = Art.NewSprite(_conveyor, "Lingote", Art.Rounded(), Art.ItemColor[(int)Item.Ingot], 2, Vector2.zero, Art.ItemScale(Item.Ingot, 0.2f));
+            for (int i = 0; i < 4; i++)
+            {
+                _convDots[i] = Art.NewSprite(_conveyor, "Lingote", null, Color.white, 2, Vector2.zero, Vector2.one);
+                Art.PaintItem(_convDots[i], Item.Ingot, false, 0.3f);
+            }
             _conveyor.gameObject.SetActive(false);
         }
 
@@ -495,7 +569,7 @@ namespace FS
             var v = new CarrierV { C = c, Root = new GameObject(c.Role < 0 ? "Jogador" : "Ajudante " + c.Role).transform };
             v.Root.SetParent(transform, false);
             v.Root.localPosition = W(c.Pos);
-            float stackY = size * 0.5f + 0.24f;
+            float stackY = size * 0.5f;
             int order = 8;
             string artName = c.Role < 0 ? "ferreiro" : "ajudante";
             if (SpriteSheet.TryGet(artName, out SpriteSheet sh))
@@ -504,7 +578,7 @@ namespace FS
                 Art.NewSprite(v.Root, "Sombra", Art.Disc(), new Color(0f, 0f, 0f, 0.3f), 5, Vector2.zero, new Vector2(0.55f, 0.22f));
                 Color tint = c.Role < 0 ? Color.white : Color.Lerp(Color.white, Art.ItemColor[(int)RoleItem(c.Role)], 0.3f);
                 v.Body = new Body { Sheet = sh, R = Art.NewSprite(v.Root, "Corpo", null, tint, 0, Vector2.zero, Vector2.one) };
-                stackY = HeadY + 0.15f;
+                stackY = HeadY;
                 order = StackOrder;
             }
             else
@@ -514,30 +588,27 @@ namespace FS
                 Art.NewSprite(v.Root, "Cabeca", Art.Disc(), Art.Bg, 7, new Vector2(0f, 0.1f), Vector2.one * size * 0.42f);
                 if (c.Role >= 0) Art.NewSprite(v.Root, "Papel", Art.Ring(), Art.ItemColor[(int)RoleItem(c.Role)], 7, Vector2.zero, Vector2.one * size);
             }
+            v.StackY = stackY;
             v.Stack = new SpriteRenderer[maxStack];
-            v.StackBg = new SpriteRenderer[maxStack];
             for (int i = 0; i < maxStack; i++)
             {
-                var pos = new Vector2(0f, stackY + i * StackStep);
-                v.StackBg[i] = Art.NewSprite(v.Root, "ItemFundo", Art.Disc(), Art.ComAlfa(Art.Bg, 0.9f), order + 2 * i, pos, Vector2.one * ItemS * 1.3f);
-                v.Stack[i] = Art.NewSprite(v.Root, "Item", Art.Disc(), Color.white, order + 1 + 2 * i, pos, Vector2.one * ItemS);
-                v.StackBg[i].enabled = v.Stack[i].enabled = false;
+                v.Stack[i] = Art.NewSprite(v.Root, "Item", null, Color.white, order + i, Vector2.zero, Vector2.one);   // o de cima cobre o de baixo
+                v.Stack[i].enabled = false;
             }
             return v;
         }
 
         ClientV BuildClient()
         {
-            var v = new ClientV { Root = new GameObject("Cliente").transform, PatY = -0.42f };
+            var v = new ClientV { Root = new GameObject("Cliente").transform, TopY = 0.3f };
             v.Root.SetParent(transform, false);
-            float wantY = 0.68f;
-            int bubble = 30, patience = 6;   // balao sempre por cima das pilhas
+            int order = 30;   // pedido sempre por cima das pilhas
             if (_clientSheets.Count > 0)
             {
                 Art.NewSprite(v.Root, "Sombra", Art.Disc(), new Color(0f, 0f, 0f, 0.3f), 5, Vector2.zero, new Vector2(0.5f, 0.2f));
                 v.Body = new Body { R = Art.NewSprite(v.Root, "Corpo", null, Color.white, 0, Vector2.zero, Vector2.one) };
-                wantY = HeadY + 0.3f; v.PatY = -0.12f;   // balao acima da cabeca; barra no pe (a -0,42 ficaria embaixo do balcao)
-                bubble = patience = BubbleOrder;
+                v.TopY = ClientTop;
+                order = BubbleOrder;
             }
             else
             {
@@ -545,29 +616,92 @@ namespace FS
                 Art.NewSprite(v.Root, "Corpo", Art.Disc(), Art.Client, 6, Vector2.zero, Vector2.one * 0.5f);
                 Art.NewSprite(v.Root, "Cabeca", Art.Disc(), Art.Bg, 7, new Vector2(0f, 0.08f), Vector2.one * 0.2f);
             }
-            v.Bubble = Art.NewSprite(v.Root, "Balao", Art.Rounded(), Art.Bubble, bubble, new Vector2(0f, wantY), new Vector2(0.6f, 0.5f));
-            v.Want = Art.NewSprite(v.Root, "Pedido", Art.Disc(), Color.white, bubble + 1, new Vector2(0f, wantY), Vector2.one * 0.3f);
-            v.Patience = Art.NewSprite(v.Root, "Paciencia", Art.Square(), Art.Good, patience, new Vector2(0f, v.PatY), new Vector2(0.5f, 0.07f));
+            // fila: mini-icone do pedido acima da cabeca e a paciencia logo acima dele; o 1o da fila troca os dois pelo balao grande
+            v.Want = Art.NewSprite(v.Root, "Pedido", null, Color.white, order, new Vector2(0f, v.TopY + MiniY), Vector2.one);
+            v.Patience = Art.NewSprite(v.Root, "Paciencia", Art.Square(), Art.Good, order + 1, new Vector2(0f, v.TopY + PatY), new Vector2(PatW, 0.06f));
             return v;
+        }
+
+        /// <summary>Balao grande (BENCHMARK_VISUAL P0-2), escondido ate a fila ter alguem; RefreshQueue o prende no 1o.</summary>
+        BubbleV BuildBubble(string name)
+        {
+            var b = new BubbleV { Root = Group(name, new V2(0f, 0f)) };
+            Art.NewSprite(b.Root, "Trilho", Art.BalloonRing(1f), Art.ComAlfa(Art.Bg, 0.85f), BubbleOrder + 10, Vector2.zero, RingSize);
+            b.Ring = Art.NewSprite(b.Root, "Paciencia", Art.BalloonRing(1f), Art.Good, BubbleOrder + 11, Vector2.zero, RingSize);
+            Art.NewSprite(b.Root, "Balao", Art.Rounded(), Art.Bubble, BubbleOrder + 12, Vector2.zero, BalloonSize);
+            Art.NewSprite(b.Root, "Rabicho", Art.Triangle(), Art.Bubble, BubbleOrder + 12, new Vector2(-BubbleDX, TailY), TailSize, 180f);
+            b.Icon = Art.NewSprite(b.Root, "Pedido", null, Color.white, BubbleOrder + 13, Vector2.zero, Vector2.one);
+            b.Root.gameObject.SetActive(false);
+            return b;
+        }
+
+        /// <summary>Balao no 1o da fila: icone de 0,9 m, anel verde -> amarelo -> vermelho e tremida de +-3 graus a 6 Hz abaixo de 20%.</summary>
+        void PlaceBubble(BubbleV b, ClientV v, Item want, float f)
+        {
+            b.Root.localPosition = v.Root.localPosition + new Vector3(BubbleDX, v.TopY + BubbleUp, 0f);
+            b.Root.localRotation = Quaternion.Euler(0f, 0f, f < 0.2f ? 3f * Mathf.Sin(Time.time * 6f * 2f * Mathf.PI) : 0f);
+            Art.PaintItem(b.Icon, want, true, BubbleIcon);
+            b.Ring.sprite = Art.BalloonRing(f);
+            b.Ring.color = f > 0.5f ? Color.Lerp(Art.Gold, Art.Good, f * 2f - 1f) : Color.Lerp(Art.Bad, Art.Gold, f * 2f);
         }
 
         V2 Slot(bool jewel, int i) => jewel ? _sim.JewelSlot(i) : _sim.ClientSlot(i);
         List<Client> QueueOf(bool jewel) => jewel ? _sim.JewelQueue : _sim.Queue;
 
-        /// <summary>Liga um Client novo da fila a uma view livre. Id local (o Core nao tem) alterna o elenco; loja de joias = nobre.</summary>
-        ClientV BindClient(Client c, int slot, bool jewel)
+        SpriteSheet NextClientSheet()
+        {
+            if (_artBag.Count == 0)
+            {
+                for (int i = 0; i < _clientSheets.Count; i++) _artBag.Add(i);
+                for (int i = _artBag.Count - 1; i > 0; i--) { int j = _artRng.Next(i + 1); (_artBag[i], _artBag[j]) = (_artBag[j], _artBag[i]); }
+                int last = _artBag.Count - 1;   // tira do fim: o proximo nao pode ser o mesmo que acabou de sair
+                if (last > 0 && _artBag[last] == _lastArt) (_artBag[0], _artBag[last]) = (_artBag[last], _artBag[0]);
+            }
+            _lastArt = _artBag[_artBag.Count - 1];
+            _artBag.RemoveAt(_artBag.Count - 1);
+            return _clientSheets[_lastArt];
+        }
+
+        /// <summary>View livre (sem cliente e escondida) ou uma nova. Id local (o Core nao tem) alterna o elenco; loja de joias = nobre.</summary>
+        ClientV FreeClient(bool jewel)
         {
             ClientV v = null;
             foreach (ClientV x in _clients) if (x.C == null && !x.Root.gameObject.activeSelf) { v = x; break; }
             if (v == null) _clients.Add(v = BuildClient());
-            v.C = c;
             v.Jewel = jewel;
             v.Id = _clientSeq++;
-            if (v.Body != null) { v.Body.Sheet = jewel && _nobre != null ? _nobre : _clientSheets[v.Id % _clientSheets.Count]; v.Body.Clip = null; }
-            v.Bubble.enabled = v.Want.enabled = v.Patience.enabled = true;
-            v.Root.localPosition = W(Slot(jewel, slot)) + new Vector3(0f, 1.5f, 0f);   // chega pela rua de cima
+            if (v.Body != null) { v.Body.Sheet = jewel && _nobre != null ? _nobre : NextClientSheet(); v.Body.Clip = null; }
             v.Root.gameObject.SetActive(true);
             return v;
+        }
+
+        /// <summary>Liga um Client novo da fila a uma view livre.</summary>
+        ClientV BindClient(Client c, int slot, bool jewel)
+        {
+            ClientV v = FreeClient(jewel);
+            v.C = c;
+            v.Want.enabled = v.Patience.enabled = true;
+            v.Root.localPosition = W(Slot(jewel, slot)) + new Vector3(0f, 1.5f, 0f);   // chega pela rua de cima
+            return v;
+        }
+
+        /// <summary>
+        /// Quem chega com a fila cheia (Ev.ClientLeft B = 2, na vaga QueueCap; FASE7 s5): desce da rua de cima ate a faixa atras da
+        /// fila e vai embora pela esquerda, como quem cansou. ponytail: sem folha de personagem (procedural) nao aparece, como antes.
+        /// </summary>
+        public void TurnedAway(V2 at, bool jewel)
+        {
+            if (_clientSheets.Count == 0) return;
+            ClientV v = FreeClient(jewel);
+            v.C = null;
+            v.Want.enabled = v.Patience.enabled = false;
+            float laneY = Mathf.Max(W(Slot(jewel, 0)).y, Balance.WorldH) + 0.7f;
+            v.Root.localPosition = new Vector3(at.X, laneY + 0.9f, 0f);
+            v.Lane = new Vector3(at.X, laneY, 0f);
+            v.Exit = new Vector3(-1.6f, laneY, 0f);
+            v.Served = false;
+            v.Phase = 0;
+            v.LeaveT = 0f;
         }
 
         // ------------------------------------------------------------------ quadro
@@ -579,6 +713,7 @@ namespace FS
             for (int i = 0; i < _glows.Count; i++)   // tochas tremulam: 2 senos fora de fase por tocha
                 _glows[i].color = Art.ComAlfa(GlowColor, GlowAlpha + 0.05f * Mathf.Sin(Time.time * 9f + i * 2.1f) + 0.03f * Mathf.Sin(Time.time * 23f + i));
             foreach (StationV v in _stations) RefreshStation(v, pulse);
+            RefreshStand(dt);
             foreach (PadV v in _pads) RefreshPad(v, pulse);
             foreach (ChestV v in _chests) RefreshChest(v);
             foreach (LuxV v in _lux) RefreshLux(v, dt);
@@ -619,7 +754,11 @@ namespace FS
         {
             bool corridor = _sim.Bought[(int)Upgrade.SideCorridor], teaser = corridor && !_sim.Bought[(int)Upgrade.Jewelry];
             _street.color = corridor ? StreetOpen : StreetShut;
-            _door.enabled = !corridor;
+            foreach ((GameObject shut, GameObject open) in _gates)   // fechado ate o Corredor, aberto depois (folhas contra o muro da rua)
+            {
+                if (shut != null && shut.activeSelf == corridor) shut.SetActive(!corridor);
+                if (open != null && open.activeSelf != corridor) open.SetActive(corridor);
+            }
             _streetLabel.enabled = !corridor;
             if (!corridor) PlaceLabel(_streetLabel, new Vector3(Balance.WorkshopW + 0.6f, (Balance.SideWallOpenings[1] + Balance.SideWallOpenings[2]) / 2f, 0f), Vector2.zero);   // na parede entre a porta e o arco, nao em cima da porta
             if (_shopTeaser != null && _shopTeaser.transform.parent.gameObject.activeSelf != teaser) _shopTeaser.transform.parent.gameObject.SetActive(teaser);
@@ -636,7 +775,7 @@ namespace FS
                 v.Served = v.C.Patience > 0f;   // vendido sai com paciencia sobrando; quem cansou sai com <= 0
                 v.C = null;
                 if (v.Body == null) { v.Root.gameObject.SetActive(false); continue; }   // procedural: some na hora, como antes
-                v.Bubble.enabled = v.Want.enabled = v.Patience.enabled = false;
+                v.Want.enabled = v.Patience.enabled = false;
                 Vector3 p = v.Root.localPosition;
                 float laneY = Mathf.Max(W(Slot(v.Jewel, 0)).y, Balance.WorldH) + 0.7f;   // faixa da rua de cima, atras das duas filas
                 v.Lane = new Vector3(p.x + (v.Id % 3 - 1) * 0.3f, laneY, 0f);
@@ -649,10 +788,15 @@ namespace FS
             foreach (ClientV v in _clients) if (v.C == null && v.Body != null && v.Root.gameObject.activeSelf) RefreshLeaving(v, dt);
         }
 
-        /// <summary>Uma fila (balcao ou loja de joias): mesma maquina de estados, so muda a lista, os slots e o elenco.</summary>
+        /// <summary>
+        /// Uma fila (balcao ou loja de joias): mesma maquina de estados, so muda a lista, os slots e o elenco. O 1o leva o balao
+        /// grande; os outros, mini-icone e paciencia. Vagas que se recentram (balcao evolutivo) = todos deslizam ate a vaga nova.
+        /// </summary>
         void RefreshQueue(bool jewel, float dt)
         {
             List<Client> q = QueueOf(jewel);
+            BubbleV b = jewel ? _jewelBubble : _bubble;
+            if (b.Root.gameObject.activeSelf != q.Count > 0) b.Root.gameObject.SetActive(q.Count > 0);
             for (int i = 0; i < q.Count; i++)
             {
                 Client c = q[i];
@@ -661,13 +805,16 @@ namespace FS
                 if (v == null) v = BindClient(c, i, jewel);
                 Vector3 before = v.Root.localPosition;
                 v.Root.localPosition = Vector3.MoveTowards(before, W(Slot(jewel, i)), 4f * dt);
-                v.Want.sprite = Art.ItemSprite(c.Want);
-                v.Want.color = Art.ItemColor[(int)c.Want];
-                v.Want.transform.localScale = Art.ItemScale(c.Want, 0.3f);
                 float f = Mathf.Clamp01(c.Patience / c.MaxPatience);
-                v.Patience.transform.localScale = new Vector3(0.5f * f, 0.07f, 1f);
-                v.Patience.transform.localPosition = new Vector3(-0.25f + 0.25f * f, v.PatY, 0f);
-                v.Patience.color = Color.Lerp(Art.Bad, Art.Good, f);
+                v.Want.enabled = v.Patience.enabled = i > 0;
+                if (i == 0) PlaceBubble(b, v, c.Want, f);
+                else
+                {
+                    Art.PaintItem(v.Want, c.Want, true, MiniIcon);
+                    v.Patience.transform.localScale = new Vector3(PatW * f, 0.06f, 1f);
+                    v.Patience.transform.localPosition = new Vector3(PatW * (f - 1f) / 2f, v.TopY + PatY, 0f);
+                    v.Patience.color = Color.Lerp(Art.Bad, Art.Good, f);
+                }
                 if (v.Body == null) continue;
                 bool moving = v.Root.localPosition != before;
                 string clip = moving ? "Walking" : f < 0.2f ? "Angry" : f < 0.5f ? "LookingAround" : "Idle";
@@ -699,7 +846,7 @@ namespace FS
             Station s = v.S;
             if (v.Root.gameObject.activeSelf != s.Unlocked) v.Root.gameObject.SetActive(s.Unlocked);
             if (!s.Unlocked) { v.Label.enabled = false; return; }
-            v.Label.enabled = true;
+            v.Label.enabled = !v.Stand;   // o estande com espadas em pe ja le como loja; o rotulo cairia em cima da fila
             float labelY = s == _sim.Counter ? 0.9f : v.Baked ? 1.35f : 0.95f;   // balcao: abaixo do varal da Fachada nobre (y 14,1)
             PlaceLabel(v.Label, W(s.Pos) + new Vector3(0f, labelY, 0f), Vector2.zero);
             if (s.Produces)
@@ -709,7 +856,7 @@ namespace FS
                 for (int i = 0; i < v.OutPile.Length; i++)
                 {
                     v.OutPile[i].enabled = i < s.Out;
-                    v.OutPile[i].color = blocked ? Color.Lerp(Art.ItemColor[(int)s.OutItem], Art.Bad, 0.5f * pulse) : Art.ItemColor[(int)s.OutItem];
+                    v.OutPile[i].color = blocked ? Color.Lerp(Art.ItemTint(s.OutItem), Art.Bad, 0.5f * pulse) : Art.ItemTint(s.OutItem);
                 }
                 float p = s.Busy ? s.Progress : 0f;
                 v.BarFill.transform.localScale = new Vector3(1.3f * p, 0.12f, 1f);
@@ -718,9 +865,56 @@ namespace FS
                 v.BarBg.color = starving ? Color.Lerp(Art.Dim, Art.Bad, 0.35f * pulse) : Art.Dim;
                 v.Base.color = v.Baked ? (s.Busy ? Color.white : Dimmed) : Art.ComAlfa(Art.StationColor(s), s.Busy ? 1f : 0.8f);
             }
-            if (s.Kind == Kind.Counter)
+            if (s.Kind == Kind.Counter && v.Stock != null)
                 for (int p = 0; p < v.StockItems.Length; p++)
                     for (int i = 0; i < 6; i++) v.Stock[p * 6 + i].enabled = i < _sim.Stock[(int)v.StockItems[p]];
+        }
+
+        static string StandArt(Item it) => it == Item.Shield ? "balcao_escudos" : it == Item.Tool ? "balcao_ferramentas" : "balcao_meio";
+        static string StandItemArt(Item it) => it == Item.Shield ? "item_escudo_em_pe" : it == Item.Tool ? "item_ferramenta_em_pe" : "item_espada_em_pe";
+
+        /// <summary>Remonta o estande quando mudam as vagas ou abre uma linha (no maximo 7 vezes no jogo, com pop) e acende 1 item por unidade de estoque.</summary>
+        void RefreshStand(float dt)
+        {
+            if (!_hasStand) return;
+            int n = _sim.QueueCap, key = n * 4 + (_sim.LineUnlocked(Item.Shield) ? 1 : 0) + (_sim.LineUnlocked(Item.Tool) ? 2 : 0);
+            if (key != _standKey) { _standPop = _standKey < 0 ? -1f : 0f; _standKey = key; BuildStand(n); }
+            System.Array.Clear(_shown, 0, _shown.Length);
+            foreach ((Item it, SpriteRenderer r) in _standStock) r.enabled = _shown[(int)it]++ < _sim.Stock[(int)it];   // enche da esquerda para a direita
+            if (_standPop < 0f) return;
+            _standPop += dt;
+            float t = Mathf.Clamp01(_standPop / PopTime);
+            _stand.localScale = Vector3.one * Mathf.Lerp(0.9f, 1f, 1f - (1f - t) * (1f - t) * (1f - t));
+            if (t >= 1f) _standPop = -1f;
+        }
+
+        /// <summary>Pontas + N modulos centrados no balcao (o modulo i fica sob a vaga i: Sim.ClientSlot), ordem pelo pe; itens em pe logo acima.</summary>
+        void BuildStand(int n)
+        {
+            if (_stand != null) Destroy(_stand.gameObject);
+            _stand = Group("Estande", _sim.Counter.Pos);
+            _standStock.Clear();
+            int order = Depth(_sim.Counter.Pos.Y);
+            float x = -(Balance.SlotStep * n + 2f * Balance.CounterEnd) / 2f;   // borda esquerda do corpo: -Balance.CounterHalfX(n)
+            StandPiece("balcao_ponta_esq", x + Balance.CounterEnd / 2f, order);
+            x += Balance.CounterEnd + Balance.SlotStep / 2f;
+            for (int i = 0; i < n; i++, x += Balance.SlotStep)
+            {
+                Item it = _sim.LineUnlocked(StandOrder[i]) ? StandOrder[i] : Item.Sword;
+                float[] enc = StandPiece(StandArt(it), x, order).Slots;
+                string em = StandItemArt(it);
+                Sprite item = StaticArt(em, RealCell(em));
+                for (int k = 0; k + 1 < enc.Length; k += 2)
+                    _standStock.Add((it, Art.NewSprite(_stand, "Estoque", item, Color.white, order + 1, new Vector2(x + enc[k], enc[k + 1]), Vector2.one)));
+            }
+            StandPiece("balcao_ponta_dir", x - Balance.SlotStep / 2f + Balance.CounterEnd / 2f, order);
+        }
+
+        SpriteSheet StandPiece(string name, float x, int order)
+        {
+            SpriteSheet.TryGet(name, out SpriteSheet sh);   // _hasStand garante as 5 folhas
+            Art.NewSprite(_stand, name, StaticArt(name, RealCell(name)), Color.white, order, new Vector2(x, 0f), Vector2.one);
+            return sh;
         }
 
         void RefreshPad(PadV v, float pulse)
@@ -786,16 +980,22 @@ namespace FS
                 string clip = c.Moving ? "Walking" : v.CheerT > 0f ? "Cheering" : c.Role >= 0 && c.IdleT > 0.5f ? "LookingAround" : "Idle";
                 v.Body.Tick(clip, dt, v.Root.localPosition - before, clip == "LookingAround");
             }
-            for (int i = 0; i < v.Stack.Length; i++)
-            {
-                bool on = i < c.Count;
-                v.Stack[i].enabled = v.StackBg[i].enabled = on;
-                if (!on) continue;
-                v.Stack[i].sprite = v.StackBg[i].sprite = Art.ItemSprite(c.Item);
-                v.Stack[i].color = Art.ItemColor[(int)c.Item];
-                v.Stack[i].transform.localScale = Art.ItemScale(c.Item, ItemS);
-                v.StackBg[i].transform.localScale = Art.ItemScale(c.Item, ItemS * 1.3f);
-            }
+            // FASE7: pilha mista (o ferreiro leva ate o teto de cada tipo), na ordem PileOrder; o 1o item apoia na cabeca (StackY)
+            int k = 0;
+            float y = 0f, prev = 0f;
+            foreach (Item it in PileOrder)
+                for (int n = 0; n < c.Held[(int)it] && k < v.Stack.Length; n++, k++)
+                {
+                    float h = LyingH[(int)it] * ItemS;
+                    y += k == 0 ? h * 0.5f : (prev + h) * 0.375f;   // centro a centro = 75% da media das alturas
+                    prev = h;
+                    _pileY[k] = y;
+                    v.Stack[k].enabled = true;
+                    Art.PaintItem(v.Stack[k], it, false, ItemS);
+                }
+            float fit = y > StackMax ? StackMax / y : 1f;
+            for (int i = 0; i < k; i++) v.Stack[i].transform.localPosition = new Vector3(0f, v.StackY - 0.03f + _pileY[i] * fit, 0f);
+            for (; k < v.Stack.Length; k++) v.Stack[k].enabled = false;
         }
 
         // ------------------------------------------------------------------ rotulos na HUD

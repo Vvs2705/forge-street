@@ -133,3 +133,65 @@ Prompts usados: os da tabela de `ASSETS.md` (assunto + `[S]`/`[P]` + `[I]`), Nan
 ## 5. Props de cenário (2026-10-07, Blender por primitivas — 0 crédito)
 - `client/tools/props_blender.py` (Blender 5.2 headless) modela por primitivas/bmesh com materiais chapados da paleta da ART_BIBLE §2; FBX em `arte/props/<nome>/<nome>.fbx`; sprites estáticos (`render_sprites.py --dirs 1 --size 256`) em `client/Assets/_FS/Resources/Sprites/<nome>/`.
 - Peças: barril, caixote, sacos, tocha, prateleira, suporte_armas, lenha, balde. Autoria: raia de ambiente (personas 30/31/32) sob coordenação; licença: própria do estúdio (sem asset de terceiros).
+
+## 6. Leva 1 de arte v0.5 (2026-10-08, Blender por primitivas — 0 crédito)
+- **Ferramenta:** Blender 5.2.1 LTS headless, `client/tools/arte_v05_blender.py` (SHA-256 `a8a083b806315535ed19a00cc745cb5614fbeefb413e36a48373d15661b00dcc`), que importa as primitivas de `props_blender.py`. O `main()` deste passou para `if __name__ == "__main__":`, sem mudança de saída (SHA-256 novo `37242dcb2ec3ea3047d9c7b15e60bacdb0993a18eaad5846a410f2f82d7d9bfa`). Contorno `#1E1612`, sombra, redução 4×, recorte dos módulos e sombra de contato rodam em numpy dentro do Blender. Script das folhas de QA: `client/tools/folhas_v05.py` (Python 3.14 + Pillow 12.2, SHA-256 `6b8bd31797d85cd5acd0f7d976ad84e0d421e580a6518b920b1a613438bc534e`).
+- **Entrada:** nenhuma. Sem rede, sem IA generativa, sem Tripo/Mixamo, sem asset de terceiros. As texturas e personagens das folhas são os já registrados nas §2–4, usados só na conferência. Créditos: **0** (saldo Tripo intocado).
+- **Licença:** própria do estúdio. Autoria: worker da raia de arte (personas blender-3d + ai-game-development-director) sob o ORQUESTRADOR, a pedido do Vinicius (2026-10-08).
+- **Comando:** `blender.exe -b --factory-startup --python-exit-code 1 --python client/tools/arte_v05_blender.py -- --check <tmp>`, depois `python client/tools/folhas_v05.py --check <tmp>` (`ASSETS.md` §7).
+- **Reprodutibilidade:** um 2º render deu 26 de 27 PNG idênticos bit a bit. `porta_servico_aberta` variou até 5/255 (ruído de antisserrilhado do Workbench). Os SHA abaixo são dos arquivos entregues.
+
+| Arquivo (`client/Assets/_FS/Resources/Sprites/`) | px | bytes | SHA-256 |
+|---|---|---|---|
+| `item_minerio/icone.png` | 128×128 | 14 923 | `5a2863efdb0fba2bb04803352f3a4a13f2485ec304cf3e0bb972fd806a651857` |
+| `item_minerio/deitado.png` | 128×128 | 15 831 | `c955dd138c75e9b8d17dbb39893a7583b5353d4432f45da110d87b23bde091d0` |
+| `item_lingote/icone.png` | 128×128 | 9 278 | `a466f5da6dbc6297d5e4cbda69543cdbb2b7907659a5fa88b5fd862e6d044974` |
+| `item_lingote/deitado.png` | 128×128 | 9 152 | `e3790d20fd68ebbdb94b35903a1b43cb9fb9c448e978bbef3acd7497d5d558e9` |
+| `item_espada/icone.png` | 128×128 | 10 441 | `f074a2de70eeaeab2d7e1b7fe40011567ad46e723577853123c9d7b5e5ada27b` |
+| `item_espada/deitado.png` | 128×128 | 5 100 | `d58391920e71dadee10cc8515708a29ac98f807be0b73ee8557214364c9b55fd` |
+| `item_escudo/icone.png` | 128×128 | 16 794 | `162f768f728dee56c7355ae1cb7a8c35a6f7dac907be10e176d984df0bdfd841` |
+| `item_escudo/deitado.png` | 128×128 | 17 367 | `f1b50581b5903ad52e103caedf76b162a6f2ee038743f20fcf16dab31676dc6f` |
+| `item_ferramenta/icone.png` | 128×128 | 11 472 | `3b40adcdcb08215231b2b0a0661f32503d7eaf585178e0a3c26f69be036020aa` |
+| `item_ferramenta/deitado.png` | 128×128 | 7 290 | `b87f647a5e307df6e5833f1724ad906ba3dcdd5fac31c4045496144b98bf8801` |
+| `item_joia/icone.png` | 128×128 | 14 176 | `0b56013438cdb4a07940a42629699cd0cfce2187181977c02399a292e60d85a0` |
+| `item_joia/deitado.png` | 128×128 | 12 908 | `a02d77b58a7063d6a64b5f95144c8216ee9127b0978f0fb85b1770c55cbae267` |
+| `moeda/icone.png` | 128×128 | 15 213 | `5858ed9421f6c33bc58670bf8f69c515d51c6a435d6f8ca265cfbe66a3c39b8e` |
+| `moeda/deitado.png` | 128×128 | 16 110 | `a0dcff4f890bc208332eda75caab84237c26460ac1a3b50eab6043a73fd36ed5` |
+| `item_espada_em_pe/Static.png` | 36×106 | 4 067 | `1f26ca1c2caec719e2f147531f340cde84d983a04fff2cec0659a7e8c665ce9b` |
+| `item_escudo_em_pe/Static.png` | 72×70 | 7 380 | `7170ab33d7485684d80a1bea3272f07c1a0b95e81bd001cbea0d332307689843` |
+| `item_ferramenta_em_pe/Static.png` | 60×84 | 3 999 | `8b5596f0a385eaed60c131b0116b954c65ceaf6fb4c8f6bc08949e13cbade970` |
+| `balcao_ponta_esq/Static.png` | 64×269 | 15 144 | `33ab066c9c6cecdd5400200ccdbc7ac4b94d61887fb6c29b814ea0eb18fa76e6` |
+| `balcao_meio/Static.png` | 136×269 | 37 624 | `25b227d8dd819f83a71902bf6d509c9532a5c7f14b08057070dda3d93411b2eb` |
+| `balcao_escudos/Static.png` | 136×269 | 38 102 | `611c28615ee59d0e4a31c5754d5947304871d71a5ae79c54b3b44a0578453747` |
+| `balcao_ferramentas/Static.png` | 136×269 | 38 026 | `80046b8062deaa50c1be6fb2fdeb3db28894cb68b6b959b14ecd89c3a3d28045` |
+| `balcao_ponta_dir/Static.png` | 64×269 | 15 560 | `336c00d528eae787dceabffe2b8f9bad1d364500d0c56678196714cc8e0e2301` |
+| `pilar/Static.png` | 142×207 | 32 652 | `1f76b759d7f713453aafd9d26fac6dc47c2d405015bb421e82d25bed710af304` |
+| `portao_fechado/Static.png` | 104×380 | 47 574 | `34678e05894307818903e70af7cdd5eac9a3668772f61d86c617a50a160d7e22` |
+| `portao_aberto/Static.png` | 336×591 | 129 788 | `c088e0f11d7ed3c23d25d06627b29e7391f4bb1b61688f67af70720d62fea4bd` |
+| `porta_servico_fechada/Static.png` | 62×356 | 29 248 | `37f8b585de583833fb4c83e5c05a2511e735c84d4528d57d0599676fb9fba167` |
+| `porta_servico_aberta/Static.png` | 308×567 | 104 271 | `fcd72e83c26ae651ae5e71aa58716f8e4713103014b2ddbf44d0127d041b1a8c` |
+
+Folhas (`client/Builds/sprites_contact/`, só QA): `v05_itens.png` 1500×1690, 584 604 B, `02d623c415e162423f8968f803bfe85e55d4bb0faaaa5e7ff9932761f1dea2cc` · `v05_balcao_4e8.png` 1248×3381, 1 999 630 B, `ca76ca1098eae1cb131bc03929ef9b1ba9378e973698a210dabaa51110accff3` · `v05_portao.png` 2246×1897, 3 069 158 B, `8d886db72fda422d68feb6f3fb74284726040be542999f9d6727f6cd28650ecf`.
+
+## 7. Lote 4 — 10 clientes novos (aberto 2026-10-08 ~13:30)
+- **Aval:** Vinicius, 2026-10-08 (AskUserQuestion: "10 novos ≈ 650 créditos"). Teto: saldo final ≥ **20 720** (21 370 − 650).
+- **Receita (conferir no painel antes de CADA geração):** imagem gerada dentro do site (grátis) → Modelo HD H3.1, 8 000 polígonos, triângulos, textura 2K (NÃO 8K/4K), remover iluminação, **Privado** → Auto Rig humanoide com esqueleto **Mixamo** → Exportar FBX (predefinição Mixamo). Uma página nova por peça.
+- **Prompts:** assunto + `[S][T]` + `[I]` de `docs/ASSETS.md` (cabeçalho).
+
+| Data/hora | Evento | Saldo visto no site | Gasto | Obs |
+|---|---|---|---|---|
+| 2026-10-08 13:30 | Abertura do Lote 4, antes de qualquer geração | **21 370** | 0 | Chrome "PC de casa" |
+
+| 2026-10-08 13:35 | **PAUSA pedida pelo Vinicius** antes da 1ª geração (só abri o gerador) | **21 370** | 0 | nada gerado; retomar pelo 1º cliente (Bárbaro) |
+| 2026-10-08 19:49 | Minerador: imagem #2 de 4 (Nano Banana 2); Modelo HD H3.1 (Ultra, 2K, 8 000, triângulos, remover iluminação, PBR, 8K off, Privado) | **21 325** | 45 | task `436ef357-6978-4855-bac7-0eebde1cfd72` |
+| 2026-10-08 19:51 | Bardo: imagem #2 de 4; Modelo HD (mesma receita) | **21 280** | 45 | task `9cf89ab0-e6b5-4a62-b2ec-dfdbdda5b106` |
+| 2026-10-08 19:53 | Alquimista: imagem #4 de 4; Modelo HD | **21 235** | 45 | task `5417da22-fc46-464f-8e66-399ca1b6369a` |
+| 2026-10-08 19:54 | Caçadora: imagem #2 de 4; Modelo HD | **21 190** | 45 | task `8becbadd-b5dd-48c7-9c12-c639b2de04f1` |
+| 2026-10-08 19:55 | Monge: imagem #4 de 4 (calça visível sob a túnica); Modelo HD | **21 145** | 45 | task `57ee5871-858f-46c7-aaa5-08ce22d54321` |
+| 2026-10-08 19:57 | Ladina: imagem #2 de 4 (capa curta); Modelo HD | **21 100** | 45 | task `0b039fdf-d6f5-422f-bea8-2f4c39c4247c` |
+| 2026-10-08 19:58 | Paladina: imagem #2 de 4; Modelo HD | **21 055** | 45 | task `549e54a6-ce51-47a7-91de-62bd38ea0501` |
+| 2026-10-08 19:59 | Orc: imagem #4 de 4 (pose A, braços mais abertos); Modelo HD | **21 010** | 45 | task `aeccd363-82fe-491a-bff5-fd636f14bacb` |
+| 2026-10-08 20:00 | Bárbaro: imagem #4 de 4 (única em pose T); Modelo HD | **20 965** | 45 | task `7a9bd6e6-60b9-4354-9155-6709b133c73e` |
+| 2026-10-08 20:01 | Pirata: imagem #2 de 4 (sem gancho); Modelo HD — **10 modelos, 450 créditos** | **20 920** | 45 | task `63adc3d5-bff2-4435-9931-989d4da8b3bd` |
+| 2026-10-08 20:03–20:10 | Auto Rig humanoide, predefinição de esqueleto **Mixamo**, nos 10 (Minerador, Bardo, Alquimista, Monge, Ladina, Paladina, Orc, Bárbaro, Pirata, Caçadora), cada um pela URL `workspace/rigging/<task>` | **20 720** | 200 | saldo final = teto do aval (21 370 − 650). Orc veio de imagem em pose A (o painel recomenda T; rig aceitou) |
+| 2026-10-08 20:10 | **Lote 4 fechado na geração: 10 modelos + 10 rigs = 650 créditos.** Pendente: export FBX (predefinição Mixamo, 2K) e render dos sprites | **20 720** | 0 | |

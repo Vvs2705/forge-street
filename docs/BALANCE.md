@@ -889,3 +889,180 @@ precos (F / P / J)  | Dt 1/30: fachada  piso           joalheria real  | Dt 1/60
 - **Pad do Mineiro** (0,5; 3,5) → **(2,8; 0,6)**, slot 20, no lugar das Botas (pad do menu, invisível; `Sim` ignora pad invisível na busca por posição). Motivo: a 0,62 m da linha Depósito → entrada da Fornalha, o humano pisaria nele de passagem. Bot: produção completa **43:37** (igual), Fachada +8,8 min, ouro/min 44–90 1.626; dotnet 66/66.
 - **Arte das estações** de célula 1,65 m para 1,95 m: com 1,65 a peça tinha 0,9–1,24 m de largura e o corpo sólido 1,3 m (o ferreiro batia numa borda invisível). Só view; nenhum número muda.
 
+## 17. FASE7: carga mista do ferreiro, balcão evolutivo 4 → 8 e venda só com cliente na vaga (contrato `docs/FASE7_CARGA_BALCAO.md`, medido 2026-10-08)
+
+**Vigente.** Origem: playtest do Vinicius na v0.4.1 (POCO F4): a trava dos lingotes com a bigorna cheia, o pedido do balcão evolutivo e "vendas sem ninguém pedindo". Os números de §15/§16 viram **históricos**. Harness: `scratchpad/fs7/h` (fontes reais do core; preços do balcão mudados em runtime), `h2` (vendas por caminho, compila contra o core antigo e o novo) e `red` (mutações). Bot humano, Dt 1/30 (portão) e 1/60.
+
+### 17.1 O que mudou no core
+- **Carga:** `Carrier.Held[6]`.
+  - O ferreiro leva todos os tipos, até `Cap` de cada um; o ajudante, um tipo por vez.
+  - A regra nova sozinha não muda nenhum tick do bot antigo em 90 min: ele nunca passava por uma boca recolhível carregando outra coisa.
+  - O estado da trava (insumo na mão sem nenhuma entrada com espaço) apareceu **0 s** em 90 min de bot.
+- **Balcão:** `Counter5..Counter8` no menu, em cadeia (o 1º exige a Vitrine), +1 vaga cada.
+  - O corpo cresce com as vagas: meia-largura `CounterHalfX(n)` = 0,425·n + 0,2.
+  - As vagas ficam centradas no balcão. A Vitrine perdeu a fila e ficou com estoque e clientes ×0,7.
+  - Baú da oficina (2,8; 12,6) → (2,2; 12,0). Nos 10 min, a diferença entre posições do baú (1.380–1.480 de receita) é ruído do bot: no Dt 1/60 dá 1.450 nas duas.
+- **Venda:** a compra direta da vitrine saiu (§17.2).
+- **Bot:**
+  - só leva ao balcão o produto que ele aceita (`Sim.Deliverable`);
+  - insumo sem destino não o prende;
+  - produto que a fila pede ganha +12 (`Sim.Wanted`).
+  - A dica segue a mesma ordem.
+- **`Sim.Steer`:** considera todos os corpos encostados e descarta rota cuja quina não cabe o personagem (§17.5).
+- **Teto do cofre:** o mais barato **à venda** (§17.5).
+- **Save:** grava a carga na mão (`hold=`, `wk=`).
+
+### 17.2 Etapa C: vendas sem cliente visível (causa medida)
+`Ev.Sold` só sai de `Sim.Sell`, chamado em dois lugares: o atendimento da fila e a compra direta (fila cheia + produto no estoque). A compra direta solta o "+10" na vaga depois da última, sem cliente desenhado.
+
+| bot humano | v0.4.1, 10 min | v0.4.1, 45 min | FASE7, 10 min | FASE7, 45 min |
+|---|---|---|---|---|
+| Dt 1/30: vendas (fila / **direta**) | 107 (87 / **20 = 18,7%**) | 1.544 (945 / **377 = 28,5%**; joias 221 / 1) | 90 (90 / **0**) | 1.212 (1.047 / **0**; joias 165 / 0) |
+| Dt 1/60: vendas (fila / **direta**) | 106 (90 / **16 = 15,1%**) | 1.561 (944 / **400 = 29,8%**) | 78 (78 / **0**) | 1.275 (1.102 / **0**) |
+| fila_cheia \| cansou (1/30) | 65 \| 1 | 1.882 \| 1 | 79 \| 2 | 2.094 \| 2 |
+| receita (1/30) | 1.460 | 32.723 | 1.320 | 27.075 |
+
+- **Outras fontes descartadas:**
+  - `Ev.Offline` não tem `case` no `HandleEvents`: o cofre aparece só no painel.
+  - `Ev.Deposited` do ajudante só toca som.
+  - `Ev.ChestOpened` solta "+ouro" no baú, mas são só 2–3 aberturas no jogo inteiro.
+- **Sem a compra direta e sem mudar mais nada, o bot TRAVAVA aos ~10 min** (renda 0 até os 90 min).
+  - Estado aos 15:00: o bot no balcão com 2 espadas, estoque de espada 5/5, fila = 4 clientes de escudo e 3 escudos prontos na bancada.
+  - Os clientes de espada nunca acham vaga, porque os tempos ficam em fase. É a trava da §9.1, que a compra direta mascarava.
+  - Ela se desfaz pela paciência, pela vaga a mais e pela carga mista, mais a regra do bot/dica "não espere num balcão que não aceita o que está na mão; busque o que a fila pede". Teste: `FilaCheiaDeEscudo_…_DestravaPelaPacienciaPelasVagasEPelaCargaMista`.
+
+### 17.3 Ganho das vagas e preço
+- **Com a compra direta (antes da Etapa C) as vagas valiam zero.** 4 → 8 dadas de graça no minuto T, janela de 10 min: Δ entre −50 e +18 ouro/min, média −2,5. A `fila_cheia` quase não caía (479 → 474 aos 10 min).
+  - A Vitrine antiga (fila 6) e a nova (fila 4) deram a mesma receita em 90 min: 106.215 × 105.834 (Dt 1/30) e 107.041 × 105.941 (Dt 1/60).
+  - A economia é limitada pela produção: no fim chegam ~110 clientes/min contra ~50 vendas/min. Quem não entrava comprava direto do estoque.
+- **Sem a compra direta, as vagas rendem no meio do jogo.** Médias de 5 passos (Dt 1/30, 1/40, 1/45, 1/50, 1/60), janela de 15 min, vagas dadas no minuto T:
+
+| T | ouro/min com 4 vagas | 5 | 6 | 7 | 8 | **4 → 8** | fila_cheia \| cansou (4 → 8 vagas) |
+|---|---|---|---|---|---|---|---|
+| 5 | 303 | −6 | +4 | +1 | −3 | **−4** | 535 \| 1 → 546 \| 4 |
+| 10 | 357 | −10 | −5 | +36 | +4 | **+25** | 804 \| 0 → 790 \| 0 |
+| 15 | 425 | +33 | +1 | +35 | +20 | **+89** | 1.000 \| 1 → 952 \| 1 |
+| 20 | 636 | +5 | +32 | −2 | +22 | **+56** | 982 \| 2 → 965 \| 1 |
+| 25 | 900 | +18 | +33 | −11 | +10 | **+50** | 944 \| 2 → 919 \| 2 |
+| 30 | 1.142 | −10 | 0 | +9 | +11 | **+9** | 897 \| 1 → 872 \| 2 |
+| 40 | 1.431 | −13 | +28 | −14 | +1 | **+2** | 949 \| 0 → 927 \| 0 |
+
+  - **Mais vagas não trocam "fila_cheia" por "cansou"** (nota do benchmark): `cansou` fica em 0–4 em toda linha, porque a paciência por item (57–84 s) segura quem entra. A `fila_cheia` cai pouco (−2% a −5%), já que a produção continua sendo o limite.
+  - O ganho por vaga tem ruído de ±15 e não se separa. **A regra de retorno foi aplicada à soma.** Na faixa 15–25 min, 4 → 8 rendem ~65 ouro/min; comprando aos ~15 min, +89/min.
+- **Preço APLICADO: 150 / 175 / 200 / 225** (soma 750, retorno de 8,4 min sobre +89/min). **O Balcão 5 exige a Vitrine.**
+
+| preços (5/6/7/8) | requisito do Balcão 5 | Esteira (1/30 · 1/60) | vagas compradas (1/30) | produção completa (1/30 · 1/60) |
+|---|---|---|---|---|
+| sem as vagas (4 sempre) | — | 7:28 · 7:30 | — | 49:01 · 47:52 (os 22 antigos) |
+| 160 / 160 / 160 / 160 | nenhum | **11:12 · 11:13** | 6:40–8:32 | 51:09 · 49:44 |
+| 120 / 150 / 180 / 210 | nenhum | **10:23 · 10:33** | 5:08–9:27 | 47:20 · 47:52 |
+| 120 / 150 / 180 / 210 | Vitrine | 7:28 · 7:30 | 13:41–14:43 | 49:52 · 48:02 |
+| **150 / 175 / 200 / 225** | **Vitrine** | **7:28 · 7:30** | **13:45–14:43** | **48:24 · 47:32** |
+| 200 / 250 / 300 / 350 | Vitrine | 7:28 · 7:30 | 13:46–14:48 | 51:10 · 48:32 |
+| 300 / 350 / 400 / 450 | Vitrine | 7:28 · 7:30 | 14:05–14:51 | 50:37 · 50:02 |
+
+  - **Sem requisito**, o preço da regra põe as vagas nos primeiros 5–9 min, onde rendem 0, e a Esteira sai da janela da §3 (≤ 8:30).
+  - **Com a Vitrine**, elas caem logo depois dela (13:28), onde começam a render, e a §3 fica idêntica à base.
+  - **No jogo inteiro**, as vagas se pagam:
+    - ouro/min 15–25 min: +85/+91 (Dt 1/30) e +19/+87 (Dt 1/60) contra a base sem vagas;
+    - receita em 90 min: 95.926 → 98.151 (Dt 1/30) e 98.215 → 99.992 (Dt 1/60), já descontados os 750.
+
+### 17.4 Bot humano antes (v0.4.1) × depois (FASE7), Dt 1/30 (`BalanceTests`)
+| marco | v0.4.1 | FASE7 | janela |
+|---|---|---|---|
+| 1ª venda | 0:22 | 0:22 | < 1:30 |
+| Fole · 2ª bigorna · Ajudante · Escudos | 1:07 · 2:17 · 2:59 · 4:00 | 1:07 · 2:17 · 2:59 · 4:00 | §3 |
+| Esteira | 7:20 | **7:28** (Dt 1/60 7:30) | ≤ 8:30 |
+| receita · compras em 10 min | 1.460 · 9 | **1.320** · 9 (Dt 1/60: 1.450 → 1.170) | — |
+| Vitrine · Balcão 5/6/7/8 | 12:40 · — | 13:28 · 13:45 / 14:05 / 14:28 / 14:43 | — |
+| Corredor · Joalheria | 13:26 · 23:01 | 14:46 · 26:44 | — |
+| Joalheiro · Mineiro · Joalheiro 2 · Lupa | 27:10 · 30:05 · 32:20 · 36:49 | 31:42 · 34:35 · 36:47 · 41:21 | — |
+| **produção completa** | **43:37** (22 produtivos) | **48:24** (26; Dt 1/60 47:32) | 42–48 |
+| Fachada · Piso · Joalheria real | 52:25 · 63:32 · 76:54 | 56:57 (+8,6) · 68:09 (+19,8) · 82:08 (+33,7) | Fachada +8…12 |
+| receita · vendas em 90 min | 106.006 · 3.775 | 98.151 · 3.059 | — |
+| **fila_cheia \| cansou** em 10 / 45 / 60 / 90 min | 65\|1 · 1.882\|1 · 2.758\|1 · 4.519\|1 | 79\|2 · 2.094\|2 · 3.084\|2 · 5.091\|2 | — |
+| fome da joalheria (Joalheiro → 60 min) | 14% | **9%** | ≤ 35% |
+| andar sem decisão (10 min · 45 min) | 34% · 30% | 34% · 23% | < 50% |
+| cofre ofline depois de 10 min | 1.060 | 1.060 | — |
+| baús abertos | 2:53 / 7:18 / 25:46 / 13:23 | 2:53 / 7:26 / 28:57 / 14:42 | — |
+
+| ouro/min (janela de 5 min) | 0–5 | 5–10 | 10–15 | 15–20 | 20–25 | 25–30 | 30–35 | 35–40 | 40–45 | 45–50 | 50–55 | 55–60 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| v0.4.1 | 67 | 225 | 384 | 410 | 658 | 986 | 1.147 | 1.292 | 1.372 | 1.617 | 1.598 | 1.661 |
+| **FASE7** | 65 | 199 | 375 | 424 | 394 | 551 | 992 | 1.138 | 1.274 | 1.397 | 1.656 | 1.551 |
+
+- **O custo é da Etapa C, não das vagas:**
+  - Sem a compra direta, 28–30% das vendas do balcão (que eram clientes invisíveis) viram "fila_cheia". A receita cai 7% em 90 min e as vendas, 19%.
+  - O vale de 20–30 min é a fila entupida de clientes de escudo/ferramenta antes do Ajudante 3 e da Joalheria.
+  - As vagas devolvem parte disso: sem elas, a produção sairia aos 49:01.
+- **A produção completa sai 1:24 depois da janela 42–48 no Dt 1/30** (47:32 no Dt 1/60, dentro). **Não repreçei nada fora da FASE7.** Se o coordenador quiser voltar a ~44 min, as alavancas medidas são o preço das vagas (já no mínimo da regra) ou a paciência e a fila. Fica a decisão.
+- A Fachada sai +8,6 min depois da produção, dentro da regra de +8…12 min, sem mexer no luxo.
+
+### 17.5 Achados corrigidos no caminho
+- **Bolso da Loja de joias (`Sim.Steer`):**
+  - Com a Joalheria real, a loja (x 11,35–12,65; y 11,1–11,9) e os 2 pedestais da frente (10,95 e 13,05; 10,9) deixam vãos de 0,1–0,2 m dos dois lados da boca.
+  - O `Steer` olhava só o 1º corpo encostado e escolhia a quina do vão. Aos 81 min (Dt 1/60, com a carga mista), o bot ficou 9 min parado em (11,40; 10,79): ouro/min 85–90 1.354 e 64 "cansou".
+  - **Correção:** todos os corpos encostados entram na conta, e a rota cuja quina não cabe o personagem (`Sim.Fits`) é descartada. Nada muda antes desse ponto: as partidas são idênticas ao tick até ali. Depois: 85–90 min = 1.625 ouro/min e 0 "cansou".
+  - **Teste:** `Steer_BocaDaLojaDeJoias_EntreLojaEPedestais_SaiDoVao`. A geometria dos pedestais (duplicada em `WorldView.Pedestals`) não mudou.
+- **Teto do cofre (`CheapestLockedCost`):**
+  - O Balcão 5 (150, exige a Vitrine) virou o "menor travado" e derrubou o cofre dos 10 min de 1.060 para 300.
+  - **Agora o teto conta só o que está à venda (pré-requisito comprado)**, e os 10 min voltam a 1.060.
+  - Efeito colateral único: na janela do par, o teto passa de 4.800 (2 × Joalheiro 2, que exige o Mineiro e não está à venda) para **6.000** (2 × Mineiro). Produção completa: 18.000, igual.
+
+### 17.6 Portões remedidos (medido × 1,3, arredondado para cima em 10 s; pisos ~70%)
+- **`Bot_45Minutos…`:** Corredor ≤ 19:20; Joalheria ≤ 34:50; joias/min > 6,3 (medido 9,0). A Joalheria aumenta a renda (371 → 792, +113%).
+- **`Bot_60Minutos_Fase2`:**
+  - tempos: Joalheiro ≤ 41:20; Mineiro ≤ 45:00; Joalheiro 2 ≤ 47:50; Lupa ≤ 53:50; Vitrine de joias dentro dos 60 min;
+  - **as 4 vagas até 19:10** (medido 14:43);
+  - baús: ≤ 3:50 / 9:40 / 37:40 / 19:10;
+  - joias/min depois da produção > 10,3 (medido 14,8);
+  - fome ≤ 35% (medido 9%);
+  - ouro/min 55–60 > 1.085 (medido 1.551).
+- **`Bot_90Minutos_Luxo`:** Fachada ≤ 74:10; Piso ≤ 88:40; Joalheria real ≤ 90:00. Com e sem luxo dentro de ±3%; medido −1,1% em ouro/min e +1,1% em vendas/min.
+- **`Bot_Primeiros10Minutos_BatemASecao3`:** sem mudança.
+
+### 17.7 Testes e prova vermelha
+- **Suíte: 72/72** (66 − 1 substituído + 7 novos). `viewcheck` com o core das fontes: 0 erros, 0 avisos.
+- **Novos (7):**
+  - `Carga_LingotesNoTeto_BigornaCheia_PegaEspadasEVende` (a trava do Vinicius)
+  - `Venda_SempreDeClienteNaVaga_SemCompraDireta`
+  - `FilaCheiaDeEscudo_EspadaNoEstoque_DestravaPelaPacienciaPelasVagasEPelaCargaMista`
+  - `Balcao_4a8Vagas_EmCadeiaNoMenu_ExigeVitrine_VitrineSoEstoqueEClientes`
+  - `Balcao_VagasCentradas_CorpoCresce_SemEngolirPadsBocasERotas` (4..8 vagas)
+  - `Save_CargaDaMao_JogadorMistaEAjudantes_IdaEVolta_SaveAntigoMaosVazias`
+  - `Steer_BocaDaLojaDeJoias_EntreLojaEPedestais_SaiDoVao`
+  - O antigo `FilaCheia_ProdutoNaVitrine_ClienteCompraDireto_NaoTrava` foi trocado pelos dois de venda/trava.
+- **Reescritos ao contrato novo:**
+  - `Capacidade_TetoPorTipo_JogadorMistura_AjudanteNao` (antes: "nunca mistura");
+  - a dica (lingote na mão + espada pronta = pegar a espada);
+  - bocas (a saída recolhe com minério na mão);
+  - fila/Vitrine (a fila cresce no balcão);
+  - a compra de joia com a fila cheia;
+  - luxo e cofre com as vagas e com o teto "à venda";
+  - saves de 25 → 29 flags;
+  - ciclo dos ajudantes com o jogador parado: > 250 vendas em 10 min, medido 288. Antes era > 300, mas a compra direta contava.
+- **Prova vermelha A (core antigo, sem adaptar):** os 2 testes novos que só usam API antiga foram copiados literalmente para uma cópia isolada com o core da v0.4.1 (SHA = HEAD), em `scratchpad/fs7/redold`, com `dotnet build --no-incremental && dotnet test --no-build`:
+  - `Carga_LingotesNoTeto…` vermelho: "recolhe as espadas com os lingotes na mao — Expected True, But was False";
+  - `Venda_SempreDeCliente…` vermelho: "toda venda tem um cliente que saiu da vaga — Expected 0, But was 4";
+  - os mesmos 2 contra o core novo: verdes.
+- **Prova vermelha B (mutações):** cópia isolada do core novo (`scratchpad/fs7/red/red.py`), rebuild limpo a cada mutação, resumo em `red/summary.txt`. Tabela abaixo.
+
+| mutação na cópia | testes vermelhos |
+|---|---|
+| A1 ferreiro com pilha homogênea (`CanPick`) | Carga_LingotesNoTeto, Capacidade_TetoPorTipo, Dica_SegueOEstado, FilaCheiaDeEscudo (rodada à mão; a automática não leu a saída) |
+| A2 dica de produto pronto só de mãos vazias | Dica_SegueOEstado, FilaCheiaDeEscudo |
+| C1 compra direta de volta | Venda_SempreDeClienteNaVaga, VitrineDeJoias_Preco60Antes80Depois |
+| C2 dica "leve ao balcão" com o estoque cheio | FilaCheiaDeEscudo |
+| C3 bot espera no balcão com o estoque cheio | **Bot_45Minutos** (o bot trava aos ~10 min) |
+| B1 Vitrine volta a dar fila (+2) | Balcao_4a8Vagas, Balcao_VagasCentradas, Fila_Cheia |
+| B2 evoluções não somam vaga | Balcao_4a8Vagas, Balcao_VagasCentradas, FilaCheiaDeEscudo, Fila_Cheia |
+| B3 vagas à direita do balcão (antigo) | Balcao_VagasCentradas |
+| B4 corpo do balcão fixo (1,3 m) | Balcao_VagasCentradas |
+| B5 Balcão 5 sem requisito | Balcao_4a8Vagas, Offline_IgnoraLuxo |
+| B6 baú da oficina no lugar antigo | Balcao_VagasCentradas |
+| B7 teto ofline ignora pré-requisito (antigo) | Luxo_EsperaOs26Produtivos, Offline_IgnoraLuxo |
+| S1 save sem `hold=` | Save_CargaDaMao |
+| S2 `Load` do ajudante aceita qualquer tipo | Save_CargaDaMao |
+| S3 `Load` sem teto por tipo do ferreiro | Save_CargaDaMao |
+| P1 `Steer` sem a checagem de quina que cabe | Steer_BocaDaLojaDeJoias |
+| restaurado (SHA da cópia = fontes reais) | verde, 72/72 |

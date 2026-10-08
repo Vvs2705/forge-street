@@ -127,12 +127,12 @@ namespace FS.Tests
                 Clock(corridor), Clock(jewelry), jewels, jewelGold, jewelry < 0f ? 0f : 100f * jewelGold / Math.Max(1, earned[45] - earned[Math.Min(45, mj)]), jewelsPerMin,
                 jewelTired, jewelAway, s.Crafted[(int)Item.Jewel], PerMin(Math.Max(0, mc - 5), mc), before, after, PerMin(40, 45)));
 
-            // Limites folgados (Leva 11: menu inferior + bocas laterais, por cima das fases 5 e 4; medido 2026-10-07: corredor 13:26,
-            // joalheria 23:01, 10,1 joias/min, ouro/min 490 -> 968; BALANCE.md §15). Tempos x1,3 arredondados para cima em 10 s; piso 70%.
-            Assert.That(corridor, Is.InRange(1f, 1050f), "Corredor ate ~medido + 30%");
-            Assert.That(jewelry, Is.InRange(corridor, 1800f), "Joalheria depois do Corredor, ate ~medido + 30%");
-            Assert.Greater(jewelsPerMin, 7.0f, "a linha de joias anda (medido 10,1/min; piso 70%)");
-            Assert.Greater(after, before, "a Joalheria aumenta a renda (medido +98%)");
+            // Limites folgados (FASE7: carga mista, balcao 4->8 e venda so com cliente na vaga; medido 2026-10-08: corredor 14:46,
+            // joalheria 26:44, 9,0 joias/min, ouro/min 371 -> 792; BALANCE.md §17). Tempos x1,3 arredondados para cima em 10 s; piso 70%.
+            Assert.That(corridor, Is.InRange(1f, 1160f), "Corredor ate ~medido + 30%");
+            Assert.That(jewelry, Is.InRange(corridor, 2090f), "Joalheria depois do Corredor, ate ~medido + 30%");
+            Assert.Greater(jewelsPerMin, 6.3f, "a linha de joias anda (medido 9,0/min; piso 70%)");
+            Assert.Greater(after, before, "a Joalheria aumenta a renda (medido +113%)");
         }
 
         /// <summary>
@@ -188,22 +188,24 @@ namespace FS.Tests
                 Clock(tJeweler), Clock(tLupa), Clock(tVitrine), all ? Clock(lastBuy) : "nao", before, afterJeweler, afterAll, starveBefore, starveJewelerToLupa, starveAfter, jewels,
                 string.Join(" ", Array.ConvertAll(chestOpen, Clock))));
 
-            // Limites folgados (Leva 11: menu inferior + bocas laterais; medido 2026-10-07: joalheiro 27:10, mineiro 30:04, joalheiro 2 32:16,
-            // lupa 36:50, vitrine 43:37 = producao completa; baus 2:53 / 7:18 / 25:46 / 13:23; joias/min 5,3 -> 13,6; sem lingote joalheiro -> 60 min 16%;
-            // ouro/min 55-60 = 1623). Tempos medidos x1,3 arredondados para cima em 10 s; pisos ~70% do medido (BALANCE.md §15).
-            Assert.IsTrue(all, "nenhum dos 22 produtivos inalcancavel em 60 min");
-            Assert.That(tJeweler, Is.InRange(tJewelry, 2120f), "Joalheiro depois da Joalheria, ate ~medido + 30%");
-            Assert.That(U(Upgrade.Miner), Is.InRange(tJeweler, 2350f), "Mineiro depois do Joalheiro, ate ~medido + 30%");
-            Assert.That(U(Upgrade.Jeweler2), Is.InRange(U(Upgrade.Miner), 2520f), "Joalheiro 2 depois do Mineiro, ate ~medido + 30%");
-            Assert.That(tLupa, Is.InRange(tJewelry, 2880f), "Lupa ate ~medido + 30%");
-            Assert.That(tVitrine, Is.InRange(tJewelry, 3410f), "Vitrine de joias ate ~medido + 30%");
-            float[] chestMax = { 230f, 570f, 2010f, 1050f };
+            // Limites folgados (FASE7; medido 2026-10-08: balcao 5-8 vagas 13:45-14:43, joalheiro 31:42, mineiro 34:35, joalheiro 2 36:47,
+            // lupa 41:21, vitrine 48:24 = producao completa; baus 2:53 / 7:26 / 28:57 / 14:42; joias/min 4,3 -> 14,8; sem lingote joalheiro ->
+            // 60 min 9%; ouro/min 55-60 = 1551). Tempos medidos x1,3 arredondados para cima em 10 s (a Vitrine de joias no teto do teste,
+            // 60 min); pisos ~70% do medido (BALANCE.md §17).
+            Assert.IsTrue(all, "nenhum dos 26 produtivos inalcancavel em 60 min");
+            Assert.That(tJeweler, Is.InRange(tJewelry, 2480f), "Joalheiro depois da Joalheria, ate ~medido + 30%");
+            Assert.That(U(Upgrade.Miner), Is.InRange(tJeweler, 2700f), "Mineiro depois do Joalheiro, ate ~medido + 30%");
+            Assert.That(U(Upgrade.Jeweler2), Is.InRange(U(Upgrade.Miner), 2870f), "Joalheiro 2 depois do Mineiro, ate ~medido + 30%");
+            Assert.That(tLupa, Is.InRange(tJewelry, 3230f), "Lupa ate ~medido + 30%");
+            Assert.That(tVitrine, Is.InRange(tJewelry, 3600f), "Vitrine de joias dentro dos 60 min");
+            Assert.That(U(Upgrade.Counter8), Is.InRange(U(Upgrade.CounterCapacity), 1150f), "as 4 vagas do balcao logo depois da Vitrine (medido 14:43)");
+            float[] chestMax = { 230f, 580f, 2260f, 1150f };
             for (int i = 0; i < chestOpen.Length; i++)
                 Assert.That(chestOpen[i], Is.InRange(1f, chestMax[i]), $"bau {i} ({s.Chests[i].Label}) aberto ate ~medido + 30%");
-            Assert.Greater(afterAll, before, "joalheiro + par + lupa + vitrine aumentam as joias/min (medido 5,3 -> 13,6)");
-            Assert.Greater(afterAll, 9.5f, "piso ~70% do medido (13,6 joias/min)");
-            Assert.LessOrEqual(starveAfter, 35f, "criterio da fase 4: bancada de joias sem lingote <= 35% (medido 16%)");
-            Assert.Greater((earned[60] - earned[55]) / 5f, 1136f, "piso ~70% do ouro/min medido no fim (1623)");
+            Assert.Greater(afterAll, before, "joalheiro + par + lupa + vitrine aumentam as joias/min (medido 4,3 -> 14,8)");
+            Assert.Greater(afterAll, 10.3f, "piso ~70% do medido (14,8 joias/min)");
+            Assert.LessOrEqual(starveAfter, 35f, "criterio da fase 4: bancada de joias sem lingote <= 35% (medido 9%)");
+            Assert.Greater((earned[60] - earned[55]) / 5f, 1085f, "piso ~70% do ouro/min medido no fim (1551)");
         }
 
         /// <summary>
@@ -250,10 +252,10 @@ namespace FS.Tests
                 Clock(tProd), Clock(tF), (tF - tProd) / 60f, Clock(tW), (tW - tProd) / 60f, Clock(tJ), (tJ - tProd) / 60f, mp, M, gL, gP, 100f * (gL / gP - 1f), sL, sP, 100f * (sL / sP - 1f),
                 lux.GoldEarned, plain.GoldEarned, lux.Gold, plain.Gold));
 
-            // medido 2026-10-07 (Leva 11: menu + bocas laterais; luxo 14.000/18.000/22.000): producao 43:37, fachada 52:20, piso 63:22,
-            // joalheria real 76:56; tempos x1,3 arredondados para cima em 10 s; o 3o fica no teto de 90 min pedido pelo contrato (BALANCE.md §15)
-            Assert.That(tF, Is.InRange(tProd, 4090f), "Fachada nobre depois da producao completa, ate ~medido + 30%");
-            Assert.That(tW, Is.InRange(tF, 4950f), "Piso de oficina depois da Fachada, ate ~medido + 30%");
+            // medido 2026-10-08 (FASE7; luxo 14.000/18.000/22.000): producao 48:24, fachada 56:57, piso 68:09, joalheria real 82:08; tempos
+            // x1,3 arredondados para cima em 10 s; o 3o fica no teto de 90 min pedido pelo contrato (BALANCE.md §17)
+            Assert.That(tF, Is.InRange(tProd, 4450f), "Fachada nobre depois da producao completa, ate ~medido + 30%");
+            Assert.That(tW, Is.InRange(tF, 5320f), "Piso de oficina depois da Fachada, ate ~medido + 30%");
             Assert.That(tJ, Is.InRange(tW, M * 60f), "Joalheria real depois do Piso, dentro dos 90 min");
             for (int m = 1; m * 60f <= tF; m++)
                 Assert.AreEqual((earnedP[m], salesP[m]), (earnedL[m], salesL[m]), $"identicas ate a 1a compra de luxo (minuto {m})");

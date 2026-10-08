@@ -31,12 +31,13 @@ namespace FS
         static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 
         public static Sprite Square() => Get("sq", (x, y) => true);
-        public static Sprite Rounded() => Get("rounded", (x, y) =>
+        public static Sprite Rounded() => Get("rounded", RoundedIn);
+        static bool RoundedIn(float x, float y)
         {
             const float r = 0.28f;
             float qx = Mathf.Max(Mathf.Abs(x) - (1f - r), 0f), qy = Mathf.Max(Mathf.Abs(y) - (1f - r), 0f);
             return qx * qx + qy * qy <= r * r;
-        });
+        }
         public static Sprite Disc() => Get("disc", (x, y) => x * x + y * y <= 0.96f);
         public static Sprite Ring() => Get("ring", (x, y) => { float d = x * x + y * y; return d <= 0.96f && d >= 0.62f; });
         /// <summary>Anel tracejado (12 tracos): marca de obra no chao dos pads de construcao.</summary>
@@ -84,8 +85,40 @@ namespace FS
             }
         }
 
-        /// <summary>Escala do sprite do item quando desenhado solto (lingote e' uma barra deitada).</summary>
+        /// <summary>Escala da mascara do item (so a reserva sem arte: o lingote e' o quadrado arredondado achatado em barra).</summary>
         public static Vector2 ItemScale(Item i, float s) => i == Item.Ingot ? new Vector2(s * 1.25f, s * 0.6f) : new Vector2(s, s);
+
+        // ---------- arte pre-renderizada dos itens (v0.5, docs/ASSETS.md s7): as mascaras acima viram reserva ----------
+        static readonly string[] ItemArtName = { "item_minerio", "item_lingote", "item_espada", "item_escudo", "item_ferramenta", "item_joia" };
+        const float ArtFill = 1.1f;   // o item ocupa ~116 dos 128 px da celula: escala = tamanho desejado x 1,1
+
+        /// <summary>Quadro `clip` de uma folha de 1 quadro (Resources/Sprites/&lt;name&gt;); null sem a folha.</summary>
+        public static Sprite Icon(string name, string clip) => SpriteSheet.TryGet(name, out SpriteSheet sh) ? sh.Frame(clip, 0, 0f) : null;
+        /// <summary>Item renderizado: `icone` (3/4: balao, cartao) ou `deitado` (pilha, estoque, bocas); null sem a folha.</summary>
+        public static Sprite ItemArt(Item i, bool icon) => Icon(ItemArtName[(int)i], icon ? "icone" : "deitado");
+        /// <summary>Cor base do renderer do item: branco na arte (a cor ja vem no PNG), matiz do item na mascara.</summary>
+        public static Color ItemTint(Item i) => ItemArt(i, false) != null ? Color.white : ItemColor[(int)i];
+
+        /// <summary>Pinta o item com `size` m de lado: arte (contorno no PNG, sem achatar o lingote) ou, sem ela, a mascara de sempre.</summary>
+        public static void PaintItem(SpriteRenderer r, Item i, bool icon, float size)
+        {
+            Sprite art = ItemArt(i, icon);
+            r.sprite = art != null ? art : ItemSprite(i);
+            r.color = art != null ? Color.white : ItemColor[(int)i];
+            Vector2 s = art != null ? Vector2.one * (size * ArtFill) : ItemScale(i, size);
+            r.transform.localScale = new Vector3(s.x, s.y, 1f);
+        }
+
+        /// <summary>
+        /// Anel de paciencia do balao: faixa na borda do retangulo arredondado (o mesmo do Rounded), cheia no sentido horario a
+        /// partir do topo ate `frac`. ponytail: 24 degraus em cache (24 x 16 KB); trocar por shader radial se o degrau aparecer.
+        /// </summary>
+        public static Sprite BalloonRing(float frac)
+        {
+            int k = Mathf.Clamp(Mathf.CeilToInt(frac * 24f), 0, 24);
+            return Get("arc" + k, (x, y) =>
+                RoundedIn(x, y) && !RoundedIn(x / 0.86f, y / 0.84f) && Mathf.Repeat(Mathf.Atan2(x, y) / (Mathf.PI * 2f), 1f) < k / 24f);
+        }
 
         public static Color StationColor(Station s)
         {

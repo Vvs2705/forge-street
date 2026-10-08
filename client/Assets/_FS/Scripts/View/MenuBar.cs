@@ -100,16 +100,17 @@ namespace FS
             return c;
         }
 
-        /// <summary>Icone simples: forma/cor do que a melhoria acelera.</summary>
+        /// <summary>Icone simples: forma/cor do que a melhoria acelera (item: arte `icone` da v0.5, mascara se faltar a folha).</summary>
         static (Sprite, Color) Icon(Upgrade u) => u switch
         {
-            Upgrade.FurnaceSpeed1 or Upgrade.FurnaceSpeed2 => (Art.ItemSprite(Item.Ingot), Art.ItemColor[(int)Item.Ingot]),
-            Upgrade.HammerSpeed => (Art.ItemSprite(Item.Sword), Art.ItemColor[(int)Item.Sword]),
-            Upgrade.JewelSpeed or Upgrade.JewelVitrine => (Art.Jewel(), Art.ItemColor[(int)Item.Jewel]),
-            Upgrade.CounterCapacity => (Art.Star(), Art.Accent),
+            Upgrade.FurnaceSpeed1 or Upgrade.FurnaceSpeed2 => ItemIcon(Item.Ingot),
+            Upgrade.HammerSpeed => ItemIcon(Item.Sword),
+            Upgrade.JewelSpeed or Upgrade.JewelVitrine => ItemIcon(Item.Jewel),
+            Upgrade.CounterCapacity or Upgrade.Counter5 or Upgrade.Counter6 or Upgrade.Counter7 or Upgrade.Counter8 => (Art.Star(), Art.Accent),   // balcao (FASE7)
             Upgrade.HelperSpeed => (Art.Disc(), Art.Worker),
             _ => (Art.Disc(), Art.Player),   // mochila, botas: o ferreiro
         };
+        static (Sprite, Color) ItemIcon(Item i) => Art.ItemArt(i, true) is Sprite s ? (s, Color.white) : (Art.ItemSprite(i), Art.ItemColor[(int)i]);
 
         /// <summary>Estado dos cartoes 4x/s e o destaque do botao quando ha o que comprar.</summary>
         public void Refresh(float dt)
