@@ -1,9 +1,11 @@
 #!/bin/bash
 # Ponto de entrada único de verificação do Forge Street (ticket A-PLAT-04). Git Bash no Windows.
-# uso: client/tools/verify.sh quick | full | android-emulator
+# uso: client/tools/verify.sh quick | full | android-emulator | release | release-check <arquivo.aab|apk>
 #   quick             núcleo (dotnet test) + viewcheck do PC e do Android, sem abrir o Unity
 #   full              quick + Unity batchmode: EditMode, Setup.BuildWindows e o .exe com -autoplay 10
 #   android-emulator  Setup.BuildAndroidEmu + emulador + adb install + abre com '-bot -speed 4' + BACK/HOME + logcat sem exceção
+#   release           quick + Setup.BuildAndroidRelease (AAB assinado; exige FS_KEYSTORE, FS_KEYSTORE_PASS, FS_KEY_ALIAS, FS_KEY_PASS) + release-check
+#   release-check     só confere um artefato pronto: targetSdk, versionCode, debuggable, ABI, 16 KB, assinatura e permissões
 # Regra do PC (7,7 GB): um processo pesado por vez. Nunca Unity e emulador juntos; aborta se o Unity estiver aberto neste projeto.
 # Variáveis opcionais: UNITY_EXE, ADB, EMULATOR, AVD (padrão fs_playstore). Logs desta rodada em client/Builds/verify/.
 set -uo pipefail
@@ -121,10 +123,103 @@ android_emulator() {
   ok "abriu com -bot -speed 4, BACK e HOME, logcat sem exceção"
 }
 
+# base = permissões do APK 0.6.0 (LevelPlay/Unity Ads, WorkManager, androidx). Permissão nova = revisar o Data safety antes de subir
+PERMS="android.permission.INTERNET android.permission.ACCESS_NETWORK_STATE android.permission.VIBRATE android.permission.WAKE_LOCK
+  android.permission.RECEIVE_BOOT_COMPLETED android.permission.FOREGROUND_SERVICE com.google.android.gms.permission.AD_ID
+  android.permission.ACCESS_ADSERVICES_TOPICS android.permission.ACCESS_ADSERVICES_ATTRIBUTION $PKG.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+
+# confere um .aab ou .apk pronto, sem abrir o Unity; lista tudo o que reprova e só então sai 1
+release_check() {
+  local f="$1" A="${UNITY%/*}/Data/PlaybackEngines/AndroidPlayer" n=0 t
+  [ -f "$f" ] || fail "artefato não achado: $f"
+  local java="$A/OpenJDK/bin/java.exe" bt=("$A"/Tools/bundletool-all-*.jar) bin=("$A"/SDK/build-tools/*)
+  local elf="$A/NDK/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-readelf.exe"; bin="${bin[-1]}"
+  for t in "$java" "${bt[0]}" "$elf" "$bin/aapt2.exe"; do [ -f "$t" ] || fail "ferramenta do Unity não achada: $t"; done
+  bad() { echo "REPROVA: $*"; n=$((n + 1)); }
+
+  # manifesto: o AAB guarda em protobuf (bundletool devolve XML); o APK sai pelo aapt2 badging
+  local m vc vn min tgt dbg perms aab=0; [[ "$f" == *.aab ]] && aab=1
+  if [ $aab = 1 ]; then
+    m=$("$java" -jar "${bt[0]}" dump manifest --bundle="$f") || fail "bundletool dump manifest"
+    get() { echo "$m" | grep -m1 -oE "android:$1=\"[^\"]*" | cut -d'"' -f2; }
+    dbg=$(get debuggable)
+    perms=$(echo "$m" | grep -oE '<uses-permission[^>]*' | grep -oE 'android:name="[^"]*' | cut -d'"' -f2)
+  else
+    m=$("$bin/aapt2.exe" dump badging "$f") || fail "aapt2 dump badging"
+    get() { echo "$m" | grep -m1 -oE "(^| )$1[=:]'[^']*" | cut -d"'" -f2; }
+    echo "$m" | grep -q '^application-debuggable' && dbg=true
+    perms=$(echo "$m" | grep -oE "^uses-permission: name='[^']*" | cut -d"'" -f2)
+  fi
+  vc=$(get versionCode); vn=$(get versionName); min=$(get minSdkVersion); tgt=$(get targetSdkVersion)
+  echo "     $f: $vn (versionCode ${vc:-?}), minSdk ${min:-?}, targetSdk ${tgt:-?}"
+
+  [ "${tgt:-0}" -ge 36 ] && ok "targetSdk $tgt" || bad "targetSdk ${tgt:-?} < 36 (exigência da Play desde 31/08/2026)"
+  # mesmo esquema do Setup.VersionCode: maior*10000 + menor*100 + patch
+  local exp=?; [[ "$vn" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] && exp=$((10#${BASH_REMATCH[1]} * 10000 + 10#${BASH_REMATCH[2]} * 100 + 10#${BASH_REMATCH[3]}))
+  [ "${vc:-0}" -gt 1 ] && [ "$vc" = "$exp" ] && ok "versionCode $vc" || bad "versionCode ${vc:-?}: para $vn o esperado é $exp (e sempre > 1, o último publicado)"
+  [ "$dbg" = true ] && bad "debuggable=true (build de desenvolvimento)" || ok "não-debuggable"
+
+  local so abis; so=$(unzip -Z1 "$f" | grep '\.so$')
+  abis=$(echo "$so" | sed -nE 's#^(.*/)?lib/([^/]+)/.*#\2#p' | sort -u | paste -sd' ')
+  [ "$abis" = arm64-v8a ] && ok "ABI só arm64-v8a" || bad "ABIs '${abis:-nenhuma}' (só arm64-v8a)"
+
+  # 16 KB: todo segmento LOAD de todo .so com Align >= 0x4000 (o unzip do Git Bash não casa curinga: extrai pelo nome exato)
+  local tmp s ruins=(); tmp=$(cygpath -m "$(mktemp -d)"); mapfile -t s < <(echo "$so" | grep .)   # C:/...: o readelf é .exe nativo
+  [ ${#s[@]} = 0 ] || unzip -qo "$f" "${s[@]}" -d "$tmp" || fail "unzip dos .so"
+  for t in "${s[@]}"; do
+    "$elf" -lW "$tmp/$t" | awk '$1 == "LOAD" { n++; if (strtonum($NF) < 16384) b = 1 } END { exit !n || b }' || ruins+=("${t##*/}")
+  done
+  rm -rf "$tmp"
+  [ ${#ruins[@]} = 0 ] && ok "16 KB: ${#s[@]} .so com LOAD align >= 0x4000" || bad "16 KB: LOAD align < 0x4000 em ${ruins[*]}"
+  # 16 KB no zip: só importa para .so sem compressão (o Unity 6 usa useLegacyPackaging, .so comprimidos)
+  if [ $aab = 1 ]; then
+    t=$("$java" -jar "${bt[0]}" dump config --bundle="$f" | tr -d ' \r\n')
+    [[ "$t" == *'"uncompressNativeLibraries":{"enabled":true'* && "$t" != *PAGE_ALIGNMENT_16K* ]] \
+      && bad "AAB com .so sem compressão e sem PAGE_ALIGNMENT_16K (bundletool dump config)" || ok "zip: .so comprimidos ou com PAGE_ALIGNMENT_16K (bundletool dump config)"
+  else
+    "$bin/zipalign.exe" -c -P 16 4 "$f" > /dev/null && ok "zipalign -c -P 16: ok" || bad "zipalign -c -P 16 4 reprovou"
+  fi
+
+  # assinatura: AAB é jar (jarsigner); APK v2/v3 (apksigner). A chave de debug reprova
+  local sig
+  if [ $aab = 1 ]; then
+    sig=$("$A/OpenJDK/bin/jarsigner.exe" -J-Duser.language=en -verify -verbose:summary -certs "$f" 2>&1); [[ "$sig" == *"jar verified."* ]] || sig=
+  else
+    sig=$("$java" -jar "$bin/lib/apksigner.jar" verify --print-certs "$f" 2>&1) || sig=
+  fi
+  if [ -z "$sig" ]; then bad "sem assinatura válida"
+  elif [[ "$sig" == *"CN=Android Debug"* ]]; then bad "assinado com a chave de DEBUG"
+  else ok "assinado: $(echo "$sig" | grep -m1 -oE 'CN=[^,]*')"; fi
+
+  local p novas=() lista; lista=" $(echo $PERMS) "
+  for p in $perms; do [[ "$lista" == *" $p "* ]] || novas+=("$p"); done
+  echo "     permissões: $(echo "$perms" | sed 's/.*\.//' | paste -sd' ')"
+  [ ${#novas[@]} = 0 ] || echo "AVISO: permissão fora da lista aprovada (revisar Data safety): ${novas[*]}"
+
+  [ $n = 0 ] || fail "release-check: $n item(ns) reprovado(s) em $f"
+  ok "release-check: $f"
+}
+
+release() {
+  # sem as 4 variáveis nem abre o Unity: o release nunca cai na chave de debug (os valores não vão para log)
+  local v; for v in FS_KEYSTORE FS_KEYSTORE_PASS FS_KEY_ALIAS FS_KEY_PASS; do [ -n "${!v:-}" ] || fail "defina $v (assinatura do release, ver README)"; done
+  [ -f "$FS_KEYSTORE" ] || fail "keystore não achado: $FS_KEYSTORE"
+  quick
+  guard
+  v=$(sed -nE 's/.*const string Version = "([^"]+)".*/\1/p' "$CLIENT/Assets/_FS/Editor/Setup.cs")
+  local aab="$CLIENT/Builds/android/ForgeStreet-$v.aab"
+  rm -f "$aab"   # o que for conferido é desta rodada
+  build BuildAndroidRelease build_android_release.log Android
+  dirty
+  release_check "$aab"
+}
+
 case "${1:-}" in
   quick) quick ;;
   full) full ;;
   android-emulator) android_emulator ;;
-  *) sed -n '3,6p' "$0"; exit 2 ;;
+  release) release ;;
+  release-check) [ -n "${2:-}" ] || fail "uso: $0 release-check <arquivo.aab|apk>"; release_check "$2" ;;
+  *) sed -n '3,8p' "$0"; exit 2 ;;
 esac
 echo "verify $1: OK em $((SECONDS - T0)) s"

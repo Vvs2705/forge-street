@@ -26,9 +26,11 @@
 ## Como rodar
 
 ```bash
-client/tools/verify.sh quick   # ou full, ou android-emulator
+client/tools/verify.sh quick   # ou full, android-emulator, release, release-check <arquivo.aab|apk>
 ```
 Ponto de entrada único dos portões (Git Bash). `quick`: núcleo + viewcheck do PC e do Android (compila os `#if UNITY_ANDROID`), sem Unity, ~30 s. `full`: quick + EditMode + `Setup.BuildWindows` + `-autoplay 10`, com veredito do XML/log desta rodada. `android-emulator`: `Setup.BuildAndroidEmu`, liga o AVD `fs_playstore`, instala, abre com `-bot -speed 4`, aperta voltar e início e confere o logcat. Sai ≠ 0 se algo falhar; logs em `client/Builds/verify/`.
+`release`: quick + `Setup.BuildAndroidRelease` (AAB sem Development, ARM64, target 36, versionCode = maior×10000 + menor×100 + patch, 0.6.0 = 600) + `release-check`. A chave de upload vem só de `FS_KEYSTORE` (caminho com `/`), `FS_KEYSTORE_PASS`, `FS_KEY_ALIAS` e `FS_KEY_PASS`; sem elas o build falha e nunca assina com a chave de debug. Keystore fora do repositório (`*.keystore`, `*.jks` e `*.p12` estão no `.gitignore`).
+`release-check <arquivo.aab|apk>`: só as checagens, sem Unity (targetSdk ≥ 36, versionCode, não-debuggable, só arm64-v8a, LOAD align ≥ 0x4000 em todo `.so`, alinhamento do zip, assinatura sem chave de debug e permissões fora da lista aprovada).
 Um processo pesado por vez: aborta se o Unity estiver aberto neste projeto ou se o emulador estiver ligado. Numa worktree, copie `UnityEngine.UI.dll`, `Unity.InputSystem.dll` e `Unity.LevelPlay.dll` de `client/Library/ScriptAssemblies` da pasta principal. Os comandos avulsos abaixo continuam valendo.
 
 ```bash
