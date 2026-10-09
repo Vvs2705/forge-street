@@ -1,0 +1,17 @@
+A-ART-02 preset forja - custo medido (2026-10-09, PC do estudio: i7-13620H, RTX 3050 6 GB laptop, 7,7 GB RAM; Blender 5.2.1 LTS headless)
+Amostra: ferreiro Walking 8 quadros x 4 dir (1024x512, celula 128, --scale 109.87 --max-frames 8) e fornalha Static (256x256, --dirs 1 --size 256 --scale 192.74)
+Clipe: arte/mixamo/Walking.fbx (SHA-256 87c18ad4..., igual ao PROVENIENCIA). FBX: arte/tripo/ferreiro e arte/tripo/fornalha (fora do git). 0 credito, 0 download.
+
+Tempo do clipe (linha CLIP do render_sprites.py: copia das malhas + render + PNG)
+                      atual (Workbench flat)   forja (EEVEE 16 amostras)
+ferreiro 32 celulas   2,9 s  (0,09 s/celula)   3,0-4,5 s (0,09-0,14 s/celula); 10,1 s em 1 de 4 rodadas (causa nao isolada)
+fornalha 1 celula     1,2-1,3 s                1,6-4,2 s (dominado pela compilacao de shader do EEVEE, custo fixo por execucao)
+Execucao inteira      ferreiro 148-277 s nos dois presets: ~170 s sao o import do FBX do Tripo (FBX 7200), nao o render; fornalha 4-5 s
+
+PNG (mesmas dimensoes; na GPU o ASTC ocupa o mesmo; muda so o tamanho no repo/APK antes da compressao)
+ferreiro Walking.png  atual 361 049 B   forja 403 401 B  (+11,7 %)
+fornalha Static.png   atual  57 007 B   forja  60 967 B  (+6,9 %)
+
+Margem/altura do alfa por celula (limiar 8): ferreiro atual 67-86 px, forja 75-94 px (sombra de contato + contorno), margem minima 14 / 13 px; fornalha 174 / 191 px, margem 32 / 24 px.
+Regressao do padrao: fornalha com os argumentos de producao (--dirs 1 --size 256, --light flat) = Resources/Sprites/fornalha/Static.png pixel a pixel (diferenca nula) e meta.json identico.
+Folhas: folha_contato.png (1:1), folha_contato_cinza.png, folha_jogo_1x.png (ferreiro com 32 e 56 px de altura, fornalha na mesma escala de mundo; reducao LANCZOS = melhor caso, o jogo amostra sem mipmap), folha_jogo_x4.png (a mesma ampliada sem filtro). Montagem: python montar_folha.py .
