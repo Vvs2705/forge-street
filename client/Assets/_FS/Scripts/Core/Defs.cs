@@ -53,8 +53,9 @@ namespace FS.Core
     /// <summary>Eventos de um tick, para a view (SFX, particulas, diario). A = item/upgrade/estacao, B = detalhe.
     /// Milestone: bau de marco apareceu (A = indice em Balance.Milestones, B = ouro); ChestOpened: o jogador abriu (A = indice, B = ouro).
     /// FASE8 (anexados): VipArrived = o VIP entrou numa vaga do balcao (A = item, B = unidades do pacote); VipServed = levou o pacote todo
-    /// (A = item, B = ouro que pagou); VipLeft = cansou antes (A = item, B = unidades que faltaram). Cada unidade do VIP sai tambem como Sold (B = 3x o preco).</summary>
-    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft }
+    /// (A = item, B = ouro que pagou); VipLeft = cansou antes (A = item, B = unidades que faltaram). Cada unidade do VIP sai tambem como Sold (B = 3x o preco).
+    /// FASE9 (anexados): OrderNew = encomenda nova (A = item, B = quantas vender); OrderDone = entregue (A = item, B = premio em ouro).</summary>
+    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone }
 
     /// <summary>Dica contextual da HUD (a view so traduz). Arg = indice do pad (BuyPad), do item, do bau (OpenChest) ou do upgrade (BuyMenu).
     /// BuyMenu ANEXADO no fim (FASE6): a compra mais barata pagavel agora e' um upgrade do menu inferior.</summary>
@@ -154,6 +155,11 @@ namespace FS.Core
         public const float VipSummonMinIn = 60f;                // chamar por anuncio: so sem VIP ativo e com o proximo natural a mais de 60 s
         public const int VipSummonPackMul = 2, VipSummonPackMax = 20;   // o VIP chamado e' EXTRA (nao mexe no relogio natural) e traz 2x o pacote do natural, ate 20 (coordenador)
         public const float BoostSeconds = 60f, BoostMax = 3f, BoostPlayerMax = 1.3f;   // 1 anuncio = 2x por 60 s, o 2o sobe para 3x; o ferreiro no maximo 1,3x
+        // FASE9 (docs/FASE9_ENCOMENDAS.md): encomenda = vender N de uma linha aberta; uma por vez, sem prazo nem falha
+        public const float OrderFirstDelay = 45f, OrderGap = 20f;   // s depois da 1a venda; s entre uma entregue e a proxima
+        public const int OrderFirstTarget = 5, OrderMin = 3, OrderMax = 30;   // a 1a e' 5 espadas; depois N = OrderSeconds de clientes da linha
+        public const float OrderSeconds = 150f, OrderRewardSeconds = 10f;     // premio ~10 s da taxa online: 4,2% da receita no bot de 60 min (BALANCE §20)
+        public const int OrderRewardMin = 25;
         public const float BoostCooldownSeconds = 300f;         // recarga: 5 min de jogo contados do FIM de cada boost (coordenador; sem ela, 2x renovado fechava a producao aos 26:56)
         public static readonly int[] Price = { 0, 0, 10, 25, 16, 60 };     // ouro por item vendido
         public static readonly int[] IngotsPer = { 0, 0, 1, 2, 1, 2 };     // lingotes por produto
