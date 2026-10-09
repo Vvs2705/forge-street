@@ -105,6 +105,8 @@ namespace FS.Core
         public const float CharRadius = 0.25f;                  // jogador, ajudantes e bot
         public const float MouthRadius = 0.4f;                  // zona da boca: centro do personagem a ate 0,4 m do ponto da boca (encostado)
         public const float WorkerReach = 0.3f;                  // ajudante para a 0,3 m do ponto da boca (dentro da zona)
+        // impasse do Sim.Steer: andando 1 s sem sair de 0,75 m (> 2 passos do mais rapido, ajudante 3x a 30 ticks/s = 0,34 m; quem anda livre sai em < 0,45 s)
+        public const float StuckRadius = 0.75f, StuckSeconds = 1f;
         public const float PlayerSpeed = 3f, PlayerSpeedUp = 4.2f;
         public const int PlayerCap = 3, PlayerCapUp = 6;
         public const float WorkerSpeed = 2.4f, WorkerSpeedUp = 3.4f;
