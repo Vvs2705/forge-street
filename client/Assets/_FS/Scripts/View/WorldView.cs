@@ -30,13 +30,14 @@ namespace FS
     {
         sealed class StationV
         {
-            public Station S; public Transform Root; public SpriteRenderer Base, BarBg, BarFill, BarIcon, Glow;
+            public Station S; public Transform Root; public SpriteRenderer Base, BarBg, BarFill, BarIcon;
             public SpriteRenderer[] InPile, OutPile, Stock; public Item[] StockItems; public Text Label;   // Stock: 6 por item vendido
             public bool Baked;   // Base e' o sprite pre-renderizado (sem icone)
             public bool Stand;   // balcao principal desenhado pelo estande modular (BuildStand), sem Base nem grade de estoque
             public float PopT = -1f;   // nasceu agora (compra): pop 0 -> 1,1 -> 1
-            // v0.6a: boca acesa da fornalha, escala de repouso da arte (punch) e da pilha (pop), relogio da martelada/baforada
-            public SpriteRenderer Mouth; public Vector3 BaseScale, PileScale; public float HitT, PunchT = -1f, ItemPopT = -1f;
+            // v0.6a: escala de repouso da arte (punch) e da pilha (pop), relogio da martelada
+            public Vector3 BaseScale, PileScale; public float HitT, PunchT = -1f, ItemPopT = -1f;
+            public StationView Forno;   // A-ART-06: os 6 estados da fornalha (StationView)
         }
         /// <summary>Placa de obra: fundo escuro, enchimento de ouro, borda tracejada, icone do que constroi; preco (moeda + valor) e nome na HUD.</summary>
         sealed class PadV
@@ -86,7 +87,7 @@ namespace FS
         static readonly Item[] PileOrder = { Item.Ore, Item.Shield, Item.Jewel, Item.Tool, Item.Ingot, Item.Sword };
         static readonly float[] LyingH = { 0.88f, 0.57f, 0.3f, 0.95f, 0.61f, 0.95f };
         readonly float[] _pileY = new float[Balance.PlayerCapUp * 6];
-        const float PileS = 0.4f, PileStep = 0.2f;   // pilhas das estacoes (2 colunas de itens deitados)
+        internal const float PileS = 0.4f; const float PileStep = 0.2f;   // pilhas das estacoes (2 colunas de itens deitados)
         // Balao do pedido (BENCHMARK_VISUAL P0-2): 1o da fila com balao 1,32 x 1,12 m e icone de 0,9 m, deslocado 0,2 m para a esquerda
         // (o 1o e' a vaga mais a esquerda) para nao encostar no mini-icone do 2o; o rabicho fica sobre a cabeca. Anel = borda de 0,1 m.
         const float BubbleIcon = 0.9f, BubbleDX = -0.2f, BubbleUp = 0.77f, TailY = -0.62f;   // ponta do rabicho ~0,02 m acima de ClientTop
@@ -120,7 +121,7 @@ namespace FS
         const int StackOrder = 2000, BubbleOrder = 3000;   // acima de todo corpo ordenado por Depth
         // estacao parada: "fome" = apagada e cinza (ART_BIBLE §6). Era 0,78: no video do criativo #8 (docs/CRIATIVOS.md) a bigorna
         // com fome ficava igual a que trabalhava; 0,55 frio le a 1 m do celular e continua mais clara que a loja fechada (Shut).
-        static readonly Color Dimmed = new Color(0.55f, 0.55f, 0.6f, 1f);
+        internal static readonly Color Dimmed = new Color(0.55f, 0.55f, 0.6f, 1f);
         // clientes do balcao (Lote 1-2 + Lote 4 de 2026-10-08); nobre = so a loja de joias. Nome sem folha em Resources e' ignorado.
         static readonly string[] ClientArt = { "guerreira", "anao", "mago", "elfa", "goblin", "cavaleiro",
             "minerador", "bardo", "alquimista", "monge", "ladina", "paladina", "orc", "barbaro", "pirata", "cacadora" };
@@ -150,7 +151,7 @@ namespace FS
         // com pilar de pedra nas 4 pontas (centro 0,23 m alem da ponta: o pe de 0,6 m encosta 0,07 m no vao).
         const float PillarOut = 0.23f;
         const float DeckY = 12f;                     // assoalho (madeira) na frente da loja: balcao, bau e fila; o luxo Piso cobre so a pedra
-        const int ExteriorOrder = -10, FloorOrder = -9, LuxOrder = -8, WashOrder = -7, ShadeOrder = -5, WallOrder = -4, GlowOrder = -3;   // abaixo do tapete (-1), sombras e pads (1-4)
+        internal const int ExteriorOrder = -10, FloorOrder = -9, LuxOrder = -8, WashOrder = -7, ShadeOrder = -5, WallOrder = -4, GlowOrder = -3;   // abaixo do tapete (-1), sombras e pads (1-4)
         static readonly Color FaceTint = Gray(0.55f), ShadeColor = new Color(0f, 0f, 0f, 0.35f);
         // v0.5b (P1-6): luz quente "lavando" o chao da oficina (alfa sobre a laje ~#493F36 -> ~#7A6A58, sem shader aditivo: Built-in RP
         // e nenhum shader extra no APK), grama no exterior, tampo claro na borda de dentro das paredes e pilares nos cantos.
@@ -167,7 +168,7 @@ namespace FS
             ("canteiro", 12.6f, 17.0f), ("arvore", 15.2f, 17.6f),
             ("poste", 0.9f, 16.75f), ("poste", 8.2f, 16.75f), ("poste", 13.9f, 16.75f),
         };
-        const float LampY = 2.13f, FurnaceGlow = 4f, FurnaceGlowA = 0.3f;
+        const float LampY = 2.13f;
         static readonly Color MuroTint = new Color(0.72f, 0.8f, 0.95f), MuroFaceTint = new Color(0.4f, 0.44f, 0.52f);   // pedra fria (ART_BIBLE s2) sobre a parede quente
         // Props (tools/props_blender.py; escala real, 1 m do Blender = 1 m do mundo) encostados nas paredes, fora do clamp e longe de
         // pads, estacoes, filas, baus e rotulos: tampo da parede esquerda (x -0,3 a -0,45), quintal atras da parede de baixo (y < -1,2),
@@ -198,20 +199,19 @@ namespace FS
         static readonly Color VipCream = Art.Hex(0xFFF3D2);
         const int FxOrder = 3500, FxMax = 64;
         static readonly Color Dust = new Color(0.86f, 0.78f, 0.66f, 0.55f), HeartC = Art.Hex(0xFF4D6D), AngryC = Art.Hex(0xFF6B3D);
-        static readonly Color GlowColor = Art.Hex(0xFF9A3D);
+        internal static readonly Color GlowColor = Art.Hex(0xFF9A3D);
         static float PropShadow(string n) => n switch { "tocha" => 0f, "balde" => 0.4f, "barril" => 0.6f, "prateleira" or "suporte_armas" or "lenha" => 0.9f, _ => 0.75f };
         static Color Gray(float v) => new Color(v, v, v, 1f);
         // Joalheria real: tapete roxo da bancada a loja (x 11,45-12,55) e 4 pedestais de gema fora dos pads, da fila e do bau.
         static readonly Color Carpet = Color.Lerp(Art.ItemColor[(int)Item.Jewel], Art.Bg, 0.55f);   // #59447F: a joia do estoque ainda le por cima
         const float CarpetW = 1.1f;
         static readonly V2[] Pedestals = { new V2(10.95f, 8.4f), new V2(13.05f, 8.4f), new V2(10.95f, 10.9f), new V2(13.05f, 10.9f) };
-        // v0.6a (P2-1): martelada a cada 0,45 s com 8-10 faiscas em 0,3 s e punch 1 -> 1,06 -> 1 em 0,12 s; fornalha solta 3 baforadas/s
-        // que sobem 1 m. Pontos medidos nos PNG (celula 1,95 m / 256 px, a partir do pivo): topo da bigorna (-0,18; 0,45), tampo das
-        // bancadas (0; 0,3), chamine (-0,21; 0,8) e boca acesa (-0,21; -0,2) da fornalha.
-        const float HitEvery = 0.45f, SparkLife = 0.3f, PunchTime = 0.12f, PunchAmp = 0.06f, SmokeEvery = 0.33f, SmokeLife = 1.1f, ItemPop = 0.2f;
+        // v0.6a (P2-1): martelada a cada 0,45 s com 8-10 faiscas em 0,3 s e punch 1 -> 1,06 -> 1 em 0,12 s (a fornalha esta na
+        // StationView). Pontos medidos nos PNG (celula 1,95 m / 256 px, a partir do pivo): topo da bigorna (-0,18; 0,45) e tampo das bancadas (0; 0,3).
+        const float HitEvery = 0.45f, SparkLife = 0.3f, PunchTime = 0.12f, PunchAmp = 0.06f, ItemPop = 0.2f;
         const int FxAmbient = 40;   // faisca, fumaca e poeira so com menos de 40 efeitos vivos: venda, moedas e obra nunca ficam sem vaga
-        static readonly Color SparkA = Art.Hex(0xFFD166), SparkB = Art.Hex(0xFF7A1F), Smoke = new Color(0.55f, 0.55f, 0.58f, 0.5f);
-        static readonly Vector2 AnvilTop = new Vector2(-0.18f, 0.45f), BenchTop = new Vector2(0f, 0.3f), Chimney = new Vector2(-0.21f, 0.8f), FurnaceMouth = new Vector2(-0.21f, -0.2f);
+        internal static readonly Color SparkA = Art.Hex(0xFFD166), SparkB = Art.Hex(0xFF7A1F);
+        static readonly Vector2 AnvilTop = new Vector2(-0.18f, 0.45f), BenchTop = new Vector2(0f, 0.3f);
         // P2-2: icone do upgrade como prop. Fole na parede esquerda da fornalha (a direita ja tem o fole da arte), acima da pilha de
         // entrada; martelo dourado encostado no lado direito da bancada, acima da pilha de saida; mochila nas costas do ferreiro.
         static readonly Vector2 BellowsAt = new Vector2(-0.7f, 0.55f), HammerAt = new Vector2(0.66f, 0.22f);
@@ -226,7 +226,7 @@ namespace FS
             PadNo = Art.ComAlfa(Art.Hex(0x2A1E14), 0.45f), PriceNo = Art.Hex(0xFF8A7A), StreetInk = Art.Hex(0xE8D9B8), PillC = Art.Hex(0xFFD34D);
 
         /// <summary>sortingOrder pelo pe: quem esta mais abaixo na tela fica na frente (1 cm de resolucao/2).</summary>
-        static int Depth(float footY) => 1000 - Mathf.RoundToInt(footY * 50f);
+        internal static int Depth(float footY) => 1000 - Mathf.RoundToInt(footY * 50f);
 
         Sim _sim; Camera _cam; RectTransform _labels;
         readonly List<StationV> _stations = new List<StationV>();
@@ -492,11 +492,9 @@ namespace FS
                 v.BarIcon = Art.NewSprite(v.Root, "BarraIcone", null, Color.white, 5, new Vector2(BarW / 2f + 0.1f, BarY + 0.02f), Vector2.one);
                 Art.PaintItem(v.BarIcon, s.OutItem, true, 0.34f);
             }
-            if (s.Kind == Kind.Furnace)   // poca de luz quente da brasa (P1-6): pulsa trabalhando, quase apaga com fome
+            if (s.Kind == Kind.Furnace)   // A-ART-06: luz, boca, fumaca e os 6 estados na StationView; aqui so o fole do upgrade (o simples apaga quando chega o duplo)
             {
-                v.Glow = Art.NewSprite(v.Root, "Luz", Art.Glow(), Art.ComAlfa(GlowColor, FurnaceGlowA), GlowOrder, new Vector2(0f, 0.2f), Vector2.one * FurnaceGlow);
-                // v0.6a: boca acesa por cima da arte (pulsa com a poca) e o fole do upgrade; o simples apaga quando chega o duplo
-                v.Mouth = Art.NewSprite(v.Root, "Boca", Art.Glow(), Art.ComAlfa(SparkB, 0f), Depth(s.Pos.Y) + 1, FurnaceMouth, Vector2.one * 0.7f);
+                v.Forno = new StationView(this, s, v.Root, v.Base, v.Baked);
                 Prop(v.Root, "melhoria_fole", Upgrade.FurnaceSpeed1, BellowsAt, BellowsS, Depth(s.Pos.Y) + 1, (int)Upgrade.FurnaceSpeed2);
                 Prop(v.Root, "melhoria_fole_duplo", Upgrade.FurnaceSpeed2, BellowsAt, BellowsS * 1.15f, Depth(s.Pos.Y) + 1);
             }
@@ -1259,7 +1257,8 @@ namespace FS
                     v.OutPile[i].color = blocked ? Color.Lerp(Art.ItemTint(s.OutItem), Art.Bad, 0.5f * pulse) : Art.ItemTint(s.OutItem);
                     if (popping) v.OutPile[i].transform.localScale = i == pop ? v.PileScale * ps : v.PileScale;
                 }
-                Juice(v, dt);
+                if (v.Forno != null) v.Forno.Refresh(dt, _sim.BoostLeft > 0f, pulse);   // A-ART-06: arte, luz, boca e efeitos da fornalha
+                else Juice(v, dt);
                 float p = s.Busy ? s.Progress : 0f;
                 float fh = BarH - 0.05f, fw = Mathf.Lerp(fh, BarW - 0.05f, p);
                 v.BarFill.enabled = p > 0.01f;
@@ -1267,30 +1266,22 @@ namespace FS
                 v.BarFill.transform.localPosition = new Vector3(-(BarW - 0.05f) / 2f + fw / 2f, BarY, 0f);
                 bool starving = !s.Busy && s.In < s.Need;
                 v.BarBg.color = starving ? Color.Lerp(Art.ComAlfa(Art.Bg, 0.85f), Art.Bad, 0.35f * pulse) : Art.ComAlfa(Art.Bg, 0.85f);
-                v.Base.color = v.Baked ? (s.Busy ? Color.white : Dimmed) : Art.ComAlfa(Art.StationColor(s), s.Busy ? 1f : 0.8f);
+                if (v.Forno == null) v.Base.color = v.Baked ? (s.Busy ? Color.white : Dimmed) : Art.ComAlfa(Art.StationColor(s), s.Busy ? 1f : 0.8f);
             }
-            if (v.Glow != null)   // brasa: pulsa trabalhando, quase apaga parada (a "fome" ja apaga a arte) ou travada com a saida cheia
-                v.Glow.color = Art.ComAlfa(GlowColor, s.Busy && s.Progress < 1f ? FurnaceGlowA * (0.8f + 0.2f * Mathf.Sin(Time.time * 7f + s.Index)) : FurnaceGlowA * 0.35f);   // v0.6a: no ritmo da boca
             if (s.Kind == Kind.Counter && v.Stock != null)
                 for (int p = 0; p < v.StockItems.Length; p++)
                     for (int i = 0; i < 6; i++) v.Stock[p * 6 + i].enabled = i < _sim.Stock[(int)v.StockItems[p]];
         }
 
         /// <summary>
-        /// v0.6a (P2-1), estacao que produz: fornalha trabalhando = boca acesa pulsando e 3 baforadas de fumaca/s pela chamine (sobem
-        /// 1 m crescendo e somem); bigorna/bancada = martelada a cada 0,45 s (8-10 faiscas #FFD166 -> #FF7A1F em 0,3 s do tampo e punch
-        /// da arte). Efeito so com a estacao na camera e abaixo de FxAmbient; o punch roda sempre (custa uma escala).
+        /// v0.6a (P2-1), bigorna/bancada: martelada a cada 0,45 s (8-10 faiscas #FFD166 -> #FF7A1F em 0,3 s do tampo e punch da arte).
+        /// Efeito so com a estacao na camera e abaixo de FxAmbient; o punch roda sempre (custa uma escala). Fornalha: StationView.
         /// </summary>
         void Juice(StationV v, float dt)
         {
             Station s = v.S;
             // revisao da v0.6: pronta com a saida cheia o Sim deixa Busy com Progress 1; isso e' trava (pulso vermelho na pilha), nao trabalho
-            bool furnace = s.Kind == Kind.Furnace, work = s.Busy && s.Progress < 1f;
-            if (v.Mouth != null)
-            {
-                v.Mouth.enabled = work;
-                if (work) v.Mouth.color = Art.ComAlfa(SparkB, 0.5f + 0.25f * Mathf.Sin(Time.time * 7f + s.Index));
-            }
+            bool work = s.Busy && s.Progress < 1f;
             if (v.PunchT >= 0f)
             {
                 v.PunchT += dt;
@@ -1300,21 +1291,12 @@ namespace FS
             }
             if (!work) { v.HitT = 0f; return; }   // a 1a martelada sai assim que volta a trabalhar
             if ((v.HitT -= dt) > 0f) return;
-            v.HitT = furnace ? SmokeEvery : HitEvery;
-            if (!furnace) v.PunchT = 0f;
-            Vector3 vp = _cam.WorldToViewportPoint(v.Root.position);
-            if (vp.x < -0.1f || vp.x > 1.1f || vp.y < -0.1f || vp.y > 1.1f) return;
-            int order = Depth(s.Pos.Y) + 2;   // na frente da arte; quem passa na frente da estacao cobre
-            Vector3 o = v.Root.localPosition + (Vector3)(furnace ? Chimney : s.OutItem == Item.Sword ? AnvilTop : BenchTop);
-            if (furnace)
-            {
-                if (_fxLive >= FxAmbient) return;
-                float dx = Random.Range(-0.08f, 0.12f);
-                Spawn(Art.Disc(), Smoke, o, o + new Vector3(dx, 0.5f, 0f), o + new Vector3(dx * 2.5f + 0.1f, 1f, 0f), SmokeLife, 0.2f, 0.6f, true, 0f, null, order);
-                return;
-            }
+            v.HitT = HitEvery;
+            v.PunchT = 0f;
             int n = Random.Range(8, 11);
-            if (_fxLive + n > FxAmbient) return;
+            if (!Ambiente(v.Root, n)) return;
+            int order = Depth(s.Pos.Y) + 2;   // na frente da arte; quem passa na frente da estacao cobre
+            Vector3 o = v.Root.localPosition + (Vector3)(s.OutItem == Item.Sword ? AnvilTop : BenchTop);
             for (int i = 0; i < n; i++)   // leque para cima, cada uma em arco que cai; 0,26 m (~25 px no aparelho): 0,16 sumia na foto
             {
                 float a = Random.Range(0.12f, 0.88f) * Mathf.PI;
@@ -1581,7 +1563,7 @@ namespace FS
         /// Efeito do pool (ate FxMax vivos; cheio = o efeito e' pulado). `size` em m como o PaintItem (arte com ArtFill). v0.6a: cor
         /// vai de `c` a `to` na vida; `order` (faisca/fumaca/poeira ordenadas com a estacao ou o pe; padrao por cima de tudo).
         /// </summary>
-        void Spawn(Sprite s, Color c, Vector3 a, Vector3 m, Vector3 b, float life, float s0, float s1, bool fade, float spin = 0f, Color? to = null, int order = FxOrder)
+        internal void Spawn(Sprite s, Color c, Vector3 a, Vector3 m, Vector3 b, float life, float s0, float s1, bool fade, float spin = 0f, Color? to = null, int order = FxOrder)
         {
             Fx f = null;
             foreach (Fx x in _fx) if (!x.Live) { f = x; break; }
@@ -1594,6 +1576,22 @@ namespace FS
             _fxLive++;
             f.A = a; f.M = m; f.B = b; f.Life = life; f.S0 = s0; f.S1 = s1; f.Fade = fade; f.Spin = spin; f.Age = 0f; f.Live = true;
             f.R.transform.localPosition = a; f.R.transform.localScale = Vector3.one * s0; f.R.transform.localRotation = Quaternion.identity;
+        }
+
+        /// <summary>Efeito ambiente (faisca, fumaca) cabe: a estacao esta na camera e os `n` novos nao passam de FxAmbient vivos.</summary>
+        internal bool Ambiente(Transform root, int n)
+        {
+            if (_fxLive + n > FxAmbient) return false;
+            Vector3 vp = _cam.WorldToViewportPoint(root.position);
+            return vp.x >= -0.1f && vp.x <= 1.1f && vp.y >= -0.1f && vp.y <= 1.1f;
+        }
+
+        /// <summary>Estado de cada fornalha aberta, para a linha SHOT do -shot (A-ART-06: confere a foto contra a decisao).</summary>
+        public string Fornalhas()
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (StationV v in _stations) if (v.Forno != null && v.S.Unlocked) sb.Append(v.S.Name).Append('=').Append(v.Forno.Atual).Append(' ');
+            return sb.ToString().TrimEnd();
         }
 
         void TickFx(float dt)
