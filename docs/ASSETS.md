@@ -166,6 +166,7 @@ Regenerar (raiz do projeto, ~11 s; grupos opcionais `icones exterior`):
 | Pasta | Clipes | px | ppu | Pivô | Uso |
 |---|---|---|---|---|---|
 | `melhoria_mochila`, `melhoria_botas` (com asinha), `melhoria_fole`, `melhoria_fole_duplo`, `melhoria_martelo` (cabeça de ouro), `melhoria_lupa`, `melhoria_vitrine` (3 espadas em pé), `melhoria_sino` (sino de balcão), `melhoria_cesto` (cesto com minério) | `icone` | 128×128 | 128 | centro | cartões do menu (`MenuBar.Icon`: Fole, Mochila, Fole duplo, Botas, Vitrine, Ajudantes ágeis, Martelo veloz, Lupa, Balcão 5–8 vagas; a Vitrine de joias usa `item_joia`) e martelo do botão Melhorias |
+| `coroa` (v0.5c: aro de ouro com 5 pontas, veludo vinho, rubis e safiras) | `icone` | 128×128 | 128 | centro | cabeça do cliente VIP (0,46 m), botão "Chamar VIP" e aviso "Cliente VIP!" |
 | `arvore` (2,3 m), `arbusto`, `poste` (lanterna amarela, a View põe a poça de luz), `canteiro` (1,2 m, flores creme/amarelas) | `Static` | 268×239, 170×119, 60×225, 206×96 | 160 (escala real) | centro da base | exterior: atrás da parede de baixo, além da rua de cima e à direita da rua lateral (`WorldView.Outside`) |
 
 Sem matiz de item nos props (ART_BIBLE §3): copa verde-oliva `#3F6B3A`/`#365E33` (longe do `#4CD964` da ferramenta). Procedurais novos em `Art.cs` (sem arquivo): grama do exterior (`Art.Ground("grama")`, ruído de valor em 3 verdes-oliva), placa tracejada, coração, brilho de 4 pontas, rosto bravo, seta da dica, cápsula 9-fatias (barra de progresso) e retângulo 9-fatias (todo painel uGUI).

@@ -42,7 +42,11 @@ namespace FS
         }
         sealed class CarrierV { public Carrier C; public Transform Root; public SpriteRenderer[] Stack; public Body Body; public float CheerT, StackY; }   // StackY: onde a pilha apoia
         /// <summary>Balao grande do 1o da fila (um por fila, segue o cliente): trilho escuro, anel de paciencia, corpo, rabicho, icone e rosto bravo.</summary>
-        sealed class BubbleV { public Transform Root; public SpriteRenderer Ring, Icon; public Transform Angry; public float PopT = -1f; }
+        sealed class BubbleV
+        {
+            public Transform Root; public SpriteRenderer Ring, Icon, Track, Body, Tail, Frame; public Transform Angry, Seal; public float PopT = -1f;
+            public Text Pack, SealText;   // v0.5c: "xN" do pacote do VIP e o selo "x3" do preco
+        }
         /// <summary>Efeito curto (moeda, coracao, brilho, poeira): curva de Bezier A -> M -> B em `Life` s, escala S0 -> S1, some no fim se `Fade`.</summary>
         sealed class Fx { public SpriteRenderer R; public Vector3 A, M, B; public float Age, Life, S0, S1, Spin; public bool Fade, Live; public Color C; }
         sealed class ClientV
@@ -50,6 +54,8 @@ namespace FS
             public Client C; public int Id; public Transform Root; public SpriteRenderer Want, Patience; public float TopY;   // TopY: topo da cabeca
             public Body Body; public int Phase; public float LeaveT; public bool Served; public Vector3 Lane, Exit;   // saida (so com arte)
             public bool Jewel;   // fila da loja de joias (JewelQueue/JewelSlot) em vez da do balcao
+            public SpriteRenderer Crown; public Text Tag;   // v0.5c: coroa do VIP e "xN" do pacote (ou "VIP" esperando vaga)
+            public bool Waiting;                             // VIP esperando ao lado da fila cheia (sem Client ainda)
         }
         sealed class ChestV { public Chest C; public Transform Root; public Text Label; }
         sealed class Floater { public Text T; public Vector3 World; public float Age; public bool Live; }
@@ -180,6 +186,12 @@ namespace FS
         const float NearLabel = 2.6f, LabelFade = 0.25f, TutorialLabels = 60f;   // nome de estacao/placa: perto do jogador ou no 1o minuto (fade curto: meio-alfa lia como defeito)
         const float StationPop = 0.35f, BubblePop = 0.32f;
         const float BarW = 1.2f, BarH = 0.16f, BarY = -0.74f;   // barra de progresso arredondada (era 1,3 x 0,12 reta)
+        // VIP (v0.5c, docs/FASE8_VIP_VELOCIDADE.md s5): coroa de 0,46 m "vestida" na cabeca (centro 0,04 m acima do topo), mini-icone do VIP
+        // fora da fila sobe 0,16 m para a coroa caber; balao com moldura de ouro, corpo creme e selo "x3"; quem espera a fila cheia fica
+        // 0,95 m a direita da ultima vaga, 0,35 m para tras.
+        const float CrownS = 0.46f, CrownY = 0.04f, VipMiniUp = 0.16f;
+        static readonly Vector3 VipWaitOff = new Vector3(0.95f, 0.35f, 0f);
+        static readonly Color VipCream = Art.Hex(0xFFF3D2);
         const int FxOrder = 3500, FxMax = 64;
         static readonly Color Dust = new Color(0.86f, 0.78f, 0.66f, 0.55f), HeartC = Art.Hex(0xFF4D6D), AngryC = Art.Hex(0xFF6B3D);
         static readonly Color GlowColor = Art.Hex(0xFF9A3D);
@@ -225,7 +237,8 @@ namespace FS
         readonly List<SpriteRenderer> _glows = new List<SpriteRenderer>();
         readonly List<Fx> _fx = new List<Fx>();
         Transform _arrow; bool _hintOn; V2 _hintAt;   // seta da dica (ShowHint)
-        Sprite _coin;
+        Sprite _coin, _crown;
+        ClientV _vipWait;
         Transform _conveyor; SpriteRenderer[] _convDots; float _convLen;
         int _clientSeq, _bought;
 
@@ -236,6 +249,7 @@ namespace FS
             _sim = sim; _cam = cam; _labels = labels;
             _bought = sim.UpgradesBought;
             _coin = Art.Icon("moeda", "icone");
+            _crown = Art.Icon("coroa", "icone");
             foreach (string n in ClientArt)
                 if (SpriteSheet.TryGet(n, out SpriteSheet sh)) { sh.Scale = CharScale(n); _clientSheets.Add(sh); }
             if (SpriteSheet.TryGet("nobre", out _nobre)) _nobre.Scale = CharScale("nobre");
@@ -470,7 +484,7 @@ namespace FS
         {
             var at = new Vector2(off.X, off.Y);
             float d = Balance.MouthRadius * 2f;
-            Art.NewSprite(root, into ? "BocaEntra" : "BocaSai", Art.Rounded(), Art.ComAlfa(into ? GrateC : PalletC, 0.9f), 1, at, Vector2.one * d);
+            Art.NewSprite(root, into ? "BocaEntra" : "BocaSai", Art.Rounded(), Art.ComAlfa(into ? GrateC : PalletC, 0.9f), 0, at, Vector2.one * d);   // ripas (1) por cima
             for (int k = -1; k <= 1; k++)   // 3 barras da grelha / 3 tabuas do palete
                 Art.NewSprite(root, "BocaRipa", Art.Square(), into ? GrateBar : PlankC, 1, at + new Vector2(0f, k * d * 0.27f), new Vector2(d * 0.82f, d * (into ? 0.06f : 0.2f)));
             if (!into) return;
@@ -753,6 +767,12 @@ namespace FS
             // fila: mini-icone do pedido acima da cabeca e a paciencia logo acima dele; o 1o da fila troca os dois pelo balao grande
             v.Want = Art.NewSprite(v.Root, "Pedido", null, Color.white, order, new Vector2(0f, v.TopY + MiniY), Vector2.one);
             v.Patience = Art.NewSprite(v.Root, "Paciencia", Art.Square(), Art.Good, order + 1, new Vector2(0f, v.TopY + PatY), new Vector2(PatW, 0.06f));
+            // coroa do VIP: acima do rabicho do balao (BubbleOrder + 17); sem a folha, estrela de ouro
+            v.Crown = Art.NewSprite(v.Root, "Coroa", _crown != null ? _crown : Art.Star(), _crown != null ? Color.white : Art.Gold, BubbleOrder + 18,
+                new Vector2(0f, v.TopY + CrownY), Vector2.one * (_crown != null ? CrownS * 1.1f : CrownS * 0.8f));
+            v.Crown.enabled = false;
+            v.Tag = Art.Outlined(Art.FreeText(_labels, "Pacote", 30, new Vector2(140f, 40f)), 2f);
+            v.Tag.fontStyle = FontStyle.Bold; v.Tag.color = Art.Accent; v.Tag.enabled = false;
             return v;
         }
 
@@ -760,18 +780,33 @@ namespace FS
         BubbleV BuildBubble(string name)
         {
             var b = new BubbleV { Root = Group(name, new V2(0f, 0f)) };
-            Art.NewSprite(b.Root, "Trilho", Art.BalloonRing(1f), Art.ComAlfa(Art.Bg, 0.85f), BubbleOrder + 10, Vector2.zero, RingSize);
+            b.Track = Art.NewSprite(b.Root, "Trilho", Art.BalloonRing(1f), Art.ComAlfa(Art.Bg, 0.85f), BubbleOrder + 10, Vector2.zero, RingSize);
             b.Ring = Art.NewSprite(b.Root, "Paciencia", Art.BalloonRing(1f), Art.Good, BubbleOrder + 11, Vector2.zero, RingSize);
-            Art.NewSprite(b.Root, "Balao", Art.Rounded(), Art.Bubble, BubbleOrder + 12, Vector2.zero, BalloonSize);
-            Art.NewSprite(b.Root, "Rabicho", Art.Triangle(), Art.Bubble, BubbleOrder + 12, new Vector2(-BubbleDX, TailY), TailSize, 180f);
-            b.Icon = Art.NewSprite(b.Root, "Pedido", null, Color.white, BubbleOrder + 13, Vector2.zero, Vector2.one);
+            // VIP: moldura de ouro 0,12 m maior que o corpo (o trilho fica escondido sob o anel cheio de paciencia)
+            b.Frame = Art.NewSprite(b.Root, "Moldura", Art.Rounded(), Art.Gold, BubbleOrder + 12, Vector2.zero, BalloonSize + Vector2.one * 0.12f);
+            b.Frame.enabled = false;
+            b.Body = Art.NewSprite(b.Root, "Balao", Art.Rounded(), Art.Bubble, BubbleOrder + 13, Vector2.zero, BalloonSize);
+            b.Tail = Art.NewSprite(b.Root, "Rabicho", Art.Triangle(), Art.Bubble, BubbleOrder + 13, new Vector2(-BubbleDX, TailY), TailSize, 180f);
+            // VIP: selo dourado "x3" (preco) no canto de cima a esquerda e "xN" (pacote) no canto de baixo a direita do icone
+            b.Seal = Group(name + "Selo", new V2(0f, 0f));
+            b.Seal.SetParent(b.Root, false);
+            b.Seal.localPosition = new Vector3(-BalloonSize.x / 2f, BalloonSize.y / 2f, 0f);
+            Art.NewSprite(b.Seal, "Contorno", Art.Disc(), Art.ComAlfa(Art.Bg, 0.9f), BubbleOrder + 15, Vector2.zero, Vector2.one * 0.62f);
+            Art.NewSprite(b.Seal, "Ouro", Art.Disc(), Art.Gold, BubbleOrder + 16, Vector2.zero, Vector2.one * 0.56f);
+            Art.NewSprite(b.Seal, "Brilho", Art.Disc(), Art.Accent, BubbleOrder + 17, new Vector2(-0.05f, 0.05f), Vector2.one * 0.38f);
+            b.Seal.gameObject.SetActive(false);
+            b.SealText = Art.Outlined(Art.FreeText(_labels, name + "SeloTexto", 30, new Vector2(100f, 40f)), 2f);
+            b.SealText.fontStyle = FontStyle.Bold; b.SealText.text = "×" + Balance.VipPriceMul; b.SealText.enabled = false;
+            b.Pack = Art.Outlined(Art.FreeText(_labels, name + "Pacote", 44, new Vector2(140f, 56f)), 3f);
+            b.Pack.fontStyle = FontStyle.Bold; b.Pack.color = Art.Accent; b.Pack.enabled = false;
+            b.Icon = Art.NewSprite(b.Root, "Pedido", null, Color.white, BubbleOrder + 14, Vector2.zero, Vector2.one);
             // rosto bravo de ~0,5 m (48 px) no canto de cima a direita, abaixo de 20% de paciencia (P0-2): contorno, rosto, tracos
             b.Angry = Group(name + "Bravo", new V2(0f, 0f));
             b.Angry.SetParent(b.Root, false);
             b.Angry.localPosition = new Vector3(BalloonSize.x / 2f, BalloonSize.y / 2f, 0f);
-            Art.NewSprite(b.Angry, "Contorno", Art.Disc(), Art.ComAlfa(Art.Bg, 0.9f), BubbleOrder + 14, Vector2.zero, Vector2.one * 0.56f);
-            Art.NewSprite(b.Angry, "Rosto", Art.Disc(), AngryC, BubbleOrder + 15, Vector2.zero, Vector2.one * 0.5f);
-            Art.NewSprite(b.Angry, "Tracos", Art.AngryFace(), Art.Hex(0x3A1208), BubbleOrder + 16, Vector2.zero, Vector2.one * 0.5f);
+            Art.NewSprite(b.Angry, "Contorno", Art.Disc(), Art.ComAlfa(Art.Bg, 0.9f), BubbleOrder + 15, Vector2.zero, Vector2.one * 0.56f);
+            Art.NewSprite(b.Angry, "Rosto", Art.Disc(), AngryC, BubbleOrder + 16, Vector2.zero, Vector2.one * 0.5f);
+            Art.NewSprite(b.Angry, "Tracos", Art.AngryFace(), Art.Hex(0x3A1208), BubbleOrder + 17, Vector2.zero, Vector2.one * 0.5f);
             b.Angry.gameObject.SetActive(false);
             b.Root.gameObject.SetActive(false);
             return b;
@@ -781,7 +816,7 @@ namespace FS
         /// Balao no 1o da fila: icone de 0,9 m, anel verde -> amarelo -> vermelho e tremida de +-3 graus a 6 Hz abaixo de 20% (com o
         /// rosto bravo). Venda (Sold): estoura 1 -> 1,25 -> 0 em 0,15 s e volta com sobra no proximo da fila.
         /// </summary>
-        void PlaceBubble(BubbleV b, ClientV v, Item want, float f, float dt)
+        void PlaceBubble(BubbleV b, ClientV v, Client c, float f, float dt)
         {
             b.Root.localPosition = v.Root.localPosition + new Vector3(BubbleDX, v.TopY + BubbleUp, 0f);
             b.Root.localRotation = Quaternion.Euler(0f, 0f, f < 0.2f ? 3f * Mathf.Sin(Time.time * 6f * 2f * Mathf.PI) : 0f);
@@ -794,7 +829,21 @@ namespace FS
                 if (b.PopT >= BubblePop) { b.PopT = -1f; s = 1f; }
             }
             b.Root.localScale = Vector3.one * s;
-            Art.PaintItem(b.Icon, want, true, BubbleIcon);
+            Art.PaintItem(b.Icon, c.Want, true, BubbleIcon);
+            // VIP (v0.5c): trilho de ouro, corpo creme, selo "x3" e "xN" do pacote que cai a cada unidade entregue
+            bool vip = c.Vip;
+            b.Track.color = vip ? Art.GoldDark : Art.ComAlfa(Art.Bg, 0.85f);
+            b.Frame.enabled = vip;
+            b.Body.color = b.Tail.color = vip ? VipCream : Art.Bubble;
+            if (b.Seal.gameObject.activeSelf != vip) b.Seal.gameObject.SetActive(vip);
+            b.SealText.enabled = vip && s > 0.5f;
+            b.Pack.enabled = vip && s > 0.5f;
+            if (vip)
+            {
+                PlaceLabel(b.SealText, b.Root.localPosition + b.Seal.localPosition, Vector2.zero);
+                b.Pack.text = "×" + c.Pack;
+                PlaceLabel(b.Pack, b.Root.localPosition + new Vector3(0.36f, -0.3f, 0f), Vector2.zero);
+            }
             b.Ring.sprite = Art.BalloonRing(f);
             b.Ring.color = f > 0.5f ? Color.Lerp(Art.Gold, Art.Good, f * 2f - 1f) : Color.Lerp(Art.Bad, Art.Gold, f * 2f);
             bool angry = f < 0.2f;
@@ -836,6 +885,7 @@ namespace FS
             v.Jewel = jewel;
             v.Id = _clientSeq++;
             if (v.Body != null) { v.Body.Sheet = jewel && _nobre != null ? _nobre : NextClientSheet(); v.Body.Clip = null; }
+            v.Crown.enabled = v.Tag.enabled = v.Waiting = false;
             v.Root.gameObject.SetActive(true);
             return v;
         }
@@ -843,6 +893,15 @@ namespace FS
         /// <summary>Liga um Client novo da fila a uma view livre.</summary>
         ClientV BindClient(Client c, int slot, bool jewel)
         {
+            if (c.Vip && _vipWait != null)   // o VIP que esperava ao lado da fila cheia entra andando de onde estava
+            {
+                ClientV w = _vipWait;
+                _vipWait = null;
+                w.Waiting = false;
+                w.C = c;
+                w.Want.enabled = w.Patience.enabled = true;
+                return w;
+            }
             ClientV v = FreeClient(jewel);
             v.C = c;
             v.Want.enabled = v.Patience.enabled = true;
@@ -947,7 +1006,7 @@ namespace FS
                 v.Served = v.C.Patience > 0f;   // vendido sai com paciencia sobrando; quem cansou sai com <= 0
                 v.C = null;
                 if (v.Body == null) { v.Root.gameObject.SetActive(false); continue; }   // procedural: some na hora, como antes
-                v.Want.enabled = v.Patience.enabled = false;
+                v.Want.enabled = v.Patience.enabled = v.Tag.enabled = false;   // a coroa vai embora com ele
                 Vector3 p = v.Root.localPosition;
                 float laneY = Mathf.Max(W(Slot(v.Jewel, 0)).y, Balance.WorldH) + 0.7f;   // faixa da rua de cima, atras das duas filas
                 v.Lane = new Vector3(p.x + (v.Id % 3 - 1) * 0.3f, laneY, 0f);
@@ -955,10 +1014,40 @@ namespace FS
                 v.Phase = 0;
                 v.LeaveT = 0f;
             }
+            RefreshVipWaiting(dt);
             RefreshQueue(false, dt);
             RefreshQueue(true, dt);
-            foreach (ClientV v in _clients) if (v.C == null && v.Body != null && v.Root.gameObject.activeSelf) RefreshLeaving(v, dt);
+            foreach (ClientV v in _clients) if (v.C == null && !v.Waiting && v.Body != null && v.Root.gameObject.activeSelf) RefreshLeaving(v, dt);
         }
+
+        /// <summary>
+        /// VIP sorteado/chamado com a fila cheia (Sim.VipActive sem VIP na Queue): desce da rua de cima e espera de coroa 0,95 m a direita
+        /// da ultima vaga, olhando em volta, com "VIP" em cima; quando abre vaga, o BindClient o leva andando. ponytail: sem folha de
+        /// personagem (procedural) ele nao aparece esperando, so na vaga.
+        /// </summary>
+        void RefreshVipWaiting(float dt)
+        {
+            bool pending = _sim.VipActive && !_sim.Queue.Exists(c => c.Vip);
+            if (pending && _vipWait == null && _clientSheets.Count > 0)
+            {
+                _vipWait = FreeClient(false);
+                _vipWait.C = null; _vipWait.Waiting = true;
+                _vipWait.Want.enabled = _vipWait.Patience.enabled = false;
+                _vipWait.Crown.enabled = true;
+                _vipWait.Root.localPosition = VipWaitSpot() + new Vector3(0f, 1.5f, 0f);
+            }
+            if (_vipWait == null) return;
+            if (!pending) { _vipWait.Root.gameObject.SetActive(false); _vipWait.Waiting = false; _vipWait.Tag.enabled = false; _vipWait = null; return; }
+            ClientV v = _vipWait;
+            Vector3 before = v.Root.localPosition;
+            v.Root.localPosition = Vector3.MoveTowards(before, VipWaitSpot(), 4f * dt);
+            bool moving = v.Root.localPosition != before;
+            v.Body.Tick(moving ? "Walking" : "LookingAround", dt, moving ? (Vector2)(v.Root.localPosition - before) : Vector2.down, true);
+            v.Tag.enabled = true; v.Tag.text = "VIP"; v.Tag.fontSize = 30;
+            PlaceLabel(v.Tag, v.Root.localPosition + new Vector3(0f, v.TopY + 0.4f, 0f), Vector2.zero);
+        }
+
+        Vector3 VipWaitSpot() => W(Slot(false, _sim.QueueCap - 1)) + VipWaitOff;
 
         /// <summary>
         /// Uma fila (balcao ou loja de joias): mesma maquina de estados, so muda a lista, os slots e o elenco. O 1o leva o balao
@@ -973,6 +1062,7 @@ namespace FS
                 b.Root.gameObject.SetActive(q.Count > 0);
                 b.PopT = q.Count > 0 ? 0.15f : -1f;   // 1o cliente chegou: o balao entra com pop (pula a fase de estouro)
             }
+            if (q.Count == 0) b.SealText.enabled = b.Pack.enabled = false;   // rotulos do VIP vivem na HUD: nao ficam soltos quando o balao some
             for (int i = 0; i < q.Count; i++)
             {
                 Client c = q[i];
@@ -983,13 +1073,22 @@ namespace FS
                 v.Root.localPosition = Vector3.MoveTowards(before, W(Slot(jewel, i)), 4f * dt);
                 float f = Mathf.Clamp01(c.Patience / c.MaxPatience);
                 v.Want.enabled = v.Patience.enabled = i > 0;
-                if (i == 0) PlaceBubble(b, v, c.Want, f, dt);
+                v.Crown.enabled = c.Vip;
+                v.Tag.enabled = c.Vip && i > 0;
+                if (i == 0) PlaceBubble(b, v, c, f, dt);
                 else
                 {
+                    float up = c.Vip ? VipMiniUp : 0f;   // a coroa fica na cabeca, o pedido sobe
                     Art.PaintItem(v.Want, c.Want, true, MiniIcon);
+                    v.Want.transform.localPosition = new Vector3(0f, v.TopY + MiniY + up, 0f);
                     v.Patience.transform.localScale = new Vector3(PatW * f, 0.06f, 1f);
-                    v.Patience.transform.localPosition = new Vector3(PatW * (f - 1f) / 2f, v.TopY + PatY, 0f);
+                    v.Patience.transform.localPosition = new Vector3(PatW * (f - 1f) / 2f, v.TopY + PatY + up, 0f);
                     v.Patience.color = Color.Lerp(Art.Bad, Art.Good, f);
+                    if (c.Vip)
+                    {
+                        v.Tag.text = "×" + c.Pack; v.Tag.fontSize = 30;
+                        PlaceLabel(v.Tag, v.Root.localPosition + new Vector3(0.36f, v.TopY + MiniY + up, 0f), Vector2.zero);
+                    }
                 }
                 if (v.Body == null) continue;
                 bool moving = v.Root.localPosition != before;
@@ -1245,6 +1344,24 @@ namespace FS
                 float a = i * Mathf.PI / 3f + 0.3f;
                 Vector3 d = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 0.85f;
                 Spawn(Art.Sparkle(), Art.Accent, c, c + d * 0.6f, c + d, 0.38f, 0.32f, 0.05f, true, 180f);
+            }
+        }
+
+        /// <summary>VIP entrou na vaga (Ev.VipArrived) ou levou o pacote (Ev.VipServed): anel de 10 brilhos dourados; servido = 2 coracoes a mais.</summary>
+        public void VipBurst(V2 at, bool served)
+        {
+            Vector3 c = W(at) + new Vector3(0f, ClientTop + 0.2f, 0f);
+            for (int i = 0; i < 10; i++)
+            {
+                float a = i * Mathf.PI / 5f;
+                Vector3 d = new Vector3(Mathf.Cos(a), Mathf.Sin(a) * 0.8f, 0f) * (served ? 1.3f : 1f);
+                Spawn(Art.Sparkle(), Art.Accent, c, c + d * 0.6f, c + d, 0.5f, 0.4f, 0.06f, true, 200f);
+            }
+            if (!served) return;
+            for (int k = -1; k <= 1; k += 2)
+            {
+                Vector3 h = c + new Vector3(k * 0.35f, 0.2f, 0f);
+                Spawn(Art.Heart(), HeartC, h, h + new Vector3(k * 0.2f, 0.6f, 0f), h + new Vector3(k * 0.3f, 1.3f, 0f), 0.9f, 0.4f, 0.6f, true);
             }
         }
 

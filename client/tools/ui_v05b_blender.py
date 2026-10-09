@@ -7,6 +7,7 @@ Uso (da raiz do projeto Forge Street; docs/ASSETS.md secao v0.5b):
 Saida por peca: <out>/<nome>/meta.json + PNG, formato lido por SpriteSheet.cs.
   - melhoria_*: icone 3/4 (clipe `icone`), celula 128 px, contorno 3 px + sombra 4 px a 35% (= item_*): cartoes do menu,
     botao Melhorias e placas de obra. Mochila, botas, fole, fole duplo, martelo de ouro, lupa, vitrine, sino, cesto.
+  - coroa (v0.5c): mesmo formato; na cabeca do cliente VIP, no botao "Chamar VIP" e no aviso "Cliente VIP!".
   - arvore, arbusto, poste, canteiro: escala real (ppu 160), camera de 60 graus, clipe `Static`, pivo no pe (= pilar).
 Nenhum matiz de item nos props (ART_BIBLE s3): copa verde-oliva apagado, flores creme/amarelo.
 """
@@ -26,6 +27,8 @@ A.TONS.update({
     "copa": (0x3F6B3A, 0x3F6B3A, 0x5E8C4C), "copa2": (0x365E33, 0x365E33, 0x527E44), "tronco": (0x6B4428, 0x6B4428, 0x8A5A32),
     "flor": (0xF2E6C8, 0xF2E6C8, 0xFFF8E8), "flor2": (0xFFD166, 0xFFD166, 0xFFE9A8), "terra": (0x5C4630, 0x5C4630, 0x6E5640),
     "luz": (0xFFD166, 0xFFE9A8, 0xFFF6D8),
+    # v0.5c: coroa do VIP (veludo e rubi longe dos matizes de item: vinho escuro e vermelho-rubi pequeno)
+    "veludo": (0x4A1020, 0x6E1A30, 0x962A48), "rubi": (0x9E1022, 0xD8203A, 0xFF8A9A), "safira": (0x1E3E8A, 0x3460C8, 0x8AB0FF),
 })
 PPU = A.PPU
 
@@ -146,6 +149,23 @@ def cesto(p):
     lingote(Sub(p, T(0.0, -0.05, 0.25) @ R("Z", 15) @ Matrix.Scale(0.7, 4)))
 
 
+def coroa(p):
+    """Coroa do cliente VIP (v0.5c): aro de ouro com 5 pontas e bolinhas, veludo vinho dentro, rubis e safiras no aro."""
+    p.add(lathe([(0.15, 0.0), (0.17, 0.0), (0.17, 0.09), (0.15, 0.09)], segs=30, closed=True), "ouro", bevel=0)
+    p.add(cyl(0.148, 0.11, 0.1, segs=24), "veludo", at=(0, 0, 0.085), bevel=0)
+    p.add(ball(0.1, 0.1, 0.07, u=12, v=6), "veludo", at=(0, 0, 0.14), bevel=0)
+    for k in range(5):
+        a = 2 * math.pi * k / 5 - math.pi / 2
+        x, y = 0.16 * math.cos(a), 0.16 * math.sin(a)
+        p.add(cyl(0.045, 0.13, 0.008, segs=4), "ouro", m=T(x, y, 0.15) @ R("Z", math.degrees(a) + 45), bevel=0.004)
+        p.add(ball(0.022, 0.022, 0.022, u=8, v=5), "ouro", at=(x * 1.02, y * 1.02, 0.225), bevel=0)
+        b = a + math.pi / 5
+        p.add(ball(0.022, 0.012, 0.024, u=8, v=5), "rubi" if k % 2 == 0 else "safira",
+              m=T(0.171 * math.cos(b), 0.171 * math.sin(b), 0.045) @ R("Z", math.degrees(b) + 90), bevel=0)
+    p.add(ball(0.03, 0.016, 0.032, u=8, v=5), "rubi", m=T(0.0, -0.172, 0.045), bevel=0)
+    p.add(box(0.05, 0.004, 0.012), "brilho", m=T(-0.07, -0.168, 0.07) @ R("Y", 30), bevel=0)
+
+
 ICONES = {   # nome -> (construtor, pose do icone)
     "melhoria_mochila": (mochila, R("X", 14) @ R("Z", 24)),
     "melhoria_botas": (botas, R("X", 10) @ R("Z", 12)),
@@ -156,6 +176,7 @@ ICONES = {   # nome -> (construtor, pose do icone)
     "melhoria_vitrine": (vitrine, R("X", 16) @ R("Z", 20)),
     "melhoria_sino": (sino, R("X", 22) @ R("Z", 18)),
     "melhoria_cesto": (cesto, R("X", 28) @ R("Z", 22)),
+    "coroa": (coroa, R("X", 18) @ R("Z", 8)),
 }
 
 

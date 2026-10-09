@@ -151,6 +151,13 @@ namespace FS
             bool head = y < 0.06f + g && y > -0.92f - g && Mathf.Abs(x) < (y + 0.92f + g) * 0.85f;
             return shaft || head;
         });
+        /// <summary>Avanco rapido (2 triangulos para a direita): botao e selo da velocidade 2x/3x (v0.5c).</summary>
+        public static Sprite FastForward() => Get("ff", (x, y) =>
+        {
+            bool Tri(float x0) => x >= x0 && x <= x0 + 0.9f && Mathf.Abs(y) <= (x0 + 0.9f - x) / 0.9f * 0.78f;
+            return Tri(-0.92f) || Tri(0.02f);
+        });
+
         /// <summary>Capsula para SpriteRenderer Sliced: pontas de 0,5 unidade fixas, meio estica. Usar size = (w/h, 1) e escala h.</summary>
         public static Sprite Capsule()
         {
@@ -430,6 +437,7 @@ namespace FS
             Tone("leave", 520, 230, 0.35f, 0.2f);      // cliente foi embora
             Tone("drop", 700, 500, 0.06f);             // item depositado
             Tone("offline", 523, 1046, 0.7f);          // cofre
+            Tone("vip", 660, 1480, 0.6f, 0.05f);       // cliente VIP chegou (v0.5c)
         }
 
         /// <summary>Toca no maximo uma vez por `minGap` segundos por nome (varias marteladas no mesmo quadro viram uma).</summary>

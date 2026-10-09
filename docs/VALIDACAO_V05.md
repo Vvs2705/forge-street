@@ -92,3 +92,53 @@ Refeito depois de olhar: ícone da placa pequeno (a arte ocupa 62–77% da célu
 - Câmera deslizando até a próxima placa liberada e "MAX" na pilha: não feitos (mexem na câmera/pilha que a raia do VIP vai tocar).
 - Custo no aparelho: +120 renderers no início e até ~190 com tudo comprado (bocas ~9 por estação, barras 3, exterior 40, brilhos 11, placas 4 por placa visível) e até 64 efeitos; vinheta + 3 lavagens de luz = ~2 telas de overdraw alfa a mais. Medir FPS no POCO F4 com o APK.
 - Leitura a 1080 × 2400: preço da placa (34 px de referência ≈ 38 px), nome de estação (28 px) e o rosto bravo (0,5 m ≈ 48 px).
+
+---
+
+# v0.5c: VIP e velocidade na tela (validação, 2026-10-08)
+
+Escopo: a View do núcleo FASE8 (`docs/FASE8_VIP_VELOCIDADE.md` §5) com o wrapper de anúncio da raia LevelPlay (`Ads.Ready`/`Ads.Show`, placements `vip` e `velocidade`, simulado de 5 s no Windows). Só View (`Art.cs`, `Game.cs`, `WorldView.cs`) e 1 sprite novo (`coroa`, `tools/ui_v05b_blender.py`). Core, testes e `Ads.cs` não foram tocados.
+
+## O que mudou
+| # | Pedido | Como ficou |
+|---|---|---|
+| 1 | VIP na tela | **Coroa** de ouro de 0,46 m "vestida" na cabeça de qualquer VIP (na vaga, na fila, esperando ou indo embora). 1º da fila: balão com **moldura de ouro**, corpo creme, **selo "×3"** dourado no canto de cima e **"×N"** grande do pacote no canto de baixo, que cai a cada unidade entregue (cada unidade estoura o balão com coração, como a venda normal). VIP fora do 1º lugar: mini-ícone sobe 0,16 m e "×N" ao lado. **Fila cheia:** o VIP pendente desce da rua e espera de coroa, 0,95 m à direita da última vaga, olhando em volta, com "VIP" em cima; quando abre vaga ele entra andando de onde estava. |
+| 1b | Eventos | `VipArrived`: aviso "Cliente VIP!" com coroa (pop, 2 s), som novo `vip` e anel de brilhos na vaga. `VipServed`: "+total" de 64 px pela frente do estande, 2 corações, anel de brilhos e 12 moedas de enfeite voando para a HUD (o ouro já entrou unidade por unidade). `VipLeft`: "..." vermelho e som de saída; ele vai embora pela esquerda, de coroa. |
+| 2 | Botões | Cantos da barra de baixo, fora da fila e do joystick: **"Chamar VIP"** (coroa + selo de vídeo) só com `Sim.CanSummonVip && Ads.Ready(Ads.Vip)`; **"Velocidade"** (avanço rápido + selo de vídeo) com `Sim.CanBoost && Ads.Ready(Ads.Velocidade)`, mostrando o próximo multiplicador ("2×", ou "3×" com o boost ativo). Sem boost e em recarga: cinza com o tempo (`Sim.BoostCooldown`, "4:42"). No 3× o botão some (o selo diz tudo). **Selo do boost** logo acima do botão de velocidade: avanço rápido, "2×"/"3×" e cronômetro (`Sim.BoostLeft`), pulsando. Toque: `Ads.Show(placement, onReward: Sim.SummonVip()` (+ aviso "VIP a caminho!") `/ Sim.StartBoost()` (+ "Velocidade 2×!" no ferreiro)`, onFail:` aviso curto "Anúncio indisponível")`. A base dos botões sobe 2,6% para a marca "Development Build" do APK de teste não cobrir a legenda; a versão foi para cima do botão VIP. |
+| 3 | Diário | `vip_arrived` a=item b=unidades, `vip_served` a=item b=ouro, `vip_left` a=item b=faltaram, `boost_start` a=multiplicador b=60 (nomes e campos do `client/tools/diario_report.py`; os `ad_*` continuam saindo do `Ads.Logged`). |
+| 4 | Flags | `-vipnow`: chama o VIP depois do `-warmup` (fila cheia = ele espera ao lado; marca a 1ª venda se ainda não houve, cheat de dev); se ainda não pode, tenta a cada quadro. `-boost N`: N anúncios de velocidade **antes** do warmup (`-boost 1 -warmup 75` = foto da recarga). |
+
+## Verificação
+| Portão | Resultado |
+|---|---|
+| `dotnet build client/tools/viewcheck/view -nologo -v q --artifacts-path <tmp>` (core das fontes) | 0 erros, 0 avisos |
+| `dotnet test client/tools/coretests --artifacts-path <tmp>` | 78/78 |
+| `Unity.exe ... -executeMethod FS.EditorTools.Setup.BuildWindows -logFile client/Builds/validation_v05c/build_win.log` | "Build Finished, Result: Success." (com o `SpriteImport` em DXT5 no Windows) |
+| `ForgeStreet.exe -batchmode -nographics -autoplay 10 -logFile validation_v05c/autoplay.log` | `AUTOPLAY OK venda1=23s upgrades=8 ouro=1310` |
+| Borda dos sprites com DXT5 | comparada ampliada com a foto da v0.5b (estação, placa, ferreiro, itens): sem borrão visível |
+
+Fotos em `client/Builds/validation_v05c/shots/` (janela `-screen-fullscreen 0 -screen-width 540 -screen-height 960 -testsession`, salvo indicação; logs em `validation_v05c/logs/`). Todas abertas e ampliadas.
+
+| Foto | Argumentos | Conferido |
+|---|---|---|
+| `01_botoes_visiveis.png` | `-warmup 30 -stock 5 -px 4.5,11 -shotdelay 2` | "VIP" e "2×" nos cantos, com selo de vídeo |
+| `02_vip_primeiro.png` | `-warmup 3 -vipnow -px 4.5,10.5 -shotdelay 3` | coroa, moldura de ouro, "×3" e "×6" |
+| `02b_aviso_vip.png` | igual, `-shotdelay 1.2` | aviso "Cliente VIP!" com coroa |
+| `03_vip_na_fila.png` | `-warmup 22 -vipnow ...` | VIP na 4ª vaga: coroa e "×6" ao lado do mini-ícone |
+| `04_vip_esperando.png` | `-warmup 40 -vipnow ...` | fila 4/4, VIP de coroa esperando à direita com "VIP" |
+| `05_boost_ativo.png` | `-boost 1 -warmup 12 -stock 5 ...` | selo "2× 0:45", botão oferecendo "3×" |
+| `05b_boost_3x.png` | `-boost 2 -warmup 12 -stock 5 -buyids 10,25,26,27,28 ...` | selo "3× 0:45", botão de velocidade some, fila de 8 vagas sem bater no selo |
+| `06_recarga.png` | `-boost 1 -warmup 75 ...` | botão cinza "4:42" sem selo de vídeo |
+| `07_anuncio_simulado.png` | `-warmup 30 -stock 5 -adtest velocidade -shotdelay 2.5` | painel "Anúncio de teste", recompensa Velocidade x1, contagem |
+| `08a_vip_pacote_caindo.png` | `-warmup 3 -vipnow -stock 6 ... -shotdelay 2.9` | "×1" depois de 5 unidades (estoque preso em 5 sem a Vitrine) |
+| `08b_vip_servido.png` | `-buyids 10 -warmup 3 -vipnow -stock 8 ... -shotdelay 2.5` | "+180", corações, moedas indo para a HUD |
+| `09_botoes_boost_20x9.png` | `-boost 1 -warmup 30 -stock 5 -buyids 10,25,26,27,28`, janela 432 × 960 | selo, "VIP", "3×" e badge legíveis em 20:9 |
+
+Refeito depois de olhar: moldura de ouro própria (o trilho dourado sumia sob o anel cheio de paciência); coroa 0,40 → 0,46 m; "play" do selo de vídeo escuro (vermelho em branco lembrava marca); aviso "Cliente VIP!" não aparecia (o 1º quadro tem `unscaledDeltaTime` de segundos: passo limitado a 0,1 s); a marca "Development Build" cobria a legenda do botão de velocidade (base subiu); o selo do boost no topo batia no balão do 1º da fila com 8 vagas (foi para cima do botão); "×3"/"×1" ficavam soltos quando a fila esvaziava (rótulos desligados com o balão); "+180" subia para baixo da faixa da HUD (agora sai pela frente do estande); ripas das bocas sem ordem fixa (placa 0, ripas 1, item 2).
+
+## Fica de fora / para o aparelho
+- Diário não conferido em arquivo: `-testsession` (todas as fotos e o smoke) não grava diário de propósito, e uma sessão normal mexeria no save real do PC. Os nomes e campos batem com o `diario_report.py`.
+- Aviso "Anúncio indisponível" sem foto: no Windows o simulado sempre tem anúncio. Conferir no aparelho sem rede.
+- O VIP pendente não mostra o item (o Core não expõe o `_vipWant`); ele aparece só com coroa e "VIP".
+- No aparelho: medir se o "×N" de pacote grande (até 20) lê a 1080 × 2400 (44 px de referência) e se o selo de 0,56 m com "×3" de 30 px lê.
+

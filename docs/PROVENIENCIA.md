@@ -188,6 +188,7 @@ Folhas (`client/Builds/sprites_contact/`, só QA): `v05_itens.png` 1500×1690, 5
 | `melhoria_vitrine/icone.png` | 128×128 | 14 406 | `acd364f9b56cb9760dedfef31b1d9be1f2ba74cc10fa98e438e0cd567731febf` |
 | `melhoria_sino/icone.png` | 128×128 | 14 608 | `3854f4aa0890352cbff00226ff3a76e203c19a9763788b6d4a330cc3118eb570` |
 | `melhoria_cesto/icone.png` | 128×128 | 19 847 | `fddf218debc91e30fefa9300a117bed8543bbdb3eee93fe8d40fc74f018fd66d` |
+| `coroa/icone.png` (v0.5c, mesmo script) | 128×128 | 19 016 | `c3cdd312261844a52ef74ccd5127808ed0bd2c33868cbf02d023cf62b8ffafac` |
 | `arvore/Static.png` | 268×239 | 61 884 | `3a3d721a31afac4f63d711cfebc9c639f24a08cf5e28bc7a9c4815b624456b21` |
 | `arbusto/Static.png` | 170×119 | 23 391 | `8fa1b74db8f5ac9e187085b95124442a04f8117cc64807b9b1ae74b1b7063c10` |
 | `poste/Static.png` | 60×225 | 13 210 | `682db448620f4f2384b07fe55659a2eba6c1c88246ea8b03131f3460026d88a8` |

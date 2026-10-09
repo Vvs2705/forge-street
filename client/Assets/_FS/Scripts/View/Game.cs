@@ -20,7 +20,9 @@ namespace FS
     /// [-shotdelay s] [-shotchest] [-bot] [-menu] | -speed N | -reset (apaga o save) | -testsession (sem persistencia) |
     /// -record pasta [-recordsec S] [-recordfps F] (quadros 1080x1920 para os criativos, docs/CRIATIVOS.md) | -buyids 1,5,0@300 |
     /// -warmup S | -hold 0,3,3,3,0,0 | -stock 10,10,10 (fotos de validacao) | -fakeads | -adtest vip|velocidade (Ads.Show no
-    /// inicio; docs/LEVELPLAY.md).
+    /// inicio; docs/LEVELPLAY.md) | -vipnow (chama o VIP depois do warmup) | -boost N (N anuncios de velocidade antes do warmup).
+    /// v0.5c (docs/FASE8_VIP_VELOCIDADE.md s5): botoes "Chamar VIP" e "Velocidade 2x/3x" nos cantos da barra de baixo (Ads.Show ->
+    /// Sim.SummonVip / Sim.StartBoost), selo do boost com cronometro, aviso "Cliente VIP!" e diario vip_* / boost_start.
     /// </summary>
     public sealed class Game : MonoBehaviour
     {
@@ -62,6 +64,14 @@ namespace FS
         sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
         readonly System.Collections.Generic.List<Coin> _coins = new System.Collections.Generic.List<Coin>();
         int _pending, _goldInt = -1; float _punchT, _goldShown = -1f;
+        // v0.5c: botoes de anuncio, selo do boost e avisos curtos (VIP chegou / anuncio indisponivel)
+        sealed class AdBtn { public Button B; public Image Face, Icon; public GameObject Video; public Text Label; }
+        sealed class Banner { public RectTransform R; public CanvasGroup G; public Text T; public Image I; public float Age = 99f, Dur; }
+        AdBtn _vipBtn, _speedBtn;
+        RectTransform _boostSeal; Text _boostMul, _boostTime;
+        Banner _vipBanner, _toast;
+        bool _vipNow;
+        static readonly Color AdFace = Art.Hex(0x3B2650), AdOff = Art.Hex(0x5A5560);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -171,6 +181,7 @@ namespace FS
                 HandleEvents();
             }
 
+            if (_vipNow && _sim.CanSummonVip) _vipNow = !_sim.SummonVip();
             _view.Refresh(Time.deltaTime);
             FollowCamera(Time.deltaTime);
             RefreshHud();
@@ -231,6 +242,25 @@ namespace FS
                         _view.Float(e.Pos, "+" + e.B, Art.Accent, 44);
                         FlyCoins(e.Pos, e.B);
                         Log("chest_opened", e.A.ToString(), e.B.ToString());
+                        break;
+                    // FASE8 (v0.5c): VIP entrou na vaga / levou o pacote (cada unidade ja saiu como Sold) / cansou
+                    case Ev.VipArrived:
+                        Sfx.Play("vip");
+                        ShowBanner(_vipBanner, "Cliente VIP!", 2f);
+                        _view.VipBurst(e.Pos, false);
+                        Log("vip_arrived", Balance.ItemName[e.A], e.B.ToString());
+                        break;
+                    case Ev.VipServed:
+                        Sfx.Play("offline", 1.15f);
+                        _view.Float(new V2(e.Pos.X, e.Pos.Y - 1.2f), "+" + e.B, Art.Accent, 64);   // pela frente do estande: na fila ele subia para baixo da HUD
+                        _view.VipBurst(e.Pos, true);
+                        FlyCoins(e.Pos, e.B, 12);   // so visual: o ouro ja entrou unidade por unidade
+                        Log("vip_served", Balance.ItemName[e.A], e.B.ToString());
+                        break;
+                    case Ev.VipLeft:
+                        Sfx.Play("leave");
+                        _view.Float(e.Pos, "...", Art.Bad, 44);
+                        Log("vip_left", Balance.ItemName[e.A], e.B.ToString());
                         break;
                 }
             }
@@ -321,7 +351,7 @@ namespace FS
             // versao: saiu do titulo; canto de baixo a esquerda, discreta (criativo: nenhuma)
             if (Arg("-record") == null)
             {
-                Text ver = Art.NewText(_safe, "Versao", 20, new Vector2(0.005f, 0.002f), new Vector2(0.17f, 0.03f), TextAnchor.LowerLeft);
+                Text ver = Art.NewText(_safe, "Versao", 20, new Vector2(0.005f, MenuBar.Band), new Vector2(0.17f, MenuBar.Band + 0.016f), TextAnchor.LowerLeft);
                 ver.text = "v" + Application.version;
                 ver.color = Art.ComAlfa(Art.Ink, 0.3f);
             }
@@ -335,6 +365,7 @@ namespace FS
             Button ok = Art.NewButton(box.transform, "OK", 52, Art.Accent, new Vector2(0.22f, 0.07f), new Vector2(0.78f, 0.3f), () => _panelAction?.Invoke());
             _panelBtn = ok.GetComponentInChildren<Text>();
             _panel.gameObject.SetActive(false);
+            BuildAdUi();
             _fx = Art.Node(_canvas, "Moedas", Vector2.zero, Vector2.one);   // depois da AreaSegura: as moedas passam por cima da faixa da HUD
 
             // Canvas do joystick em escala 1 (px = px): o dp do ARKANA vale direto.
@@ -345,14 +376,15 @@ namespace FS
         }
 
         /// <summary>3-6 moedas saem do ponto da venda (acima do cliente) em fila de 0,04 s; o valor e' dividido entre elas.</summary>
-        void FlyCoins(V2 at, int value)
+        /// <param name="burst">&gt; 0: N moedas so de enfeite (o ouro ja foi contado, ex.: VIP servido); 0: 3-6 moedas que levam o valor.</param>
+        void FlyCoins(V2 at, int value, int burst = 0)
         {
-            int n = Mathf.Clamp(value / 8, 3, 6), given = 0;
+            int n = burst > 0 ? burst : Mathf.Clamp(value / 8, 3, 6), given = 0;
             Vector3 from = _cam.WorldToScreenPoint(new Vector3(at.X, at.Y + 0.8f, 0f));
             from.z = 0f;
             for (int i = 0; i < n; i++)
             {
-                int share = i == n - 1 ? value - given : value / n;
+                int share = burst > 0 ? 0 : i == n - 1 ? value - given : value / n;
                 Coin c = null;
                 foreach (Coin x in _coins) if (!x.I.enabled) { c = x; break; }
                 if (c == null && _coins.Count < CoinPool)
@@ -397,6 +429,7 @@ namespace FS
         void RefreshHud()
         {
             TickCoins(Time.deltaTime);
+            RefreshAdUi(Mathf.Min(Time.unscaledDeltaTime, 0.1f));   // tempo real (o simulado zera o timeScale), sem o salto do 1o quadro
             // numero rolando: persegue o valor (sobe na venda, desce na compra) em ~0,3 s em vez de pular
             int target = Mathf.Max(0, _sim.Gold - _pending);
             _goldShown = _goldShown < 0f ? target : Mathf.Lerp(target, _goldShown, Mathf.Exp(-GoldRoll * Time.deltaTime));
@@ -429,6 +462,157 @@ namespace FS
                 case Hint.OpenChest: return $"Abra o baú: {_sim.Chests[arg].Label}";
                 default: return "Pegue minério no depósito";
             }
+        }
+
+        // ---------- anuncios: Chamar VIP, Velocidade 2x/3x, selo do boost e avisos (v0.5c) ----------
+
+        /// <summary>
+        /// Botoes nos cantos da barra de baixo (fora da fila e do joystick; a base sobe 2,6% para a marca "Development Build" do APK de
+        /// teste nao cobrir a legenda), selo do boost logo acima do botao de velocidade (no topo ele batia no balao do 1o da fila, que vai
+        /// para a esquerda com 8 vagas) e 2 avisos.
+        /// </summary>
+        void BuildAdUi()
+        {
+            float band = MenuBar.Band;
+            _vipBtn = AdButton("ChamarVip", new Vector2(0.02f, 0.026f), new Vector2(0.165f, band - 0.004f), Art.Icon("coroa", "icone") ?? Art.Star(), "VIP", OnVipAd);
+            _speedBtn = AdButton("Velocidade", new Vector2(0.835f, 0.026f), new Vector2(0.98f, band - 0.004f), Art.FastForward(), "2×", OnSpeedAd);
+            _speedBtn.Icon.color = Art.Accent;
+            // selo do boost: borda de ouro, avanco rapido, "2x" grande e o cronometro
+            Image seal = Art.Panel(_safe, "SeloBoost", Art.Gold, new Vector2(0.69f, band + 0.018f), new Vector2(0.98f, band + 0.07f));
+            seal.raycastTarget = false;
+            Image sealIn = Art.Panel(seal.transform, "Fundo", Art.ComAlfa(AdFace, 0.95f), Vector2.zero, Vector2.one);
+            sealIn.rectTransform.offsetMin = new Vector2(5f, 5f); sealIn.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            sealIn.raycastTarget = false;
+            Image ff = Art.Node(seal.transform, "Icone", new Vector2(0.05f, 0.2f), new Vector2(0.27f, 0.8f)).gameObject.AddComponent<Image>();
+            ff.sprite = Art.FastForward(); ff.color = Art.Accent; ff.preserveAspect = true; ff.raycastTarget = false;
+            _boostMul = Art.Outlined(Art.NewText(seal.transform, "Mult", 50, new Vector2(0.27f, 0f), new Vector2(0.58f, 1f)), 3f);
+            _boostMul.fontStyle = FontStyle.Bold; _boostMul.color = Art.Accent;
+            _boostTime = Art.Outlined(Art.NewText(seal.transform, "Tempo", 36, new Vector2(0.56f, 0f), new Vector2(0.97f, 1f)), 2f);
+            _boostTime.fontStyle = FontStyle.Bold;
+            _boostSeal = seal.rectTransform;
+            _boostSeal.gameObject.SetActive(false);
+            _vipBanner = MakeBanner("AvisoVip", new Vector2(0.14f, 0.63f), new Vector2(0.86f, 0.7f), Art.Icon("coroa", "icone"), 52);
+            _toast = MakeBanner("AvisoAnuncio", new Vector2(0.15f, MenuBar.Band + 0.08f), new Vector2(0.85f, MenuBar.Band + 0.12f), null, 34);   // acima do selo do boost
+        }
+
+        /// <summary>Botao quadrado: borda de ouro, fundo roxo escuro, icone, legenda e o selo de video (anuncio) no canto de cima.</summary>
+        AdBtn AdButton(string name, Vector2 min, Vector2 max, Sprite icon, string label, Action onClick)
+        {
+            var a = new AdBtn();
+            Image edge = Art.Panel(_safe, name, Art.Gold, min, max);
+            a.B = edge.gameObject.AddComponent<Button>();
+            a.B.targetGraphic = edge;
+            a.B.onClick.AddListener(() => onClick());
+            a.Face = Art.Panel(edge.transform, "Face", AdFace, Vector2.zero, Vector2.one);
+            a.Face.rectTransform.offsetMin = new Vector2(5f, 5f); a.Face.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            a.Face.raycastTarget = false;
+            a.Icon = Art.Node(edge.transform, "Icone", new Vector2(0.16f, 0.36f), new Vector2(0.84f, 0.94f)).gameObject.AddComponent<Image>();
+            a.Icon.sprite = icon; a.Icon.preserveAspect = true; a.Icon.raycastTarget = false;
+            a.Label = Art.Outlined(Art.NewText(edge.transform, "Legenda", 32, new Vector2(0f, 0.03f), new Vector2(1f, 0.4f)), 2f);
+            a.Label.fontStyle = FontStyle.Bold; a.Label.text = label;
+            // selo de video: retangulo branco com "play" escuro, saindo pelo canto de cima a direita
+            RectTransform v = Art.Node(edge.transform, "Video", new Vector2(1f, 1f), new Vector2(1f, 1f));
+            v.sizeDelta = new Vector2(52f, 38f); v.anchoredPosition = new Vector2(-8f, -4f);
+            Image vb = v.gameObject.AddComponent<Image>(); vb.sprite = Art.Box(); vb.type = Image.Type.Sliced; vb.pixelsPerUnitMultiplier = 2f;
+            vb.color = Color.white; vb.raycastTarget = false;
+            Image play = Art.Node(v, "Play", new Vector2(0.3f, 0.2f), new Vector2(0.7f, 0.8f)).gameObject.AddComponent<Image>();
+            play.sprite = Art.Triangle(); play.color = Art.Bg; play.raycastTarget = false;   // "play" escuro e neutro (sem cor de marca)
+            play.rectTransform.localEulerAngles = new Vector3(0f, 0f, -90f);
+            a.Video = v.gameObject;
+            edge.gameObject.SetActive(false);
+            return a;
+        }
+
+        Banner MakeBanner(string name, Vector2 min, Vector2 max, Sprite icon, int size)
+        {
+            var b = new Banner();
+            Image edge = Art.Panel(_safe, name, Art.Gold, min, max);
+            edge.raycastTarget = false;
+            Image face = Art.Panel(edge.transform, "Fundo", Art.ComAlfa(Art.Hex(0x2A1E14), 0.95f), Vector2.zero, Vector2.one);
+            face.rectTransform.offsetMin = new Vector2(5f, 5f); face.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            face.raycastTarget = false;
+            if (icon != null)
+            {
+                b.I = Art.Node(edge.transform, "Icone", new Vector2(0.02f, 0.05f), new Vector2(0.2f, 0.95f)).gameObject.AddComponent<Image>();
+                b.I.sprite = icon; b.I.preserveAspect = true; b.I.raycastTarget = false;
+            }
+            b.T = Art.Outlined(Art.NewText(edge.transform, "Texto", size, new Vector2(icon != null ? 0.2f : 0.03f, 0f), new Vector2(0.97f, 1f)), 3f);
+            b.T.fontStyle = FontStyle.Bold; b.T.color = Art.Accent;
+            b.R = edge.rectTransform;
+            b.G = edge.gameObject.AddComponent<CanvasGroup>();
+            b.G.blocksRaycasts = false;
+            edge.gameObject.SetActive(false);
+            return b;
+        }
+
+        void ShowBanner(Banner b, string text, float dur)
+        {
+            b.T.text = text; b.Age = 0f; b.Dur = dur;
+            b.R.gameObject.SetActive(true);
+        }
+
+        /// <summary>Pop 0 -> 1,1 -> 1 em 0,3 s, segura e some nos ultimos 0,4 s.</summary>
+        static void TickBanner(Banner b, float dt)
+        {
+            if (!b.R.gameObject.activeSelf) return;
+            b.Age += dt;
+            if (b.Age >= b.Dur) { b.R.gameObject.SetActive(false); return; }
+            float k = Mathf.Clamp01(b.Age / 0.3f);
+            b.R.localScale = Vector3.one * (k < 0.6f ? Mathf.Lerp(0.3f, 1.1f, k / 0.6f) : Mathf.Lerp(1.1f, 1f, (k - 0.6f) / 0.4f));
+            b.G.alpha = Mathf.Clamp01((b.Dur - b.Age) / 0.4f);
+        }
+
+        /// <summary>
+        /// Cada quadro (tempo real: o simulado zera o timeScale): VIP so com Sim.CanSummonVip e anuncio pronto; velocidade com CanBoost e
+        /// anuncio pronto mostra o proximo multiplicador, fora disso (sem boost e com recarga) fica cinza com o tempo; no 3x some (o selo
+        /// diz tudo). Selo do boost com o multiplicador e o cronometro, pulsando.
+        /// </summary>
+        void RefreshAdUi(float dt)
+        {
+            bool vip = _sim.CanSummonVip && Ads.Ready(Ads.Vip);
+            if (_vipBtn.B.gameObject.activeSelf != vip) _vipBtn.B.gameObject.SetActive(vip);
+            bool active = _sim.BoostLeft > 0f, can = _sim.CanBoost && Ads.Ready(Ads.Velocidade), cool = !active && _sim.BoostCooldown > 0f;
+            bool show = can || cool;
+            if (_speedBtn.B.gameObject.activeSelf != show) _speedBtn.B.gameObject.SetActive(show);
+            if (show)
+            {
+                _speedBtn.B.interactable = can;
+                _speedBtn.Face.color = can ? AdFace : AdOff;
+                _speedBtn.Icon.color = can ? Art.Accent : Art.ComAlfa(Art.Ink, 0.45f);
+                _speedBtn.Video.SetActive(can);
+                _speedBtn.Label.text = can ? (active ? "3×" : "2×") : Clock(_sim.BoostCooldown);
+            }
+            if (_boostSeal.gameObject.activeSelf != active) _boostSeal.gameObject.SetActive(active);
+            if (active)
+            {
+                _boostMul.text = _sim.BoostMul.ToString("0") + "×";
+                _boostTime.text = Clock(_sim.BoostLeft);
+                _boostSeal.localScale = Vector3.one * (1f + 0.04f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 3f)));
+            }
+            TickBanner(_vipBanner, dt);
+            TickBanner(_toast, dt);
+        }
+
+        void OnVipAd() => Ads.Show(Ads.Vip, () =>
+        {
+            if (!_sim.SummonVip()) return;   // mudou entre o toque e o fim do anuncio: nada a dar
+            Sfx.Play("upgrade");
+            ShowBanner(_vipBanner, "VIP a caminho!", 1.6f);
+        }, AdFail);
+
+        void OnSpeedAd() => Ads.Show(Ads.Velocidade, () =>
+        {
+            float m = _sim.StartBoost();
+            if (m <= 0f) return;
+            Sfx.Play("upgrade", 1.2f);
+            _view.Float(_sim.Player.Pos, $"Velocidade {m:0}×!", Art.Accent, 48);
+            Log("boost_start", m.ToString("0", CultureInfo.InvariantCulture), Balance.BoostSeconds.ToString("0", CultureInfo.InvariantCulture));
+        }, AdFail);
+
+        void AdFail()
+        {
+            Sfx.Play("leave", 1.3f);
+            ShowBanner(_toast, "Anúncio indisponível", 1.6f);
         }
 
         void ShowPanel(string title, string body, string button, Action action)
@@ -489,6 +673,8 @@ namespace FS
             if (px.Length == 2 && float.TryParse(px[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x)
                 && float.TryParse(px[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y)) _sim.Player.Pos = new V2(x, y);
             // -warmup S: simula S s antes do 1o quadro (jogador parado, sem bot): a fila e a fome ja estao montadas quando a gravacao comeca
+            // v0.5c: -boost N = N anuncios de velocidade (1 = 2x, 2 = 3x) ANTES do warmup (warmup >= 60 = foto da recarga)
+            if (int.TryParse(Arg("-boost"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int nb)) for (int i = 0; i < nb; i++) _sim.StartBoost();
             float warm = ArgF("-warmup", 0f);
             for (float t = 0f; t < warm; t += MaxStep) { _sim.Tick(MaxStep, 0f, 0f); TimedBuys(); }
             // fotos da v0.5, depois do warmup: -hold 0,3,3,3,0,0 = carga mista do ferreiro (por Item, ate o teto de cada tipo) e
@@ -498,6 +684,13 @@ namespace FS
                 if (int.TryParse(hold[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out int h)) _sim.Player.Held[i] = Math.Max(0, Math.Min(h, _sim.Player.Cap));
             for (int i = 0; i < Math.Min(stock.Length, 4); i++)
                 if (int.TryParse(stock[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out int s)) _sim.Stock[2 + i] = Math.Max(0, Math.Min(s, _sim.CounterCap));
+            // -vipnow: chama o VIP depois do warmup (fila cheia = ele espera ao lado); se ainda nao pode, tenta a cada quadro (Update).
+            // ponytail: cheat de dev, marca a 1a venda se ainda nao houve (CanSummonVip pede a 1a venda)
+            if (Arg("-vipnow") != null)
+            {
+                if (_sim.FirstSaleTime < 0f) _sim.FirstSaleTime = _sim.Time;
+                _vipNow = !_sim.SummonVip();
+            }
         }
 
         /// <summary>-buyids id@t: compra quando _sim.Time passa de t e cobra o preco (sem ouro bastante fica em 0).</summary>
