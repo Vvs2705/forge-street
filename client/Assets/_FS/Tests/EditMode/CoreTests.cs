@@ -303,6 +303,8 @@ namespace FS.Tests
                 if (req >= 0) Assert.Less(req, i, "pre-requisito e' sempre de tier menor");
             }
             Assert.AreEqual(Balance.CostBase, Upgrades.Cost(0));
+            // curva literal (mutante eco-custo-crescimento): mexer no CostGrowth tem de ficar vermelho, nao so caber na faixa
+            Assert.AreEqual(65, Upgrades.Cost(Upgrade.Anvil2)); Assert.AreEqual(315, Upgrades.Cost(Upgrade.FurnaceSpeed2)); Assert.AreEqual(895, Upgrades.Cost(Upgrade.Furnace2));   // separados: o NUnit 3.5 do Unity compara tupla tipo a tipo (int x long)
             for (int i = 1; i < Upgrades.Count; i++)
             {
                 Assert.AreEqual(0, Upgrades.Cost(i) % 5, "preco legivel");
@@ -2134,9 +2136,9 @@ namespace FS.Tests
             Assert.AreEqual((3f, 0f), (s.BoostMul, s.BoostCooldown), "a recarga so comeca no fim do boost");
             Run(s, 2f);
             Assert.AreEqual((1f, 0f), (s.BoostMul, s.BoostLeft), "expirou");
-            Assert.AreEqual(Balance.BoostCooldownSeconds - 1f, s.BoostCooldown, 0.1f, "recarga de 5 min contada do fim");
+            Assert.AreEqual(299f, s.BoostCooldown, 0.1f, "recarga de 5 min contada do fim (literal: mutante boost-recarga)");
             Assert.AreEqual((false, 0f, 1f), (s.CanBoost, s.StartBoost(), s.BoostMul), "na recarga recusa");
-            Run(s, Balance.BoostCooldownSeconds - 2f);
+            Run(s, 298f);
             Assert.IsFalse(s.CanBoost, "ainda na recarga (no tempo de jogo)");
             Run(s, 1.5f);
             Assert.AreEqual((0f, true), (s.BoostCooldown, s.CanBoost), "recarga zerada: libera");
