@@ -19,7 +19,8 @@ namespace FS
     /// Flags de dev: -autoplay [min] (bot sem render, loga AUTOPLAY por minuto, sai 0/1) | -shot foto.png
     /// [-shotdelay s] [-shotchest] [-bot] [-menu] | -speed N | -reset (apaga o save) | -testsession (sem persistencia) |
     /// -record pasta [-recordsec S] [-recordfps F] (quadros 1080x1920 para os criativos, docs/CRIATIVOS.md) | -buyids 1,5,0@300 |
-    /// -warmup S | -hold 0,3,3,3,0,0 | -stock 10,10,10 (fotos de validacao).
+    /// -warmup S | -hold 0,3,3,3,0,0 | -stock 10,10,10 (fotos de validacao) | -fakeads | -adtest vip|velocidade (Ads.Show no
+    /// inicio; docs/LEVELPLAY.md).
     /// </summary>
     public sealed class Game : MonoBehaviour
     {
@@ -80,6 +81,8 @@ namespace FS
             if (!_testSession && Arg("-reset") != null) PlayerPrefs.DeleteKey(SaveKey);
             _sim = _testSession ? new Sim() : Sim.Load(PlayerPrefs.GetString(SaveKey, ""));
             DevArgs();
+            Ads.Logged += (e, a, b) => Log(e, a, b);   // pedido, mostrado, recompensa e falha do anuncio vao para o diario
+            Ads.Init();
             _bot = new Bot();
             string sp = Arg("-speed");
             if (!string.IsNullOrEmpty(sp) && float.TryParse(sp, NumberStyles.Float, CultureInfo.InvariantCulture, out float v)) _speed = Mathf.Clamp(v, 0.1f, 50f);
@@ -112,6 +115,16 @@ namespace FS
             if (!string.IsNullOrEmpty(shot)) StartCoroutine(Shot(shot));
             string rec = Arg("-record");
             if (!string.IsNullOrEmpty(rec)) StartCoroutine(Record(rec));
+            string ad = Ads.Arg("-adtest");   // Ads.Arg tambem le o extra "unity" do intent no Android
+            if (!string.IsNullOrEmpty(ad)) StartCoroutine(AdTest(ad));
+        }
+
+        /// <summary>-adtest vip|velocidade (dev): mostra o anuncio no inicio; no aparelho espera ate 15 s o real carregar.</summary>
+        IEnumerator AdTest(string p)
+        {
+            for (float t = 0f; Ads.Live && !Ads.Real(p) && t < 15f; t += Time.unscaledDeltaTime) yield return null;
+            Ads.Show(p, () => ShowPanel("Anúncio de teste", $"Recompensa recebida: {p}", "OK", ClosePanel),
+                () => ShowPanel("Anúncio de teste", $"Sem recompensa: {p}", "OK", ClosePanel));
         }
 
         /// <summary>Cofre: o claim e' idempotente pelo SavedAt do save (o Core recusa id repetido ou mais antigo).</summary>
