@@ -11,7 +11,7 @@ Idle/tycoon arcade em retrato. Você é o ferreiro: pega **minério** no depósi
 | Item | Estado |
 |---|---|
 | Versão no aparelho | **0.5.1** (Release `v0.5.1`, PR #4 na `main`): testada pelo Vinicius no POCO F4 em 2026-10-09 — **60 fps** (p95 16,6 ms, 0 travada), PSS 325–345 MB, 0 crash, bateria ≤ 41 °C. Parecer: "promissor" (`docs/VALIDACAO_V05.md`, seção "Teste no POCO F4") |
-| Próxima versão | **0.6.0** neste branch (`feat/v0.6-juice`, PR #5): juice, configurações som/vibração, Encomendas (missões curtas), revisão de UX, voltar do Android |
+| Próxima versão | **0.6.0** já na `main` (PR #5; falta o teste no POCO para a Release): juice, configurações som/vibração, Encomendas (missões curtas), revisão de UX, voltar do Android |
 | Núcleo C# puro (`FS.Core`) | simulação por tick, física, 6 papéis de ajudante, balcão 4→8, VIP, velocidade por anúncio, cofre offline, save; **81 testes** (87 na v0.6) |
 | Balance (bot) | produção completa 46:12 (41:31 na v0.6); pessoa real foi 1,7–3,7× mais lenta que o bot no 1º teste (`docs/BALANCE.md`) |
 | Anúncios | Unity LevelPlay 9.5.1 integrado (rewarded "Chamar VIP" e "Velocidade"); conta aguardando aprovação, build de teste usa anúncio simulado |
