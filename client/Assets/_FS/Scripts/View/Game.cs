@@ -20,7 +20,8 @@ namespace FS
     /// [-shotdelay s] [-shotchest] [-bot] [-menu] | -speed N | -reset (apaga o save) | -testsession (sem persistencia) |
     /// -record pasta [-recordsec S] [-recordfps F] (quadros 1080x1920 para os criativos, docs/CRIATIVOS.md) | -buyids 1,5,0@300 |
     /// -warmup S | -hold 0,3,3,3,0,0 | -stock 10,10,10 (fotos de validacao) | -fakeads | -adtest vip|velocidade (Ads.Show no
-    /// inicio; docs/LEVELPLAY.md) | -vipnow (chama o VIP depois do warmup) | -boost N (N anuncios de velocidade antes do warmup).
+    /// inicio; docs/LEVELPLAY.md) | -vipnow (chama o VIP depois do warmup) | -boost N (N anuncios de velocidade antes do warmup) |
+    /// -cam W (largura visivel em m, 6..11,4; experimento de camera mais perto). Build dev: tambem pelo intent do Android (Arg).
     /// v0.5c (docs/FASE8_VIP_VELOCIDADE.md s5): botoes "Chamar VIP" e "Velocidade 2x/3x" nos cantos da barra de baixo (Ads.Show ->
     /// Sim.SummonVip / Sim.StartBoost), selo do boost com cronometro, aviso "Cliente VIP!" e diario vip_* / boost_start.
     /// </summary>
@@ -50,7 +51,7 @@ namespace FS
         Joystick _joy;
         MenuBar _menu;
         Camera _cam;
-        float _speed = 1f, _saveT, _hintT, _minuteT, _adHold;
+        float _speed = 1f, _saveT, _hintT, _minuteT, _adHold, _visW = VisibleWidth;
         bool _botDrive, _headless, _firstSaleLogged, _testSession, _started, _pausedByAd;
         string _diary, _sid;
         Vector2Int _screen;
@@ -91,6 +92,8 @@ namespace FS
             if (!_testSession && Arg("-reset") != null) PlayerPrefs.DeleteKey(SaveKey);
             _sim = _testSession ? new Sim() : Sim.Load(PlayerPrefs.GetString(SaveKey, ""));
             DevArgs();
+            // -cam W (P2-3 do BENCHMARK_VISUAL, experimento de playtest): largura visivel em m; abaixo de 11,4 a camera segue o jogador
+            _visW = Mathf.Clamp(ArgF("-cam", VisibleWidth), 6f, VisibleWidth);
             Ads.Logged += (e, a, b) => Log(e, a, b);   // pedido, mostrado, recompensa e falha do anuncio vao para o diario
             Ads.Init();
             _bot = new Bot();
@@ -301,7 +304,7 @@ namespace FS
         void FollowCamera(float dt)
         {
             float aspect = Screen.width / (float)Mathf.Max(1, Screen.height);
-            float size = VisibleWidth / (2f * aspect);
+            float size = _visW / (2f * aspect);
             _cam.orthographicSize = size;
             float halfW = size * aspect, halfH = size;
             V2 p = _sim.Player.Pos;
@@ -713,8 +716,11 @@ namespace FS
 
         static float ArgF(string name, float def) => float.TryParse(Arg(name), NumberStyles.Float, CultureInfo.InvariantCulture, out float v) ? v : def;
 
+        // build de desenvolvimento: Ads.Arg tambem le o extra "unity" do intent, entao as flags valem no aparelho
+        // (adb shell am start -n br.com.vstack.forgestreet/com.unity3d.player.UnityPlayerGameActivity -e unity "-cam 9"). Release: so linha de comando
         static string Arg(string name)
         {
+            if (Debug.isDebugBuild) return Ads.Arg(name);
             string[] a = Environment.GetCommandLineArgs();
             int i = Array.IndexOf(a, name);
             if (i < 0) return null;
