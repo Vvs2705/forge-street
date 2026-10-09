@@ -21,7 +21,7 @@ Colunas (Game.Log: sem cabecalho, virgula crua, sem aspas): utc, sessao, evento,
         vip_arrived a=item b=unidades | vip_served a=item b=ouro | vip_left a=item b=faltaram | boost_start a=multiplicador
   v0.6c: order_new a=item b=quantas vender | order_done a=item b=premio (docs/FASE9_ENCOMENDAS.md)
   v0.7 (Save 2.0): save_corrupt a=arquivos ruins b=status final | save_newer a=schema b=versao | save_error a=excecao
-        | save_prefs a=status (Legacy = migrou o save da 0.6 do PlayerPrefs)
+        | save_prefs a=status (Legacy = migrou o save da 0.6 do PlayerPrefs) | clock_back a=segundos que o relogio voltou b=SavedAt
 """
 import glob
 import math
@@ -132,7 +132,7 @@ def analisar(linhas):
             vip[ev] += 1
         elif ev in ("order_new", "order_done"):
             T["enc"][ev] += 1
-        elif ev.startswith("save_"):
+        elif ev.startswith("save_") or ev == "clock_back":
             save[ev] += 1
 
     # Por minuto de jogo. walk e t_jogo sao acumulados no save, entao a razao entre duas amostras vale ate atravessando
@@ -275,7 +275,7 @@ def relatorio(linhas, ruins=0):
                  f" | 1 a cada {f'{por[arq]:.1f}' if arq in por else '-'} min")
     sv = r["save"]
     s += ["", f"SAVE (v0.7): corrompidos {sv['save_corrupt']} | versao mais nova {sv['save_newer']}"
-              f" | erro de disco {sv['save_error']} | lidos do PlayerPrefs {sv['save_prefs']}"]
+              f" | erro de disco {sv['save_error']} | lidos do PlayerPrefs {sv['save_prefs']} | relogio voltou {sv['clock_back']}"]
     s += ["", "PORTOES"]
     s += [f"  [{st}] {texto}" for _, st, texto in portoes(r)]
     s.append("  nao medidos aqui: tutorial (sem evento), D1/D7 e sessoes/dia (utc existe; Camada 0 nao mede retencao), "
