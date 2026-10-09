@@ -980,14 +980,7 @@ namespace FS
 
         // build de desenvolvimento: Ads.Arg tambem le o extra "unity" do intent, entao as flags valem no aparelho
         // (adb shell am start -n br.com.vstack.forgestreet/com.unity3d.player.UnityPlayerGameActivity -e unity "-cam 9"). Release: so linha de comando
-        static string Arg(string name)
-        {
-            if (Debug.isDebugBuild) return Ads.Arg(name);
-            string[] a = Environment.GetCommandLineArgs();
-            int i = Array.IndexOf(a, name);
-            if (i < 0) return null;
-            return i + 1 < a.Length && !a[i + 1].StartsWith("-") ? a[i + 1] : "";
-        }
+        static string Arg(string name) => Ads.Arg(name);
 
         static string Clock(float s) => $"{(int)(s / 60f)}:{(int)(s % 60f):00}";
 
