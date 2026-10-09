@@ -13,6 +13,8 @@
     <Compile Include="../../Assets/_FS/Tests/EditMode/**/*.cs" />
     <!-- v0.6d: textos da HUD (puros, sem UnityEngine) para o TextosTests -->
     <Compile Include="../../Assets/_FS/Scripts/View/Textos.cs" />
+    <!-- A-PLAT-02: save em arquivo (so System.IO) para o SaveTests -->
+    <Compile Include="../../Assets/_FS/Scripts/View/SaveStore.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />

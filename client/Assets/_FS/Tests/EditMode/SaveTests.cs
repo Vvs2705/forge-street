@@ -113,5 +113,83 @@ namespace FS.Tests
             foreach (Func<string, string> m in Sim.Migrations) Assert.IsNotNull(m);
             StringAssert.StartsWith("v=" + Sim.Schema + "\n", new Sim().Save(1), "o payload grava o schema");
         }
+
+        // ------------------------------------------------------------------ SaveStore (arquivo)
+
+        [Test]
+        public void Store_TrocaAtomica_AnteriorViraBak()
+        {
+            SaveStore.Write(_path, Wrap(10));
+            Assert.IsFalse(File.Exists(_path + ".bak") || File.Exists(_path + ".tmp"));
+            SaveStore.Write(_path, Wrap(20));
+            Assert.AreEqual(Wrap(10), File.ReadAllText(_path + ".bak"), "o anterior vira .bak");
+            Assert.IsFalse(File.Exists(_path + ".tmp"));
+            SaveEnvelope.Result r = SaveStore.Read(_path, out int corrupt);
+            Assert.AreEqual((SaveEnvelope.Status.Ok, 20, 0), (r.Status, Gold(r), corrupt));
+            File.Delete(_path);   // queda entre os Move da troca manual: so sobrou o .bak
+            r = SaveStore.Read(_path, out corrupt);
+            Assert.AreEqual((SaveEnvelope.Status.Ok, 10, 0), (r.Status, Gold(r), corrupt));
+            File.Delete(_path + ".bak");
+            Assert.AreEqual(SaveEnvelope.Status.Missing, SaveStore.Read(_path, out corrupt).Status);
+        }
+
+        [Test]
+        public void Store_PrincipalCorrompido_RecuperaPeloBak_EQuarentena()
+        {
+            SaveStore.Write(_path, Wrap(10));
+            SaveStore.Write(_path, Wrap(20));
+            byte[] bad = File.ReadAllBytes(_path);
+            bad[bad.Length - 3] ^= 1;   // 1 bit no payload
+            File.WriteAllBytes(_path, bad);
+            SaveEnvelope.Result r = SaveStore.Read(_path, out int corrupt);
+            Assert.AreEqual((SaveEnvelope.Status.Ok, 10, 1), (r.Status, Gold(r), corrupt), "volta pelo .bak");
+            string[] q = Quarentena("save.txt");
+            Assert.AreEqual(1, q.Length);
+            CollectionAssert.AreEqual(bad, File.ReadAllBytes(q[0]), "o ruim fica intacto na quarentena");
+            Assert.IsFalse(File.Exists(_path), "saiu do caminho");
+            SaveStore.Write(_path, Wrap(30));
+            Assert.AreEqual(30, Gold(SaveStore.Read(_path, out corrupt)));
+            Assert.AreEqual(10, Gold(SaveEnvelope.Unwrap(File.ReadAllText(_path + ".bak"))), "o .bak bom nao vira o principal ruim");
+            CollectionAssert.AreEqual(bad, File.ReadAllBytes(q[0]));
+        }
+
+        [Test]
+        public void Store_FalhaAoCarregar_NaoSobrescreve()
+        {
+            // sem .bak: lixo, vazio e save sem envelope (o arquivo sempre sai com envelope) vao para a quarentena; o estado novo grava ao lado
+            string[] junks = { "lixo", "", CoreTests.SaveV03 };
+            for (int i = 0; i < junks.Length; i++)
+            {
+                string p = Path.Combine(_dir, "save" + i + ".txt");
+                File.WriteAllText(p, junks[i]);
+                SaveEnvelope.Result r = SaveStore.Read(p, out int corrupt);
+                Assert.AreEqual((SaveEnvelope.Status.Corrupt, "", 1), (r.Status, r.Payload, corrupt), junks[i]);
+                Assert.IsFalse(File.Exists(p), "saiu do caminho");
+                SaveStore.Write(p, Wrap(0));
+                string[] q = Quarentena("save" + i + ".txt");
+                Assert.AreEqual(1, q.Length);
+                Assert.AreEqual(junks[i], File.ReadAllText(q[0]), "o ruim nunca e' sobrescrito nem apagado");
+            }
+            File.WriteAllText(_path, "lixo");
+            File.WriteAllText(_path + ".bak", "sha256=00\nschema=1\n");
+            Assert.AreEqual(SaveEnvelope.Status.Corrupt, SaveStore.Read(_path, out int both).Status);
+            Assert.AreEqual((2, 2), (both, Quarentena("save.txt").Length), "principal e .bak ruins: os dois na quarentena");
+        }
+
+        [Test]
+        public void Store_SchemaMaisNovo_NaoUsaOBakNemMexeEmNada()
+        {
+            string newer = Envelope(Sim.Schema + 1, new Sim().Save(1));
+            File.WriteAllText(_path, newer);
+            File.WriteAllText(_path + ".bak", Wrap(10));
+            SaveEnvelope.Result r = SaveStore.Read(_path, out int corrupt);
+            Assert.AreEqual((SaveEnvelope.Status.NewerSchema, 0), (r.Status, corrupt));
+            Assert.AreEqual((newer, Wrap(10)), (File.ReadAllText(_path), File.ReadAllText(_path + ".bak")), "nada mexido");
+            Assert.AreEqual(0, Quarentena("save.txt").Length);
+            File.WriteAllText(_path, "lixo");   // principal ruim e .bak de versao mais nova: o .bak fica intacto
+            File.WriteAllText(_path + ".bak", newer);
+            Assert.AreEqual(SaveEnvelope.Status.NewerSchema, SaveStore.Read(_path, out corrupt).Status);
+            Assert.AreEqual((1, newer), (corrupt, File.ReadAllText(_path + ".bak")));
+        }
     }
 }
