@@ -173,6 +173,26 @@ Prompts usados: os da tabela de `ASSETS.md` (assunto + `[S]`/`[P]` + `[I]`), Nan
 
 Folhas (`client/Builds/sprites_contact/`, só QA): `v05_itens.png` 1500×1690, 584 604 B, `02d623c415e162423f8968f803bfe85e55d4bb0faaaa5e7ff9932761f1dea2cc` · `v05_balcao_4e8.png` 1248×3381, 1 999 630 B, `ca76ca1098eae1cb131bc03929ef9b1ba9378e973698a210dabaa51110accff3` · `v05_portao.png` 2246×1897, 3 069 158 B, `8d886db72fda422d68feb6f3fb74284726040be542999f9d6727f6cd28650ecf`.
 
+## 6b. Leva v0.5b: ícones de melhoria e exterior (2026-10-08, Blender por primitivas — 0 crédito)
+- Ferramenta: Blender 5.2 headless, `client/tools/ui_v05b_blender.py` (importa `arte_v05_blender.py`), primitivas + Workbench FLAT. Nenhum gerador externo, nenhum crédito, nenhum asset de terceiros.
+- Saída em `client/Assets/_FS/Resources/Sprites/<nome>/` (PNG + `meta.json`):
+
+| Arquivo | px | Bytes | SHA-256 |
+|---|---|---|---|
+| `melhoria_mochila/icone.png` | 128×128 | 13 471 | `ab4fbf3e0ee640fb50ca4a13215c0387c87a403eaca7f12445fdec661e557f75` |
+| `melhoria_botas/icone.png` | 128×128 | 10 908 | `a46bdac76229fd2c5121687aaf253934b757a04f6091e0aa53eba32d8fdd9051` |
+| `melhoria_fole/icone.png` | 128×128 | 12 473 | `4c8a93d11b76b70fb47ff2ad0303b1eed9840b1139c6fb829c205af859647523` |
+| `melhoria_fole_duplo/icone.png` | 128×128 | 16 327 | `a69f26c5bf3a4b32bc4059af23b7c5040c6755ca23df3f7e74540c5da0293d69` |
+| `melhoria_martelo/icone.png` | 128×128 | 11 112 | `55ecbaae621f6025f5a81d09e8cbd4fc31b216a5f02bf4552836beaacf4db886` |
+| `melhoria_lupa/icone.png` | 128×128 | 12 698 | `936e49c24c2857ddede5552f3364c02c903d805c0d08a959353627371f65a734` |
+| `melhoria_vitrine/icone.png` | 128×128 | 14 406 | `acd364f9b56cb9760dedfef31b1d9be1f2ba74cc10fa98e438e0cd567731febf` |
+| `melhoria_sino/icone.png` | 128×128 | 14 608 | `3854f4aa0890352cbff00226ff3a76e203c19a9763788b6d4a330cc3118eb570` |
+| `melhoria_cesto/icone.png` | 128×128 | 19 847 | `fddf218debc91e30fefa9300a117bed8543bbdb3eee93fe8d40fc74f018fd66d` |
+| `arvore/Static.png` | 268×239 | 61 884 | `3a3d721a31afac4f63d711cfebc9c639f24a08cf5e28bc7a9c4815b624456b21` |
+| `arbusto/Static.png` | 170×119 | 23 391 | `8fa1b74db8f5ac9e187085b95124442a04f8117cc64807b9b1ae74b1b7063c10` |
+| `poste/Static.png` | 60×225 | 13 210 | `682db448620f4f2384b07fe55659a2eba6c1c88246ea8b03131f3460026d88a8` |
+| `canteiro/Static.png` | 206×96 | 26 834 | `2c320d11fbcd93ce2c29186c2e5b179a01041fd324063eca41b45bcc0d77f933` |
+
 ## 7. Lote 4 — 10 clientes novos (aberto 2026-10-08 ~13:30)
 - **Aval:** Vinicius, 2026-10-08 (AskUserQuestion: "10 novos ≈ 650 créditos"). Teto: saldo final ≥ **20 720** (21 370 − 650).
 - **Receita (conferir no painel antes de CADA geração):** imagem gerada dentro do site (grátis) → Modelo HD H3.1, 8 000 polígonos, triângulos, textura 2K (NÃO 8K/4K), remover iluminação, **Privado** → Auto Rig humanoide com esqueleto **Mixamo** → Exportar FBX (predefinição Mixamo). Uma página nova por peça.
@@ -195,3 +215,27 @@ Folhas (`client/Builds/sprites_contact/`, só QA): `v05_itens.png` 1500×1690, 5
 | 2026-10-08 20:01 | Pirata: imagem #2 de 4 (sem gancho); Modelo HD — **10 modelos, 450 créditos** | **20 920** | 45 | task `63adc3d5-bff2-4435-9931-989d4da8b3bd` |
 | 2026-10-08 20:03–20:10 | Auto Rig humanoide, predefinição de esqueleto **Mixamo**, nos 10 (Minerador, Bardo, Alquimista, Monge, Ladina, Paladina, Orc, Bárbaro, Pirata, Caçadora), cada um pela URL `workspace/rigging/<task>` | **20 720** | 200 | saldo final = teto do aval (21 370 − 650). Orc veio de imagem em pose A (o painel recomenda T; rig aceitou) |
 | 2026-10-08 20:10 | **Lote 4 fechado na geração: 10 modelos + 10 rigs = 650 créditos.** Pendente: export FBX (predefinição Mixamo, 2K) e render dos sprites | **20 720** | 0 | |
+
+### Arquivos do Lote 4 (export + sprites, 2026-10-08 20:15–21:20)
+- **Export (coordenador):** FBX predefinição Mixamo 2K, `arte/tripo/<cliente>/tripo_convert_<uuid>.fbx` + `.fbm/` com 5 PNG (`fs_cliente_<cliente>_{basecolor,normal,metallic,roughness,rm}.PNG`). Raw art fora do git (`.gitignore`). SHA-256 calculado pelo worker de render em 2026-10-08.
+- **Render (worker blender-3d, 0 crédito, sem rede):** Blender 5.2.1 LTS headless, `client/tools/render_sprites.py` sem mudança, com os parâmetros dos 6 clientes atuais (padrões do script: elev 60°, 4 direções S/W/N/E, 12 fps, célula 128 px, ppu automático por modelo, luz flat + contorno + cavidade, AA 8, `--max-frames 32`, retarget por delta de repouso). Clipes: `client/Builds/anims_sets/guerreira/` = Angry, Idle, LookingAround, Thankful, Walking, Waving (SHA iguais aos de `arte/mixamo/`, §2; sem Cheering, como os clientes atuais). Licença: tripo_pago + Mixamo (§2), visibilidade privada.
+- **Comando** (raiz do projeto, um cliente por vez; `contact.png` sai de `Resources`, que vai inteiro para o APK):
+```
+timeout 900 "/c/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup --python-exit-code 1 --python client/tools/render_sprites.py -- --model arte/tripo/<cliente>/<FBX> --anims client/Builds/anims_sets/guerreira --out client/Assets/_FS/Resources/Sprites/<cliente>
+mv client/Assets/_FS/Resources/Sprites/<cliente>/contact.png client/Builds/sprites_contact/<cliente>.png
+```
+
+| Cliente | FBX (`arte/tripo/<cliente>/`) | Bytes | SHA-256 do FBX | Saída `Resources/Sprites/<cliente>/` (ppu · pivô y · PNG) |
+|---|---|---|---|---|
+| minerador | `tripo_convert_f4f0ab5c-0ca0-4009-b200-742ecaae11ac.fbx` | 13 067 776 | `1497785125384efe6f701c8e276f0bc74921d6aafb163b3940af78c79e92b82a` | ppu 116.31 · 35.1 px · 6 PNG, 7 350 386 B |
+| bardo | `tripo_convert_cbabe90d-f1e3-4a95-9c52-1f4b905e61ff.fbx` | 13 344 048 | `66ad0344a17d530422d6a0436e6949976dd67eda457036a12d568c24bcb6161c` | ppu 114.51 · 31.2 px · 6 PNG, 6 057 809 B |
+| alquimista | `tripo_convert_14b06e65-661a-4385-8151-29d50dc22d53.fbx` | 12 503 472 | `e7e4e02e334753a4aa52070d35a24c0d1b94310ab6e53c0b6ed68bc50e054750` | ppu 122.01 · 36.5 px · 6 PNG, 7 130 823 B |
+| monge | `tripo_convert_d60f40e4-7c40-4cb6-8995-450cd89f98e2.fbx` | 12 390 304 | `2a9e3a6e633e00a4b0366cda4cb325bdaef15b94e4e0041c280330b8fa51cb03` | ppu 134.32 · 35.2 px · 6 PNG, 7 383 369 B |
+| ladina | `tripo_convert_5768a4dc-f123-43b3-b598-014e0a9dd859.fbx` | 11 090 640 | `fa301a0b18293339eb28edda9731ba30acdd23dd43ba6ce001c373cbb654a659` | ppu 124.93 · 39.2 px · 6 PNG, 6 174 615 B |
+| paladina | `tripo_convert_4b15b22d-2b4b-4a08-b863-6bfaad8f50c6.fbx` | 16 913 440 | `f5efa0e3e3292a742bdda04c429421f57867e63d7f3d90568759d90e711f1b7b` | ppu 123.74 · 35.4 px · 6 PNG, 7 652 300 B |
+| orc | `tripo_convert_41acb365-a32b-48db-8e2a-09925cfa8fa9.fbx` | 10 850 992 | `0625db07111f703d3a0cc26d5fe4764ecc847966b1af92c5d1a405dc18b810e3` | ppu 119.79 · 37.9 px · 6 PNG, 7 066 647 B |
+| barbaro | `tripo_convert_3f6ba9bf-de36-473a-8fb9-5a6436e65978.fbx` | 11 919 376 | `834bd4f8bdb52d7e695a6b49dc64a376e7809926c9c4be26af80b69f05b8a789` | ppu 127.26 · 39.3 px · 6 PNG, 7 201 546 B |
+| pirata | `tripo_convert_9d7f80f0-4050-4af3-aad9-09a8d524ae0f.fbx` | 13 066 672 | `fe226759183f2d09a7fc694996df6e9aa45b63d21f376ec49beefbae6c8b051b` | ppu 106.90 · 32.1 px · 6 PNG, 6 744 714 B |
+| cacadora | `tripo_convert_f9f8969a-f957-43fc-801b-b6cf6fe1e175.fbx` | 11 579 248 | `871e5036c408287934496b99d7317091fd5684fd4f687c3fd26360668044eeef` | ppu 123.04 · 38.7 px · 6 PNG, 6 731 609 B |
+
+Saída por cliente: `meta.json` + Angry/Idle/LookingAround/Thankful (32 quadros, 4096×512), Walking (16, 2048×512), Waving (6, 768×512). Total dos 60 PNG: 69 493 818 B. Os SHA dos PNG não foram registrados (o AA do Workbench varia alguns níveis entre renders, §6). Conferência: `client/Builds/sprites_contact/v05_clientes_lote4.png` (2694×3215, 1 930 713 B, SHA-256 `332409aa1ad3d0466be6dae3ab5aa4719a05f806b62ba4fa68db4a250c9661fb`) e `<cliente>.png` (1º quadro de cada clipe, direção S). CharScale proposto: `ASSETS.md` §9.

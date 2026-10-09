@@ -19,20 +19,32 @@ namespace FS
     /// pre-renderizados (tools/props_blender.py) encostados nelas, com tochas de brilho tremulo.
     /// v0.5 (docs/ASSETS.md s7, BENCHMARK_VISUAL s4): itens renderizados (icone/deitado, mascaras so de reserva), balao grande so no
     /// 1o da fila, estande do balcao montado por vaga com o estoque em pe, portoes vistos de lado e quem acha a fila cheia passando.
+    /// v0.5b (BENCHMARK_VISUAL P1-3/4/6 + juice): bocas viram placas no chao (grelha de entrada, palete de saida), nome das estacoes so
+    /// perto do jogador ou no 1o minuto, placas de obra com icone do que constroi + preco (moedas voam do jogador, a estacao nasce com
+    /// pop e poeira), chao lavado de luz quente, poca de luz nas fornalhas/tochas/postes, grama, arvores e postes fora da oficina, balao
+    /// que estoura com coracao na venda, rosto bravo abaixo de 20% e seta da dica no mundo.
     /// </summary>
     public sealed class WorldView : MonoBehaviour
     {
         sealed class StationV
         {
-            public Station S; public Transform Root; public SpriteRenderer Base, BarBg, BarFill;
+            public Station S; public Transform Root; public SpriteRenderer Base, BarBg, BarFill, BarIcon, Glow;
             public SpriteRenderer[] InPile, OutPile, Stock; public Item[] StockItems; public Text Label;   // Stock: 6 por item vendido
             public bool Baked;   // Base e' o sprite pre-renderizado (sem icone)
             public bool Stand;   // balcao principal desenhado pelo estande modular (BuildStand), sem Base nem grade de estoque
+            public float PopT = -1f;   // nasceu agora (compra): pop 0 -> 1,1 -> 1
         }
-        sealed class PadV { public Pad P; public Transform Root; public SpriteRenderer Ring, Fill, Plus; public Text Label; }
+        /// <summary>Placa de obra: fundo escuro, enchimento de ouro, borda tracejada, icone do que constroi; preco (moeda + valor) e nome na HUD.</summary>
+        sealed class PadV
+        {
+            public Pad P; public Transform Root; public SpriteRenderer Fill, Border, Icon; public Text Label, Price; public RectTransform PriceBox; public Image Coin;
+            public int LastU = -2, LastPaid; public float CoinT;
+        }
         sealed class CarrierV { public Carrier C; public Transform Root; public SpriteRenderer[] Stack; public Body Body; public float CheerT, StackY; }   // StackY: onde a pilha apoia
-        /// <summary>Balao grande do 1o da fila (um por fila, segue o cliente): trilho escuro, anel de paciencia, corpo, rabicho e icone.</summary>
-        sealed class BubbleV { public Transform Root; public SpriteRenderer Ring, Icon; }
+        /// <summary>Balao grande do 1o da fila (um por fila, segue o cliente): trilho escuro, anel de paciencia, corpo, rabicho, icone e rosto bravo.</summary>
+        sealed class BubbleV { public Transform Root; public SpriteRenderer Ring, Icon; public Transform Angry; public float PopT = -1f; }
+        /// <summary>Efeito curto (moeda, coracao, brilho, poeira): curva de Bezier A -> M -> B em `Life` s, escala S0 -> S1, some no fim se `Fade`.</summary>
+        sealed class Fx { public SpriteRenderer R; public Vector3 A, M, B; public float Age, Life, S0, S1, Spin; public bool Fade, Live; public Color C; }
         sealed class ClientV
         {
             public Client C; public int Id; public Transform Root; public SpriteRenderer Want, Patience; public float TopY;   // TopY: topo da cabeca
@@ -81,7 +93,11 @@ namespace FS
         // Mago fica em 1: de 60 graus a aba do chapeu esconde o corpo e a altura medida engana; goblin com a mochila (1,30 m) e cavaleiro com a pluma (1,55 m), como na ART_BIBLE s4.
         static float CharScale(string n) => CharPpuMul * n switch
         {
-            "ajudante" => 1.19f, "guerreira" => 1.24f, "anao" => 1.08f, "elfa" => 1.03f, "goblin" => 1.11f, "cavaleiro" => 0.79f, "nobre" => 0.91f, _ => 1f,
+            "ajudante" => 1.19f, "guerreira" => 1.24f, "anao" => 1.08f, "elfa" => 1.03f, "goblin" => 1.11f, "cavaleiro" => 0.79f, "nobre" => 0.91f,
+            // Lote 4 (coordenador 2026-10-08, ASSETS s9: (altura_m / 0,664) x (1,20 / alvo), reproduz os de cima +-0,01)
+            "minerador" => 0.96f, "bardo" => 0.85f, "alquimista" => 0.99f, "monge" => 0.95f, "ladina" => 0.98f,
+            "paladina" => 0.86f, "orc" => 0.76f, "barbaro" => 0.79f, "pirata" => 0.97f, "cacadora" => 0.93f,
+            _ => 1f,
         };
         // m do mundo por celula de estacao. Com 1,65 a peca ocupava 0,9-1,24 m de largura e o corpo solido tem 1,3 m (FASE5): o
         // ferreiro batia numa borda invisivel. Com 1,95 a arte cobre o corpo (1,08-1,47 m de largura, 1,06-1,49 m de altura).
@@ -124,8 +140,24 @@ namespace FS
         // com pilar de pedra nas 4 pontas (centro 0,23 m alem da ponta: o pe de 0,6 m encosta 0,07 m no vao).
         const float PillarOut = 0.23f;
         const float DeckY = 12f;                     // assoalho (madeira) na frente da loja: balcao, bau e fila; o luxo Piso cobre so a pedra
-        const int ExteriorOrder = -8, FloorOrder = -7, LuxOrder = -6, ShadeOrder = -5, WallOrder = -4, GlowOrder = -3;   // abaixo do tapete (-1), sombras e pads (1-4)
-        static readonly Color ExteriorTint = Gray(0.42f), FaceTint = Gray(0.55f), ShadeColor = new Color(0f, 0f, 0f, 0.35f);
+        const int ExteriorOrder = -10, FloorOrder = -9, LuxOrder = -8, WashOrder = -7, ShadeOrder = -5, WallOrder = -4, GlowOrder = -3;   // abaixo do tapete (-1), sombras e pads (1-4)
+        static readonly Color FaceTint = Gray(0.55f), ShadeColor = new Color(0f, 0f, 0f, 0.35f);
+        // v0.5b (P1-6): luz quente "lavando" o chao da oficina (alfa sobre a laje ~#493F36 -> ~#7A6A58, sem shader aditivo: Built-in RP
+        // e nenhum shader extra no APK), grama no exterior, tampo claro na borda de dentro das paredes e pilares nos cantos.
+        static readonly Color Wash = new Color(0.95f, 0.78f, 0.56f, 0.3f), StreetWash = new Color(0.75f, 0.83f, 0.95f, 0.22f), WallCap = Art.Hex(0xB3A797);
+        const float CapW = 0.1f;
+        static readonly V2[] CornerPillars = { new V2(-0.3f, -0.3f), new V2(-0.3f, 7.4f), new V2(-0.3f, 13.75f), new V2(9.3f, -0.3f) };
+        // exterior: arvores e arbustos atras da parede de baixo e alem da rua de cima, postes na beira da rua (com poca de luz), canteiros.
+        // Fora do clamp do jogador e dos clientes (rua de cima ate y 16,6; faixa de quem vai embora em y ~14,7).
+        static readonly (string Name, float X, float Y)[] Outside =
+        {
+            ("arvore", -0.9f, -2.5f), ("arbusto", 1.4f, -2.1f), ("arvore", 4.6f, -2.7f), ("arbusto", 6.9f, -2.2f), ("arvore", 9.9f, -2.5f),
+            ("arbusto", 12.4f, -2.0f), ("arvore", 15.9f, -2.4f), ("arvore", 16.3f, 4.2f), ("arbusto", 16.1f, 9.0f), ("arvore", 16.3f, 12.6f),
+            ("arvore", -0.6f, 17.4f), ("canteiro", 2.2f, 17.0f), ("arvore", 4.6f, 17.6f), ("canteiro", 7.0f, 17.0f), ("arvore", 10.2f, 17.4f),
+            ("canteiro", 12.6f, 17.0f), ("arvore", 15.2f, 17.6f),
+            ("poste", 0.9f, 16.75f), ("poste", 8.2f, 16.75f), ("poste", 13.9f, 16.75f),
+        };
+        const float LampY = 2.13f, FurnaceGlow = 4f, FurnaceGlowA = 0.3f;
         static readonly Color MuroTint = new Color(0.72f, 0.8f, 0.95f), MuroFaceTint = new Color(0.4f, 0.44f, 0.52f);   // pedra fria (ART_BIBLE s2) sobre a parede quente
         // Props (tools/props_blender.py; escala real, 1 m do Blender = 1 m do mundo) encostados nas paredes, fora do clamp e longe de
         // pads, estacoes, filas, baus e rotulos: tampo da parede esquerda (x -0,3 a -0,45), quintal atras da parede de baixo (y < -1,2),
@@ -133,14 +165,23 @@ namespace FS
         // do jogador encostado no clamp (raio ~0,25) nao entra nele. Tocha: pivo no pe da parede, chama 0,46 m acima.
         static readonly (string Name, float X, float Y)[] Props =
         {
-            ("balde", 0f, 0.1f), ("prateleira", -0.42f, 2.75f), ("tocha", -0.3f, 4.0f), ("tocha", -0.3f, 11.0f),
-            ("suporte_armas", -0.45f, 12.4f), ("barril", -0.3f, 13.55f),
+            ("balde", 0f, 0.55f), ("prateleira", -0.42f, 2.75f), ("tocha", -0.3f, 4.0f), ("tocha", -0.3f, 11.0f),
+            ("suporte_armas", -0.45f, 12.4f),   // v0.5b: barril (13,55) e balde (0,1) cederam o canto aos pilares
             ("lenha", 0.6f, -1.45f), ("tocha", 2.0f, -1.2f), ("barril", 3.0f, -1.35f), ("caixote", 4.1f, -1.4f), ("sacos", 5.3f, -1.4f),
             ("tocha", 6.6f, -1.2f), ("barril", 7.6f, -1.35f), ("balde", 8.3f, -1.3f),
             ("barril", 15.4f, 0.6f), ("caixote", 15.45f, 1.6f), ("tocha", 15.2f, 7.0f), ("sacos", 15.4f, 10.2f), ("tocha", 15.2f, 13.0f),
             ("lenha", 11.2f, -0.95f), ("barril", 13.4f, -0.9f), ("balde", 14.0f, -0.85f),
         };
-        const float FlameY = 0.46f, GlowSize = 1.5f, GlowAlpha = 0.3f;   // brilho alfa (Sprites/Default): aditivo pediria shader fora do APK
+        // brilho alfa (Sprites/Default): aditivo pediria shader fora do APK. v0.5b: 1,5 m -> 2,6 m (poca de luz no chao, P1-6)
+        const float FlameY = 0.46f, GlowSize = 2.6f, GlowAlpha = 0.2f;
+        // Placa de obra (P1-4): 1,2 m (= Balance.PadRadius x 2), icone de 0,7 m acima do meio, preco (moeda + valor) no terco de baixo
+        const float PadSize = 1.2f, PadIconBox = 0.66f, PadIconY = 0.13f, PadPriceY = -0.33f, PadCoinEvery = 0.06f;
+        static readonly Color PlateC = Art.Hex(0x2A2420), GrateC = Art.Hex(0x2B2E36), GrateBar = Art.Hex(0x4F5866), PalletC = Art.Hex(0x6B4428), PlankC = Art.Hex(0x9A6A3E);
+        const float NearLabel = 2.6f, LabelFade = 0.25f, TutorialLabels = 60f;   // nome de estacao/placa: perto do jogador ou no 1o minuto (fade curto: meio-alfa lia como defeito)
+        const float StationPop = 0.35f, BubblePop = 0.32f;
+        const float BarW = 1.2f, BarH = 0.16f, BarY = -0.74f;   // barra de progresso arredondada (era 1,3 x 0,12 reta)
+        const int FxOrder = 3500, FxMax = 64;
+        static readonly Color Dust = new Color(0.86f, 0.78f, 0.66f, 0.55f), HeartC = Art.Hex(0xFF4D6D), AngryC = Art.Hex(0xFF6B3D);
         static readonly Color GlowColor = Art.Hex(0xFF9A3D);
         static float PropShadow(string n) => n switch { "tocha" => 0f, "balde" => 0.4f, "barril" => 0.6f, "prateleira" or "suporte_armas" or "lenha" => 0.9f, _ => 0.75f };
         static Color Gray(float v) => new Color(v, v, v, 1f);
@@ -166,7 +207,7 @@ namespace FS
         readonly System.Random _artRng = new System.Random(7);
         int _lastArt = -1;
         SpriteSheet _nobre;
-        SpriteRenderer _street, _shopTeaser; Text _streetLabel, _shopLabel;
+        SpriteRenderer _street, _streetWash, _shopTeaser; Text _streetLabel, _shopLabel;
         readonly List<(GameObject Shut, GameObject Open)> _gates = new List<(GameObject, GameObject)>();   // portao e porta de servico
         BubbleV _bubble, _jewelBubble;
         // Estande do balcao (ASSETS s7, integracao 2): modulos de 0,85 m (um por vaga) entre pontas de 0,2 m, na largura do corpo do
@@ -182,6 +223,9 @@ namespace FS
         readonly List<Floater> _floaters = new List<Floater>();
         readonly List<LuxV> _lux = new List<LuxV>();
         readonly List<SpriteRenderer> _glows = new List<SpriteRenderer>();
+        readonly List<Fx> _fx = new List<Fx>();
+        Transform _arrow; bool _hintOn; V2 _hintAt;   // seta da dica (ShowHint)
+        Sprite _coin;
         Transform _conveyor; SpriteRenderer[] _convDots; float _convLen;
         int _clientSeq, _bought;
 
@@ -191,6 +235,7 @@ namespace FS
         {
             _sim = sim; _cam = cam; _labels = labels;
             _bought = sim.UpgradesBought;
+            _coin = Art.Icon("moeda", "icone");
             foreach (string n in ClientArt)
                 if (SpriteSheet.TryGet(n, out SpriteSheet sh)) { sh.Scale = CharScale(n); _clientSheets.Add(sh); }
             if (SpriteSheet.TryGet("nobre", out _nobre)) _nobre.Scale = CharScale("nobre");
@@ -216,6 +261,11 @@ namespace FS
             foreach (Chest c in sim.Chests) _chests.Add(BuildChest(c));
             BuildConveyor();
             _player = BuildCarrier(sim.Player, Art.Player, 0.62f, Balance.PlayerCapUp * sim.Player.Held.Length);   // FASE7: ate o teto de CADA tipo
+            // seta da dica: contorno escuro atras, ouro na frente, por cima de tudo menos os efeitos
+            _arrow = Group("SetaDica", new V2(0f, 0f));
+            Art.NewSprite(_arrow, "Contorno", Art.Arrow(true), Art.ComAlfa(Art.Bg, 0.9f), FxOrder - 2, Vector2.zero, Vector2.one * 0.5f);
+            Art.NewSprite(_arrow, "Seta", Art.Arrow(false), Art.Accent, FxOrder - 1, Vector2.zero, Vector2.one * 0.5f);
+            _arrow.gameObject.SetActive(false);
         }
 
         // ------------------------------------------------------------------ construcao
@@ -261,11 +311,16 @@ namespace FS
         {
             float ws = Balance.WorkshopW, w = Balance.WorldW, h = Balance.WorldH;
             Sprite rua = Art.Ground("rua"), parede = Art.Ground("parede");
-            Tiled("Exterior", rua, ExteriorTint, ExteriorOrder, new Vector2(-4f, -6f), new Vector2(w + 4f, h + 7f));   // fundo de toda a camera
+            // fundo de toda a camera: grama (v0.5b; era calcamento a 42%, "exterior vazio"), um pouco abaixo do valor da oficina
+            Tiled("Exterior", Art.Ground("grama"), Gray(0.82f), ExteriorOrder, new Vector2(-4f, -7f), new Vector2(w + 4f, h + 8f));
             Tiled("Rua", rua, StreetOpen, FloorOrder, new Vector2(-4f, h), new Vector2(w + 4f, h + 2.6f));             // rua dos clientes, aberta
             _street = Tiled("RuaLateral", rua, StreetShut, FloorOrder, new Vector2(ws, 0f), new Vector2(w, h));
             Tiled("Chao", Art.Ground("piso_oficina"), Color.white, FloorOrder, Vector2.zero, new Vector2(ws, DeckY));
             Tiled("Assoalho", Art.Ground("madeira"), Color.white, FloorOrder, new Vector2(0f, DeckY), new Vector2(ws, h));
+            Art.NewSprite(transform, "LuzQuente", Art.Square(), Wash, WashOrder, new Vector2(ws / 2f, h / 2f), new Vector2(ws, h));   // sobre chao, assoalho e piso de luxo
+            // ruas: luz fria (pedra fria da ART_BIBLE s2 mais clara); a lateral so depois do Corredor (antes ela e' a penumbra do teaser)
+            Art.NewSprite(transform, "LuzRua", Art.Square(), StreetWash, WashOrder, new Vector2(w / 2f, h + 1.3f), new Vector2(w + 8f, 2.6f));
+            _streetWash = Art.NewSprite(transform, "LuzRuaLateral", Art.Square(), StreetWash, WashOrder, new Vector2((ws + w) / 2f, h / 2f), new Vector2(w - ws, h));
             // sombra de contato: luz-chave de baixo-esquerda (ART_BIBLE s7) -> a parede projeta para a direita/para cima
             Shade(Vector2.zero, new Vector2(0.35f, h), false);
             Shade(Vector2.zero, new Vector2(w, 0.3f), true);
@@ -295,6 +350,21 @@ namespace FS
                 SpriteRenderer art = Deco(n, new V2(x, y), RealCell(n), PropShadow(n));
                 if (art != null && n == "tocha")
                     _glows.Add(Art.NewSprite(art.transform.parent, "Brilho", Art.Glow(), Art.ComAlfa(GlowColor, GlowAlpha), GlowOrder, new Vector2(0f, FlameY), Vector2.one * GlowSize));
+            }
+            // v0.5b (P1-6): tampo claro na borda de dentro das paredes (le como topo de parede alta) e pilares nos cantos
+            Art.NewSprite(transform, "TampoEsq", Art.Square(), WallCap, WallOrder + 1, new Vector2(-CapW / 2f, h / 2f), new Vector2(CapW, h));
+            Art.NewSprite(transform, "TampoBaixo", Art.Square(), WallCap, WallOrder + 1, new Vector2(ws / 2f, -CapW / 2f), new Vector2(ws, CapW));
+            for (int i = 0; i <= gaps.Length; i += 2)
+            {
+                float y0 = i == 0 ? 0f : gaps[i - 1], y1 = i < gaps.Length ? gaps[i] : h;
+                Art.NewSprite(transform, "TampoDir", Art.Square(), WallCap, WallOrder + 1, new Vector2(x0 + CapW / 2f, (y0 + y1) / 2f), new Vector2(CapW, y1 - y0));
+            }
+            foreach (V2 p in CornerPillars) Deco("pilar", p, RealCell("pilar"), 0f);
+            foreach ((string n, float x, float y) in Outside)
+            {
+                SpriteRenderer art = Deco(n, new V2(x, y), RealCell(n), n == "arvore" ? 1.3f : n == "poste" ? 0.4f : 1f);
+                if (art != null && n == "poste")
+                    _glows.Add(Art.NewSprite(art.transform.parent, "Brilho", Art.Glow(), Art.ComAlfa(GlowColor, GlowAlpha), GlowOrder, new Vector2(0f, LampY * 0.5f), Vector2.one * GlowSize * 1.2f));
             }
         }
 
@@ -352,20 +422,25 @@ namespace FS
                 Vector2 isc = s.Kind == Kind.Counter || s.Kind == Kind.Deposit ? new Vector2(0.5f, 0.5f) : Art.ItemScale(s.OutItem, 0.5f);
                 Art.NewSprite(v.Root, "Icone", icon, Art.ComAlfa(ic, 0.55f), 3, new Vector2(0f, 0.08f), isc);
             }
-            v.Label = Art.FreeText(_labels, s.Name, 26, new Vector2(320f, 40f));
+            v.Label = Art.Outlined(Art.FreeText(_labels, s.Name, 28, new Vector2(320f, 40f)), 2f);
             v.Label.text = s.Name;
-            v.Label.color = Art.ComAlfa(Art.Ink, 0.8f);
-            // bocas no chao (FASE5 s2b), na cor do que passa por ela: deposito so entrega, balcoes so recebem, quem produz tem as duas
-            if (s.Kind == Kind.Deposit) Mouth(v.Root, s.OutAt - s.Pos, Art.ItemColor[(int)Item.Ore], false, (int)Item.Ore);
-            else Mouth(v.Root, s.InAt - s.Pos, s.Produces ? Art.ItemColor[(int)s.InItem] : Art.Accent, true, s.Produces ? (int)s.InItem : s == _sim.JewelShop ? (int)Item.Jewel : -1);
-            if (s.Produces) Mouth(v.Root, s.OutAt - s.Pos, Art.ItemColor[(int)s.OutItem], false, (int)s.OutItem);
+            v.Label.fontStyle = FontStyle.Bold;
+            // bocas no chao (FASE5 s2b): deposito so entrega, balcoes so recebem, quem produz tem as duas. v0.5b: placa no chao
+            if (s.Kind == Kind.Deposit) Mouth(v.Root, s.OutAt - s.Pos, false, (int)Item.Ore);
+            else Mouth(v.Root, s.InAt - s.Pos, true, s.Produces ? (int)s.InItem : s == _sim.JewelShop ? (int)Item.Jewel : -1);
+            if (s.Produces) Mouth(v.Root, s.OutAt - s.Pos, false, (int)s.OutItem);
             if (s.Produces)
             {
                 v.InPile = Pile(v.Root, s.InItem, s.InCap, -1.05f);
                 v.OutPile = Pile(v.Root, s.OutItem, s.OutCap, 1.05f);
-                v.BarBg = Art.NewSprite(v.Root, "BarraFundo", Art.Square(), Art.Dim, 3, new Vector2(0f, -0.72f), new Vector2(1.3f, 0.12f));
-                v.BarFill = Art.NewSprite(v.Root, "Barra", Art.Square(), Art.Accent, 4, new Vector2(-0.65f, -0.72f), new Vector2(0f, 0.12f));
+                // barra arredondada (capsula 9-fatias) com o icone do produto na ponta (P1-3)
+                v.BarBg = Capsule(v.Root, "BarraFundo", Art.ComAlfa(Art.Bg, 0.85f), 3, new Vector2(0f, BarY), BarW, BarH);
+                v.BarFill = Capsule(v.Root, "Barra", Art.Accent, 4, new Vector2(0f, BarY), BarH - 0.05f, BarH - 0.05f);
+                v.BarIcon = Art.NewSprite(v.Root, "BarraIcone", null, Color.white, 5, new Vector2(BarW / 2f + 0.1f, BarY + 0.02f), Vector2.one);
+                Art.PaintItem(v.BarIcon, s.OutItem, true, 0.34f);
             }
+            if (s.Kind == Kind.Furnace)   // poca de luz quente da brasa (P1-6): pulsa trabalhando, quase apaga com fome
+                v.Glow = Art.NewSprite(v.Root, "Luz", Art.Glow(), Art.ComAlfa(GlowColor, FurnaceGlowA), GlowOrder, new Vector2(0f, 0.2f), Vector2.one * FurnaceGlow);
             if (s.Kind == Kind.Counter && !v.Stand)
             {
                 var sold = new List<Item>();   // loja de joias: so joia; balcao sem os modulos do estande: espada/escudo/ferramenta
@@ -387,23 +462,32 @@ namespace FS
         }
 
         /// <summary>
-        /// Boca no chao: anel da zona (Balance.MouthRadius) com o item que entra/sai (arte deitada de 0,45 m a 50%); sem item (balcao,
-        /// que recebe 3 produtos) ou sem arte, a seta de sempre apontando para a estacao (entra) ou para fora (sai).
+        /// Boca no chao (v0.5b, BENCHMARK P1-3; era anel com "play"): placa quadrada do tamanho da zona (Balance.MouthRadius x 2).
+        /// Entrada = grelha de ferro escura com o item que entra deitado a 55% ("ponha aqui"; balcao = moeda); saida = palete de
+        /// madeira (a pilha da estacao fica ao lado). Sem a arte do item, a mascara dele.
         /// </summary>
-        static void Mouth(Transform root, V2 off, Color c, bool into, int item)
+        static void Mouth(Transform root, V2 off, bool into, int item)
         {
             var at = new Vector2(off.X, off.Y);
-            Art.NewSprite(root, into ? "BocaEntra" : "BocaSai", Art.Disc(), Art.ComAlfa(c, 0.18f), 1, at, Vector2.one * Balance.MouthRadius * 2f);
-            Art.NewSprite(root, "BocaAnel", Art.Ring(), Art.ComAlfa(c, 0.6f), 1, at, Vector2.one * Balance.MouthRadius * 2f);
-            if (item >= 0 && Art.ItemArt((Item)item, false) != null)
-            {
-                SpriteRenderer r = Art.NewSprite(root, "BocaItem", null, Color.white, 2, at, Vector2.one);
-                Art.PaintItem(r, (Item)item, false, 0.45f);
-                r.color = Art.ComAlfa(Color.white, 0.5f);
-                return;
-            }
-            float ang = Mathf.Atan2(off.Y, off.X) * Mathf.Rad2Deg + (into ? 90f : -90f);   // Triangle aponta para +y
-            Art.NewSprite(root, "BocaSeta", Art.Triangle(), Art.ComAlfa(c, 0.9f), 1, at, Vector2.one * 0.32f, ang);
+            float d = Balance.MouthRadius * 2f;
+            Art.NewSprite(root, into ? "BocaEntra" : "BocaSai", Art.Rounded(), Art.ComAlfa(into ? GrateC : PalletC, 0.9f), 1, at, Vector2.one * d);
+            for (int k = -1; k <= 1; k++)   // 3 barras da grelha / 3 tabuas do palete
+                Art.NewSprite(root, "BocaRipa", Art.Square(), into ? GrateBar : PlankC, 1, at + new Vector2(0f, k * d * 0.27f), new Vector2(d * 0.82f, d * (into ? 0.06f : 0.2f)));
+            if (!into) return;
+            SpriteRenderer r = Art.NewSprite(root, "BocaItem", null, Color.white, 2, at, Vector2.one);
+            if (item >= 0) Art.PaintItem(r, (Item)item, false, 0.5f);
+            else if (Art.Icon("moeda", "deitado") is Sprite coin) { r.sprite = coin; r.transform.localScale = Vector3.one * 0.5f * 1.1f; }
+            else { r.sprite = Art.Disc(); r.color = Art.Accent; r.transform.localScale = Vector3.one * 0.35f; }
+            r.color = Art.ComAlfa(r.color, 0.55f);
+        }
+
+        /// <summary>Capsula (pontas redondas em qualquer largura): SpriteRenderer Sliced com a escala = altura.</summary>
+        static SpriteRenderer Capsule(Transform root, string name, Color c, int order, Vector2 at, float w, float h)
+        {
+            SpriteRenderer r = Art.NewSprite(root, name, Art.Capsule(), c, order, at, Vector2.one * h);
+            r.drawMode = SpriteDrawMode.Sliced;
+            r.size = new Vector2(w / h, 1f);
+            return r;
         }
 
         /// <summary>Pilha visivel ao lado da estacao: 2 colunas de itens deitados, de baixo para cima (a fileira de cima cobre a de baixo).</summary>
@@ -425,13 +509,63 @@ namespace FS
             var v = new PadV { P = p, Root = new GameObject("Pad " + p.Slot).transform };
             v.Root.SetParent(transform, false);
             v.Root.localPosition = W(p.Pos);
-            // canteiro de obra: chao aparece por baixo, anel tracejado, "+" no meio; o pago enche de ouro do centro para fora
-            Art.NewSprite(v.Root, "Fundo", Art.Disc(), Art.ComAlfa(Art.Pad, 0.5f), 2, Vector2.zero, Vector2.one * 1.15f);
-            v.Fill = Art.NewSprite(v.Root, "Pago", Art.Disc(), Art.PadFill, 3, Vector2.zero, Vector2.zero);
-            v.Ring = Art.NewSprite(v.Root, "Anel", Art.DashedRing(), Art.Accent, 4, Vector2.zero, Vector2.one * 1.15f);
-            v.Plus = Art.NewSprite(v.Root, "Obra", Art.Plus(), Art.Accent, 4, Vector2.zero, Vector2.one * 0.3f);
-            v.Label = Art.FreeText(_labels, "PadLabel", 24, new Vector2(300f, 70f));
+            // placa de obra (P1-4; era anel tracejado com "+"): quadrado arredondado escuro, enchimento de ouro do centro para fora,
+            // borda tracejada e o icone do que sera construido; preco (moeda + valor) e nome vivem na HUD (RefreshPad)
+            Art.NewSprite(v.Root, "Placa", Art.Rounded(), Art.ComAlfa(PlateC, 0.85f), 2, Vector2.zero, Vector2.one * PadSize);
+            v.Fill = Art.NewSprite(v.Root, "Pago", Art.Rounded(), Art.ComAlfa(Art.Gold, 0.55f), 3, Vector2.zero, Vector2.zero);
+            v.Border = Art.NewSprite(v.Root, "Borda", Art.DashedBox(), Color.white, 4, Vector2.zero, Vector2.one * PadSize);
+            v.Icon = Art.NewSprite(v.Root, "Obra", null, Color.white, 5, Vector2.zero, Vector2.one);
+            v.Label = Art.Outlined(Art.FreeText(_labels, "PadNome", 24, new Vector2(300f, 40f)), 2f);
+            v.Label.fontStyle = FontStyle.Bold;
+            v.PriceBox = Art.Node(_labels, "PadPreco", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+            v.PriceBox.sizeDelta = new Vector2(150f, 44f);
+            v.Coin = Art.Node(v.PriceBox, "Moeda", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f)).gameObject.AddComponent<Image>();
+            v.Coin.rectTransform.sizeDelta = new Vector2(40f, 40f);
+            v.Coin.sprite = _coin != null ? _coin : Art.Disc(); v.Coin.color = _coin != null ? Color.white : Art.Accent; v.Coin.raycastTarget = false;
+            v.Price = Art.Outlined(Art.NewText(v.PriceBox, "Valor", 34, Vector2.zero, Vector2.one, TextAnchor.MiddleLeft), 2.5f);
+            v.Price.fontStyle = FontStyle.Bold;
+            v.Price.horizontalOverflow = HorizontalWrapMode.Overflow;
             return v;
+        }
+
+        /// <summary>
+        /// Icone da placa: a arte do que nasce ali (estacao, portao, ajudante, item); sem arte, "+" de sempre. `fill` = fracao da celula
+        /// que a arte ocupa (medida nos PNG: estacoes 0,62-0,77, ajudante 0,65), para o desenho e nao a celula vazia encher a caixa.
+        /// </summary>
+        Sprite PadIcon(int u, out Color tint, out float fill)
+        {
+            tint = Color.white;
+            fill = 0.72f;
+            string st = (Upgrade)u switch
+            {
+                Upgrade.Anvil2 => "bigorna", Upgrade.Furnace2 => "fornalha", Upgrade.Shields => "bancada_escudos", Upgrade.Tools => "bancada_ferramentas",
+                Upgrade.Jewelry => "bancada_joalheria", _ => null,
+            };
+            if (st != null) return StaticArt(st, StationCell);   // mesma celula da estacao: o 1o Frame no cache serve aos dois
+            switch ((Upgrade)u)
+            {
+                case Upgrade.SideCorridor: fill = 1f; return StaticArt("portao_fechado", RealCell("portao_fechado"));
+                case Upgrade.Conveyor: fill = 0.9f; return Art.ItemArt(Item.Ingot, true) ?? Art.Rounded();
+                case Upgrade.Helper1: case Upgrade.Helper2: case Upgrade.Helper3: case Upgrade.Jeweler: case Upgrade.Miner: case Upgrade.Jeweler2:
+                    if (!SpriteSheet.TryGet("ajudante", out SpriteSheet sh)) break;
+                    sh.Scale = CharScale("ajudante");   // o quadro entra no cache com a escala do corpo do ajudante (BuildCarrier)
+                    fill = 0.65f;
+                    return sh.Frame("Idle", 0, 0f);
+            }
+            fill = 1f;
+            if (Upgrades.IsLuxury(u)) { tint = Art.Accent; return Art.Star(); }
+            tint = Art.Accent;
+            return Art.Plus();
+        }
+
+        /// <summary>Encaixa o sprite (qualquer ppu/pivo) numa caixa de `box` m centrada em `center`.</summary>
+        static void Fit(SpriteRenderer r, Sprite s, float box, Vector2 center)
+        {
+            r.sprite = s;
+            Bounds b = s.bounds;
+            float k = box / Mathf.Max(b.size.x, b.size.y, 0.01f);
+            r.transform.localScale = new Vector3(k, k, 1f);
+            r.transform.localPosition = center - (Vector2)b.center * k;
         }
 
         /// <summary>Bau de marco: folha `bau` ordenada pelo pe como os corpos (sem folha, caixa dourada), rotulo do marco acima. Comeca escondido.</summary>
@@ -631,18 +765,49 @@ namespace FS
             Art.NewSprite(b.Root, "Balao", Art.Rounded(), Art.Bubble, BubbleOrder + 12, Vector2.zero, BalloonSize);
             Art.NewSprite(b.Root, "Rabicho", Art.Triangle(), Art.Bubble, BubbleOrder + 12, new Vector2(-BubbleDX, TailY), TailSize, 180f);
             b.Icon = Art.NewSprite(b.Root, "Pedido", null, Color.white, BubbleOrder + 13, Vector2.zero, Vector2.one);
+            // rosto bravo de ~0,5 m (48 px) no canto de cima a direita, abaixo de 20% de paciencia (P0-2): contorno, rosto, tracos
+            b.Angry = Group(name + "Bravo", new V2(0f, 0f));
+            b.Angry.SetParent(b.Root, false);
+            b.Angry.localPosition = new Vector3(BalloonSize.x / 2f, BalloonSize.y / 2f, 0f);
+            Art.NewSprite(b.Angry, "Contorno", Art.Disc(), Art.ComAlfa(Art.Bg, 0.9f), BubbleOrder + 14, Vector2.zero, Vector2.one * 0.56f);
+            Art.NewSprite(b.Angry, "Rosto", Art.Disc(), AngryC, BubbleOrder + 15, Vector2.zero, Vector2.one * 0.5f);
+            Art.NewSprite(b.Angry, "Tracos", Art.AngryFace(), Art.Hex(0x3A1208), BubbleOrder + 16, Vector2.zero, Vector2.one * 0.5f);
+            b.Angry.gameObject.SetActive(false);
             b.Root.gameObject.SetActive(false);
             return b;
         }
 
-        /// <summary>Balao no 1o da fila: icone de 0,9 m, anel verde -> amarelo -> vermelho e tremida de +-3 graus a 6 Hz abaixo de 20%.</summary>
-        void PlaceBubble(BubbleV b, ClientV v, Item want, float f)
+        /// <summary>
+        /// Balao no 1o da fila: icone de 0,9 m, anel verde -> amarelo -> vermelho e tremida de +-3 graus a 6 Hz abaixo de 20% (com o
+        /// rosto bravo). Venda (Sold): estoura 1 -> 1,25 -> 0 em 0,15 s e volta com sobra no proximo da fila.
+        /// </summary>
+        void PlaceBubble(BubbleV b, ClientV v, Item want, float f, float dt)
         {
             b.Root.localPosition = v.Root.localPosition + new Vector3(BubbleDX, v.TopY + BubbleUp, 0f);
             b.Root.localRotation = Quaternion.Euler(0f, 0f, f < 0.2f ? 3f * Mathf.Sin(Time.time * 6f * 2f * Mathf.PI) : 0f);
+            float s = 1f;
+            if (b.PopT >= 0f)
+            {
+                b.PopT += dt;
+                float k = b.PopT / 0.15f;
+                s = k < 0.4f ? Mathf.Lerp(1f, 1.25f, k / 0.4f) : k < 1f ? Mathf.Lerp(1.25f, 0f, (k - 0.4f) / 0.6f) : PopCurve((b.PopT - 0.15f) / (BubblePop - 0.15f));
+                if (b.PopT >= BubblePop) { b.PopT = -1f; s = 1f; }
+            }
+            b.Root.localScale = Vector3.one * s;
             Art.PaintItem(b.Icon, want, true, BubbleIcon);
             b.Ring.sprite = Art.BalloonRing(f);
             b.Ring.color = f > 0.5f ? Color.Lerp(Art.Gold, Art.Good, f * 2f - 1f) : Color.Lerp(Art.Bad, Art.Gold, f * 2f);
+            bool angry = f < 0.2f;
+            if (b.Angry.gameObject.activeSelf != angry) b.Angry.gameObject.SetActive(angry);
+            if (angry) b.Angry.localScale = Vector3.one * (1f + 0.1f * Mathf.Abs(Mathf.Sin(Time.time * 7f)));
+        }
+
+        /// <summary>Pop de quem nasce: 0 -> 1,1 (60% do tempo, ease-out) -> 1.</summary>
+        static float PopCurve(float t)
+        {
+            t = Mathf.Clamp01(t);
+            if (t < 0.6f) { float k = t / 0.6f; return 1.1f * (1f - (1f - k) * (1f - k)); }
+            return Mathf.Lerp(1.1f, 1f, (t - 0.6f) / 0.4f);
         }
 
         V2 Slot(bool jewel, int i) => jewel ? _sim.JewelSlot(i) : _sim.ClientSlot(i);
@@ -712,9 +877,9 @@ namespace FS
             RefreshArea();
             for (int i = 0; i < _glows.Count; i++)   // tochas tremulam: 2 senos fora de fase por tocha
                 _glows[i].color = Art.ComAlfa(GlowColor, GlowAlpha + 0.05f * Mathf.Sin(Time.time * 9f + i * 2.1f) + 0.03f * Mathf.Sin(Time.time * 23f + i));
-            foreach (StationV v in _stations) RefreshStation(v, pulse);
+            foreach (StationV v in _stations) RefreshStation(v, pulse, dt);
             RefreshStand(dt);
-            foreach (PadV v in _pads) RefreshPad(v, pulse);
+            foreach (PadV v in _pads) RefreshPad(v, dt);
             foreach (ChestV v in _chests) RefreshChest(v);
             foreach (LuxV v in _lux) RefreshLux(v, dt);
 
@@ -730,11 +895,17 @@ namespace FS
 
             if (_sim.UpgradesBought != _bought) { _bought = _sim.UpgradesBought; Cheer(); }   // comprou upgrade
             RefreshCarrier(_player, dt);
-            while (_workers.Count < _sim.Workers.Count) _workers.Add(BuildCarrier(_sim.Workers[_workers.Count], Art.Worker, 0.52f, Balance.WorkerCapUp));
+            while (_workers.Count < _sim.Workers.Count)
+            {
+                _workers.Add(BuildCarrier(_sim.Workers[_workers.Count], Art.Worker, 0.52f, Balance.WorkerCapUp));
+                if (Time.timeSinceLevelLoad > 1f) Poof(_sim.Workers[_workers.Count - 1].Pos, 1f);   // contratou agora (o save carrega sem poeira)
+            }
             foreach (CarrierV v in _workers) RefreshCarrier(v, dt);
 
             RefreshClients(dt);
 
+            TickFx(dt);
+            RefreshArrow();
             for (int i = 0; i < _floaters.Count; i++)
             {
                 Floater f = _floaters[i];
@@ -754,6 +925,7 @@ namespace FS
         {
             bool corridor = _sim.Bought[(int)Upgrade.SideCorridor], teaser = corridor && !_sim.Bought[(int)Upgrade.Jewelry];
             _street.color = corridor ? StreetOpen : StreetShut;
+            _streetWash.enabled = corridor;
             foreach ((GameObject shut, GameObject open) in _gates)   // fechado ate o Corredor, aberto depois (folhas contra o muro da rua)
             {
                 if (shut != null && shut.activeSelf == corridor) shut.SetActive(!corridor);
@@ -796,7 +968,11 @@ namespace FS
         {
             List<Client> q = QueueOf(jewel);
             BubbleV b = jewel ? _jewelBubble : _bubble;
-            if (b.Root.gameObject.activeSelf != q.Count > 0) b.Root.gameObject.SetActive(q.Count > 0);
+            if (b.Root.gameObject.activeSelf != q.Count > 0)
+            {
+                b.Root.gameObject.SetActive(q.Count > 0);
+                b.PopT = q.Count > 0 ? 0.15f : -1f;   // 1o cliente chegou: o balao entra com pop (pula a fase de estouro)
+            }
             for (int i = 0; i < q.Count; i++)
             {
                 Client c = q[i];
@@ -807,7 +983,7 @@ namespace FS
                 v.Root.localPosition = Vector3.MoveTowards(before, W(Slot(jewel, i)), 4f * dt);
                 float f = Mathf.Clamp01(c.Patience / c.MaxPatience);
                 v.Want.enabled = v.Patience.enabled = i > 0;
-                if (i == 0) PlaceBubble(b, v, c.Want, f);
+                if (i == 0) PlaceBubble(b, v, c.Want, f, dt);
                 else
                 {
                     Art.PaintItem(v.Want, c.Want, true, MiniIcon);
@@ -841,14 +1017,32 @@ namespace FS
             else v.Root.gameObject.SetActive(false);
         }
 
-        void RefreshStation(StationV v, float pulse)
+        void RefreshStation(StationV v, float pulse, float dt)
         {
             Station s = v.S;
-            if (v.Root.gameObject.activeSelf != s.Unlocked) v.Root.gameObject.SetActive(s.Unlocked);
+            if (v.Root.gameObject.activeSelf != s.Unlocked)
+            {
+                v.Root.gameObject.SetActive(s.Unlocked);
+                if (s.Unlocked) { v.PopT = 0f; Poof(s.Pos, 1.6f); }   // comprou agora: nasce com pop e poeira (o save liga no Build, sem pop)
+            }
             if (!s.Unlocked) { v.Label.enabled = false; return; }
-            v.Label.enabled = !v.Stand;   // o estande com espadas em pe ja le como loja; o rotulo cairia em cima da fila
-            float labelY = s == _sim.Counter ? 0.9f : v.Baked ? 1.35f : 0.95f;   // balcao: abaixo do varal da Fachada nobre (y 14,1)
-            PlaceLabel(v.Label, W(s.Pos) + new Vector3(0f, labelY, 0f), Vector2.zero);
+            if (v.PopT >= 0f)
+            {
+                v.PopT += dt;
+                v.Root.localScale = Vector3.one * PopCurve(v.PopT / StationPop);
+                if (v.PopT >= StationPop) { v.PopT = -1f; v.Root.localScale = Vector3.one; }
+            }
+            // nome so perto do jogador ou no 1o minuto de jogo (tutorial); o estande ja le como loja e o rotulo cairia na fila
+            float near = Mathf.Clamp01((NearLabel - V2.Dist(_sim.Player.Pos, s.Pos)) / LabelFade);
+            float la = _sim.Time < TutorialLabels ? 1f : near;
+            v.Label.enabled = !v.Stand && la > 0.01f;
+            if (v.Label.enabled)
+            {
+                v.Label.color = Art.ComAlfa(Art.Ink, 0.95f * la);
+                // quem produz: nome embaixo da barra (em cima batia no preco da placa da Esteira, a 2 m da Bigorna); balcao: abaixo do varal
+                float labelY = s.Produces ? BarY - 0.3f : s == _sim.Counter ? 0.9f : v.Baked ? 1.35f : 0.95f;
+                PlaceLabel(v.Label, W(s.Pos) + new Vector3(0f, labelY, 0f), Vector2.zero);
+            }
             if (s.Produces)
             {
                 for (int i = 0; i < v.InPile.Length; i++) v.InPile[i].enabled = i < s.In;
@@ -859,12 +1053,16 @@ namespace FS
                     v.OutPile[i].color = blocked ? Color.Lerp(Art.ItemTint(s.OutItem), Art.Bad, 0.5f * pulse) : Art.ItemTint(s.OutItem);
                 }
                 float p = s.Busy ? s.Progress : 0f;
-                v.BarFill.transform.localScale = new Vector3(1.3f * p, 0.12f, 1f);
-                v.BarFill.transform.localPosition = new Vector3(-0.65f + 0.65f * p, -0.72f, 0f);
+                float fh = BarH - 0.05f, fw = Mathf.Lerp(fh, BarW - 0.05f, p);
+                v.BarFill.enabled = p > 0.01f;
+                v.BarFill.size = new Vector2(fw / fh, 1f);
+                v.BarFill.transform.localPosition = new Vector3(-(BarW - 0.05f) / 2f + fw / 2f, BarY, 0f);
                 bool starving = !s.Busy && s.In < s.Need;
-                v.BarBg.color = starving ? Color.Lerp(Art.Dim, Art.Bad, 0.35f * pulse) : Art.Dim;
+                v.BarBg.color = starving ? Color.Lerp(Art.ComAlfa(Art.Bg, 0.85f), Art.Bad, 0.35f * pulse) : Art.ComAlfa(Art.Bg, 0.85f);
                 v.Base.color = v.Baked ? (s.Busy ? Color.white : Dimmed) : Art.ComAlfa(Art.StationColor(s), s.Busy ? 1f : 0.8f);
             }
+            if (v.Glow != null)   // brasa: pulsa trabalhando, quase apaga parada (a "fome" ja apaga a arte)
+                v.Glow.color = Art.ComAlfa(GlowColor, s.Busy ? FurnaceGlowA * (0.85f + 0.15f * Mathf.Sin(Time.time * 5f + s.Index)) : FurnaceGlowA * 0.35f);
             if (s.Kind == Kind.Counter && v.Stock != null)
                 for (int p = 0; p < v.StockItems.Length; p++)
                     for (int i = 0; i < 6; i++) v.Stock[p * 6 + i].enabled = i < _sim.Stock[(int)v.StockItems[p]];
@@ -917,23 +1115,58 @@ namespace FS
             return sh;
         }
 
-        void RefreshPad(PadV v, float pulse)
+        /// <summary>
+        /// Placa de obra: icone do que nasce ali (cinza quando nao da para pagar), enchimento de ouro pelo que ja foi pago, borda que
+        /// pulsa quando da, preco com moeda dentro da placa e o nome so perto. Pagando: moedas voam do jogador para a placa (1 a cada
+        /// 0,06 s). Concluiu (o upgrade da vez virou comprado): poeira; a estacao nasce com pop no RefreshStation.
+        /// </summary>
+        void RefreshPad(PadV v, float dt)
         {
             int u = v.P.Current(_sim);
+            if (u != v.LastU)
+            {
+                if (v.LastU >= 0 && _sim.Bought[v.LastU]) Poof(v.P.Pos, 1.3f);
+                v.LastU = u; v.LastPaid = v.P.Paid;
+                if (u >= 0) { Sprite ic = PadIcon(u, out Color tint, out float fill); Fit(v.Icon, ic, PadIconBox / fill, new Vector2(0f, PadIconY)); v.Icon.color = tint; }
+            }
             bool on = u >= 0;
             if (v.Root.gameObject.activeSelf != on) v.Root.gameObject.SetActive(on);
-            v.Label.enabled = on;
-            if (!on) return;
+            if (v.PriceBox.gameObject.activeSelf != on) v.PriceBox.gameObject.SetActive(on);
+            if (!on) { v.Label.enabled = false; return; }
             int cost = Upgrades.Cost(u), remaining = cost - v.P.Paid;
             bool affordable = _sim.Gold >= remaining;
             float frac = cost > 0 ? v.P.Paid / (float)cost : 0f;
-            v.Fill.transform.localScale = Vector3.one * (1.0f * Mathf.Sqrt(frac));
-            v.Ring.color = affordable ? Art.ComAlfa(Art.Accent, pulse) : Art.ComAlfa(Art.Ink, 0.45f);
-            v.Plus.color = v.Ring.color;
-            if (affordable) v.Ring.transform.localRotation = Quaternion.Euler(0f, 0f, -Time.time * 20f);   // gira devagar quando da para pagar
-            v.Label.text = Upgrades.All[u].Name + "\n" + remaining;
-            v.Label.color = affordable ? Art.Accent : Art.ComAlfa(Art.Ink, 0.75f);
-            PlaceLabel(v.Label, W(v.P.Pos) + new Vector3(0f, 0.95f, 0f), Vector2.zero);
+            v.Fill.transform.localScale = Vector3.one * (PadSize * 0.92f * Mathf.Sqrt(frac));
+            float pulse = 0.7f + 0.3f * Mathf.Sin(Time.time * 6f);
+            v.Border.color = affordable ? Art.ComAlfa(Art.Accent, pulse) : Art.ComAlfa(Art.Ink, 0.5f);
+            v.Icon.color = Art.ComAlfa(v.Icon.color, affordable ? 1f : 0.55f);
+            // pagando: moedas do jogador para a placa
+            if (v.P.Paid > v.LastPaid)
+            {
+                v.CoinT -= dt;
+                if (v.CoinT <= 0f)
+                {
+                    v.CoinT = PadCoinEvery;
+                    Vector3 a = W(_sim.Player.Pos) + new Vector3(0f, HeadY + 0.3f, 0f), b = W(v.P.Pos);
+                    Spawn(_coin != null ? _coin : Art.Disc(), _coin != null ? Color.white : Art.Accent, a, (a + b) * 0.5f + new Vector3(0f, 1.6f, 0f), b, 0.32f, 0.44f, 0.26f, false);
+                }
+            }
+            v.LastPaid = v.P.Paid;
+            // preco: moeda + valor centrados no terco de baixo da placa
+            v.Price.text = remaining.ToString();
+            v.Price.color = affordable ? Color.white : Art.ComAlfa(Art.Ink, 0.7f);
+            float tw = v.Price.preferredWidth, total = 40f + 6f + tw;
+            v.Coin.rectTransform.anchoredPosition = new Vector2(20f, 0f);
+            v.Price.rectTransform.offsetMin = new Vector2(46f, 0f); v.Price.rectTransform.offsetMax = Vector2.zero;
+            v.PriceBox.sizeDelta = new Vector2(total, 44f);
+            PlaceRect(v.PriceBox, W(v.P.Pos) + new Vector3(0f, PadPriceY, 0f));
+            // nome: perto do jogador ou no 1o minuto (a seta da dica ja aponta a placa da vez)
+            float la = _sim.Time < TutorialLabels ? 1f : Mathf.Clamp01((NearLabel - V2.Dist(_sim.Player.Pos, v.P.Pos)) / LabelFade);
+            v.Label.enabled = la > 0.01f;
+            if (!v.Label.enabled) return;
+            v.Label.text = Upgrades.All[u].Name;
+            v.Label.color = affordable ? Art.ComAlfa(Art.Accent, la) : Art.ComAlfa(Art.Ink, 0.85f * la);
+            PlaceLabel(v.Label, W(v.P.Pos) + new Vector3(0f, PadSize / 2f + 0.22f, 0f), Vector2.zero);
         }
 
         /// <summary>So o bau disponivel aparece; aberto some (as moedas e o "+ouro" saem do Ev.ChestOpened no Game).</summary>
@@ -998,13 +1231,113 @@ namespace FS
             for (; k < v.Stack.Length; k++) v.Stack[k].enabled = false;
         }
 
+        // ------------------------------------------------------------------ juice (v0.5b): efeitos curtos, venda, seta da dica
+
+        /// <summary>Venda (Ev.Sold, chamado pelo Game): o balao da fila estoura e sobe um coracao com 6 brilhos em volta.</summary>
+        public void Sold(V2 at, bool jewel)
+        {
+            BubbleV b = jewel ? _jewelBubble : _bubble;
+            b.PopT = 0f;
+            Vector3 c = b.Root.gameObject.activeSelf ? b.Root.localPosition : W(at) + new Vector3(BubbleDX, ClientTop + BubbleUp, 0f);
+            Spawn(Art.Heart(), HeartC, c, c + new Vector3(0f, 0.5f, 0f), c + new Vector3(0f, 1.1f, 0f), 0.7f, 0.45f, 0.62f, true);
+            for (int i = 0; i < 6; i++)
+            {
+                float a = i * Mathf.PI / 3f + 0.3f;
+                Vector3 d = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 0.85f;
+                Spawn(Art.Sparkle(), Art.Accent, c, c + d * 0.6f, c + d, 0.38f, 0.32f, 0.05f, true, 180f);
+            }
+        }
+
+        /// <summary>Poeira da obra: 7 nuvenzinhas saindo do pe e crescendo, somem em 0,5 s.</summary>
+        void Poof(V2 at, float radius)
+        {
+            Vector3 c = W(at);
+            for (int i = 0; i < 7; i++)
+            {
+                float a = i * Mathf.PI * 2f / 7f;
+                Vector3 d = new Vector3(Mathf.Cos(a) * radius * 0.6f, Mathf.Sin(a) * radius * 0.3f + 0.15f, 0f);
+                Spawn(Art.Disc(), Dust, c, c + d * 0.7f, c + d, 0.5f, 0.3f, 0.75f, true);
+            }
+        }
+
+        /// <summary>Efeito do pool (ate FxMax vivos; cheio = o efeito e' pulado). `size` em m como o PaintItem (arte com ArtFill).</summary>
+        void Spawn(Sprite s, Color c, Vector3 a, Vector3 m, Vector3 b, float life, float s0, float s1, bool fade, float spin = 0f)
+        {
+            Fx f = null;
+            foreach (Fx x in _fx) if (!x.Live) { f = x; break; }
+            if (f == null)
+            {
+                if (_fx.Count >= FxMax) return;   // ponytail: pico de efeitos some em vez de crescer o pool
+                _fx.Add(f = new Fx { R = Art.NewSprite(transform, "Fx", null, Color.white, FxOrder, Vector2.zero, Vector2.one) });
+            }
+            f.R.sprite = s; f.R.color = f.C = c; f.R.enabled = true;
+            f.A = a; f.M = m; f.B = b; f.Life = life; f.S0 = s0; f.S1 = s1; f.Fade = fade; f.Spin = spin; f.Age = 0f; f.Live = true;
+            f.R.transform.localPosition = a; f.R.transform.localScale = Vector3.one * s0; f.R.transform.localRotation = Quaternion.identity;
+        }
+
+        void TickFx(float dt)
+        {
+            foreach (Fx f in _fx)
+            {
+                if (!f.Live) continue;
+                f.Age += dt;
+                float t = Mathf.Clamp01(f.Age / f.Life), u = 1f - t;
+                f.R.transform.localPosition = u * u * f.A + 2f * u * t * f.M + t * t * f.B;
+                f.R.transform.localScale = Vector3.one * Mathf.Lerp(f.S0, f.S1, t);
+                if (f.Spin != 0f) f.R.transform.localRotation = Quaternion.Euler(0f, 0f, f.Spin * f.Age);
+                if (f.Fade) f.R.color = Art.ComAlfa(f.C, f.C.a * Mathf.Clamp01(u / 0.4f));
+                if (t >= 1f) { f.Live = false; f.R.enabled = false; }
+            }
+        }
+
+        /// <summary>Alvo da dica (Game, 4x/s): placa da vez, boca onde depositar/recolher, bau ou deposito; sem alvo no mundo, sem seta.</summary>
+        public void ShowHint(Hint h, int arg)
+        {
+            _hintOn = true;
+            switch (h)
+            {
+                case Hint.BuyPad: _hintAt = _sim.Pads[arg].Pos; break;
+                case Hint.ProductToCounter: _hintAt = arg == (int)Item.Jewel ? _sim.JewelShop.InAt : _sim.Counter.InAt; break;
+                case Hint.IngotToCrafter: _hintOn = Nearest(s => s.Kind == Kind.Crafter && s.In < s.InCap, true); break;
+                case Hint.OreToFurnace: _hintOn = Nearest(s => s.Kind == Kind.Furnace && s.In < s.InCap, true); break;
+                case Hint.PickProducts: _hintOn = Nearest(s => s.Kind == Kind.Crafter && (int)s.OutItem == arg && s.Out > 0, false); break;
+                case Hint.PickIngots: _hintOn = Nearest(s => s.Kind == Kind.Furnace && s.Out > 0, false); break;
+                case Hint.OpenChest: _hintAt = _sim.Chests[arg].Pos; break;
+                case Hint.GrabOre: _hintAt = _sim.Deposit.OutAt; break;
+                default: _hintOn = false; break;   // Melhorias (o badge pulsa) e cliente esperando (a dica de texto basta)
+            }
+        }
+
+        bool Nearest(System.Predicate<Station> ok, bool input)
+        {
+            float best = float.MaxValue;
+            foreach (Station s in _sim.Stations)
+            {
+                if (!s.Unlocked || !ok(s)) continue;
+                V2 p = input ? s.InAt : s.OutAt;
+                float d = V2.Dist(p, _sim.Player.Pos);
+                if (d < best) { best = d; _hintAt = p; }
+            }
+            return best < float.MaxValue;
+        }
+
+        /// <summary>Seta quicando 0,15 m a cada 0,6 s acima do alvo; some com o jogador em cima dele.</summary>
+        void RefreshArrow()
+        {
+            bool on = _hintOn && V2.Dist(_hintAt, _sim.Player.Pos) > 0.9f;
+            if (_arrow.gameObject.activeSelf != on) _arrow.gameObject.SetActive(on);
+            if (on) _arrow.localPosition = W(_hintAt) + new Vector3(0f, 1.05f + 0.15f * Mathf.Abs(Mathf.Sin(Time.time * Mathf.PI / 0.6f)), 0f);
+        }
+
         // ------------------------------------------------------------------ rotulos na HUD
 
-        void PlaceLabel(Text t, Vector3 world, Vector2 offsetPx)
+        void PlaceLabel(Text t, Vector3 world, Vector2 offsetPx) => PlaceRect(t.rectTransform, world, offsetPx);
+
+        void PlaceRect(RectTransform r, Vector3 world, Vector2 offsetPx = default)
         {
             Vector3 sp = _cam.WorldToScreenPoint(world);
             RectTransformUtility.ScreenPointToLocalPointInRectangle(_labels, sp, null, out Vector2 local);
-            t.rectTransform.anchoredPosition = local + offsetPx;
+            r.anchoredPosition = local + offsetPx;
         }
 
         /// <summary>Numero flutuante ("+10", nome do upgrade) subindo do ponto do mundo.</summary>
@@ -1014,7 +1347,7 @@ namespace FS
             foreach (Floater x in _floaters) if (!x.Live) { f = x; break; }
             if (f == null)
             {
-                f = new Floater { T = Art.FreeText(_labels, "Flutuante", size, new Vector2(400f, 60f)) };
+                f = new Floater { T = Art.Outlined(Art.FreeText(_labels, "Flutuante", size, new Vector2(400f, 60f)), 2.5f) };   // v0.5b: contorno
                 f.T.fontStyle = FontStyle.Bold;
                 _floaters.Add(f);
             }

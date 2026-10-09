@@ -30,7 +30,10 @@ namespace FS
         // 2026-10-06, fotos 05-08: com 7,6 m visiveis o mundo de 9 m cortava uma coluna de cada lado em qualquer clamp).
         // 2a area (docs/AREA2_JOALHERIA.md s1): mesma escala; a rua lateral entra seguindo o jogador depois do Corredor.
         const float VisibleWidth = Balance.WorkshopW + 2f * Margin;
-        const float HudBand = 0.15f;                             // fracao da tela reservada ao painel de cima; o mundo nao chega la (fotos 02-04)
+        // fracao da tela reservada a faixa de cima; o mundo nao chega la. v0.5b (BENCHMARK P1-1): 0,15 -> 0,075 (~144 px na referencia),
+        // so 2 pilulas (ouro | dica) sem painel cheio e sem o numero de versao
+        const float HudBand = 0.075f;
+        const float GoldRoll = 12f;                              // 1/s do numero rolando: ~0,3 s ate o valor novo (P0-5)
         // topo do conteudo: fila de clientes (pe em y 14) + balao grande do 1o da fila (v0.5: topo do anel em ~16,05 m) + "+10"
         const float ContentTop = Balance.WorldH + 2.1f;
         // Moedas da venda (BENCHMARK_VISUAL P0-5, versao visual): saem do cliente e voam ate a moeda da HUD; o numero so sobe quando
@@ -57,7 +60,7 @@ namespace FS
         Image _coinIcon;
         sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
         readonly System.Collections.Generic.List<Coin> _coins = new System.Collections.Generic.List<Coin>();
-        int _pending; float _punchT;
+        int _pending, _goldInt = -1; float _punchT, _goldShown = -1f;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -188,7 +191,8 @@ namespace FS
                         break;
                     case Ev.Sold:
                         Sfx.Play("coin", 1f + 0.05f * (_sim.Sales % 5), 0.1f);
-                        _view.Float(new V2(e.Pos.X, e.Pos.Y - 0.9f), "+" + e.B, Art.Accent);   // v0.5: sobe pela frente do estande, fora do balao do 1o
+                        _view.Float(new V2(e.Pos.X, e.Pos.Y - 0.9f), "+" + e.B, Art.Accent, 44);   // v0.5: sobe pela frente do estande, fora do balao do 1o
+                        _view.Sold(e.Pos, e.A == (int)Item.Jewel);   // v0.5b: balao estoura com coracao e brilhos
                         FlyCoins(e.Pos, e.B);
                         Log("product_sold", Balance.ItemName[e.A], e.B.ToString());
                         break;
@@ -274,24 +278,40 @@ namespace FS
             sc.referenceResolution = new Vector2(1080, 1920);
             sc.matchWidthOrHeight = 0.5f;
             _canvas = (RectTransform)canvasGo.transform;
+            // vinheta (P1-6): bordas -30%, por cima do mundo e por baixo de rotulos, HUD e painel (1 quad de tela cheia)
+            Image vig = Art.Node(_canvas, "Vinheta", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            vig.sprite = Art.Vignette(); vig.color = new Color(0.05f, 0.02f, 0f, 0.3f); vig.raycastTarget = false;
             _labels = Art.Node(_canvas, "Rotulos", Vector2.zero, Vector2.one);   // rotulos do mundo ficam ABAIXO da HUD e do painel modal
             _safe = Art.Node(_canvas, "AreaSegura", Vector2.zero, Vector2.one);
 
-            // Painel de cima com 2 linhas (ouro | dica). Ocupa a faixa HudBand da tela, que a camera reserva: nada do mundo passa aqui.
-            Image band = Art.Panel(_safe, "Topo", Art.ComAlfa(Art.Bg, 0.88f), new Vector2(0.02f, 1f - HudBand + 0.01f), new Vector2(0.98f, 0.99f));
-            band.raycastTarget = false;
-            _coinIcon = Art.Node(band.transform, "Moeda", new Vector2(0.03f, 0.56f), new Vector2(0.1f, 0.94f)).gameObject.AddComponent<Image>();
+            // Faixa de cima (BENCHMARK P1-1): pilula de ouro (borda clara, fundo #2A1E14, moeda 3D saindo pela esquerda, numero
+            // grande com contorno) e pilula da dica ao lado. Ocupa a faixa HudBand, que a camera reserva: nada do mundo passa aqui.
+            RectTransform top = Art.Node(_safe, "Topo", new Vector2(0.02f, 1f - HudBand), new Vector2(0.98f, 0.995f));
+            Image pill = Art.Panel(top, "PilulaOuro", Art.Hex(0xF2D9A0), new Vector2(0.06f, 0.1f), new Vector2(0.36f, 0.9f));
+            Image pillIn = Art.Panel(pill.transform, "Fundo", Art.ComAlfa(Art.Hex(0x2A1E14), 0.95f), Vector2.zero, Vector2.one);
+            pillIn.rectTransform.offsetMin = new Vector2(5f, 5f); pillIn.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            pill.raycastTarget = pillIn.raycastTarget = false;
+            _coinIcon = Art.Node(top, "Moeda", new Vector2(0f, -0.05f), new Vector2(0.14f, 1.05f)).gameObject.AddComponent<Image>();
             Sprite moeda = Art.Icon("moeda", "icone");   // v0.5: moeda renderizada; sem a folha, o disco amarelo de sempre
             _coinIcon.sprite = moeda != null ? moeda : Art.Disc(); _coinIcon.color = moeda != null ? Color.white : Art.Accent;
             _coinIcon.preserveAspect = true; _coinIcon.raycastTarget = false;
-            _gold = Art.NewText(band.transform, "Ouro", 64, new Vector2(0.12f, 0.5f), new Vector2(0.6f, 1f), TextAnchor.MiddleLeft);
+            _gold = Art.Outlined(Art.NewText(pill.transform, "Ouro", 62, new Vector2(0.3f, 0f), new Vector2(0.98f, 1f), TextAnchor.MiddleLeft), 3f);
             _gold.fontStyle = FontStyle.Bold;
             _gold.rectTransform.pivot = new Vector2(0f, 0.5f);   // o pulso cresce a partir da moeda, sem empurrar o numero
-            Text title = Art.NewText(band.transform, "Titulo", 30, new Vector2(0.55f, 0.5f), new Vector2(0.97f, 1f), TextAnchor.MiddleRight);
-            title.text = Arg("-record") != null ? "Forge Street" : "Forge Street v" + Application.version;   // criativo sem versao
-            title.color = Art.ComAlfa(Art.Ink, 0.55f);
-            _hint = Art.NewText(band.transform, "Dica", 36, new Vector2(0.03f, 0.04f), new Vector2(0.97f, 0.5f));
-            _hint.color = Art.Accent;
+            Image hintPill = Art.Panel(top, "PilulaDica", Art.ComAlfa(Art.Bg, 0.92f), new Vector2(0.385f, 0.1f), new Vector2(1f, 0.9f));
+            hintPill.raycastTarget = false;
+            _hint = Art.Outlined(Art.NewText(hintPill.transform, "Dica", 32, Vector2.zero, Vector2.one), 2f);
+            _hint.rectTransform.offsetMin = new Vector2(18f, 4f); _hint.rectTransform.offsetMax = new Vector2(-18f, -4f);
+            _hint.fontStyle = FontStyle.Bold; _hint.color = Art.Accent;
+            _hint.resizeTextForBestFit = true; _hint.resizeTextMinSize = 22; _hint.resizeTextMaxSize = 32;   // 2 linhas no maximo
+            _hint.verticalOverflow = VerticalWrapMode.Truncate;
+            // versao: saiu do titulo; canto de baixo a esquerda, discreta (criativo: nenhuma)
+            if (Arg("-record") == null)
+            {
+                Text ver = Art.NewText(_safe, "Versao", 20, new Vector2(0.005f, 0.002f), new Vector2(0.17f, 0.03f), TextAnchor.LowerLeft);
+                ver.text = "v" + Application.version;
+                ver.color = Art.ComAlfa(Art.Ink, 0.3f);
+            }
 
             _panel = Art.Node(_safe, "Painel", Vector2.zero, Vector2.one);
             _panel.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);
@@ -364,11 +384,18 @@ namespace FS
         void RefreshHud()
         {
             TickCoins(Time.deltaTime);
-            _gold.text = Mathf.Max(0, _sim.Gold - _pending).ToString();
+            // numero rolando: persegue o valor (sobe na venda, desce na compra) em ~0,3 s em vez de pular
+            int target = Mathf.Max(0, _sim.Gold - _pending);
+            _goldShown = _goldShown < 0f ? target : Mathf.Lerp(target, _goldShown, Mathf.Exp(-GoldRoll * Time.deltaTime));
+            if (Mathf.Abs(_goldShown - target) < 0.5f) _goldShown = target;
+            int shown = Mathf.RoundToInt(_goldShown);
+            if (shown != _goldInt) { _goldInt = shown; _gold.text = shown.ToString(); }
             _hintT -= Time.deltaTime;
             if (_hintT > 0f) return;
             _hintT = 0.25f;
-            _hint.text = HintText(_sim.CurrentHint(), _sim.HintArg);
+            Hint h = _sim.CurrentHint();
+            _hint.text = HintText(h, _sim.HintArg);
+            _view.ShowHint(h, _sim.HintArg);   // seta no mundo sobre o alvo (P1-1)
         }
 
         string HintText(Hint h, int arg)
@@ -378,7 +405,7 @@ namespace FS
                 case Hint.BuyPad:
                     Pad p = _sim.Pads[arg];
                     int u = p.Current(_sim);
-                    return u < 0 ? "" : $"Pise no pad: {Upgrades.All[u].Name} ({Upgrades.Cost(u) - p.Paid} de ouro)";
+                    return u < 0 ? "" : $"Pise na placa: {Upgrades.All[u].Name} ({Upgrades.Cost(u) - p.Paid} de ouro)";
                 case Hint.BuyMenu: return $"Toque em Melhorias: {Upgrades.All[arg].Name} ({Upgrades.Cost(arg)} de ouro)";
                 case Hint.ProductToCounter: return arg == (int)Item.Jewel ? "Leve joias à loja de joias" : $"Leve {Balance.ItemName[arg]}s ao balcão";
                 case Hint.IngotToCrafter: return "Leve os lingotes à bigorna";
