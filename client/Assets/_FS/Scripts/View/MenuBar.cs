@@ -41,18 +41,23 @@ namespace FS
             _sim = sim;
             _bought = bought;
             _bar = Art.Node(safe, "Menu", new Vector2(0.02f, 0.005f), new Vector2(0.98f, Band));
-            Button b = Art.NewButton(_bar, "Melhorias", 44, Art.Pad, new Vector2(0.18f, 0.08f), new Vector2(0.82f, 0.92f), Toggle);
-            _btn = (Image)b.targetGraphic;
+            // A-UI-16: borda creme e face marrom como as pilulas da HUD (era o azul #2C3550); com compra pronta a face fica ouro
+            Button b = Art.NewButton(_bar, "Melhorias", 44, Art.HudEdge, new Vector2(0.18f, 0.08f), new Vector2(0.82f, 0.92f), Toggle);
+            _btn = Art.Panel(b.transform, "Face", Art.HudFace, Vector2.zero, Vector2.one);
+            _btn.rectTransform.offsetMin = new Vector2(5f, 5f); _btn.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            _btn.raycastTarget = false;
+            _btn.transform.SetAsFirstSibling();   // por baixo da legenda
+            b.targetGraphic = _btn;               // o toque escurece a face, nao so a borda
             _btnText = b.GetComponentInChildren<Text>();
             _btnText.rectTransform.offsetMin = new Vector2(70f, 0f);   // espaco do martelo a esquerda
             Sprite ham = Art.Icon("melhoria_martelo", "icone");
             if (ham != null)
             {
-                Image hi = Art.Node(_btn.transform, "Icone", new Vector2(0.06f, 0.08f), new Vector2(0.26f, 0.92f)).gameObject.AddComponent<Image>();
+                Image hi = Art.Node(b.transform, "Icone", new Vector2(0.06f, 0.08f), new Vector2(0.26f, 0.92f)).gameObject.AddComponent<Image>();
                 hi.sprite = ham; hi.preserveAspect = true; hi.raycastTarget = false;
             }
             // badge vermelho (44-60 px) com o numero de cartoes compraveis, no canto de cima a direita do botao
-            _badge = Art.Node(_btn.transform, "Badge", new Vector2(1f, 1f), new Vector2(1f, 1f));
+            _badge = Art.Node(b.transform, "Badge", new Vector2(1f, 1f), new Vector2(1f, 1f));
             _badge.sizeDelta = new Vector2(62f, 62f); _badge.anchoredPosition = new Vector2(-14f, -10f);
             Image bd = _badge.gameObject.AddComponent<Image>();
             bd.sprite = Art.Disc(); bd.color = Art.Bad; bd.raycastTarget = false;
@@ -63,7 +68,7 @@ namespace FS
             _badgeText.fontStyle = FontStyle.Bold;
             _badge.gameObject.SetActive(false);
 
-            _tray = Art.Panel(safe, "Fileira", Art.ComAlfa(Art.Hex(0x2A1E14), 0.92f), new Vector2(0.02f, Band + 0.005f), new Vector2(0.98f, Band + Tray)).rectTransform;
+            _tray = Art.Panel(safe, "Fileira", Art.ComAlfa(Art.HudFace, 0.92f), new Vector2(0.02f, Band + 0.005f), new Vector2(0.98f, Band + Tray)).rectTransform;
             var scroll = _tray.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = true; scroll.vertical = false; scroll.movementType = ScrollRect.MovementType.Clamped;
             RectTransform view = Art.Node(_tray, "Janela", Vector2.zero, Vector2.one);
@@ -223,8 +228,8 @@ namespace FS
                 c.Price.horizontalOverflow = locked ? HorizontalWrapMode.Overflow : HorizontalWrapMode.Wrap;
             }
             _ready = ready;
-            _btn.color = ready > 0 ? Art.Accent : Art.Pad;
-            _btnText.color = ready > 0 ? Art.Bg : Art.Ink;
+            _btn.color = ready > 0 ? Art.Accent : Art.HudFace;
+            _btnText.color = ready > 0 ? Art.HudFace : Art.HudEdge;
             if (_badge.gameObject.activeSelf != ready > 0) _badge.gameObject.SetActive(ready > 0);
             _badgeText.text = ready.ToString();
         }
