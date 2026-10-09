@@ -15,3 +15,6 @@ desktop.ini
 *.apk
 *.aab
 **/logcat.txt
+
+# dados de playtest (saves, diarios e fotos de aparelho de pessoas reais): nunca no repositorio publico
+/playtest/
