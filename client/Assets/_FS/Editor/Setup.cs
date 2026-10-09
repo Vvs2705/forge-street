@@ -69,20 +69,26 @@ namespace FS.EditorTools
         static void Build(BuildTarget target, string path, AndroidArchitecture arch = AndroidArchitecture.None)
         {
             Apply();
-            if (arch != AndroidArchitecture.None) PlayerSettings.Android.targetArchitectures = arch;
-            // o empacotamento incremental do Gradle reaproveita o APK anterior: depois de trocar de branch deixou ~12 MB de buracos e,
-            // alternando ARM64/x86_64, saiu APK sem libunity/libil2cpp (crash "libgame.so not found"). Apagar a saida custa ~1 min
-            const string gradleOut = "Library/Bee/Android/Prj/IL2CPP/Gradle/launcher/build";
-            if (target == BuildTarget.Android && Directory.Exists(gradleOut)) Directory.Delete(gradleOut, true);
-            // o mainTemplate versionado e' o do aparelho (o resolver do LevelPlay exclui /lib/x86_64): sem tirar a linha, o APK do
-            // emulador sai sem libunity/libil2cpp. Tira so durante o build x86_64 e devolve o arquivo como estava
             const string tpl = "Assets/Plugins/Android/mainTemplate.gradle";
-            string tplOrig = arch == AndroidArchitecture.X86_64 && File.Exists(tpl) ? File.ReadAllText(tpl) : null;
-            if (tplOrig != null) File.WriteAllText(tpl, System.Text.RegularExpressions.Regex.Replace(tplOrig, @"^[ \t]*exclude \('/lib/x86_64/\*' \+ '\*'\)\r?\n", "",
-                System.Text.RegularExpressions.RegexOptions.Multiline));
-            BuildReport r;
+            string tplOrig = null;
+            BuildReport r = null;
             try
             {
+                if (arch != AndroidArchitecture.None) PlayerSettings.Android.targetArchitectures = arch;
+                // o empacotamento incremental do Gradle reaproveita o APK anterior: depois de trocar de branch deixou ~12 MB de buracos e,
+                // alternando ARM64/x86_64, saiu APK sem libunity/libil2cpp (crash "libgame.so not found"). Apagar a saida custa ~1 min
+                const string gradleOut = "Library/Bee/Android/Prj/IL2CPP/Gradle/launcher/build";
+                if (target == BuildTarget.Android && Directory.Exists(gradleOut)) Directory.Delete(gradleOut, true);   // arquivo preso (daemon do Gradle): IOException aborta, o finally devolve tudo
+                // o mainTemplate versionado e' o do aparelho (o resolver do LevelPlay exclui /lib/x86_64): sem tirar a linha, o APK do
+                // emulador sai sem libunity/libil2cpp. Tira so durante o build x86_64 e devolve o arquivo como estava
+                if (arch == AndroidArchitecture.X86_64 && File.Exists(tpl))
+                {
+                    tplOrig = File.ReadAllText(tpl);
+                    string semX86 = System.Text.RegularExpressions.Regex.Replace(tplOrig, @"^[ \t]*exclude \('/lib/x86_64/\*' \+ '\*'\)\r?\n", "",
+                        System.Text.RegularExpressions.RegexOptions.Multiline);
+                    if (semX86 == tplOrig) Debug.LogError("FS Setup: exclude de /lib/x86_64 nao achado no mainTemplate.gradle; o APK do emulador pode sair sem .so");
+                    File.WriteAllText(tpl, semX86);
+                }
                 r = BuildPipeline.BuildPlayer(new BuildPlayerOptions
                 {
                     scenes = new[] { Scene },
@@ -90,11 +96,15 @@ namespace FS.EditorTools
                     target = target,
                     options = BuildOptions.Development,
                 });
+                Debug.Log($"BuildSummary({target}): result={r.summary.result} errors={r.summary.totalErrors} size={r.summary.totalSize} path={path}");
             }
-            finally { if (tplOrig != null) File.WriteAllText(tpl, tplOrig); }
-            Debug.Log($"BuildSummary({target}): result={r.summary.result} errors={r.summary.totalErrors} size={r.summary.totalSize} path={path}");
-            if (arch != AndroidArchitecture.None) { PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64; AssetDatabase.SaveAssets(); }   // nao vaza para o build do aparelho
-            if (Application.isBatchMode) EditorApplication.Exit(r.summary.result == BuildResult.Succeeded ? 0 : 1);
+            catch (System.Exception e) { Debug.LogError("FS Setup: build abortado: " + e.Message); }
+            finally
+            {
+                if (tplOrig != null) File.WriteAllText(tpl, tplOrig);
+                if (arch != AndroidArchitecture.None) { PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64; AssetDatabase.SaveAssets(); }   // nao vaza para o build do aparelho
+            }
+            if (Application.isBatchMode) EditorApplication.Exit(r != null && r.summary.result == BuildResult.Succeeded ? 0 : 1);
         }
     }
 }
