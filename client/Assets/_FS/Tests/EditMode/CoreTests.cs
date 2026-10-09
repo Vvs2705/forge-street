@@ -1904,8 +1904,8 @@ namespace FS.Tests
             Assert.IsTrue(RunUntil(s, Ev.OrderNew, 2f), "a 2a chega");
         }
 
-        /// <summary>FASE9 §2: rodizio so entre linhas abertas (espada, escudo, ferramenta, joia); a partir da 2a, N = 150 s de clientes daquela
-        /// linha (OrderSeconds / ClientInterval), entre 3 e 30; premio ~ 10 s da taxa online.</summary>
+        /// <summary>FASE9 §2: rodizio so entre linhas abertas (espada, escudo, ferramenta, joia); a partir da 2a, N = 150 s da renda da linha
+        /// (OrderSeconds x RateEma / (linhas x preco)), entre 3 e 30; premio ~ 10 s da taxa online.</summary>
         [Test]
         public void Encomenda_RodizioDeLinhasAbertas_TamanhoPelaDemanda_PremioPelaTaxa()
         {
@@ -1918,7 +1918,7 @@ namespace FS.Tests
                 s.OrderItem = -1; s.OrderCount = k; s.OrderIn = 0f;
                 s.Tick(Dt, 0f, 0f);
                 seen.Add(s.OrderItem);
-                int want = Math.Max(Balance.OrderMin, Math.Min(Balance.OrderMax, (int)Math.Round(Balance.OrderSeconds / s.ClientInterval((Item)s.OrderItem))));
+                int want = Math.Max(Balance.OrderMin, Math.Min(Balance.OrderMax, (int)Math.Round(Balance.OrderSeconds * 4.0 / (3 * s.PriceOf((Item)s.OrderItem)))));
                 Assert.AreEqual(want, s.OrderTarget, $"tamanho da encomenda {k}");
                 Assert.AreEqual(Math.Max(Balance.OrderRewardMin, 5 * (int)Math.Round(4.0 * Balance.OrderRewardSeconds / 5.0)), s.OrderReward);
             }

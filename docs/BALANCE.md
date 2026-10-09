@@ -1379,7 +1379,7 @@ Portão novo: `Ocioso_15Min_AjudantesVendemSozinhos` (≥ 150 vendas parado). Pr
 
 ## 20. v0.6c: Encomendas (FASE9, 2026-10-09)
 
-Regra em `docs/FASE9_ENCOMENDAS.md`. Uma encomenda por vez (vender N de uma linha aberta, em rodízio), sem prazo; a 1ª é 5 espadas, 45 s depois da 1ª venda; a seguinte vem 20 s depois da entrega. N = 150 s de clientes daquela linha (`OrderSeconds / ClientInterval`, entre 3 e 30). Prêmio = `OrderRewardSeconds` × taxa online (mínimo 25, múltiplo de 5), pago como o baú: **fora do `GoldEarned`** (não infla a taxa online, o cofre offline nem o pacote do VIP).
+Regra em `docs/FASE9_ENCOMENDAS.md`. Uma encomenda por vez (vender N de uma linha aberta, em rodízio), sem prazo; a 1ª é 5 espadas, 45 s depois da 1ª venda; a seguinte vem 20 s depois da entrega. N = ~150 s da renda real daquela linha (`OrderSeconds × RateEma / (linhas abertas × preço)`, entre 3 e 30; vigente desde o teste no emulador, ver abaixo). Prêmio = `OrderRewardSeconds` × taxa online (mínimo 25, múltiplo de 5), pago como o baú: **fora do `GoldEarned`** (não infla a taxa online, o cofre offline nem o pacote do VIP).
 
 **Varredura do prêmio** (bot humano 60 min, `Bot_60Minutos_Fase2`, Dt 1/30):
 
@@ -1387,9 +1387,12 @@ Regra em `docs/FASE9_ENCOMENDAS.md`. Uma encomenda por vez (vender N de uma linh
 |---|---|---|---|---|
 | sem encomenda (0.5.1) | — | — | — | 46:12 |
 | 8 s | 17 | 3,6% | 3,5 | 43:03 |
-| **10 s (vigente)** | **16** | **4,2%** | **3,7** | **42:51** |
+| 10 s, N pela demanda | 16 | 4,2% | 3,7 | 42:51 |
+| **10 s, N pela renda (vigente)** | **21** | **5,0%** | **2,8** | **41:31** |
 | 15 s | 17 | 6,6% | 3,5 | 41:56 |
 
 O ganho de ritmo vem mais do prêmio mínimo (25) no começo, quando cada 25 de ouro adianta uma compra de 50–110, do que do tamanho do prêmio no fim; por isso 8 s e 10 s dão quase o mesmo tempo. Com 10 s, o 1º terço anda assim (bot humano): Bigorna 2 2:17 → 1:55, Ajudante 1 2:59 → 2:56, Escudos 4:00 → 3:49, Ferramentas 11:40 → 10:46, Ajudante 3 19:01 → 17:19. Todos ainda antes dos tempos do GDD §3 (o bot tem de chegar antes). A produção completa volta para perto da v0.4.1 (43:37). O VIP continua em 5,5% e o luxo não muda o ouro por minuto (-0,7%, `Bot_90Minutos_Luxo`).
 
-Portão: `Bot_60Minutos_Fase2` exige o prêmio entre 3% e 10% da receita. `Bot_90Minutos_Luxo` passa a somar o `OrderGold` na conta exata do saldo.
+Portão: `Bot_60Minutos_Fase2` exige o prêmio entre 3% e 10% da receita. `Bot_90Minutos_Luxo` passa a somar o `OrderGold` na conta exata do saldo.
+
+**N pela renda (2026-10-09, teste no emulador).** Com N pela demanda (`OrderSeconds / ClientInterval`), a 2ª encomenda já pedia **27 espadas por +25** no 3º minuto: no começo o gargalo é a produção do ferreiro, não o cliente. Agora N segue a renda real dividida entre as linhas abertas, então cresce junto com a oficina (5 → ~8 → ~15 espadas no começo; teto de 30 no fim). As encomendas ficam mais curtas (2,8 min), saem mais vezes (21) e o prêmio sobe para 5,0% da receita; produção completa 41:31.

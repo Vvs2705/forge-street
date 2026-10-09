@@ -157,7 +157,7 @@ namespace FS.Core
         public const float BoostSeconds = 60f, BoostMax = 3f, BoostPlayerMax = 1.3f;   // 1 anuncio = 2x por 60 s, o 2o sobe para 3x; o ferreiro no maximo 1,3x
         // FASE9 (docs/FASE9_ENCOMENDAS.md): encomenda = vender N de uma linha aberta; uma por vez, sem prazo nem falha
         public const float OrderFirstDelay = 45f, OrderGap = 20f;   // s depois da 1a venda; s entre uma entregue e a proxima
-        public const int OrderFirstTarget = 5, OrderMin = 3, OrderMax = 30;   // a 1a e' 5 espadas; depois N = OrderSeconds de clientes da linha
+        public const int OrderFirstTarget = 5, OrderMin = 3, OrderMax = 30;   // a 1a e' 5 espadas; depois N = OrderSeconds da renda da linha
         public const float OrderSeconds = 150f, OrderRewardSeconds = 10f;     // premio ~10 s da taxa online: 4,2% da receita no bot de 60 min (BALANCE §20)
         public const int OrderRewardMin = 25;
         public const float BoostCooldownSeconds = 300f;         // recarga: 5 min de jogo contados do FIM de cada boost (coordenador; sem ela, 2x renovado fechava a producao aos 26:56)

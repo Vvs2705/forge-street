@@ -941,7 +941,8 @@ namespace FS.Core
             Item it = lines[OrderCount % lines.Count];
             OrderItem = (int)it;
             OrderTarget = OrderCount == 0 ? Balance.OrderFirstTarget
-                : Math.Max(Balance.OrderMin, Math.Min(Balance.OrderMax, (int)Math.Round(Balance.OrderSeconds / ClientInterval(it))));   // pela demanda da linha
+                : Math.Max(Balance.OrderMin, Math.Min(Balance.OrderMax, (int)Math.Round(Balance.OrderSeconds * RateEma / (lines.Count * PriceOf(it)))));
+            // ~150 s da renda real dividida entre as linhas (no comeco o gargalo e' a producao, nao o cliente: pela demanda a 2a ja pedia 27 espadas)
             OrderProgress = 0;
             OrderReward = Math.Max(Balance.OrderRewardMin, 5 * (int)Math.Round(RateEma * Balance.OrderRewardSeconds / 5.0));
             OrderIn = 0f;

@@ -9,9 +9,9 @@
 - Sem compras pelo offline (o cofre não vende nada), então o offline não mexe na encomenda.
 
 ## 2. Números (medidos em `BALANCE.md` §20)
-- N a partir da 2ª: `OrderSeconds / ClientInterval(linha)` = ~150 s de clientes daquela linha, entre `OrderMin` 3 e `OrderMax` 30.
+- N a partir da 2ª: `OrderSeconds × RateEma / (linhas abertas × preço)` = ~150 s da renda real daquela linha, entre `OrderMin` 3 e `OrderMax` 30. (A 1ª versão usava a demanda de clientes e pedia 27 espadas no 3º minuto; ver `BALANCE.md` §20.)
 - Prêmio: `OrderRewardSeconds` = 10 s da taxa online (`RateEma`), mínimo 25, múltiplo de 5. Pago **fora do `GoldEarned`**, como o baú.
-- Bot humano 60 min: 16 entregues, prêmio = 4,2% da receita, uma a cada 3,7 min; produção completa 46:12 → 42:51.
+- Bot humano 60 min: 21 entregues, prêmio = 5,0% da receita, uma a cada 2,8 min; produção completa 46:12 → 41:31.
 
 ## 3. Save
 `ord=item,alvo,progresso,prêmio,entregues,relógio`. Save antigo sem `ord=` começa do zero; lixo vira o padrão; item de linha fechada não volta (a contagem fica); progresso no teto do alvo.
