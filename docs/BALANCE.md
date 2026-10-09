@@ -1411,3 +1411,23 @@ Pergunta do benchmark (B4): moedas empilhando ao lado do balcão e o ferreiro re
 **Leitura.** A moeda física custa pouco no ritmo: produção completa +45 a +65 s (~2%), vendas −6 a −7%, receita −4%; a 1ª venda não muda. O "andar sem decisão" bruto sobe 8–10 p.p. (passa do portão de +5 p.p. do benchmark), mas porque a ida à pilha conta como "sem decisão": tirando ela, a caminhada à toa **cai** de 20% para 5–13%. Ou seja, o tempo que hoje é deslocamento vazio vira o ritual de recolher, que é o que o gênero faz. O bot não mede o que importa (se recolher é gostoso ou chato); isso é do playtest.
 
 **Decisão do Vinicius.** Se quiser, entra na v0.7 com a pilha física na View (moedas empilhando, ímã ao passar, som), a pilha no save e uma dica "Recolha as moedas"; se não, o branch fica só como registro.
+
+## 22. Bot 2.0 e econsim: 4 perfis, 60 min (2026-10-09, A-CORE-07)
+
+`client/tools/econsim` roda N partidas × perfis do Bot 2.0 (`BotProfile`: Ideal, F2P = o humano de sempre, Slow = reação 1,5 s e 60% de stick do §18.3, AdWatcher = F2P que chama o VIP sempre que pode e a Velocidade 2× quando a recarga deixa) e grava um CSV por minuto. Determinístico; 1 partida de 60 min ≈ 0,7 s; 1.000 partidas em 42 s. Nenhuma regra mudou: com N = 1 o F2P reproduz o portão (produção completa 41:31).
+
+| Perfil | 1ª venda | Fole | Esteira | Corredor | Ajudante 3 | Joalheria | Produção completa | Zona morta até a produção (min; maior sequência) | Ouro depois da produção | Luxos | Minutos sem destino | VIPs (anúncios VIP/boost) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Ideal | 0:18 | 0:56 | 6:48 | 15:31 | 18:24 | 24:56 | 43:53 | 23 (4 a partir do min 34) | 28 467 | 1/3 | 0 | 11 (0/0) |
+| F2P | 0:22 | 1:07 | 6:58 | 13:42 | 16:51 | 22:53 | **41:31** | 21 (5 a partir do min 36) | 32 449 | 2/3 | 0 | 11 (0/0) |
+| Slow | 0:38 | 0:54 | 8:19 | 16:12 | 19:24 | 26:16 | 45:15 | 24 (5 a partir do min 40) | 25 939 | 1/3 | 0 | 11 (0/0) |
+| AdWatcher | 0:20 | 0:28 | 3:56 | 7:53 | 10:19 | 12:29 | **24:46** | 8 (3 a partir do min 21) | 87 248 | 3/3 | 14 | 55 (45/10) |
+
+Robustez (250 passos de tick por perfil, 1.000 partidas): produção completa média Ideal 43:47, F2P 43:15 (p50 42:57, p90 45:08 — o 41:31 do portão fica no percentil ~3), Slow 45:20, AdWatcher 24:22; zona morta 22,7–23,7 min sem anúncio × 7,6 com.
+
+**Achados (decisão do Vinicius; nada aplicado):**
+1. **"Chamar VIP" não tem recarga.** O AdWatcher chama ~47 VIPs por hora e fecha a produção aos 24 min (−44%), furando os pisos do §3 (Esteira 3:56 < 4:15; Fole 0:28 < 0:45). O Sim não conta o tempo do anúncio (47 × ~30 s ≈ 24 min por hora). Proposta: recarga no VIP chamado (ex.: 5 min, como a Velocidade) ou teto por hora — entra no RemoteConfig da Wave A/E.
+2. **Zona morta é metade da curva.** O F2P passa ~23 dos ~43 min sem poder comprar nada (platô aos 15–25 min: renda 400–600/min × custos de 1–3 mil). O Slow, 2× mais lento, chega só +2 min depois: depois dos ~15 min a curva é dos ajudantes, e a ação do jogador pesa pouco. É o espaço das Orders 2.0 e dos Blueprints (Wave B).
+3. **Ouro sem destino depois da produção completa** (BACKLOG_V07 item 2): ~29 mil até os 60 min e ~84 mil até os 90; só os 54 mil de luxo absorvem, e o luxo acaba por volta dos 72 min. É o argumento econômico dos distritos (Wave C).
+
+**QA:** 1 em 1.000 partidas travou — o Ideal a 36,36 ticks/s parou aos 31 min em (8,4; 6,1) a caminho do pad do Mineiro, com o `Sim.Steer` alternando entre (0,71; 0,70) e (−0,71; −0,70). Impasse de navegação no núcleo; conferir se os ajudantes podem cair nele (ticket para a raia de núcleo).
