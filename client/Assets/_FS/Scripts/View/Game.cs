@@ -170,7 +170,10 @@ namespace FS
             if (_headless) return;
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
-                if (_cfg.gameObject.activeSelf) _cfg.gameObject.SetActive(false);   // voltar do Android fecha as configuracoes
+                // voltar do Android (revisao da v0.6): fecha o que estiver aberto, de cima para baixo; so com nada aberto grava e sai
+                if (_panel.gameObject.activeSelf) ClosePanel();
+                else if (_cfg.gameObject.activeSelf) _cfg.gameObject.SetActive(false);
+                else if (_menu.IsOpen) _menu.Toggle();
                 else { Save(); Application.Quit(); return; }
             }
             if (_screen.x != Screen.width || _screen.y != Screen.height) Fit();

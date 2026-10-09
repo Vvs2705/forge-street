@@ -94,6 +94,8 @@ namespace FS
             }
         }
 
+        public bool IsOpen => _open;
+
         public void Toggle()
         {
             _open = !_open;

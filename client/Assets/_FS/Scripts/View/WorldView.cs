@@ -1202,7 +1202,8 @@ namespace FS
                 for (int i = 0; i < v.InPile.Length; i++) v.InPile[i].enabled = i < s.In;
                 bool blocked = s.Blocked || (s.Out >= s.OutCap);
                 int pop = -1; float ps = 1f;   // v0.6a: o item que acabou de sair (Ev.Crafted) da pop 0 -> 1,15 -> 1
-                if (v.ItemPopT >= 0f)
+                bool popping = v.ItemPopT >= 0f;   // revisao da v0.6: escala so durante a pop (e no quadro em que ela acaba volta a 1)
+                if (popping)
                 {
                     v.ItemPopT += dt;
                     pop = s.Out - 1;
@@ -1213,7 +1214,7 @@ namespace FS
                 {
                     v.OutPile[i].enabled = i < s.Out;
                     v.OutPile[i].color = blocked ? Color.Lerp(Art.ItemTint(s.OutItem), Art.Bad, 0.5f * pulse) : Art.ItemTint(s.OutItem);
-                    v.OutPile[i].transform.localScale = i == pop ? v.PileScale * ps : v.PileScale;
+                    if (popping) v.OutPile[i].transform.localScale = i == pop ? v.PileScale * ps : v.PileScale;
                 }
                 Juice(v, dt);
                 float p = s.Busy ? s.Progress : 0f;
@@ -1225,8 +1226,8 @@ namespace FS
                 v.BarBg.color = starving ? Color.Lerp(Art.ComAlfa(Art.Bg, 0.85f), Art.Bad, 0.35f * pulse) : Art.ComAlfa(Art.Bg, 0.85f);
                 v.Base.color = v.Baked ? (s.Busy ? Color.white : Dimmed) : Art.ComAlfa(Art.StationColor(s), s.Busy ? 1f : 0.8f);
             }
-            if (v.Glow != null)   // brasa: pulsa trabalhando, quase apaga parada (a "fome" ja apaga a arte)
-                v.Glow.color = Art.ComAlfa(GlowColor, s.Busy ? FurnaceGlowA * (0.8f + 0.2f * Mathf.Sin(Time.time * 7f + s.Index)) : FurnaceGlowA * 0.35f);   // v0.6a: no ritmo da boca
+            if (v.Glow != null)   // brasa: pulsa trabalhando, quase apaga parada (a "fome" ja apaga a arte) ou travada com a saida cheia
+                v.Glow.color = Art.ComAlfa(GlowColor, s.Busy && s.Progress < 1f ? FurnaceGlowA * (0.8f + 0.2f * Mathf.Sin(Time.time * 7f + s.Index)) : FurnaceGlowA * 0.35f);   // v0.6a: no ritmo da boca
             if (s.Kind == Kind.Counter && v.Stock != null)
                 for (int p = 0; p < v.StockItems.Length; p++)
                     for (int i = 0; i < 6; i++) v.Stock[p * 6 + i].enabled = i < _sim.Stock[(int)v.StockItems[p]];
@@ -1240,11 +1241,12 @@ namespace FS
         void Juice(StationV v, float dt)
         {
             Station s = v.S;
-            bool furnace = s.Kind == Kind.Furnace;
+            // revisao da v0.6: pronta com a saida cheia o Sim deixa Busy com Progress 1; isso e' trava (pulso vermelho na pilha), nao trabalho
+            bool furnace = s.Kind == Kind.Furnace, work = s.Busy && s.Progress < 1f;
             if (v.Mouth != null)
             {
-                v.Mouth.enabled = s.Busy;
-                if (s.Busy) v.Mouth.color = Art.ComAlfa(SparkB, 0.5f + 0.25f * Mathf.Sin(Time.time * 7f + s.Index));
+                v.Mouth.enabled = work;
+                if (work) v.Mouth.color = Art.ComAlfa(SparkB, 0.5f + 0.25f * Mathf.Sin(Time.time * 7f + s.Index));
             }
             if (v.PunchT >= 0f)
             {
@@ -1253,7 +1255,7 @@ namespace FS
                 v.Base.transform.localScale = v.BaseScale * (1f + PunchAmp * Mathf.Sin(Mathf.PI * k));
                 if (k >= 1f) v.PunchT = -1f;
             }
-            if (!s.Busy) { v.HitT = 0f; return; }   // a 1a martelada sai assim que volta a trabalhar
+            if (!work) { v.HitT = 0f; return; }   // a 1a martelada sai assim que volta a trabalhar
             if ((v.HitT -= dt) > 0f) return;
             v.HitT = furnace ? SmokeEvery : HitEvery;
             if (!furnace) v.PunchT = 0f;

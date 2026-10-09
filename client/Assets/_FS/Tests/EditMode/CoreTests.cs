@@ -1949,6 +1949,22 @@ namespace FS.Tests
             Assert.AreEqual(5, g.OrderProgress, "progresso no teto do alvo");
         }
 
+        /// <summary>FASE9 §4 (revisao da v0.6): OrderNew/OrderDone saem no balcao que vende o item; a de joia, na loja de joias.</summary>
+        [Test]
+        public void Encomenda_DeJoia_EventosNaLojaDeJoias()
+        {
+            var s = new Sim();
+            s.Buy(Upgrade.SideCorridor); s.Buy(Upgrade.Jewelry);
+            s.FirstSaleTime = 1f; s.OrderCount = 1; s.OrderIn = 0f;   // linhas abertas: espada, joia -> a 2a e' joia
+            s.Tick(Dt, 0f, 0f);
+            SimEvent n = s.Events.Find(e => e.Kind == Ev.OrderNew);
+            Assert.AreEqual(((int)Item.Jewel, s.JewelShop.Pos.X, s.JewelShop.Pos.Y), (n.A, n.Pos.X, n.Pos.Y), "nova na loja de joias");
+            s.OrderProgress = s.OrderTarget;
+            s.Tick(Dt, 0f, 0f);
+            SimEvent d = s.Events.Find(e => e.Kind == Ev.OrderDone);
+            Assert.AreEqual(((int)Item.Jewel, s.JewelShop.Pos.X, s.JewelShop.Pos.Y), (d.A, d.Pos.X, d.Pos.Y), "entregue na loja de joias");
+        }
+
         static Client Vip(Sim s) => s.Queue.Find(c => c.Vip);
 
         /// <summary>Zera o relogio e roda um tick: o VIP NATURAL e' sorteado e entra (fila com vaga).</summary>

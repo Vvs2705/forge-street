@@ -931,7 +931,7 @@ namespace FS.Core
                 if (OrderProgress < OrderTarget) return;
                 Gold = (int)Math.Min(int.MaxValue, (long)Gold + OrderReward);
                 OrderGold += OrderReward;
-                Emit(Ev.OrderDone, OrderItem, OrderReward, Counter.Pos);
+                Emit(Ev.OrderDone, OrderItem, OrderReward, CounterFor((Item)OrderItem).Pos);   // joia: na loja de joias
                 OrderItem = -1; OrderCount++; OrderIn = Balance.OrderGap;
                 return;
             }
@@ -945,7 +945,7 @@ namespace FS.Core
             OrderProgress = 0;
             OrderReward = Math.Max(Balance.OrderRewardMin, 5 * (int)Math.Round(RateEma * Balance.OrderRewardSeconds / 5.0));
             OrderIn = 0f;
-            Emit(Ev.OrderNew, OrderItem, OrderTarget, Counter.Pos);
+            Emit(Ev.OrderNew, OrderItem, OrderTarget, CounterFor(it).Pos);
         }
 
         // ------------------------------------------------------------------ consultas para view, bot e dica

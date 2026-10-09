@@ -216,29 +216,35 @@ namespace FS
         }
 
         /// <summary>Mascara com 4 amostras de antialias por pixel (x, y em [-1, 1]).</summary>
-        static Sprite Get(string key, Func<float, float, bool> inside) => Mask(key, (x, y) =>
+        // revisao da v0.6: o cache e' conferido ANTES de criar a lambda que captura `inside`/`f`, e num metodo sem lambda (o C# aloca a
+        // closure na entrada do metodo que a tem, mesmo com return antes). Medido num console .NET: 90 -> 0 B por chamada; as faiscas,
+        // a fumaca e a poeira chamam Art.Sparkle()/Disc() varias vezes por segundo
+        static Sprite Get(string key, Func<float, float, bool> inside) => Cached(key) ?? Mask(key, Supersample(inside));
+        static Func<int, int, byte> Supersample(Func<float, float, bool> inside) => (x, y) =>
         {
             int n = 0;
             for (int sy = 0; sy < 2; sy++)
                 for (int sx = 0; sx < 2; sx++)
                     if (inside((x + 0.25f + sx * 0.5f) / Side * 2f - 1f, (y + 0.25f + sy * 0.5f) / Side * 2f - 1f)) n++;
             return (byte)(n * 63);
-        });
+        };
 
         /// <summary>Degrade: alfa = f(x, y) em [0, 1], com x, y em [-1, 1] no centro do pixel.</summary>
-        static Sprite Soft(string key, Func<float, float, float> f) =>
-            Mask(key, (x, y) => (byte)(255f * Mathf.Clamp01(f((x + 0.5f) / Side * 2f - 1f, (y + 0.5f) / Side * 2f - 1f))));
+        static Sprite Soft(string key, Func<float, float, float> f) => Cached(key) ?? Mask(key, Gradient(f));
+        static Func<int, int, byte> Gradient(Func<float, float, float> f) =>
+            (x, y) => (byte)(255f * Mathf.Clamp01(f((x + 0.5f) / Side * 2f - 1f, (y + 0.5f) / Side * 2f - 1f)));
+
+        static Sprite Cached(string key) => Cache.TryGetValue(key, out Sprite s) && s != null ? s : null;
 
         static Sprite Mask(string key, Func<int, int, byte> alpha)
         {
-            if (Cache.TryGetValue(key, out Sprite s) && s != null) return s;
             var tex = new Texture2D(Side, Side, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
             var px = new Color32[Side * Side];
             for (int y = 0; y < Side; y++)
                 for (int x = 0; x < Side; x++) px[y * Side + x] = new Color32(255, 255, 255, alpha(x, y));
             tex.SetPixels32(px);
             tex.Apply();
-            s = Sprite.Create(tex, new Rect(0, 0, Side, Side), new Vector2(0.5f, 0.5f), Side);
+            Sprite s = Sprite.Create(tex, new Rect(0, 0, Side, Side), new Vector2(0.5f, 0.5f), Side);
             Cache[key] = s;
             return s;
         }
@@ -479,8 +485,8 @@ namespace FS
 
     /// <summary>
     /// Configuracoes (v0.6b, BENCHMARK_VISUAL P2-4): Som e Vibracao no PlayerPrefs (fs_som, fs_vibra; 1 = ligado), fora do save de
-    /// progresso, entao valem tambem no -testsession. Pulso = vibracao curta do Android (VibrationEffect.createOneShot, API 26+);
-    /// no PC e no editor nao faz nada.
+    /// progresso, entao valem tambem no -testsession. Pulso = vibracao curta do Android (Vibrator.vibrate(long)); no PC e no editor
+    /// nao faz nada.
     /// </summary>
     public static class Ajustes
     {
@@ -490,7 +496,6 @@ namespace FS
         static float _last = -99f;
 #if UNITY_ANDROID && !UNITY_EDITOR
         static AndroidJavaObject _vib;
-        static int _sdk;
         static bool _quebrou;
 #endif
 
@@ -520,19 +525,13 @@ namespace FS
             try
             {
                 if (_vib == null)
-                {
                     using (var up = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
                     using (AndroidJavaObject act = up.GetStatic<AndroidJavaObject>("currentActivity"))
                         _vib = act.Call<AndroidJavaObject>("getSystemService", "vibrator");
-                    using (var ver = new AndroidJavaClass("android.os.Build$VERSION")) _sdk = ver.GetStatic<int>("SDK_INT");
-                }
-                if (_sdk >= 26)
-                {
-                    using (var fx = new AndroidJavaClass("android.os.VibrationEffect"))
-                    using (AndroidJavaObject e = fx.CallStatic<AndroidJavaObject>("createOneShot", ms, -1))   // -1 = DEFAULT_AMPLITUDE
-                        _vib.Call("vibrate", e);
-                }
-                else _vib.Call("vibrate", ms);   // API < 26 (o minSdk hoje e' 26)
+                // revisao da v0.6: vibrate(long), assinatura (J)V exata. O vibrate(VibrationEffect) montava a assinatura pela classe de
+                // runtime (VibrationEffect$OneShot), errava a busca e caia na reflexao a cada pulso, com um AndroidJavaClass novo por pulso.
+                // ponytail: obsoleto desde a API 26, mas funciona em todas e respeita a duracao
+                _vib.Call("vibrate", ms);
             }
             catch (Exception) { _quebrou = true; }   // ponytail: falhou uma vez = sem vibracao ate reabrir; nunca derruba o jogo
 #endif

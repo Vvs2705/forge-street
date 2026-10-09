@@ -130,3 +130,19 @@ Fotos em `client/Builds/validation_v06c/shots/` (janela `-screen-fullscreen 0 -t
 ## Fica de fora
 - Som ao chegar encomenda nova: o pop do cartão já chama o olho, e o pedido só falava do som da entrega. Entra se o playtest disser que ninguém viu o cartão.
 - Vibração na entrega: o baú não vibra, então a entrega também não.
+
+# Revisão da v0.6 (correções, 2026-10-09)
+
+Achados da revisão de código de `57de892` (v0.6a), `5d992d2` (v0.6b) e `f05142f` (core v0.6c). Todos entraram no mesmo build Windows das fotos da v0.6c. Os portões são os da seção acima: coretests 86/86, viewcheck 0/0, autoplay OK e bot de 20 min sem exceção.
+
+| # | Achado | Correção | Como foi conferido |
+|---|---|---|---|
+| 1 | Estação pronta com a saída cheia parecia trabalhando (`Busy` com `Progress` 1) | `WorldView.Juice`: `work = Busy && Progress < 1` para faíscas e punch, fumaça, boca acesa e brasa da fornalha. O pulso vermelho da pilha fica sozinho | Código. No Sim de hoje esse estado não aparece em jogo normal (a estação não começa com a saída cheia, e só ela enche a própria saída). Só um save com `Busy=1` e saída cheia chega lá, então a correção é defensiva |
+| 2 | Voltar do Android saía do jogo com o painel do cofre ou a fileira de melhorias abertos | `Game.Update`: painel → `ClosePanel()`; configurações → fecha; fileira (`MenuBar.IsOpen`) → fecha; nada aberto → grava e sai. Isso também resolve a pendência da v0.6b ("o voltar com o painel do cofre aberto continua saindo") | Código e viewcheck. O Esc do PC passa pelo mesmo caminho, mas não foi apertado à mão |
+| 3 | GC por quadro: `Art.Get`/`Soft` criavam a lambda que captura `inside`/`f` antes de olhar o cache | O cache é conferido antes, num método sem lambda (`Cached`); a lambda foi para `Supersample`/`Gradient`. Corrige todos os chamadores (faísca, fumaça, poeira, coração), sem campo de cache no `WorldView` | Console .NET com o mesmo formato (`GC.GetAllocatedBytesForCurrentThread`, 1000 chamadas): antes 90 B por chamada; "return antes" no mesmo método 24 B; corrigido 0 B |
+| 4 | Vibração: `vibrate(VibrationEffect)` montava a assinatura JNI pela classe de runtime (`VibrationEffect$OneShot`), errava a busca e caía na reflexão a cada pulso, com um `AndroidJavaClass` novo por pulso | Sempre `_vib.Call("vibrate", ms)` com `ms` long (assinatura `(J)V` exata). O `Vibrator` fica em cache, e saíram o `SDK_INT` e o `VibrationEffect` | O caminho `UNITY_ANDROID` não compila no viewcheck nem no build Windows. A linha `_vib.Call("vibrate", ms)` já existia no ramo API < 26 compilado pelo APK temporário da v0.6b. Falta sentir no próximo APK de playtest |
+| 5 | Encomendas invisíveis na View | v0.6c (seção acima) | idem |
+| 6 | `OrderNew`/`OrderDone` saíam sempre no balcão principal | `Sim.Orders`: `CounterFor(item).Pos`, então a encomenda de joia sai na loja de joias. O item é lido antes de `OrderItem = -1` | Teste novo `Encomenda_DeJoia_EventosNaLojaDeJoias`. Falhou antes (`(5, 4.5, 13)` em vez de `(5, 12, 11.5)`) e passa depois; 86/86 |
+| 7 | A pop do item da pilha de saída reescrevia a escala de todos os itens a cada quadro | A escala só é escrita durante a pop, inclusive no quadro em que ela acaba (volta a 1) | Código |
+
+Visto de passagem e fora do pedido: `MenuBar.TopPx` cria um `Vector3[4]` por quadro (o `Game.Update` lê a cada quadro).
