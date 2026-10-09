@@ -22,7 +22,7 @@ Exit 0 + linha `SPRITES_OK` no log; exit 1 + `ERRO ...` na falha (osso faltando,
 | `-Size` / `--size` | 128 | px por célula (quadrada) |
 | `-Scale` / `--scale` | 0 | px por metro; 0 = ajusta o personagem à célula (todas as folhas do mesmo personagem compartilham ppu e pivô). Avisa `AVISO recorte` se não couber |
 | `-Yaw` / `--yaw` | 0 | graus somados a toda direção, para modelo que não olha para −Y no Blender (= +Z no Unity) |
-| `-Light` / `--light` | flat | `flat` cor plana + contorno + cavidade · `matcap` toon 2 tons (`toon_light.exr`) · `studio` sombreado |
+| `-Light` / `--light` | flat | `flat` cor plana + contorno + cavidade · `matcap` toon 2 tons (`toon_light.exr`) · `studio` sombreado · `forja` preset v2 em EEVEE (abaixo) |
 | `-Aa` / `--aa` | 8 | antialias do Workbench (`OFF` para pixel art crua) |
 | `-Shadow` / `--shadow` | off | auto-sombra do Workbench (não há sombra no chão: sem shadow catcher; desenhe a elipse no Unity) |
 | `--src-fps` | 30 | fps dos clipes de origem (Mixamo e placeholder = 30) |
@@ -55,6 +55,11 @@ Cache os `Sprite` por (clipe, d, i) como o `Art.Get` já faz; parado → último
 2. Mixamo: clipes **"Without Skin", 30 fps, In Place**; 1 FBX por clipe na pasta `-Anims`.
 3. Rodar e **olhar o `contact.png`**. Se der `ERRO armature nao bate`, é prefixo/nomenclatura (`mixamorig:` × rig do Tripo) — a verificar com o 1º modelo; o script lista os ossos faltantes. Se o personagem sair de costas, `-Yaw 180`.
 4. Só então importar para `Assets/Resources/Sprites/` e escrever o consumidor acima (owner: frontend/view do Forge).
+
+## Preset `forja` (A-ART-02, 2026-10-09: PROPOSTO, só amostra; nada em `Assets/` mudou)
+- `--light forja` troca o Workbench por EEVEE: toon de 3 faixas (Shader to RGB de um difuso branco → Color Ramp constante: sombra fria, meio neutro-quente, brilho laranja, multiplicando a cor base), contorno por casca invertida (Solidify de 2 cm no mundo + material com backface culling), 2 sóis sem sombra projetada (chave baixa à esquerda + preenchimento frio de cima/trás), sombra de contato (elipse degradê no chão) e, só em prop sem armature, emissão nos texels laranja/amarelo claros (boca da fornalha).
+- Mesma câmera, ppu, pivô e `meta.json` (muda só `"light": "forja"`); o padrão `flat` sai idêntico pixel a pixel (fornalha re-renderizada = PNG do jogo). Ajustes: constantes `BANDS`, `KEY`, `FILL`, `OUTLINE_M`, `EMBER`, `SHADOW_*` no topo do `.py`.
+- Prova, tempos e tamanhos: `client/Builds/art_preset_forja/` (`folha_contato*.png`, `folha_jogo_*.png`, `custo.txt`). Ao integrar, desligar a elipse procedural do Unity (a sombra já vem no sprite).
 
 ## Limites
 - Retarget vigente por delta de rotação sobre o repouso no mundo (`render_sprites.py:retarget`); aplicar a action bruta por nome levantava os braços. Conferir poses e pés na folha de cada personagem.

@@ -4,7 +4,7 @@ render_sprites.ps1 - chama o Blender 5.2 headless com render_sprites.py (ASCII p
 Uso:
   .\render_sprites.ps1 -Model <fbx|glb> -Anims <pasta com 1 FBX por clipe> -Out <pasta>
       [-Dirs 4|8] [-Elev 60] [-Fps 12] [-Size 128] [-Scale 0] [-Yaw 0]
-      [-Light flat|matcap|studio] [-Aa OFF|FXAA|5|8|11|16|32] [-Shadow] [-SelfAnims]
+      [-Light flat|matcap|studio|forja] [-Aa OFF|FXAA|5|8|11|16|32] [-Shadow] [-SelfAnims]
   .\render_sprites.ps1 -Teste [-TestDir <pasta>]
       gera o humanoide-placeholder do COE em <TestDir>\fbx e renderiza Idle + Run em 4 direcoes
       para <TestDir>\out (padrao: %TEMP%\fs_sprites_test - caminho curto, MAX_PATH).
@@ -20,7 +20,7 @@ param(
     [int]$Size = 128,
     [double]$Scale = 0,
     [double]$Yaw = 0,
-    [ValidateSet("flat", "matcap", "studio")][string]$Light = "flat",
+    [ValidateSet("flat", "matcap", "studio", "forja")][string]$Light = "flat",
     [string]$Aa = "8",
     [switch]$Shadow,
     [switch]$SelfAnims,
