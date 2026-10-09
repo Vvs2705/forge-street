@@ -257,7 +257,7 @@ def relatorio(linhas, ruins=0):
     s += ["ANUNCIOS, VIP E VELOCIDADE (v0.5)"]
     for pl in ("vip", "velocidade"):
         c = {e: r["ads"][(e, pl)] for e in ("ad_request", "ad_shown", "ad_reward", "ad_fail", "ad_load_fail")}
-        s.append(f"  {pl:<11} pedidos {c['ad_request']} | mostrados {c['ad_shown']} | recompensas {c['ad_reward']} | falhas {c['ad_fail'] + c['ad_load_fail']}")
+        s.append(f"  {pl:<11} pedidos {c['ad_request']} | mostrados {c['ad_shown']} | recompensas {c['ad_reward']} | falhas ao mostrar {c['ad_fail']} | sem anuncio carregado {c['ad_load_fail']}")
     vp = r["vip"]
     s.append(f"  VIP: chegaram {vp['vip_arrived']} | atendidos {vp['vip_served']} | foram embora {vp['vip_left']} | velocidade ativada {vp['boost_start']}x")
     # min/encomenda = t_jogo acumulado / entregues, a conta do bot no BALANCE sec.20 (60 min / 16)
