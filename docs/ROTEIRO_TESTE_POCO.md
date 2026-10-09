@@ -33,6 +33,16 @@ adb shell "am start -n br.com.vstack.forgestreet/com.unity3d.player.UnityPlayerG
 ```
 As aspas simples vão dentro das duplas (sem isso o shell do celular quebra o extra e o `am` acusa "Unknown option"). Jogar 2–3 min com 9 e com 8 e dizer qual prefere (personagens maiores × ver a oficina toda; o balão do 1º da fila pode encostar na borda e, com o ferreiro lá embaixo na forja, a fila fica sob a barra de cima). Testado no emulador: `client/Builds/validation_v051/shots/04_android_cam9_bandeja.png`. Abrir pelo ícone volta ao normal (11,4). Fotos do PC: `client/Builds/validation_v051/shots/02_cam9.png` e `02_cam8.png`.
 
+## 2c. Parte 2 (opcional): v0.6.0 por cima
+Depois do roteiro da 0.5.1, dá para ver a próxima versão no mesmo save: `adb install -r client/Builds/android/ForgeStreet-0.6.0.apk` (SHA-256 `088761b4…3957`; branch `feat/v0.6-juice`, ainda sem PR). O que olhar:
+| # | O que | Onde |
+|---|---|---|
+| a | Faíscas na bigorna, fumaça e fole na fornalha, martelo dourado e mochila quando compra as melhorias | estações e ferreiro |
+| b | "MAX" quando a mão está cheia daquele tipo | em cima da pilha |
+| c | Engrenagem no canto de cima: Som e Vibração liga/desliga (vibração curta na venda e na compra) | barra de cima |
+| d | **Encomendas**: cartão no canto de baixo à esquerda ("Encomenda 3/8 +25"); entregue = banner e moedas | ~45 s depois da 1ª venda |
+Para voltar à 0.5.1: `adb install -r -d client/Builds/android/ForgeStreet-dev.apk` (o save da 0.6 abre na 0.5.1; a encomenda em andamento é ignorada).
+
 ## 3. Medir (o coordenador faz pelo cabo)
 FPS (SurfaceFlinger), memória (`dumpsys meminfo br.com.vstack.forgestreet`), temperatura e erros no logcat. Comparar com a v0.4.1 (60 fps, 252 MB).
 
