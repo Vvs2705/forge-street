@@ -116,9 +116,12 @@ namespace FS
         public static Sprite BalloonRing(float frac)
         {
             int k = Mathf.Clamp(Mathf.CeilToInt(frac * 24f), 0, 24);
-            return Get("arc" + k, (x, y) =>
-                RoundedIn(x, y) && !RoundedIn(x / 0.86f, y / 0.84f) && Mathf.Repeat(Mathf.Atan2(x, y) / (Mathf.PI * 2f), 1f) < k / 24f);
+            return _rings[k] != null ? _rings[k] : (_rings[k] = MakeRing(k));   // chamado 2x por quadro: cache sem lambda nem string no caminho quente
         }
+
+        static readonly Sprite[] _rings = new Sprite[25];
+        static Sprite MakeRing(int k) => Get("arc" + k, (x, y) =>
+            RoundedIn(x, y) && !RoundedIn(x / 0.86f, y / 0.84f) && Mathf.Repeat(Mathf.Atan2(x, y) / (Mathf.PI * 2f), 1f) < k / 24f);
 
         // ---------- v0.5b (BENCHMARK_VISUAL P1-1..P1-6): placa de obra, juice e seta da dica ----------
 

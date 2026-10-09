@@ -9,6 +9,12 @@ A 0.5.1 corrige o que a revisão de código achou na 0.5.0: o Ajudante 3 ficava 
 adb install -r client/Builds/android/ForgeStreet-dev.apk
 ```
 
+**Plano B (se o joystick falhar ou o FPS cair):** a 0.5.1 lê o voltar pelo Input Manager legado junto com o Input System ("Both"), que a Unity avisa não ser suportado no Android. No emulador o toque, o arrasto do joystick e o voltar funcionaram, mas o FPS só se mede no POCO. Se o joystick travar, não responder ou o jogo ficar abaixo de ~55 fps, instale o reserva, que é a mesma 0.5.1 só com o Input System, como as versões já medidas a 60 fps (aí o voltar não faz nada):
+```
+adb install -r client/Builds/android/ForgeStreet-0.5.1-reserva.apk
+```
+(SHA-256 `55b251b075f23c567a71a6fc9fcdf980ce990b11a8210608624efa893de443ee`.) Anote qual dos dois ficou: decide se a correção do voltar fica assim ou muda para o ponto de entrada Activity.
+
 ## 2. O que conferir jogando (10–15 min)
 | # | Pedido seu | O que olhar |
 |---|---|---|

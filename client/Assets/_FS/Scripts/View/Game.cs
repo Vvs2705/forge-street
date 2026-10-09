@@ -169,7 +169,11 @@ namespace FS
         {
             if (_headless) return;
             // Input.GetKeyDown: com o GameActivity o voltar do Android nao chega ao Input System, so ao Input Manager legado (Setup: Both)
-            if (Input.GetKeyDown(KeyCode.Escape) || (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame))
+            bool back = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+#if ENABLE_LEGACY_INPUT_MANAGER
+            back |= Input.GetKeyDown(KeyCode.Escape);   // sem o legado (handler 1) o Input.* lanca toda chamada e derruba o Update inteiro
+#endif
+            if (back)
             {
                 // voltar do Android (revisao da v0.6): fecha o que estiver aberto, de cima para baixo; so com nada aberto grava e sai
                 if (_panel.gameObject.activeSelf) ClosePanel();
