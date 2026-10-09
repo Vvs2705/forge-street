@@ -38,6 +38,17 @@ namespace FS.Core
         public float ActT, IdleT; public bool Moving;
         public int State;            // ajudante: 0 buscando, 1 entregando
         public int Target = -1;      // ajudante: indice da estacao alvo (-1 = parado)
+        /// <summary>s andando sem sair de Balance.StuckRadius de um ponto (sem progresso): o Sim.Steer usa para sair do impasse. Nao vai no save.</summary>
+        public float StuckT;
+        V2 _anchor;
+
+        /// <summary>Poe o personagem em `p` (todo movimento do Sim passa aqui) e conta o tempo andando sem progredir.</summary>
+        public void MoveTo(V2 p, float dt)
+        {
+            Pos = p;
+            if (!Moving || V2.Dist(p, _anchor) > Balance.StuckRadius) { _anchor = p; StuckT = 0f; }
+            else StuckT += dt;
+        }
         public bool Has(Item i) => Held[(int)i] > 0;
         /// <summary>Total na mao, todos os tipos.</summary>
         public int Count { get { int n = 0; foreach (int h in Held) n += h; return n; } }
@@ -325,7 +336,7 @@ namespace FS.Core
             Player.Moving = len > 0.01f;
             if (len > 1f) { inX /= len; inY /= len; }
             V2 p = Player.Moving ? new V2(Player.Pos.X + inX * Player.Speed * dt, Player.Pos.Y + inY * Player.Speed * dt) : Player.Pos;
-            Player.Pos = Collide(Clamp(p, MaxX));   // parado tambem: estacao comprada embaixo do jogador o empurra para fora
+            Player.MoveTo(Collide(Clamp(p, MaxX)), dt);   // parado tambem: estacao comprada embaixo do jogador o empurra para fora
         }
 
         static V2 Clamp(V2 p, float maxX) => new V2(Math.Max(0.3f, Math.Min(maxX, p.X)), Math.Max(0.3f, Math.Min(Balance.WorldH - 0.3f, p.Y)));
@@ -357,11 +368,17 @@ namespace FS.Core
         /// Direcao (unitaria) de quem anda sozinho rumo a `target` (ajudante e bot; o jogador humano nao): encostado num corpo
         /// que fica na frente da linha reta ate o alvo, contorna pelas quinas (caixa inflada pelo raio) no sentido de menor
         /// caminho, que soma quina a quina ate o alvo ficar visivel. Sem isso o empurrao so anula o passo e ele trava atras da
-        /// estacao. Nao oscila: andar no sentido escolhido so encurta o caminho por ele (empate: anti-horario).
+        /// estacao. Empate: anti-horario.
+        /// Impasse (Leva 4; econsim: Ideal a 36,36 ticks/s parado aos 31 min na quina da Ferramentas): quem bate de frente numa quina
+        /// fica na curva dela, a ~0,10 m (r(raiz 2 - 1)) do canto da caixa inflada; mirar esse canto o leva para FORA da faixa de
+        /// contato, de la a reta ao alvo volta para a mesma quina e o Collide o devolve ao mesmo ponto (vai-e-volta sem fim). Com
+        /// `who` andando sem progresso ha Balance.StuckSeconds, quem esta a menos de r do canto ja conta como na quina e mira o ponto
+        /// seguinte da rota. So age no impasse: fora dele a rota e' a de sempre (o antigo "ja na quina" de 0,05 m nunca disparava,
+        /// encostado nunca chega a menos de 0,09 m do canto), entao os numeros do bot nao mudam.
         /// </summary>
-        public V2 Steer(V2 from, V2 target)
+        public V2 Steer(Carrier who, V2 target)
         {
-            V2 d = target - from;
+            V2 from = who.Pos, d = target - from;
             float dl = d.Len;
             if (dl < 1e-5f) return new V2(0f, 0f);
             float r = Balance.CharRadius;
@@ -369,6 +386,7 @@ namespace FS.Core
             // (vao mais estreito que o personagem) e' descartada: na boca da Loja de joias, entre a loja e os pedestais da Joalheria real
             // (vaos de 0,1-0,2 m), o bot ia e voltava no vao para sempre. ponytail: resolve vao entre 2 corpos; labirinto pede grafo de waypoints.
             V2 bestStep = d; float bestLen = float.MaxValue;
+            bool stuck = who.StuckT >= Balance.StuckSeconds;   // ponytail: ligado sempre contorna melhor toda quina, mas mexe na curva do bot (BALANCE inteiro de novo)
             foreach (Box b in Solids)
             {
                 V2 n = from - b.Closest(from), shrunk = b.Half + new V2(r - 0.02f, r - 0.02f);
@@ -380,7 +398,11 @@ namespace FS.Core
                     int i = turn == 1 ? (face + 1) % 4 : face;
                     V2 step = Corner(b.Pos, h, i) - from;
                     bool open = Fits(from + step, b);
-                    if (step.Len < 0.05f) { step = Corner(b.Pos, h, (i + turn) % 4) - from; open = Fits(from + step, b); }   // ja na quina: rumo a proxima
+                    if (stuck && step.Len < r)   // ja na quina: rumo ao ponto seguinte da rota (a proxima quina, ou o alvo se ele ja aparece dali)
+                    {
+                        V2 c = Corner(b.Pos, h, i), next = Crosses(c, target, b.Pos, shrunk) ? Corner(b.Pos, h, (i + turn) % 4) : target;
+                        step = next - from; open = Fits(next, b);
+                    }
                     float len = V2.Dist(from, Corner(b.Pos, h, i));
                     for (int k = 0; k < 4 && Crosses(Corner(b.Pos, h, i), target, b.Pos, shrunk); k++)
                     {
@@ -454,8 +476,8 @@ namespace FS.Core
             c.Moving = len > reach;
             if (!c.Moving) return true;
             V2 goal = Via(c.Pos, target);
-            V2 dir = Steer(c.Pos, goal);
-            c.Pos = Collide(Clamp(c.Pos + dir * Math.Min(V2.Dist(c.Pos, goal), c.Speed * dt), Balance.WorldW - 0.3f));   // ponytail: ajudante usa o mapa inteiro; so mira estacao desbloqueada, entao nunca entra na rua fechada
+            V2 dir = Steer(c, goal);
+            c.MoveTo(Collide(Clamp(c.Pos + dir * Math.Min(V2.Dist(c.Pos, goal), c.Speed * dt), Balance.WorldW - 0.3f)), dt);   // ponytail: ajudante usa o mapa inteiro; so mira estacao desbloqueada, entao nunca entra na rua fechada
             return false;
         }
 

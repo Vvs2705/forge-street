@@ -50,7 +50,7 @@ namespace FS.Core
         {
             V2 d = target - s.Player.Pos;
             float len = d.Len;
-            return len <= Reach ? new V2(0f, 0f) : s.Steer(s.Player.Pos, Sim.Via(s.Player.Pos, target));   // porta/arco da parede e contorno das estacoes
+            return len <= Reach ? new V2(0f, 0f) : s.Steer(s.Player, Sim.Via(s.Player.Pos, target));   // porta/arco da parede e contorno das estacoes
         }
 
         public static V2 Target(Sim s)
