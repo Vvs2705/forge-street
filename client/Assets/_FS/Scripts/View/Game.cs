@@ -56,7 +56,7 @@ namespace FS
         Joystick _joy;
         MenuBar _menu;
         Camera _cam;
-        float _speed = 1f, _saveT, _hintT, _minuteT, _adHold, _visW = VisibleWidth;
+        float _speed = 1f, _saveT, _hintT, _minuteT, _adHold, _visW = VisibleWidth, _backT;
         bool _botDrive, _headless, _firstSaleLogged, _testSession, _started, _pausedByAd;
         string _diary, _sid;
         Vector2Int _screen;
@@ -164,6 +164,7 @@ namespace FS
         {
             if (_sim.SavedAt <= 0) return;
             long elapsed = Now() - _sim.SavedAt;
+            if (elapsed < 60) return;   // mesma regra da volta de pausa: abrir de novo em < 1 min mostrava "31 de ouro em 0 min fora" (POCO F4)
             int gold = _sim.ApplyOffline(elapsed, _sim.SavedAt);
             if (gold <= 0) return;
             long shown = Math.Min(elapsed, (long)Balance.OfflineCapSeconds);
@@ -184,8 +185,10 @@ namespace FS
 #if ENABLE_LEGACY_INPUT_MANAGER
             back |= Input.GetKeyDown(KeyCode.Escape);   // sem o legado (handler 1) o Input.* lanca toda chamada e derruba o Update inteiro
 #endif
-            if (back)
+            // POCO F4: um voltar as vezes chegava em 2 quadros (legado e Input System): fechava a bandeja e logo depois saia do jogo
+            if (back && Time.unscaledTime >= _backT)
             {
+                _backT = Time.unscaledTime + 0.4f;
                 // voltar do Android (revisao da v0.6): fecha o que estiver aberto, de cima para baixo; so com nada aberto grava e sai
                 if (_panel.gameObject.activeSelf) ClosePanel();
                 else if (_cfg.gameObject.activeSelf) _cfg.gameObject.SetActive(false);
