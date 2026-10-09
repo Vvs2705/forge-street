@@ -49,6 +49,7 @@ namespace FS
         // elas chegam (o ouro do Sim ja mudou: mostra Gold - _pending) e a moeda e o numero pulsam 1 -> 1,15 -> 1.
         const float CoinFlight = 0.4f, CoinGap = 0.04f, CoinPx = 56f, PunchTime = 0.2f;
         const int CoinPool = 30;
+        const int BigSale = 60;   // A-AUD-22: venda grande = >= 60 de ouro numa venda normal (6 espadas; hoje so a joia, 60/80)
 
         Sim _sim;
         Bot _bot;
@@ -259,7 +260,9 @@ namespace FS
                         break;
                     case Ev.Sold:
                         Sfx.Play("coin", 1f + 0.05f * (_sim.Sales % 5), 0.1f);
-                        Ajustes.Pulso(15, 0.25f);   // v0.6b: no maximo 4 por segundo (o VIP vende varias unidades no mesmo quadro)
+                        // A-AUD-22: venda comum nao vibra; so a grande, no maximo 1 a cada 1,5 s (a loja de joias atende a cada 0,4 s).
+                        // A unidade do VIP (preco x3) fica de fora: o pacote vibra uma vez no VipServed
+                        if (e.B >= BigSale && e.B <= _sim.PriceOf((Item)e.A)) Ajustes.Pulso(20, 90, 1.5f);
                         _view.SaleFloat(new V2(e.Pos.X, e.Pos.Y - 0.9f), e.B);   // v0.5: pela frente do estande; v0.6d: vendas a < 0,4 s somam num "+N" so
                         _view.Sold(e.Pos, e.A == (int)Item.Jewel);   // v0.5b: balao estoura com coracao e brilhos
                         FlyCoins(e.Pos, e.B);
@@ -297,7 +300,7 @@ namespace FS
                         break;
                     case Ev.VipServed:
                         Sfx.Play("offline", 1.15f);
-                        Ajustes.Pulso(40);
+                        Ajustes.Pulso(40, 200);
                         _view.Float(new V2(e.Pos.X, e.Pos.Y - 1.2f), "+" + e.B, Art.Accent, 64);   // pela frente do estande: na fila ele subia para baixo da HUD
                         _view.VipBurst(e.Pos, true);
                         FlyCoins(e.Pos, e.B, 12);   // so visual: o ouro ja entrou unidade por unidade
@@ -313,6 +316,7 @@ namespace FS
                     case Ev.OrderNew: Log("order_new", Balance.ItemName[e.A], e.B.ToString()); break;
                     case Ev.OrderDone:
                         Log("order_done", Balance.ItemName[e.A], e.B.ToString());
+                        Ajustes.Pulso(40, 200);
                         if (_order == null) break;   // criativo: sem cartao, o ouro entra direto no numero
                         Sfx.Play("upgrade");
                         OrderText(_sim.OrderTarget, _sim.OrderTarget);   // a ultima venda e a entrega caem no mesmo tick: mostra o 5/5
@@ -336,7 +340,10 @@ namespace FS
         void Bought(int u, int price, V2 pos)
         {
             Sfx.Play("upgrade");
-            Ajustes.Pulso(25);
+            // A-AUD-22: compra = pulso medio; compra que abre estacao (o Ev.Unlocked do mesmo tick) ou a rua lateral = o mais forte
+            bool opens = u == (int)Upgrade.SideCorridor;
+            foreach (Station s in _sim.Stations) opens |= s.UnlockBy == u;
+            Ajustes.Pulso(opens ? 60 : 30, opens ? 255 : 150);
             if (_orderBanner == null) _view.Float(pos, Upgrades.All[u].Name + "!", Art.Good, 44);
             else
             {

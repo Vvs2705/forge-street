@@ -488,17 +488,21 @@ namespace FS
 
     /// <summary>
     /// Configuracoes (v0.6b, BENCHMARK_VISUAL P2-4): Som e Vibracao no PlayerPrefs (fs_som, fs_vibra; 1 = ligado), fora do save de
-    /// progresso, entao valem tambem no -testsession. Pulso = vibracao curta do Android (Vibrator.vibrate(long)); no PC e no editor
-    /// nao faz nada.
+    /// progresso, entao valem tambem no -testsession. Pulso = VibrationEffect.createOneShot(ms, forca) do Android; no PC e no editor
+    /// nao faz nada. A-AUD-22 (Documento Mestre s72, "nao vibrar a cada pequena venda"): quem chama escolhe ms e forca por importancia
+    /// (Game.HandleEvents/Bought) e o teto e' de 4 pulsos por segundo (so um pulso mais forte fura a espera).
     /// </summary>
     public static class Ajustes
     {
         const string SomKey = "fs_som", VibraKey = "fs_vibra";
+        const float MinGap = 0.25f;   // teto: 4 pulsos por segundo de forca igual ou menor
         public static readonly bool TemVibra = Application.platform == RuntimePlatform.Android;
-        static int _som = -1, _vibra = -1;   // cache: o Sfx.Play pergunta a cada som
+        static int _som = -1, _vibra = -1, _lastAmp;   // cache: o Sfx.Play pergunta a cada som
         static float _last = -99f;
 #if UNITY_ANDROID && !UNITY_EDITOR
         static AndroidJavaObject _vib;
+        static IntPtr _effect, _oneShot, _vibrate;   // classe VibrationEffect (ref global), createOneShot(JI) e Vibrator.vibrate(VibrationEffect)
+        static readonly jvalue[] _args1 = new jvalue[1], _args2 = new jvalue[2];   // sem alocacao por pulso
         static bool _quebrou;
 #endif
 
@@ -518,26 +522,57 @@ namespace FS
 #endif
         }
 
-        /// <summary>Vibra `ms` se a Vibracao esta ligada; `gap` &gt; 0 pula se houve outro pulso ha menos de `gap` s.</summary>
-        public static void Pulso(long ms, float gap = 0f)
+        /// <summary>
+        /// Vibra `ms` com forca `amp` (1-255) se a Vibracao esta ligada; pula se houve outro pulso ha menos de `gap` s (minimo 0,25 s),
+        /// a nao ser que este seja mais forte: a ultima joia de uma encomenda e a entrega caem no mesmo tick e a entrega vale mais.
+        /// </summary>
+        public static void Pulso(long ms, int amp, float gap = MinGap)
         {
-            if (!Vibra || Time.unscaledTime - _last < gap) return;
-            _last = Time.unscaledTime;
+            if (!Vibra || (Time.unscaledTime - _last < Mathf.Max(gap, MinGap) && amp <= _lastAmp)) return;
+            _last = Time.unscaledTime; _lastAmp = amp;
 #if UNITY_ANDROID && !UNITY_EDITOR
             if (_quebrou) return;
             try
             {
-                if (_vib == null)
+                // A-AUD-22: JNI cru com assinatura fixa e ids em cache. O AndroidJavaObject.Call(VibrationEffect) montava a assinatura pela
+                // classe de runtime (VibrationEffect$OneShot), errava a busca e caia na reflexao a cada pulso (revisao da v0.6).
+                // minSdk 26 (Setup.cs): createOneShot sempre existe; aparelho sem controle de forca vibra na forca padrao
+                if (_vibrate == IntPtr.Zero)
+                {
                     using (var up = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
                     using (AndroidJavaObject act = up.GetStatic<AndroidJavaObject>("currentActivity"))
                         _vib = act.Call<AndroidJavaObject>("getSystemService", "vibrator");
-                // revisao da v0.6: vibrate(long), assinatura (J)V exata. O vibrate(VibrationEffect) montava a assinatura pela classe de
-                // runtime (VibrationEffect$OneShot), errava a busca e caia na reflexao a cada pulso, com um AndroidJavaClass novo por pulso.
-                // ponytail: obsoleto desde a API 26, mas funciona em todas e respeita a duracao
-                _vib.Call("vibrate", ms);
+                    IntPtr cls = AndroidJNI.FindClass("android/os/VibrationEffect");
+                    if (JavaFalhou()) return;
+                    _effect = AndroidJNI.NewGlobalRef(cls);
+                    AndroidJNI.DeleteLocalRef(cls);
+                    _oneShot = AndroidJNI.GetStaticMethodID(_effect, "createOneShot", "(JI)Landroid/os/VibrationEffect;");
+                    if (JavaFalhou()) return;
+                    _vibrate = AndroidJNI.GetMethodID(_vib.GetRawClass(), "vibrate", "(Landroid/os/VibrationEffect;)V");
+                    if (JavaFalhou()) return;
+                }
+                _args2[0].j = ms; _args2[1].i = Mathf.Clamp(amp, 1, 255);
+                IntPtr fx = AndroidJNI.CallStaticObjectMethod(_effect, _oneShot, _args2);
+                if (JavaFalhou()) return;
+                _args1[0].l = fx;
+                AndroidJNI.CallVoidMethod(_vib.GetRawObject(), _vibrate, _args1);
+                AndroidJNI.DeleteLocalRef(fx);
+                JavaFalhou();
             }
             catch (Exception) { _quebrou = true; }   // ponytail: falhou uma vez = sem vibracao ate reabrir; nunca derruba o jogo
 #endif
         }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+        /// <summary>Excecao Java pendente (o JNI cru nao vira excecao C#): limpa e desliga a vibracao ate reabrir.</summary>
+        static bool JavaFalhou()
+        {
+            IntPtr ex = AndroidJNI.ExceptionOccurred();
+            if (ex == IntPtr.Zero) return false;
+            AndroidJNI.ExceptionClear();
+            AndroidJNI.DeleteLocalRef(ex);
+            return _quebrou = true;
+        }
+#endif
     }
 }
