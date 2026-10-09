@@ -3,6 +3,8 @@
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões do Forge Street em [SemVer](https://semver.org/lang/pt-BR/). O histórico anterior ao repositório (2026-10-06 → 2026-10-07) foi reconstruído a partir dos documentos de validação.
 
 ## [Unreleased]
+
+## [0.5.1] — 2026-10-09
 ### Adicionado
 - **Carga sem bloqueio:** o ferreiro carrega todos os tipos de item ao mesmo tempo, até 3 de cada (6 com a Mochila); ajudantes continuam com um tipo só. Corrige a trava "lingotes na mão + bigornas cheias = não pega espada" (`docs/FASE7_CARGA_BALCAO.md`).
 - **Balcão evolutivo 4 → 8 vagas:** 4 evoluções no menu (150/175/200/225; a 1ª exige a Vitrine), estande sem toldo que cresce com as vagas e mostra o estoque em pé nos encaixes.
@@ -16,6 +18,9 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 - `docs/ROTEIRO_TESTE_POCO.md` (teste da v0.5 no aparelho) e `docs/TESTE_COMPARATIVO.md` (protocolo do teste com 4 jogos no emulador).
 - `docs/BENCHMARK_MERCADO.md` e `docs/BENCHMARK_VISUAL.md`: análise de 10 jogos similares.
 ### Corrigido
+- **Botão voltar do Android:** não chegava ao jogo (o GameActivity da Unity 6 não passa o voltar ao Input System; testado no emulador). Input "Both" + `Input.GetKeyDown(KeyCode.Escape)`: fecha o painel do cofre e a bandeja de melhorias e, com a tela limpa, sai do jogo. APK reserva só com o Input System para o caso de o "Both" pesar no aparelho (`docs/ROTEIRO_TESTE_POCO.md`, plano B).
+- **Build Android:** `Setup.Build` apaga a saída incremental do Gradle antes de cada build (APK com ~12 MB de buracos ou sem `libunity` ao alternar ARM64/x86_64) e o `BuildAndroidEmu` tira o exclude de `/lib/x86_64` do `mainTemplate.gradle` só durante o build.
+- `diario_report.py` separa "falhas ao mostrar" de "sem anúncio carregado" (antes somava e mostrava falhas sem nenhum pedido).
 - **Ajudante 3 parado no balcão (0.5.1, revisão de código):** pegava espada com a prateleira de espada cheia e esperava no balcão enquanto escudo e ferramenta encalhavam. Agora só busca o que cabe. Jogador parado 15 min: 80 → 209 vendas; produção completa do bot 47:03 → 46:12 (`docs/BALANCE.md` §19).
 - Save: a carga dos ajudantes contratados fora da ordem (Joalheiro antes do Ajudante 3) sumia ao reabrir; cada entrada leva o papel (`wk=papel:contagens`, o save da 0.5.0 ainda abre).
 - VIP que estava na vaga ao fechar: reabrir não repete o aviso "Cliente VIP!" nem o `vip_arrived` no diário, e guarda o ouro que ele já pagou.
