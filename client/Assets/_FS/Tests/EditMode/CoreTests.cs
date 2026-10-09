@@ -1846,6 +1846,125 @@ namespace FS.Tests
         /// <summary>Partida que ja fez a 1a venda (o relogio do VIP so anda depois dela), sem mexer no resto.</summary>
         static Sim Sold() { var s = new Sim(); s.FirstSaleTime = 1f; return s; }
 
+        // ------------------------------------------------------------------ FASE9: encomendas (docs/FASE9_ENCOMENDAS.md)
+
+        /// <summary>Roda tick a tick ate `kind` aparecer (no maximo `seconds`); `stock` mantem a prateleira cheia desse item.</summary>
+        static bool RunUntil(Sim s, Ev kind, float seconds, Item? stock = null)
+        {
+            for (float t = 0f; t < seconds; t += Dt)
+            {
+                if (stock.HasValue) s.Stock[(int)stock.Value] = s.CounterCap;
+                s.Tick(Dt, 0f, 0f);
+                if (Count(s, kind) > 0) return true;
+            }
+            return false;
+        }
+
+        /// <summary>FASE9 §1: o relogio da encomenda so anda depois da 1a venda; a 1a (5 espadas) chega 45 s depois dela.</summary>
+        [Test]
+        public void Encomenda_Primeira_5Espadas_45sDepoisDa1aVenda()
+        {
+            var n = new Sim();
+            Run(n, 120f);
+            Assert.AreEqual((-1, Balance.OrderFirstDelay), (n.OrderItem, n.OrderIn), "sem venda o relogio nao anda");
+            var s = Sold();
+            Run(s, Balance.OrderFirstDelay - 1f);
+            Assert.AreEqual(-1, s.OrderItem, "aos 44 s ainda nao");
+            Assert.IsTrue(RunUntil(s, Ev.OrderNew, 2f), "OrderNew aos 45 s");
+            Assert.AreEqual(((int)Item.Sword, Balance.OrderFirstTarget, 0), (s.OrderItem, s.OrderTarget, s.OrderProgress));
+            Assert.GreaterOrEqual(s.OrderReward, Balance.OrderRewardMin);
+            Assert.AreEqual(0, s.OrderReward % 5, "premio redondo");
+        }
+
+        /// <summary>FASE9 §1: so conta venda feita depois do inicio; entregue paga o premio FORA do GoldEarned (como o bau: nao infla a taxa
+        /// online nem o cofre) e a proxima chega 20 s depois.</summary>
+        [Test]
+        public void Encomenda_ContaSoVendaDepoisDoInicio_PremioForaDoGoldEarned_ProximaEm20s()
+        {
+            var s = Sold();
+            Assert.IsTrue(RunUntil(s, Ev.OrderNew, 60f, Item.Sword));
+            int before = s.SoldItems[(int)Item.Sword];
+            Assert.Greater(before, 0, "vendeu espada antes da encomenda");
+            Assert.AreEqual(0, s.OrderProgress, "venda de antes nao conta");
+            int reward = s.OrderReward, gold = 0, earned = 0;
+            bool done = false;
+            for (float t = 0f; t < 600f && !done; t += Dt)
+            {
+                s.Stock[(int)Item.Sword] = s.CounterCap;
+                gold = s.Gold; earned = s.GoldEarned;
+                s.Tick(Dt, 0f, 0f);
+                done = Count(s, Ev.OrderDone) == 1;
+            }
+            Assert.IsTrue(done, "entregou");
+            Assert.AreEqual(reward, (s.Gold - gold) - (s.GoldEarned - earned), "premio no ouro, fora do GoldEarned");
+            Assert.GreaterOrEqual(s.SoldItems[(int)Item.Sword] - before, Balance.OrderFirstTarget);
+            Assert.AreEqual((-1, 1), (s.OrderItem, s.OrderCount));
+            Run(s, Balance.OrderGap - 1f);
+            Assert.AreEqual(-1, s.OrderItem, "intervalo de 20 s");
+            Assert.IsTrue(RunUntil(s, Ev.OrderNew, 2f), "a 2a chega");
+        }
+
+        /// <summary>FASE9 §2: rodizio so entre linhas abertas (espada, escudo, ferramenta, joia); a partir da 2a, N = 150 s da renda da linha
+        /// (OrderSeconds x RateEma / (linhas x preco)), entre 3 e 30; premio ~ 10 s da taxa online.</summary>
+        [Test]
+        public void Encomenda_RodizioDeLinhasAbertas_TamanhoPelaDemanda_PremioPelaTaxa()
+        {
+            var s = Rich();
+            Assert.IsTrue(s.Buy(Upgrade.Shields) && s.Buy(Upgrade.Tools));
+            s.FirstSaleTime = 1f; s.RateEma = 4.0;
+            var seen = new List<int>();
+            for (int k = 1; k <= 6; k++)
+            {
+                s.OrderItem = -1; s.OrderCount = k; s.OrderIn = 0f;
+                s.Tick(Dt, 0f, 0f);
+                seen.Add(s.OrderItem);
+                int want = Math.Max(Balance.OrderMin, Math.Min(Balance.OrderMax, (int)Math.Round(Balance.OrderSeconds * 4.0 / (3 * s.PriceOf((Item)s.OrderItem)))));
+                Assert.AreEqual(want, s.OrderTarget, $"tamanho da encomenda {k}");
+                Assert.AreEqual(Math.Max(Balance.OrderRewardMin, 5 * (int)Math.Round(4.0 * Balance.OrderRewardSeconds / 5.0)), s.OrderReward);
+            }
+            CollectionAssert.AreEqual(new[] { 3, 4, 2, 3, 4, 2 }, seen, "escudo, ferramenta, espada...; sem joia (joalheria fechada)");
+        }
+
+        /// <summary>FASE9 §3: a encomenda vai no save (item, alvo, progresso, premio, contagem, relogio). Save antigo sem ord= abre do zero; lixo
+        /// vira o padrao; item de linha fechada nao volta.</summary>
+        [Test]
+        public void Save_Encomenda_IdaEVolta_SaveAntigo_Lixo()
+        {
+            var s = Sold();
+            Assert.IsTrue(RunUntil(s, Ev.OrderNew, 60f));
+            s.OrderProgress = 3;
+            string text = s.Save(10);
+            StringAssert.Contains("ord=2,5,3," + s.OrderReward + ",0,", text);
+            Sim b = Sim.Load(text);
+            Assert.AreEqual((2, 5, 3, s.OrderReward, 0), (b.OrderItem, b.OrderTarget, b.OrderProgress, b.OrderReward, b.OrderCount));
+            Assert.AreEqual(text, b.Save(10), "save estavel");
+            string old = string.Join("\n", Array.FindAll(text.Split('\n'), l => !l.StartsWith("ord=")));
+            Sim o = Sim.Load(old);
+            Assert.AreEqual((-1, 0, Balance.OrderFirstDelay), (o.OrderItem, o.OrderCount, o.OrderIn), "save antigo: do zero");
+            Sim g = Sim.Load(old + "ord=x,-4,99,-1,-2,abc\n");
+            Assert.AreEqual((-1, 0, Balance.OrderFirstDelay), (g.OrderItem, g.OrderCount, g.OrderIn), "lixo vira o padrao");
+            g = Sim.Load(old + "ord=5,10,2,100,3,0\n");
+            Assert.AreEqual((-1, 3), (g.OrderItem, g.OrderCount), "joia sem joalheria nao volta; a contagem fica");
+            g = Sim.Load(old + "ord=2,5,99,100,0,0\n");
+            Assert.AreEqual(5, g.OrderProgress, "progresso no teto do alvo");
+        }
+
+        /// <summary>FASE9 §4 (revisao da v0.6): OrderNew/OrderDone saem no balcao que vende o item; a de joia, na loja de joias.</summary>
+        [Test]
+        public void Encomenda_DeJoia_EventosNaLojaDeJoias()
+        {
+            var s = new Sim();
+            s.Buy(Upgrade.SideCorridor); s.Buy(Upgrade.Jewelry);
+            s.FirstSaleTime = 1f; s.OrderCount = 1; s.OrderIn = 0f;   // linhas abertas: espada, joia -> a 2a e' joia
+            s.Tick(Dt, 0f, 0f);
+            SimEvent n = s.Events.Find(e => e.Kind == Ev.OrderNew);
+            Assert.AreEqual(((int)Item.Jewel, s.JewelShop.Pos.X, s.JewelShop.Pos.Y), (n.A, n.Pos.X, n.Pos.Y), "nova na loja de joias");
+            s.OrderProgress = s.OrderTarget;
+            s.Tick(Dt, 0f, 0f);
+            SimEvent d = s.Events.Find(e => e.Kind == Ev.OrderDone);
+            Assert.AreEqual(((int)Item.Jewel, s.JewelShop.Pos.X, s.JewelShop.Pos.Y), (d.A, d.Pos.X, d.Pos.Y), "entregue na loja de joias");
+        }
+
         static Client Vip(Sim s) => s.Queue.Find(c => c.Vip);
 
         /// <summary>Zera o relogio e roda um tick: o VIP NATURAL e' sorteado e entra (fila com vaga).</summary>

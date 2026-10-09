@@ -116,9 +116,12 @@ namespace FS
         public static Sprite BalloonRing(float frac)
         {
             int k = Mathf.Clamp(Mathf.CeilToInt(frac * 24f), 0, 24);
-            return Get("arc" + k, (x, y) =>
-                RoundedIn(x, y) && !RoundedIn(x / 0.86f, y / 0.84f) && Mathf.Repeat(Mathf.Atan2(x, y) / (Mathf.PI * 2f), 1f) < k / 24f);
+            return _rings[k] != null ? _rings[k] : (_rings[k] = MakeRing(k));   // chamado 2x por quadro: cache sem lambda nem string no caminho quente
         }
+
+        static readonly Sprite[] _rings = new Sprite[25];
+        static Sprite MakeRing(int k) => Get("arc" + k, (x, y) =>
+            RoundedIn(x, y) && !RoundedIn(x / 0.86f, y / 0.84f) && Mathf.Repeat(Mathf.Atan2(x, y) / (Mathf.PI * 2f), 1f) < k / 24f);
 
         // ---------- v0.5b (BENCHMARK_VISUAL P1-1..P1-6): placa de obra, juice e seta da dica ----------
 
@@ -146,7 +149,7 @@ namespace FS
         /// <summary>Seta da dica apontando para baixo (haste + ponta); `fat` = contorno (desenhado atras, escuro).</summary>
         public static Sprite Arrow(bool fat) => Get(fat ? "arrow+" : "arrow", (x, y) =>
         {
-            float g = fat ? 0.12f : 0f;
+            float g = fat ? 0.09f : 0f;   // v0.6d: 0,09 da meia-seta = 4 px na seta de 0,95 m (WorldView.ArrowS)
             bool shaft = Mathf.Abs(x) < 0.26f + g && y > -0.1f && y < 0.86f + g;
             bool head = y < 0.06f + g && y > -0.92f - g && Mathf.Abs(x) < (y + 0.92f + g) * 0.85f;
             return shaft || head;
@@ -156,6 +159,12 @@ namespace FS
         {
             bool Tri(float x0) => x >= x0 && x <= x0 + 0.9f && Mathf.Abs(y) <= (x0 + 0.9f - x) / 0.9f * 0.78f;
             return Tri(-0.92f) || Tri(0.02f);
+        });
+        /// <summary>Engrenagem (8 dentes largos que afinam na ponta, furo no meio): botao de configuracoes da HUD (v0.6b).</summary>
+        public static Sprite Gear() => Get("gear", (x, y) =>
+        {
+            float r = Mathf.Sqrt(x * x + y * y), a = Mathf.Repeat(Mathf.Atan2(y, x) / (Mathf.PI * 2f) * 8f, 1f);
+            return r >= 0.3f && (r <= 0.72f || (r <= 0.97f && Mathf.Abs(a - 0.5f) < 0.3f - 0.4f * (r - 0.72f)));
         });
 
         /// <summary>Capsula para SpriteRenderer Sliced: pontas de 0,5 unidade fixas, meio estica. Usar size = (w/h, 1) e escala h.</summary>
@@ -187,10 +196,10 @@ namespace FS
         public static Sprite Vignette() => Soft("vignette", (x, y) => Mathf.Clamp01((x * x + y * y - 0.55f) / 1.2f));
 
         /// <summary>Contorno escuro + sombra no texto (numero de ouro, preco, "+25"): le sobre qualquer fundo.</summary>
-        public static Text Outlined(Text t, float px)
+        public static Text Outlined(Text t, float px, Color? edge = null)
         {
             var o = t.gameObject.AddComponent<Outline>();
-            o.effectColor = new Color(0.08f, 0.05f, 0.03f, 0.95f);
+            o.effectColor = edge ?? new Color(0.08f, 0.05f, 0.03f, 0.95f);
             o.effectDistance = new Vector2(px, -px);
             var sh = t.gameObject.AddComponent<Shadow>();
             sh.effectColor = new Color(0f, 0f, 0f, 0.5f);
@@ -210,29 +219,35 @@ namespace FS
         }
 
         /// <summary>Mascara com 4 amostras de antialias por pixel (x, y em [-1, 1]).</summary>
-        static Sprite Get(string key, Func<float, float, bool> inside) => Mask(key, (x, y) =>
+        // revisao da v0.6: o cache e' conferido ANTES de criar a lambda que captura `inside`/`f`, e num metodo sem lambda (o C# aloca a
+        // closure na entrada do metodo que a tem, mesmo com return antes). Medido num console .NET: 90 -> 0 B por chamada; as faiscas,
+        // a fumaca e a poeira chamam Art.Sparkle()/Disc() varias vezes por segundo
+        static Sprite Get(string key, Func<float, float, bool> inside) => Cached(key) ?? Mask(key, Supersample(inside));
+        static Func<int, int, byte> Supersample(Func<float, float, bool> inside) => (x, y) =>
         {
             int n = 0;
             for (int sy = 0; sy < 2; sy++)
                 for (int sx = 0; sx < 2; sx++)
                     if (inside((x + 0.25f + sx * 0.5f) / Side * 2f - 1f, (y + 0.25f + sy * 0.5f) / Side * 2f - 1f)) n++;
             return (byte)(n * 63);
-        });
+        };
 
         /// <summary>Degrade: alfa = f(x, y) em [0, 1], com x, y em [-1, 1] no centro do pixel.</summary>
-        static Sprite Soft(string key, Func<float, float, float> f) =>
-            Mask(key, (x, y) => (byte)(255f * Mathf.Clamp01(f((x + 0.5f) / Side * 2f - 1f, (y + 0.5f) / Side * 2f - 1f))));
+        static Sprite Soft(string key, Func<float, float, float> f) => Cached(key) ?? Mask(key, Gradient(f));
+        static Func<int, int, byte> Gradient(Func<float, float, float> f) =>
+            (x, y) => (byte)(255f * Mathf.Clamp01(f((x + 0.5f) / Side * 2f - 1f, (y + 0.5f) / Side * 2f - 1f)));
+
+        static Sprite Cached(string key) => Cache.TryGetValue(key, out Sprite s) && s != null ? s : null;
 
         static Sprite Mask(string key, Func<int, int, byte> alpha)
         {
-            if (Cache.TryGetValue(key, out Sprite s) && s != null) return s;
             var tex = new Texture2D(Side, Side, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
             var px = new Color32[Side * Side];
             for (int y = 0; y < Side; y++)
                 for (int x = 0; x < Side; x++) px[y * Side + x] = new Color32(255, 255, 255, alpha(x, y));
             tex.SetPixels32(px);
             tex.Apply();
-            s = Sprite.Create(tex, new Rect(0, 0, Side, Side), new Vector2(0.5f, 0.5f), Side);
+            Sprite s = Sprite.Create(tex, new Rect(0, 0, Side, Side), new Vector2(0.5f, 0.5f), Side);
             Cache[key] = s;
             return s;
         }
@@ -443,7 +458,7 @@ namespace FS
         /// <summary>Toca no maximo uma vez por `minGap` segundos por nome (varias marteladas no mesmo quadro viram uma).</summary>
         public static void Play(string name, float pitch = 1f, float minGap = 0.05f)
         {
-            if (_src == null || !Clips.TryGetValue(name, out AudioClip c)) return;
+            if (_src == null || !Ajustes.Som || !Clips.TryGetValue(name, out AudioClip c)) return;   // Som desligado = nada toca
             if (LastPlayed.TryGetValue(name, out float last) && Time.unscaledTime - last < minGap) return;
             LastPlayed[name] = Time.unscaledTime;
             _src.pitch = pitch;
@@ -468,6 +483,61 @@ namespace FS
             AudioClip clip = AudioClip.Create(name, n, 1, rate, false);
             clip.SetData(data, 0);
             Clips[name] = clip;
+        }
+    }
+
+    /// <summary>
+    /// Configuracoes (v0.6b, BENCHMARK_VISUAL P2-4): Som e Vibracao no PlayerPrefs (fs_som, fs_vibra; 1 = ligado), fora do save de
+    /// progresso, entao valem tambem no -testsession. Pulso = vibracao curta do Android (Vibrator.vibrate(long)); no PC e no editor
+    /// nao faz nada.
+    /// </summary>
+    public static class Ajustes
+    {
+        const string SomKey = "fs_som", VibraKey = "fs_vibra";
+        public static readonly bool TemVibra = Application.platform == RuntimePlatform.Android;
+        static int _som = -1, _vibra = -1;   // cache: o Sfx.Play pergunta a cada som
+        static float _last = -99f;
+#if UNITY_ANDROID && !UNITY_EDITOR
+        static AndroidJavaObject _vib;
+        static bool _quebrou;
+#endif
+
+        public static bool Som { get => Read(SomKey, ref _som); set => Write(SomKey, ref _som, value); }
+        public static bool Vibra { get => TemVibra && Read(VibraKey, ref _vibra); set => Write(VibraKey, ref _vibra, value); }
+
+        static bool Read(string key, ref int v) { if (v < 0) v = PlayerPrefs.GetInt(key, 1); return v == 1; }
+        static void Write(string key, ref int v, bool on) { v = on ? 1 : 0; PlayerPrefs.SetInt(key, v); PlayerPrefs.Save(); }
+
+        /// <summary>Confirma o "ligar" da Vibracao com a vibracao padrao do sistema (como o Rune Relay).</summary>
+        public static void Confirmar()
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            // ponytail: esta referencia ao Handheld.Vibrate tambem faz a Unity por a permissao VIBRATE no manifesto
+            // (sem AndroidManifest.xml proprio brigando com o merge do GameActivity e do LevelPlay)
+            Handheld.Vibrate();
+#endif
+        }
+
+        /// <summary>Vibra `ms` se a Vibracao esta ligada; `gap` &gt; 0 pula se houve outro pulso ha menos de `gap` s.</summary>
+        public static void Pulso(long ms, float gap = 0f)
+        {
+            if (!Vibra || Time.unscaledTime - _last < gap) return;
+            _last = Time.unscaledTime;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            if (_quebrou) return;
+            try
+            {
+                if (_vib == null)
+                    using (var up = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                    using (AndroidJavaObject act = up.GetStatic<AndroidJavaObject>("currentActivity"))
+                        _vib = act.Call<AndroidJavaObject>("getSystemService", "vibrator");
+                // revisao da v0.6: vibrate(long), assinatura (J)V exata. O vibrate(VibrationEffect) montava a assinatura pela classe de
+                // runtime (VibrationEffect$OneShot), errava a busca e caia na reflexao a cada pulso, com um AndroidJavaClass novo por pulso.
+                // ponytail: obsoleto desde a API 26, mas funciona em todas e respeita a duracao
+                _vib.Call("vibrate", ms);
+            }
+            catch (Exception) { _quebrou = true; }   // ponytail: falhou uma vez = sem vibracao ate reabrir; nunca derruba o jogo
+#endif
         }
     }
 }

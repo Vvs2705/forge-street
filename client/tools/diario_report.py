@@ -19,6 +19,7 @@ Colunas (Game.Log: sem cabecalho, virgula crua, sem aspas): utc, sessao, evento,
   ZERAM a cada sessao) | walk_no_decision a=s andando sem decisao (vai no save: acumulado) b=upgrades comprados
   v0.5: ad_request/ad_shown/ad_reward/ad_fail/ad_load_fail a=placement (vip|velocidade) b=detalhe (Ads.Logged)
         vip_arrived a=item b=unidades | vip_served a=item b=ouro | vip_left a=item b=faltaram | boost_start a=multiplicador
+  v0.6c: order_new a=item b=quantas vender | order_done a=item b=premio (docs/FASE9_ENCOMENDAS.md)
 """
 import glob
 import math
@@ -101,7 +102,7 @@ def ler(caminhos):
 
 
 def analisar(linhas):
-    tst = defaultdict(lambda: {"venda1": None, "upg": {}, "walk": [], "fim": 0.0, "offline": False, "ads": Counter()})
+    tst = defaultdict(lambda: {"venda1": None, "upg": {}, "walk": [], "fim": 0.0, "offline": False, "ads": Counter(), "enc": Counter()})
     ses = defaultdict(lambda: {"t0": math.inf, "t1": 0.0, "gargalo": []})
     saiu, travou, ads, vip = Counter(), Counter(), Counter(), Counter()
     for arq, sid, ev, t, a, b in linhas:
@@ -127,6 +128,8 @@ def analisar(linhas):
                 T["ads"][a] += 1
         elif ev in ("vip_arrived", "vip_served", "vip_left", "boost_start"):
             vip[ev] += 1
+        elif ev in ("order_new", "order_done"):
+            T["enc"][ev] += 1
 
     # Por minuto de jogo. walk e t_jogo sao acumulados no save, entao a razao entre duas amostras vale ate atravessando
     # sessoes; o save a cada 5 s pode voltar alguns segundos no reload (amostra com delta negativo e' pulada).
@@ -257,6 +260,15 @@ def relatorio(linhas, ruins=0):
         s.append(f"  {pl:<11} pedidos {c['ad_request']} | mostrados {c['ad_shown']} | recompensas {c['ad_reward']} | falhas ao mostrar {c['ad_fail']} | sem anuncio carregado {c['ad_load_fail']}")
     vp = r["vip"]
     s.append(f"  VIP: chegaram {vp['vip_arrived']} | atendidos {vp['vip_served']} | foram embora {vp['vip_left']} | velocidade ativada {vp['boost_start']}x")
+    # min/encomenda = t_jogo acumulado / entregues, a conta do bot no BALANCE sec.20 (60 min / 16)
+    por = {arq: T["fim"] / 60 / T["enc"]["order_done"] for arq, T in tst.items() if T["enc"]["order_done"]}
+    me = mediana(list(por.values()))
+    s += ["", "ENCOMENDAS (v0.6c; bot humano 60 min: 21 entregues, 1 a cada 2,8 min - BALANCE sec.20)",
+          f"  receberam {sum(1 for T in tst.values() if T['enc']['order_new'])}/{n} | entregaram {len(por)}/{n}"
+          f" | mediana {'-' if me is None else f'{me:.1f}'} min de jogo por encomenda (entre quem entregou)"]
+    for arq, T in sorted(tst.items()):
+        s.append(f"  {os.path.basename(arq)}: recebidas {T['enc']['order_new']} | entregues {T['enc']['order_done']}"
+                 f" | 1 a cada {f'{por[arq]:.1f}' if arq in por else '-'} min")
     s += ["", "PORTOES"]
     s += [f"  [{st}] {texto}" for _, st, texto in portoes(r)]
     s.append("  nao medidos aqui: tutorial (sem evento), D1/D7 e sessoes/dia (utc existe; Camada 0 nao mede retencao), "
@@ -265,8 +277,9 @@ def relatorio(linhas, ruins=0):
 
 
 def autoteste():
-    def jogador(venda1, compras, andar, minutos, sessoes=1, anuncio=False):
-        """Linhas CSV de um testador: walk acumulado no save; travada 5 s/min e fome 10 s/min, que zeram por sessao."""
+    def jogador(venda1, compras, andar, minutos, sessoes=1, anuncio=False, encomendas=0):
+        """Linhas CSV de um testador: walk acumulado no save; travada 5 s/min e fome 10 s/min, que zeram por sessao.
+        encomendas = entregues na 1a sessao (uma a cada 2 min a partir de 1:10) mais uma aberta no fim."""
         out, t, w = [], 0.0, 0.0
         por = minutos * 60 / sessoes
         for k in range(sessoes):
@@ -287,6 +300,11 @@ def autoteste():
                 ln("ad_reward", t + 345, "velocidade", "Velocidade x1 simulado")
                 ln("boost_start", t + 345, "2", "60")
                 ln("vip_served", t + 360, "espada", "90")
+            if encomendas and k == 0:
+                for i in range(encomendas + 1):
+                    ln("order_new", t + 70 + 120 * i, "espada", "5")
+                    if i < encomendas:
+                        ln("order_done", t + 130 + 120 * i, "espada", "25")
             for m in range(1, int(por // 60) + 1):
                 ln("walk_no_decision", t0 + 60 * m, f"{w + andar * 60 * m:.0f}", "3")
                 ln("bottleneck_seconds", t0 + 60 * m, f"{5 * m}", f"{10 * m}")
@@ -295,7 +313,7 @@ def autoteste():
                 ln("offline_claim", t0, "50", "600")
         return out
 
-    rapido = lambda: jogador(40, {"FurnaceSpeed1": 100, "Anvil2": 180, "Helper1": 250, "Shields": 300, "Conveyor": 480}, 0.2, 10, anuncio=True)
+    rapido = lambda: jogador(40, {"FurnaceSpeed1": 100, "Anvil2": 180, "Helper1": 250, "Shields": 300, "Conveyor": 480}, 0.2, 10, anuncio=True, encomendas=4)
     lento = lambda: jogador(120, {"FurnaceSpeed1": 200, "Anvil2": 400}, 0.6, 9)
 
     with tempfile.TemporaryDirectory() as d:
@@ -319,6 +337,8 @@ def autoteste():
         assert ruins == 5, ruins
         assert p == {"venda1": "PASSA", "escudos": "PASSA", "andar": "PASSA", "gdd3": "PASSA", "fator": "PASSA", "rewarded": "PASSA", "gargalo": "MANUAL"}, p
         assert "recompensas 10" in texto and "VIP: chegaram 10 | atendidos 10" in texto, texto
+        # encomendas: 4 entregues + 1 aberta em 10 min de jogo = 1 a cada 2,5 min
+        assert "receberam 10/10 | entregaram 10/10 | mediana 2.5 min" in texto and "t00.csv: recebidas 5 | entregues 4 | 1 a cada 2.5 min" in texto, texto
         assert "1.36x" in texto and "andar sem decisao < 50% do tempo de jogo (mediana por testador): 20%" in texto
         assert r["minuto"][3]["travada"] == [5.0] * 10 and r["minuto"][3]["fome"] == [10.0] * 10
         assert mediana(r["minuto"][5]["andar"]) == 20.0
@@ -335,6 +355,7 @@ def autoteste():
         r, p, texto, _ = rodar([lento() for _ in range(10)])
         assert p == {"venda1": "FALHA", "escudos": "FALHA", "andar": "FALHA", "gdd3": "FALHA", "fator": "FALHA", "rewarded": "FALHA", "gargalo": "MANUAL"}, p
         assert "2.99x (pessoa mais lenta que 2x)" in texto
+        assert "receberam 0/10 | entregaram 0/10 | mediana - min" in texto and "t00.csv: recebidas 0 | entregues 0 | 1 a cada - min" in texto, texto
 
         # fronteiras: 9 rapidos + 1 lento = 90% vende < 90 s (PASSA); 7 + 3 = 70% escudos (PASSA) e 70% venda (FALHA)
         p = rodar([rapido() for _ in range(9)] + [lento()])[1]

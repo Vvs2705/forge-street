@@ -13,6 +13,66 @@ Todos terminam com o cartão "FORGE STREET" (1,5 s, último quadro desfocado). N
 
 **Honestidade:** só aparece gameplay real. Os trechos acelerados levam o rótulo "VÍDEO ACELERADO". Os estados montados com `-buyids` existem no jogo de verdade (o jogador só não comprou o Fole) e o #2 paga as duas compras com o ouro que tinha. No time-lapse do #1, a multidão de clientes saindo pelo topo fica mais densa que a 1×: eles andam na velocidade da animação enquanto a simulação roda a 50×.
 
+## v0.6 (2026-10-09)
+
+Regravados do build Windows da v0.6 (v0.6d) com o mesmo pipeline. Saída em `client/Builds/creatives/v06/`; os da v0.4.1 acima ficam onde estão. As folhas de contato estão no git, os MP4 não (os da v0.4.1 foram versionados no PR #3, apesar do "fora do git"; os novos ficaram fora para não somar ~35 MB).
+
+| id | duração | o que mudou em relação ao corte da v0.4.1 |
+|---|---|---|
+| #8 | 14,1 s | Mesmos flags e filtro. Na v0.6 as 2 bigornas e as Ferramentas ficam apagadas até o quadro ~340 (Escudos e fornalha acesos); fila 4/4 com 1 venda em 13 s (`RECORD OK t=133,4 fila=4/4 ouro=363`). |
+| #2 | 23,0 s | Gancho **"FILA CHEIA?"** (era "FILA GIGANTE?": desde a v0.5 o balcão tem 4 vagas e a fila fica em 3–4). Ouro 740 → 690 → 385 (as encomendas pagam). A Bigorna 2 fica apagada 100% até o quadro 333 e acesa 65% depois, então "BIGORNAS ACESAS..." entra aos 7,63 s (quadro 334) e "...E A FILA ANDOU" aos 11,85 s (quadro 840, a fila cai de 4 para 2). 4× do quadro 210 ao 1771; **"FILA ZERADA!" a 1×**, quadros 1771–1827 (1,9 s sem ninguém no balcão), sem o rótulo de acelerado; cartão sobre o quadro 1827. |
+| #1 | 26,3 s | Time-lapse de 60 s (era 54): o bot da tela compra a Vitrine de joias, último produtivo, no quadro 536 (minuto 44; no `-autoplay` sai aos 41:31). Trim 2–548, contador "MINUTO 0→45". Estado final = **26 produtivos** (0–19 e 23–28: entraram as 4 vagas do balcão). |
+
+- **Textos:** a câmera da v0.6 enquadra a oficina inteira e os textos no meio cobriam a fornalha; desceram para a faixa de baixo (y 1250–1620), longe das bancadas, da fornalha e da fila. No #2 o menu aberto ocupa y 1380–1740, então as linhas ficam em y 1250/1400 e cobrem só o título dos cartões.
+- **HUD:** o `-record` já esconde o cartão da encomenda, o aviso de encomenda entregue, a engrenagem e a versão. Os botões VIP e 2× aparecem (no PC o anúncio simulado está sempre pronto): é a HUD real.
+- **Como conferir a fila e a fome sem olhar quadro a quadro:** `ffmpeg -i "$Q/f2/f%05d.jpg" -vf "crop=100:80:350:185,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=y2.txt" -f null -` (YAVG ~214 = balão do 1º da fila; < 112 por 6+ quadros = fila vazia); Bigorna 2 com `crop=110:110:525:665` e `SATAVG` (> 26 = acesa). Os mesmos números de quadro valem enquanto o build e os flags não mudarem.
+
+Comandos que mudaram (o resto é o bloco "Reproduzir" com `Q=.../fs_quadros_v06` e `OUT=../creatives/v06`):
+
+```bash
+# #2: mesma gravação; o cartão usa o quadro 1827
+ffmpeg -y -framerate 30 -i "$Q/f2/f%05d.jpg" -loop 1 -framerate 30 -t 1.5 -i "$Q/f2/f01827.jpg" $MUDO -/filter_complex "$F/fs02.filter" -map "[v]" -map 2:a -shortest $ENC $OUT/fs_02_fila_fole.mp4
+# #1: time-lapse de 60 s e estado final com os 26 produtivos (fs1a e o ffmpeg iguais)
+./ForgeStreet.exe $W -bot -speed 50 -record "$Q/fs1b" -recordsec 60 -recordfps 10 -logFile "$Q/fs1b.log"
+./ForgeStreet.exe $W -buyids 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,23,24,25,26,27,28 -warmup 90 -px 4.5,8.2 -record "$Q/fs1c" -recordsec 4 -logFile "$Q/fs1c.log"
+# folhas de contato: fps 1/2.25 no #1, 1/1.96 no #2, 1/1.2 no #8
+```
+
+```text
+# fs02.filter v0.6 (1x ate as 2 compras; 4x ate o quadro 1771; 1x com a fila vazia)
+[0:v]split=3[s1][s2][s3];
+[s1]trim=start_frame=12:end_frame=210,setpts=PTS-STARTPTS[a];
+[s2]trim=start_frame=210:end_frame=1771,setpts=(PTS-STARTPTS)/4,fps=30,
+drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='VÍDEO ACELERADO 4×':fontsize=50:fontcolor=white:borderw=5:bordercolor=black:x=w-text_w-40:y=1185[b];
+[s3]trim=start_frame=1771:end_frame=1828,setpts=PTS-STARTPTS,
+drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='FILA ZERADA!':fontsize=160:fontcolor=0xFFD166:borderw=11:bordercolor=black:x=(w-text_w)/2:y=1250[c];
+[a][b]concat=n=2:v=1:a=0,
+drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='FILA CHEIA?':fontsize=150:fontcolor=0xFFD166:borderw=9:bordercolor=black:x=(w-text_w)/2:y=1250:enable='lt(t,4)',
+drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='A FORNALHA NÃO DÁ CONTA':fontsize=92:fontcolor=white:borderw=9:bordercolor=black:x=(w-text_w)/2:y=1400:enable='between(t,1.2,4)',
+drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='MELHORA A FORNALHA':fontsize=108:fontcolor=0xFFD166:borderw=9:bordercolor=black:x=(w-text_w)/2:y=1260:enable='between(t,4,7.63)',
+drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='FOLE + FOLE DUPLO':fontsize=92:fontcolor=white:borderw=9:bordercolor=black:x=(w-text_w)/2:y=1400:enable='between(t,4.4,7.63)',
+drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='BIGORNAS ACESAS...':fontsize=110:fontcolor=white:borderw=9:bordercolor=black:x=(w-text_w)/2:y=1260:enable='gte(t,7.63)',
+drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='...E A FILA ANDOU':fontsize=110:fontcolor=0xFFD166:borderw=9:bordercolor=black:x=(w-text_w)/2:y=1400:enable='gte(t,11.85)',
+setsar=1[ab];
+[c]setsar=1[c1];
+[1:v]boxblur=24:2,eq=brightness=-0.25,drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='FORGE STREET':fontsize=170:fontcolor=0xFFD166:borderw=12:bordercolor=black:x=(w-text_w)/2:y=(h-text_h)/2,setsar=1[card];
+[ab][c1][card]concat=n=3:v=1:a=0,scale=out_range=tv:out_color_matrix=bt709,format=yuv420p[v]
+
+# fs01.filter v0.6 (igual ao de cima, com o trim do time-lapse em 548, a troca de texto aos 21,2 s e os textos em y 1320-1470)
+[0:v]trim=start_frame=12:end_frame=102,setpts=PTS-STARTPTS[a];
+[1:v]trim=start_frame=2:end_frame=548,setpts=PTS-STARTPTS[b];
+[2:v]trim=start_frame=12:end_frame=120,setpts=PTS-STARTPTS[c];
+[a][b][c]concat=n=3:v=1:a=0,
+drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='COMECEI COM UMA':fontsize=110:fontcolor=white:borderw=9:bordercolor=black:x=(w-text_w)/2:y=1320:enable='lt(t,3)',
+drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='BIGORNA VAZIA...':fontsize=150:fontcolor=0xFFD166:borderw=9:bordercolor=black:x=(w-text_w)/2:y=1450:enable='lt(t,3)',
+drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='MINUTO %{eif\:(15+(t-3)*150)/60\:d}':fontsize=120:fontcolor=0xFFD166:borderw=9:bordercolor=black:x=(w-text_w)/2:y=1330:enable='between(t,3,21.2)',
+drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='VÍDEO ACELERADO':fontsize=56:fontcolor=white:borderw=5:bordercolor=black:x=(w-text_w)/2:y=1470:enable='between(t,3,21.2)',
+drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='...E A OFICINA LOTOU!':fontsize=120:fontcolor=0xFFD166:borderw=9:bordercolor=black:x=(w-text_w)/2:y=1360:enable='gte(t,21.2)',
+setsar=1[main];
+[3:v]boxblur=24:2,eq=brightness=-0.25,drawtext=fontfile='C\:/Windows/Fonts/impact.ttf':text='FORGE STREET':fontsize=170:fontcolor=0xFFD166:borderw=12:bordercolor=black:x=(w-text_w)/2:y=(h-text_h)/2,setsar=1[card];
+[main][card]concat=n=2:v=1:a=0,scale=out_range=tv:out_color_matrix=bt709,format=yuv420p[v]
+```
+
 ## Reproduzir
 
 Primeiro faça o build Windows (README). A janela do jogo precisa ficar visível durante a gravação (`-batchmode`/`-nographics` não têm tela para capturar). Cada quadro tem ~0,7 MB: grave fora do repo. A simulação não tem aleatoriedade e `-record` trava o relógio em 1/F s por quadro, então o mesmo comando gera os mesmos quadros. Os números de quadro dos filtros dependem disso.
