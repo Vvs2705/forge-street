@@ -114,8 +114,8 @@ namespace FS.Core
         // FASE9: encomenda ativa (OrderItem -1 = nenhuma) e relogio ate a proxima (so anda depois da 1a venda)
         public int OrderItem = -1, OrderTarget, OrderProgress, OrderReward, OrderCount; public float OrderIn = Balance.OrderFirstDelay;
         public long OrderGold;   // premios pagos nesta sessao (metrica do bot; fora do GoldEarned, nao vai no save)
-        /// <summary>Velocidade por anuncio: multiplicador (1, 2 ou 3), s restantes e s de recarga (conta do fim do boost), no tempo de jogo. NAO vao no
-        /// save. ponytail: a recarga some ao fechar (reabrir o app libera um boost); gravar exige descontar o tempo offline, fica para quando medir abuso.</summary>
+        /// <summary>Velocidade por anuncio: multiplicador (1, 2 ou 3), s restantes e s de recarga (conta do fim do boost), no tempo de jogo. A-CORE-02:
+        /// os tres vao no save (bst=): reabrir nao libera outro boost e o ativo volta com o que restou; o tempo fora nao corre nenhum (como na pausa).</summary>
         public float BoostMul = 1f, BoostLeft, BoostCooldown;
         int _vipWant = -1, _vipPack;   // VIP sorteado esperando vaga (-1 = nenhum)
         int _vipPaid; bool _vipQuiet;  // VIP que estava na vaga ao salvar: volta com o que ja pagou e sem novo aviso de chegada
@@ -133,7 +133,11 @@ namespace FS.Core
         }
         public readonly int[] Crafted = new int[6];
         public double RateEma;                 // ouro/s online, media movel (base do offline)
-        public long SavedAt, LastClaim;        // unix s; o claim offline e' idempotente por SavedAt
+        public long SavedAt, LastClaim;        // unix s; o claim offline e' idempotente por SavedAt, que nunca recua (Save)
+        /// <summary>A-CORE-02: s que o relogio do aparelho estava atras do SavedAt, so no 1o Save de cada recuo (senao 0): a View loga clock_back
+        /// uma vez, nao a cada autosave.</summary>
+        public long ClockWentBack;
+        bool _clockBehind;
 
         public readonly Station Deposit, FurnaceA, FurnaceB, AnvilA, AnvilB, ShieldBench, ToolBench, Counter, JewelBench, JewelShop;
         public static readonly V2 HireSpot = new V2(8.3f, 1.5f);
@@ -1069,7 +1073,12 @@ namespace FS.Core
 
         public string Save(long nowUnix)
         {
-            SavedAt = nowUnix;
+            // A-CORE-02: SavedAt = maior instante ja visto. Relogio que voltou nao regrava o SavedAt para tras: adiantar -> resgatar -> voltar
+            // -> adiantar nao gera claim novo, e voltar -> fechar -> acertar a hora nao paga tempo que nao passou
+            long back = SavedAt - nowUnix;
+            ClockWentBack = back > 0 && !_clockBehind ? back : 0;
+            _clockBehind = back > 0;
+            SavedAt = Math.Max(SavedAt, nowUnix);
             var ci = CultureInfo.InvariantCulture;
             var sb = new StringBuilder();
             sb.Append("v=").Append(Schema).Append('\n');
@@ -1099,7 +1108,7 @@ namespace FS.Core
             sb.Append("hold=").Append(string.Join(",", Player.Held)).Append('\n');
             if (Workers.Count > 0) sb.Append("wk=").Append(string.Join(";", Workers.ConvertAll(w => w.Role + ":" + string.Join(",", w.Held)))).Append('\n');
             // FASE8: relogio do VIP, VIPs sorteados e o VIP pendente (produto, unidades que faltam). A fila nao vai no save: o VIP que ja estava
-            // na vaga volta como pendente e pega a 1a vaga ao reabrir, com paciencia cheia. O boost nao vai: some ao fechar
+            // na vaga volta como pendente e pega a 1a vaga ao reabrir, com paciencia cheia
             Client vip = Queue.Find(c => c.Vip);
             int vipWant = vip != null ? (int)vip.Want : _vipWant, vipPack = vip != null ? vip.Pack : _vipWant >= 0 ? _vipPack : 0;
             sb.Append("vip=").Append(VipIn.ToString("0.###", ci)).Append(',').Append(VipCount).Append(',').Append(vipWant).Append(',').Append(vipPack)
@@ -1107,6 +1116,9 @@ namespace FS.Core
             // FASE9: encomenda (item, alvo, progresso, premio, entregues, relogio ate a proxima)
             sb.Append("ord=").Append(OrderItem).Append(',').Append(OrderTarget).Append(',').Append(OrderProgress).Append(',').Append(OrderReward)
               .Append(',').Append(OrderCount).Append(',').Append(OrderIn.ToString("0.###", ci)).Append('\n');
+            // A-CORE-02: velocidade (multiplicador, s restantes, s de recarga), no tempo de jogo
+            sb.Append("bst=").Append(BoostMul.ToString("0", ci)).Append(',').Append(BoostLeft.ToString("0.###", ci)).Append(',')
+              .Append(BoostCooldown.ToString("0.###", ci)).Append('\n');
             return sb.ToString();
         }
 
@@ -1174,6 +1186,14 @@ namespace FS.Core
                             sim.VipCount = Math.Max(0, I(parts[1], 0));
                             vipWant = I(parts[2], -1); vipPack = Clamp0(I(parts[3], 0), Balance.VipSummonPackMax);
                             if (parts.Length >= 6) { vipQuiet = I(parts[4], 0) == 1; vipPaid = Math.Max(0, I(parts[5], 0)); }   // save da 0.5.0: 4 campos
+                        }
+                        break;
+                    case "bst":   // A-CORE-02; save antigo sem bst=: sem boost e sem recarga (como antes). Sem tempo = sem boost; ativo = 2x ou 3x
+                        if (parts.Length >= 3)
+                        {
+                            sim.BoostLeft = Math.Max(0f, Math.Min(Balance.BoostSeconds, F(parts[1], 0f)));
+                            sim.BoostMul = sim.BoostLeft > 0f ? Math.Max(2f, Math.Min(Balance.BoostMax, (float)Math.Round(F(parts[0], 2f)))) : 1f;
+                            sim.BoostCooldown = Math.Max(0f, Math.Min(Balance.BoostCooldownSeconds, F(parts[2], 0f)));
                         }
                         break;
                     default:

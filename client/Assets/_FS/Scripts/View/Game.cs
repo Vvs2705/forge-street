@@ -937,6 +937,7 @@ namespace FS
             if (_sim == null || _headless || _testSession || _noSave) return;
             long now = Now();
             string text = SaveEnvelope.Wrap(_sim.Save(now), Application.version, now);
+            if (_sim.ClockWentBack > 0) Log("clock_back", _sim.ClockWentBack.ToString(), _sim.SavedAt.ToString());   // A-CORE-02: s atras, SavedAt mantido
             try { SaveStore.Write(_savePath, text); }
             catch (Exception e) { Log("save_error", e.GetType().Name); }   // disco cheio nao derruba o jogo; o espelho segura o progresso
             PlayerPrefs.SetString(SaveKey, text);   // espelho na chave antiga: um downgrade para a 0.6 le o mesmo texto

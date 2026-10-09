@@ -2181,23 +2181,20 @@ namespace FS.Tests
         }
 
         /// <summary>FASE8 §4: o relogio do VIP, os VIPs sorteados e o VIP pendente vao no save (o que estava na vaga volta pendente com o que
-        /// falta do pacote); o boost nao vai. Save antigo (sem vip=) carrega com o relogio novo e sem VIP; lixo vira o padrao.</summary>
+        /// falta do pacote). Save antigo (sem vip=) carrega com o relogio novo e sem VIP; lixo vira o padrao. O boost vai no save (A-CORE-02, ExploitTests).</summary>
         [Test]
-        public void Save_RelogioEVipPendente_IdaEVolta_BoostNaoVai_SaveAntigo()
+        public void Save_RelogioEVipPendente_IdaEVolta_SaveAntigo()
         {
             var s = Sold();
             s.Buy(Upgrade.Shields);
             Run(s, 3f);
             Assert.AreEqual(Sim.VipInterval(0) - 3f, s.VipIn, 0.05f, "relogio andando");
             Assert.IsTrue(s.SummonVip());   // sorteado, ainda sem vaga (sem Tick)
-            s.StartBoost(); s.StartBoost();
             string text = s.Save(10);
             StringAssert.Contains("vip=" + s.VipIn.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + ",1,2,6,0,0\n", text);   // chamado: 2x3, passa da prateleira de 5; ainda fora da vaga, nada pago
-            StringAssert.DoesNotContain("boost", text);
             Sim b = Sim.Load(text);
             Assert.AreEqual(s.VipIn, b.VipIn, 1e-3f);
             Assert.AreEqual((1, true), (b.VipCount, b.VipActive), "VIP pendente volta");
-            Assert.AreEqual((1f, 0f), (b.BoostMul, b.BoostLeft), "o boost some ao fechar");
             Assert.AreEqual(text, b.Save(10), "save estavel");
             b.Tick(Dt, 0f, 0f);
             Assert.AreEqual((Item.Sword, 6), (Vip(b).Want, Vip(b).Pack), "o pendente pega a 1a vaga ao reabrir, com o pacote do chamado");
@@ -2212,11 +2209,6 @@ namespace FS.Tests
             Assert.AreEqual((0, Vip(b).Paid), (Count(c, Ev.VipArrived), Vip(c).Paid), "revisao v0.5 #5: ja estava na vaga, sem novo aviso/vip_arrived e com o que ja pagou");
             Assert.Greater(Vip(c).Paid, 0);
             Assert.AreEqual(Balance.VipPatienceFor(5) - Dt, Vip(c).Patience, 1e-3f, "paciencia cheia, pelo que falta");
-            var k = new Sim();
-            k.StartBoost(); Run(k, Balance.BoostSeconds + 1f);
-            Assert.Greater(k.BoostCooldown, 0f);
-            Sim kb = Sim.Load(k.Save(1));
-            Assert.AreEqual((0f, true), (kb.BoostCooldown, kb.CanBoost), "a recarga nao vai no save (FASE8 §3)");
             string old = text.Substring(0, text.IndexOf("vip="));   // save da FASE7
             Sim o = Sim.Load(old);
             Assert.AreEqual((Sim.VipInterval(0), 0, false), (o.VipIn, o.VipCount, o.VipActive), "save antigo: relogio novo, sem VIP");
