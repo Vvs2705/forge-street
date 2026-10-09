@@ -111,6 +111,10 @@ namespace FS.Core
         /// <summary>s ate o proximo VIP natural (parado ate a 1a venda); VipCount = VIPs ja sorteados, naturais e chamados (semente do intervalo e do
         /// produto). Vao no save.</summary>
         public float VipIn = VipInterval(0); public int VipCount;
+        // EXPERIMENTO B4 (BENCHMARK_MERCADO, branch exp/moeda-fisica): a venda empilha moedas ao lado do balcao (0) e da loja de joias (1);
+        // so o ferreiro recolhe, passando perto. Desligado = jogo normal
+        public bool PhysicalCoins; public readonly int[] Pile = new int[2];
+        public V2 PileSpot(int i) => (i == 0 ? Counter.InAt : JewelShop.InAt) + new V2(Balance.PileOffset, 0f);
         // FASE9: encomenda ativa (OrderItem -1 = nenhuma) e relogio ate a proxima (so anda depois da 1a venda)
         public int OrderItem = -1, OrderTarget, OrderProgress, OrderReward, OrderCount; public float OrderIn = Balance.OrderFirstDelay;
         public long OrderGold;   // premios pagos nesta sessao (metrica do bot; fora do GoldEarned, nao vai no save)
@@ -623,6 +627,9 @@ namespace FS.Core
         {
             if (c.Role < 0)
             {
+                if (PhysicalCoins)
+                    for (int i = 0; i < 2; i++)
+                        if (Pile[i] > 0 && V2.Dist(c.Pos, PileSpot(i)) <= Balance.PileRadius) { Gold += Pile[i]; Pile[i] = 0; }
                 Pad pad = PadAt(c.Pos);
                 if (pad != _padUnder) { _padUnder = pad; _padDwell = 0f; }
                 if (pad == null) foreach (Pad p in Pads) p.Armed = true;
@@ -844,7 +851,8 @@ namespace FS.Core
         int Sell(Item want, V2 pos, int mul = 1)
         {
             int price = PriceOf(want) * mul;
-            Stock[(int)want]--; Gold += price; GoldEarned += price; Sales++; SoldItems[(int)want]++;
+            Stock[(int)want]--; GoldEarned += price; Sales++; SoldItems[(int)want]++;
+            if (PhysicalCoins) Pile[want == Item.Jewel ? 1 : 0] += price; else Gold += price;
             if ((int)want == OrderItem && OrderProgress < OrderTarget) OrderProgress++;
             if (FirstSaleTime < 0f) FirstSaleTime = Time;
             Emit(Ev.Sold, (int)want, price, pos);

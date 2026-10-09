@@ -16,6 +16,7 @@ namespace FS.Core
         /// tela"; e nao segura o analogico no maximo. Reaction = 0 e Stick = 1 e' o bot ideal (limite inferior de tempo).
         /// </summary>
         public float Reaction = 0.7f, Stick = 0.85f;
+        public float PileWalk; public static int PileGo = Balance.PileGo;   // EXPERIMENTO B4: s andando ate a pilha; limiar de coleta (estatico: so experimento)
 
         V2 _target; bool _has, _menu; float _wait;
 
@@ -40,6 +41,7 @@ namespace FS.Core
                 return;
             }
             V2 d = Toward(s, t);
+            if (s.PhysicalCoins && (d.X != 0f || d.Y != 0f) && (V2.Dist(t, s.PileSpot(0)) < 0.01f || V2.Dist(t, s.PileSpot(1)) < 0.01f)) PileWalk += dt;
             s.Tick(dt, d.X * Stick, d.Y * Stick);
         }
 
@@ -56,6 +58,13 @@ namespace FS.Core
         public static V2 Target(Sim s)
         {
             Carrier p = s.Player;
+            if (s.PhysicalCoins)   // EXPERIMENTO B4: vai recolher quando a pilha completa a proxima compra (pad ou menu) ou passa de 60
+            {
+                int pile = s.Pile[0] + s.Pile[1], next = s.CheapestVisibleCost();
+                for (int u = 0; u < Upgrades.Count; u++) if (s.MenuAvailable(u) && (next < 0 || Upgrades.Cost(u) < next)) next = Upgrades.Cost(u);
+                if (pile > 0 && ((next > s.Gold && s.Gold + pile >= next) || pile >= PileGo))
+                    return s.PileSpot(s.Pile[1] > s.Pile[0] ? 1 : 0);
+            }
             Pad pad = s.CheapestAffordablePad();
             if (pad != null) return pad.Pos;
             Chest chest = null;   // bau disponivel mais perto: abre quando passa perto ou quando nao tem nada melhor (nao e' otimo)

@@ -100,6 +100,7 @@ namespace FS.Core
         public const float WorkshopW = 9f;                     // oficina (x 0-9): o jogador fica nela ate comprar o Corredor
         public const float WorldW = 15f, WorldH = 14f;        // metros, retrato; x 9-15 = rua lateral (2a area)
         public const float PadRadius = 0.6f;
+        public const float PileOffset = 1.2f, PileRadius = 0.7f; public const int PileGo = 60;   // EXPERIMENTO B4: pilha 1,2 m a direita da boca do balcao; bot recolhe com 60+
         // Fisica (docs/FASE5_FISICA_PACIENCIA.md §2/§2b): estacao = caixa solida; personagem = circulo; interacao so nas bocas
         public static readonly V2 StationHalf = new V2(0.65f, 0.40f);   // corpo de toda estacao (base do sprite de 1,65 m)
         public const float CharRadius = 0.25f;                  // jogador, ajudantes e bot
