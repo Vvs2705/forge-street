@@ -269,7 +269,7 @@ Como repetir: `dotnet test client/tools/coretests --logger "console;verbosity=de
 
 ### 10.7 Passo A — custos aprovados e Vitrine com joia 80 (vigente, 2026-10-07)
 
-Fonte de decisão: handoff `PROMPT_CONTINUACAO_CHATGPT.md` §3 e §6A. Aplicado: Joalheiro **2.200**, Lupa **5.500**, Vitrine de joias **9.000**; descrição "Nobres pagam 80 e a fila cresce"; `Balance.JewelPriceUp = 80`. `Sim.PriceOf(Item)` é usado por `Sell` nos dois caminhos (fila e compra direta), inclusive `GoldEarned` e `Ev.Sold.B`. Antes da Vitrine a joia continua em 60; outras linhas mantêm 10/25/16. Bot e dicas não têm preço de joia fixo e não precisaram mudar.
+Fonte de decisão: handoff `PROMPT_CONTINUACAO_CHATGPT.md` (removido em 2026-10-09; está no histórico do git, commit 2df0f0d) §3 e §6A. Aplicado: Joalheiro **2.200**, Lupa **5.500**, Vitrine de joias **9.000**; descrição "Nobres pagam 80 e a fila cresce"; `Balance.JewelPriceUp = 80`. `Sim.PriceOf(Item)` é usado por `Sell` nos dois caminhos (fila e compra direta), inclusive `GoldEarned` e `Ev.Sold.B`. Antes da Vitrine a joia continua em 60; outras linhas mantêm 10/25/16. Bot e dicas não têm preço de joia fixo e não precisaram mudar.
 
 #### Antes/depois: mesmo bot humano, 60 min, 30 ticks/s
 
@@ -1393,8 +1393,8 @@ Regra em `docs/FASE9_ENCOMENDAS.md`. Uma encomenda por vez (vender N de uma linh
 
 O ganho de ritmo vem mais do prêmio mínimo (25) no começo, quando cada 25 de ouro adianta uma compra de 50–110, do que do tamanho do prêmio no fim; por isso 8 s e 10 s dão quase o mesmo tempo. Com 10 s, o 1º terço anda assim (bot humano): Bigorna 2 2:17 → 1:55, Ajudante 1 2:59 → 2:56, Escudos 4:00 → 3:49, Ferramentas 11:40 → 10:46, Ajudante 3 19:01 → 17:19. Todos ainda antes dos tempos do GDD §3 (o bot tem de chegar antes). A produção completa volta para perto da v0.4.1 (43:37). O VIP continua em 5,5% e o luxo não muda o ouro por minuto (-0,7%, `Bot_90Minutos_Luxo`).
 
-Portão: `Bot_60Minutos_Fase2` exige o prêmio entre 3% e 10% da receita. `Bot_90Minutos_Luxo` passa a somar o `OrderGold` na conta exata do saldo.
-
+Portão: `Bot_60Minutos_Fase2` exige o prêmio entre 3% e 10% da receita. `Bot_90Minutos_Luxo` passa a somar o `OrderGold` na conta exata do saldo.
+
 **N pela renda (2026-10-09, teste no emulador).** Com N pela demanda (`OrderSeconds / ClientInterval`), a 2ª encomenda já pedia **27 espadas por +25** no 3º minuto: no começo o gargalo é a produção do ferreiro, não o cliente. Agora N segue a renda real dividida entre as linhas abertas, então cresce junto com a oficina (5 → ~8 → ~15 espadas no começo; teto de 30 no fim). As encomendas ficam mais curtas (2,8 min), saem mais vezes (21) e o prêmio sobe para 5,0% da receita; produção completa 41:31.
 
 ## 21. Experimento B4: moeda física no balcão (2026-10-09, branch `exp/moeda-fisica`, NÃO entra no jogo)
