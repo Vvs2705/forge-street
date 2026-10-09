@@ -26,6 +26,12 @@
 ## Como rodar
 
 ```bash
+client/tools/verify.sh quick   # ou full, ou android-emulator
+```
+Ponto de entrada único dos portões (Git Bash). `quick`: núcleo + viewcheck do PC e do Android (compila os `#if UNITY_ANDROID`), sem Unity, ~30 s. `full`: quick + EditMode + `Setup.BuildWindows` + `-autoplay 10`, com veredito do XML/log desta rodada. `android-emulator`: `Setup.BuildAndroidEmu`, liga o AVD `fs_playstore`, instala, abre com `-bot -speed 4`, aperta voltar e início e confere o logcat. Sai ≠ 0 se algo falhar; logs em `client/Builds/verify/`.
+Um processo pesado por vez: aborta se o Unity estiver aberto neste projeto ou se o emulador estiver ligado. Numa worktree, copie `UnityEngine.UI.dll`, `Unity.InputSystem.dll` e `Unity.LevelPlay.dll` de `client/Library/ScriptAssemblies` da pasta principal. Os comandos avulsos abaixo continuam valendo.
+
+```bash
 dotnet test client/tools/coretests
 ```
 Núcleo + testes em ~1 s, sem abrir o Unity. `--logger "console;verbosity=detailed"` mostra o relatório do bot minuto a minuto.
