@@ -20,7 +20,8 @@ namespace FS
         public const float Band = 0.085f;   // fracao da tela da barra; a camera reserva essa faixa como reserva a de cima
         const float Tray = 0.2f;            // fileira de cartoes, acima da barra, so quando aberta (~384 px: cartao de ~360)
         const float CardW = 270f;           // px na referencia 1080x1920
-        static readonly Color Cream = Art.Hex(0xFFF1D6), Leather = Art.Hex(0x5C3A1E), Brown = Art.Hex(0x3A2614),
+        // paleta do cartao creme; o cartao de configuracoes (Game, v0.6b) usa a mesma
+        public static readonly Color Cream = Art.Hex(0xFFF1D6), Leather = Art.Hex(0x5C3A1E), Brown = Art.Hex(0x3A2614),
             Green = Art.Good, GreenDark = Art.Hex(0x2F9A4A), Gray = Art.Hex(0xA49C92), GrayDark = Art.Hex(0x766E66);
 
         sealed class Card { public int U; public GameObject Go; public Image Icon, Btn, BtnEdge, Coin; public Text Name, Effect, Price; public CanvasGroup Fade; }

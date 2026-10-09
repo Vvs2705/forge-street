@@ -1292,7 +1292,7 @@ namespace FS
             Station s = _sim.StationAt(p.Pos, out bool outZone);
             bool full = s != null && (s.Kind == Kind.Deposit || (outZone && s.Out > 0))
                 && p.Held[(int)(s.Kind == Kind.Deposit ? Item.Ore : s.OutItem)] >= p.Cap;
-            if (full) { if (_maxT <= 0f) _maxAge = 0f; _maxT = MaxHold; }
+            if (full) { if (_maxT <= 0f) { _maxAge = 0f; Ajustes.Pulso(15); } _maxT = MaxHold; }   // v0.6b: pulso so quando aparece
             else _maxT -= dt;
             _max.enabled = _maxT > 0f;
             if (!_max.enabled) return;

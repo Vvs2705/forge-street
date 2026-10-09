@@ -40,3 +40,53 @@ Refeito depois de olhar: faíscas de 0,16 m sumiam na foto (7 px a 540 de largur
 - Mochila de frente (andando para baixo) fica escondida atrás do corpo, como uma mochila de verdade; ela lê andando para cima e de lado.
 - A Joalheria também ganha faíscas e martelo dourado (é bancada, e o Martelo veloz acelera a joia também: `HammerTime × JewelTimeMul`). Trocar as faíscas por brilho roxo se o playtest estranhar.
 - No POCO: medir se 9 faíscas × 4 bancadas + fumaça pesam no FPS (pool de 64 sprites, sem alocação por quadro) e se o "MAX" de 46 px de referência lê a 1080 × 2400.
+---
+
+# v0.6b: configurações com som e vibração (validação, 2026-10-09)
+
+Escopo: `BENCHMARK_VISUAL.md` P2-4 (vibração) e o resto da P1-1 (versão sai da HUD para as configurações). Só View (`Game.cs`, `Art.cs`, uma linha no `WorldView.cs` e a paleta do `MenuBar.cs` pública); Core e testes não foram tocados. Sem `AndroidManifest.xml` próprio. `bundleVersion` continua 0.5.1; o APK de amanhã (`ForgeStreet-dev.apk`, SHA `b2f26113…`) não foi refeito.
+
+## O que mudou
+| # | Pedido | Como ficou |
+|---|---|---|
+| P1-1 | Engrenagem na HUD | Botão à direita da dica, dentro da `AreaSegura`, no estilo da pílula de ouro (borda `#F2D9A0`, fundo `#2A1E14`, engrenagem de 8 dentes desenhada por código). A dica encolheu de 0,385–1 para 0,385–0,875 da faixa e continua quebrando em 2 linhas. No `-record` não há engrenagem e a dica volta à largura inteira. |
+| P1-1 | Cartão de configurações | Cartão creme com borda de couro e chanfro (a paleta dos cartões do menu), título "Configurações" em Arial negrito, Som e Vibração como chaves verde (LIGADO) / cinza (DESLIGADO) com bolinha branca e texto com contorno, linha "Forge Street v0.5.1" e FECHAR. O voltar do Android (Esc) fecha o cartão em vez de sair do jogo. |
+| — | Comportamento | **Não é pausa.** Como o painel do cofre: o joystick e o WASD ficam travados (o ferreiro para), a oficina, a fila e o boost seguem rodando. Foi o caminho mais simples e igual ao modal que já existia. |
+| P1-1 | Versão no canto | Só no build de desenvolvimento (`Debug.isDebugBuild`; o playtest usa). No release ela fica só no cartão. |
+| P2-4 | Som | `Ajustes.Som` (PlayerPrefs `fs_som`, 1 = ligado). A 1ª linha do `Sfx.Play` volta sem tocar com o som desligado: nenhum SFX do jogo passa por outro caminho. |
+| P2-4 | Vibração | `Ajustes.Pulso(ms)`: `Vibrator` do `currentActivity` + `VibrationEffect.createOneShot(ms, DEFAULT_AMPLITUDE)` (API 26+; abaixo, `vibrate(long)`), em `try/catch`; se falhar uma vez, desliga até reabrir. Venda 15 ms (no máximo 4 por segundo: o VIP vende várias unidades no mesmo quadro), compra (placa ou menu) 25 ms, VIP servido 40 ms, "MAX" 15 ms só quando aparece. PlayerPrefs `fs_vibra`, ligada por padrão no Android. No PC a chave aparece apagada (45%) e não responde. |
+| P2-4 | Permissão `VIBRATE` | Ligar a Vibração confirma com `Handheld.Vibrate()`, como o Rune Relay. Essa referência basta para a Unity pôr a permissão no manifesto, sem um `AndroidManifest.xml` próprio disputando o merge com o GameActivity e o LevelPlay. |
+| — | Diário | Mudar uma chave grava `settings,som|vibra,0|1` (pelo mesmo `SetSom`/`SetVibra` do toque). As preferências valem também no `-testsession` (não são progresso); o diário não (`Log` não grava no `-testsession`). |
+| — | Flag de dev | `-settings` abre o cartão no início; `-settings on|off` liga ou desliga as duas antes, gravando como o toque. A linha `SHOT` do log passou a mostrar `som=` e `vibra=`. |
+
+## Verificação
+| Portão | Resultado |
+|---|---|
+| `dotnet test client/tools/coretests` | 81/81 |
+| `dotnet build client/tools/viewcheck/view -nologo --artifacts-path %TEMP%\vc6b` | 0 erros, 0 avisos |
+| `Unity.exe … -executeMethod FS.EditorTools.Setup.BuildWindows -logFile client/Builds/validation_v06b/build_win.log` | "Build Finished, Result: Success." |
+| `ForgeStreet.exe -batchmode -nographics -autoplay 10 -logFile validation_v06b/autoplay.log` | `AUTOPLAY OK venda1=23s upgrades=8 ouro=1310` (igual à v0.6a) |
+| Android: método temporário `Setup.BuildAndroidTmp` → `%TEMP%\fsv\test.apk` (log `validation_v06b/build_android_tmp.log`, já removido do `Setup.cs`) | `BuildSummary(Android): result=Succeeded errors=0`; compila o caminho `UNITY_ANDROID` do `Ajustes.Pulso` |
+| `aapt2 dump permissions %TEMP%\fsv\test.apk` | `uses-permission: name='android.permission.VIBRATE'` (o APK 0.5.1 não tinha); `mainTemplate.gradle` e `AndroidResolverDependencies.xml` não foram alterados pelo resolver |
+| Persistência | `-testsession -settings off` → registro `fs_som=0`, `fs_vibra=0`; a execução seguinte só com `-settings` abre com as duas DESLIGADO e loga `som=False`; a seguinte sem flag mostra a HUD normal e loga `som=False`; `-settings on` restaurou `fs_som=1`, `fs_vibra=1` |
+| Mudo | caminho de código: `Sfx.Play` → `if (… !Ajustes.Som …) return` antes do `PlayOneShot` |
+
+Fotos em `client/Builds/validation_v06b/shots/` (janela `-screen-fullscreen 0 -testsession`, `-shotdelay 2`; logs em `validation_v06b/logs/`). Todas foram abertas.
+
+| Foto | Argumentos | Conferido |
+|---|---|---|
+| `01_hud_540.png`, `03_hud_432.png` + `01z_engrenagem_zoom.png` | 540×960 e 432×960 | engrenagem dentro da faixa, sem encostar na dica nem na pílula de ouro; na 432 o botão fica um pouco mais alto que largo e continua lendo |
+| `02_hud_dica_longa_540.png`, `04_hud_dica_longa_432.png` | `-gold 300` | "Toque em Melhorias: Fole (50 de ouro)" em 2 linhas inteiras na dica mais estreita |
+| `05_config_540.png`, `06_config_432.png` | `-settings` | cartão no centro, Som LIGADO, Vibração apagada (PC), versão, FECHAR; a HUD, o menu e o botão 2× ficam escurecidos por baixo |
+| `07_config_off_540.png` | `-settings off` | Som DESLIGADO (cinza, bolinha à esquerda) diferente da Vibração apagada |
+| `08_persistiu_432.png` | `-settings` (execução seguinte) | abriu com Som DESLIGADO: gravou |
+| `09_hud_som_off_540.png` | sem flag | HUD igual com o som desligado (`som=False` no log) |
+| `10_restaurado_432.png` | `-settings on` | volta ao LIGADO; preferências restauradas no registro |
+| `11z_record_sem_engrenagem.png` | `-record … -recordsec 0.2` (topo do quadro 1080×1920) | criativo sem engrenagem e sem versão, dica na largura inteira |
+
+Refeito depois de olhar: a 1ª engrenagem (dentes finos de 0,19 do passo) lia como sol a 50 px. Os dentes ficaram largos e afinando na ponta, com corpo maior. No `-record` a dica deixava um buraco à direita e voltou à largura inteira.
+
+## Fica de fora / para o aparelho
+- Vibração não foi sentida: o emulador não vibra e o APK do teste de amanhã é o 0.5.1. Conferir no próximo APK de playtest se 15 ms se sente no POCO (alguns motores ignoram pulsos abaixo de ~20 ms) e se 4 por segundo na venda incomoda.
+- A linha `settings` do diário não foi gravada de verdade: rodar sem `-testsession` mexeria no save e no diário reais do PC. Ela sai do mesmo `Log` das outras linhas.
+- O voltar do Android com o painel do cofre aberto continua saindo do jogo, como antes. Só o cartão de configurações fecha com o voltar.

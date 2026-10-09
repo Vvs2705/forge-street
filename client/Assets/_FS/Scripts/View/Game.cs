@@ -21,7 +21,8 @@ namespace FS
     /// -record pasta [-recordsec S] [-recordfps F] (quadros 1080x1920 para os criativos, docs/CRIATIVOS.md) | -buyids 1,5,0@300 |
     /// -warmup S | -hold 0,3,3,3,0,0 | -stock 10,10,10 (fotos de validacao) | -fakeads | -adtest vip|velocidade (Ads.Show no
     /// inicio; docs/LEVELPLAY.md) | -vipnow (chama o VIP depois do warmup) | -boost N (N anuncios de velocidade antes do warmup) |
-    /// -cam W (largura visivel em m, 6..11,4; experimento de camera mais perto). Build dev: tambem pelo intent do Android (Arg).
+    /// -cam W (largura visivel em m, 6..11,4; experimento de camera mais perto) | -settings [on|off] (abre as configuracoes; on/off
+    /// liga/desliga Som e Vibracao antes, gravando como o toque). Build dev: tambem pelo intent do Android (Arg).
     /// v0.5c (docs/FASE8_VIP_VELOCIDADE.md s5): botoes "Chamar VIP" e "Velocidade 2x/3x" nos cantos da barra de baixo (Ads.Show ->
     /// Sim.SummonVip / Sim.StartBoost), selo do boost com cronometro, aviso "Cliente VIP!" e diario vip_* / boost_start.
     /// </summary>
@@ -60,6 +61,7 @@ namespace FS
         Canvas _joyCanvas;
         RectTransform _canvas, _labels, _safe, _panel, _fx;
         Text _gold, _hint, _panelTitle, _panelBody, _panelBtn;
+        RectTransform _cfg;   // v0.6b: cartao de configuracoes (Som, Vibracao, versao)
         Action _panelAction;
         Image _coinIcon;
         sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
@@ -94,6 +96,8 @@ namespace FS
             DevArgs();
             // -cam W (P2-3 do BENCHMARK_VISUAL, experimento de playtest): largura visivel em m; abaixo de 11,4 a camera segue o jogador
             _visW = Mathf.Clamp(ArgF("-cam", VisibleWidth), 6f, VisibleWidth);
+            string cfg = Arg("-settings");
+            if (cfg == "on" || cfg == "off") { SetSom(cfg == "on"); SetVibra(cfg == "on"); }   // fotos e teste de persistencia
             Ads.Logged += (e, a, b) => Log(e, a, b);   // pedido, mostrado, recompensa e falha do anuncio vao para o diario
             Ads.Init();
             _bot = new Bot();
@@ -109,8 +113,10 @@ namespace FS
             _view = new GameObject("Mundo").AddComponent<WorldView>();
             _view.Init(_sim, _cam, _labels);
             _menu = new MenuBar(_safe, _sim, u => Bought(u, Upgrades.Cost(u), _sim.Player.Pos));
-            _panel.SetAsLastSibling();   // o painel modal cobre a barra de melhorias
+            _cfg.SetAsLastSibling();     // configuracoes e painel modal cobrem a barra de melhorias
+            _panel.SetAsLastSibling();
             if (Arg("-menu") != null) _menu.Toggle();   // foto com a fileira aberta
+            if (cfg != null) _cfg.gameObject.SetActive(true);
             _joy = new Joystick(_joyCanvas.transform);
             _joy.TopBand = HudBand;
             Fit();
@@ -157,10 +163,14 @@ namespace FS
         void Update()
         {
             if (_headless) return;
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) { Save(); Application.Quit(); return; }
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                if (_cfg.gameObject.activeSelf) _cfg.gameObject.SetActive(false);   // voltar do Android fecha as configuracoes
+                else { Save(); Application.Quit(); return; }
+            }
             if (_screen.x != Screen.width || _screen.y != Screen.height) Fit();
 
-            bool modal = _panel.gameObject.activeSelf;
+            bool modal = _panel.gameObject.activeSelf || _cfg.gameObject.activeSelf;
             _joy.Blocked = modal;
             _joy.BottomPx = _menu.TopPx;
             _joy.Tick();
@@ -222,6 +232,7 @@ namespace FS
                         break;
                     case Ev.Sold:
                         Sfx.Play("coin", 1f + 0.05f * (_sim.Sales % 5), 0.1f);
+                        Ajustes.Pulso(15, 0.25f);   // v0.6b: no maximo 4 por segundo (o VIP vende varias unidades no mesmo quadro)
                         _view.Float(new V2(e.Pos.X, e.Pos.Y - 0.9f), "+" + e.B, Art.Accent, 44);   // v0.5: sobe pela frente do estande, fora do balao do 1o
                         _view.Sold(e.Pos, e.A == (int)Item.Jewel);   // v0.5b: balao estoura com coracao e brilhos
                         FlyCoins(e.Pos, e.B);
@@ -259,6 +270,7 @@ namespace FS
                         break;
                     case Ev.VipServed:
                         Sfx.Play("offline", 1.15f);
+                        Ajustes.Pulso(40);
                         _view.Float(new V2(e.Pos.X, e.Pos.Y - 1.2f), "+" + e.B, Art.Accent, 64);   // pela frente do estande: na fila ele subia para baixo da HUD
                         _view.VipBurst(e.Pos, true);
                         FlyCoins(e.Pos, e.B, 12);   // so visual: o ouro ja entrou unidade por unidade
@@ -282,6 +294,7 @@ namespace FS
         void Bought(int u, int price, V2 pos)
         {
             Sfx.Play("upgrade");
+            Ajustes.Pulso(25);
             _view.Float(pos, Upgrades.All[u].Name + "!", Art.Good, 44);
             Log("upgrade_buy", ((Upgrade)u).ToString(), price.ToString());
         }
@@ -348,20 +361,23 @@ namespace FS
             _gold = Art.Outlined(Art.NewText(pill.transform, "Ouro", 62, new Vector2(0.3f, 0f), new Vector2(0.98f, 1f), TextAnchor.MiddleLeft), 3f);
             _gold.fontStyle = FontStyle.Bold;
             _gold.rectTransform.pivot = new Vector2(0f, 0.5f);   // o pulso cresce a partir da moeda, sem empurrar o numero
-            Image hintPill = Art.Panel(top, "PilulaDica", Art.ComAlfa(Art.Bg, 0.92f), new Vector2(0.385f, 0.1f), new Vector2(1f, 0.9f));
+            Image hintPill = Art.Panel(top, "PilulaDica", Art.ComAlfa(Art.Bg, 0.92f), new Vector2(0.385f, 0.1f), new Vector2(Arg("-record") == null ? 0.875f : 1f, 0.9f));   // v0.6b: a engrenagem fica a direita (criativo: sem ela)
             hintPill.raycastTarget = false;
             _hint = Art.Outlined(Art.NewText(hintPill.transform, "Dica", 32, Vector2.zero, Vector2.one), 2f);
             _hint.rectTransform.offsetMin = new Vector2(18f, 4f); _hint.rectTransform.offsetMax = new Vector2(-18f, -4f);
             _hint.fontStyle = FontStyle.Bold; _hint.color = Art.Accent;
             _hint.resizeTextForBestFit = true; _hint.resizeTextMinSize = 22; _hint.resizeTextMaxSize = 32;   // 2 linhas no maximo
             _hint.verticalOverflow = VerticalWrapMode.Truncate;
-            // versao: saiu do titulo; canto de baixo a esquerda, discreta (criativo: nenhuma)
-            if (Arg("-record") == null)
+            // versao: saiu do titulo; canto de baixo a esquerda, discreta, so no build dev (o playtest usa). Release: so nas
+            // configuracoes (v0.6b, P1-1). Criativo: nenhuma, nem a engrenagem
+            if (Arg("-record") == null && Debug.isDebugBuild)
             {
                 Text ver = Art.NewText(_safe, "Versao", 20, new Vector2(0.005f, MenuBar.Band), new Vector2(0.17f, MenuBar.Band + 0.016f), TextAnchor.LowerLeft);
                 ver.text = "v" + Application.version;
                 ver.color = Art.ComAlfa(Art.Ink, 0.3f);
             }
+
+            BuildSettings(top);
 
             _panel = Art.Node(_safe, "Painel", Vector2.zero, Vector2.one);
             _panel.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);
@@ -622,6 +638,82 @@ namespace FS
             ShowBanner(_toast, "Anúncio indisponível", 1.6f);
         }
 
+        // ---------- configuracoes: som e vibracao (v0.6b, BENCHMARK_VISUAL P2-4; a versao saiu da HUD para ca, P1-1) ----------
+
+        /// <summary>
+        /// Engrenagem na faixa de cima (a direita da dica, mesmo estilo da pilula de ouro) abre o cartao creme do menu: Som, Vibracao
+        /// (so no Android; no PC aparece apagada), a versao e FECHAR. Nao e' pausa: como o painel do cofre, trava o joystick e a
+        /// oficina segue trabalhando (o ferreiro para). Criativo (-record): sem engrenagem.
+        /// </summary>
+        void BuildSettings(RectTransform top)
+        {
+            if (Arg("-record") == null)
+            {
+                Image gear = Art.Panel(top, "Engrenagem", Art.Hex(0xF2D9A0), new Vector2(0.89f, 0.1f), new Vector2(1f, 0.9f));
+                Image gearIn = Art.Panel(gear.transform, "Fundo", Art.ComAlfa(Art.Hex(0x2A1E14), 0.95f), Vector2.zero, Vector2.one);
+                gearIn.rectTransform.offsetMin = new Vector2(5f, 5f); gearIn.rectTransform.offsetMax = new Vector2(-5f, -5f);
+                gearIn.raycastTarget = false;
+                Image icon = Art.Node(gear.transform, "Icone", new Vector2(0.17f, 0.17f), new Vector2(0.83f, 0.83f)).gameObject.AddComponent<Image>();
+                icon.sprite = Art.Gear(); icon.color = Art.Hex(0xF2D9A0); icon.preserveAspect = true; icon.raycastTarget = false;
+                Button gb = gear.gameObject.AddComponent<Button>();
+                gb.targetGraphic = gear;
+                gb.onClick.AddListener(() => { Sfx.Play("drop"); _cfg.gameObject.SetActive(true); });
+            }
+
+            _cfg = Art.Node(_safe, "Configuracoes", Vector2.zero, Vector2.one);
+            _cfg.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);   // escurece e segura os toques do resto
+            Image edge = Art.Panel(_cfg, "Cartao", MenuBar.Leather, new Vector2(0.1f, 0.33f), new Vector2(0.9f, 0.67f));
+            Image face = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
+            face.rectTransform.offsetMin = new Vector2(6f, 14f); face.rectTransform.offsetMax = new Vector2(-6f, -6f);   // chanfro de couro embaixo
+            face.raycastTarget = false;
+            Text title = Art.NewText(face.transform, "Titulo", 60, new Vector2(0.05f, 0.8f), new Vector2(0.95f, 0.97f));
+            title.text = "Configurações"; title.fontStyle = FontStyle.Bold; title.color = MenuBar.Brown;
+            Chave(face.transform, "Som", 0.58f, () => Ajustes.Som, v => { SetSom(v); if (v) Sfx.Play("coin"); }, true);
+            Chave(face.transform, "Vibração", 0.38f, () => Ajustes.Vibra, v => { SetVibra(v); if (v) Ajustes.Confirmar(); }, Ajustes.TemVibra);
+            Text ver = Art.NewText(face.transform, "Versao", 32, new Vector2(0.05f, 0.25f), new Vector2(0.95f, 0.35f));
+            ver.text = "Forge Street v" + Application.version; ver.color = Art.ComAlfa(MenuBar.Brown, 0.65f);
+            Button close = Art.NewButton(face.transform, "FECHAR", 46, MenuBar.Leather, new Vector2(0.25f, 0.05f), new Vector2(0.75f, 0.22f), () => _cfg.gameObject.SetActive(false));
+            close.GetComponentInChildren<Text>().color = MenuBar.Cream;
+            _cfg.gameObject.SetActive(false);
+        }
+
+        /// <summary>Linha "rotulo + chave": pilula verde (LIGADO) ou cinza (DESLIGADO) com chanfro e bolinha branca; o texto diz o estado.</summary>
+        void Chave(Transform parent, string label, float y, Func<bool> get, Action<bool> set, bool enabled)
+        {
+            Text l = Art.NewText(parent, label, 50, new Vector2(0.07f, y), new Vector2(0.48f, y + 0.17f), TextAnchor.MiddleLeft);
+            l.text = label; l.fontStyle = FontStyle.Bold; l.color = MenuBar.Brown;
+            Image edge = Art.Panel(parent, label + " Chave", MenuBar.GreenDark, new Vector2(0.5f, y + 0.01f), new Vector2(0.93f, y + 0.16f));
+            Image face = Art.Panel(edge.transform, "Face", MenuBar.Green, Vector2.zero, Vector2.one);
+            face.rectTransform.offsetMin = new Vector2(0f, 7f); face.raycastTarget = false;
+            Image knob = Art.Node(face.transform, "Bolinha", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            knob.sprite = Art.Disc(); knob.color = Color.white; knob.preserveAspect = true; knob.raycastTarget = false;
+            Text state = Art.Outlined(Art.NewText(face.transform, "Estado", 34, Vector2.zero, Vector2.one), 2f);
+            state.fontStyle = FontStyle.Bold; state.color = Color.white;
+            Button b = edge.gameObject.AddComponent<Button>();
+            b.targetGraphic = edge;
+            void Paint()
+            {
+                bool on = get();
+                edge.color = on ? MenuBar.GreenDark : MenuBar.GrayDark;
+                face.color = on ? MenuBar.Green : MenuBar.Gray;
+                knob.rectTransform.anchorMin = new Vector2(on ? 0.72f : 0.03f, 0.12f);
+                knob.rectTransform.anchorMax = new Vector2(on ? 0.97f : 0.28f, 0.88f);
+                state.rectTransform.anchorMin = new Vector2(on ? 0.03f : 0.28f, 0f);
+                state.rectTransform.anchorMax = new Vector2(on ? 0.72f : 0.97f, 1f);
+                state.text = on ? "LIGADO" : "DESLIGADO";
+            }
+            b.onClick.AddListener(() => { set(!get()); Paint(); });
+            Paint();
+            if (enabled) return;
+            // sem vibrador (PC): apagada e sem toque
+            b.interactable = false;
+            edge.gameObject.AddComponent<CanvasGroup>().alpha = 0.45f;
+            l.color = Art.ComAlfa(MenuBar.Brown, 0.45f);
+        }
+
+        void SetSom(bool on) { Ajustes.Som = on; Log("settings", "som", on ? "1" : "0"); }
+        void SetVibra(bool on) { Ajustes.Vibra = on; Log("settings", "vibra", on ? "1" : "0"); }
+
         void ShowPanel(string title, string body, string button, Action action)
         {
             _panel.gameObject.SetActive(true);
@@ -742,7 +834,7 @@ namespace FS
                 if (!_sim.Chests.Exists(c => c.State == 1)) { Debug.LogError("SHOT: nenhum bau disponivel em 180 s"); Application.Quit(1); yield break; }
             }
             else yield return new WaitForSecondsRealtime(delay);
-            Debug.Log($"SHOT t={_sim.Time:0.0} upgrades={_sim.UpgradesBought} nobres={_sim.JewelQueue.Count}/{_sim.JewelQueueCap} baus={string.Join(",", _sim.Chests.ConvertAll(c => c.State))}");
+            Debug.Log($"SHOT t={_sim.Time:0.0} upgrades={_sim.UpgradesBought} nobres={_sim.JewelQueue.Count}/{_sim.JewelQueueCap} baus={string.Join(",", _sim.Chests.ConvertAll(c => c.State))} som={Ajustes.Som} vibra={Ajustes.Vibra}");
             ScreenCapture.CaptureScreenshot(path);
             yield return null;
             yield return null;

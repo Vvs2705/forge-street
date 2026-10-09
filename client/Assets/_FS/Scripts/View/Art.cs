@@ -157,6 +157,12 @@ namespace FS
             bool Tri(float x0) => x >= x0 && x <= x0 + 0.9f && Mathf.Abs(y) <= (x0 + 0.9f - x) / 0.9f * 0.78f;
             return Tri(-0.92f) || Tri(0.02f);
         });
+        /// <summary>Engrenagem (8 dentes largos que afinam na ponta, furo no meio): botao de configuracoes da HUD (v0.6b).</summary>
+        public static Sprite Gear() => Get("gear", (x, y) =>
+        {
+            float r = Mathf.Sqrt(x * x + y * y), a = Mathf.Repeat(Mathf.Atan2(y, x) / (Mathf.PI * 2f) * 8f, 1f);
+            return r >= 0.3f && (r <= 0.72f || (r <= 0.97f && Mathf.Abs(a - 0.5f) < 0.3f - 0.4f * (r - 0.72f)));
+        });
 
         /// <summary>Capsula para SpriteRenderer Sliced: pontas de 0,5 unidade fixas, meio estica. Usar size = (w/h, 1) e escala h.</summary>
         public static Sprite Capsule()
@@ -443,7 +449,7 @@ namespace FS
         /// <summary>Toca no maximo uma vez por `minGap` segundos por nome (varias marteladas no mesmo quadro viram uma).</summary>
         public static void Play(string name, float pitch = 1f, float minGap = 0.05f)
         {
-            if (_src == null || !Clips.TryGetValue(name, out AudioClip c)) return;
+            if (_src == null || !Ajustes.Som || !Clips.TryGetValue(name, out AudioClip c)) return;   // Som desligado = nada toca
             if (LastPlayed.TryGetValue(name, out float last) && Time.unscaledTime - last < minGap) return;
             LastPlayed[name] = Time.unscaledTime;
             _src.pitch = pitch;
@@ -468,6 +474,68 @@ namespace FS
             AudioClip clip = AudioClip.Create(name, n, 1, rate, false);
             clip.SetData(data, 0);
             Clips[name] = clip;
+        }
+    }
+
+    /// <summary>
+    /// Configuracoes (v0.6b, BENCHMARK_VISUAL P2-4): Som e Vibracao no PlayerPrefs (fs_som, fs_vibra; 1 = ligado), fora do save de
+    /// progresso, entao valem tambem no -testsession. Pulso = vibracao curta do Android (VibrationEffect.createOneShot, API 26+);
+    /// no PC e no editor nao faz nada.
+    /// </summary>
+    public static class Ajustes
+    {
+        const string SomKey = "fs_som", VibraKey = "fs_vibra";
+        public static readonly bool TemVibra = Application.platform == RuntimePlatform.Android;
+        static int _som = -1, _vibra = -1;   // cache: o Sfx.Play pergunta a cada som
+        static float _last = -99f;
+#if UNITY_ANDROID && !UNITY_EDITOR
+        static AndroidJavaObject _vib;
+        static int _sdk;
+        static bool _quebrou;
+#endif
+
+        public static bool Som { get => Read(SomKey, ref _som); set => Write(SomKey, ref _som, value); }
+        public static bool Vibra { get => TemVibra && Read(VibraKey, ref _vibra); set => Write(VibraKey, ref _vibra, value); }
+
+        static bool Read(string key, ref int v) { if (v < 0) v = PlayerPrefs.GetInt(key, 1); return v == 1; }
+        static void Write(string key, ref int v, bool on) { v = on ? 1 : 0; PlayerPrefs.SetInt(key, v); PlayerPrefs.Save(); }
+
+        /// <summary>Confirma o "ligar" da Vibracao com a vibracao padrao do sistema (como o Rune Relay).</summary>
+        public static void Confirmar()
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            // ponytail: esta referencia ao Handheld.Vibrate tambem faz a Unity por a permissao VIBRATE no manifesto
+            // (sem AndroidManifest.xml proprio brigando com o merge do GameActivity e do LevelPlay)
+            Handheld.Vibrate();
+#endif
+        }
+
+        /// <summary>Vibra `ms` se a Vibracao esta ligada; `gap` &gt; 0 pula se houve outro pulso ha menos de `gap` s.</summary>
+        public static void Pulso(long ms, float gap = 0f)
+        {
+            if (!Vibra || Time.unscaledTime - _last < gap) return;
+            _last = Time.unscaledTime;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            if (_quebrou) return;
+            try
+            {
+                if (_vib == null)
+                {
+                    using (var up = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                    using (AndroidJavaObject act = up.GetStatic<AndroidJavaObject>("currentActivity"))
+                        _vib = act.Call<AndroidJavaObject>("getSystemService", "vibrator");
+                    using (var ver = new AndroidJavaClass("android.os.Build$VERSION")) _sdk = ver.GetStatic<int>("SDK_INT");
+                }
+                if (_sdk >= 26)
+                {
+                    using (var fx = new AndroidJavaClass("android.os.VibrationEffect"))
+                    using (AndroidJavaObject e = fx.CallStatic<AndroidJavaObject>("createOneShot", ms, -1))   // -1 = DEFAULT_AMPLITUDE
+                        _vib.Call("vibrate", e);
+                }
+                else _vib.Call("vibrate", ms);   // API < 26 (o minSdk hoje e' 26)
+            }
+            catch (Exception) { _quebrou = true; }   // ponytail: falhou uma vez = sem vibracao ate reabrir; nunca derruba o jogo
+#endif
         }
     }
 }
