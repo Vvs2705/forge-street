@@ -3,6 +3,10 @@
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões do Forge Street em [SemVer](https://semver.org/lang/pt-BR/). O histórico anterior ao repositório (2026-10-06 → 2026-10-07) foi reconstruído a partir dos documentos de validação.
 
 ## [Unreleased]
+### Corrigido
+- Achados do teste no POCO F4 (2026-10-09): um voltar às vezes valia por dois (fechava a bandeja e saía do jogo) — trava de 0,4 s; reabrir em menos de 1 min mostrava "31 de ouro em 0 min fora" — a abertura segue a regra de ≥ 60 s.
+### Adicionado
+- `client/tools/medir_aparelho.sh` (FPS, memória, temperatura, erros e diário pelo cabo); resultado do teste no POCO em `docs/VALIDACAO_V05.md`; portfólio dos 9 jogos em `docs/PORTFOLIO.md`.
 
 ## [0.5.1] — 2026-10-09
 ### Adicionado
