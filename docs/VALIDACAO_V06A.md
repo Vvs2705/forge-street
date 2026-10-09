@@ -146,3 +146,21 @@ Achados da revisão de código de `57de892` (v0.6a), `5d992d2` (v0.6b) e `f05142
 | 7 | A pop do item da pilha de saída reescrevia a escala de todos os itens a cada quadro | A escala só é escrita durante a pop, inclusive no quadro em que ela acaba (volta a 1) | Código |
 
 Visto de passagem e fora do pedido: `MenuBar.TopPx` cria um `Vector3[4]` por quadro (o `Game.Update` lê a cada quadro).
+
+---
+
+# v0.6 no Android (emulador do PC, 2026-10-09, coordenador)
+
+APK x86_64 da `feat/v0.6-juice` (`Setup.BuildAndroidEmu`) no AVD `fs_playstore` (Android 15, API 35, 1080×2400), sem janela. Flags de dev pelo intent: `adb shell "am start -n br.com.vstack.forgestreet/com.unity3d.player.UnityPlayerGameActivity -e unity '-bot -speed 4'"`. As aspas simples vão **dentro** das duplas: sem elas o shell do aparelho quebra o extra e o `am` acusa "Unknown option".
+
+| Conferido | Resultado |
+|---|---|
+| Encomendas no Android | cartão "Encomenda 3/27" com o bot vendendo, 0 exceção no logcat (`validation_v06emu/01`) |
+| Vibração (JNI) | `dumpsys vibrator_manager`: pulsos de 15 ms nas vendas e 25 ms na compra, `usage: TOUCH`, do `br.com.vstack.forgestreet`; sem exceção |
+| **Botão voltar** | **não chegava ao jogo**: nem o código antigo (salvar e sair) nem a correção da revisão rodavam. O GameActivity da Unity 6 não passa o voltar ao Input System (nenhum evento de teclado, nem "A"; problema conhecido: fórum Unity 1555368 / UUM-136080). Com o Predictive Back desligado, também não |
+| Correção | `activeInputHandler` = 2 (Input System + Input Manager legado) no `Setup`/ProjectSettings e `Input.GetKeyDown(KeyCode.Escape)` no `Game.Update`. Voltar fecha a bandeja (`validation_v06emu/03`→`04`) e o cartão de configurações (`05`→`06`); com a tela limpa, sai do jogo. Predictive Back continua ligado (Android 16) |
+| Painel do cofre | apareceu na 1ª volta (`validation_v06emu/02`, antes da correção); na repetição o cofre já tinha pago, então o caminho "voltar fecha o painel" foi provado pelo cartão de configurações (mesmo `if`) |
+
+## Armadilhas do build Android (corrigidas no `Setup.Build`)
+- **Empacotamento incremental do Gradle:** depois de trocar de branch o APK saiu com ~12 MB de buracos (84,8 MB, as mesmas entradas comprimidas de 72,4 MB); alternando ARM64/x86_64 saiu APK sem `libunity`/`libil2cpp` (crash `libgame.so not found`). Agora todo build Android apaga `Library/Bee/Android/Prj/IL2CPP/Gradle/launcher/build` antes.
+- **APK do emulador sem bibliotecas:** o `mainTemplate.gradle` versionado é o do aparelho (o resolver do LevelPlay exclui `/lib/x86_64`). Se o resolver não reescrever (estado guardado de um build x86 anterior), o APK x86_64 sai sem as `.so` nativas. Agora o `BuildAndroidEmu` tira essa linha só durante o build e devolve o arquivo.
