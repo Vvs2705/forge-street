@@ -1058,14 +1058,21 @@ namespace FS.Core
         /// <summary>Teto relativo do cofre: 2x o proximo upgrade travado.</summary>
         public int OfflineMaxGold() => (int)Math.Round(Balance.OfflineMaxNextUpgrades * CheapestLockedCost());
 
-        // ------------------------------------------------------------------ save/load (chave=valor; lixo vira estado inicial)
+        // ------------------------------------------------------------------ save/load (chave=valor; lixo do payload vira estado inicial;
+        // soma, schema e versao do jogo ficam no SaveEnvelope)
+
+        /// <summary>A-CORE-01: versao do payload (linha v=). Subir = anexar o passo em Migrations (Migracao_TodaVersaoAnteriorTemPasso cobra).
+        /// Campo novo que nao muda o significado de save antigo (hold=, vip=, ord=) nao sobe.</summary>
+        public const int Schema = 1;
+        /// <summary>Migracoes sobre o texto bruto, antes do parse: Migrations[i] leva o schema i+1 ao i+2. Vazio: so existe o schema 1 (0.1-0.7).</summary>
+        public static readonly Func<string, string>[] Migrations = { };
 
         public string Save(long nowUnix)
         {
             SavedAt = nowUnix;
             var ci = CultureInfo.InvariantCulture;
             var sb = new StringBuilder();
-            sb.Append("v=1\n");
+            sb.Append("v=").Append(Schema).Append('\n');
             sb.Append("t=").Append(Time.ToString("0.###", ci)).Append('\n');
             sb.Append("gold=").Append(Gold).Append('\n');
             var up = new StringBuilder();
@@ -1114,6 +1121,10 @@ namespace FS.Core
         {
             var sim = new Sim();
             if (string.IsNullOrEmpty(text)) return sim;
+            // schema: sem v= (lixo, testes) = 1; maior que Schema (downgrade) = melhor esforco, como a 0.6 faz com o save da 0.7
+            int v = 1;
+            foreach (string raw in text.Split('\n')) if (raw.StartsWith("v=", StringComparison.Ordinal)) { v = Math.Max(1, I(raw.Substring(2), 1)); break; }
+            for (; v < Schema; v++) text = Migrations[v - 1](text);
             var ci = CultureInfo.InvariantCulture;
             string wk = "";   // carga dos ajudantes: aplicada depois do Recompute (eles nascem dos flags)
             int vipWant = -1, vipPack = 0, vipPaid = 0; bool vipQuiet = false;
