@@ -157,7 +157,13 @@ namespace FS
         void Update()
         {
             if (_headless) return;
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) { Save(); Application.Quit(); return; }
+            // voltar do Android (= Esc): fecha o que estiver aberto (painel do cofre, bandeja de melhorias); so sai com a tela limpa
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                if (_panel.gameObject.activeSelf) ClosePanel();
+                else if (_menu.IsOpen) _menu.Toggle();
+                else { Save(); Application.Quit(); return; }
+            }
             if (_screen.x != Screen.width || _screen.y != Screen.height) Fit();
 
             bool modal = _panel.gameObject.activeSelf;
