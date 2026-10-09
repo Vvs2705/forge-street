@@ -158,7 +158,8 @@ namespace FS
         {
             if (_headless) return;
             // voltar do Android (= Esc): fecha o que estiver aberto (painel do cofre, bandeja de melhorias); so sai com a tela limpa
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            // Input.GetKeyDown: com o GameActivity o voltar do Android nao chega ao Input System, so ao Input Manager legado (Setup: Both)
+            if (Input.GetKeyDown(KeyCode.Escape) || (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame))
             {
                 if (_panel.gameObject.activeSelf) ClosePanel();
                 else if (_menu.IsOpen) _menu.Toggle();
