@@ -71,12 +71,12 @@ public sealed class Ads : MonoBehaviour
     public static bool Ready(string placement);                      // false = esconder o botão
     public static bool Real(string placement);                       // há anúncio REAL carregado (diagnóstico)
     public static void Show(string placement, Action onReward, Action onFail);
-    public static string Arg(string name);                           // flag da linha de comando ou do intent Android
+    public static string Arg(string name);                           // flag da linha de comando ou do intent Android (intent só em build de desenvolvimento)
 }
 ```
 
 - `Show` chama **exatamente um** dos dois callbacks, sempre na thread principal. `onReward` vem do `OnAdRewarded` do SDK, ou do fim do simulado. `onFail` cobre: placement desconhecido, outro anúncio na tela, sem anúncio, erro de exibição, e "fechou sem recompensa".
-- No SDK, o `OnAdRewarded` pode chegar depois do `OnAdClosed`. Por isso a falha por fechamento espera 2 s antes de valer. Se a recompensa chegar depois desses 2 s, ela é ignorada e fica só no log (`ADS ...`). É um caso raro.
+- No SDK, o `OnAdRewarded` pode chegar depois do `OnAdClosed`. Por isso a falha por fechamento espera 2 s antes de valer. Se a recompensa chegar depois desses 2 s, ela não paga e fica no log e no diário como `ad_reward_late`. É um caso raro.
 - **Uso esperado pelo coordenador:** `botao.SetActive(Ads.Ready(Ads.Vip))` e, no toque, `Ads.Show(Ads.Vip, DarVip, () => {})`. A recompensa é aplicada **só** no `onReward`.
 - A pré-carga é feita de propósito: as 2 ad units carregam logo depois do init e recarregam ao fechar. Sem isso, o `Ready` nunca ficaria true a tempo de o botão aparecer. Uma falha de carga tenta de novo em 30 s, 60 s, 120 s… até o teto de 300 s.
 - Se o init falhar, ele tenta de novo em 10 s, 20 s… até o teto de 300 s.
