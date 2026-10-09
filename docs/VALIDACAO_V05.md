@@ -196,4 +196,37 @@ Fica para o aparelho: #4 e #6 só aparecem com anúncio real (conta LevelPlay ap
 APK x86_64 com o mesmo código da 0.5.1 (`ForgeStreet-emu-0.5.1.apk`), bot a 4× por 10 min reais (~41 min de jogo), sem `-testsession` (grava diário):
 - **Memória:** PSS 322 → 322 → 333 → 324 → 329 → 333 MB a cada 2 min: estável, sem vazamento. (x86 no emulador não compara com os 252 MB do POCO na v0.4.1; serve só para tendência.)
 - **Erros:** 0 exceção da Unity no logcat (fora o `LoadFailed` esperado do LevelPlay sem conta aprovada); nenhum FATAL/ANR.
-- **Diário do Android → `diario_report.py`:** de ponta a ponta. 1ª venda 0:22, upgrades no ritmo do bot do core (humano/bot 0,93–1,13×), 8 VIPs (7 atendidos), portões do GDD ok exceto os 2 que só pessoa mede (fator humano e opt-in de anúncio). O relatório agora separa "falhas ao mostrar" de "sem anúncio carregado" (antes somava as duas e mostrava "falhas 5" sem nenhum pedido).
+- **Diário do Android → `diario_report.py`:** de ponta a ponta. 1ª venda 0:22, upgrades no ritmo do bot do core (humano/bot 0,93–1,13×), 8 VIPs (7 atendidos), portões do GDD ok exceto os 2 que só pessoa mede (fator humano e opt-in de anúncio). O relatório agora separa "falhas ao mostrar" de "sem anúncio carregado" (antes somava as duas e mostrava "falhas 5" sem nenhum pedido).
+
+---
+
+# Teste no POCO F4 (2026-10-09, 10:50–11:12, APK 0.5.1 `3ed4260c`)
+
+Instalado por cima da 0.4.1 (save mantido; backup do save e do diário em `playtest/`, fora do git). O Vinicius jogou no aparelho; o coordenador mediu pelo cabo sem tocar na tela (`client/tools/medir_aparelho.sh` + amostras a cada 90 s).
+
+## Desempenho (Android 14, 1080×2400)
+| Medida | Resultado |
+|---|---|
+| FPS (SurfaceFlinger, 6 janelas de 3 s) | **60,3–60,5 médio**, p95 16,6 ms, pior 24,7 ms, **0 quadros > 33 ms** |
+| Memória | PSS 325–345 MB em jogo (v0.4.1: 252 MB; +10 clientes, arte v0.5, SDK do LevelPlay) |
+| Temperatura | bateria 38,9 → 40,8 °C; status térmico 0 |
+| Erros | 0 exceção da Unity; nenhum crash. O processo morreu 1× **em segundo plano** (Android liberando app em cache), não em jogo |
+
+**Input "Both" (voltar):** sem custo de FPS e o joystick respondeu normal → o APK reserva não foi necessário.
+
+## O que funcionou
+- Save da 0.4.1 abriu na 0.5.1; cofre pagou 220 de ouro por 2 h fora.
+- Voltar fecha o painel do cofre e a bandeja; joystick e compras por placa ok.
+- Anúncio simulado de velocidade: pedido → mostrado → recompensa → velocidade ativada (1×). VIP: 3 chegaram, 3 atendidos.
+- Diário puxado e lido pelo `diario_report.py`: 31 min de jogo em 15 sessões curtas (mediana 3:35).
+
+## Achados
+| # | Achado | Situação |
+|---|---|---|
+| 1 | Um voltar às vezes valia por dois (fechava a bandeja e saía do jogo): o legado e o Input System leem a mesma tecla em quadros diferentes | **corrigido** (trava de 0,4 s, `8d462f2`); falta APK |
+| 2 | Reabrir em menos de 1 min mostrava "31 de ouro em **0 min** fora" | **corrigido** (abertura segue a regra de ≥ 60 s, `8d462f2`) |
+| 3 | Na bandeja de Melhorias o 1º cartão é um travado ("Balcão 8 vagas, requer Balcão 7") na frente da Vitrine, que dá para comprar | a corrigir: compráveis primeiro, travados no fim |
+| 4 | "Ajudantes ágeis": o cartão mostra só "carga 2 → 4" e esconde a velocidade (2,4 → 3,4 m/s), que é o que o nome promete | a corrigir: nome/efeito (decisão de texto do Vinicius) |
+| 5 | **Ritmo humano 1,7–3,7× mais lento que o bot** (Fole 3:21, Escudos 14:45, Esteira 14:54 contra 2:30/5:30/8:30 do GDD §3); 67 clientes de espada cansaram e 471 deram meia-volta com a fila cheia | dado para a v0.7: o começo pede mais do que uma pessoa entrega (ver `BACKLOG_V07.md`) |
+
+Parecer do Vinicius no teste: "os testes mostram que está promissor".
