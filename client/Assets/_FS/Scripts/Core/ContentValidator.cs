@@ -19,7 +19,7 @@ namespace FS.Core
         public const int FormulaTiers = (int)Upgrade.SideCorridor;
 
         /// <summary>Todas as regras. Sem argumentos = o conteudo real; o teste injeta uma COPIA quebrada no que quiser.</summary>
-        public static List<string> Validate(UpgradeDef[] upgrades = null, int[] costs = null, int[] prices = null, MilestoneDef[] milestones = null, Sim world = null)
+        public static List<string> Validate(UpgradeDef[] upgrades = null, long[] costs = null, int[] prices = null, MilestoneDef[] milestones = null, Sim world = null)
         {
             upgrades ??= Upgrades.All;
             costs ??= RealCosts();
@@ -40,9 +40,9 @@ namespace FS.Core
             return e;
         }
 
-        public static int[] RealCosts()
+        public static long[] RealCosts()
         {
-            var c = new int[Upgrades.Count];
+            var c = new long[Upgrades.Count];
             for (int i = 0; i < c.Length; i++) c[i] = Upgrades.Cost(i);
             return c;
         }
@@ -135,7 +135,7 @@ namespace FS.Core
         }
 
         /// <summary>Custo positivo, multiplo de 5 (preco legivel) e subindo tier a tier na parte da formula.</summary>
-        public static IEnumerable<string> Custos(int[] cost)
+        public static IEnumerable<string> Custos(long[] cost)
         {
             for (int i = 0; i < cost.Length; i++)
             {
