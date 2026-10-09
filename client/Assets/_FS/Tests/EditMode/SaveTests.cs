@@ -48,7 +48,7 @@ namespace FS.Tests
             return SaveEnvelope.Wrap(s.Save(1), "0.7.0", 1);
         }
 
-        static int Gold(SaveEnvelope.Result r) => Sim.Load(r.Payload).Gold;
+        static long Gold(SaveEnvelope.Result r) => Sim.Load(r.Payload).Gold;
 
         string[] Quarentena(string name) => Directory.GetFiles(_dir, name + "*.corrupt-*");
 

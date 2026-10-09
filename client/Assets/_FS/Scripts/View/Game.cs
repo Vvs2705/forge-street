@@ -73,7 +73,7 @@ namespace FS
         Image _coinIcon;
         sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
         readonly System.Collections.Generic.List<Coin> _coins = new System.Collections.Generic.List<Coin>();
-        int _pending, _goldInt = -1; float _punchT, _goldShown = -1f;
+        int _pending; long _goldInt = -1; float _punchT; double _goldShown = -1;   // A-CORE-06: double/long, float perdia unidade acima de 16 mi
         // v0.5c: botoes de anuncio, selo do boost e avisos curtos (VIP chegou / anuncio indisponivel)
         sealed class AdBtn { public Button B; public Image Face, Icon; public GameObject Video; public Text Label; }
         sealed class Banner { public RectTransform R; public CanvasGroup G; public Text T; public Image I; public float Age = 99f, Dur; }
@@ -167,7 +167,7 @@ namespace FS
             if (_sim.SavedAt <= 0) return;
             long elapsed = Now() - _sim.SavedAt;
             if (elapsed < 60) return;   // mesma regra da volta de pausa: abrir de novo em < 1 min mostrava "31 de ouro em 0 min fora" (POCO F4)
-            int gold = _sim.ApplyOffline(elapsed, _sim.SavedAt);
+            long gold = _sim.ApplyOffline(elapsed, _sim.SavedAt);
             if (gold <= 0) return;
             long shown = Math.Min(elapsed, (long)Balance.OfflineCapSeconds);
             Log("offline_claim", gold.ToString(), shown.ToString());
@@ -177,7 +177,7 @@ namespace FS
         }
 
         /// <summary>v0.6d: cartao creme do cofre: titulo, "+N" grande com a moeda, uma linha e PEGAR (saiu a frase dos 25% e do teto).</summary>
-        void ShowVault(int gold) => ShowPanel("Bem-vindo de volta!", "Seu cofre guardou isso pra você", "PEGAR", ClosePanel, gold);
+        void ShowVault(long gold) => ShowPanel("Bem-vindo de volta!", "Seu cofre guardou isso pra você", "PEGAR", ClosePanel, gold);
 
         void Update()
         {
@@ -335,7 +335,7 @@ namespace FS
         /// Compra (pad, bot ou toque no menu): som, aviso "Nome!" e diario. v0.6d: o aviso e' o mesmo banner do "Encomenda entregue!", com o
         /// icone da melhoria (era um "+nome!" verde no mundo, que se misturava aos "+N" das vendas). Criativo (sem banner): o flutuante de antes.
         /// </summary>
-        void Bought(int u, int price, V2 pos)
+        void Bought(int u, long price, V2 pos)
         {
             Sfx.Play("upgrade");
             Ajustes.Pulso(25);
@@ -536,10 +536,10 @@ namespace FS
             RefreshAdUi(Mathf.Min(Time.unscaledDeltaTime, 0.1f));   // tempo real (o simulado zera o timeScale), sem o salto do 1o quadro
             RefreshOrder(Mathf.Min(Time.unscaledDeltaTime, 0.1f));
             // numero rolando: persegue o valor (sobe na venda, desce na compra) em ~0,3 s em vez de pular
-            int target = Mathf.Max(0, _sim.Gold - _pending);
-            _goldShown = _goldShown < 0f ? target : Mathf.Lerp(target, _goldShown, Mathf.Exp(-GoldRoll * Time.deltaTime));
-            if (Mathf.Abs(_goldShown - target) < 0.5f) _goldShown = target;
-            int shown = Mathf.RoundToInt(_goldShown);
+            long target = Math.Max(0, _sim.Gold - _pending);
+            _goldShown = _goldShown < 0 ? target : target + (_goldShown - target) * Math.Exp(-GoldRoll * Time.deltaTime);   // = Mathf.Lerp(target, shown, e)
+            if (Math.Abs(_goldShown - target) < 0.5) _goldShown = target;
+            long shown = (long)Math.Round(_goldShown);
             if (shown != _goldInt) { _goldInt = shown; _gold.text = shown.ToString(); }
             _hintT -= Time.deltaTime;
             if (_hintT > 0f) return;
@@ -882,7 +882,7 @@ namespace FS
         void SetVibra(bool on) { Ajustes.Vibra = on; Log("settings", "vibra", on ? "1" : "0"); }
 
         /// <param name="gold">&gt; 0: linha da moeda com "+gold" grande (cofre); 0: so o texto.</param>
-        void ShowPanel(string title, string body, string button, Action action, int gold = 0)
+        void ShowPanel(string title, string body, string button, Action action, long gold = 0)
         {
             _panel.gameObject.SetActive(true);
             _panelTitle.text = title;
@@ -972,7 +972,7 @@ namespace FS
                 if (p.Length == 1) _sim.Buy((Upgrade)id);
                 else if (float.TryParse(p[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float at)) _buyAt.Add((id, at));
             }
-            if (int.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int g)) _sim.Gold = Math.Max(0, g);
+            if (long.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long g)) _sim.Gold = Math.Max(0, g);   // A-CORE-06: aceita > int (foto da HUD)
             string[] px = (Arg("-px") ?? "").Split(',');
             if (px.Length == 2 && float.TryParse(px[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x)
                 && float.TryParse(px[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y)) _sim.Player.Pos = new V2(x, y);

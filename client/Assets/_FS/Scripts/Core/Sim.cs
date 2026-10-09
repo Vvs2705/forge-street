@@ -62,7 +62,7 @@ namespace FS.Core
     /// <summary>Pad de upgrade: ficar em cima despeja ouro ate completar o preco. Um slot tem uma cadeia (ex.: Ajudante 1/2/3).</summary>
     public sealed class Pad
     {
-        public int Slot; public V2 Pos; public Upgrade[] Chain; public int Paid; public double Acc;
+        public int Slot; public V2 Pos; public Upgrade[] Chain; public long Paid; public double Acc;
         public bool Armed = true;   // depois de comprar, so volta a cobrar quando o jogador sai de cima (nao engole o proximo nivel)
 
         /// <summary>Upgrade a venda neste pad agora, ou -1 (cadeia esgotada, pre-requisito faltando ou upgrade do menu = pad invisivel).</summary>
@@ -89,7 +89,9 @@ namespace FS.Core
     public sealed class Sim
     {
         public float Time;
-        public int Gold;
+        /// <summary>A-CORE-06: ouro, custos e somas em long (o save e' texto: cabe sem mudar o formato). ponytail: soma sem saturar; 9,2e18 nao
+        /// se alcanca jogando (1 milhao/s por 100 anos = 3e15), so editando o save.</summary>
+        public long Gold;
         public readonly bool[] Bought = new bool[Upgrades.Count];
         public readonly float[] UpgradeTime = new float[Upgrades.Count];
         public readonly List<Station> Stations = new List<Station>();
@@ -122,7 +124,8 @@ namespace FS.Core
 
         // metricas de playtest (GDD §14/§15)
         public float FirstSaleTime = -1f, WalkNoDecision;
-        public int Sales, GoldEarned, OfflineEarned, ClientsLost, ClientsTurnedAway, MaxQueue, UpgradesBought;
+        public int Sales, ClientsLost, ClientsTurnedAway, MaxQueue, UpgradesBought;
+        public long GoldEarned, OfflineEarned;
         public bool ProductionComplete
         {
             get
@@ -297,7 +300,7 @@ namespace FS.Core
             Events.Clear();
             if (dt <= 0f) return;
             Time += dt;
-            int earnedBefore = GoldEarned;
+            long earnedBefore = GoldEarned;
             // FASE8: o boost acelera estacoes, esteira, ajudantes e a chegada de clientes; o ferreiro (andar e maos) no maximo 1,3x, para o
             // joystick nao fugir do controle. Paciencia, atendimento, relogio do VIP e o proprio boost correm no tempo de jogo. Sem boost, fast = hand = dt
             float fast = dt * BoostMul, hand = dt * Math.Min(BoostMul, Balance.BoostPlayerMax);
@@ -314,7 +317,7 @@ namespace FS.Core
             if (BoostLeft > 0f) { if ((BoostLeft -= dt) <= 0f) { BoostLeft = 0f; BoostMul = 1f; BoostCooldown = Balance.BoostCooldownSeconds; } }   // recarga conta do fim
             else BoostCooldown = Math.Max(0f, BoostCooldown - dt);
 
-            int cheapest = CheapestVisibleCost();
+            long cheapest = CheapestVisibleCost();
             // kill criterion do GDD §26 ("andar entre pilhas sem decisao"): anda de maos vazias sem nenhum pad pagavel = puro deslocamento
             if (Player.Moving && Player.Count == 0 && (cheapest < 0 || Gold < cheapest)) WalkNoDecision += dt;
             // FASE8: ouro por segundo de FABRICA (dt x boost): a taxa do cofre offline e do pacote do VIP nao aprende o boost. ponytail: o
@@ -662,11 +665,11 @@ namespace FS.Core
         {
             int u = pad.Current(this);
             if (u < 0) return;
-            int cost = Upgrades.Cost(u);
+            long cost = Upgrades.Cost(u);
             pad.Acc += cost / Balance.PadDrainSeconds * dt;
-            int want = (int)pad.Acc;
+            long want = (long)pad.Acc;
             pad.Acc -= want;
-            int step = Math.Min(want, Math.Min(Gold, cost - pad.Paid));
+            long step = Math.Min(want, Math.Min(Gold, cost - pad.Paid));
             if (step <= 0) return;
             Gold -= step;
             pad.Paid += step;
@@ -683,7 +686,7 @@ namespace FS.Core
             UpgradeTime[(int)u] = Time;
             UpgradesBought++;
             Recompute();
-            Emit(Ev.Bought, (int)u, Upgrades.Cost(u), PadOf(u));
+            Emit(Ev.Bought, (int)u, (int)Math.Min(int.MaxValue, Upgrades.Cost(u)), PadOf(u));   // ponytail: evento e' int; acima de 2,1 bi sai no teto (so o diario le)
             foreach (Station s in Stations) if (s.UnlockBy == (int)u) Emit(Ev.Unlocked, (int)s.OutItem, s.Index, s.Pos);
             if (Workers.Count > workersBefore) Emit(Ev.Hired, Workers.Count - 1, 0, HireSpot);
             return true;
@@ -696,7 +699,7 @@ namespace FS.Core
         /// </summary>
         public bool TryBuyMenu(Upgrade u)
         {
-            int cost = Upgrades.Cost(u);
+            long cost = Upgrades.Cost(u);
             if (!MenuAvailable((int)u) || Gold < cost || !Buy(u)) return false;
             Gold -= cost;
             return true;
@@ -933,7 +936,7 @@ namespace FS.Core
             if (OrderItem >= 0)
             {
                 if (OrderProgress < OrderTarget) return;
-                Gold = (int)Math.Min(int.MaxValue, (long)Gold + OrderReward);
+                Gold += OrderReward;
                 OrderGold += OrderReward;
                 Emit(Ev.OrderDone, OrderItem, OrderReward, CounterFor((Item)OrderItem).Pos);   // joia: na loja de joias
                 OrderItem = -1; OrderCount++; OrderIn = Balance.OrderGap;
@@ -955,14 +958,14 @@ namespace FS.Core
 
         // ------------------------------------------------------------------ consultas para view, bot e dica
 
-        public int CheapestVisibleCost()
+        public long CheapestVisibleCost()
         {
-            int best = -1;
+            long best = -1;
             foreach (Pad p in Pads)
             {
                 int u = p.Current(this);
                 if (u < 0) continue;
-                int remaining = Upgrades.Cost(u) - p.Paid;
+                long remaining = Upgrades.Cost(u) - p.Paid;
                 if (best < 0 || remaining < best) best = remaining;
             }
             return best;
@@ -971,12 +974,12 @@ namespace FS.Core
         /// <summary>Pad visivel mais barato que o ouro atual ja paga inteiro, ou null.</summary>
         public Pad CheapestAffordablePad()
         {
-            Pad best = null; int bestRemaining = int.MaxValue;
+            Pad best = null; long bestRemaining = long.MaxValue;
             foreach (Pad p in Pads)
             {
                 int u = p.Current(this);
                 if (u < 0) continue;
-                int remaining = Upgrades.Cost(u) - p.Paid;
+                long remaining = Upgrades.Cost(u) - p.Paid;
                 if (remaining <= Gold && remaining < bestRemaining) { bestRemaining = remaining; best = p; }
             }
             return best;
@@ -1029,28 +1032,28 @@ namespace FS.Core
         /// nao comprar o resto do jogo sozinho. Delta negativo da 0 e o claim e' idempotente por id (SavedAt do save):
         /// id igual ou mais antigo que o ultimo nunca paga de novo.
         /// </summary>
-        public int ApplyOffline(long elapsedSeconds, long claimId)
+        public long ApplyOffline(long elapsedSeconds, long claimId)
         {
             if (elapsedSeconds <= 0 || claimId <= LastClaim) return 0;
             LastClaim = claimId;
             long capped = Math.Min(elapsedSeconds, (long)Balance.OfflineCapSeconds);
-            int gold = (int)Math.Min(Math.Floor(RateEma * Balance.OfflineFactor * capped), OfflineMaxGold());
+            long gold = (long)Math.Min(Math.Floor(RateEma * Balance.OfflineFactor * capped), OfflineMaxGold());
             if (gold <= 0) return 0;
             Gold += gold;
             OfflineEarned += gold;
-            Emit(Ev.Offline, gold, (int)capped, Counter.Pos);
+            Emit(Ev.Offline, (int)Math.Min(int.MaxValue, gold), (int)capped, Counter.Pos);
             return gold;
         }
 
         /// <summary>Menor produtivo nao comprado e a venda (pre-requisito comprado); producao completa = o produtivo mais caro (hoje a Vitrine de joias, 9.000:
         /// e' o "ultimo" de antes, mas nao muda quando um produtivo mais barato e' anexado ao enum). Luxo nao altera o cofre.</summary>
-        public int CheapestLockedCost()
+        public long CheapestLockedCost()
         {
-            int best = -1, top = 0;
+            long best = -1, top = 0;
             for (int i = 0; i < Upgrades.Count; i++)
             {
                 if (Upgrades.IsLuxury(i)) continue;
-                int c = Upgrades.Cost(i), req = Upgrades.All[i].Requires;
+                long c = Upgrades.Cost(i); int req = Upgrades.All[i].Requires;
                 top = Math.Max(top, c);
                 // FASE7: so o que esta A VENDA (pre-requisito comprado). Sem isso o Balcao 5 (150, exige a Vitrine) baixava o cofre de
                 // 1.060 para 300 aos 10 min; e o Joalheiro 2 (2.400, exige o Mineiro) segurava o teto do par em 4.800 (agora 2x Mineiro)
@@ -1060,7 +1063,7 @@ namespace FS.Core
         }
 
         /// <summary>Teto relativo do cofre: 2x o proximo upgrade travado.</summary>
-        public int OfflineMaxGold() => (int)Math.Round(Balance.OfflineMaxNextUpgrades * CheapestLockedCost());
+        public long OfflineMaxGold() => (long)Math.Round(Balance.OfflineMaxNextUpgrades * CheapestLockedCost());
 
         // ------------------------------------------------------------------ save/load (chave=valor; lixo do payload vira estado inicial;
         // soma, schema e versao do jogo ficam no SaveEnvelope)
@@ -1150,10 +1153,10 @@ namespace FS.Core
                 switch (key)
                 {
                     case "t": sim.Time = F(val, 0f); break;
-                    case "gold": sim.Gold = Math.Max(0, I(val, 0)); break;
+                    case "gold": sim.Gold = Math.Max(0, L(val, 0)); break;
                     case "up": for (int i = 0; i < Math.Min(val.Length, Upgrades.Count); i++) sim.Bought[i] = val[i] == '1'; break;
                     case "ut": for (int i = 0; i < Math.Min(parts.Length, Upgrades.Count); i++) sim.UpgradeTime[i] = F(parts[i], -1f); break;
-                    case "pads": for (int i = 0; i < Math.Min(parts.Length, sim.Pads.Count); i++) sim.Pads[i].Paid = Math.Max(0, I(parts[i], 0)); break;
+                    case "pads": for (int i = 0; i < Math.Min(parts.Length, sim.Pads.Count); i++) sim.Pads[i].Paid = Math.Max(0, L(parts[i], 0)); break;
                     case "stock": for (int i = 0; i < Math.Min(parts.Length, sim.Stock.Length - 2); i++) sim.Stock[2 + i] = Math.Max(0, I(parts[i], 0)); break;   // save antigo: 3 numeros, joia fica 0
                     case "sold": for (int i = 0; i < Math.Min(parts.Length, sim.SoldItems.Length - 2); i++) sim.SoldItems[2 + i] = Math.Max(0, I(parts[i], 0)); break;   // save antigo sem sold=: conta do zero
                     case "ms": for (int i = 0; i < Math.Min(parts.Length, sim.Chests.Count); i++) sim.Chests[i].State = Clamp0(I(parts[i], 0), 2); break;      // save antigo sem ms=: nenhum marco
@@ -1163,7 +1166,7 @@ namespace FS.Core
                     case "m":
                         if (parts.Length >= 9)
                         {
-                            sim.FirstSaleTime = F(parts[0], -1f); sim.Sales = I(parts[1], 0); sim.GoldEarned = I(parts[2], 0); sim.OfflineEarned = I(parts[3], 0);
+                            sim.FirstSaleTime = F(parts[0], -1f); sim.Sales = I(parts[1], 0); sim.GoldEarned = L(parts[2], 0); sim.OfflineEarned = L(parts[3], 0);
                             sim.ClientsLost = I(parts[4], 0); sim.ClientsTurnedAway = I(parts[5], 0); sim.MaxQueue = I(parts[6], 0); sim.WalkNoDecision = F(parts[7], 0f); sim.UpgradesBought = I(parts[8], 0);
                         }
                         break;
@@ -1235,7 +1238,7 @@ namespace FS.Core
             sim.Player.Pos = sim.Collide(Clamp(sim.Player.Pos, sim.MaxX));   // save antigo com o jogador dentro de um corpo: sai pela borda
             // pad escondido devolve o parcial: o save da v0.3 com produtivos novos (Mineiro, Joalheiro 2) esconde o luxo ate completar
             // de novo, e o pad cujo upgrade foi para o menu (FASE6) nunca mais aparece
-            foreach (Pad p in sim.Pads) if (p.Current(sim) < 0) { sim.Gold = (int)Math.Min(int.MaxValue, (long)sim.Gold + p.Paid); p.Paid = 0; }
+            foreach (Pad p in sim.Pads) if (p.Current(sim) < 0) { sim.Gold += p.Paid; p.Paid = 0; }
             return sim;
         }
 
