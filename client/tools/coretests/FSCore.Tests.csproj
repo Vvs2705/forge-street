@@ -11,6 +11,8 @@
   <ItemGroup>
     <Compile Include="../../Assets/_FS/Scripts/Core/**/*.cs" />
     <Compile Include="../../Assets/_FS/Tests/EditMode/**/*.cs" />
+    <!-- v0.6d: textos da HUD (puros, sem UnityEngine) para o TextosTests -->
+    <Compile Include="../../Assets/_FS/Scripts/View/Textos.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />

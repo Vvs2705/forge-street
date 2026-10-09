@@ -237,7 +237,7 @@ namespace FS.Core
         public static readonly UpgradeDef[] All =
         {
             new UpgradeDef(Upgrade.FurnaceSpeed1, -1, "Fole", "Fornalha mais rápida", menu: true),
-            new UpgradeDef(Upgrade.Anvil2, -1, "2ª bigorna", "Mais espadas por minuto"),
+            new UpgradeDef(Upgrade.Anvil2, -1, "Bigorna 2", "Mais espadas por minuto"),
             new UpgradeDef(Upgrade.Helper1, -1, "Ajudante", "Leva minério à fornalha"),
             new UpgradeDef(Upgrade.Shields, -1, "Escudos", "Nova linha: 2 lingotes, paga 25"),
             new UpgradeDef(Upgrade.PlayerCapacity, -1, "Mochila", "Carrega 6 em vez de 3", menu: true),
@@ -247,7 +247,7 @@ namespace FS.Core
             new UpgradeDef(Upgrade.PlayerSpeed, -1, "Botas", "Você anda mais rápido", menu: true),
             new UpgradeDef(Upgrade.Tools, (int)Upgrade.Shields, "Ferramentas", "Nova linha: 1 lingote, paga 16"),
             new UpgradeDef(Upgrade.CounterCapacity, -1, "Vitrine", "Mais estoque e mais clientes", menu: true),
-            new UpgradeDef(Upgrade.Furnace2, (int)Upgrade.Anvil2, "2ª fornalha", "Dobra os lingotes"),
+            new UpgradeDef(Upgrade.Furnace2, (int)Upgrade.Anvil2, "Fornalha 2", "Dobra os lingotes"),
             new UpgradeDef(Upgrade.Helper3, (int)Upgrade.Helper2, "Ajudante 3", "Leva produtos ao balcão"),
             new UpgradeDef(Upgrade.HelperSpeed, (int)Upgrade.Helper1, "Ajudantes ágeis", "Mais rápidos e carregam 4", menu: true),
             new UpgradeDef(Upgrade.HammerSpeed, -1, "Martelo veloz", "Bancadas mais rápidas", menu: true),

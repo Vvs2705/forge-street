@@ -149,7 +149,7 @@ namespace FS
         /// <summary>Seta da dica apontando para baixo (haste + ponta); `fat` = contorno (desenhado atras, escuro).</summary>
         public static Sprite Arrow(bool fat) => Get(fat ? "arrow+" : "arrow", (x, y) =>
         {
-            float g = fat ? 0.12f : 0f;
+            float g = fat ? 0.09f : 0f;   // v0.6d: 0,09 da meia-seta = 4 px na seta de 0,95 m (WorldView.ArrowS)
             bool shaft = Mathf.Abs(x) < 0.26f + g && y > -0.1f && y < 0.86f + g;
             bool head = y < 0.06f + g && y > -0.92f - g && Mathf.Abs(x) < (y + 0.92f + g) * 0.85f;
             return shaft || head;
@@ -196,10 +196,10 @@ namespace FS
         public static Sprite Vignette() => Soft("vignette", (x, y) => Mathf.Clamp01((x * x + y * y - 0.55f) / 1.2f));
 
         /// <summary>Contorno escuro + sombra no texto (numero de ouro, preco, "+25"): le sobre qualquer fundo.</summary>
-        public static Text Outlined(Text t, float px)
+        public static Text Outlined(Text t, float px, Color? edge = null)
         {
             var o = t.gameObject.AddComponent<Outline>();
-            o.effectColor = new Color(0.08f, 0.05f, 0.03f, 0.95f);
+            o.effectColor = edge ?? new Color(0.08f, 0.05f, 0.03f, 0.95f);
             o.effectDistance = new Vector2(px, -px);
             var sh = t.gameObject.AddComponent<Shadow>();
             sh.effectColor = new Color(0f, 0f, 0f, 0.5f);

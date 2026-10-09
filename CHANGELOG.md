@@ -29,6 +29,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 - **Cofre ao voltar de outro app:** antes só a abertura pagava; agora a volta de pausa ≥ 60 s também paga.
 - `Steer` preso entre a Loja de joias e um pedestal; teto do cofre derrubado por upgrade ainda não à venda.
 ### Alterado
+- **Leitura da HUD (v0.6d, revisão de UX):** dica em 1 linha de até 26 caracteres, sem preço ("Compre o Fole em Melhorias", "Pise na placa da Bigorna 2"; teste `TextosTests`); balão do 1º da fila preso na tela (24 px abaixo da HUD) e mini-ícones só do 2º ao 4º; seta da dica maior com contorno; placas creme com borda verde e pulso quando dá para pagar, preço salmão quando não; cartão "Venda 5 espadas" com "3/5" na barra; botões de anúncio a 32 px das bordas com o ▶ dentro e "→3×" com o boost ativo; quantidade do VIP numa pílula só; "+N" de vendas próximas somados; moedas por baixo da dica; compra no aviso da encomenda; chaves e cofre ("Bem-vindo de volta!") no cartão creme; rótulos de 30 px; "Bigorna 2"/"Fornalha 2" como nome único; "Precisa: Balcão 5" no cartão travado. Flag de dev `-cofre N`. Validação em `docs/VALIDACAO_V06A.md` §v0.6d.
 - Vitrine: só estoque 5 → 10 e clientes ×0,7 (as vagas passaram para as evoluções do balcão). Produção completa do bot 43:37 → 48:24 (sem a receita invisível).
 - Criativos de UA 9:16 #1, #2 e #8 (GDD §17) gravados do build real, em `client/Builds/creatives/`, com os comandos em `docs/CRIATIVOS.md`.
 - Flags de dev `-record` (quadros 1080×1920 com relógio travado), `-buyids` e `-warmup`.

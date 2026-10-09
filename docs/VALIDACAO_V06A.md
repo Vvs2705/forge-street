@@ -164,3 +164,66 @@ APK x86_64 da `feat/v0.6-juice` (`Setup.BuildAndroidEmu`) no AVD `fs_playstore` 
 ## Armadilhas do build Android (corrigidas no `Setup.Build`)
 - **Empacotamento incremental do Gradle:** depois de trocar de branch o APK saiu com ~12 MB de buracos (84,8 MB, as mesmas entradas comprimidas de 72,4 MB); alternando ARM64/x86_64 saiu APK sem `libunity`/`libil2cpp` (crash `libgame.so not found`). Agora todo build Android apaga `Library/Bee/Android/Prj/IL2CPP/Gradle/launcher/build` antes.
 - **APK do emulador sem bibliotecas:** o `mainTemplate.gradle` versionado é o do aparelho (o resolver do LevelPlay exclui `/lib/x86_64`). Se o resolver não reescrever (estado guardado de um build x86 anterior), o APK x86_64 sai sem as `.so` nativas. Agora o `BuildAndroidEmu` tira essa linha só durante o build e devolve o arquivo.
+
+---
+
+# v0.6d: leitura e retorno visual (revisão de UX, validação, 2026-10-09)
+
+Escopo: os itens 1–12 da revisão de UX (as 3 decisões do dono ficaram de fora, como pedido). Mexi só na View (`Game.cs`, `WorldView.cs`, `MenuBar.cs`, `Art.cs` e o novo `Textos.cs`) e no teste novo `TextosTests`. No Core mudaram **só 2 textos** em `Defs.cs` ("2ª bigorna" → "Bigorna 2", "2ª fornalha" → "Fornalha 2"), para o nome ser o mesmo da estação em todo lugar. Nenhuma regra mudou. `bundleVersion` continua 0.6.0 e nenhum APK foi refeito. Medidas em px na largura 1080 (a janela de 540 mostra a metade).
+
+## O que mudou
+| # | Item | Como ficou |
+|---|---|---|
+| 1 | Dica | 1 linha em negrito, ~32 px. A caixa do texto tem 48 px de altura, então 2 linhas não cabem e o best-fit encolhe até caber em uma. Os textos foram para `View/Textos.cs` (sem UnityEngine), com no máximo 26 caracteres e sem preço: "Compre o Fole em Melhorias", "Pise na placa da Bigorna 2", "Pegue as espadas prontas", "Cliente quer espada!". Nome comprido cai para a forma curta ("Pise na placa: Ferramentas", "Placa: Piso de oficina", "Compre a Mochila"). A dica só é remontada quando muda; antes era uma string nova a cada 0,25 s. |
+| 1 | Teste | `TextosTests.Dicas_CabemNumaLinha` monta a dica de cada upgrade (placa e menu), item e baú e falha se alguma passar de 26. Prova vermelha: com "Pegue o minério no depósito" (27) ele sai `Expected: less than or equal to 26`. O `FSCore.Tests.csproj` compila o `Textos.cs` e o `FS.Tests.asmdef` passou a referenciar `FS`. |
+| 2 | Balões da fila | O balão do 1º fica preso na tela pelo anel: topo ≥ 24 px abaixo da faixa da HUD e x entre 48 e 1032 (`WorldView.OnScreen`; a base da HUD vem do `Game.Fit`). Os mini-ícones e a paciência aparecem só do 2º ao 4º da fila e só para quem está dentro da tela. |
+| 3 | Seta da dica | 0,95 m (~80 px; antes 42 px), contorno de 4 px `#2A1E14` e quique de 12 px a 1,5 Hz. Subiu para 1,5 m acima do alvo: a 1,25 m a ponta caía em cima do nome da placa. |
+| 4 | Placas | Placa creme `#E9D8B4` a 90% (antes `#2A2420`, que sumia no chão escuro). Quando dá para pagar: borda verde `#5BD16B` e a placa pulsa de 1 a 1,05. Quando não dá: borda apagada e preço `#FF8A7A`. O ícone de quem não dá para pagar ficou a 75% (com 55% sumia no creme). O preço só é reescrito quando muda; antes era um `int.ToString()` por placa a cada quadro. |
+| 5 | Cartão da encomenda | 420 × 104 px, a 32 px da borda da área segura e 24 px acima do botão VIP. Título "Venda 5 espadas" (`Textos.Venda`) numa linha, com best-fit para "Venda 30 ferramentas". A conta "3/5" fica em cima da barra de 20 px. |
+| 6 | Versão | Só no build de desenvolvimento, pequena (18 px, contorno de 1,5 px), logo abaixo da pílula de ouro. Fica na folga de 24 px que o balão respeita; embaixo ela batia no cartão e no VIP. |
+| 7 | Botões de anúncio | 140 px de largura a 32 px da borda da área segura (antes 2%, ~22 px). A faixa de cima também passou para 32 px. O selo ▶ tem 44 × 32 e fica 8 px para dentro do canto (antes saía pela borda), e o ícone foi para a esquerda dele. Com o boost ativo, o botão mostra "→3×" (o próximo nível). |
+| 8 | VIP | O balão mostra a quantidade uma vez só: pílula de 40 px, "×N" `#2A1E14` no `#FFD34D`, na borda de baixo à esquerda (longe do rabicho e da coroa). Saiu o selo "×3" do preço. |
+| 9 | Poluição | O "+N" de vendas a menos de 0,4 s do último soma num número só (`WorldView.SaleFloat`). Nasce no máximo 1 a cada 0,4 s e cada um vive 1,1 s, então nunca passam de 3 na tela. As moedas voando viraram filhas da faixa de cima, entre a moeda e a dica: passam por cima da pílula de ouro, onde chegam, e por baixo da dica e de todo o resto da HUD (painéis, avisos, botões). A compra ("Fole!", "Ajudantes ágeis!") usa o aviso do "Encomenda entregue!", com o ícone da melhoria, em vez do "+nome!" verde no mundo. |
+| 10 | Configurações | LIGADO: texto `#1F3B12` de 30 px no verde `#5BD16B`. DESLIGADO: branco no `#8C7B6B`. O rótulo fica `#3B2A1A` nos dois. Só a Vibração do PC continua apagada. |
+| 11 | Cofre | Cartão creme das configurações com "Bem-vindo de volta!", "+23" de 64 px com a moeda, "Seu cofre guardou isso pra você" em 26 px e PEGAR. Saiu a frase técnica dos 25% e do teto. Flag de dev `-cofre N`: mostra o painel com N de ouro, sem dar o ouro. |
+| 12 | Rótulos | Estações e placas com 30 px e contorno de 3 px `#2A1E14`. "Bigorna 2" e "Fornalha 2" são o mesmo nome na placa, no menu, na dica e na estação. "Rua lateral" tem 28 px, cor `#E8D9B8`, e fica dentro de x ≤ 1032. O cartão travado do menu diz "Precisa: Vitrine" / "Precisa: Balcão 5" em 1 linha de 22 px, sem best-fit (antes era "requer Balcão 5 vagas" em 2 linhas). |
+
+Alocação: nenhum texto novo por quadro. A dica, o preço da placa e a pílula do VIP só montam string quando o valor muda. A escala da placa só é escrita enquanto ela pulsa. `OnScreen`/`InView` são só contas de struct.
+
+## Verificação
+| Portão | Resultado |
+|---|---|
+| `dotnet test client/tools/coretests` | 87/87 (86 + `TextosTests`) |
+| `dotnet build client/tools/viewcheck/view -nologo --artifacts-path %TEMP%\vc6d` | 0 erros, 0 avisos |
+| `python client/tools/diario_report.py --autoteste` | `autoteste OK` |
+| `Unity.exe … -executeMethod FS.EditorTools.Setup.BuildWindows -logFile client/Builds/validation_v06d/build_win.log` | "Build Finished, Result: Success." (compila também o `FS.Tests` com a referência nova) |
+| `ForgeStreet.exe -batchmode -nographics -autoplay 10` | `AUTOPLAY OK venda1=23s upgrades=9 ouro=1580`, igual à 0.6.0 (`validation_v06emu/autoplay060b.log`) |
+| Bot 20 min: `-bot -speed 20 -shotdelay 62` | `SHOT t=1240,6 upgrades=18`, 0 exceções (`logs/14_bot_20min.log`) |
+
+Fotos em `client/Builds/validation_v06d/shots/` (janela `-screen-fullscreen 0 -screen-width 540|432 -screen-height 960 -testsession`; logs em `validation_v06d/logs/`). `a*` = antes (exe da `2751a66`), o resto = depois. Abri todas as fotos. Os `*z_*` são recortes ampliados.
+
+| Antes | Depois | Argumentos | Conferido |
+|---|---|---|---|
+| `a01_inicio_540` | `01_inicio_540`, `01z_hud_seta_zoom` | `-shotdelay 2` | dica em 1 linha; seta grande com contorno sobre o Depósito; versão sob a pílula de ouro; botão 2× a 32 px da borda, com o ▶ dentro |
+| `a03_placas_540` | `02_placas_540`, `02z_placas_zoom` | `-gold 90` | Bigorna 2 (65) e Ajudante (85) com borda verde e nome amarelo; Escudos, Esteira e Corredor com preço salmão; "Compre o Fole em Melhorias" |
+| `a02_dica_longa_432` | `03_dica_432` | `-gold 300` (432×960) | a dica que antes tinha 2 linhas ("Toque em Melhorias: Fole (50 de ouro)") virou 1 linha |
+| `a04_fila_cheia_540` | `04_fila_cheia_540`, `05_fila_cheia_432` | `-buyids 3,9,10,25,26,27,28 -warmup 50 -px 4.5,10.5` | 8 na fila: balão do 1º ~13 px (540) abaixo da HUD e mini-ícones só no 2º, 3º e 4º |
+| — | `05b_fila_cam7_540` | igual + `-px 8,12 -cam 7` | o 1º da fila fora da tela pela esquerda: o balão fica preso na borda (x ≈ 50 px na largura 1080); o 2º e o 3º estão fora da tela ou na borda (sem mini); o mini do 4º fica atrás do balão preso; do 5º em diante, nenhum |
+| `a05_cartao_vip_boost_540` | `06_cartao_vip_boost_540`, `06b_…_432`, `06z_cartao_botoes_zoom` | `-bot -boost 1 -stock 5 -speed 2 -shotdelay 26` | "Venda 5 espadas", "0/5" na barra, 24 px acima do VIP; selo do boost espelhado à direita; botão "→3×" |
+| — | `07_vip_pilula_540`, `07z_pilula_vip_zoom` | `-vipnow -shotdelay 4` | VIP como 1º: moldura de ouro e só a pílula "×6" |
+| `validation_v06emu/02_android_cofre_painel_antes_da_correcao` | `08_cofre_540` | `-cofre 23` | cartão creme, "Bem-vindo de volta!", moeda + "+23", subtítulo, PEGAR |
+| `a07_bandeja_540` | `09_bandeja_540`, `09z_trava_zoom` | `-menu -gold 120` | "Precisa: Vitrine" em 1 linha no Balcão 5 vagas |
+| — | `10_compra_aviso_540` | `-gold 200 -bot -shotdelay 1.2` | o bot comprou o Fole: aviso "Fole!" com o ícone do fole, no lugar do "+Fole!" verde no mundo |
+| `a06_config_540` | `11_config_on_540`, `12_config_off_540`, `12b_config_on_432` | `-settings on` / `off` / `on` | LIGADO com texto escuro no verde, DESLIGADO branco no `#8C7B6B`, rótulo "Som" escuro nos dois; preferências restauradas (`som=True`) |
+| — | `13_moedas_dica_540` | `-warmup 30 -stock 6 -shotdelay 0.35` | moedas da venda chegando por cima da pílula de ouro; "+10" somado |
+| — | `14_bot_20min` | `-bot -speed 20 -shotdelay 62` | fim dos 20 min: "Venda 12 escudos 3/12 +60", aviso "Encomenda entregue! +65", dois "+N" na tela, oficina íntegra |
+
+Refeito depois de olhar: a seta a 1,25 m tocava o nome da placa (subiu para 1,5 m); o ícone da placa sem dinheiro a 55% sumia no creme (75%); a versão a 45% sem contorno não lia na pedra (80% + contorno); a pílula do VIP com 54 px e texto de 40 px cobria o ícone, e no canto de baixo à direita brigava com a coroa (40 px, texto de 30 px, borda de baixo à esquerda).
+
+## Fica de fora
+- As 3 decisões do dono.
+- A tag "×N" do VIP que não é o 1º da fila continua texto, sem pílula: lá ela é o único número.
+- O VIP servido ainda mostra o "+N" somado das unidades e o "+N" grande do `VipServed`. O número aparece 2 vezes, mas em 1 só lugar cada, e antes eram N flutuantes.
+- Não há foto de uma moeda cruzando a dica. A ordem vem da árvore: `Topo/Moedas` fica antes de `PilulaDica`.
+- Com o balão preso 24 px abaixo da HUD, a coroa do VIP (desenhada por cima do balão desde a v0.5c) entra mais no balão. Ela continua lendo.
+- O rótulo "Joalheria — fechada" ainda pode sair pela direita com a câmera seguindo o jogador (fora da lista; só a "Rua lateral" foi pedida).

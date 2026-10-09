@@ -42,14 +42,14 @@ namespace FS
         sealed class PadV
         {
             public Pad P; public Transform Root; public SpriteRenderer Fill, Border, Icon; public Text Label, Price; public RectTransform PriceBox; public Image Coin;
-            public int LastU = -2, LastPaid; public float CoinT;
+            public int LastU = -2, LastPaid, LastRem = -1; public float CoinT; public bool Pulsing, LastOk;   // LastRem/LastOk: o preco so e' reescrito quando muda
         }
         sealed class CarrierV { public Carrier C; public Transform Root; public SpriteRenderer[] Stack; public Body Body; public float CheerT, StackY, Top, DustT; public SpriteRenderer Pack; }   // StackY: onde a pilha apoia; Top: topo dela
         /// <summary>Balao grande do 1o da fila (um por fila, segue o cliente): trilho escuro, anel de paciencia, corpo, rabicho, icone e rosto bravo.</summary>
         sealed class BubbleV
         {
-            public Transform Root; public SpriteRenderer Ring, Icon, Track, Body, Tail, Frame; public Transform Angry, Seal; public float PopT = -1f;
-            public Text Pack, SealText;   // v0.5c: "xN" do pacote do VIP e o selo "x3" do preco
+            public Transform Root; public SpriteRenderer Ring, Icon, Track, Body, Tail, Frame; public Transform Angry; public float PopT = -1f;
+            public RectTransform Pill; public Text Pack; public int PackN = -1;   // v0.6d: pilula "xN" do pacote do VIP (era selo "x3" + "xN" solto)
         }
         /// <summary>Efeito curto (moeda, coracao, brilho, poeira): curva de Bezier A -> M -> B em `Life` s, escala S0 -> S1, some no fim se `Fade`.</summary>
         sealed class Fx { public SpriteRenderer R; public Vector3 A, M, B; public float Age, Life, S0, S1, Spin; public bool Fade, Live; public Color C, C2; }   // C -> C2 na vida
@@ -186,7 +186,7 @@ namespace FS
         const float FlameY = 0.46f, GlowSize = 2.6f, GlowAlpha = 0.2f;
         // Placa de obra (P1-4): 1,2 m (= Balance.PadRadius x 2), icone de 0,7 m acima do meio, preco (moeda + valor) no terco de baixo
         const float PadSize = 1.2f, PadIconBox = 0.66f, PadIconY = 0.13f, PadPriceY = -0.33f, PadCoinEvery = 0.06f;
-        static readonly Color PlateC = Art.Hex(0x2A2420), GrateC = Art.Hex(0x2B2E36), GrateBar = Art.Hex(0x4F5866), PalletC = Art.Hex(0x6B4428), PlankC = Art.Hex(0x9A6A3E);
+        static readonly Color GrateC = Art.Hex(0x2B2E36), GrateBar = Art.Hex(0x4F5866), PalletC = Art.Hex(0x6B4428), PlankC = Art.Hex(0x9A6A3E);
         const float NearLabel = 2.6f, LabelFade = 0.25f, TutorialLabels = 60f;   // nome de estacao/placa: perto do jogador ou no 1o minuto (fade curto: meio-alfa lia como defeito)
         const float StationPop = 0.35f, BubblePop = 0.32f;
         const float BarW = 1.2f, BarH = 0.16f, BarY = -0.74f;   // barra de progresso arredondada (era 1,3 x 0,12 reta)
@@ -219,6 +219,11 @@ namespace FS
         // P1-5: "MAX" vermelho em italico com contorno escuro sobre a pilha, enquanto o ferreiro insiste e 0,8 s depois
         const float MaxHold = 0.8f;
         static readonly Color MaxC = Art.Hex(0xFF2D2D);
+        // v0.6d (revisao de UX, px na largura 1080 = 94,7 px/m): seta da dica de ~80 px quicando 12 px a 1,5 Hz; placa creme com borda
+        // verde e pulso 1,05 quando da para pagar, preco salmao quando nao da; rotulos de 30 px com contorno #2A1E14 de 3 px
+        const float ArrowS = 0.95f, ArrowY = 1.5f, ArrowBob = 0.127f, SaleMerge = 0.4f;
+        static readonly Color Edge = Art.Hex(0x2A1E14), PlateCream = Art.ComAlfa(Art.Hex(0xE9D8B4), 0.9f), PadOk = Art.Hex(0x5BD16B),
+            PadNo = Art.ComAlfa(Art.Hex(0x2A1E14), 0.45f), PriceNo = Art.Hex(0xFF8A7A), StreetInk = Art.Hex(0xE8D9B8), PillC = Art.Hex(0xFFD34D);
 
         /// <summary>sortingOrder pelo pe: quem esta mais abaixo na tela fica na frente (1 cm de resolucao/2).</summary>
         static int Depth(float footY) => 1000 - Mathf.RoundToInt(footY * 50f);
@@ -261,6 +266,10 @@ namespace FS
         ClientV _vipWait;
         Transform _conveyor; SpriteRenderer[] _convDots; float _convLen;
         int _clientSeq, _bought;
+        Floater _sale; int _saleSum;   // v0.6d: ultimo "+N" de venda (SaleFloat soma nele)
+        float _streetHalfW;
+        /// <summary>Base da faixa da HUD de cima em px de tela (Game.Fit): o balao do 1o da fila fica 24 px abaixo (v0.6d).</summary>
+        public float HudBottomPx = float.MaxValue;
 
         public static Vector3 W(V2 p) => new Vector3(p.X, p.Y, 0f);
 
@@ -274,9 +283,10 @@ namespace FS
                 if (SpriteSheet.TryGet(n, out SpriteSheet sh)) { sh.Scale = CharScale(n); _clientSheets.Add(sh); }
             if (SpriteSheet.TryGet("nobre", out _nobre)) _nobre.Scale = CharScale("nobre");
             BuildScenery();
-            _streetLabel = Art.FreeText(_labels, "RuaLateral", 26, new Vector2(200f, 80f));
+            _streetLabel = Art.FreeText(_labels, "RuaLateral", 28, new Vector2(200f, 80f));
             _streetLabel.text = "Rua\nlateral";   // 2 linhas: so 1,2 m da rua cabe na tela antes do Corredor
-            _streetLabel.color = Art.ComAlfa(Art.Ink, 0.55f);
+            _streetLabel.color = StreetInk;       // v0.6d: 28 px #E8D9B8 (era Ink a 55%, sumia na pedra)
+            _streetHalfW = _streetLabel.preferredWidth / 2f;
             Deco("carroca", CartPos, CartCell, 1.3f);
             _shopTeaser = Deco("loja_joalheria", sim.JewelShop.Pos, StationCell, 1.3f);   // mesma folha e celula da estacao
             if (_shopTeaser != null) _shopTeaser.color = Shut;
@@ -300,10 +310,11 @@ namespace FS
             if (pack != null) _player.Pack = pack.GetComponentInChildren<SpriteRenderer>(true);
             _max = Art.Outlined(Art.FreeText(_labels, "Max", 46, new Vector2(200f, 64f)), 3f);
             _max.text = "MAX"; _max.fontStyle = FontStyle.BoldAndItalic; _max.color = MaxC; _max.enabled = false;
-            // seta da dica: contorno escuro atras, ouro na frente, por cima de tudo menos os efeitos
+            // seta da dica: contorno escuro atras, ouro na frente, por cima de tudo menos os efeitos. v0.6d: ~80 px (era 0,5 m = 42 px),
+            // contorno de 4 px #2A1E14 (Art.Arrow)
             _arrow = Group("SetaDica", new V2(0f, 0f));
-            Art.NewSprite(_arrow, "Contorno", Art.Arrow(true), Art.ComAlfa(Art.Bg, 0.9f), FxOrder - 2, Vector2.zero, Vector2.one * 0.5f);
-            Art.NewSprite(_arrow, "Seta", Art.Arrow(false), Art.Accent, FxOrder - 1, Vector2.zero, Vector2.one * 0.5f);
+            Art.NewSprite(_arrow, "Contorno", Art.Arrow(true), Edge, FxOrder - 2, Vector2.zero, Vector2.one * ArrowS);
+            Art.NewSprite(_arrow, "Seta", Art.Arrow(false), Art.Accent, FxOrder - 1, Vector2.zero, Vector2.one * ArrowS);
             _arrow.gameObject.SetActive(false);
         }
 
@@ -463,7 +474,7 @@ namespace FS
                 Vector2 isc = s.Kind == Kind.Counter || s.Kind == Kind.Deposit ? new Vector2(0.5f, 0.5f) : Art.ItemScale(s.OutItem, 0.5f);
                 Art.NewSprite(v.Root, "Icone", icon, Art.ComAlfa(ic, 0.55f), 3, new Vector2(0f, 0.08f), isc);
             }
-            v.Label = Art.Outlined(Art.FreeText(_labels, s.Name, 28, new Vector2(320f, 40f)), 2f);
+            v.Label = Art.Outlined(Art.FreeText(_labels, s.Name, 30, new Vector2(320f, 44f)), 3f, Edge);   // v0.6d: 28 -> 30 px, contorno 3 px
             v.Label.text = s.Name;
             v.Label.fontStyle = FontStyle.Bold;
             // bocas no chao (FASE5 s2b): deposito so entrega, balcoes so recebem, quem produz tem as duas. v0.5b: placa no chao
@@ -560,20 +571,23 @@ namespace FS
             v.Root.localPosition = W(p.Pos);
             // placa de obra (P1-4; era anel tracejado com "+"): quadrado arredondado escuro, enchimento de ouro do centro para fora,
             // borda tracejada e o icone do que sera construido; preco (moeda + valor) e nome vivem na HUD (RefreshPad)
-            Art.NewSprite(v.Root, "Placa", Art.Rounded(), Art.ComAlfa(PlateC, 0.85f), 2, Vector2.zero, Vector2.one * PadSize);
-            v.Fill = Art.NewSprite(v.Root, "Pago", Art.Rounded(), Art.ComAlfa(Art.Gold, 0.55f), 3, Vector2.zero, Vector2.zero);
+            // v0.6d: placa creme (era #2A2420, sumia no chao escuro) e enchimento de ouro mais forte para ler sobre ela
+            Art.NewSprite(v.Root, "Placa", Art.Rounded(), PlateCream, 2, Vector2.zero, Vector2.one * PadSize);
+            v.Fill = Art.NewSprite(v.Root, "Pago", Art.Rounded(), Art.ComAlfa(Art.Gold, 0.8f), 3, Vector2.zero, Vector2.zero);
             v.Border = Art.NewSprite(v.Root, "Borda", Art.DashedBox(), Color.white, 4, Vector2.zero, Vector2.one * PadSize);
             v.Icon = Art.NewSprite(v.Root, "Obra", null, Color.white, 5, Vector2.zero, Vector2.one);
-            v.Label = Art.Outlined(Art.FreeText(_labels, "PadNome", 24, new Vector2(300f, 40f)), 2f);
+            v.Label = Art.Outlined(Art.FreeText(_labels, "PadNome", 30, new Vector2(360f, 44f)), 3f, Edge);   // v0.6d: 24 -> 30 px
             v.Label.fontStyle = FontStyle.Bold;
             v.PriceBox = Art.Node(_labels, "PadPreco", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
             v.PriceBox.sizeDelta = new Vector2(150f, 44f);
             v.Coin = Art.Node(v.PriceBox, "Moeda", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f)).gameObject.AddComponent<Image>();
             v.Coin.rectTransform.sizeDelta = new Vector2(40f, 40f);
+            v.Coin.rectTransform.anchoredPosition = new Vector2(20f, 0f);
             v.Coin.sprite = _coin != null ? _coin : Art.Disc(); v.Coin.color = _coin != null ? Color.white : Art.Accent; v.Coin.raycastTarget = false;
             v.Price = Art.Outlined(Art.NewText(v.PriceBox, "Valor", 34, Vector2.zero, Vector2.one, TextAnchor.MiddleLeft), 2.5f);
             v.Price.fontStyle = FontStyle.Bold;
             v.Price.horizontalOverflow = HorizontalWrapMode.Overflow;
+            v.Price.rectTransform.offsetMin = new Vector2(46f, 0f);
             return v;
         }
 
@@ -581,7 +595,7 @@ namespace FS
         /// Icone da placa: a arte do que nasce ali (estacao, portao, ajudante, item); sem arte, "+" de sempre. `fill` = fracao da celula
         /// que a arte ocupa (medida nos PNG: estacoes 0,62-0,77, ajudante 0,65), para o desenho e nao a celula vazia encher a caixa.
         /// </summary>
-        Sprite PadIcon(int u, out Color tint, out float fill)
+        public Sprite PadIcon(int u, out Color tint, out float fill)
         {
             tint = Color.white;
             fill = 0.72f;
@@ -841,18 +855,15 @@ namespace FS
             b.Frame.enabled = false;
             b.Body = Art.NewSprite(b.Root, "Balao", Art.Rounded(), Art.Bubble, BubbleOrder + 13, Vector2.zero, BalloonSize);
             b.Tail = Art.NewSprite(b.Root, "Rabicho", Art.Triangle(), Art.Bubble, BubbleOrder + 13, new Vector2(-BubbleDX, TailY), TailSize, 180f);
-            // VIP: selo dourado "x3" (preco) no canto de cima a esquerda e "xN" (pacote) no canto de baixo a direita do icone
-            b.Seal = Group(name + "Selo", new V2(0f, 0f));
-            b.Seal.SetParent(b.Root, false);
-            b.Seal.localPosition = new Vector3(-BalloonSize.x / 2f, BalloonSize.y / 2f, 0f);
-            Art.NewSprite(b.Seal, "Contorno", Art.Disc(), Art.ComAlfa(Art.Bg, 0.9f), BubbleOrder + 15, Vector2.zero, Vector2.one * 0.62f);
-            Art.NewSprite(b.Seal, "Ouro", Art.Disc(), Art.Gold, BubbleOrder + 16, Vector2.zero, Vector2.one * 0.56f);
-            Art.NewSprite(b.Seal, "Brilho", Art.Disc(), Art.Accent, BubbleOrder + 17, new Vector2(-0.05f, 0.05f), Vector2.one * 0.38f);
-            b.Seal.gameObject.SetActive(false);
-            b.SealText = Art.Outlined(Art.FreeText(_labels, name + "SeloTexto", 30, new Vector2(100f, 40f)), 2f);
-            b.SealText.fontStyle = FontStyle.Bold; b.SealText.text = "×" + Balance.VipPriceMul; b.SealText.enabled = false;
-            b.Pack = Art.Outlined(Art.FreeText(_labels, name + "Pacote", 44, new Vector2(140f, 56f)), 3f);
-            b.Pack.fontStyle = FontStyle.Bold; b.Pack.color = Art.Accent; b.Pack.enabled = false;
+            // VIP: o pacote numa pilula so de 40 px, "xN" #2A1E14 no #FFD34D, na borda de baixo a esquerda do balao (v0.6d: era o selo
+            // dourado "x3" do preco + o "xN" solto; 2 numeros no balao, e o jogador nao sabia qual era a quantidade)
+            b.Pill = Art.Node(_labels, name + "Pacote", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+            b.Pill.sizeDelta = new Vector2(80f, 40f);
+            Image pill = b.Pill.gameObject.AddComponent<Image>();
+            pill.sprite = Art.Box(); pill.type = Image.Type.Sliced; pill.color = PillC; pill.raycastTarget = false;
+            b.Pack = Art.NewText(b.Pill, "Texto", 30, Vector2.zero, Vector2.one);
+            b.Pack.fontStyle = FontStyle.Bold; b.Pack.color = Edge; b.Pack.horizontalOverflow = HorizontalWrapMode.Overflow;
+            b.Pill.gameObject.SetActive(false);
             b.Icon = Art.NewSprite(b.Root, "Pedido", null, Color.white, BubbleOrder + 14, Vector2.zero, Vector2.one);
             // rosto bravo de ~0,5 m (48 px) no canto de cima a direita, abaixo de 20% de paciencia (P0-2): contorno, rosto, tracos
             b.Angry = Group(name + "Bravo", new V2(0f, 0f));
@@ -872,7 +883,7 @@ namespace FS
         /// </summary>
         void PlaceBubble(BubbleV b, ClientV v, Client c, float f, float dt)
         {
-            b.Root.localPosition = v.Root.localPosition + new Vector3(BubbleDX, v.TopY + BubbleUp, 0f);
+            b.Root.localPosition = OnScreen(v.Root.localPosition + new Vector3(BubbleDX, v.TopY + BubbleUp, 0f));
             b.Root.localRotation = Quaternion.Euler(0f, 0f, f < 0.2f ? 3f * Mathf.Sin(Time.time * 6f * 2f * Mathf.PI) : 0f);
             float s = 1f;
             if (b.PopT >= 0f)
@@ -884,25 +895,48 @@ namespace FS
             }
             b.Root.localScale = Vector3.one * s;
             Art.PaintItem(b.Icon, c.Want, true, BubbleIcon);
-            // VIP (v0.5c): trilho de ouro, corpo creme, selo "x3" e "xN" do pacote que cai a cada unidade entregue
-            bool vip = c.Vip;
+            // VIP (v0.5c): trilho de ouro, corpo creme e a pilula "xN" do pacote, que cai a cada unidade entregue
+            bool vip = c.Vip, pill = vip && s > 0.5f;
             b.Track.color = vip ? Art.GoldDark : Art.ComAlfa(Art.Bg, 0.85f);
             b.Frame.enabled = vip;
             b.Body.color = b.Tail.color = vip ? VipCream : Art.Bubble;
-            if (b.Seal.gameObject.activeSelf != vip) b.Seal.gameObject.SetActive(vip);
-            b.SealText.enabled = vip && s > 0.5f;
-            b.Pack.enabled = vip && s > 0.5f;
-            if (vip)
+            if (b.Pill.gameObject.activeSelf != pill) b.Pill.gameObject.SetActive(pill);
+            if (pill)
             {
-                PlaceLabel(b.SealText, b.Root.localPosition + b.Seal.localPosition, Vector2.zero);
-                b.Pack.text = "×" + c.Pack;
-                PlaceLabel(b.Pack, b.Root.localPosition + new Vector3(0.36f, -0.3f, 0f), Vector2.zero);
+                if (b.PackN != c.Pack)   // string nova so quando o pacote muda
+                {
+                    b.PackN = c.Pack; b.Pack.text = "×" + c.Pack;
+                    b.Pill.sizeDelta = new Vector2(b.Pack.preferredWidth + 28f, 40f);
+                }
+                PlaceRect(b.Pill, b.Root.localPosition + new Vector3(-0.5f, -0.52f, 0f));   // sobre a borda, longe do rabicho e da coroa (a direita)
             }
             b.Ring.sprite = Art.BalloonRing(f);
             b.Ring.color = f > 0.5f ? Color.Lerp(Art.Gold, Art.Good, f * 2f - 1f) : Color.Lerp(Art.Bad, Art.Gold, f * 2f);
             bool angry = f < 0.2f;
             if (b.Angry.gameObject.activeSelf != angry) b.Angry.gameObject.SetActive(angry);
             if (angry) b.Angry.localScale = Vector3.one * (1f + 0.1f * Mathf.Abs(Mathf.Sin(Time.time * 7f)));
+        }
+
+        /// <summary>
+        /// v0.6d (revisao de UX): centro do balao grande preso na tela pelo anel (1,53 x 1,33 m): topo >= 24 px abaixo da HUD e x entre 48 e
+        /// 1032 (px na largura 1080). Com 8 vagas ele encostava na faixa de cima; com -cam menor saia pela borda.
+        /// </summary>
+        Vector3 OnScreen(Vector3 w)
+        {
+            float k = Screen.width / 1080f, ppm = Screen.height / (2f * _cam.orthographicSize);
+            float hw = RingSize.x * 0.5f * ppm, hh = RingSize.y * 0.5f * ppm;
+            Vector3 sp = _cam.WorldToScreenPoint(w);
+            float x = Mathf.Clamp(sp.x, 48f * k + hw, 1032f * k - hw), y = Mathf.Min(sp.y, HudBottomPx - 24f * k - hh);
+            if (x == sp.x && y == sp.y) return w;
+            Vector3 p = _cam.ScreenToWorldPoint(new Vector3(x, y, sp.z));
+            return new Vector3(p.x, p.y, w.z);
+        }
+
+        /// <summary>Mini-icone so de quem esta dentro da tela (v0.6d).</summary>
+        bool InView(Vector3 p)
+        {
+            Vector3 vp = _cam.WorldToViewportPoint(p);
+            return vp.x > 0.03f && vp.x < 0.97f && vp.y > 0f && vp.y < 1f;
         }
 
         /// <summary>Pop de quem nasce: 0 -> `peak` (60% do tempo, ease-out) -> 1.</summary>
@@ -1046,7 +1080,14 @@ namespace FS
                 if (open != null && open.activeSelf != corridor) open.SetActive(corridor);
             }
             _streetLabel.enabled = !corridor;
-            if (!corridor) PlaceLabel(_streetLabel, new Vector3(Balance.WorkshopW + 0.6f, (Balance.SideWallOpenings[1] + Balance.SideWallOpenings[2]) / 2f, 0f), Vector2.zero);   // na parede entre a porta e o arco, nao em cima da porta
+            if (!corridor)
+            {
+                PlaceLabel(_streetLabel, new Vector3(Balance.WorkshopW + 0.6f, (Balance.SideWallOpenings[1] + Balance.SideWallOpenings[2]) / 2f, 0f), Vector2.zero);   // na parede entre a porta e o arco, nao em cima da porta
+                // v0.6d: inteiro dentro de x <= 1032 (px na largura 1080); o "lateral" saia pela borda direita
+                Vector2 at = _streetLabel.rectTransform.anchoredPosition;
+                float max = _labels.rect.width * (1032f / 1080f - 0.5f) - _streetHalfW;
+                if (at.x > max) _streetLabel.rectTransform.anchoredPosition = new Vector2(max, at.y);
+            }
             if (_shopTeaser != null && _shopTeaser.transform.parent.gameObject.activeSelf != teaser) _shopTeaser.transform.parent.gameObject.SetActive(teaser);
             _shopLabel.enabled = teaser;
             if (teaser) PlaceLabel(_shopLabel, W(_sim.JewelShop.Pos) + new Vector3(0f, 1.2f, 0f), Vector2.zero);
@@ -1117,7 +1158,7 @@ namespace FS
                 b.Root.gameObject.SetActive(q.Count > 0);
                 b.PopT = q.Count > 0 ? 0.15f : -1f;   // 1o cliente chegou: o balao entra com pop (pula a fase de estouro)
             }
-            if (q.Count == 0) b.SealText.enabled = b.Pack.enabled = false;   // rotulos do VIP vivem na HUD: nao ficam soltos quando o balao some
+            if (q.Count == 0 && b.Pill.gameObject.activeSelf) b.Pill.gameObject.SetActive(false);   // a pilula do VIP vive na HUD: nao fica solta quando o balao some
             for (int i = 0; i < q.Count; i++)
             {
                 Client c = q[i];
@@ -1127,11 +1168,13 @@ namespace FS
                 Vector3 before = v.Root.localPosition;
                 v.Root.localPosition = Vector3.MoveTowards(before, W(Slot(jewel, i)), 4f * dt);
                 float f = Mathf.Clamp01(c.Patience / c.MaxPatience);
-                v.Want.enabled = v.Patience.enabled = i > 0;
+                // v0.6d: mini-icone e paciencia so do 2o ao 4o da fila e dentro da tela (com 8 vagas eram 7 minis em volta do balao)
+                bool mini = i > 0 && i < 4 && InView(v.Root.localPosition);
+                v.Want.enabled = v.Patience.enabled = mini;
                 v.Crown.enabled = c.Vip;
-                v.Tag.enabled = c.Vip && i > 0;
+                v.Tag.enabled = c.Vip && mini;
                 if (i == 0) PlaceBubble(b, v, c, f, dt);
-                else
+                else if (mini)
                 {
                     float up = c.Vip ? VipMiniUp : 0f;   // a coroa fica na cabeca, o pedido sobe
                     Art.PaintItem(v.Want, c.Want, true, MiniIcon);
@@ -1362,7 +1405,7 @@ namespace FS
             if (u != v.LastU)
             {
                 if (v.LastU >= 0 && _sim.Bought[v.LastU]) Poof(v.P.Pos, 1.3f);
-                v.LastU = u; v.LastPaid = v.P.Paid;
+                v.LastU = u; v.LastPaid = v.P.Paid; v.LastRem = -1;
                 if (u >= 0) { Sprite ic = PadIcon(u, out Color tint, out float fill); Fit(v.Icon, ic, PadIconBox / fill, new Vector2(0f, PadIconY)); v.Icon.color = tint; }
             }
             bool on = u >= 0;
@@ -1373,9 +1416,11 @@ namespace FS
             bool affordable = _sim.Gold >= remaining;
             float frac = cost > 0 ? v.P.Paid / (float)cost : 0f;
             v.Fill.transform.localScale = Vector3.one * (PadSize * 0.92f * Mathf.Sqrt(frac));
-            float pulse = 0.7f + 0.3f * Mathf.Sin(Time.time * 6f);
-            v.Border.color = affordable ? Art.ComAlfa(Art.Accent, pulse) : Art.ComAlfa(Art.Ink, 0.5f);
-            v.Icon.color = Art.ComAlfa(v.Icon.color, affordable ? 1f : 0.55f);
+            // v0.6d: da para pagar = borda verde e a placa pulsa 1 -> 1,05 (escala so escrita enquanto pulsa); nao da = borda apagada
+            if (affordable) { v.Root.localScale = Vector3.one * (1.025f + 0.025f * Mathf.Sin(Time.time * 6f)); v.Pulsing = true; }
+            else if (v.Pulsing) { v.Root.localScale = Vector3.one; v.Pulsing = false; }
+            v.Border.color = affordable ? PadOk : PadNo;
+            v.Icon.color = Art.ComAlfa(v.Icon.color, affordable ? 1f : 0.75f);   // v0.6d: 0,55 sumia na placa creme
             // pagando: moedas do jogador para a placa
             if (v.P.Paid > v.LastPaid)
             {
@@ -1388,13 +1433,14 @@ namespace FS
                 }
             }
             v.LastPaid = v.P.Paid;
-            // preco: moeda + valor centrados no terco de baixo da placa
-            v.Price.text = remaining.ToString();
-            v.Price.color = affordable ? Color.white : Art.ComAlfa(Art.Ink, 0.7f);
-            float tw = v.Price.preferredWidth, total = 40f + 6f + tw;
-            v.Coin.rectTransform.anchoredPosition = new Vector2(20f, 0f);
-            v.Price.rectTransform.offsetMin = new Vector2(46f, 0f); v.Price.rectTransform.offsetMax = Vector2.zero;
-            v.PriceBox.sizeDelta = new Vector2(total, 44f);
+            // preco: moeda + valor centrados no terco de baixo da placa; v0.6d: salmao #FF8A7A quando nao da, e so reescrito quando muda
+            if (remaining != v.LastRem || affordable != v.LastOk)
+            {
+                v.LastRem = remaining; v.LastOk = affordable;
+                v.Price.text = remaining.ToString();
+                v.Price.color = affordable ? Color.white : PriceNo;
+                v.PriceBox.sizeDelta = new Vector2(40f + 6f + v.Price.preferredWidth, 44f);
+            }
             PlaceRect(v.PriceBox, W(v.P.Pos) + new Vector3(0f, PadPriceY, 0f));
             // nome: perto do jogador ou no 1o minuto (a seta da dica ja aponta a placa da vez)
             float la = _sim.Time < TutorialLabels ? 1f : Mathf.Clamp01((NearLabel - V2.Dist(_sim.Player.Pos, v.P.Pos)) / LabelFade);
@@ -1600,12 +1646,12 @@ namespace FS
             return best < float.MaxValue;
         }
 
-        /// <summary>Seta quicando 0,15 m a cada 0,6 s acima do alvo; some com o jogador em cima dele.</summary>
+        /// <summary>Seta acima do alvo quicando 12 px a 1,5 Hz (v0.6d; era 0,15 m a ~1,7 Hz); some com o jogador em cima dele.</summary>
         void RefreshArrow()
         {
             bool on = _hintOn && V2.Dist(_hintAt, _sim.Player.Pos) > 0.9f;
             if (_arrow.gameObject.activeSelf != on) _arrow.gameObject.SetActive(on);
-            if (on) _arrow.localPosition = W(_hintAt) + new Vector3(0f, 1.05f + 0.15f * Mathf.Abs(Mathf.Sin(Time.time * Mathf.PI / 0.6f)), 0f);
+            if (on) _arrow.localPosition = W(_hintAt) + new Vector3(0f, ArrowY + ArrowBob * Mathf.Abs(Mathf.Sin(Time.time * Mathf.PI * 1.5f)), 0f);
         }
 
         // ------------------------------------------------------------------ rotulos na HUD
@@ -1619,8 +1665,21 @@ namespace FS
             r.anchoredPosition = local + offsetPx;
         }
 
+        /// <summary>
+        /// "+N" da venda (v0.6d): vendas a menos de 0,4 s do ultimo "+N" somam nele em vez de abrir outro, entao nasce no maximo 1 a cada
+        /// 0,4 s e, vivendo 1,1 s, nunca passam de 3 na tela. ponytail: soma tambem a venda da loja de joias no "+N" do balcao (2 lojas no mesmo 0,4 s, raro).
+        /// </summary>
+        public void SaleFloat(V2 world, int gold)
+        {
+            if (_sale != null && _sale.Live && _sale.Age < SaleMerge) { _saleSum += gold; _sale.T.text = "+" + _saleSum; return; }
+            _saleSum = gold;
+            _sale = NewFloat(world, "+" + gold, Art.Accent, 44);
+        }
+
         /// <summary>Numero flutuante ("+10", nome do upgrade) subindo do ponto do mundo.</summary>
-        public void Float(V2 world, string text, Color color, int size = 36)
+        public void Float(V2 world, string text, Color color, int size = 36) => NewFloat(world, text, color, size);
+
+        Floater NewFloat(V2 world, string text, Color color, int size)
         {
             Floater f = null;
             foreach (Floater x in _floaters) if (!x.Live) { f = x; break; }
@@ -1633,6 +1692,7 @@ namespace FS
             f.Live = true; f.Age = 0f; f.World = W(world);
             f.T.enabled = true; f.T.text = text; f.T.fontSize = size; f.T.color = color;
             PlaceLabel(f.T, f.World + new Vector3(0f, 0.5f, 0f), Vector2.zero);
+            return f;
         }
     }
 }

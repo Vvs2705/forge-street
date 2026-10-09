@@ -1,7 +1,7 @@
 {
     "name": "FS.Tests",
     "rootNamespace": "FS.Tests",
-    "references": ["FS.Core", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
+    "references": ["FS.Core", "FS", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

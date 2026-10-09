@@ -24,7 +24,7 @@ namespace FS
         public static readonly Color Cream = Art.Hex(0xFFF1D6), Leather = Art.Hex(0x5C3A1E), Brown = Art.Hex(0x3A2614),
             Green = Art.Good, GreenDark = Art.Hex(0x2F9A4A), Gray = Art.Hex(0xA49C92), GrayDark = Art.Hex(0x766E66);
 
-        sealed class Card { public int U; public GameObject Go; public Image Icon, Btn, BtnEdge, Coin; public Text Name, Effect, Price; public CanvasGroup Fade; }
+        sealed class Card { public int U; public GameObject Go; public Image Icon, Btn, BtnEdge, Coin; public Text Name, Effect, Price; public CanvasGroup Fade; public string Lock; }
 
         readonly Sim _sim;
         readonly Action<int> _bought;   // fora do Tick o Ev.Bought nao chega ao HandleEvents (o proximo Tick limpa): o Game toca som/efeito por aqui
@@ -141,13 +141,14 @@ namespace FS
             c.Price = Art.Outlined(Art.NewText(c.Btn.transform, "Valor", 36, new Vector2(0.3f, 0f), new Vector2(0.97f, 1f)), 2f);
             c.Price.fontStyle = FontStyle.Bold; c.Price.color = Color.white;
             c.Price.resizeTextForBestFit = true; c.Price.resizeTextMinSize = 16; c.Price.resizeTextMaxSize = 36;
-            // best-fit so encolhe com Truncate (o NewText vem com Overflow): "requer Balcao 5 vagas" cabe no botao em 2 linhas
+            // best-fit so encolhe com Truncate (o NewText vem com Overflow); o texto do travado tem tamanho fixo (Refresh)
             c.Name.verticalOverflow = c.Effect.verticalOverflow = c.Price.verticalOverflow = VerticalWrapMode.Truncate;
+            if (d.Requires >= 0) c.Lock = Textos.Precisa(d.Requires);   // v0.6d: "Precisa: Balcão 5" (era "requer Balcão 5 vagas" em 2 linhas)
             return c;
         }
 
         /// <summary>Icone renderizado da melhoria (tools/ui_v05b_blender.py); sem a folha, a forma/cor procedural de antes.</summary>
-        static (Sprite, Color) Icon(Upgrade u)
+        public static (Sprite, Color) Icon(Upgrade u)   // v0.6d: o aviso de compra do Game usa o mesmo icone
         {
             string art = u switch
             {
@@ -214,8 +215,12 @@ namespace FS
                 c.Btn.color = can ? Green : Gray;
                 c.BtnEdge.color = can ? GreenDark : GrayDark;
                 c.Coin.enabled = !locked;
-                c.Price.text = locked ? "requer " + Upgrades.All[d.Requires].Name : cost.ToString();
+                c.Price.text = locked ? c.Lock : cost.ToString();
                 c.Price.rectTransform.anchorMin = new Vector2(locked ? 0.04f : 0.3f, 0f);
+                // travado: 1 linha de 22 px sem best-fit (o best-fit preferia 2 linhas maiores)
+                c.Price.resizeTextForBestFit = !locked;
+                c.Price.fontSize = locked ? 22 : 36;
+                c.Price.horizontalOverflow = locked ? HorizontalWrapMode.Overflow : HorizontalWrapMode.Wrap;
             }
             _ready = ready;
             _btn.color = ready > 0 ? Art.Accent : Art.Pad;
