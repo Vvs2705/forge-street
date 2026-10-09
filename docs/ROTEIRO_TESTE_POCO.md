@@ -1,8 +1,8 @@
 # Roteiro do teste da v0.5 no POCO F4 (2026-10-09)
 
-APK: `client/Builds/android/ForgeStreet-dev.apk` (**0.5.1**, ARM64, build de desenvolvimento, 72,5 MB, SHA-256 `b2f26113f15c97ca8e785aa3e7168973dd8e4568a1ed2b84f823b81bc652ac23`; a versão aparece no canto de baixo à esquerda). O save da 0.4.x abre na 0.5.
+APK: `client/Builds/android/ForgeStreet-dev.apk` (**0.5.1**, ARM64, build de desenvolvimento, 72,5 MB, SHA-256 `e9cb5c0f7dfbec97a7faeebaa4dd3d63923dbe79913f265541437b839ab2852e`; a versão aparece no canto de baixo à esquerda). O save da 0.4.x abre na 0.5.
 
-A 0.5.1 corrige o que a revisão de código achou na 0.5.0: o Ajudante 3 ficava parado no balcão com espada quando a prateleira de espada estava cheia (escudo e ferramenta encalhavam); a carga dos ajudantes sumia ao reabrir se o Joalheiro foi contratado antes do Ajudante 3; o VIP repetia o aviso a cada abertura; o VIP que esperava ao lado da fila cheia "pulava" para outro boneco; e a volta de um anúncio real abria o "Seu cofre rendeu".
+A 0.5.1 corrige o que a revisão de código achou na 0.5.0: o Ajudante 3 ficava parado no balcão com espada quando a prateleira de espada estava cheia (escudo e ferramenta encalhavam); a carga dos ajudantes sumia ao reabrir se o Joalheiro foi contratado antes do Ajudante 3; o VIP repetia o aviso a cada abertura; o VIP que esperava ao lado da fila cheia "pulava" para outro boneco; a volta de um anúncio real abria o "Seu cofre rendeu"; e o botão voltar do Android saía do jogo com o painel do cofre aberto (agora fecha o painel, depois a bandeja de melhorias, e só sai com a tela limpa).
 
 ## 1. Instalar (cabo USB, "Instalar via USB" ligado nas Opções do desenvolvedor)
 ```
