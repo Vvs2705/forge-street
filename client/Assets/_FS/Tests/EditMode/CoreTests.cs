@@ -1225,6 +1225,65 @@ namespace FS.Tests
             }
         }
 
+        /// <summary>
+        /// Leva 4 (econsim do PR #17): o Ideal a 36,36 ticks/s parou aos 31 min em (8,4; 6,1), batendo de frente na quina de cima-direita da
+        /// Ferramentas a caminho do pad do Mineiro (2,8; 0,6): o Steer mirava o canto da caixa inflada, que fica para fora da faixa de contato,
+        /// dali a reta voltava para a mesma quina e o Collide devolvia ao mesmo ponto, a cada 2 ticks, para sempre. Mesma coisa com o Ajudante de
+        /// produto na quina de cima-esquerda da Bigorna 2, a caminho da saida das Ferramentas (3 de 1.000 partidas do econsim, ate o fim), e em
+        /// orbita lenta (deriva de mm por ciclo) na quina de um pedestal da Joalheria real. Bot e ajudantes (mesmo MoveTowards/Steer), varios
+        /// passos de tick: chegam.
+        /// </summary>
+        [Test]
+        public void Steer_QuinaDeFrente_NaoFicaNoVaiEVolta()
+        {
+            var tools = new Sim();
+            tools.Buy(Upgrade.Tools);
+            var anvil = new Sim();
+            anvil.Buy(Upgrade.Anvil2); anvil.Buy(Upgrade.Tools);
+            var cases = new[]
+            {
+                (tools, new V2(8.3264475f, 6.077105f), new V2(2.8f, 0.6f)),   // ponto exato do impasse do econsim -> pad do Mineiro
+                (anvil, new V2(3.61f, 10.14f), anvil.ToolBench.OutAt),        // onde o Ajudante de produto ficou no econsim
+                (AllBodies(), new V2(1.8f, 6.8f), new V2(12f, 10.85f)),        // oficina -> boca da Loja de joias, pela quina do pedestal
+            };
+            foreach (var (s, start, target) in cases)
+                foreach (float speed in new[] { Balance.PlayerSpeedUp, Balance.WorkerSpeed, Balance.WorkerSpeedUp })
+                    foreach (float hz in new[] { 30f, 30f + 30f * 53 / 250, 45f, 60f })   // 36,36 = partida 53 de 250 do econsim
+                    {
+                        var c = new Carrier { Pos = start, Speed = speed };
+                        float dt = 1f / hz; bool arrived = false;
+                        for (float t = 0f; t < 15f && !arrived; t += dt) arrived = s.MoveTowards(c, target, dt, Bot.Reach);
+                        Assert.IsTrue(arrived, $"de {start} ate {target} a {speed} m/s e {hz} ticks/s: parou em {c.Pos}");
+                    }
+        }
+
+        /// <summary>
+        /// Leva 4: os ajudantes andam pelo mesmo Steer do bot e tambem caiam no impasse. Duas partidas do econsim em que o Ajudante de produto
+        /// travou na quina da Bigorna 2 (Ideal a 40,56 ticks/s desde os 22 min; F2P a 45 desde os 26 min, ate o fim): em 30 min de jogo nenhum
+        /// ajudante passa 3 s andando sem sair de 0,75 m.
+        /// </summary>
+        [Test]
+        public void Ajudantes_CicloLongo_VariosPassosDeTick_NuncaEmImpasse()
+        {
+            foreach (var (bot, hz) in new[] { (Bot.Ideal(), 30f + 30f * 88 / 250), (new Bot(), 30f + 30f * 125 / 250) })   // partidas 88 e 125 de 250
+            {
+                var s = new Sim();
+                float dt = 1f / hz, worst = 0f;
+                var anchor = new V2[8]; var still = new float[8];
+                for (float t = 0f; t < 30f * 60f; t += dt)
+                {
+                    bot.Step(s, dt);
+                    for (int i = 0; i < s.Workers.Count; i++)
+                    {
+                        Carrier w = s.Workers[i];
+                        if (!w.Moving || V2.Dist(w.Pos, anchor[i]) > 0.75f) { anchor[i] = w.Pos; still[i] = 0f; } else still[i] += dt;
+                        worst = Math.Max(worst, still[i]);
+                    }
+                }
+                Assert.Less(worst, 3f, $"{hz} ticks/s: ajudante andando sem sair do lugar");
+            }
+        }
+
         [Test]
         public void Fisica_DeslizaNaQuina_EAjudanteContornaEstacaoNoCaminho()
         {
