@@ -417,6 +417,7 @@ namespace FS
             _fx = Art.Node(top, "Moedas", Vector2.zero, Vector2.one);
             _gold = Art.Outlined(Art.NewText(pill.transform, "Ouro", 62, new Vector2(0.3f, 0f), new Vector2(0.98f, 1f), TextAnchor.MiddleLeft), 3f);
             _gold.fontStyle = FontStyle.Bold;
+            _gold.resizeTextForBestFit = true; _gold.resizeTextMinSize = 36; _gold.resizeTextMaxSize = 62;   // "1,23 mi" encolhe em vez de quebrar
             _gold.rectTransform.pivot = new Vector2(0f, 0.5f);   // o pulso cresce a partir da moeda, sem empurrar o numero
             Image hintPill = Art.Panel(top, "PilulaDica", Art.ComAlfa(Art.Bg, 0.92f), new Vector2(0.385f, 0.1f), new Vector2(Arg("-record") == null ? 0.875f : 1f, 0.9f));   // v0.6b: a engrenagem fica a direita (criativo: sem ela)
             hintPill.raycastTarget = false;
@@ -540,7 +541,7 @@ namespace FS
             _goldShown = _goldShown < 0 ? target : target + (_goldShown - target) * Math.Exp(-GoldRoll * Time.deltaTime);   // = Mathf.Lerp(target, shown, e)
             if (Math.Abs(_goldShown - target) < 0.5) _goldShown = target;
             long shown = (long)Math.Round(_goldShown);
-            if (shown != _goldInt) { _goldInt = shown; _gold.text = shown.ToString(); }
+            if (shown != _goldInt) { _goldInt = shown; _gold.text = Textos.Ouro(shown); }
             _hintT -= Time.deltaTime;
             if (_hintT > 0f) return;
             _hintT = 0.25f;
