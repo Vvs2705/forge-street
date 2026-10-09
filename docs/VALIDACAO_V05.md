@@ -172,7 +172,7 @@ Um revisor leu o diff `main...feat/v0.5` (Core + View + `diario_report.py`) proc
 | viewcheck | 0 erros, 0 avisos |
 | Build Windows + `-autoplay 10` | Success; `AUTOPLAY OK venda1=23s upgrades=8 ouro=1310` |
 | Bot no build a 20× por 20 min (`-bot -speed 20 -vipnow`) | 19 upgrades, 0 exceções (`validation_v051/bot20.log`, foto `validation_v051/shots/01_bot_20min.png`) |
-| Build Android ARM64 | Success; `ForgeStreet-dev.apk` **0.5.1**, 72 504 619 B, SHA-256 `e9cb5c0f…852e` (refeito com a flag `-cam` e o voltar do Android) |
+| Build Android ARM64 | Success; `ForgeStreet-dev.apk` **0.5.1**, 72 504 619 B, SHA-256 `3ed4260c…e4ac` (refeito com a flag `-cam` e o voltar do Android que chega ao jogo) |
 
 Fica para o aparelho: #4 e #6 só aparecem com anúncio real (conta LevelPlay aprovada). A paciência do VIP restaurado continua cheia ao reabrir (decisão da FASE8 §4).
 
@@ -184,4 +184,10 @@ Fica para o aparelho: #4 e #6 só aparecem com anúncio real (conta LevelPlay ap
 ## Voltar do Android (0.5.1, achado da revisão da v0.6)
 - O voltar (= Esc) salvava e saía mesmo com o "Seu cofre rendeu" aberto, que aparece em quase toda abertura depois de tempo fora. Agora fecha o painel, depois a bandeja de melhorias, e só sai com a tela limpa (`MenuBar.IsOpen`).
 - viewcheck 0/0; build Windows Success; `AUTOPLAY OK venda1=23s upgrades=8 ouro=1310`; APK ARM64 72 506 143 B, SHA-256 `e9cb5c0f…852e`.
-- **Armadilha do build:** depois de trocar de branch, o empacotamento incremental do Gradle deixou ~12 MB de buracos no APK (84,8 MB com as mesmas entradas comprimidas de 72,4 MB). Apagar `client/Library/Bee/Android/Prj/IL2CPP/Gradle/launcher/build` antes do build Android resolve.
+- **Armadilha do build:** depois de trocar de branch, o empacotamento incremental do Gradle deixou ~12 MB de buracos no APK (84,8 MB com as mesmas entradas comprimidas de 72,4 MB). Apagar `client/Library/Bee/Android/Prj/IL2CPP/Gradle/launcher/build` antes do build Android resolve.
+
+## O voltar não chegava ao jogo no Android (teste no emulador, 2026-10-09)
+- No emulador (API 35), nem o código antigo (salvar e sair) nem a correção acima rodavam: o GameActivity da Unity 6 não entrega o voltar ao Input System (nenhum evento de teclado; problema conhecido, fórum Unity 1555368 / UUM-136080). O Predictive Back desligado também não resolve.
+- Correção: `activeInputHandler` = 2 (Input System + Input Manager legado, no `Setup` e no ProjectSettings) e `Input.GetKeyDown(KeyCode.Escape)` no `Game.Update`. No emulador: voltar fecha a bandeja (`validation_v051/shots/04`→`05`) e, com a tela limpa, sai do jogo.
+- O `Setup.Build` agora apaga a saída incremental do Gradle antes de todo build Android e o `BuildAndroidEmu` tira o exclude de `/lib/x86_64` do `mainTemplate.gradle` durante o build (detalhes em `VALIDACAO_V06A.md` §Android).
+- Build Windows Success, `AUTOPLAY OK venda1=23s upgrades=8 ouro=1310`; APK ARM64 72 509 035 B (7 bibliotecas), SHA-256 `3ed4260c…e4ac`.

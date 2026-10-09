@@ -1,6 +1,6 @@
 # Roteiro do teste da v0.5 no POCO F4 (2026-10-09)
 
-APK: `client/Builds/android/ForgeStreet-dev.apk` (**0.5.1**, ARM64, build de desenvolvimento, 72,5 MB, SHA-256 `e9cb5c0f7dfbec97a7faeebaa4dd3d63923dbe79913f265541437b839ab2852e`; a versão aparece no canto de baixo à esquerda). O save da 0.4.x abre na 0.5.
+APK: `client/Builds/android/ForgeStreet-dev.apk` (**0.5.1**, ARM64, build de desenvolvimento, 72,5 MB, SHA-256 `3ed4260ce9a3924b6dbd47c87f1e2eac7ad7a64d74f1e186b1abcb1187ebe4ac`; a versão aparece no canto de baixo à esquerda). O save da 0.4.x abre na 0.5.
 
 A 0.5.1 corrige o que a revisão de código achou na 0.5.0: o Ajudante 3 ficava parado no balcão com espada quando a prateleira de espada estava cheia (escudo e ferramenta encalhavam); a carga dos ajudantes sumia ao reabrir se o Joalheiro foi contratado antes do Ajudante 3; o VIP repetia o aviso a cada abertura; o VIP que esperava ao lado da fila cheia "pulava" para outro boneco; a volta de um anúncio real abria o "Seu cofre rendeu"; e o botão voltar do Android saía do jogo com o painel do cofre aberto (agora fecha o painel, depois a bandeja de melhorias, e só sai com a tela limpa).
 
@@ -22,15 +22,16 @@ adb install -r client/Builds/android/ForgeStreet-dev.apk
 | 8 | Anúncio → VIP / velocidade | Botões nos cantos da barra de baixo. Sem a conta aprovada, o build de teste mostra um **anúncio simulado de 5 s** e dá a recompensa; velocidade 2× (2º anúncio = 3×) por 1 min, depois recarga de 5 min |
 | 9 | Cofre | Saia do jogo por mais de 1 min e volte: "Seu cofre rendeu" |
 | 10 | Visual geral | HUD em pílula, cartões claros com preço verde/cinza, placas de obra com ícone, luz, coração na venda, rosto bravo quando a paciência acaba |
+| 12 | Botão voltar (0.5.1) | Com a bandeja de Melhorias ou o "Seu cofre rendeu" aberto, o voltar fecha só o que está aberto; com a tela limpa, sai do jogo. Antes ele não fazia nada no Android |
 | 11 | Ajudantes sozinhos (0.5.1) | Com o Ajudante 3 contratado, solte o celular 2–3 min: ele não pode ficar parado no balcão segurando espada enquanto escudos/ferramentas acumulam na bancada |
 
 ## 2b. Experimento: câmera mais perto (5 min, depois do roteiro acima)
 O benchmark visual (P2-3) aponta a câmera longe como causa de fundo do "cru": hoje a tela mostra 11,4 m de largura e o ferreiro tem ~50 px. O build de teste aceita `-cam W` (largura em metros) pelo cabo; abaixo de 11,4 a câmera segue o ferreiro. Mesmo save, só muda o enquadramento:
 ```
 adb shell am force-stop br.com.vstack.forgestreet
-adb shell am start -n br.com.vstack.forgestreet/com.unity3d.player.UnityPlayerGameActivity -e unity "-cam 9"
+adb shell "am start -n br.com.vstack.forgestreet/com.unity3d.player.UnityPlayerGameActivity -e unity '-cam 9'"
 ```
-Jogar 2–3 min com 9 e com 8 e dizer qual prefere (personagens maiores × ver a oficina toda; o balão do 1º da fila pode encostar na borda). Abrir pelo ícone volta ao normal (11,4). Fotos do PC: `client/Builds/validation_v051/shots/02_cam9.png` e `02_cam8.png`.
+As aspas simples vão dentro das duplas (sem isso o shell do celular quebra o extra e o `am` acusa "Unknown option"). Jogar 2–3 min com 9 e com 8 e dizer qual prefere (personagens maiores × ver a oficina toda; o balão do 1º da fila pode encostar na borda e, com o ferreiro lá embaixo na forja, a fila fica sob a barra de cima). Testado no emulador: `client/Builds/validation_v051/shots/04_android_cam9_bandeja.png`. Abrir pelo ícone volta ao normal (11,4). Fotos do PC: `client/Builds/validation_v051/shots/02_cam9.png` e `02_cam8.png`.
 
 ## 3. Medir (o coordenador faz pelo cabo)
 FPS (SurfaceFlinger), memória (`dumpsys meminfo br.com.vstack.forgestreet`), temperatura e erros no logcat. Comparar com a v0.4.1 (60 fps, 252 MB).
