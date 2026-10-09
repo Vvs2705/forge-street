@@ -38,9 +38,7 @@ MUTACOES = [
     mut('eco-preco-ferramenta', DEFS, 'Price = { 0, 0, 10, 25, 16, 60 };', 'Price = { 0, 0, 10, 25, 18, 60 };',
         'preço de venda da ferramenta 16 -> 18'),
     mut('eco-custo-crescimento', DEFS, 'CostGrowth = 1.30f;', 'CostGrowth = 1.32f;',
-        'custo de upgrade cresce 1,32x por tier em vez de 1,30x',
-        esperado_vivo='nenhum teste fixa a curva: CoreTests só checa Cost(0) = 50, razão 1,15-1,5 e múltiplo de 5, e o bot'
-                      ' cabe nas janelas da §3 com 1,32. Falta teste com os custos dos tiers (ex.: Bigorna 2 = 65, Fornalha 2 = 895)'),
+        'custo de upgrade cresce 1,32x por tier em vez de 1,30x'),
     mut('eco-menu-nao-cobra', SIM, 'Gold -= cost;', ';',
         'compra pelo menu aplica o upgrade sem cobrar'),
     # offline
@@ -72,9 +70,7 @@ MUTACOES = [
     mut('boost-multiplicador', SIM, 'BoostMul += 1f;', 'BoostMul += 2f;',
         '1o anúncio de velocidade já dá 3x (em vez de 2x)'),
     mut('boost-recarga', DEFS, 'BoostCooldownSeconds = 300f;', 'BoostCooldownSeconds = 240f;',
-        'recarga do boost 5 min -> 4 min',
-        esperado_vivo='Boost_2xPor60s_... mede a recarga por Balance.BoostCooldownSeconds (simbólico) e o bot não chama'
-                      ' anúncio: falta teste com o número literal (300 s: ainda recusa aos 299 s, libera aos 300 s)'),
+        'recarga do boost 5 min -> 4 min'),
     # fila e clientes
     mut('fila-vaga-a-mais', SIM, 'if (q.Count < cap)', 'if (q.Count <= cap)',
         'fila aceita um cliente além das vagas'),
