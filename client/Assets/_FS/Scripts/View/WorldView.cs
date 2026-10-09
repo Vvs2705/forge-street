@@ -42,7 +42,7 @@ namespace FS
         sealed class PadV
         {
             public Pad P; public Transform Root; public SpriteRenderer Fill, Border, Icon; public Text Label, Price; public RectTransform PriceBox; public Image Coin;
-            public int LastU = -2, LastPaid, LastRem = -1; public float CoinT; public bool Pulsing, LastOk;   // LastRem/LastOk: o preco so e' reescrito quando muda
+            public int LastU = -2; public long LastPaid, LastRem = -1; public float CoinT; public bool Pulsing, LastOk;   // LastRem/LastOk: o preco so e' reescrito quando muda
         }
         sealed class CarrierV { public Carrier C; public Transform Root; public SpriteRenderer[] Stack; public Body Body; public float CheerT, StackY, Top, DustT; public SpriteRenderer Pack; }   // StackY: onde a pilha apoia; Top: topo dela
         /// <summary>Balao grande do 1o da fila (um por fila, segue o cliente): trilho escuro, anel de paciencia, corpo, rabicho, icone e rosto bravo.</summary>
@@ -1412,7 +1412,7 @@ namespace FS
             if (v.Root.gameObject.activeSelf != on) v.Root.gameObject.SetActive(on);
             if (v.PriceBox.gameObject.activeSelf != on) v.PriceBox.gameObject.SetActive(on);
             if (!on) { v.Label.enabled = false; return; }
-            int cost = Upgrades.Cost(u), remaining = cost - v.P.Paid;
+            long cost = Upgrades.Cost(u), remaining = cost - v.P.Paid;
             bool affordable = _sim.Gold >= remaining;
             float frac = cost > 0 ? v.P.Paid / (float)cost : 0f;
             v.Fill.transform.localScale = Vector3.one * (PadSize * 0.92f * Mathf.Sqrt(frac));

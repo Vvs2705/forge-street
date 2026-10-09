@@ -267,8 +267,12 @@ namespace FS.Core
             new UpgradeDef(Upgrade.Counter8, (int)Upgrade.Counter7, "Balcão 8 vagas", "Atende 8 clientes ao mesmo tempo", menu: true),
         };
 
-        /// <summary>custo(tier) = CostBase * CostGrowth^tier, arredondado ao multiplo de 5 (preco legivel no pad).</summary>
-        public static int Cost(int tier)
+        /// <summary>A-CORE-06: teto da curva (1e18, cabe em long com folga para somar ouro). 50 x 1,3^tier chega nele no tier 144.</summary>
+        public const long CostMax = 1000000000000000000;
+
+        /// <summary>custo(tier) = CostBase * CostGrowth^tier, arredondado ao multiplo de 5 (preco legivel no pad). A-CORE-06: long, ate CostMax
+        /// (em int estourava no tier 67 e o Math.Max devolvia 5).</summary>
+        public static long Cost(int tier)
         {
             // ponytail: a 2a area sai da formula porque fica no FIM do enum (save antigo de 15/17 flags) com preco de meio de
             // jogo. Mais uma area assim = trocar por uma tabela de precos por upgrade.
@@ -287,10 +291,10 @@ namespace FS.Core
                 case Upgrade.Counter5: case Upgrade.Counter6: case Upgrade.Counter7: case Upgrade.Counter8:
                     return Balance.CounterSlotCost[tier - (int)Upgrade.Counter5];
             }
-            double c = Balance.CostBase * Math.Pow(Balance.CostGrowth, tier);
-            return Math.Max(5, (int)(Math.Round(c / 5.0) * 5.0));
+            double c = Math.Min(Balance.CostBase * Math.Pow(Balance.CostGrowth, tier), CostMax);
+            return Math.Max(5, (long)Math.Round(c / 5.0) * 5);   // x5 em long: em double, acima de 2^53 o produto perdia o multiplo de 5
         }
 
-        public static int Cost(Upgrade u) => Cost((int)u);
+        public static long Cost(Upgrade u) => Cost((int)u);
     }
 }
