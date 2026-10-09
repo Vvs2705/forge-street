@@ -206,7 +206,7 @@ namespace FS
             {
                 UpgradeDef d = Upgrades.All[c.U];
                 bool bought = _sim.Bought[c.U], locked = d.Requires >= 0 && !_sim.Bought[d.Requires];
-                int cost = Upgrades.Cost(c.U);
+                long cost = Upgrades.Cost(c.U);
                 bool can = !bought && !locked && _sim.Gold >= cost;
                 if (can) ready++;
                 if (c.Go.activeSelf != !bought) c.Go.SetActive(!bought);

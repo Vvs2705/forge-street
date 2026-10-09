@@ -48,7 +48,7 @@ namespace FS.Tests
             return SaveEnvelope.Wrap(s.Save(1), "0.7.0", 1);
         }
 
-        static int Gold(SaveEnvelope.Result r) => Sim.Load(r.Payload).Gold;
+        static long Gold(SaveEnvelope.Result r) => Sim.Load(r.Payload).Gold;
 
         string[] Quarentena(string name) => Directory.GetFiles(_dir, name + "*.corrupt-*");
 
@@ -125,10 +125,10 @@ namespace FS.Tests
             Assert.AreEqual(Wrap(10), File.ReadAllText(_path + ".bak"), "o anterior vira .bak");
             Assert.IsFalse(File.Exists(_path + ".tmp"));
             SaveEnvelope.Result r = SaveStore.Read(_path, out int corrupt);
-            Assert.AreEqual((SaveEnvelope.Status.Ok, 20, 0), (r.Status, Gold(r), corrupt));
+            Assert.AreEqual((SaveEnvelope.Status.Ok, 20L, 0), (r.Status, Gold(r), corrupt));
             File.Delete(_path);   // queda entre os Move da troca manual: so sobrou o .bak
             r = SaveStore.Read(_path, out corrupt);
-            Assert.AreEqual((SaveEnvelope.Status.Ok, 10, 0), (r.Status, Gold(r), corrupt));
+            Assert.AreEqual((SaveEnvelope.Status.Ok, 10L, 0), (r.Status, Gold(r), corrupt));
             File.Delete(_path + ".bak");
             Assert.AreEqual(SaveEnvelope.Status.Missing, SaveStore.Read(_path, out corrupt).Status);
         }
@@ -142,7 +142,7 @@ namespace FS.Tests
             bad[bad.Length - 3] ^= 1;   // 1 bit no payload
             File.WriteAllBytes(_path, bad);
             SaveEnvelope.Result r = SaveStore.Read(_path, out int corrupt);
-            Assert.AreEqual((SaveEnvelope.Status.Ok, 10, 1), (r.Status, Gold(r), corrupt), "volta pelo .bak");
+            Assert.AreEqual((SaveEnvelope.Status.Ok, 10L, 1), (r.Status, Gold(r), corrupt), "volta pelo .bak");
             string[] q = Quarentena("save.txt");
             Assert.AreEqual(1, q.Length);
             CollectionAssert.AreEqual(bad, File.ReadAllBytes(q[0]), "o ruim fica intacto na quarentena");
