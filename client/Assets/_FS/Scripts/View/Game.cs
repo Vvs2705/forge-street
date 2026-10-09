@@ -76,14 +76,20 @@ namespace FS
         int _pending, _goldInt = -1; float _punchT, _goldShown = -1f;
         // v0.5c: botoes de anuncio, selo do boost e avisos curtos (VIP chegou / anuncio indisponivel)
         sealed class AdBtn { public Button B; public Image Face, Icon; public GameObject Video; public Text Label; }
-        sealed class Banner { public RectTransform R; public CanvasGroup G; public Text T; public Image I; public float Age = 99f, Dur; }
+        sealed class Banner { public RectTransform R; public CanvasGroup G; public Text T; public Image I; public float Age; }
         AdBtn _vipBtn, _speedBtn;
         RectTransform _boostSeal; Text _boostMul, _boostTime;
-        Banner _vipBanner, _toast;
+        // A-UI-19: um aviso so (VIP, encomenda, compra, anuncio), em fila, no lugar da pilula da dica: a faixa da HUD que a camera
+        // reserva, entao nunca cobre estacao, fila nem balao (o balao do 1o da fila fica 24 px abaixo dela)
+        Banner _notice;
+        readonly System.Collections.Generic.Queue<(string text, Sprite icon, Color tint)> _notices = new System.Collections.Generic.Queue<(string, Sprite, Color)>(NoticeMax + 1);
+        const int NoticeMax = 3;              // esperando; cheia, o mais velho cai
+        const float NoticeTime = 1.4f;        // s por aviso (pop 0,3 s, some nos ultimos 0,4 s)
+        const string Delivered = "Encomenda entregue! +";   // o -shotorder espera este aviso
+        Sprite _crown;
         bool _vipNow;
-        // v0.6c: cartao da encomenda (FASE9), aviso de entregue e o estado da animacao (_orderKey = OrderCount da encomenda na tela)
+        // v0.6c: cartao da encomenda (FASE9) e o estado da animacao (_orderKey = OrderCount da encomenda na tela)
         RectTransform _order; CanvasGroup _orderG; Image _orderIcon, _orderFill, _orderCoin; Text _orderText, _orderPrize, _orderBar;
-        Banner _orderBanner;
         int _orderKey = -1, _orderSeen = -1; float _orderT, _orderPunch; bool _orderOut;
         static readonly Color AdFace = Art.HudFace, AdOff = MenuBar.GrayDark;   // A-UI-16: era roxo #3B2650 / #5A5560; a borda de ouro e o ▶ marcam o anuncio
         // v0.6d: botoes de anuncio e cartoes de baixo a 32 px das bordas da area segura, com largura fixa; topo dos botoes de anuncio
@@ -294,7 +300,7 @@ namespace FS
                     // FASE8 (v0.5c): VIP entrou na vaga / levou o pacote (cada unidade ja saiu como Sold) / cansou
                     case Ev.VipArrived:
                         Sfx.Play("vip");
-                        ShowBanner(_vipBanner, "Cliente VIP!", 2f);
+                        Notice("Cliente VIP!", _crown, Color.white);
                         _view.VipBurst(e.Pos, false);
                         Log("vip_arrived", Balance.ItemName[e.A], e.B.ToString());
                         break;
@@ -321,7 +327,7 @@ namespace FS
                         Sfx.Play("upgrade");
                         OrderText(_sim.OrderTarget, _sim.OrderTarget);   // a ultima venda e a entrega caem no mesmo tick: mostra o 5/5
                         _orderOut = true; _orderT = 0f;
-                        ShowBanner(_orderBanner, $"Encomenda entregue! +{e.B}", 2f, _coinIcon.sprite, _coinIcon.color);
+                        Notice(Delivered + e.B, _coinIcon.sprite, _coinIcon.color);
                         FlyCoins(_orderCoin.rectTransform.position, e.B);
                         break;
                 }
@@ -334,8 +340,8 @@ namespace FS
         }
 
         /// <summary>
-        /// Compra (pad, bot ou toque no menu): som, aviso "Nome!" e diario. v0.6d: o aviso e' o mesmo banner do "Encomenda entregue!", com o
-        /// icone da melhoria (era um "+nome!" verde no mundo, que se misturava aos "+N" das vendas). Criativo (sem banner): o flutuante de antes.
+        /// Compra (pad, bot ou toque no menu): som, aviso "Nome!" e diario. v0.6d: o aviso e' o mesmo do "Encomenda entregue!", com o
+        /// icone da melhoria (era um "+nome!" verde no mundo, que se misturava aos "+N" das vendas). Criativo (sem cartao): o flutuante de antes.
         /// </summary>
         void Bought(int u, int price, V2 pos)
         {
@@ -344,13 +350,13 @@ namespace FS
             bool opens = u == (int)Upgrade.SideCorridor;
             foreach (Station s in _sim.Stations) opens |= s.UnlockBy == u;
             Ajustes.Pulso(opens ? 60 : 30, opens ? 255 : 150);
-            if (_orderBanner == null) _view.Float(pos, Upgrades.All[u].Name + "!", Art.Good, 44);
+            if (_order == null) _view.Float(pos, Upgrades.All[u].Name + "!", Art.Good, 44);
             else
             {
                 Sprite icon; Color tint;
                 if (Upgrades.All[u].InMenu) (icon, tint) = MenuBar.Icon((Upgrade)u);
                 else icon = _view.PadIcon(u, out tint, out _);
-                ShowBanner(_orderBanner, Upgrades.All[u].Name + "!", 2f, icon, tint);
+                Notice(Upgrades.All[u].Name + "!", icon, tint);
             }
             Log("upgrade_buy", ((Upgrade)u).ToString(), price.ToString());
         }
@@ -424,7 +430,8 @@ namespace FS
             _gold.fontStyle = FontStyle.Bold;
             _gold.rectTransform.pivot = new Vector2(0f, 0.5f);   // o pulso cresce a partir da moeda, sem empurrar o numero
             // A-UI-16: borda creme e face marrom como a pilula de ouro (era o azul-marinho Art.Bg)
-            Image hintPill = Art.Panel(top, "PilulaDica", Art.HudEdge, new Vector2(0.385f, 0.1f), new Vector2(Arg("-record") == null ? 0.875f : 1f, 0.9f));   // v0.6b: a engrenagem fica a direita (criativo: sem ela)
+            Vector2 hintMin = new Vector2(0.385f, 0.1f), hintMax = new Vector2(Arg("-record") == null ? 0.875f : 1f, 0.9f);   // v0.6b: a engrenagem fica a direita (criativo: sem ela)
+            Image hintPill = Art.Panel(top, "PilulaDica", Art.HudEdge, hintMin, hintMax);
             Image hintIn = Art.Panel(hintPill.transform, "Fundo", Art.ComAlfa(Art.HudFace, 0.95f), Vector2.zero, Vector2.one);
             hintIn.rectTransform.offsetMin = new Vector2(5f, 5f); hintIn.rectTransform.offsetMax = new Vector2(-5f, -5f);
             hintPill.raycastTarget = hintIn.raycastTarget = false;
@@ -435,6 +442,8 @@ namespace FS
             _hint.fontStyle = FontStyle.Bold; _hint.color = Art.Accent;
             _hint.resizeTextForBestFit = true; _hint.resizeTextMinSize = 22; _hint.resizeTextMaxSize = 32;
             _hint.verticalOverflow = VerticalWrapMode.Truncate;
+            _notice = MakeNotice(top, hintMin, hintMax);
+            _crown = Art.Icon("coroa", "icone");
             // versao: so no build dev (o playtest usa); release so nas configuracoes (v0.6b, P1-1); criativo nenhuma. v0.6d: pequena, logo
             // abaixo da pilula de ouro, na folga de 24 px que o balao do 1o da fila respeita (no canto de baixo batia no cartao e no VIP)
             if (Arg("-record") == null && Debug.isDebugBuild)
@@ -541,8 +550,10 @@ namespace FS
         void RefreshHud()
         {
             TickCoins(Time.deltaTime);
-            RefreshAdUi(Mathf.Min(Time.unscaledDeltaTime, 0.1f));   // tempo real (o simulado zera o timeScale), sem o salto do 1o quadro
-            RefreshOrder(Mathf.Min(Time.unscaledDeltaTime, 0.1f));
+            RefreshAdUi();
+            float real = Mathf.Min(Time.unscaledDeltaTime, 0.1f);   // tempo real (o simulado zera o timeScale), sem o salto do 1o quadro
+            RefreshOrder(real);
+            TickNotice(real);
             // numero rolando: persegue o valor (sobe na venda, desce na compra) em ~0,3 s em vez de pular
             int target = Mathf.Max(0, _sim.Gold - _pending);
             _goldShown = _goldShown < 0f ? target : Mathf.Lerp(target, _goldShown, Mathf.Exp(-GoldRoll * Time.deltaTime));
@@ -563,7 +574,7 @@ namespace FS
         /// <summary>
         /// Botoes nos cantos da barra de baixo (fora da fila e do joystick; a base sobe 2,6% para a marca "Development Build" do APK de
         /// teste nao cobrir a legenda), selo do boost logo acima do botao de velocidade (no topo ele batia no balao do 1o da fila, que vai
-        /// para a esquerda com 8 vagas) e 2 avisos.
+        /// para a esquerda com 8 vagas). Os avisos foram para a faixa da HUD (A-UI-19, MakeNotice).
         /// </summary>
         void BuildAdUi()
         {
@@ -587,8 +598,6 @@ namespace FS
             _boostTime.fontStyle = FontStyle.Bold;
             _boostSeal = seal.rectTransform;
             _boostSeal.gameObject.SetActive(false);
-            _vipBanner = MakeBanner("AvisoVip", new Vector2(0.14f, 0.63f), new Vector2(0.86f, 0.7f), Art.Icon("coroa", "icone"), 52);
-            _toast = MakeBanner("AvisoAnuncio", new Vector2(0.15f, MenuBar.Band + 0.08f), new Vector2(0.85f, MenuBar.Band + 0.12f), null, 34);   // acima do selo do boost
         }
 
         /// <summary>Botao quadrado: borda de ouro, fundo marrom da HUD, icone, legenda e o selo de video (anuncio) no canto de cima.
@@ -623,21 +632,26 @@ namespace FS
             return a;
         }
 
-        Banner MakeBanner(string name, Vector2 min, Vector2 max, Sprite icon, int size)
+        /// <summary>
+        /// A-UI-19: o aviso ocupa o retangulo da pilula da dica (`min`/`max` em `top`), por cima dela e com face opaca; a dica volta quando
+        /// ele some. Borda de ouro (evento) contra a creme da dica, icone a esquerda e 1 linha de texto como a dica. Antes eram 3 avisos
+        /// soltos: VIP a 63-70% da altura e encomenda a 55-62% atravessavam a oficina; o do anuncio ficava sobre o Deposito.
+        /// </summary>
+        Banner MakeNotice(RectTransform top, Vector2 min, Vector2 max)
         {
             var b = new Banner();
-            Image edge = Art.Panel(_safe, name, Art.Gold, min, max);
+            Image edge = Art.Panel(top, "Aviso", Art.Gold, min, max);
             edge.raycastTarget = false;
-            Image face = Art.Panel(edge.transform, "Fundo", Art.ComAlfa(Art.HudFace, 0.95f), Vector2.zero, Vector2.one);
+            Image face = Art.Panel(edge.transform, "Fundo", Art.HudFace, Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(5f, 5f); face.rectTransform.offsetMax = new Vector2(-5f, -5f);
             face.raycastTarget = false;
-            if (icon != null)
-            {
-                b.I = Art.Node(edge.transform, "Icone", new Vector2(0.02f, 0.05f), new Vector2(0.2f, 0.95f)).gameObject.AddComponent<Image>();
-                b.I.sprite = icon; b.I.preserveAspect = true; b.I.raycastTarget = false;
-            }
-            b.T = Art.Outlined(Art.NewText(edge.transform, "Texto", size, new Vector2(icon != null ? 0.2f : 0.03f, 0f), new Vector2(0.97f, 1f)), 3f);
+            b.I = Art.Node(edge.transform, "Icone", new Vector2(0.03f, 0.1f), new Vector2(0.19f, 0.9f)).gameObject.AddComponent<Image>();
+            b.I.preserveAspect = true; b.I.raycastTarget = false;
+            b.T = Art.Outlined(Art.NewText(edge.transform, "Texto", 36, new Vector2(0.2f, 0.5f), new Vector2(0.97f, 0.5f)), 2f);
+            b.T.rectTransform.offsetMin = new Vector2(0f, -24f); b.T.rectTransform.offsetMax = new Vector2(0f, 24f);   // 48 px: 1 linha, como a dica
             b.T.fontStyle = FontStyle.Bold; b.T.color = Art.Accent;
+            b.T.resizeTextForBestFit = true; b.T.resizeTextMinSize = 22; b.T.resizeTextMaxSize = 36;
+            b.T.verticalOverflow = VerticalWrapMode.Truncate;
             b.R = edge.rectTransform;
             b.G = edge.gameObject.AddComponent<CanvasGroup>();
             b.G.blocksRaycasts = false;
@@ -645,21 +659,30 @@ namespace FS
             return b;
         }
 
-        void ShowBanner(Banner b, string text, float dur, Sprite icon = null, Color tint = default)
+        /// <summary>A-UI-19: entra na fila (cheia, o mais velho cai); sem `icon` o texto usa a largura toda.</summary>
+        void Notice(string text, Sprite icon = null, Color tint = default)
         {
-            b.T.text = text; b.Age = 0f; b.Dur = dur;
-            if (icon != null && b.I != null) { b.I.sprite = icon; b.I.color = tint; }   // v0.6d: o aviso da encomenda tambem anuncia compras
-            b.R.gameObject.SetActive(true);
+            if (_notices.Count >= NoticeMax) _notices.Dequeue();
+            _notices.Enqueue((text, icon, tint));
         }
 
-        /// <summary>Pop 0 -> 1,1 -> 1 em 0,3 s, segura e some nos ultimos 0,4 s.</summary>
-        static void TickBanner(Banner b, float dt)
+        /// <summary>Um aviso por vez: acabou o da tela, entra o proximo da fila. Pop 0 -> 1,1 -> 1 em 0,3 s, segura e some nos ultimos 0,4 s.</summary>
+        void TickNotice(float dt)
         {
-            if (!b.R.gameObject.activeSelf) return;
+            Banner b = _notice;
+            if (!b.R.gameObject.activeSelf)
+            {
+                if (_notices.Count == 0) return;
+                (string text, Sprite icon, Color tint) = _notices.Dequeue();
+                b.T.text = text; b.Age = 0f;
+                b.I.enabled = icon != null; b.I.sprite = icon; b.I.color = tint;
+                b.T.rectTransform.anchorMin = new Vector2(icon != null ? 0.2f : 0.03f, 0.5f);
+                b.R.gameObject.SetActive(true);
+            }
             b.Age += dt;
-            if (b.Age >= b.Dur) { b.R.gameObject.SetActive(false); return; }
+            if (b.Age >= NoticeTime) { b.R.gameObject.SetActive(false); return; }
             b.R.localScale = Vector3.one * Pop(b.Age);
-            b.G.alpha = Mathf.Clamp01((b.Dur - b.Age) / 0.4f);
+            b.G.alpha = Mathf.Clamp01((NoticeTime - b.Age) / 0.4f);
         }
 
         static float Pop(float age)
@@ -673,7 +696,7 @@ namespace FS
         /// anuncio pronto mostra o proximo multiplicador, fora disso (sem boost e com recarga) fica cinza com o tempo; no 3x some (o selo
         /// diz tudo). Selo do boost com o multiplicador e o cronometro, pulsando.
         /// </summary>
-        void RefreshAdUi(float dt)
+        void RefreshAdUi()
         {
             bool vip = _sim.CanSummonVip && Ads.Ready(Ads.Vip);
             if (_vipBtn.B.gameObject.activeSelf != vip) _vipBtn.B.gameObject.SetActive(vip);
@@ -695,8 +718,6 @@ namespace FS
                 _boostTime.text = Clock(_sim.BoostLeft);
                 _boostSeal.localScale = Vector3.one * (1f + 0.04f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 3f)));
             }
-            TickBanner(_vipBanner, dt);
-            TickBanner(_toast, dt);
         }
 
         // ---------- encomenda (v0.6c, docs/FASE9_ENCOMENDAS.md) ----------
@@ -740,7 +761,6 @@ namespace FS
             _orderG = edge.gameObject.AddComponent<CanvasGroup>();
             _orderG.blocksRaycasts = false;
             _order.gameObject.SetActive(false);
-            _orderBanner = MakeBanner("AvisoEncomenda", new Vector2(0.1f, 0.55f), new Vector2(0.9f, 0.62f), Art.Icon("moeda", "icone"), 42);   // logo abaixo do aviso do VIP
         }
 
         /// <summary>Cartao pelo estado do Sim: encomenda nova entra pulando como o aviso, cada venda dela da um pulso e, entregue (o Ev.OrderDone
@@ -748,7 +768,6 @@ namespace FS
         void RefreshOrder(float dt)
         {
             if (_order == null) return;
-            TickBanner(_orderBanner, dt);
             _orderT += dt; _orderPunch = Mathf.Max(0f, _orderPunch - dt);
             int it = _sim.OrderItem;
             if (it >= 0 && _orderKey != _sim.OrderCount)
@@ -790,7 +809,7 @@ namespace FS
         {
             if (!_sim.SummonVip()) return;   // mudou entre o toque e o fim do anuncio: nada a dar
             Sfx.Play("upgrade");
-            ShowBanner(_vipBanner, "VIP a caminho!", 1.6f);
+            Notice("VIP a caminho!", _crown, Color.white);
         }, AdFail);
 
         void OnSpeedAd() => Ads.Show(Ads.Velocidade, () =>
@@ -805,7 +824,7 @@ namespace FS
         void AdFail()
         {
             Sfx.Play("leave", 1.3f);
-            ShowBanner(_toast, "Anúncio indisponível", 1.6f);
+            Notice("Anúncio indisponível");
         }
 
         // ---------- configuracoes: som e vibracao (v0.6b, BENCHMARK_VISUAL P2-4; a versao saiu da HUD para ca, P1-1) ----------
@@ -1014,9 +1033,11 @@ namespace FS
             }
             else if (Arg("-shotorder") != null)
             {
-                // v0.6c: espera o aviso da 1a encomenda entregue (ate 180 s) e fotografa -shotdelay s depois (moedas no ar, cartao saindo)
+                // v0.6c: espera o aviso da 1a encomenda entregue (ate 180 s) e fotografa -shotdelay s depois (moedas no ar, cartao saindo).
+                // A-UI-19: o aviso divide a fila com os outros; espera ele estar na tela
                 float until = Time.realtimeSinceStartup + 180f;
-                while (_orderBanner != null && !_orderBanner.R.gameObject.activeSelf && Time.realtimeSinceStartup < until) yield return null;
+                while (_order != null && !(_notice.R.gameObject.activeSelf && _notice.T.text.StartsWith(Delivered, StringComparison.Ordinal))
+                    && Time.realtimeSinceStartup < until) yield return null;
                 yield return new WaitForSecondsRealtime(delay);
             }
             else yield return new WaitForSecondsRealtime(delay);
