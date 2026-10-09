@@ -3,7 +3,7 @@
 Uso (Blender 5.2; render_sprites.ps1 ao lado monta esta linha):
   blender.exe -b --factory-startup --python-exit-code 1 --python render_sprites.py --
       --model Model.fbx --out saida/ (--anims pasta_com_fbx/ | --self) [--elev 60] [--dirs 4|8] [--fps 12]
-      [--size 128] [--scale PX_POR_METRO] [--yaw 0] [--light flat|matcap|studio] [--shadow] [--aa 8] [--src-fps 30]
+      [--size 128] [--scale PX_POR_METRO] [--yaw 0] [--light flat|matcap|studio|forja] [--shadow] [--aa 8] [--src-fps 30]
 Saida: <Clipe>.png (linha = direcao, coluna = frame; linha 0 em cima), meta.json, contact.png.
 Direcoes em sentido horario a partir de S (de frente para a camera = para baixo na tela):
   4 -> S, W, N, E      8 -> S, SW, W, NW, N, NE, E, SE
@@ -16,7 +16,16 @@ import bpy
 from mathutils import Matrix, Vector
 
 DIRS = {1: ["S"], 4: ["S", "W", "N", "E"], 8: ["S", "SW", "W", "NW", "N", "NE", "E", "SE"]}
-LIGHT = {"flat": ("FLAT", None), "matcap": ("MATCAP", "toon_light.exr"), "studio": ("STUDIO", "Default")}
+LIGHT = {"flat": ("FLAT", None), "matcap": ("MATCAP", "toon_light.exr"), "studio": ("STUDIO", "Default"),
+         "forja": ("FLAT", None)}  # forja troca o motor para EEVEE (ver forja())
+# preset forja (A-ART-02). Faixas do toon = (limiar de luz, cor linear que multiplica a cor base): sombra fria,
+# meio neutro-quente, brilho laranja. Luz 1.0 = face virada para a chave. Cores > 1 via ganho da emissao.
+BANDS = ((0.0, (0.45, 0.50, 0.72)), (0.30, (1.0, 0.92, 0.82)), (0.75, (1.50, 1.05, 0.62)))
+GAIN = 1.5
+KEY, FILL = ((-1.0, -0.5, 0.4), 1.0), ((0.3, 1.0, 1.5), 0.35)  # sois: (de onde vem, forca); chave baixa a esquerda
+OUTLINE_M, OUTLINE_RGB = 0.02, (0.045, 0.024, 0.014)  # contorno em metros (~0,8 px a 40 px/m no jogo), marrom
+EMBER = (1.6, 0.9, 0.25)  # soma na boca da fornalha (texels laranja/amarelo claros); so em prop sem armature
+SHADOW_A, SHADOW_PAD = 0.55, 0.10  # opacidade no centro e folga (m) da sombra de contato
 BONE_RE = re.compile(r'pose\.bones\["([^"]+)"\]')
 LOOP_RE = re.compile(r"idle|walk|run", re.I)  # ponytail: laco por nome; o Unity pode sobrescrever
 
@@ -192,6 +201,110 @@ def render(cols, rows, cell, size, path, keep):
     keep.clear()
 
 
+def node(nt, kind, *ins, **props):
+    """Cria no; cada item de ins vai para a entrada i (socket = link, valor = default, None = pula)."""
+    n = nt.nodes.new(kind)
+    for k, v in props.items():
+        setattr(n, k, v)
+    for i, v in enumerate(ins):
+        if isinstance(v, bpy.types.NodeSocket):
+            nt.links.new(v, n.inputs[i])
+        elif v is not None:
+            n.inputs[i].default_value = v
+    return n
+
+
+def emit(mat, color, strength=1.0):
+    """Liga na saida do material um shader, ou uma cor (socket ou valor) via Emission: a cor sai sem luz."""
+    nt = mat.node_tree
+    out = next((n for n in nt.nodes if n.type == "OUTPUT_MATERIAL"), None) or nt.nodes.new("ShaderNodeOutputMaterial")
+    if not (isinstance(color, bpy.types.NodeSocket) and color.type == "SHADER"):
+        color = node(nt, "ShaderNodeEmission", color, strength).outputs[0]
+    nt.links.new(color, out.inputs["Surface"])
+
+
+def toon(mat, ember):
+    """Saida = cor base x rampa(luz de um difuso branco): 3 faixas chapadas que seguem as luzes da cena."""
+    nt = mat.node_tree
+    bsdf = next((n for n in nt.nodes if n.type == "BSDF_PRINCIPLED"), None)
+    bc = bsdf.inputs["Base Color"] if bsdf else None
+    if bc is not None and bc.is_linked:
+        base = bc.links[0].from_socket
+    else:
+        base = node(nt, "ShaderNodeRGB").outputs[0]
+        base.default_value = tuple(bc.default_value) if bc is not None else (0.8, 0.8, 0.8, 1.0)
+    nrm = bsdf.inputs["Normal"].links[0].from_socket if bsdf and bsdf.inputs["Normal"].is_linked else None
+    light = node(nt, "ShaderNodeShaderToRGB", node(nt, "ShaderNodeBsdfDiffuse", (1, 1, 1, 1), 0.0, nrm).outputs[0])
+    ramp = node(nt, "ShaderNodeValToRGB", light.outputs[0])
+    els = ramp.color_ramp.elements
+    ramp.color_ramp.interpolation = "CONSTANT"
+    while len(els) < len(BANDS):
+        els.new(0.5)
+    for el, (pos, rgb) in zip(els, BANDS):
+        el.position, el.color = pos, (*[c / GAIN for c in rgb], 1.0)
+    col = node(nt, "ShaderNodeVectorMath", base, ramp.outputs[0], operation="MULTIPLY")
+    if ember:  # brasa: matiz laranja-amarelo, saturado e claro (valores lineares)
+        h, s, v = node(nt, "ShaderNodeSeparateColor", base, mode="HSV").outputs
+        m = node(nt, "ShaderNodeMath", h, 0.035, operation="GREATER_THAN")
+        for t in (node(nt, "ShaderNodeMath", h, 0.16, operation="LESS_THAN"), node(nt, "ShaderNodeMath", s, 0.5,
+                  operation="GREATER_THAN"), node(nt, "ShaderNodeMapRange", v, 0.45, 0.85)):  # brilho em rampa suave
+            m = node(nt, "ShaderNodeMath", m.outputs[0], t.outputs[0], operation="MULTIPLY")
+        glow = node(nt, "ShaderNodeVectorMath", base, EMBER, operation="MULTIPLY")
+        glow = node(nt, "ShaderNodeVectorMath", glow.outputs[0], None, None, m.outputs[0], operation="SCALE")
+        col = node(nt, "ShaderNodeVectorMath", col.outputs[0], glow.outputs[0], operation="ADD")
+    emit(mat, col.outputs[0], GAIN)
+
+
+def forja(sc, meshes, arm, clips):
+    """Preset 'forja': EEVEE + toon 3 faixas, contorno por casca invertida (Solidify), 2 sois sem sombra projetada
+    (cada celula e uma copia na mesma cena: sombra real vazaria para a vizinha), sombra de contato e brasa."""
+    sc.render.engine = "BLENDER_EEVEE"
+    sc.eevee.taa_render_samples, sc.eevee.use_shadows = 16, False
+    for name, (pos, k) in (("Chave", KEY), ("Preenchimento", FILL)):
+        sun = bpy.data.objects.new(name, bpy.data.lights.new(name, "SUN"))
+        sun.data.energy, sun.data.use_shadow = k * math.pi, False  # sol de forca pi = luz 1.0 no difuso branco
+        sun.rotation_euler = (-Vector(pos)).to_track_quat("-Z", "Y").to_euler()
+        sc.collection.objects.link(sun)
+    line = bpy.data.materials.new("Contorno")
+    line.use_backface_culling = True
+    emit(line, (*OUTLINE_RGB, 1.0))
+    for mat in {m for ob in meshes for m in ob.data.materials if m}:
+        toon(mat, arm is None)
+    for ob in meshes:
+        n = len(ob.data.materials)
+        ob.data.materials.append(line)
+        sol = ob.modifiers.new("Contorno", "SOLIDIFY")
+        # sem even offset (fazia espinhos nas malhas do Tripo) e sem clamp (afinava o contorno nas malhas densas)
+        k = sum(ob.matrix_world.to_scale()) / 3  # espessura e local: FBX do Mixamo vem com escala 0.01
+        sol.thickness, sol.offset, sol.use_flip_normals, sol.thickness_clamp = OUTLINE_M / k, 1.0, True, 0.0
+        sol.material_offset, sol.use_rim = n, False
+    # sombra de contato: elipse no chao do tamanho da base (vertices ate 12 cm do chao) no 1o quadro
+    set_action(arm, clips[0][1])
+    low = [ev.matrix_world @ v.co for ev in eval_meshes(meshes, clips[0][2][0]) for v in ev.data.vertices]
+    z0 = min(p.z for p in low)
+    low = [p for p in low if p.z < z0 + 0.12]
+    x0, x1, y0, y1 = min(p.x for p in low), max(p.x for p in low), min(p.y for p in low), max(p.y for p in low)
+    me = bpy.data.meshes.new("Sombra")
+    seg = 32
+    me.from_pydata([(0, 0, 0)] + [(math.cos(i * math.tau / seg), math.sin(i * math.tau / seg), 0) for i in range(seg)],
+                   [], [(0, i + 1, (i + 1) % seg + 1) for i in range(seg)])
+    blob = bpy.data.objects.new("Sombra", me)
+    blob.location = ((x0 + x1) / 2, (y0 + y1) / 2, 0.002)
+    blob.scale = ((x1 - x0) / 2 + SHADOW_PAD, (y1 - y0) / 2 + SHADOW_PAD, 1)
+    sm = bpy.data.materials.new("Sombra")
+    sm.surface_render_method = "BLENDED"
+    nt = sm.node_tree
+    g = node(nt, "ShaderNodeTexGradient", node(nt, "ShaderNodeTexCoord").outputs["Object"], gradient_type="SPHERICAL")
+    alpha = node(nt, "ShaderNodeMath", g.outputs["Fac"], SHADOW_A, operation="MULTIPLY")
+    mix = node(nt, "ShaderNodeMixShader", alpha.outputs[0], node(nt, "ShaderNodeBsdfTransparent").outputs[0],
+               node(nt, "ShaderNodeEmission", (0, 0, 0, 1)).outputs[0])
+    emit(sm, mix.outputs[0])
+    me.materials.append(sm)
+    sc.collection.objects.link(blob)
+    blob.hide_render = True
+    meshes.append(blob)  # place() copia a sombra junto com a malha, no mesmo giro e deslocamento
+
+
 def main():
     a = parse_args()
     out = os.path.abspath(a.out)
@@ -226,6 +339,8 @@ def main():
     if studio:
         sh.studio_light = studio
     sh.color_type, sh.show_object_outline, sh.show_cavity, sh.show_shadows = "TEXTURE", True, True, a.shadow
+    if a.light == "forja":
+        forja(sc, meshes, arm, clips)
     cam = bpy.data.objects.new("SpriteCam", bpy.data.cameras.new("SpriteCam"))
     cam.data.type, cam.data.sensor_fit, cam.data.clip_end = "ORTHO", "HORIZONTAL", 1000.0
     cam.location, cam.rotation_euler = -fwd * 50.0, (math.pi / 2 - e, 0.0, 0.0)
