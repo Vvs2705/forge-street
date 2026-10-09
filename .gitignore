@@ -4,6 +4,9 @@ arte/mixamo/
 # segredos / SO / IDE (o client/.gitignore cuida do Unity e dos builds)
 .env
 .env.*
+*.keystore
+*.jks
+*.p12
 .DS_Store
 Thumbs.db
 desktop.ini
