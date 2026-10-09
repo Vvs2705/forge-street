@@ -56,7 +56,7 @@ Smoke no jogo compilado: o bot joga 10 min sem render, loga `AUTOPLAY t=… gold
 Flags de dev do executável:
 - `-shot foto.png [-shotdelay 3] [-bot]`: tira uma foto e sai; com `-bot` o bot pilota o jogador enquanto espera.
 - `-speed N`: simulação N× mais rápida (até 50).
-- `-reset`: apaga o save (`PlayerPrefs["fs.save"]`).
+- `-reset`: apaga o save (`save.txt` e `save.txt.bak` em `persistentDataPath` e o espelho `PlayerPrefs["fs.save"]`; os `save.txt.corrupt-*` da quarentena ficam).
 - `-testsession`: estado novo em memória; não lê, apaga ou grava o save nem o diário normal. Use nas fotos de QA, sem `-reset`. O autoplay também isola automaticamente.
 - `-shotchest`: com `-shot`, espera um baú real ficar disponível (até 180 s), para fotografá-lo antes de o bot abrir.
 - `-menu`: abre a fileira de melhorias (fotos).

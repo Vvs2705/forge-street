@@ -12,7 +12,7 @@ using UnityEngine.UI;
 namespace FS
 {
     /// <summary>
-    /// Fluxo do jogo, o unico MonoBehaviour de fluxo: carrega/grava o Sim (PlayerPrefs), aplica o cofre offline, le o
+    /// Fluxo do jogo, o unico MonoBehaviour de fluxo: carrega/grava o Sim (save.txt pelo SaveStore + espelho no PlayerPrefs), aplica o cofre offline, le o
     /// joystick flutuante (e WASD no PC), avanca a simulacao em passos de ate 1/30 s, toca SFX pelos eventos, segue o
     /// jogador com a camera em retrato, monta a HUD por codigo e grava o diario de playtest
     /// (persistentDataPath/diario.csv). Nasce sozinho em qualquer cena.
@@ -58,7 +58,8 @@ namespace FS
         Camera _cam;
         float _speed = 1f, _saveT, _hintT, _minuteT, _adHold, _visW = VisibleWidth, _backT;
         bool _botDrive, _headless, _firstSaleLogged, _testSession, _started, _pausedByAd;
-        string _diary, _sid;
+        bool _noSave;   // A-PLAT-02: save de versao mais nova ou disco ilegivel = a sessao nao grava por cima
+        string _diary, _sid, _savePath;
         Vector2Int _screen;
         readonly System.Collections.Generic.List<(int u, float t)> _buyAt = new System.Collections.Generic.List<(int u, float t)>();   // -buyids id@t
 
@@ -101,10 +102,11 @@ namespace FS
             if (Arg("-record") != null) Time.captureFramerate = Mathf.Max(1, (int)ArgF("-recordfps", 30f));   // relogio do jogo = quadro do video
             _sid = Guid.NewGuid().ToString("N").Substring(0, 8);
             _diary = Path.Combine(Application.persistentDataPath, "diario.csv");
+            _savePath = Path.Combine(Application.persistentDataPath, "save.txt");
             Sfx.Init(gameObject);
             // ponytail: fotos e smoke usam estado novo sem ler ou gravar o save/diario normal.
-            if (!_testSession && Arg("-reset") != null) PlayerPrefs.DeleteKey(SaveKey);
-            _sim = _testSession ? new Sim() : Sim.Load(PlayerPrefs.GetString(SaveKey, ""));
+            if (!_testSession && Arg("-reset") != null) { PlayerPrefs.DeleteKey(SaveKey); File.Delete(_savePath); File.Delete(_savePath + ".bak"); }
+            if (_testSession) _sim = new Sim(); else LoadSave();
             DevArgs();
             // -cam W (P2-3 do BENCHMARK_VISUAL, experimento de playtest): largura visivel em m; abaixo de 11,4 a camera segue o jogador
             _visW = Mathf.Clamp(ArgF("-cam", VisibleWidth), 6f, VisibleWidth);
@@ -903,10 +905,41 @@ namespace FS
 
         static long Now() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
+        /// <summary>
+        /// A-PLAT-02: arquivo (principal, senao .bak; o que nao abre vai para a quarentena); sem arquivo bom, a chave antiga do PlayerPrefs
+        /// (save da 0.1-0.6 = migracao; da 0.7 = espelho). Nunca grava estado novo por cima de save que nao abriu: o ruim ja saiu do
+        /// caminho (espelho ruim fica em fs.save.corrupt), e versao mais nova ou disco ilegivel deixam a sessao sem gravar.
+        /// </summary>
+        void LoadSave()
+        {
+            SaveEnvelope.Result r = default; int corrupt = 0; string err = null;
+            try { r = SaveStore.Read(_savePath, out corrupt); }
+            catch (Exception e) { err = e.GetType().Name; _noSave = true; }
+            bool prefs = r.Status == SaveEnvelope.Status.Missing || r.Status == SaveEnvelope.Status.Corrupt;
+            if (prefs)
+            {
+                string raw = PlayerPrefs.GetString(SaveKey, "");
+                SaveEnvelope.Result p = SaveEnvelope.Unwrap(raw);
+                if (p.Status == SaveEnvelope.Status.Corrupt) { PlayerPrefs.SetString(SaveKey + ".corrupt", raw); corrupt++; }   // ponytail: 1 vaga de quarentena
+                else if (p.Status != SaveEnvelope.Status.Missing) r = p;
+            }
+            bool ok = r.Status == SaveEnvelope.Status.Ok || r.Status == SaveEnvelope.Status.Legacy;
+            _noSave |= r.Status == SaveEnvelope.Status.NewerSchema;
+            _sim = Sim.Load(ok ? r.Payload : null);
+            if (err != null) Log("save_error", err);
+            if (corrupt > 0) Log("save_corrupt", corrupt.ToString(), r.Status.ToString());   // Ok/Legacy = recuperado; outro = estado novo
+            if (r.Status == SaveEnvelope.Status.NewerSchema) Log("save_newer", r.Schema.ToString(), r.Content);
+            else if (prefs && ok) Log("save_prefs", r.Status.ToString());   // Legacy = migrou o save da 0.6
+        }
+
         void Save()
         {
-            if (_sim == null || _headless || _testSession) return;
-            PlayerPrefs.SetString(SaveKey, _sim.Save(Now()));
+            if (_sim == null || _headless || _testSession || _noSave) return;
+            long now = Now();
+            string text = SaveEnvelope.Wrap(_sim.Save(now), Application.version, now);
+            try { SaveStore.Write(_savePath, text); }
+            catch (Exception e) { Log("save_error", e.GetType().Name); }   // disco cheio nao derruba o jogo; o espelho segura o progresso
+            PlayerPrefs.SetString(SaveKey, text);   // espelho na chave antiga: um downgrade para a 0.6 le o mesmo texto
             PlayerPrefs.Save();
         }
 
