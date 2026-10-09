@@ -263,7 +263,7 @@ def relatorio(linhas, ruins=0):
     # min/encomenda = t_jogo acumulado / entregues, a conta do bot no BALANCE sec.20 (60 min / 16)
     por = {arq: T["fim"] / 60 / T["enc"]["order_done"] for arq, T in tst.items() if T["enc"]["order_done"]}
     me = mediana(list(por.values()))
-    s += ["", "ENCOMENDAS (v0.6c; bot humano 60 min: 16 entregues, 1 a cada 3,7 min - BALANCE sec.20)",
+    s += ["", "ENCOMENDAS (v0.6c; bot humano 60 min: 21 entregues, 1 a cada 2,8 min - BALANCE sec.20)",
           f"  receberam {sum(1 for T in tst.values() if T['enc']['order_new'])}/{n} | entregaram {len(por)}/{n}"
           f" | mediana {'-' if me is None else f'{me:.1f}'} min de jogo por encomenda (entre quem entregou)"]
     for arq, T in sorted(tst.items()):

@@ -226,4 +226,10 @@ Refeito depois de olhar: a seta a 1,25 m tocava o nome da placa (subiu para 1,5 
 - O VIP servido ainda mostra o "+N" somado das unidades e o "+N" grande do `VipServed`. O número aparece 2 vezes, mas em 1 só lugar cada, e antes eram N flutuantes.
 - Não há foto de uma moeda cruzando a dica. A ordem vem da árvore: `Topo/Moedas` fica antes de `PilulaDica`.
 - Com o balão preso 24 px abaixo da HUD, a coroa do VIP (desenhada por cima do balão desde a v0.5c) entra mais no balão. Ela continua lendo.
-- O rótulo "Joalheria — fechada" ainda pode sair pela direita com a câmera seguindo o jogador (fora da lista; só a "Rua lateral" foi pedida).
+- O rótulo "Joalheria — fechada" ainda pode sair pela direita com a câmera seguindo o jogador (fora da lista; só a "Rua lateral" foi pedida).
+
+## Sessão longa no Android (emulador, 2026-10-09 10:09–10:19)
+APK x86_64 da 0.6.0 (`ForgeStreet-emu-0.6.0.apk`, com juice, configurações, Encomendas e a revisão de UX), bot a 4× por 10 min reais, gravando diário:
+- **Memória:** PSS 319 → 336 → 341 → 340 → 342 → 344 MB a cada 2 min: sobe ~10 MB acima da 0.5.1 (322–333 MB; sprites do juice e o pool de efeitos) e estabiliza a partir do 4º minuto, sem vazamento.
+- **Erros:** 0 exceção da Unity; nenhum FATAL/ANR do jogo.
+- **Diário → `diario_report.py`:** Encomendas 14 recebidas / 13 entregues (1 a cada 3,2 min de jogo), 8 VIPs (8 atendidos), andar sem decisão 13%, portões do GDD ok exceto os 2 que só pessoa mede. A referência do relatório para as Encomendas foi atualizada para o vigente (21 entregues, 1 a cada 2,8 min).
