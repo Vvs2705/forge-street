@@ -57,7 +57,9 @@ run_unity() {
 
 # o Setup.Apply regrava settings; mostra o que mudou em arquivo versionado (git checkout -- se o gerador não mudou)
 dirty() {
-  local s; s=$(git -C "$ROOT" status --short -- client/ProjectSettings client/Assets client/Packages)
+  # diff de conteúdo (o Unity regrava CRLF/LF sem mudar nada e o status acusaria) + arquivos novos
+  local p=(client/ProjectSettings client/Assets client/Packages) s
+  s=$(git -C "$ROOT" diff --name-only -- "${p[@]}"; git -C "$ROOT" ls-files --others --exclude-standard -- "${p[@]}")
   [ -z "$s" ] || printf 'AVISO: o Unity mexeu em arquivos versionados:\n%s\n' "$s"
 }
 
