@@ -1,4 +1,4 @@
-# Forge Street — protótipo v0.5 (carga sem bloqueio, balcão 4→8, arte nova, VIP e velocidade)
+# Forge Street — protótipo v0.5.1 (testado no POCO F4; carga sem bloqueio, balcão 4→8, arte nova, VIP e velocidade)
 
 Idle/tycoon arcade em retrato. Você é o ferreiro: pega **minério** no depósito, derrete na **fornalha**, martela na **bigorna**, leva ao **balcão** onde os clientes pagam, **pisa em pads** para construir (2ª bigorna, escudos, ajudantes, esteira, 2ª fornalha, corredor, joalheria…) e compra no **menu da barra de baixo**, por toque, as melhorias do ferreiro e das estações (fole, mochila, botas, martelo veloz, vitrine…). A produção é física e legível: cada pilha de entrada/saída aparece no chão, a fornalha com saída cheia pisca vermelho ("travada"), a bigorna sem lingote fica apagada ("fome"). A decisão é ler qual estágio é o gargalo agora e investir ali.
 
@@ -6,15 +6,17 @@ Idle/tycoon arcade em retrato. Você é o ferreiro: pega **minério** no depósi
 - **Balance medido pelo bot:** `docs/BALANCE.md`.
 - **Por que este jogo:** `../00_PESQUISA/VEREDITO_VALIDACAO.md` (slot idle disputado com o Underground Inc.; este greybox existe para o teste de criativos e o playtest Camada 0).
 
-## Estado (2026-10-07, v0.4.0 — física, bocas, menu de melhorias)
+## Estado (2026-10-09, v0.5.1 testada no POCO F4)
 
 | Item | Estado |
 |---|---|
-| Núcleo C# puro (`FS.Core`: simulação por tick, oficina + joalheria, física de caixas e círculos, 2 bocas por estação, paciência por item, 5 papéis de ajudante, 22 upgrades produtivos + 3 de luxo, menu de melhorias, esteira, offline, save, marcos, dicas, métricas, bot) | **66/66 dotnet** (v0.4.0); testes novos provados vermelhos em cópia isolada |
-| Balance da §3 (1ª venda, fole, 2ª bigorna, ajudante, escudos, esteira) | bate com o bot "humano"; produção completa 43:37; números em `docs/BALANCE.md` §13–§15 |
-| View (`FS`: sprites pré-renderizados do Tripo/Mixamo/Blender, chão/paredes texturizados, porta lateral, bocas no chão, pads de construção, barra inferior de melhorias, joystick flutuante, câmera em retrato, HUD com dica, painel offline, SFX, diário CSV) | compilada e fotografada no Unity (`client/Builds/validation_*/shots/`) |
-| Build Windows / APK Android | `client/Builds/win/ForgeStreet.exe` e `client/Builds/android/ForgeStreet-dev.apk` (dev, IL2CPP ARM64); v0.3.0 validada num POCO F4 a 60 fps |
-| Rewarded, IAP, interstitial, pedidos, remote config, gems | **não implementados**; pagamentos e publicação dependem de autorização específica |
+| Versão no aparelho | **0.5.1** (este branch / PR #4): testada pelo Vinicius no POCO F4 em 2026-10-09 — **60 fps** (p95 16,6 ms, 0 travada), PSS 325–345 MB, 0 crash, bateria ≤ 41 °C. Parecer: "promissor" (`docs/VALIDACAO_V05.md`, seção "Teste no POCO F4") |
+| Próxima versão | **0.6.0** no PR #5 (`feat/v0.6-juice`): juice, configurações som/vibração, Encomendas (missões curtas), revisão de UX, voltar do Android |
+| Núcleo C# puro (`FS.Core`) | simulação por tick, física, 6 papéis de ajudante, balcão 4→8, VIP, velocidade por anúncio, cofre offline, save; **81 testes** (87 na v0.6) |
+| Balance (bot) | produção completa 46:12 (41:31 na v0.6); pessoa real foi 1,7–3,7× mais lenta que o bot no 1º teste (`docs/BALANCE.md`) |
+| Anúncios | Unity LevelPlay 9.5.1 integrado (rewarded "Chamar VIP" e "Velocidade"); conta aguardando aprovação, build de teste usa anúncio simulado |
+| Próximas decisões | `docs/BACKLOG_V07.md` no PR #5 (9 decisões D1–D9) |
+| Portfólio (os 9 jogos) | `docs/PORTFOLIO.md` |
 
 ## Como rodar
 
