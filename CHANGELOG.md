@@ -10,6 +10,10 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 - **Leitura de venda:** balão grande só no 1º da fila com anel de paciência; mini-ícones nos demais; moedas voando até o contador; quem chega com a fila cheia aparece indo embora.
 - **16 clientes:** 10 novos do Lote 4 (Tripo, 650 créditos) e sorteio embaralhado sem repetir em seguida.
 - O save guarda a carga da mão do ferreiro e dos ajudantes.
+- **Cliente VIP:** ~4–6 min depois da 1ª venda chega um cliente com coroa que paga 3× por unidade (paciência 90 s + 6 s/unidade); aviso, "×3" e pacote "×N" no balão (`docs/FASE8_VIP_VELOCIDADE.md`).
+- **Anúncios recompensados (Unity LevelPlay 9.5.1):** "Chamar VIP" (VIP extra com pacote 2×, até 20) e "Velocidade" (2× por 60 s; o 2º anúncio sobe para 3×; recarga de 5 min). Sem fill, o build de teste mostra um anúncio simulado de 5 s (`-fakeads`); diário registra `ad_*`, `vip_*` e `boost_start` (`docs/LEVELPLAY.md`).
+- `Setup.BuildAndroidEmu`: APK x86_64 para o emulador do PC (o ARM64 cai na tradução do Android 15); validação em `docs/VALIDACAO_V05.md`.
+- `docs/ROTEIRO_TESTE_POCO.md` (teste da v0.5 no aparelho) e `docs/TESTE_COMPARATIVO.md` (protocolo do teste com 4 jogos no emulador).
 - `docs/BENCHMARK_MERCADO.md` e `docs/BENCHMARK_VISUAL.md`: análise de 10 jogos similares.
 ### Corrigido
 - **Vendas fantasma:** a "compra direta" com fila cheia vendia sem cliente visível (18,7% das vendas aos 10 min, 28,5% aos 45); saiu. Toda venda tem cliente na vaga.
@@ -19,7 +23,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 - Vitrine: só estoque 5 → 10 e clientes ×0,7 (as vagas passaram para as evoluções do balcão). Produção completa do bot 43:37 → 48:24 (sem a receita invisível).
 - Criativos de UA 9:16 #1, #2 e #8 (GDD §17) gravados do build real, em `client/Builds/creatives/`, com os comandos em `docs/CRIATIVOS.md`.
 - Flags de dev `-record` (quadros 1080×1920 com relógio travado), `-buyids` e `-warmup`.
-- `client/tools/diario_report.py`: relatório do playtest Camada 0 (1ª venda, upgrades humano × bot, clientes perdidos, andar sem decisão, travada/fome por minuto, portões do GDD) com `--autoteste`.
+- `client/tools/diario_report.py`: relatório do playtest Camada 0 (1ª venda, upgrades humano × bot, clientes perdidos, andar sem decisão, travada/fome por minuto, anúncios/VIP/velocidade, portões do GDD com o opt-in de rewarded ≥ 45%) com `--autoteste`.
 ### Corrigido
 - "Fome" visível: estação parada escurece para cinza frio 0,55 (antes 0,78, quase igual à ativa), como pede a ART_BIBLE §6.
 
