@@ -1349,30 +1349,20 @@ namespace FS.Tests
                 Assert.AreEqual((Math.Sign(side[st].X), Math.Sign(side[st].Y)), (Math.Sign(Math.Round(d.X, 3)), Math.Sign(Math.Round(d.Y, 3))), st.Name + ": lado da entrada");
                 if (st.Produces) Assert.IsTrue(At(st.OutAt - st.Pos, d * -1f), st.Name + ": saida no lado oposto");
                 else Assert.IsTrue(At(st.OutAt, st.InAt), st.Name + ": zona unica");
-                foreach (V2 m in new[] { st.InAt, st.OutAt })
-                {
-                    Assert.AreEqual(Balance.CharRadius, st.Body.Dist(m), 1e-4f, st.Name + ": boca = encostado na face");
-                    Assert.GreaterOrEqual(Inside(s, m), Balance.CharRadius - 1e-4f, st.Name + ": boca fora de outro corpo");
-                    foreach (Pad p in PadsInWorld(s))
-                        if (!At(p.Pos, st.Pos)) Assert.GreaterOrEqual(V2.Dist(m, p.Pos), Balance.MouthRadius + Balance.PadRadius, $"{st.Name}: zona da boca encosta no pad {p.Chain[0]}");
-                    foreach (Station o in s.Stations)
-                        if (o != st) Assert.Greater(Math.Min(V2.Dist(m, o.InAt), V2.Dist(m, o.OutAt)), 2f * Balance.MouthRadius, $"{st.Name}: zona sobreposta a de {o.Name}");
-                }
+                foreach (V2 m in new[] { st.InAt, st.OutAt }) Assert.AreEqual(Balance.CharRadius, st.Body.Dist(m), 1e-4f, st.Name + ": boca = encostado na face");
             }
+            // fora de outro corpo, dentro das paredes, longe dos pads e baus, sem zona sobreposta: regra do ContentValidator (A-CORE-05)
+            var v = new List<string>(ContentValidator.Bocas(s));
+            Assert.IsEmpty(v, string.Join("\n", v));
         }
 
         [Test]
         public void Fila_VagasEPadsEBaus_ForaDosCorpos()
         {
-            var s = AllBodies();
-            // vaga = onde o cliente pisa: nao pode cair DENTRO de um corpo (a da compra direta do balcao, x 9,6, fica na quina da parede)
-            bool Within(V2 p) => s.Solids.Exists(b => Math.Abs(p.X - b.Pos.X) < b.Half.X && Math.Abs(p.Y - b.Pos.Y) < b.Half.Y);
-            for (int i = 0; i <= Balance.QueueCapMax; i++) Assert.IsFalse(Within(s.ClientSlot(i)), $"vaga {i} do balcao");
-            for (int i = 0; i <= Balance.JewelQueueCapUp; i++) Assert.IsFalse(Within(s.JewelSlot(i)), $"vaga {i} da loja de joias");
-            foreach (Pad p in PadsInWorld(s))   // pad no lugar de estacao some quando ela abre; pad so de menu nunca aparece (o da Vitrine fica embaixo do balcao de 8 vagas)
-                if (s.Stations.TrueForAll(st => !At(st.Pos, p.Pos))) Assert.GreaterOrEqual(Inside(s, p.Pos), Balance.CharRadius, $"pad {p.Chain[0]} pisavel");
-            foreach (Chest c in s.Chests) Assert.GreaterOrEqual(Inside(s, c.Pos), Balance.CharRadius, "bau pisavel");
-            Assert.GreaterOrEqual(Inside(s, Sim.HireSpot), Balance.CharRadius, "ajudante nasce fora dos corpos");
+            // vagas, pads que aparecem no mundo, baus e o ponto de contratacao: regra do ContentValidator (A-CORE-05). Pad no lugar de
+            // estacao some quando ela abre; pad so de menu nunca aparece (o da Vitrine fica embaixo do balcao de 8 vagas)
+            var v = new List<string>(ContentValidator.Pisaveis(AllBodies()));
+            Assert.IsEmpty(v, string.Join("\n", v));
         }
 
         [Test]
