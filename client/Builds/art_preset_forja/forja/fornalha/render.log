@@ -1,0 +1,4 @@
+﻿AVISO recorte: personagem ocupa 1.33 m e a celula so 1.33 m (--scale menor ou --size maior)
+CLIP Static               frames= 1 dirs=1 folha=256x256 px loop=False t=1.6s
+SPRITES_OK C:\Users\VINICIUS\Videos\MEUS PROJETOS\JOGOS NOVOS\03_FORGE_STREET\.claude\worktrees\agent-af6b784b78d696f46\client\Builds\art_preset_forja\forja\fornalha clipes=1 ppu=192.7 pivo=(128,99)px
+JOB forja/fornalha exit 0 total 4 s (espera 18 x 30 s)
