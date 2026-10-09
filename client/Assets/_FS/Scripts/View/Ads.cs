@@ -50,6 +50,9 @@ namespace FS
             else Emit("ad_init", "simulado", _forceFake ? "fakeads" : Application.platform.ToString());
         }
 
+        /// <summary>Anuncio na tela (do Show ate a recompensa/falha): o Game congela a simulacao e nao paga cofre na volta.</summary>
+        public static bool Busy => _busy;
+
         /// <summary>True = SDK real ativo (aparelho Android/iOS, sem -fakeads).</summary>
         public static bool Live => !Application.isEditor && !_forceFake && Platform;
 

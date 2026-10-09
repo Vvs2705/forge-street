@@ -95,6 +95,40 @@ namespace FS.Tests
         }
 
         /// <summary>
+        /// Revisao v0.5 #1: sem a compra direta o estoque so desce com cliente na vaga. O Ajudante 3 pegava espada com a prateleira de
+        /// espada cheia e parava no balcao (68% do tempo no bot de 45 min) enquanto escudo e ferramenta encalhavam. So busca o que cabe.
+        /// </summary>
+        [Test]
+        public void Ajudante3_NaoBuscaProdutoComPrateleiraCheia()
+        {
+            var s = Rich();
+            Assert.IsTrue(s.Buy(Upgrade.Helper1) && s.Buy(Upgrade.Helper2) && s.Buy(Upgrade.Helper3) && s.Buy(Upgrade.Shields));
+            Carrier w = s.Workers.Find(c => c.Role == 2);
+            s.AnvilA.Out = 3; s.ShieldBench.Out = 2;
+            s.Player.Pos = new V2(1f, 1f);
+            for (int i = 0; i < 40; i++) { s.Stock[(int)Item.Sword] = s.CounterCap; Run(s, 0.1f); }   // prateleira de espada sempre cheia
+            Assert.AreEqual(0, w.Held[(int)Item.Sword], "espada com a prateleira cheia fica na bigorna");
+            Assert.IsTrue(w.Held[(int)Item.Shield] > 0 || w.Target == s.ShieldBench.Index, "vai buscar o escudo, que cabe");
+        }
+
+        /// <summary>
+        /// Revisao v0.5 #2: o save grava os ajudantes na ordem da compra e o Recompute recria na ordem do HireBy. Joalheiro antes do
+        /// Ajudante 3 desalinhava as listas e a carga sumia ao reabrir. Agora cada entrada leva o papel.
+        /// </summary>
+        [Test]
+        public void Save_CargaDosAjudantes_ContratadosForaDeOrdem()
+        {
+            var s = Rich();
+            foreach (Upgrade u in new[] { Upgrade.Helper1, Upgrade.Helper2, Upgrade.SideCorridor, Upgrade.Jewelry, Upgrade.Jeweler, Upgrade.Helper3 })
+                Assert.IsTrue(s.Buy(u), u.ToString());
+            s.Workers.Find(c => c.Role == 2).Held[(int)Item.Sword] = 2;
+            s.Workers.Find(c => c.Role == 3).Held[(int)Item.Ingot] = 1;
+            Sim b = Sim.Load(s.Save(1000));
+            Assert.AreEqual(2, b.Workers.Find(c => c.Role == 2).Held[(int)Item.Sword], "Ajudante 3 volta com as espadas");
+            Assert.AreEqual(1, b.Workers.Find(c => c.Role == 3).Held[(int)Item.Ingot], "Joalheiro volta com o lingote");
+        }
+
+        /// <summary>
         /// FASE7 §1, a trava do Vinicius (POCO F4, v0.4.1): lingotes no teto, entrada da bigorna cheia e saida com espadas. Com a pilha
         /// homogenea ele nao pegava as espadas, a bigorna nao produzia e nada destravava. Agora recolhe as espadas por cima dos lingotes
         /// e vende no balcao. So usa API que ja existia (bocas, Tick, Has, Count): prova vermelha no core antigo, sem adaptar.
@@ -1791,16 +1825,18 @@ namespace FS.Tests
             s.Workers[0].Held[(int)Item.Ore] = 2; s.Workers[2].Held[(int)Item.Shield] = 1;
             string text = s.Save(10);
             StringAssert.Contains("hold=2,6,1,0,0,0\n", text);
-            StringAssert.Contains("wk=2,0,0,0,0,0;0,0,0,0,0,0;0,0,0,1,0,0\n", text);
+            StringAssert.Contains("wk=0:2,0,0,0,0,0;1:0,0,0,0,0,0;2:0,0,0,1,0,0\n", text);
             Sim b = Sim.Load(text);
             CollectionAssert.AreEqual(s.Player.Held, b.Player.Held, "pilha mista do ferreiro volta");
             for (int k = 0; k < 3; k++) CollectionAssert.AreEqual(s.Workers[k].Held, b.Workers[k].Held, $"ajudante {k}");
             Assert.AreEqual(text, b.Save(10), "save estavel");
             // lixo: acima do teto corta no teto; ajudante so com o 1o tipo valido para o papel
-            Sim g = Sim.Load(text.Replace("hold=2,6,1,0,0,0", "hold=99,-3,x,1").Replace("wk=2,0,0,0,0,0;0,0,0,0,0,0;", "wk=9,9,0,0,0,0;0,0,1,0,0,0;"));
+            Sim g = Sim.Load(text.Replace("hold=2,6,1,0,0,0", "hold=99,-3,x,1").Replace("wk=0:2,0,0,0,0,0;1:0,0,0,0,0,0;", "wk=0:9,9,0,0,0,0;1:0,0,1,0,0,0;"));
             CollectionAssert.AreEqual(new[] { Balance.PlayerCapUp, 0, 0, 1, 0, 0 }, g.Player.Held, "teto por tipo; negativo e texto viram 0");
             CollectionAssert.AreEqual(new[] { Balance.WorkerCap, 0, 0, 0, 0, 0 }, g.Workers[0].Held, "ajudante de minerio: um tipo, ate o teto");
             Assert.AreEqual(0, g.Workers[1].Count, "ajudante de lingote nao volta com espada");
+            Sim v050 = Sim.Load(text.Replace("wk=0:2,0,0,0,0,0;1:0,0,0,0,0,0;2:", "wk=2,0,0,0,0,0;0,0,0,0,0,0;"));
+            for (int k = 0; k < 3; k++) CollectionAssert.AreEqual(s.Workers[k].Held, v050.Workers[k].Held, $"save da 0.5.0 (sem papel): ajudante {k} pela posicao");
             Sim old = Sim.Load("v=1\nt=600\ngold=190\nup=1111111100000000000000000\npx=4.5,3.5\n");
             Assert.IsTrue(old.Player.Count == 0 && old.Workers.TrueForAll(w => w.Count == 0), "save antigo sem hold=/wk=: maos vazias, como antes");
         }
@@ -2030,7 +2066,7 @@ namespace FS.Tests
             Assert.IsTrue(s.SummonVip());   // sorteado, ainda sem vaga (sem Tick)
             s.StartBoost(); s.StartBoost();
             string text = s.Save(10);
-            StringAssert.Contains("vip=" + s.VipIn.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + ",1,2,6\n", text);   // chamado: 2x3, passa da prateleira de 5
+            StringAssert.Contains("vip=" + s.VipIn.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + ",1,2,6,0,0\n", text);   // chamado: 2x3, passa da prateleira de 5; ainda fora da vaga, nada pago
             StringAssert.DoesNotContain("boost", text);
             Sim b = Sim.Load(text);
             Assert.AreEqual(s.VipIn, b.VipIn, 1e-3f);
@@ -2039,6 +2075,7 @@ namespace FS.Tests
             Assert.AreEqual(text, b.Save(10), "save estavel");
             b.Tick(Dt, 0f, 0f);
             Assert.AreEqual((Item.Sword, 6), (Vip(b).Want, Vip(b).Pack), "o pendente pega a 1a vaga ao reabrir, com o pacote do chamado");
+            Assert.AreEqual(1, Count(b, Ev.VipArrived), "nunca tinha entrado: chega agora, com aviso");
             b.Stock[(int)Item.Sword] = 1;
             Run(b, 1f);
             Assert.AreEqual(5, Vip(b).Pack);
@@ -2046,6 +2083,8 @@ namespace FS.Tests
             Assert.IsTrue(c.VipActive && Vip(c) == null, "a fila nao vai no save: o VIP da vaga volta pendente");
             c.Tick(Dt, 0f, 0f);
             Assert.AreEqual(5, Vip(c).Pack, "com o que falta do pacote");
+            Assert.AreEqual((0, Vip(b).Paid), (Count(c, Ev.VipArrived), Vip(c).Paid), "revisao v0.5 #5: ja estava na vaga, sem novo aviso/vip_arrived e com o que ja pagou");
+            Assert.Greater(Vip(c).Paid, 0);
             Assert.AreEqual(Balance.VipPatienceFor(5) - Dt, Vip(c).Patience, 1e-3f, "paciencia cheia, pelo que falta");
             var k = new Sim();
             k.StartBoost(); Run(k, Balance.BoostSeconds + 1f);

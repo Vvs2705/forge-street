@@ -149,3 +149,29 @@ Refeito depois de olhar: moldura de ouro própria (o trilho dourado sumia sob o 
 - Diário no Android lido pelo `diario_report.py` (seção de anúncios conta pedidos/mostrados/recompensas/falhas). No Git Bash, `adb pull /sdcard/...` precisa de `MSYS_NO_PATHCONV=1` (senão o caminho vira `C:/Program Files/Git/sdcard/...`).
 - Desempenho do emulador NÃO vale para o POCO (CPU do PC); FPS e memória só no aparelho.
 
+
+---
+
+# v0.5.1: correções da revisão de código (2026-10-09, coordenador)
+
+Um revisor leu o diff `main...feat/v0.5` (Core + View + `diario_report.py`) procurando bugs que o jogador veria no POCO. Sem crash, save corrompido ou pagamento em dobro. Seis achados, todos corrigidos:
+
+| # | Achado | Correção | Prova |
+|---|---|---|---|
+| 1 | **Ajudante 3 parado no balcão** com espada e a prateleira de espada cheia; escudo e ferramenta encalhavam (sem a compra direta, o estoque só desce com cliente) | `Sim.Fits` no `IsSourceFor`/`PickSource`: só busca o que cabe (regra do `JewelerSource`) | `Ajudante3_NaoBuscaProdutoComPrateleiraCheia` e `Ocioso_15Min_AjudantesVendemSozinhos` (parado 15 min: 80 → 209 vendas), vermelhos na 0.5.0; `BALANCE.md` §19 |
+| 2 | Carga dos ajudantes sumia ao reabrir se o Joalheiro/Mineiro/Joalheiro 2 veio antes do Ajudante 3 (save na ordem da compra, load na do `HireBy`) | `wk=papel:contagens`; load vai para o próximo ajudante vazio do papel; save da 0.5.0 segue pela posição | `Save_CargaDosAjudantes_ContratadosForaDeOrdem` (vermelho na 0.5.0) + caso "save da 0.5.0" no teste de save |
+| 3 | VIP que esperava ao lado da fila cheia sumia e outro boneco caía do alto ao abrir a vaga | `RefreshVipWaiting` depois do `RefreshQueue` (o `BindClient` acha o `_vipWait`) | viewcheck; leitura do fluxo |
+| 4 | Voltar de anúncio real de 60 s+ abria "Seu cofre rendeu" | `OnApplicationPause(true)` guarda `Ads.Busy`; a volta de anúncio não paga cofre | viewcheck; conferir no POCO com anúncio real |
+| 5 | VIP restaurado do save repetia aviso, som e `vip_arrived` a cada abertura e perdia o ouro já pago | `vip=` ganha 2 campos (estava na vaga, já pagou); save de 4 campos ainda abre | `Save_RelogioEVipPendente_…` estendido |
+| 6 | Recompensa de velocidade podia sumir se o boost acabasse no segundo antes de o anúncio real cobrir a tela | Jogo parado enquanto `Ads.Busy` (o simulado já parava pelo `timeScale`), teto de 15 s para SDK que não responde | viewcheck |
+
+## Verificação
+| Portão | Resultado |
+|---|---|
+| `dotnet test client/tools/coretests` | **81/81** (3 testes novos, 2 estendidos) |
+| viewcheck | 0 erros, 0 avisos |
+| Build Windows + `-autoplay 10` | Success; `AUTOPLAY OK venda1=23s upgrades=8 ouro=1310` |
+| Bot no build a 20× por 20 min (`-bot -speed 20 -vipnow`) | 19 upgrades, 0 exceções (`validation_v051/bot20.log`, foto `validation_v051/shots/01_bot_20min.png`) |
+| Build Android ARM64 | Success; `ForgeStreet-dev.apk` **0.5.1**, 72 504 619 B, SHA-256 `77fc3110…4147` |
+
+Fica para o aparelho: #4 e #6 só aparecem com anúncio real (conta LevelPlay aprovada). A paciência do VIP restaurado continua cheia ao reabrir (decisão da FASE8 §4).

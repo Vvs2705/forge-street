@@ -50,8 +50,8 @@ namespace FS
         Joystick _joy;
         MenuBar _menu;
         Camera _cam;
-        float _speed = 1f, _saveT, _hintT, _minuteT;
-        bool _botDrive, _headless, _firstSaleLogged, _testSession, _started;
+        float _speed = 1f, _saveT, _hintT, _minuteT, _adHold;
+        bool _botDrive, _headless, _firstSaleLogged, _testSession, _started, _pausedByAd;
         string _diary, _sid;
         Vector2Int _screen;
         readonly System.Collections.Generic.List<(int u, float t)> _buyAt = new System.Collections.Generic.List<(int u, float t)>();   // -buyids id@t
@@ -170,7 +170,10 @@ namespace FS
                 if (x != 0f || y != 0f) input = new Vector2(x, y);
             }
 
-            float dt = Mathf.Min(Time.deltaTime, 0.1f) * _speed;
+            // anuncio pedido = jogo parado (paciencia, boost e relogio do VIP): o boost nao acaba no segundo antes de o anuncio real
+            // cobrir a tela. ponytail: teto de 15 s de quadros parados por anuncio, para um SDK que nunca responde nao travar o jogo
+            _adHold = Ads.Busy ? _adHold + Mathf.Min(Time.unscaledDeltaTime, 0.1f) : 0f;
+            float dt = Ads.Busy && _adHold < 15f ? 0f : Mathf.Min(Time.deltaTime, 0.1f) * _speed;
             while (dt > 0f)
             {
                 float step = Mathf.Min(dt, MaxStep);
@@ -644,10 +647,11 @@ namespace FS
         // Voltar de outro app tambem paga o cofre (antes so a abertura pagava: quem trocava de app perdia o tempo fora).
         // _started: a Unity chama OnApplicationPause(false) logo apos o Awake, e na abertura quem paga e' o Start.
         // ponytail: < 60 s fora nao paga nem mostra painel (perde no maximo 15 s de producao); vira Balance se o playtest pedir.
+        // _pausedByAd: o anuncio real tira o app da frente; a volta dele nao e' "tempo fora" (nao mostra "Seu cofre rendeu")
         void OnApplicationPause(bool paused)
         {
-            if (paused) Save();
-            else if (_started && _sim != null && _sim.SavedAt > 0 && Now() - _sim.SavedAt >= 60) Offline();
+            if (paused) { _pausedByAd = Ads.Busy; Save(); }
+            else if (_started && !_pausedByAd && _sim != null && _sim.SavedAt > 0 && Now() - _sim.SavedAt >= 60) Offline();
         }
         void OnApplicationFocus(bool focus) { if (!focus) Save(); }
         void OnApplicationQuit() { Save(); }

@@ -1014,9 +1014,9 @@ namespace FS
                 v.Phase = 0;
                 v.LeaveT = 0f;
             }
-            RefreshVipWaiting(dt);
-            RefreshQueue(false, dt);
+            RefreshQueue(false, dt);   // antes do RefreshVipWaiting: o BindClient tem de achar o _vipWait para o VIP entrar andando de onde esperava
             RefreshQueue(true, dt);
+            RefreshVipWaiting(dt);
             foreach (ClientV v in _clients) if (v.C == null && !v.Waiting && v.Body != null && v.Root.gameObject.activeSelf) RefreshLeaving(v, dt);
         }
 

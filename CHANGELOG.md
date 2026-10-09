@@ -16,6 +16,11 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 - `docs/ROTEIRO_TESTE_POCO.md` (teste da v0.5 no aparelho) e `docs/TESTE_COMPARATIVO.md` (protocolo do teste com 4 jogos no emulador).
 - `docs/BENCHMARK_MERCADO.md` e `docs/BENCHMARK_VISUAL.md`: análise de 10 jogos similares.
 ### Corrigido
+- **Ajudante 3 parado no balcão (0.5.1, revisão de código):** pegava espada com a prateleira de espada cheia e esperava no balcão enquanto escudo e ferramenta encalhavam. Agora só busca o que cabe. Jogador parado 15 min: 80 → 209 vendas; produção completa do bot 47:03 → 46:12 (`docs/BALANCE.md` §19).
+- Save: a carga dos ajudantes contratados fora da ordem (Joalheiro antes do Ajudante 3) sumia ao reabrir; cada entrada leva o papel (`wk=papel:contagens`, o save da 0.5.0 ainda abre).
+- VIP que estava na vaga ao fechar: reabrir não repete o aviso "Cliente VIP!" nem o `vip_arrived` no diário, e guarda o ouro que ele já pagou.
+- VIP que esperava ao lado da fila cheia sumia e outro boneco caía do alto ao abrir a vaga; agora ele entra andando de onde estava.
+- Voltar de um anúncio real não abre mais o "Seu cofre rendeu"; o jogo para enquanto o anúncio é pedido (o boost não acaba no segundo antes de o anúncio cobrir a tela), com teto de 15 s para um SDK que não responde.
 - **Vendas fantasma:** a "compra direta" com fila cheia vendia sem cliente visível (18,7% das vendas aos 10 min, 28,5% aos 45); saiu. Toda venda tem cliente na vaga.
 - **Cofre ao voltar de outro app:** antes só a abertura pagava; agora a volta de pausa ≥ 60 s também paga.
 - `Steer` preso entre a Loja de joias e um pedestal; teto do cofre derrubado por upgrade ainda não à venda.

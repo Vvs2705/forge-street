@@ -299,5 +299,22 @@ namespace FS.Tests
             Assert.LessOrEqual(gold, 2 * s.CheapestLockedCost(), "o cofre nunca compra o resto do jogo sozinho");
             TestContext.WriteLine($"offline 8 h depois de 10 min de jogo: {gold} ouro (taxa {s.RateEma:0.00}/s; pela taxa seriam {raw}; proximo upgrade travado custa {s.CheapestLockedCost()})");
         }
+
+        /// <summary>
+        /// Revisao v0.5 #1: a promessa idle e' a oficina vender sozinha. Bot joga 25 min e larga: o Ajudante 3 parava no balcao com espada
+        /// e a prateleira de espada cheia, e escudo/ferramenta encalhavam (medido: 80 vendas e 107 perdidos em 15 min; corrigido: 209 e 59).
+        /// Portao: os ajudantes sozinhos fazem pelo menos 150 vendas.
+        /// </summary>
+        [Test]
+        public void Ocioso_15Min_AjudantesVendemSozinhos()
+        {
+            var s = new Sim();
+            Play(s, 1500f);   // bot monta a oficina (Ajudante 3 sai aos ~19 min) e larga o jogo
+            Assert.IsTrue(s.Bought[(int)Upgrade.Helper3], "Ajudante 3 comprado");
+            int sales = s.Sales;
+            for (float t = 0f; t < 900f; t += Dt) s.Tick(Dt, 0f, 0f);
+            TestContext.WriteLine($"ocioso 15 min depois de 25 min de bot: vendas={s.Sales - sales} perdidos={s.ClientsLost} estoque={string.Join(",", s.Stock)}");
+            Assert.GreaterOrEqual(s.Sales - sales, 150);
+        }
     }
 }

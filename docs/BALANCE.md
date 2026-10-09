@@ -1360,3 +1360,19 @@ O VIP natural e o bot sem anúncio **não mudam** (cenário a idêntico ao tick;
 | X1 chamado cortado na prateleira (regra antiga) | Vip_Pacote, Save_Relogio |
 | X2 chamado com o pacote do natural | Vip_Pacote, SummonVip, Save_Relogio |
 | L8 load corta o pendente na prateleira · L9 load sem o teto de 20 | Save_Relogio |
+
+## 19. v0.5.1: Ajudante 3 parado no balcão (revisão de código, 2026-10-09)
+
+**Achado.** Sem a compra direta (FASE7), o estoque do balcão só desce com cliente na vaga. O Ajudante 3 (papel 2, bancadas → balcão) escolhia a fonte sem olhar a prateleira: pegava espada com a prateleira de espada cheia e ficava parado no balcão, enquanto escudo e ferramenta encalhavam. O revisor mediu 68% do tempo parado no bot de 45 min. Na v0.4.1 a compra direta esvaziava a prateleira, então isso não aparecia.
+
+**Correção.** `Sim.Fits`: o Ajudante 3 só busca na bancada cujo produto ainda cabe (`Stock + na mão < CounterCap`), mesma regra do `JewelerSource`. Vale para o `IsSourceFor` e o `PickSource`.
+
+| Medida (Dt 1/30) | v0.5.0 | v0.5.1 |
+|---|---|---|
+| Bot 25 min + **parado 15 min**: vendas · clientes perdidos (`Ocioso_15Min_AjudantesVendemSozinhos`) | 80 · 107 | **209 · 59** |
+| Bot humano 60 min (`Bot_60Minutos_Fase2`): produção completa · vendas · perdidos | 47:03 · 1 789 · 12 | **46:12 · 1 825 · 7** |
+| Ouro/min 25–30 min (`Bot_60Minutos_Fase2`) | 579 | 771 |
+
+A fome da Bigorna 2 (2 481 s → 2 582 s em 60 min) já existia e não muda: com o jogador entregando lingote na Bigorna 1, a 2 fica sem entrada. Fica para o estudo de logística.
+
+Portão novo: `Ocioso_15Min_AjudantesVendemSozinhos` (≥ 150 vendas parado). Prova vermelha: com o `Sim.cs` da 0.5.0 dá 80 e falha.

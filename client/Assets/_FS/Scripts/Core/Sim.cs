@@ -115,6 +115,7 @@ namespace FS.Core
         /// save. ponytail: a recarga some ao fechar (reabrir o app libera um boost); gravar exige descontar o tempo offline, fica para quando medir abuso.</summary>
         public float BoostMul = 1f, BoostLeft, BoostCooldown;
         int _vipWant = -1, _vipPack;   // VIP sorteado esperando vaga (-1 = nenhum)
+        int _vipPaid; bool _vipQuiet;  // VIP que estava na vaga ao salvar: volta com o que ja pagou e sem novo aviso de chegada
 
         // metricas de playtest (GDD §14/§15)
         public float FirstSaleTime = -1f, WalkNoDecision;
@@ -481,8 +482,13 @@ namespace FS.Core
         {
             if (w.Role == 0) return s.Kind == Kind.Deposit;
             if (w.Count > 0 && s.OutItem != w.Item) return false;
+            if (w.Role == 2 && !Fits(w, s)) return false;
             return s.Produces && (w.Role == 1 ? s.Kind == Kind.Furnace : s.Kind == Kind.Crafter) && (s.Out > 0 || w.Target == s.Index);
         }
+
+        /// <summary>Ajudante de produto: so busca o que ainda cabe na prateleira (sem a compra direta o estoque so desce com cliente
+        /// na vaga; com a prateleira cheia ele parava no balcao e escudo/ferramenta encalhavam). Mesma regra do JewelerSource.</summary>
+        bool Fits(Carrier w, Station s) => Stock[(int)s.OutItem] + w.Count < CounterCap;
 
         bool IsDestFor(Carrier w, Station s)
         {
@@ -498,6 +504,7 @@ namespace FS.Core
             {
                 if (!s.Unlocked || !s.Produces || (w.Role == 1 ? s.Kind != Kind.Furnace : s.Kind != Kind.Crafter)) continue;
                 if (w.Count > 0 && s.OutItem != w.Item) continue;
+                if (w.Role == 2 && !Fits(w, s)) continue;
                 if (s.Out == 0 && w.Count == 0 && !(s.Busy && s.Progress > 0.5f)) continue;   // vale esperar o que esta quase pronto
                 float score = s.Out * 10f - V2.Dist(w.Pos, s.Pos);
                 if (score > bestScore) { bestScore = score; best = s; }
@@ -797,9 +804,9 @@ namespace FS.Core
             if (_vipWant >= 0 && Queue.Count < QueueCap)
             {
                 float pat = Balance.VipPatienceFor(_vipPack);   // pacote maior, mais tempo: o humano e' mais lento que o bot
-                Queue.Add(new Client { Want = (Item)_vipWant, Patience = pat, MaxPatience = pat, Vip = true, Pack = _vipPack });
-                Emit(Ev.VipArrived, _vipWant, _vipPack, ClientSlot(Queue.Count - 1));
-                _vipWant = -1;
+                Queue.Add(new Client { Want = (Item)_vipWant, Patience = pat, MaxPatience = pat, Vip = true, Pack = _vipPack, Paid = _vipPaid });
+                if (!_vipQuiet) Emit(Ev.VipArrived, _vipWant, _vipPack, ClientSlot(Queue.Count - 1));
+                _vipWant = -1; _vipPaid = 0; _vipQuiet = false;
             }
             for (Item p = Item.Sword; p <= Item.Jewel; p++)
             {
@@ -1045,14 +1052,15 @@ namespace FS.Core
             sb.Append("m=").Append(FirstSaleTime.ToString("0.##", ci)).Append(',').Append(Sales).Append(',').Append(GoldEarned).Append(',').Append(OfflineEarned).Append(',')
               .Append(ClientsLost).Append(',').Append(ClientsTurnedAway).Append(',').Append(MaxQueue).Append(',').Append(WalkNoDecision.ToString("0.##", ci)).Append(',').Append(UpgradesBought).Append('\n');
             sb.Append("px=").Append(Player.Pos.ToString()).Append('\n');
-            // FASE7: o que esta na mao volta ao reabrir (jogador: quantos de cada Item; ajudantes na ordem de contratacao, separados por ';')
+            // FASE7: o que esta na mao volta ao reabrir (jogador: quantos de cada Item; ajudantes "papel:contagens" separados por ';')
             sb.Append("hold=").Append(string.Join(",", Player.Held)).Append('\n');
-            if (Workers.Count > 0) sb.Append("wk=").Append(string.Join(";", Workers.ConvertAll(w => string.Join(",", w.Held)))).Append('\n');
+            if (Workers.Count > 0) sb.Append("wk=").Append(string.Join(";", Workers.ConvertAll(w => w.Role + ":" + string.Join(",", w.Held)))).Append('\n');
             // FASE8: relogio do VIP, VIPs sorteados e o VIP pendente (produto, unidades que faltam). A fila nao vai no save: o VIP que ja estava
             // na vaga volta como pendente e pega a 1a vaga ao reabrir, com paciencia cheia. O boost nao vai: some ao fechar
             Client vip = Queue.Find(c => c.Vip);
             int vipWant = vip != null ? (int)vip.Want : _vipWant, vipPack = vip != null ? vip.Pack : _vipWant >= 0 ? _vipPack : 0;
-            sb.Append("vip=").Append(VipIn.ToString("0.###", ci)).Append(',').Append(VipCount).Append(',').Append(vipWant).Append(',').Append(vipPack).Append('\n');
+            sb.Append("vip=").Append(VipIn.ToString("0.###", ci)).Append(',').Append(VipCount).Append(',').Append(vipWant).Append(',').Append(vipPack)
+              .Append(',').Append(vip != null ? 1 : 0).Append(',').Append(vip != null ? vip.Paid : 0).Append('\n');   // na vaga?, ja pagou
             return sb.ToString();
         }
 
@@ -1069,7 +1077,7 @@ namespace FS.Core
             if (string.IsNullOrEmpty(text)) return sim;
             var ci = CultureInfo.InvariantCulture;
             string wk = "";   // carga dos ajudantes: aplicada depois do Recompute (eles nascem dos flags)
-            int vipWant = -1, vipPack = 0;   // VIP pendente: so depois do Recompute (a linha do produto tem de estar aberta)
+            int vipWant = -1, vipPack = 0, vipPaid = 0; bool vipQuiet = false;   // VIP pendente: so depois do Recompute (a linha do produto tem de estar aberta)
             foreach (string raw in text.Split('\n'))
             {
                 int eq = raw.IndexOf('=');
@@ -1105,6 +1113,7 @@ namespace FS.Core
                             sim.VipIn = Math.Max(0f, Math.Min(Balance.VipMax, F(parts[0], sim.VipIn)));
                             sim.VipCount = Math.Max(0, I(parts[1], 0));
                             vipWant = I(parts[2], -1); vipPack = Clamp0(I(parts[3], 0), Balance.VipSummonPackMax);
+                            if (parts.Length >= 6) { vipQuiet = I(parts[4], 0) == 1; vipPaid = Math.Max(0, I(parts[5], 0)); }   // save da 0.5.0: 4 campos
                         }
                         break;
                     default:
@@ -1126,16 +1135,21 @@ namespace FS.Core
             for (int i = 2; i < sim.Stock.Length; i++) sim.Stock[i] = Math.Min(sim.Stock[i], sim.CounterCap);   // teto so' e' conhecido depois dos upgrades
             for (int i = 0; i < sim.Player.Held.Length; i++) sim.Player.Held[i] = Math.Min(sim.Player.Held[i], sim.Player.Cap);   // teto por tipo (Mochila)
             string[] ws = wk.Split(';');
-            for (int k = 0; k < Math.Min(ws.Length, sim.Workers.Count); k++)   // ajudante: so o 1o tipo valido para o papel, ate o teto; lixo = mao vazia
+            for (int k = 0; k < ws.Length; k++)   // ajudante: so o 1o tipo valido para o papel, ate o teto; lixo = mao vazia
             {
-                Carrier w = sim.Workers[k]; string[] h = ws[k].Split(',');
+                // a lista e' recriada na ordem do HireBy, nao na da compra: vai para o proximo ajudante vazio do mesmo papel.
+                // Save da 0.5.0 (sem "papel:") segue a posicao na lista
+                int colon = ws[k].IndexOf(':'), role = colon > 0 ? I(ws[k].Substring(0, colon), -9) : -9;
+                Carrier w = colon > 0 ? sim.Workers.Find(c => c.Role == role && c.Count == 0) : k < sim.Workers.Count ? sim.Workers[k] : null;
+                if (w == null) continue;
+                string[] h = ws[k].Substring(colon + 1).Split(',');
                 for (int i = 0; i < Math.Min(h.Length, w.Held.Length); i++)
                 {
                     int n = Clamp0(I(h[i], 0), w.Cap);
                     if (n > 0 && w.Count == 0 && sim.CanPick(w, (Item)i)) w.Held[i] = n;
                 }
             }
-            if (vipPack > 0 && vipWant >= (int)Item.Sword && vipWant <= (int)Item.Tool && sim.LineUnlocked((Item)vipWant)) { sim._vipWant = vipWant; sim._vipPack = vipPack; }
+            if (vipPack > 0 && vipWant >= (int)Item.Sword && vipWant <= (int)Item.Tool && sim.LineUnlocked((Item)vipWant)) { sim._vipWant = vipWant; sim._vipPack = vipPack; sim._vipPaid = vipPaid; sim._vipQuiet = vipQuiet; }
             sim.Player.Pos = sim.Collide(Clamp(sim.Player.Pos, sim.MaxX));   // save antigo com o jogador dentro de um corpo: sai pela borda
             // pad escondido devolve o parcial: o save da v0.3 com produtivos novos (Mineiro, Joalheiro 2) esconde o luxo ate completar
             // de novo, e o pad cujo upgrade foi para o menu (FASE6) nunca mais aparece
