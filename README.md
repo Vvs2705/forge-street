@@ -1,6 +1,12 @@
 # Forge Street — v0.6 em desenvolvimento (v0.5.1 lançada e testada no POCO F4)
 
-Idle/tycoon arcade em retrato. Você é o ferreiro: pega **minério** no depósito, derrete na **fornalha**, martela na **bigorna**, leva ao **balcão** onde os clientes pagam, **pisa em pads** para construir (2ª bigorna, escudos, ajudantes, esteira, 2ª fornalha, corredor, joalheria…) e compra no **menu da barra de baixo**, por toque, as melhorias do ferreiro e das estações (fole, mochila, botas, martelo veloz, vitrine…). A produção é física e legível: cada pilha de entrada/saída aparece no chão, a fornalha com saída cheia pisca vermelho ("travada"), a bigorna sem lingote fica apagada ("fome"). A decisão é ler qual estágio é o gargalo agora e investir ali.
+**Estilo:** idle/tycoon arcade em retrato. Você controla o ferreiro com um joystick.
+
+**O que é:** você é o ferreiro de uma rua de forjas medieval e transforma uma bigorna solitária numa rua inteira de produção, com joalheria.
+
+**Como funciona:** pega **minério** no depósito, derrete na **fornalha**, martela o lingote na **bigorna** e leva a espada ao **balcão**, onde os clientes esperam em fila e pagam. Com o ouro, pisa nas **placas do chão** para construir (2ª bigorna, escudos, ferramentas, esteira, 2ª fornalha, corredor, joalheria) e contratar **ajudantes que automatizam cada etapa**; no **menu de baixo** compra as melhorias do ferreiro e das estações (fole, mochila, botas, martelo veloz, vitrine, balcão maior). A produção é física e legível: cada pilha aparece no chão, a estação com saída cheia pisca vermelho ("travada") e a sem insumo fica apagada ("fome"). A decisão é ler qual etapa é o gargalo agora e investir ali. Clientes VIP pagam 3×, encomendas curtas dão direção à sessão e o cofre rende enquanto você está fora.
+
+**Como vai ser jogar:** você começa sozinho carregando tudo no braço e termina comandando uma rua de forjas que trabalha sozinha. Sessões de 3 a 12 minutos.
 
 - **GDD:** `docs/GDD.md` (§3 primeiros 10 min e §18 MVP são o alvo desta v0.1).
 - **Balance medido pelo bot:** `docs/BALANCE.md`.
@@ -16,7 +22,6 @@ Idle/tycoon arcade em retrato. Você é o ferreiro: pega **minério** no depósi
 | Balance (bot) | produção completa 46:12 (41:31 na v0.6); pessoa real foi 1,7–3,7× mais lenta que o bot no 1º teste (`docs/BALANCE.md`) |
 | Anúncios | Unity LevelPlay 9.5.1 integrado (rewarded "Chamar VIP" e "Velocidade"); conta aguardando aprovação, build de teste usa anúncio simulado |
 | Próximas decisões | `docs/BACKLOG_V07.md` (9 decisões D1–D9) |
-| Portfólio (os 9 jogos) | `docs/PORTFOLIO.md` |
 
 ## Como rodar
 
