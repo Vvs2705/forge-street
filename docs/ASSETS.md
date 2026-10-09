@@ -153,3 +153,62 @@ Integração (leva 2, `WorldView`; nada disto foi feito nesta leva):
 1. **Itens:** `ItemArt(item, "icone"|"deitado")` com reserva em `Art.ItemSprite`. Cor `Color.white`; tirar o `StackBg` (o contorno já vem no PNG) e o `ItemScale` achatado do lingote (a barra já é barra). Tamanhos sugeridos na tela: balão 0,9 m (~85 px) dentro de um balão de 1,3 × 1,1 m, pilha na cabeça 0,5 m (48 px, passo de 0,2 m), pilhas das estações 0,4 m, bocas 0,45 m a 50% de alfa. A célula de 128 px tem o item em ~110 px, então a escala do `SpriteRenderer` = tamanho desejado × 1,16.
 2. **Estande:** para N = `QueueCap` vagas, centro (4,5; 13): `xl = 4,5 − (0,85·N + 0,4)/2`. A ponta esquerda fica em `xl + 0,1`, a vaga i em `xl + 0,625 + 0,85·i` e a ponta direita em `xl + 0,85·N + 0,3`, todas em y 13 com escala 1 (`Deco` já faz: célula = `Size/Ppu`). Ordem de desenho pelo pé (y 13) e, sem elipse, a sombra está no PNG. Itens em pé: em `(x_módulo + enc[2k], 13)` com deslocamento de tela `+enc[2k+1]` m para cima, ordem logo acima do módulo; 1 encaixe por unidade de estoque (Vitrine 10). Distribuição sugerida para 4 vagas: [espadas, escudos (ao comprar Escudos), espadas, ferramentas (ao comprar Ferramentas)]. Encaixe vazio = rack vazio (lê como falta).
 3. **Portões:** `pilar` em (9,3; 11,37), (9,3; 13,63), (9,3; 5,37) e (9,3; 7,63), ordenados pelo pé. `portao_*` em (9,3; 12,5) e `porta_servico_*` em (9,3; 6,5), com ordem logo acima de `WallOrder` (abaixo de todo corpo). Troca fechado → aberto quando o Corredor é comprado (`RefreshArea`, onde hoje some o `_door`). Os batentes `Batente` e a `Porta` tingida e o `arco` Tripo em (9,0; 12,6) saem.
+
+## 8. v0.5b — ícones de melhoria e exterior (2026-10-08, 0 crédito)
+
+Pedido do Vinicius: "melhore a qualidade gráfica [...] nosso jogo ainda está bem cru". Fecha o que a leva 2 deixou de fora do pacote do `BENCHMARK_VISUAL.md` §5 (#6, #8–11 e o juice). Mesma pipeline da §7 (`client/tools/ui_v05b_blender.py` importa `arte_v05_blender.py`: primitivas, Workbench FLAT, contorno `#1E1612`).
+
+Regenerar (raiz do projeto, ~11 s; grupos opcionais `icones exterior`):
+```
+"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup --python-exit-code 1 --python client/tools/ui_v05b_blender.py
+```
+
+| Pasta | Clipes | px | ppu | Pivô | Uso |
+|---|---|---|---|---|---|
+| `melhoria_mochila`, `melhoria_botas` (com asinha), `melhoria_fole`, `melhoria_fole_duplo`, `melhoria_martelo` (cabeça de ouro), `melhoria_lupa`, `melhoria_vitrine` (3 espadas em pé), `melhoria_sino` (sino de balcão), `melhoria_cesto` (cesto com minério) | `icone` | 128×128 | 128 | centro | cartões do menu (`MenuBar.Icon`: Fole, Mochila, Fole duplo, Botas, Vitrine, Ajudantes ágeis, Martelo veloz, Lupa, Balcão 5–8 vagas; a Vitrine de joias usa `item_joia`) e martelo do botão Melhorias |
+| `arvore` (2,3 m), `arbusto`, `poste` (lanterna amarela, a View põe a poça de luz), `canteiro` (1,2 m, flores creme/amarelas) | `Static` | 268×239, 170×119, 60×225, 206×96 | 160 (escala real) | centro da base | exterior: atrás da parede de baixo, além da rua de cima e à direita da rua lateral (`WorldView.Outside`) |
+
+Sem matiz de item nos props (ART_BIBLE §3): copa verde-oliva `#3F6B3A`/`#365E33` (longe do `#4CD964` da ferramenta). Procedurais novos em `Art.cs` (sem arquivo): grama do exterior (`Art.Ground("grama")`, ruído de valor em 3 verdes-oliva), placa tracejada, coração, brilho de 4 pontas, rosto bravo, seta da dica, cápsula 9-fatias (barra de progresso) e retângulo 9-fatias (todo painel uGUI).
+
+## 9. Lote 4 — 10 clientes (Tripo, 2026-10-08)
+
+Gerados e rigados pelo coordenador (ledger e tasks em `PROVENIENCIA.md` §7, 650 créditos); sprites com os parâmetros dos 6 clientes atuais (6 clipes, 4 direções, célula 128 px, ppu automático), em `client/Assets/_FS/Resources/Sprites/<cliente>/`. Hashes e comando: `PROVENIENCIA.md` §7, "Arquivos do Lote 4". Conferência: `client/Builds/sprites_contact/v05_clientes_lote4.png`.
+
+**Prompt:** o texto exato não foi registrado no ledger (o §7 diz só "assunto + `[S][T]` + `[I]`"). A coluna abaixo descreve o modelo renderizado; o coordenador completa com o assunto que usou.
+
+**CharScale** = fator sobre `CharPpuMul` (0,76), mesma conta dos atuais: `(altura_m / 0,664) × (1,20 / alvo)`. `altura_m` = altura do Idle, direção S, quadro 0 (alfa ≥ 128) ÷ ppu da folha. 0,664 é o ferreiro (1,20 m). A conta reproduz os valores da View: guerreira 1,24, anão 1,08, ajudante 1,19 e cavaleiro 0,79 (±0,01). O alvo inclui chapéu, pluma ou arma quando a silhueta inclui, como o goblin (1,30 com a mochila) e o cavaleiro (1,55 com a pluma) da ART_BIBLE §4. **Proposto, NÃO aplicado na View.**
+
+| Cliente | Assunto (pelo modelo) | Imagem escolhida | Altura medida (px na folha · m projetado) | Alvo (m) | CharScale proposto |
+|---|---|---|---|---|---|
+| minerador | capacete escuro, bigode, camisa azul, cinto de couro, picareta nas costas | #2 de 4 | 77 px · 0,662 | 1,25 (picareta acima da cabeça) | **0,96** |
+| bardo | boina vermelha com pena, gibão amarelo, calça verde, alaúde nas costas | #2 de 4 | 65 px · 0,568 | 1,20 | **0,85** |
+| alquimista | cabelo roxo armado, óculos de proteção, avental verde, frasco azul brilhante na mão | #4 de 4 | 87 px · 0,713 | 1,30 (cabelo armado ≈ chapéu) | **0,99** |
+| monge | careca, túnica laranja com cordão, faixas brancas nos braços | #4 de 4 (calça visível sob a túnica) | 85 px · 0,633 | 1,20 | **0,95** |
+| ladina | capuz e capa curta roxos, couro escuro, adagas | #2 de 4 (capa curta) | 81 px · 0,648 | 1,20 | **0,98** |
+| paladina | armadura clara com dourado, coifa branca com tiara, capa azul, mangual | #2 de 4 | 77 px · 0,622 | 1,30 (armadura, como o cavaleiro sem pluma) | **0,86** |
+| orc | pele cinza-esverdeada, coque preto, couro com rebites, cutelo grande nas costas | #4 de 4 (pose A) | 71 px · 0,593 | 1,40 (o grandalhão do elenco) | **0,76** |
+| barbaro | cabelo e barba laranja, peles, machado nas costas | #4 de 4 (única em pose T) | 78 px · 0,613 | 1,40 (com o machado) | **0,79** |
+| pirata | tricórnio preto com pena branca, casaca vermelha com dourado, sabre | #2 de 4 (sem gancho) | 80 px · 0,748 | 1,40 (chapéu + pena, como a pluma do cavaleiro) | **0,97** |
+| cacadora | capuz de pele de lobo cinza, couro marrom, arco nas costas | #2 de 4 | 79 px · 0,642 | 1,25 (capuz, como a elfa) | **0,93** |
+
+Para a View (`WorldView.CharScale` e `ClientArt`), dono: worker da View:
+```
+"minerador" => 0.96f, "bardo" => 0.85f, "alquimista" => 0.99f, "monge" => 0.95f, "ladina" => 0.98f,
+"paladina" => 0.86f, "orc" => 0.76f, "barbaro" => 0.79f, "pirata" => 0.97f, "cacadora" => 0.93f,
+```
+Na fila da folha (parte B, 2× o aparelho), os 10 ficam entre 165 e 194 px, contra 166 do ferreiro, 131 do anão e 215 do cavaleiro. O pirata a 1,25 m ficava de corpo menor que a guerreira (o chapéu e a pena comem a altura), então subiu para 1,40. Orc e bárbaro ficam como os maiores do elenco sem pluma.
+
+### 9.1 Prompts exatos do Lote 4 (imagem no Tripo, Nano Banana 2, 1:1, 4 imagens grátis)
+Todos = assunto + `[S]` + `[I]` do cabeçalho deste arquivo. Imagem escolhida entre 4 e task do modelo em `PROVENIENCIA.md` §7.
+| Cliente | Assunto | Imagem |
+|---|---|---|
+| bárbaro | barbarian warrior, very broad muscular shoulders, wild red hair and short braided red beard, brown fur cloak over the shoulders, bare arms with leather bracers, big two-handed battle axe strapped on the back, short leather kilt, fur boots | #4 (única em pose T) |
+| pirata | pirate captain, black tricorn hat with a big white feather, black eyepatch, long red coat with gold buttons, white striped shirt, curved cutlass at the hip, short black beard, brown boots | #2 (sem gancho) |
+| paladina | paladin woman, shining white and gold plate armor, short blue cape, golden sun emblem on the chest, long blonde braid, war mace at the hip, small open-face helmet | #2 |
+| orc | orc mercenary, grey-green skin, two small lower tusks, black topknot hair, spiked brown leather armor, big meat cleaver on the back, wide belt with iron buckle, bulky arms | #4 (pose A) |
+| ladina | rogue thief woman, dark purple hood and face scarf covering the mouth, fitted dark leather outfit, two daggers on the belt, many small pouches, short dark cape, slim boots | #2 (capa curta) |
+| bardo | cheerful bard, red beret with a long feather, wooden lute on the back, yellow and red patchwork doublet, curly brown mustache, green tights, brown pointed shoes | #2 |
+| monge | martial arts monk, bald head, knee-length orange robe tied with a rope belt, wooden prayer beads necklace, cloth wraps on hands and feet, calm smile | #4 (calça visível) |
+| caçadora | monster hunter woman, grey wolf-head fur hood, brown leather coat to the hips, crossbow strapped on the back, bandolier with bolts across the chest, tall leather boots, short brown hair | #2 |
+| alquimista | alchemist woman, round brass goggles on the forehead, green leather apron with potion bottles in the pockets, rolled-up white sleeves, messy purple hair bun, glowing blue flask hanging on the belt, brown boots | #4 (calça, sem saia) |
+| minerador | medieval miner, leather cap with a small brass oil lamp on the front, dirty blue work tunic and brown trousers, pickaxe strapped on the back, big black mustache, soot on the cheeks, sturdy boots | #2 |

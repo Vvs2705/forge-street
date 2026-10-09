@@ -17,6 +17,8 @@ Colunas (Game.Log: sem cabecalho, virgula crua, sem aspas): utc, sessao, evento,
   station_unlock a=estacao | offline_claim a=ouro b=s | milestone, chest_opened a=bau b=ouro
   a cada 60 s de sessao: queue_length a=fila b=fila_max | bottleneck_seconds a=travada b=fome (s somados nas estacoes,
   ZERAM a cada sessao) | walk_no_decision a=s andando sem decisao (vai no save: acumulado) b=upgrades comprados
+  v0.5: ad_request/ad_shown/ad_reward/ad_fail/ad_load_fail a=placement (vip|velocidade) b=detalhe (Ads.Logged)
+        vip_arrived a=item b=unidades | vip_served a=item b=ouro | vip_left a=item b=faltaram | boost_start a=multiplicador
 """
 import glob
 import math
@@ -99,9 +101,9 @@ def ler(caminhos):
 
 
 def analisar(linhas):
-    tst = defaultdict(lambda: {"venda1": None, "upg": {}, "walk": [], "fim": 0.0, "offline": False})
+    tst = defaultdict(lambda: {"venda1": None, "upg": {}, "walk": [], "fim": 0.0, "offline": False, "ads": Counter()})
     ses = defaultdict(lambda: {"t0": math.inf, "t1": 0.0, "gargalo": []})
-    saiu, travou = Counter(), Counter()
+    saiu, travou, ads, vip = Counter(), Counter(), Counter(), Counter()
     for arq, sid, ev, t, a, b in linhas:
         T, S = tst[arq], ses[(arq, sid)]
         S["t0"], S["t1"], T["fim"] = min(S["t0"], t), max(S["t1"], t), max(T["fim"], t)
@@ -119,6 +121,12 @@ def analisar(linhas):
             travou[a] += 1
         elif ev == "offline_claim":
             T["offline"] = True
+        elif ev.startswith("ad_"):
+            ads[(ev, a)] += 1
+            if ev == "ad_reward":
+                T["ads"][a] += 1
+        elif ev in ("vip_arrived", "vip_served", "vip_left", "boost_start"):
+            vip[ev] += 1
 
     # Por minuto de jogo. walk e t_jogo sao acumulados no save, entao a razao entre duas amostras vale ate atravessando
     # sessoes; o save a cada 5 s pode voltar alguns segundos no reload (amostra com delta negativo e' pulada).
@@ -141,7 +149,7 @@ def analisar(linhas):
                 minuto[faixa(t)]["travada"].append(60 * (st - ps) / (t - pt))
                 minuto[faixa(t)]["fome"].append(60 * (fo - pf) / (t - pt))
             pt, ps, pf = t, st, fo
-    return {"tst": tst, "ses": ses, "saiu": saiu, "travou": travou, "minuto": minuto}
+    return {"tst": tst, "ses": ses, "saiu": saiu, "travou": travou, "minuto": minuto, "ads": ads, "vip": vip}
 
 
 def humanos(tst, k):
@@ -185,6 +193,11 @@ def portoes(r):
     lado = "" if st != "FALHA" else " (pessoa mais lenta que 2x)" if f > FATOR[1] else " (pessoa mais rapida que 1,3x)"
     out.append(("fator", st, f"HIPOTESE pessoa 1,3-2x mais lenta que o bot (mediana das razoes, marcos do bot <= 10:00): "
                              f"{'-' if f is None else f'{f:.2f}x'}{lado}  (BALANCE sec.2)"))
+    # GDD sec.15 "rewarded opt-in >= 45%": testador que viu >= 1 anuncio ate o fim, entre os que jogaram >= 6 min (o 1o
+    # VIP/velocidade so existe depois da 1a venda e o 1o VIP natural chega ~5:30). ponytail: quem nao viu oferta conta como nao.
+    elig = [T for T in tst if T["fim"] >= 360]
+    g("rewarded", pct(lambda T: sum(T["ads"].values()) > 0, elig) if elig else None, lambda v: v >= 45,
+      "rewarded opt-in >= 45% (viu >= 1 anuncio, entre quem jogou >= 6 min)", "GDD sec.15")
     out.append(("gargalo", "MANUAL", ">= 50% dizem qual estacao era o gargalo: perguntar ao testador "
                                      "(README Proximos passos 2; GDD sec.26 CONTINUAR 'identificam gargalos')"))
     return out
@@ -237,15 +250,22 @@ def relatorio(linhas, ruins=0):
           f"  mediana {mmss(mediana(durs))} | min {mmss(min(durs) if durs else None)} | max {mmss(max(durs) if durs else None)}"
           f" | jogo total {mmss(jogo)}",
           f"  voltaram e pegaram o cofre (offline_claim): {sum(1 for T in tst.values() if T['offline'])}/{n} testadores"
-          " (GDD sec.26 ITERAR 'pouca volta offline')", "", "PORTOES"]
+          " (GDD sec.26 ITERAR 'pouca volta offline')", ""]
+    s += ["ANUNCIOS, VIP E VELOCIDADE (v0.5)"]
+    for pl in ("vip", "velocidade"):
+        c = {e: r["ads"][(e, pl)] for e in ("ad_request", "ad_shown", "ad_reward", "ad_fail", "ad_load_fail")}
+        s.append(f"  {pl:<11} pedidos {c['ad_request']} | mostrados {c['ad_shown']} | recompensas {c['ad_reward']} | falhas {c['ad_fail'] + c['ad_load_fail']}")
+    vp = r["vip"]
+    s.append(f"  VIP: chegaram {vp['vip_arrived']} | atendidos {vp['vip_served']} | foram embora {vp['vip_left']} | velocidade ativada {vp['boost_start']}x")
+    s += ["", "PORTOES"]
     s += [f"  [{st}] {texto}" for _, st, texto in portoes(r)]
     s.append("  nao medidos aqui: tutorial (sem evento), D1/D7 e sessoes/dia (utc existe; Camada 0 nao mede retencao), "
-             "rewarded, CPI, payer, crash-free (GDD sec.15/sec.26)")
+             "CPI, payer, crash-free (GDD sec.15/sec.26)")
     return "\n".join(s)
 
 
 def autoteste():
-    def jogador(venda1, compras, andar, minutos, sessoes=1):
+    def jogador(venda1, compras, andar, minutos, sessoes=1, anuncio=False):
         """Linhas CSV de um testador: walk acumulado no save; travada 5 s/min e fome 10 s/min, que zeram por sessao."""
         out, t, w = [], 0.0, 0.0
         por = minutos * 60 / sessoes
@@ -261,6 +281,12 @@ def autoteste():
             ln("client_left", t + 5, "espada", "cansou")
             ln("client_left", t + 6, "escudo", "fila_cheia")
             ln("bottleneck", t + 7, "Fornalha", "saida_cheia")
+            if anuncio and k == 0:
+                ln("vip_arrived", t + 330, "espada", "3")
+                ln("ad_request", t + 340, "velocidade", "simulado")
+                ln("ad_reward", t + 345, "velocidade", "Velocidade x1 simulado")
+                ln("boost_start", t + 345, "2", "60")
+                ln("vip_served", t + 360, "espada", "90")
             for m in range(1, int(por // 60) + 1):
                 ln("walk_no_decision", t0 + 60 * m, f"{w + andar * 60 * m:.0f}", "3")
                 ln("bottleneck_seconds", t0 + 60 * m, f"{5 * m}", f"{10 * m}")
@@ -269,7 +295,7 @@ def autoteste():
                 ln("offline_claim", t0, "50", "600")
         return out
 
-    rapido = lambda: jogador(40, {"FurnaceSpeed1": 100, "Anvil2": 180, "Helper1": 250, "Shields": 300, "Conveyor": 480}, 0.2, 10)
+    rapido = lambda: jogador(40, {"FurnaceSpeed1": 100, "Anvil2": 180, "Helper1": 250, "Shields": 300, "Conveyor": 480}, 0.2, 10, anuncio=True)
     lento = lambda: jogador(120, {"FurnaceSpeed1": 200, "Anvil2": 400}, 0.6, 9)
 
     with tempfile.TemporaryDirectory() as d:
@@ -291,7 +317,8 @@ def autoteste():
                 "2026-10-07T10:00:00,s0,walk_no_decision,60.0,1,3,2026-10-07T10:00:01,s0,product_sold,61.0,espada,10"]  # colada
         r, p, texto, ruins = rodar([rapido() for _ in range(10)], lixo)
         assert ruins == 5, ruins
-        assert p == {"venda1": "PASSA", "escudos": "PASSA", "andar": "PASSA", "gdd3": "PASSA", "fator": "PASSA", "gargalo": "MANUAL"}, p
+        assert p == {"venda1": "PASSA", "escudos": "PASSA", "andar": "PASSA", "gdd3": "PASSA", "fator": "PASSA", "rewarded": "PASSA", "gargalo": "MANUAL"}, p
+        assert "recompensas 10" in texto and "VIP: chegaram 10 | atendidos 10" in texto, texto
         assert "1.36x" in texto and "andar sem decisao < 50% do tempo de jogo (mediana por testador): 20%" in texto
         assert r["minuto"][3]["travada"] == [5.0] * 10 and r["minuto"][3]["fome"] == [10.0] * 10
         assert mediana(r["minuto"][5]["andar"]) == 20.0
@@ -306,7 +333,7 @@ def autoteste():
 
         # 10 lentos: tudo FALHA; fator = mediana(120/22, 200/67, 400/137) = 2,99x
         r, p, texto, _ = rodar([lento() for _ in range(10)])
-        assert p == {"venda1": "FALHA", "escudos": "FALHA", "andar": "FALHA", "gdd3": "FALHA", "fator": "FALHA", "gargalo": "MANUAL"}, p
+        assert p == {"venda1": "FALHA", "escudos": "FALHA", "andar": "FALHA", "gdd3": "FALHA", "fator": "FALHA", "rewarded": "FALHA", "gargalo": "MANUAL"}, p
         assert "2.99x (pessoa mais lenta que 2x)" in texto
 
         # fronteiras: 9 rapidos + 1 lento = 90% vende < 90 s (PASSA); 7 + 3 = 70% escudos (PASSA) e 70% venda (FALHA)
@@ -326,7 +353,7 @@ def autoteste():
         # vazio: SEM DADOS, nunca excecao
         p = rodar([])[1]
         assert p == {"venda1": "SEM DADOS", "escudos": "SEM DADOS", "andar": "SEM DADOS", "gdd3": "SEM DADOS",
-                     "fator": "SEM DADOS", "gargalo": "MANUAL"}, p
+                     "fator": "SEM DADOS", "rewarded": "SEM DADOS", "gargalo": "MANUAL"}, p
 
         print(rodar([rapido() for _ in range(7)] + [lento() for _ in range(3)])[2])
     print("\nautoteste OK")
