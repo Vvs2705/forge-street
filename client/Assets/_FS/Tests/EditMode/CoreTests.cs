@@ -319,7 +319,7 @@ namespace FS.Tests
             }
             Assert.AreEqual(Balance.CostBase, Upgrades.Cost(0));
             // curva literal (mutante eco-custo-crescimento): mexer no CostGrowth tem de ficar vermelho, nao so caber na faixa
-            Assert.AreEqual((65, 315, 895), (Upgrades.Cost(Upgrade.Anvil2), Upgrades.Cost(Upgrade.FurnaceSpeed2), Upgrades.Cost(Upgrade.Furnace2)));
+            Assert.AreEqual(65, Upgrades.Cost(Upgrade.Anvil2)); Assert.AreEqual(315, Upgrades.Cost(Upgrade.FurnaceSpeed2)); Assert.AreEqual(895, Upgrades.Cost(Upgrade.Furnace2));   // separados: o NUnit 3.5 do Unity compara tupla tipo a tipo (int x long)
             for (int i = 1; i < Upgrades.Count; i++)
             {
                 Assert.AreEqual(0, Upgrades.Cost(i) % 5, "preco legivel");
