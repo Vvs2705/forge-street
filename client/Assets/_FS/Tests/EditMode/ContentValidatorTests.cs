@@ -91,7 +91,7 @@ namespace FS.Tests
         [Test]
         public void Custos_ZeroForaDoMultiploECurvaQueDesce_Acusa()
         {
-            int[] c = ContentValidator.RealCosts();
+            long[] c = ContentValidator.RealCosts();
             c[(int)Upgrade.Helper2] = 0;
             c[(int)Upgrade.PlayerSpeed] = c[(int)Upgrade.FurnaceSpeed2] - 5;   // a formula sobe tier a tier; aqui desce
             c[(int)Upgrade.Miner] = 3001;
