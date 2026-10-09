@@ -85,7 +85,7 @@ namespace FS
         RectTransform _order; CanvasGroup _orderG; Image _orderIcon, _orderFill, _orderCoin; Text _orderText, _orderPrize, _orderBar;
         Banner _orderBanner;
         int _orderKey = -1, _orderSeen = -1; float _orderT, _orderPunch; bool _orderOut;
-        static readonly Color AdFace = Art.Hex(0x3B2650), AdOff = Art.Hex(0x5A5560);
+        static readonly Color AdFace = Art.HudFace, AdOff = MenuBar.GrayDark;   // A-UI-16: era roxo #3B2650 / #5A5560; a borda de ouro e o ▶ marcam o anuncio
         // v0.6d: botoes de anuncio e cartoes de baixo a 32 px das bordas da area segura, com largura fixa; topo dos botoes de anuncio
         const float Edge = 32f, AdW = 140f, AdTop = MenuBar.Band - 0.004f;
 
@@ -409,8 +409,8 @@ namespace FS
             // grande com contorno) e pilula da dica ao lado. Ocupa a faixa HudBand, que a camera reserva: nada do mundo passa aqui.
             RectTransform top = Art.Node(_safe, "Topo", new Vector2(0f, 1f - HudBand), new Vector2(1f, 0.995f));
             top.offsetMin = new Vector2(Edge, 0f); top.offsetMax = new Vector2(-Edge, 0f);   // v0.6d: 32 px das bordas (era 2%, ~22 px)
-            Image pill = Art.Panel(top, "PilulaOuro", Art.Hex(0xF2D9A0), new Vector2(0.06f, 0.1f), new Vector2(0.36f, 0.9f));
-            Image pillIn = Art.Panel(pill.transform, "Fundo", Art.ComAlfa(Art.Hex(0x2A1E14), 0.95f), Vector2.zero, Vector2.one);
+            Image pill = Art.Panel(top, "PilulaOuro", Art.HudEdge, new Vector2(0.06f, 0.1f), new Vector2(0.36f, 0.9f));
+            Image pillIn = Art.Panel(pill.transform, "Fundo", Art.ComAlfa(Art.HudFace, 0.95f), Vector2.zero, Vector2.one);
             pillIn.rectTransform.offsetMin = new Vector2(5f, 5f); pillIn.rectTransform.offsetMax = new Vector2(-5f, -5f);
             pill.raycastTarget = pillIn.raycastTarget = false;
             _coinIcon = Art.Node(top, "Moeda", new Vector2(0f, -0.05f), new Vector2(0.14f, 1.05f)).gameObject.AddComponent<Image>();
@@ -423,8 +423,11 @@ namespace FS
             _gold = Art.Outlined(Art.NewText(pill.transform, "Ouro", 62, new Vector2(0.3f, 0f), new Vector2(0.98f, 1f), TextAnchor.MiddleLeft), 3f);
             _gold.fontStyle = FontStyle.Bold;
             _gold.rectTransform.pivot = new Vector2(0f, 0.5f);   // o pulso cresce a partir da moeda, sem empurrar o numero
-            Image hintPill = Art.Panel(top, "PilulaDica", Art.ComAlfa(Art.Bg, 0.92f), new Vector2(0.385f, 0.1f), new Vector2(Arg("-record") == null ? 0.875f : 1f, 0.9f));   // v0.6b: a engrenagem fica a direita (criativo: sem ela)
-            hintPill.raycastTarget = false;
+            // A-UI-16: borda creme e face marrom como a pilula de ouro (era o azul-marinho Art.Bg)
+            Image hintPill = Art.Panel(top, "PilulaDica", Art.HudEdge, new Vector2(0.385f, 0.1f), new Vector2(Arg("-record") == null ? 0.875f : 1f, 0.9f));   // v0.6b: a engrenagem fica a direita (criativo: sem ela)
+            Image hintIn = Art.Panel(hintPill.transform, "Fundo", Art.ComAlfa(Art.HudFace, 0.95f), Vector2.zero, Vector2.one);
+            hintIn.rectTransform.offsetMin = new Vector2(5f, 5f); hintIn.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            hintPill.raycastTarget = hintIn.raycastTarget = false;
             // v0.6d: 1 linha so, ~32 px. A caixa tem 48 px de altura: 2 linhas nao cabem e o best-fit encolhe ate caber numa; os textos
             // (Textos.Dica) tem no maximo 26 caracteres, sem preco
             _hint = Art.Outlined(Art.NewText(hintPill.transform, "Dica", 32, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f)), 2f);
@@ -588,7 +591,7 @@ namespace FS
             _toast = MakeBanner("AvisoAnuncio", new Vector2(0.15f, MenuBar.Band + 0.08f), new Vector2(0.85f, MenuBar.Band + 0.12f), null, 34);   // acima do selo do boost
         }
 
-        /// <summary>Botao quadrado: borda de ouro, fundo roxo escuro, icone, legenda e o selo de video (anuncio) no canto de cima.
+        /// <summary>Botao quadrado: borda de ouro, fundo marrom da HUD, icone, legenda e o selo de video (anuncio) no canto de cima.
         /// v0.6d: 140 px de largura a 32 px da borda (esquerda ou `right`) da area segura (era 14,5% da tela a 2%, ~22 px).</summary>
         AdBtn AdButton(string name, bool right, Sprite icon, string label, Action onClick)
         {
@@ -613,7 +616,7 @@ namespace FS
             Image vb = v.gameObject.AddComponent<Image>(); vb.sprite = Art.Box(); vb.type = Image.Type.Sliced; vb.pixelsPerUnitMultiplier = 2f;
             vb.color = Color.white; vb.raycastTarget = false;
             Image play = Art.Node(v, "Play", new Vector2(0.3f, 0.2f), new Vector2(0.7f, 0.8f)).gameObject.AddComponent<Image>();
-            play.sprite = Art.Triangle(); play.color = Art.Bg; play.raycastTarget = false;   // "play" escuro e neutro (sem cor de marca)
+            play.sprite = Art.Triangle(); play.color = Art.HudFace; play.raycastTarget = false;   // "play" escuro e neutro (sem cor de marca)
             play.rectTransform.localEulerAngles = new Vector3(0f, 0f, -90f);
             a.Video = v.gameObject;
             edge.gameObject.SetActive(false);
@@ -625,7 +628,7 @@ namespace FS
             var b = new Banner();
             Image edge = Art.Panel(_safe, name, Art.Gold, min, max);
             edge.raycastTarget = false;
-            Image face = Art.Panel(edge.transform, "Fundo", Art.ComAlfa(Art.Hex(0x2A1E14), 0.95f), Vector2.zero, Vector2.one);
+            Image face = Art.Panel(edge.transform, "Fundo", Art.ComAlfa(Art.HudFace, 0.95f), Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(5f, 5f); face.rectTransform.offsetMax = new Vector2(-5f, -5f);
             face.raycastTarget = false;
             if (icon != null)
@@ -708,11 +711,11 @@ namespace FS
         void BuildOrderUi()
         {
             if (Arg("-record") != null) return;
-            Image edge = Art.Panel(_safe, "Encomenda", Art.Hex(0xF2D9A0), new Vector2(0f, AdTop), new Vector2(0f, AdTop));
+            Image edge = Art.Panel(_safe, "Encomenda", Art.HudEdge, new Vector2(0f, AdTop), new Vector2(0f, AdTop));
             edge.rectTransform.pivot = Vector2.zero; edge.rectTransform.sizeDelta = new Vector2(420f, 104f);
             edge.rectTransform.anchoredPosition = new Vector2(Edge, 24f);
             edge.raycastTarget = false;
-            Image face = Art.Panel(edge.transform, "Fundo", Art.ComAlfa(Art.Hex(0x2A1E14), 0.95f), Vector2.zero, Vector2.one);
+            Image face = Art.Panel(edge.transform, "Fundo", Art.ComAlfa(Art.HudFace, 0.95f), Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(5f, 5f); face.rectTransform.offsetMax = new Vector2(-5f, -5f);
             face.raycastTarget = false;
             _orderIcon = Art.Node(edge.transform, "Item", new Vector2(0.03f, 0.1f), new Vector2(0.22f, 0.9f)).gameObject.AddComponent<Image>();
@@ -816,12 +819,12 @@ namespace FS
         {
             if (Arg("-record") == null)
             {
-                Image gear = Art.Panel(top, "Engrenagem", Art.Hex(0xF2D9A0), new Vector2(0.89f, 0.1f), new Vector2(1f, 0.9f));
-                Image gearIn = Art.Panel(gear.transform, "Fundo", Art.ComAlfa(Art.Hex(0x2A1E14), 0.95f), Vector2.zero, Vector2.one);
+                Image gear = Art.Panel(top, "Engrenagem", Art.HudEdge, new Vector2(0.89f, 0.1f), new Vector2(1f, 0.9f));
+                Image gearIn = Art.Panel(gear.transform, "Fundo", Art.ComAlfa(Art.HudFace, 0.95f), Vector2.zero, Vector2.one);
                 gearIn.rectTransform.offsetMin = new Vector2(5f, 5f); gearIn.rectTransform.offsetMax = new Vector2(-5f, -5f);
                 gearIn.raycastTarget = false;
                 Image icon = Art.Node(gear.transform, "Icone", new Vector2(0.17f, 0.17f), new Vector2(0.83f, 0.83f)).gameObject.AddComponent<Image>();
-                icon.sprite = Art.Gear(); icon.color = Art.Hex(0xF2D9A0); icon.preserveAspect = true; icon.raycastTarget = false;
+                icon.sprite = Art.Gear(); icon.color = Art.HudEdge; icon.preserveAspect = true; icon.raycastTarget = false;
                 Button gb = gear.gameObject.AddComponent<Button>();
                 gb.targetGraphic = gear;
                 gb.onClick.AddListener(() => { Sfx.Play("drop"); _cfg.gameObject.SetActive(true); });

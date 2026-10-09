@@ -14,10 +14,13 @@ namespace FS
     public static class Art
     {
         public static readonly Color Bg = Hex(0x121622), Ink = Hex(0xEEF1F8),
-            Accent = Hex(0xFFE08A), Bad = Hex(0xFF3B4E), Dim = Hex(0x4A5370), Pad = Hex(0x2C3550), PadFill = Hex(0x6B5F2E),
+            Accent = Hex(0xFFE08A), Bad = Hex(0xFF3B4E), Dim = Hex(0x4A5370),
             Player = Hex(0xFFE08A), Worker = Hex(0x9ED0C8), Client = Hex(0xE8C9A8), Bubble = Hex(0xF4F6FA), Good = Hex(0x4CD964);
         /// <summary>Ouro (ART_BIBLE s2: base #E0B23A, sombra #9C7520, luz = Accent): luxos da fase 3.</summary>
         public static readonly Color Gold = Hex(0xE0B23A), GoldDark = Hex(0x9C7520);
+        /// <summary>HUD numa paleta so (A-UI-16, D7 do BACKLOG_V07): face marrom e borda creme em pilulas, botoes e avisos. O Bg azul
+        /// fica so no fundo da camera (mundo).</summary>
+        public static readonly Color HudFace = Hex(0x2A1E14), HudEdge = Hex(0xF2D9A0);
 
         /// <summary>Cor por Item (indice do enum).</summary>
         public static readonly Color[] ItemColor = { Hex(0x9C8468), Hex(0xC8D0DC), Hex(0x7FC4FF), Hex(0xF2545B), Hex(0x4CD964), Hex(0xB07CF2) };
@@ -425,7 +428,7 @@ namespace FS
             b.onClick.AddListener(() => onClick());
             Text t = NewText(img.transform, "Label", size, Vector2.zero, Vector2.one);
             t.text = label;
-            t.color = Bg;
+            t.color = HudFace;
             t.fontStyle = FontStyle.Bold;
             return b;
         }
