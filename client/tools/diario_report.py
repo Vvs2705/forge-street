@@ -20,6 +20,8 @@ Colunas (Game.Log: sem cabecalho, virgula crua, sem aspas): utc, sessao, evento,
   v0.5: ad_request/ad_shown/ad_reward/ad_fail/ad_load_fail a=placement (vip|velocidade) b=detalhe (Ads.Logged)
         vip_arrived a=item b=unidades | vip_served a=item b=ouro | vip_left a=item b=faltaram | boost_start a=multiplicador
   v0.6c: order_new a=item b=quantas vender | order_done a=item b=premio (docs/FASE9_ENCOMENDAS.md)
+  v0.7 (Save 2.0): save_corrupt a=arquivos ruins b=status final | save_newer a=schema b=versao | save_error a=excecao
+        | save_prefs a=status (Legacy = migrou o save da 0.6 do PlayerPrefs)
 """
 import glob
 import math
@@ -104,7 +106,7 @@ def ler(caminhos):
 def analisar(linhas):
     tst = defaultdict(lambda: {"venda1": None, "upg": {}, "walk": [], "fim": 0.0, "offline": False, "ads": Counter(), "enc": Counter()})
     ses = defaultdict(lambda: {"t0": math.inf, "t1": 0.0, "gargalo": []})
-    saiu, travou, ads, vip = Counter(), Counter(), Counter(), Counter()
+    saiu, travou, ads, vip, save = Counter(), Counter(), Counter(), Counter(), Counter()
     for arq, sid, ev, t, a, b in linhas:
         T, S = tst[arq], ses[(arq, sid)]
         S["t0"], S["t1"], T["fim"] = min(S["t0"], t), max(S["t1"], t), max(T["fim"], t)
@@ -130,6 +132,8 @@ def analisar(linhas):
             vip[ev] += 1
         elif ev in ("order_new", "order_done"):
             T["enc"][ev] += 1
+        elif ev.startswith("save_"):
+            save[ev] += 1
 
     # Por minuto de jogo. walk e t_jogo sao acumulados no save, entao a razao entre duas amostras vale ate atravessando
     # sessoes; o save a cada 5 s pode voltar alguns segundos no reload (amostra com delta negativo e' pulada).
@@ -152,7 +156,7 @@ def analisar(linhas):
                 minuto[faixa(t)]["travada"].append(60 * (st - ps) / (t - pt))
                 minuto[faixa(t)]["fome"].append(60 * (fo - pf) / (t - pt))
             pt, ps, pf = t, st, fo
-    return {"tst": tst, "ses": ses, "saiu": saiu, "travou": travou, "minuto": minuto, "ads": ads, "vip": vip}
+    return {"tst": tst, "ses": ses, "saiu": saiu, "travou": travou, "minuto": minuto, "ads": ads, "vip": vip, "save": save}
 
 
 def humanos(tst, k):
@@ -269,6 +273,9 @@ def relatorio(linhas, ruins=0):
     for arq, T in sorted(tst.items()):
         s.append(f"  {os.path.basename(arq)}: recebidas {T['enc']['order_new']} | entregues {T['enc']['order_done']}"
                  f" | 1 a cada {f'{por[arq]:.1f}' if arq in por else '-'} min")
+    sv = r["save"]
+    s += ["", f"SAVE (v0.7): corrompidos {sv['save_corrupt']} | versao mais nova {sv['save_newer']}"
+              f" | erro de disco {sv['save_error']} | lidos do PlayerPrefs {sv['save_prefs']}"]
     s += ["", "PORTOES"]
     s += [f"  [{st}] {texto}" for _, st, texto in portoes(r)]
     s.append("  nao medidos aqui: tutorial (sem evento), D1/D7 e sessoes/dia (utc existe; Camada 0 nao mede retencao), "

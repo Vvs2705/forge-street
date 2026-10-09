@@ -10,6 +10,21 @@ namespace FS.Tests
     {
         const float Dt = 1f / 30f;
 
+        // saves antigos reais (Save_Antigo* e SaveTests). v0.1: 15 flags, 12 pads, stock com 3 numeros; px fora da oficina (adulterado)
+        internal const string SaveV01 = "v=1\nt=600\ngold=190\nup=111111110000000\nut=53,119,196,259,334,429,498,562,-1,-1,-1,-1,-1,-1,-1\npads=0,0,0,0,0,0,0,0,30,0,0,0,\n" +
+                                        "st1=6,4,1,0.5,143\nst2=0,0,0,0,0\nst3=4,3,0,0,64\nst4=4,3,0,0,14\nst5=2,1,0,0,26\nst6=0,0,0,0,0\nstock=5,1,0\nema=4.54\nsaved=1000\nclaim=900\n" +
+                                        "m=19,101,1385,0,23,50,4,193,8\npx=13.00,5.00\n";
+        // v0.2 (antes da fase 2): 17 flags, 14 pads, sem ms= nem sold=
+        internal const string SaveV02 = "v=1\nt=1800\ngold=900\nup=11111111111111111\nut=53,119,196,259,334,429,498,562,647,724,817,1037,1201,1403,918,1562,1704\n" +
+                                        "pads=0,0,0,0,0,0,0,0,0,0,0,0,0,0,\nst1=6,4,1,0.5,900\nst8=2,1,0,0,20\nstock=5,1,0,2\nema=16.3\nsaved=1000\nclaim=900\n" +
+                                        "m=19,783,12196,0,23,50,4,193,17\npx=13.00,5.00\n";
+        // 20 flags, 17 pads, 450 pagos na Vitrine de joias (pad 16, hoje no menu)
+        internal const string Save20Flags = "v=1\nt=3600\ngold=7000\nup=11111111111111111110\npads=0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,450,\nstock=2,3,1,4\nsold=200,40,30,10\nms=2,2,1,2\nema=17\nsaved=500\nclaim=400\npx=12,9\n";
+        // v0.3: 20 produtivos + Fachada + Piso, 20 pads, Joalheria real com 750 pagos
+        internal const string SaveV03 = "v=1\nt=4800\ngold=9000\nup=11111111111111111111110\npads=0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,750,\nstock=2,3,1,4\nsold=300,60,40,90\nms=2,2,2,2\nema=17\nsaved=900\nclaim=800\npx=12,9\n";
+        // antes da Leva 11: parcial em 8 pads que viraram menu (slots 0, 6, 7, 8, 10, 11, 15, 16) e na Esteira (slot 9, continua pad)
+        internal const string SaveAntesLeva11 = "v=1\nt=1500\ngold=1000\nup=0010000000000001100000000\npads=40,0,0,0,0,0,100,120,30,55,900,600,0,0,0,5000,8000,0,0,0,0,0,\npx=4.5,3.5\n";
+
         static void Run(Sim s, float seconds, float x = 0f, float y = 0f)
         {
             for (float t = 0f; t < seconds; t += Dt) s.Tick(Dt, x, y);
@@ -675,10 +690,7 @@ namespace FS.Tests
         [Test]
         public void Save_Antigo15Flags_Stock3_CarregaComASegundaAreaFechada()
         {
-            // save real do v0.1 (formato de antes da 2a area): 15 flags, 12 pads, stock com 3 numeros; px fora da oficina (adulterado)
-            const string old = "v=1\nt=600\ngold=190\nup=111111110000000\nut=53,119,196,259,334,429,498,562,-1,-1,-1,-1,-1,-1,-1\npads=0,0,0,0,0,0,0,0,30,0,0,0,\n" +
-                               "st1=6,4,1,0.5,143\nst2=0,0,0,0,0\nst3=4,3,0,0,64\nst4=4,3,0,0,14\nst5=2,1,0,0,26\nst6=0,0,0,0,0\nstock=5,1,0\nema=4.54\nsaved=1000\nclaim=900\n" +
-                               "m=19,101,1385,0,23,50,4,193,8\npx=13.00,5.00\n";
+            const string old = SaveV01;   // save real do v0.1 (formato de antes da 2a area)
             Sim s = null;
             Assert.DoesNotThrow(() => s = Sim.Load(old));
             Assert.AreEqual((190 + 30, 8), (s.Gold, s.UpgradesBought), "os 30 pagos nas Botas (pad 8, hoje no menu) voltam ao ouro");
@@ -1040,7 +1052,7 @@ namespace FS.Tests
         [Test]
         public void Save_Antigo20Flags17Pads_ELuxoIdaEVolta()
         {
-            const string old = "v=1\nt=3600\ngold=7000\nup=11111111111111111110\npads=0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,450,\nstock=2,3,1,4\nsold=200,40,30,10\nms=2,2,1,2\nema=17\nsaved=500\nclaim=400\npx=12,9\n";
+            const string old = Save20Flags;
             Sim s = Sim.Load(old);
             Assert.AreEqual((19, 22, 0, 7000 + 450), (s.UpgradesBought, s.Pads.Count, s.Pads[16].Paid, s.Gold), "os 450 da Vitrine de joias (pad 16, hoje no menu) voltam ao ouro");
             Assert.IsFalse(s.ProductionComplete);
@@ -1124,10 +1136,7 @@ namespace FS.Tests
         [Test]
         public void Save_Antigo17Flags_SemMarcos_Carrega()
         {
-            // save da v0.2 (antes da fase 2): 17 flags, 14 pads, sem ms= nem sold=
-            const string v02 = "v=1\nt=1800\ngold=900\nup=11111111111111111\nut=53,119,196,259,334,429,498,562,647,724,817,1037,1201,1403,918,1562,1704\n" +
-                               "pads=0,0,0,0,0,0,0,0,0,0,0,0,0,0,\nst1=6,4,1,0.5,900\nst8=2,1,0,0,20\nstock=5,1,0,2\nema=16.3\nsaved=1000\nclaim=900\n" +
-                               "m=19,783,12196,0,23,50,4,193,17\npx=13.00,5.00\n";
+            const string v02 = SaveV02;   // save da v0.2
             Sim s = null;
             Assert.DoesNotThrow(() => s = Sim.Load(v02));
             Assert.AreEqual((900, 17), (s.Gold, s.UpgradesBought));
@@ -1444,8 +1453,7 @@ namespace FS.Tests
         [Test]
         public void Save_Antigo23Flags_CarregaComOParNovoTravadoEDevolveParcialDoLuxo()
         {
-            // save da v0.3: 20 produtivos + Fachada + Piso, 20 pads, Joalheria real com 750 pagos
-            const string v03 = "v=1\nt=4800\ngold=9000\nup=11111111111111111111110\npads=0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,750,\nstock=2,3,1,4\nsold=300,60,40,90\nms=2,2,2,2\nema=17\nsaved=900\nclaim=800\npx=12,9\n";
+            const string v03 = SaveV03;   // save da v0.3
             Sim s = null;
             Assert.DoesNotThrow(() => s = Sim.Load(v03));
             Assert.AreEqual((22, 22), (s.UpgradesBought, s.Pads.Count));
@@ -1628,8 +1636,7 @@ namespace FS.Tests
         [Test]
         public void Save_Antigo_ParcialEmPadQueVirouMenu_VoltaParaOOuro()
         {
-            // save de antes da Leva 11: parcial em 8 pads que viraram menu (slots 0, 6, 7, 8, 10, 11, 15, 16) e na Esteira (slot 9, continua pad)
-            const string old = "v=1\nt=1500\ngold=1000\nup=0010000000000001100000000\npads=40,0,0,0,0,0,100,120,30,55,900,600,0,0,0,5000,8000,0,0,0,0,0,\npx=4.5,3.5\n";
+            const string old = SaveAntesLeva11;
             Sim s = Sim.Load(old);
             Assert.AreEqual(1000 + 40 + 100 + 120 + 30 + 900 + 600 + 5000 + 8000, s.Gold, "o parcial dos pads do menu volta inteiro para o ouro");
             Assert.AreEqual(55, PadFor(s, Upgrade.Conveyor).Paid, "o parcial de pad que continua no mundo fica no pad");
