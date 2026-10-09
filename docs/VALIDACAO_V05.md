@@ -142,3 +142,10 @@ Refeito depois de olhar: moldura de ouro própria (o trilho dourado sumia sob o 
 - O VIP pendente não mostra o item (o Core não expõe o `_vipWant`); ele aparece só com coroa e "VIP".
 - No aparelho: medir se o "×N" de pacote grande (até 20) lê a 1080 × 2400 (44 px de referência) e se o selo de 0,56 m com "×3" de 30 px lê.
 
+## v0.5 no emulador do PC (2026-10-09, coordenador)
+- AVD `fs_playstore` (Android 15 Google Play x86_64, 1080×2400, 2 GB). Ligar SEMPRE com `-crash-report-mode never -no-metrics` (senão, depois de um `adb emu kill`, ele para num diálogo de relatório de erro com envio automático marcado).
+- O APK de aparelho (ARM64) **cai** no emulador: `berberis: Cannot process signal 11` (tradutor ARM→x86 do Android 15 com IL2CPP). Não é bug do jogo. Para o PC: `FS.EditorTools.Setup.BuildAndroidEmu` → `Builds/android/ForgeStreet-emu.apk` (x86_64 nativo, 73,4 MB); depois dele, `git checkout client/Assets/Plugins/Android/mainTemplate.gradle client/ProjectSettings/AndroidResolverDependencies.xml` (o resolver do LevelPlay exclui as libs ARM64).
+- Resultado: abre, LevelPlay inicializa (`ad_init ok 9.5.1`), sem anúncio real (`509 Mediation No fill` — conta ainda não aprovada / sem test device) → build de desenvolvimento cai no **anúncio simulado**; toque em "2×" → anúncio de teste 5 s → recompensa → selo "2× 0:56" e botão oferecendo "3×". Fotos `client/Builds/validation_emulador/` (01 queda ARM64, 02 abertura x86_64, 03 anúncio, 04 boost).
+- Diário no Android lido pelo `diario_report.py` (seção de anúncios conta pedidos/mostrados/recompensas/falhas). No Git Bash, `adb pull /sdcard/...` precisa de `MSYS_NO_PATHCONV=1` (senão o caminho vira `C:/Program Files/Git/sdcard/...`).
+- Desempenho do emulador NÃO vale para o POCO (CPU do PC); FPS e memória só no aparelho.
+

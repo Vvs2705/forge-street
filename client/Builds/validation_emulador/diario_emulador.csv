@@ -1,0 +1,29 @@
+2026-10-09T01:15:10,398297fd,session_start,0.0,0.5.0,Google sdk_gphone64_x86_64
+2026-10-09T01:15:12,398297fd,ad_init,1.5,ok,9.5.1
+2026-10-09T01:15:13,398297fd,ad_load_fail,3.4,velocidade,509 Mediation No fill retry 30s
+2026-10-09T01:15:14,398297fd,ad_load_fail,3.5,vip,509 Mediation No fill retry 30s
+2026-10-09T01:15:42,398297fd,client_left,32.0,espada,fila_cheia
+2026-10-09T01:15:44,398297fd,ad_load_fail,33.6,velocidade,509 Mediation No fill retry 60s
+2026-10-09T01:15:44,398297fd,ad_load_fail,33.8,vip,509 Mediation No fill retry 60s
+2026-10-09T01:15:48,398297fd,client_left,38.0,espada,fila_cheia
+2026-10-09T01:15:54,398297fd,client_left,44.0,espada,fila_cheia
+2026-10-09T01:16:00,398297fd,ad_request,49.9,velocidade,simulado
+2026-10-09T01:16:00,398297fd,ad_shown,49.9,velocidade,simulado
+2026-10-09T01:16:05,398297fd,ad_reward,49.9,velocidade,Velocidade x1 simulado
+2026-10-09T01:16:05,398297fd,boost_start,49.9,2,60
+2026-10-09T01:16:05,398297fd,client_left,50.0,espada,fila_cheia
+2026-10-09T01:16:08,398297fd,client_left,53.0,espada,fila_cheia
+2026-10-09T01:16:11,398297fd,client_left,56.0,espada,fila_cheia
+2026-10-09T01:16:14,398297fd,client_left,59.0,espada,fila_cheia
+2026-10-09T01:16:15,398297fd,queue_length,59.9,4,4
+2026-10-09T01:16:15,398297fd,bottleneck_seconds,59.9,0,140
+2026-10-09T01:16:15,398297fd,walk_no_decision,59.9,1,0
+2026-10-09T01:16:17,398297fd,client_left,62.0,espada,fila_cheia
+2026-10-09T01:16:20,398297fd,client_left,65.0,espada,fila_cheia
+2026-10-09T01:16:20,398297fd,client_left,65.0,espada,cansou
+2026-10-09T01:16:26,398297fd,client_left,71.0,espada,fila_cheia
+2026-10-09T01:16:26,398297fd,client_left,71.0,espada,cansou
+2026-10-09T01:16:32,398297fd,client_left,77.0,espada,fila_cheia
+2026-10-09T01:16:32,398297fd,client_left,77.0,espada,cansou
+2026-10-09T01:16:38,398297fd,client_left,83.0,espada,fila_cheia
+2026-10-09T01:16:38,398297fd,client_left,83.0,espada,cansou

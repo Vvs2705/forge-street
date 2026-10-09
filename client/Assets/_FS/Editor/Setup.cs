@@ -59,10 +59,16 @@ namespace FS.EditorTools
 
         public static void BuildWindows() => Build(BuildTarget.StandaloneWindows64, "Builds/win/ForgeStreet.exe");
         public static void BuildAndroidDev() => Build(BuildTarget.Android, "Builds/android/ForgeStreet-dev.apk");
+        // Emulador do PC (x86_64): o berberis do Android 15 derruba o ARM64 traduzido do Unity/IL2CPP (signal 11, 2026-10-08).
+        // ponytail: APK so de teste local; aparelho e Play recebem so ARM64 (BuildAndroidDev).
+        // ATENCAO: o resolver do LevelPlay reescreve Plugins/Android/mainTemplate.gradle e ProjectSettings/AndroidResolverDependencies.xml
+        // para x86_64 (exclui as libs ARM64). Depois deste build: `git checkout` dos dois antes do BuildAndroidDev.
+        public static void BuildAndroidEmu() => Build(BuildTarget.Android, "Builds/android/ForgeStreet-emu.apk", AndroidArchitecture.X86_64);
 
-        static void Build(BuildTarget target, string path)
+        static void Build(BuildTarget target, string path, AndroidArchitecture arch = AndroidArchitecture.None)
         {
             Apply();
+            if (arch != AndroidArchitecture.None) PlayerSettings.Android.targetArchitectures = arch;
             BuildReport r = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {
                 scenes = new[] { Scene },
@@ -71,6 +77,7 @@ namespace FS.EditorTools
                 options = BuildOptions.Development,
             });
             Debug.Log($"BuildSummary({target}): result={r.summary.result} errors={r.summary.totalErrors} size={r.summary.totalSize} path={path}");
+            if (arch != AndroidArchitecture.None) { PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64; AssetDatabase.SaveAssets(); }   // nao vaza para o build do aparelho
             if (Application.isBatchMode) EditorApplication.Exit(r.summary.result == BuildResult.Succeeded ? 0 : 1);
         }
     }
