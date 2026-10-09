@@ -16,7 +16,7 @@ Este repositório é **só do Forge Street** (GitHub `Vvs2705/forge-street`). Ca
 
 ## Situação
 - Estado: 0.5.1 lançada (Release `v0.5.1`, testada no POCO F4 a 60 fps); 0.6.0 na `main` — Release só depois do teste no POCO.
-- Comece por: `README.md` (seção Estado), `docs/BACKLOG_V07.md` (decisões D1–D9), `docs/GDD.md`, `docs/COMPETITIVO.md`, `docs/VALIDACAO_V05.md` (teste no POCO) e `docs/VALIDACAO_V06A.md`.
+- Comece por: `docs/PROJETO.md` (fonte única: estado, decisões, known issues), `docs/DOCUMENTO_MESTRE_PRODUCAO_V1.md` (direção comercial, Waves A→I), `docs/PRODUCAO_V1_MAPA_TICKETS.md` (mapa e tickets); histórico: `README.md` (seção Estado), `docs/BACKLOG_V07.md` (decisões D1–D9), `docs/GDD.md`, `docs/COMPETITIVO.md`, `docs/VALIDACAO_V05.md` (teste no POCO) e `docs/VALIDACAO_V06A.md`.
 - Portões antes de qualquer PR de jogo: `dotnet test client/tools/coretests`, `dotnet build client/tools/viewcheck/view` (0 erros), build Windows + `-autoplay`; economia mexida = números do bot em `docs/BALANCE.md`.
 - Build Android: use `Setup.BuildAndroidDev`/`BuildAndroidEmu` (já limpam a saída incremental do Gradle e tratam o `mainTemplate.gradle`). Aparelho: `client/tools/medir_aparelho.sh`; roteiro em `docs/ROTEIRO_TESTE_POCO.md`.
 - A `main` tem a regra "mudanças só por pull request": nunca dê push direto nela.
