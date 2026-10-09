@@ -190,4 +190,10 @@ Fica para o aparelho: #4 e #6 só aparecem com anúncio real (conta LevelPlay ap
 - No emulador (API 35), nem o código antigo (salvar e sair) nem a correção acima rodavam: o GameActivity da Unity 6 não entrega o voltar ao Input System (nenhum evento de teclado; problema conhecido, fórum Unity 1555368 / UUM-136080). O Predictive Back desligado também não resolve.
 - Correção: `activeInputHandler` = 2 (Input System + Input Manager legado, no `Setup` e no ProjectSettings) e `Input.GetKeyDown(KeyCode.Escape)` no `Game.Update`. No emulador: voltar fecha a bandeja (`validation_v051/shots/04`→`05`) e, com a tela limpa, sai do jogo.
 - O `Setup.Build` agora apaga a saída incremental do Gradle antes de todo build Android e o `BuildAndroidEmu` tira o exclude de `/lib/x86_64` do `mainTemplate.gradle` durante o build (detalhes em `VALIDACAO_V06A.md` §Android).
-- Build Windows Success, `AUTOPLAY OK venda1=23s upgrades=8 ouro=1310`; APK ARM64 72 509 035 B (7 bibliotecas), SHA-256 `3ed4260c…e4ac`.
+- Build Windows Success, `AUTOPLAY OK venda1=23s upgrades=8 ouro=1310`; APK ARM64 72 509 035 B (7 bibliotecas), SHA-256 `3ed4260c…e4ac`.
+
+## Sessão longa no Android (emulador, 2026-10-09 09:54–10:04)
+APK x86_64 com o mesmo código da 0.5.1 (`ForgeStreet-emu-0.5.1.apk`), bot a 4× por 10 min reais (~41 min de jogo), sem `-testsession` (grava diário):
+- **Memória:** PSS 322 → 322 → 333 → 324 → 329 → 333 MB a cada 2 min: estável, sem vazamento. (x86 no emulador não compara com os 252 MB do POCO na v0.4.1; serve só para tendência.)
+- **Erros:** 0 exceção da Unity no logcat (fora o `LoadFailed` esperado do LevelPlay sem conta aprovada); nenhum FATAL/ANR.
+- **Diário do Android → `diario_report.py`:** de ponta a ponta. 1ª venda 0:22, upgrades no ritmo do bot do core (humano/bot 0,93–1,13×), 8 VIPs (7 atendidos), portões do GDD ok exceto os 2 que só pessoa mede (fator humano e opt-in de anúncio). O relatório agora separa "falhas ao mostrar" de "sem anúncio carregado" (antes somava as duas e mostrava "falhas 5" sem nenhum pedido).
