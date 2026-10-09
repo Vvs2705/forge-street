@@ -1,4 +1,4 @@
-# Forge Street — protótipo v0.5 (carga sem bloqueio, balcão 4→8, arte nova, VIP e velocidade)
+# Forge Street — protótipo v0.6 (juice, configurações, encomendas e leitura; v0.5.1 no teste do POCO)
 
 Idle/tycoon arcade em retrato. Você é o ferreiro: pega **minério** no depósito, derrete na **fornalha**, martela na **bigorna**, leva ao **balcão** onde os clientes pagam, **pisa em pads** para construir (2ª bigorna, escudos, ajudantes, esteira, 2ª fornalha, corredor, joalheria…) e compra no **menu da barra de baixo**, por toque, as melhorias do ferreiro e das estações (fole, mochila, botas, martelo veloz, vitrine…). A produção é física e legível: cada pilha de entrada/saída aparece no chão, a fornalha com saída cheia pisca vermelho ("travada"), a bigorna sem lingote fica apagada ("fome"). A decisão é ler qual estágio é o gargalo agora e investir ali.
 
@@ -88,6 +88,14 @@ Bot humano, 60 min: Joalheiro 25:25, Lupa 31:12, Vitrine 40:41; receita online 4
 
 Evidências da continuação: `client/Builds/validation_phase2/`. Core 37/37, prova vermelha isolada e restauração verde, EditMode Unity 37/37, viewcheck 0 erros/0 avisos. Builds Windows/Android `Succeeded`, zero erros; autoplay Windows 60 min OK. APK dev 0.2.0: **46.898.468 bytes (46,9 MB)**, gerado em 07/10 às 15:07:54. Fotos em `shots/` e relatório/comandos em `docs/VALIDACAO_FASE2.md`. Android real e métricas humanas continuam sem validação.
 
+## v0.6 — juice, configurações, encomendas e leitura (2026-10-09, branch `feat/v0.6-juice`, APK de teste `ForgeStreet-0.6.0.apk`)
+- **Juice:** faíscas e punch na bigorna, fumaça e boca acesa na fornalha, pop do item pronto, "MAX" na pilha, melhorias visíveis (fole, martelo dourado, mochila, poeira das botas) (`docs/VALIDACAO_V06A.md`).
+- **Configurações:** engrenagem na HUD com Som e Vibração (pulsos curtos na venda/compra/VIP, provados no Android por `dumpsys`).
+- **Encomendas** (missões curtas, `docs/FASE9_ENCOMENDAS.md`): uma por vez, "Venda N de uma linha", N pela renda real, prêmio ~10 s da taxa online fora do `GoldEarned`; bot 60 min: 21 entregues, 5,0% da receita.
+- **Leitura (revisão de UX):** dica numa linha, placas que mostram quando dá para comprar, seta-guia maior, balões dentro da tela, cofre "Bem-vindo de volta!", rótulos maiores.
+- **Android:** voltar do Android chega ao jogo (Input "Both"; o GameActivity da Unity 6 não passa o voltar ao Input System) e o build Android limpa a saída incremental do Gradle. Experimento B4 (moeda física) medido no bot: `docs/BALANCE.md` §21, branch `exp/moeda-fisica`.
+- Próximas escolhas em `docs/BACKLOG_V07.md`.
+
 ## v0.5 — feedback do POCO F4 + análise de jogos similares (2026-10-08, em andamento)
 
 Pedidos do Vinicius jogando a v0.4.1 e o que virou (detalhes em `docs/FASE7_CARGA_BALCAO.md`, `docs/FASE8_VIP_VELOCIDADE.md`, `docs/BENCHMARK_*.md`):
@@ -143,7 +151,7 @@ Pedidos do Vinicius depois de jogar a v0.3.0 num POCO F4:
 
 ## Próximos passos
 
-1. **Testar a v0.5 no POCO F4 (2026-10-09):** carga mista e a trava das máquinas cheias, balcão 4→8 e estande, balão/moedas/ícones legíveis a 1080×2400, VIP e velocidade (anúncio simulado ou LevelPlay de teste), cofre na volta de outro app; FPS e memória com 16 clientes.
+1. **Testar a v0.5.1 no POCO F4 (2026-10-09, `docs/ROTEIRO_TESTE_POCO.md`; parte 2 opcional com a 0.6.0):** carga mista e a trava das máquinas cheias, balcão 4→8 e estande, balão/moedas/ícones legíveis a 1080×2400, VIP e velocidade (anúncio simulado ou LevelPlay de teste), cofre na volta de outro app; FPS e memória com 16 clientes.
    Teste comparativo no emulador com 4 jogos similares (`docs/TESTE_COMPARATIVO.md`) quando o Vinicius entrar na conta Google.
 2. **Playtest Camada 0** (10–20 pessoas, teste interno do Play) lendo `diario.csv` com `python client/tools/diario_report.py playtest/` (seção Playtest abaixo): `first_sale` <90 s em ≥90% (GDD §15); `upgrade_buy` × a §3 (calibra o fator humano do bot); `walk_no_decision` (kill criterion "andar entre pilhas"); `client_left`. Hipótese de passagem: ≥70% compram a 2ª linha (escudos) sem dica e ≥50% dizem qual estação era o gargalo.
 3. **8 criativos 9:16** (GDD §17). **3 gravados** do build real: #1 bigorna vazia → oficina lotada, #2 fila gigante → fole resolve, #8 erro proposital (`client/Builds/creatives/`, `docs/CRIATIVOS.md`). Faltam 5; #3 "onde investir 100 moedas?" é o próximo.
