@@ -1,4 +1,4 @@
-# Forge Street — protótipo v0.4 (oficina + joalheria, física e menu de melhorias)
+# Forge Street — protótipo v0.5 (carga sem bloqueio, balcão 4→8, arte nova, VIP e velocidade)
 
 Idle/tycoon arcade em retrato. Você é o ferreiro: pega **minério** no depósito, derrete na **fornalha**, martela na **bigorna**, leva ao **balcão** onde os clientes pagam, **pisa em pads** para construir (2ª bigorna, escudos, ajudantes, esteira, 2ª fornalha, corredor, joalheria…) e compra no **menu da barra de baixo**, por toque, as melhorias do ferreiro e das estações (fole, mochila, botas, martelo veloz, vitrine…). A produção é física e legível: cada pilha de entrada/saída aparece no chão, a fornalha com saída cheia pisca vermelho ("travada"), a bigorna sem lingote fica apagada ("fome"). A decisão é ler qual estágio é o gargalo agora e investir ali.
 
@@ -88,6 +88,18 @@ Bot humano, 60 min: Joalheiro 25:25, Lupa 31:12, Vitrine 40:41; receita online 4
 
 Evidências da continuação: `client/Builds/validation_phase2/`. Core 37/37, prova vermelha isolada e restauração verde, EditMode Unity 37/37, viewcheck 0 erros/0 avisos. Builds Windows/Android `Succeeded`, zero erros; autoplay Windows 60 min OK. APK dev 0.2.0: **46.898.468 bytes (46,9 MB)**, gerado em 07/10 às 15:07:54. Fotos em `shots/` e relatório/comandos em `docs/VALIDACAO_FASE2.md`. Android real e métricas humanas continuam sem validação.
 
+## v0.5 — feedback do POCO F4 + análise de jogos similares (2026-10-08, em andamento)
+
+Pedidos do Vinicius jogando a v0.4.1 e o que virou (detalhes em `docs/FASE7_CARGA_BALCAO.md`, `docs/FASE8_VIP_VELOCIDADE.md`, `docs/BENCHMARK_*.md`):
+- **"Peguei as barras, as máquinas estavam cheias e não consegui pegar os itens da bigorna"** → o ferreiro carrega todos os tipos ao mesmo tempo (até 3 de cada; 6 com a Mochila); ajudantes seguem com um tipo.
+- **"Vendas no balcão sem ninguém pedindo"** → era a compra direta com fila cheia (18,7% das vendas aos 10 min): saiu; toda venda tem cliente na vaga.
+- **Balcão sem toldo, estande que atende 4 e cresce até 8 (+1 por evolução)** → Balcão 5–8 no menu (150/175/200/225), estande modular com o estoque em pé.
+- **"A espada é um triângulo azul"; "o portão lateral está errado"** → ícones renderizados no Blender (espada, escudo, martelo, anel, lingote, minério, moeda), balão grande no 1º da fila, moedas voando ao contador, portões vistos de lado.
+- **"Crie mais NPCs e rotacione"** → 10 clientes novos (Tripo, Lote 4, 650 créditos) e sorteio embaralhado de 16.
+- **Cliente VIP (~5 min, paga mais) e anúncio para chamar o VIP / velocidade 2×–3× por 1 min** → VIP paga 3× por unidade; velocidade com recarga; anúncios pelo Unity LevelPlay (em integração; anúncio simulado com `-fakeads`).
+- Cofre também paga ao voltar de outro app (≥ 60 s fora).
+- Teste comparativo com 4 jogos no emulador: protocolo em `docs/TESTE_COMPARATIVO.md`.
+
 ## v0.4.0 — playtest no aparelho: física, duas bocas, paciência, ambiente e menu (2026-10-07)
 
 Pedidos do Vinicius depois de jogar a v0.3.0 num POCO F4:
@@ -130,11 +142,12 @@ Pedidos do Vinicius depois de jogar a v0.3.0 num POCO F4:
 
 ## Próximos passos
 
-1. **Retestar a v0.4.0 no POCO F4:** barra de melhorias (toque, joystick fora da faixa), bocas de 0,4 m no polegar, contornar estações sem desvio automático, porta lateral, paciência nova.
+1. **Testar a v0.5 no POCO F4 (2026-10-09):** carga mista e a trava das máquinas cheias, balcão 4→8 e estande, balão/moedas/ícones legíveis a 1080×2400, VIP e velocidade (anúncio simulado ou LevelPlay de teste), cofre na volta de outro app; FPS e memória com 16 clientes.
+   Teste comparativo no emulador com 4 jogos similares (`docs/TESTE_COMPARATIVO.md`) quando o Vinicius entrar na conta Google.
 2. **Playtest Camada 0** (10–20 pessoas, teste interno do Play) lendo `diario.csv` com `python client/tools/diario_report.py playtest/` (seção Playtest abaixo): `first_sale` <90 s em ≥90% (GDD §15); `upgrade_buy` × a §3 (calibra o fator humano do bot); `walk_no_decision` (kill criterion "andar entre pilhas"); `client_left`. Hipótese de passagem: ≥70% compram a 2ª linha (escudos) sem dica e ≥50% dizem qual estação era o gargalo.
 3. **8 criativos 9:16** (GDD §17). **3 gravados** do build real: #1 bigorna vazia → oficina lotada, #2 fila gigante → fole resolve, #8 erro proposital (`client/Builds/creatives/`, `docs/CRIATIVOS.md`). Faltam 5; #3 "onde investir 100 moedas?" é o próximo.
 4. **Decisão do slot idle** pelo playtest e criativos do Forge; Underground continua como alternativa.
-5. **Backlog proposto:** A/B do 2º ajudante de minério (`docs/ESTUDO_LOGISTICA.md`); validar com pessoas se o luxo é desejado (bot comprar não prova interesse). Não ampliar conteúdo antes de medir. Ads/IAP e publicação exigem autorização específica.
+5. **Backlog proposto:** A/B do 2º ajudante de minério (`docs/ESTUDO_LOGISTICA.md`); validar com pessoas se o luxo é desejado (bot comprar não prova interesse). Não ampliar conteúdo antes de medir. IAP e publicação exigem autorização específica; anúncios recompensados (LevelPlay) autorizados em 2026-10-08.
 
 
 ## Repositório e licença

@@ -51,8 +51,10 @@ namespace FS.Core
     }
 
     /// <summary>Eventos de um tick, para a view (SFX, particulas, diario). A = item/upgrade/estacao, B = detalhe.
-    /// Milestone: bau de marco apareceu (A = indice em Balance.Milestones, B = ouro); ChestOpened: o jogador abriu (A = indice, B = ouro).</summary>
-    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened }
+    /// Milestone: bau de marco apareceu (A = indice em Balance.Milestones, B = ouro); ChestOpened: o jogador abriu (A = indice, B = ouro).
+    /// FASE8 (anexados): VipArrived = o VIP entrou numa vaga do balcao (A = item, B = unidades do pacote); VipServed = levou o pacote todo
+    /// (A = item, B = ouro que pagou); VipLeft = cansou antes (A = item, B = unidades que faltaram). Cada unidade do VIP sai tambem como Sold (B = 3x o preco).</summary>
+    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft }
 
     /// <summary>Dica contextual da HUD (a view so traduz). Arg = indice do pad (BuyPad), do item, do bau (OpenChest) ou do upgrade (BuyMenu).
     /// BuyMenu ANEXADO no fim (FASE6): a compra mais barata pagavel agora e' um upgrade do menu inferior.</summary>
@@ -142,6 +144,17 @@ namespace FS.Core
         public const int OfflineCapSeconds = 7200; public const float OfflineFactor = 0.25f;   // raia B §5 + coordenador 2026-10-06: teto 2 h, 25% da taxa online
         public const float OfflineMaxNextUpgrades = 2f;         // e nunca mais que 2x o preco do upgrade mais barato ainda travado
         public const float RateTau = 60f;                       // s da media movel de ouro/s (taxa online)
+        // FASE8 (docs/FASE8_VIP_VELOCIDADE.md, medido no BALANCE.md §18): cliente VIP e velocidade por anuncio
+        public const float VipMin = 240f, VipMax = 360f;        // s entre VIPs (sorteio deterministico); o relogio so anda depois da 1a venda
+        public const int VipPackMin = 3, VipPriceMul = 3;       // pacote de no minimo 3 unidades (no maximo a prateleira, CounterCap) de um produto do balcao, 3x o preco cada
+        public const float VipShare = 0.07f;                    // o pacote vale ~7% do ouro de um intervalo medio entre VIPs (sweep de 3/5/6 fixos e 5/7/10%: BALANCE §18)
+        public const float VipPatienceBase = 90f, VipPatiencePerUnit = 6f;   // rodada 3: paciencia do VIP = 90 s + 6 s por unidade do pacote (3 = 108 s, 10 = 150 s, 20 = 210 s)
+        /// <summary>Paciencia do VIP com `units` no pacote (natural e chamado). O cliente normal tem 57-77 s.</summary>
+        public static float VipPatienceFor(int units) => VipPatienceBase + VipPatiencePerUnit * units;
+        public const float VipSummonMinIn = 60f;                // chamar por anuncio: so sem VIP ativo e com o proximo natural a mais de 60 s
+        public const int VipSummonPackMul = 2, VipSummonPackMax = 20;   // o VIP chamado e' EXTRA (nao mexe no relogio natural) e traz 2x o pacote do natural, ate 20 (coordenador)
+        public const float BoostSeconds = 60f, BoostMax = 3f, BoostPlayerMax = 1.3f;   // 1 anuncio = 2x por 60 s, o 2o sobe para 3x; o ferreiro no maximo 1,3x
+        public const float BoostCooldownSeconds = 300f;         // recarga: 5 min de jogo contados do FIM de cada boost (coordenador; sem ela, 2x renovado fechava a producao aos 26:56)
         public static readonly int[] Price = { 0, 0, 10, 25, 16, 60 };     // ouro por item vendido
         public static readonly int[] IngotsPer = { 0, 0, 1, 2, 1, 2 };     // lingotes por produto
         public static readonly string[] ItemName = { "minério", "lingote", "espada", "escudo", "ferramenta", "joia" };

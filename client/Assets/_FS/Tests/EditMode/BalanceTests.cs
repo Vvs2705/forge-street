@@ -147,7 +147,7 @@ namespace FS.Tests
             var earned = new int[61]; var jewelsAt = new int[61];
             var chestOpen = new float[s.Chests.Count];
             for (int i = 0; i < chestOpen.Length; i++) chestOpen[i] = -1f;
-            int jewels = 0, nextMinute = 1;
+            int jewels = 0, nextMinute = 1, vipArrived = 0, vipServed = 0, vipLeft = 0, vipGold = 0;   // FASE8: VIP natural (o bot nao assiste anuncio)
             float starveAtJewelry = 0f, starveAtJeweler = 0f, starveAtLupa = 0f;
             var log = new StringBuilder();
             for (float t = 0f; t < 60f * 60f; t += Dt)
@@ -156,6 +156,9 @@ namespace FS.Tests
                 foreach (SimEvent e in s.Events)
                 {
                     if (e.Kind == Ev.Sold && e.A == (int)Item.Jewel) jewels++;
+                    if (e.Kind == Ev.VipArrived) vipArrived++;
+                    if (e.Kind == Ev.VipServed) { vipServed++; vipGold += e.B; }
+                    if (e.Kind == Ev.VipLeft) vipLeft++;
                     if (e.Kind == Ev.ChestOpened) { chestOpen[e.A] = s.Time; log.AppendLine($"  {Clock(s.Time)} bau {e.A} ({s.Chests[e.A].Label}) aberto, +{e.B}"); }
                     if (e.Kind == Ev.Milestone) log.AppendLine($"  {Clock(s.Time)} marco {e.A} ({s.Chests[e.A].Label}) bateu");
                     if (e.Kind == Ev.Bought && e.A == (int)Upgrade.Jewelry) starveAtJewelry = s.JewelBench.StarveSeconds;
@@ -182,6 +185,8 @@ namespace FS.Tests
             TestContext.WriteLine(log.ToString());
             TestContext.WriteLine(Report(s));
             TestContext.WriteLine(windows.ToString());
+            float vipShare = 100f * vipGold / Math.Max(1, s.GoldEarned);
+            TestContext.WriteLine(string.Format(CultureInfo.InvariantCulture, "VIP: sorteados={0} entraram={1} levaram={2} cansaram={3} ouro={4} ({5:0.0}% da receita)", s.VipCount, vipArrived, vipServed, vipLeft, vipGold, vipShare));
             TestContext.WriteLine(string.Format(CultureInfo.InvariantCulture,
                 "joalheiro={0} lupa={1} vitrine de joias={2} | producao completa={3} | joias/min: joalheria->joalheiro={4:0.0} joalheiro->lupa={5:0.0} depois da producao={6:0.0} | " +
                 "bancada de joias sem lingote: antes do joalheiro={7:0}% joalheiro->lupa={8:0}% joalheiro->60 min={9:0}% | joias={10} | baus abertos: {11}",
@@ -206,6 +211,10 @@ namespace FS.Tests
             Assert.Greater(afterAll, 10.3f, "piso ~70% do medido (14,8 joias/min)");
             Assert.LessOrEqual(starveAfter, 35f, "criterio da fase 4: bancada de joias sem lingote <= 35% (medido 9%)");
             Assert.Greater((earned[60] - earned[55]) / 5f, 1085f, "piso ~70% do ouro/min medido no fim (1551)");
+            // FASE8 (BALANCE.md §18; medido 2026-10-08: 11 VIPs sorteados, 11 levaram o pacote, 0 cansaram, 3.177 ouro = 6,0% da receita)
+            Assert.GreaterOrEqual(vipServed, 8, "VIP natural a cada 4-6 min depois da 1a venda e o bot atende (medido 11; piso ~70%)");
+            Assert.LessOrEqual(vipLeft, 1, "a paciencia de 120 s cobre o pacote (medido 0 cansaram)");
+            Assert.That(vipShare, Is.InRange(4.2f, 10f), "o VIP vale 5-10% da receita (alvo do contrato; medido 6,0%, piso ~70%)");
         }
 
         /// <summary>

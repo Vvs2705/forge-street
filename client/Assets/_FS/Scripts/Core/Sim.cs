@@ -49,6 +49,8 @@ namespace FS.Core
     public sealed class Client
     {
         public Item Want; public float Patience, MaxPatience;
+        /// <summary>FASE8: VIP = pacote de `Pack` unidades (o que ainda falta) a 3x o preco; `Paid` = ouro que ja pagou nesta vaga.</summary>
+        public bool Vip; public int Pack, Paid;
     }
 
     /// <summary>Bau de marco (um por Balance.Milestones, mesmo Index). State: 0 nao batido, 1 disponivel, 2 aberto.</summary>
@@ -105,6 +107,14 @@ namespace FS.Core
         public readonly List<Chest> Chests = new List<Chest>();          // baus de marco, na ordem de Balance.Milestones
         public readonly int[] SoldItems = new int[6];                    // vendas por Item (marcos "10 espadas", "10 joias")
         public float MaxX = Balance.WorkshopW - 0.3f;   // limite direito do jogador: a oficina ate o Corredor, o mapa inteiro depois
+        // FASE8 (docs/FASE8_VIP_VELOCIDADE.md): cliente VIP e velocidade por anuncio
+        /// <summary>s ate o proximo VIP natural (parado ate a 1a venda); VipCount = VIPs ja sorteados, naturais e chamados (semente do intervalo e do
+        /// produto). Vao no save.</summary>
+        public float VipIn = VipInterval(0); public int VipCount;
+        /// <summary>Velocidade por anuncio: multiplicador (1, 2 ou 3), s restantes e s de recarga (conta do fim do boost), no tempo de jogo. NAO vao no
+        /// save. ponytail: a recarga some ao fechar (reabrir o app libera um boost); gravar exige descontar o tempo offline, fica para quando medir abuso.</summary>
+        public float BoostMul = 1f, BoostLeft, BoostCooldown;
+        int _vipWant = -1, _vipPack;   // VIP sorteado esperando vaga (-1 = nenhum)
 
         // metricas de playtest (GDD §14/§15)
         public float FirstSaleTime = -1f, WalkNoDecision;
@@ -218,6 +228,55 @@ namespace FS.Core
         public float Fame => Math.Max(Balance.FameFloor, (float)Math.Pow(Balance.FamePer10Sales, Sales / 10));
         public float ClientInterval(Item product) => Balance.ClientInterval[(int)product] * Fame * (Bought[(int)Upgrade.CounterCapacity] ? Balance.VitrineClientMul : 1f)
             * (product == Item.Jewel && Bought[(int)Upgrade.JewelVitrine] ? Balance.JewelVitrineClientMul : 1f);
+        /// <summary>Ha um VIP esperando vaga ou numa vaga do balcao.</summary>
+        public bool VipActive => _vipWant >= 0 || Queue.Exists(c => c.Vip);
+        /// <summary>Botao "chamar o VIP" (anuncio): depois da 1a venda, sem VIP ativo e com o natural a mais de 60 s (contra abuso).</summary>
+        public bool CanSummonVip => FirstSaleTime >= 0f && !VipActive && VipIn > Balance.VipSummonMinIn;
+
+        /// <summary>s entre o VIP `n` e o seguinte: 4-6 min, sorteio deterministico (sequencia de Weyl pela razao aurea: sem estado alem de VipCount).</summary>
+        public static float VipInterval(int n) => Balance.VipMin + (Balance.VipMax - Balance.VipMin) * (float)((n + 1) * 0.6180339887498949 % 1.0);
+
+        /// <summary>Anuncio "chamar o VIP": um VIP EXTRA agora (entra na proxima vaga livre), com 2x o pacote do natural (ate 20). NAO mexe no
+        /// relogio natural (so o segura em 0 se ele zerar com o extra ainda na vaga). Fora de CanSummonVip recusa (false).</summary>
+        public bool SummonVip()
+        {
+            if (!CanSummonVip) return false;
+            SpawnVip(true);
+            return true;
+        }
+
+        /// <summary>Botao "velocidade": com boost ativo, ate chegar a 3x; sem boost, so com a recarga (5 min de jogo desde o fim do ultimo) zerada.</summary>
+        public bool CanBoost => BoostLeft > 0f ? BoostMul < Balance.BoostMax : BoostCooldown <= 0f;
+
+        /// <summary>Anuncio "velocidade": 2x por 60 s; outro com o boost ativo sobe para 3x e reinicia os 60 s. Fora de CanBoost recusa: nada muda e
+        /// devolve 0. Senao devolve o multiplicador novo.</summary>
+        public float StartBoost()
+        {
+            if (!CanBoost) return 0f;
+            BoostMul += 1f;   // CanBoost segura o teto de 3x
+            BoostLeft = Balance.BoostSeconds;
+            return BoostMul;
+        }
+
+        /// <summary>
+        /// Sorteia o VIP: produto do balcao principal ja desbloqueado, em rodizio (espada, escudo, ferramenta); fica em _vipWant ate ter vaga.
+        /// Pacote: ~7% do ouro de um intervalo medio (300 s x RateEma) a 3x o preco, entre 3 e a prateleira (CounterCap). ponytail: a taxa online
+        /// e' o termometro (3 no comeco, 10 no fim); fixo em 3 o VIP caia para 1-3% da janela depois dos 35 min, quando a joia domina a renda.
+        /// `extra` = chamado por anuncio: 2x o pacote do natural (o teto de 20 sai daqui: o natural ja vem cortado na prateleira, no maximo 10) e
+        /// o relogio natural fica como esta.
+        /// </summary>
+        void SpawnVip(bool extra)
+        {
+            var lines = new List<Item>();
+            for (Item p = Item.Sword; p <= Item.Tool; p++) if (LineUnlocked(p)) lines.Add(p);
+            _vipWant = (int)lines[VipCount % lines.Count];
+            double raw = Balance.VipShare * (Balance.VipMin + Balance.VipMax) / 2.0 * RateEma / (Balance.VipPriceMul * PriceOf((Item)_vipWant));
+            int pack = Math.Max(Balance.VipPackMin, Math.Min(CounterCap, (int)Math.Round(raw)));
+            _vipPack = extra ? Balance.VipSummonPackMul * pack : pack;   // ponytail: <= 2 x 10 = VipSummonPackMax; prateleira maior que 10 pede o Math.Min de volta
+            VipCount++;
+            if (!extra) VipIn = VipInterval(VipCount);
+        }
+
         /// <summary>Vaga `i` do balcao (FASE7 §2): QueueCap vagas lado a lado em cima dele, centradas; i = QueueCap = compra direta, logo
         /// depois da ultima. 4 vagas: x 3,2-5,8; 8 vagas: x 1,5-7,5 (compra direta 8,3), dentro da oficina.</summary>
         public V2 ClientSlot(int i) => new V2(Counter.Pos.X + Balance.SlotStep * (i - (QueueCap - 1) / 2f), Counter.Pos.Y + 1.0f);
@@ -231,20 +290,27 @@ namespace FS.Core
             if (dt <= 0f) return;
             Time += dt;
             int earnedBefore = GoldEarned;
+            // FASE8: o boost acelera estacoes, esteira, ajudantes e a chegada de clientes; o ferreiro (andar e maos) no maximo 1,3x, para o
+            // joystick nao fugir do controle. Paciencia, atendimento, relogio do VIP e o proprio boost correm no tempo de jogo. Sem boost, fast = hand = dt
+            float fast = dt * BoostMul, hand = dt * Math.Min(BoostMul, Balance.BoostPlayerMax);
 
-            MovePlayer(dt, inX, inY);
-            foreach (Carrier w in Workers) WorkerThink(w, dt);
-            Interact(Player, dt);
-            foreach (Carrier w in Workers) Interact(w, dt);
-            foreach (Station s in Stations) Produce(s, dt);
-            Conveyor(dt);
+            MovePlayer(hand, inX, inY);
+            foreach (Carrier w in Workers) WorkerThink(w, fast);
+            Interact(Player, hand);
+            foreach (Carrier w in Workers) Interact(w, fast);
+            foreach (Station s in Stations) Produce(s, fast);
+            Conveyor(fast);
             Clients(dt);
             Milestones();
+            if (BoostLeft > 0f) { if ((BoostLeft -= dt) <= 0f) { BoostLeft = 0f; BoostMul = 1f; BoostCooldown = Balance.BoostCooldownSeconds; } }   // recarga conta do fim
+            else BoostCooldown = Math.Max(0f, BoostCooldown - dt);
 
             int cheapest = CheapestVisibleCost();
             // kill criterion do GDD §26 ("andar entre pilhas sem decisao"): anda de maos vazias sem nenhum pad pagavel = puro deslocamento
             if (Player.Moving && Player.Count == 0 && (cheapest < 0 || Gold < cheapest)) WalkNoDecision += dt;
-            double inst = (GoldEarned - earnedBefore) / (double)dt;
+            // FASE8: ouro por segundo de FABRICA (dt x boost): a taxa do cofre offline e do pacote do VIP nao aprende o boost. ponytail: o
+            // ferreiro so vai a 1,3x, entao no boost a taxa sai um pouco abaixo da real; congelar a media deixava ela velha para quem vive no boost
+            double inst = (GoldEarned - earnedBefore) / (double)fast;
             RateEma += (inst - RateEma) * Math.Min(1.0, dt / Balance.RateTau);
         }
 
@@ -721,10 +787,24 @@ namespace FS.Core
 
         void Clients(float dt)
         {
+            // FASE8: o relogio do VIP corre so depois da 1a venda; no zero sorteia o VIP se nao houver outro ativo (senao segura em 0 ate ele
+            // sair). O sorteado pega a proxima vaga livre ANTES de quem chega neste tick: com a fila cheia ele espera, nao some
+            if (FirstSaleTime >= 0f)
+            {
+                VipIn = Math.Max(0f, VipIn - dt);
+                if (VipIn <= 0f && !VipActive) SpawnVip(false);
+            }
+            if (_vipWant >= 0 && Queue.Count < QueueCap)
+            {
+                float pat = Balance.VipPatienceFor(_vipPack);   // pacote maior, mais tempo: o humano e' mais lento que o bot
+                Queue.Add(new Client { Want = (Item)_vipWant, Patience = pat, MaxPatience = pat, Vip = true, Pack = _vipPack });
+                Emit(Ev.VipArrived, _vipWant, _vipPack, ClientSlot(Queue.Count - 1));
+                _vipWant = -1;
+            }
             for (Item p = Item.Sword; p <= Item.Jewel; p++)
             {
                 if (!LineUnlocked(p)) continue;
-                _clientT[(int)p] -= dt;
+                _clientT[(int)p] -= dt * BoostMul;   // FASE8: a demanda acompanha o boost
                 if (_clientT[(int)p] > 0f) continue;
                 _clientT[(int)p] += ClientInterval(p);
                 bool j = p == Item.Jewel;
@@ -750,12 +830,13 @@ namespace FS.Core
 
         public int PriceOf(Item item) => item == Item.Jewel && Bought[(int)Upgrade.JewelVitrine] ? Balance.JewelPriceUp : Balance.Price[(int)item];
 
-        void Sell(Item want, V2 pos)
+        int Sell(Item want, V2 pos, int mul = 1)
         {
-            int price = PriceOf(want);
+            int price = PriceOf(want) * mul;
             Stock[(int)want]--; Gold += price; GoldEarned += price; Sales++; SoldItems[(int)want]++;
             if (FirstSaleTime < 0f) FirstSaleTime = Time;
             Emit(Ev.Sold, (int)want, price, pos);
+            return price;
         }
 
         /// <summary>
@@ -796,21 +877,30 @@ namespace FS.Core
                 // atende o primeiro da fila que da para atender: um cliente de escudo sem escudo no balcao nao trava quem quer espada
                 for (int i = 0; i < q.Count; i++)
                 {
-                    Item want = q[i].Want;
-                    if (Stock[(int)want] <= 0) continue;
-                    q.RemoveAt(i);
+                    Client c = q[i];
+                    if (Stock[(int)c.Want] <= 0) continue;
                     serveT = Balance.ServeTime;
-                    Sell(want, Slot(jewel, i));
+                    if (c.Vip)   // FASE8: uma unidade por atendimento a 3x o preco; fica na vaga ate levar o pacote todo
+                    {
+                        c.Paid += Sell(c.Want, Slot(jewel, i), Balance.VipPriceMul);
+                        if (--c.Pack > 0) break;
+                        q.RemoveAt(i);
+                        Emit(Ev.VipServed, (int)c.Want, c.Paid, Slot(jewel, i));
+                        break;
+                    }
+                    q.RemoveAt(i);
+                    Sell(c.Want, Slot(jewel, i));
                     break;
                 }
             }
             for (int i = q.Count - 1; i >= 0; i--)
             {
-                q[i].Patience -= dt;
-                if (q[i].Patience > 0f) continue;
-                Emit(Ev.ClientLeft, (int)q[i].Want, 0, Slot(jewel, i));
+                Client c = q[i];
+                c.Patience -= dt;
+                if (c.Patience > 0f) continue;
+                if (c.Vip) Emit(Ev.VipLeft, (int)c.Want, c.Pack, Slot(jewel, i));   // FASE8: o VIP fica fora do ClientsLost (metrica dos clientes normais)
+                else { Emit(Ev.ClientLeft, (int)c.Want, 0, Slot(jewel, i)); ClientsLost++; }
                 q.RemoveAt(i);
-                ClientsLost++;
             }
         }
 
@@ -958,6 +1048,11 @@ namespace FS.Core
             // FASE7: o que esta na mao volta ao reabrir (jogador: quantos de cada Item; ajudantes na ordem de contratacao, separados por ';')
             sb.Append("hold=").Append(string.Join(",", Player.Held)).Append('\n');
             if (Workers.Count > 0) sb.Append("wk=").Append(string.Join(";", Workers.ConvertAll(w => string.Join(",", w.Held)))).Append('\n');
+            // FASE8: relogio do VIP, VIPs sorteados e o VIP pendente (produto, unidades que faltam). A fila nao vai no save: o VIP que ja estava
+            // na vaga volta como pendente e pega a 1a vaga ao reabrir, com paciencia cheia. O boost nao vai: some ao fechar
+            Client vip = Queue.Find(c => c.Vip);
+            int vipWant = vip != null ? (int)vip.Want : _vipWant, vipPack = vip != null ? vip.Pack : _vipWant >= 0 ? _vipPack : 0;
+            sb.Append("vip=").Append(VipIn.ToString("0.###", ci)).Append(',').Append(VipCount).Append(',').Append(vipWant).Append(',').Append(vipPack).Append('\n');
             return sb.ToString();
         }
 
@@ -974,6 +1069,7 @@ namespace FS.Core
             if (string.IsNullOrEmpty(text)) return sim;
             var ci = CultureInfo.InvariantCulture;
             string wk = "";   // carga dos ajudantes: aplicada depois do Recompute (eles nascem dos flags)
+            int vipWant = -1, vipPack = 0;   // VIP pendente: so depois do Recompute (a linha do produto tem de estar aberta)
             foreach (string raw in text.Split('\n'))
             {
                 int eq = raw.IndexOf('=');
@@ -1003,6 +1099,14 @@ namespace FS.Core
                     case "px": if (parts.Length == 2) sim.Player.Pos = new V2(F(parts[0], 4.5f), F(parts[1], 3.5f)); break;   // clamp so' depois do Recompute (MaxX depende do Corredor)
                     case "hold": for (int i = 0; i < Math.Min(parts.Length, sim.Player.Held.Length); i++) sim.Player.Held[i] = Math.Max(0, I(parts[i], 0)); break;   // save antigo sem hold=: maos vazias
                     case "wk": wk = val; break;
+                    case "vip":   // FASE8; save antigo sem vip=: relogio novo (VipInterval(0)) e nenhum VIP pendente
+                        if (parts.Length >= 4)
+                        {
+                            sim.VipIn = Math.Max(0f, Math.Min(Balance.VipMax, F(parts[0], sim.VipIn)));
+                            sim.VipCount = Math.Max(0, I(parts[1], 0));
+                            vipWant = I(parts[2], -1); vipPack = Clamp0(I(parts[3], 0), Balance.VipSummonPackMax);
+                        }
+                        break;
                     default:
                         if (key.StartsWith("st") && parts.Length >= 4)
                         {
@@ -1031,6 +1135,7 @@ namespace FS.Core
                     if (n > 0 && w.Count == 0 && sim.CanPick(w, (Item)i)) w.Held[i] = n;
                 }
             }
+            if (vipPack > 0 && vipWant >= (int)Item.Sword && vipWant <= (int)Item.Tool && sim.LineUnlocked((Item)vipWant)) { sim._vipWant = vipWant; sim._vipPack = vipPack; }
             sim.Player.Pos = sim.Collide(Clamp(sim.Player.Pos, sim.MaxX));   // save antigo com o jogador dentro de um corpo: sai pela borda
             // pad escondido devolve o parcial: o save da v0.3 com produtivos novos (Mineiro, Joalheiro 2) esconde o luxo ate completar
             // de novo, e o pad cujo upgrade foi para o menu (FASE6) nunca mais aparece

@@ -1805,6 +1805,267 @@ namespace FS.Tests
             Assert.IsTrue(old.Player.Count == 0 && old.Workers.TrueForAll(w => w.Count == 0), "save antigo sem hold=/wk=: maos vazias, como antes");
         }
 
+        // ------------------------------------------------------------------ FASE8: VIP e velocidade por anuncio (docs/FASE8_VIP_VELOCIDADE.md)
+
+        /// <summary>Partida que ja fez a 1a venda (o relogio do VIP so anda depois dela), sem mexer no resto.</summary>
+        static Sim Sold() { var s = new Sim(); s.FirstSaleTime = 1f; return s; }
+
+        static Client Vip(Sim s) => s.Queue.Find(c => c.Vip);
+
+        /// <summary>Zera o relogio e roda um tick: o VIP NATURAL e' sorteado e entra (fila com vaga).</summary>
+        static Client NaturalVip(Sim s) { s.VipIn = 0f; s.Tick(Dt, 0f, 0f); return Vip(s); }
+
+        /// <summary>
+        /// FASE8 §1: o relogio do VIP fica parado ate a 1a venda; dali o VIP chega quando o intervalo sorteado (4-6 min, deterministico) zera.
+        /// Com a fila cheia ele espera fora dela (nao some) e pega a proxima vaga livre antes de quem chega depois.
+        /// </summary>
+        [Test]
+        public void Vip_SoDepoisDa1aVenda_ChegaEntre4e6Min_EsperaAVagaSemSumir()
+        {
+            float min = float.MaxValue, max = 0f;
+            for (int n = 0; n < 200; n++) { min = Math.Min(min, Sim.VipInterval(n)); max = Math.Max(max, Sim.VipInterval(n)); }
+            Assert.That(min, Is.InRange(Balance.VipMin, Balance.VipMin + 10f), "sorteio cobre 4 min");
+            Assert.That(max, Is.InRange(Balance.VipMax - 10f, Balance.VipMax), "sorteio cobre 6 min");
+            var s = new Sim();
+            float clock = s.VipIn;
+            Assert.AreEqual(Sim.VipInterval(0), clock);
+            Run(s, Balance.VipMax + 30f);   // sem estoque ninguem compra
+            Assert.AreEqual((clock, false, 0), (s.VipIn, s.VipActive, s.VipCount), "antes da 1a venda o relogio fica parado");
+            s.Stock[(int)Item.Sword] = 1;
+            Run(s, 0.5f);
+            float t0 = s.FirstSaleTime;
+            Assert.Greater(t0, 0f, "1a venda");
+            s.Queue.Clear();
+            for (int i = 0; i < s.QueueCap; i++) s.Queue.Add(new Client { Want = Item.Sword, Patience = 999f, MaxPatience = 999f });   // fila cheia de quem nao cansa
+            while (!s.VipActive && s.Time < t0 + Balance.VipMax + 1f) s.Tick(Dt, 0f, 0f);
+            Assert.AreEqual(t0 + clock, s.Time, 0.5f, "chega quando o intervalo sorteado zera, contado da 1a venda");
+            Assert.AreEqual(1, s.VipCount);
+            Assert.That(s.VipIn, Is.InRange(Balance.VipMin, Balance.VipMax), "o proximo ja foi sorteado");
+            Run(s, 30f);
+            Assert.IsTrue(s.VipActive && Vip(s) == null && s.Queue.Count == s.QueueCap, "fila cheia: espera fora da fila e nao some");
+            s.Stock[(int)Item.Sword] = 1;   // um cliente compra e libera a vaga
+            int arrived = 0; SimEvent ev = default;
+            for (float t = 0f; t < 1f; t += Dt) { s.Tick(Dt, 0f, 0f); foreach (SimEvent e in s.Events) if (e.Kind == Ev.VipArrived) { arrived++; ev = e; } }
+            Client vip = Vip(s);
+            Assert.AreEqual(1, arrived, "entrou na vaga que abriu");
+            Assert.IsNotNull(vip);
+            Assert.AreEqual(((int)Item.Sword, Balance.VipPackMin), (ev.A, ev.B), "so a espada esta aberta; renda baixa = pacote minimo");
+            Assert.AreEqual(s.ClientSlot(s.Queue.IndexOf(vip)).ToString(), ev.Pos.ToString(), "evento na vaga dele");
+            Assert.AreEqual((108f, 150f, 210f), (Balance.VipPatienceFor(3), Balance.VipPatienceFor(10), Balance.VipPatienceFor(20)), "paciencia do VIP = 90 s + 6 s por unidade");
+            Assert.AreEqual((Balance.VipPatienceFor(Balance.VipPackMin), Balance.VipPackMin), (vip.MaxPatience, vip.Pack));
+            Assert.LessOrEqual(s.Queue.Count, s.QueueCap);
+        }
+
+        /// <summary>
+        /// FASE8 §1: o VIP leva o pacote uma unidade por atendimento, cada uma a 3x o preco (Sold com B = 3x), e sai com VipServed (B = total).
+        /// O pacote acompanha a renda (~7% do ouro de 300 s a 3x o preco), de 3 ate a prateleira; o produto roda entre as linhas do balcao.
+        /// </summary>
+        [Test]
+        public void Vip_PacoteA3xPorUnidade_UmPorAtendimento_TamanhoPelaRenda_ProdutoAberto()
+        {
+            var s = Sold();
+            Assert.AreEqual((Item.Sword, Balance.VipPackMin), (NaturalVip(s).Want, Vip(s).Pack));
+            s.Stock[(int)Item.Sword] = Balance.VipPackMin;
+            var paid = new List<int>(); int served = -1;
+            for (float t = 0f; t < 3f; t += Dt)
+            {
+                s.Tick(Dt, 0f, 0f);
+                foreach (SimEvent e in s.Events) { if (e.Kind == Ev.Sold) paid.Add(e.B); if (e.Kind == Ev.VipServed) served = e.B; }
+            }
+            int unit = Balance.VipPriceMul * Balance.Price[(int)Item.Sword];
+            CollectionAssert.AreEqual(new[] { unit, unit, unit }, paid, "3 unidades, uma por atendimento, 3x o preco");
+            Assert.AreEqual((3 * unit, 3 * unit, 3), (served, s.Gold, s.Sales), "VipServed com o total; ouro e vendas contam");
+            Assert.IsFalse(s.VipActive, "levou o pacote e foi embora");
+            int Pack(double rate, bool vitrine, bool extra = false)
+            {
+                var p = Sold(); p.RateEma = rate;
+                if (vitrine) p.Buy(Upgrade.CounterCapacity);
+                if (!extra) return NaturalVip(p).Pack;
+                p.VipIn = Balance.VipMax; Assert.IsTrue(p.SummonVip()); p.Tick(Dt, 0f, 0f);
+                return Vip(p).Pack;
+            }
+            double four = 4.0 * unit / (Balance.VipShare * 300.0);   // renda em que o natural pede 4 espadas (7% de 300 s, a 3x)
+            Assert.AreEqual(Balance.VipPackMin, Pack(0.0, false), "renda baixa: 3");
+            Assert.AreEqual(4, Pack(four, false), "4 espadas = 7% de 300 s de renda, a 3x");
+            Assert.AreEqual(Balance.CounterCap0, Pack(1000.0, false), "teto: a prateleira (5)");
+            Assert.AreEqual(Balance.CounterCap1, Pack(1000.0, true), "com a Vitrine, 10");
+            Assert.AreEqual((6, 8, Balance.VipSummonPackMax), (Pack(0.0, true, true), Pack(four, true, true), Pack(1000.0, true, true)), "chamado: 2x o natural, ate 20");
+            Assert.AreEqual((6, 2 * Balance.CounterCap0), (Pack(0.0, false, true), Pack(1000.0, false, true)), "chamado passa da prateleira: 2x3 = 6 e 2x5 = 10 sem a Vitrine");
+            var r = Sold();
+            r.Buy(Upgrade.Shields); r.Buy(Upgrade.Tools); r.Buy(Upgrade.SideCorridor); r.Buy(Upgrade.Jewelry);
+            var wants = new List<Item>();
+            for (int k = 0; k < 4; k++) { wants.Add(NaturalVip(r).Want); r.Queue.RemoveAll(c => c.Vip); }
+            CollectionAssert.AreEqual(new[] { Item.Sword, Item.Shield, Item.Tool, Item.Sword }, wants, "rodizio entre as linhas abertas do balcao (a joia e' da loja de joias)");
+        }
+
+        /// <summary>FASE8 §1: o VIP que nao recebe o pacote na paciencia (120 s, tempo de jogo) vai embora com VipLeft (B = unidades que
+        /// faltaram), pagou so o que levou e fica fora do ClientsLost (metrica dos clientes normais).</summary>
+        [Test]
+        public void Vip_CansaPelaPaciencia_PagaSoOQueLevou_ForaDoClientsLost()
+        {
+            var s = Sold();
+            NaturalVip(s);
+            s.Stock[(int)Item.Sword] = 1;
+            Run(s, 1f);
+            int unit = Balance.VipPriceMul * Balance.Price[(int)Item.Sword];
+            Assert.AreEqual((Balance.VipPackMin - 1, unit), (Vip(s).Pack, s.Gold), "levou 1 do pacote");
+            int left = -1, lost = 0; float leftAt = -1f, pat = Balance.VipPatienceFor(Balance.VipPackMin);
+            for (float t = 0f; t < pat; t += Dt)
+            {
+                s.Tick(Dt, 0f, 0f);
+                foreach (SimEvent e in s.Events)
+                {
+                    if (e.Kind == Ev.VipLeft) { left = e.B; leftAt = s.Time; }
+                    if (e.Kind == Ev.ClientLeft && e.B == 0) lost++;
+                }
+            }
+            Assert.AreEqual(Balance.VipPackMin - 1, left, "VipLeft com as unidades que faltaram");
+            Assert.AreEqual(pat, leftAt, 0.1f, "90 + 6 x 3 = 108 s desde que entrou na vaga");
+            Assert.IsFalse(s.VipActive);
+            Assert.Greater(lost, 0, "os clientes normais de espada tambem cansaram");
+            Assert.AreEqual(lost, s.ClientsLost, "ClientsLost conta so os normais");
+            Assert.AreEqual(unit, s.Gold, "pagou so a unidade que levou");
+        }
+
+        /// <summary>FASE8 §2 (decisao do coordenador): "chamar o VIP" (anuncio) so depois da 1a venda, sem VIP ativo (esperando vaga ou na fila) e
+        /// com o natural a mais de 60 s. O chamado e' um VIP EXTRA: 2x o pacote do natural (ate a prateleira) e o relogio natural nao muda.</summary>
+        [Test]
+        public void SummonVip_VipExtra_PacoteDobrado_NaoMexeNoRelogio_SoSemVipAtivoEComONaturalAMaisDe60s()
+        {
+            var s = new Sim();
+            s.Buy(Upgrade.CounterCapacity);   // prateleira de 10: o dobro cabe
+            Assert.IsFalse(s.CanSummonVip || s.SummonVip(), "antes da 1a venda nao tem VIP");
+            s.FirstSaleTime = 1f; s.VipIn = Balance.VipSummonMinIn;
+            Assert.IsFalse(s.CanSummonVip || s.SummonVip(), "o natural chega em 60 s: nao gasta o anuncio");
+            s.VipIn = 200f;
+            Assert.IsTrue(s.CanSummonVip && s.SummonVip());
+            Assert.AreEqual((200f, 1, true), (s.VipIn, s.VipCount, s.VipActive), "VIP extra agora; o relogio natural fica como estava");
+            Assert.IsFalse(s.SummonVip(), "esperando vaga: recusa");
+            s.Tick(Dt, 0f, 0f);
+            Assert.AreEqual(Balance.VipSummonPackMul * Balance.VipPackMin, Vip(s).Pack, "pacote 2x o do natural (3 -> 6)");
+            Assert.IsFalse(s.CanSummonVip || s.SummonVip(), "VIP na fila: recusa");
+            s.Stock[(int)Item.Sword] = s.CounterCap;
+            Run(s, 3f);
+            Assert.IsFalse(s.VipActive, "levou o pacote");
+            Assert.AreEqual(6 * Balance.VipPriceMul * Balance.Price[(int)Item.Sword], s.Gold, "6 espadas a 3x");
+            Assert.IsTrue(s.CanSummonVip, "sem VIP e com o natural longe: pode de novo");
+            float due = s.Time + s.VipIn;
+            Assert.AreEqual(200f - s.Time, s.VipIn, 0.05f, "o relogio natural andou so o tempo de jogo");
+            while (!s.VipActive && s.Time < due + 1f) s.Tick(Dt, 0f, 0f);
+            Assert.AreEqual(due, s.Time, 0.1f, "o natural chega no horario de antes do anuncio");
+            Assert.AreEqual(2, s.VipCount);
+        }
+
+        /// <summary>
+        /// FASE8 §3: 1 anuncio = 2x por 60 s; o 2o com o boost ativo sobe para 3x e reinicia os 60 s; teto 3x; expira no tempo de jogo. Acelera
+        /// estacoes, ajudantes e a chegada de clientes; o ferreiro no maximo 1,3x; paciencia e relogio do VIP no tempo de jogo; a taxa do cofre
+        /// offline aprende o ouro por segundo de fabrica (o offline nao paga boost).
+        /// </summary>
+        [Test]
+        public void Boost_2xPor60s_2oAnuncioSobePara3x_TetoEExpira_OQueAcelera()
+        {
+            var s = new Sim();
+            Assert.AreEqual((1f, 0f, 0f, true), (s.BoostMul, s.BoostLeft, s.BoostCooldown, s.CanBoost));
+            Assert.AreEqual((2f, Balance.BoostSeconds), (s.StartBoost(), s.BoostLeft), "1 anuncio: 2x por 60 s");
+            Assert.IsTrue(s.CanBoost, "no 2x da para subir");
+            Run(s, 30f);
+            Assert.AreEqual(Balance.BoostSeconds - 30f, s.BoostLeft, 0.05f, "corre no tempo de jogo");
+            Assert.AreEqual((3f, Balance.BoostSeconds), (s.StartBoost(), s.BoostLeft), "2o anuncio com o boost ativo: 3x e reinicia os 60 s");
+            Assert.IsFalse(s.CanBoost, "teto 3x");
+            Run(s, 1f);
+            float left = s.BoostLeft;
+            Assert.AreEqual((0f, 3f, left), (s.StartBoost(), s.BoostMul, s.BoostLeft), "no 3x recusa e nada muda");
+            Run(s, Balance.BoostSeconds - 2f);
+            Assert.AreEqual((3f, 0f), (s.BoostMul, s.BoostCooldown), "a recarga so comeca no fim do boost");
+            Run(s, 2f);
+            Assert.AreEqual((1f, 0f), (s.BoostMul, s.BoostLeft), "expirou");
+            Assert.AreEqual(Balance.BoostCooldownSeconds - 1f, s.BoostCooldown, 0.1f, "recarga de 5 min contada do fim");
+            Assert.AreEqual((false, 0f, 1f), (s.CanBoost, s.StartBoost(), s.BoostMul), "na recarga recusa");
+            Run(s, Balance.BoostCooldownSeconds - 2f);
+            Assert.IsFalse(s.CanBoost, "ainda na recarga (no tempo de jogo)");
+            Run(s, 1.5f);
+            Assert.AreEqual((0f, true), (s.BoostCooldown, s.CanBoost), "recarga zerada: libera");
+            Assert.AreEqual(2f, s.StartBoost());
+
+            Sim[] Trio() { var m = new[] { new Sim(), new Sim(), new Sim() }; m[1].StartBoost(); m[2].StartBoost(); m[2].StartBoost(); return m; }   // 1x, 2x, 3x
+            Sim[] f = Trio();
+            foreach (Sim x in f) { x.FurnaceA.In = Balance.FurnaceIn; Run(x, Balance.FurnaceTime0 + 0.5f); }
+            Assert.AreEqual((1, 2, 3), (f[0].Crafted[(int)Item.Ingot], f[1].Crafted[(int)Item.Ingot], f[2].Crafted[(int)Item.Ingot]), "estacao: 2x e 3x");
+            Sim[] p = Trio();
+            foreach (Sim x in p) Run(x, 0.5f, 1f, 0f);
+            float dx = p[0].Player.Pos.X - 4.5f;
+            Assert.AreEqual(Balance.BoostPlayerMax, (p[1].Player.Pos.X - 4.5f) / dx, 1e-3f, "ferreiro a 1,3x no boost 2x");
+            Assert.AreEqual(Balance.BoostPlayerMax, (p[2].Player.Pos.X - 4.5f) / dx, 1e-3f, "e no 3x tambem: no maximo 1,3x");
+            Sim[] w = Trio();
+            foreach (Sim x in w) { x.Buy(Upgrade.Helper1); Run(x, 0.5f); }
+            float wd = V2.Dist(w[0].Workers[0].Pos, Sim.HireSpot);
+            Assert.AreEqual(2f, V2.Dist(w[1].Workers[0].Pos, Sim.HireSpot) / wd, 0.02f, "ajudante 2x");
+            Assert.AreEqual(3f, V2.Dist(w[2].Workers[0].Pos, Sim.HireSpot) / wd, 0.02f, "ajudante 3x");
+            Sim[] c = Trio();
+            var arrivals = new int[3];
+            for (int k = 0; k < 3; k++)
+                for (float t = 0f; t < 30f; t += Dt) { c[k].Tick(Dt, 0f, 0f); arrivals[k] += Count(c[k], Ev.ClientArrived) + Count(c[k], Ev.ClientLeft); }
+            Assert.AreEqual((4, 9, 14), (arrivals[0], arrivals[1], arrivals[2]), "chegada de clientes: 8 s e 6 s entre eles, divididos por 2 e 3");
+            Assert.AreEqual((0, 0), (c[2].ClientsLost, c[2].Queue.Count - c[2].QueueCap), "fila cheia e ninguem cansou: paciencia no tempo de jogo");
+            Assert.AreEqual(Balance.PatienceFor(Item.Sword) - (30f - Balance.FirstClientAt / 3f), c[2].Queue[0].Patience, 0.15f, "o 1o esperou 27 s de jogo, nao 82 s de fabrica");
+            var v = Sold(); v.VipIn = 200f; v.StartBoost(); v.StartBoost();
+            Run(v, 10f);
+            Assert.AreEqual(190f, v.VipIn, 0.05f, "relogio do VIP no tempo de jogo");
+            var o = new Sim();
+            o.StartBoost();
+            o.Stock[(int)Item.Sword] = 1; o.Queue.Add(new Client { Want = Item.Sword, Patience = 99f, MaxPatience = 99f });
+            o.Tick(Dt, 0f, 0f);
+            Assert.AreEqual(Balance.Price[(int)Item.Sword] / (2.0 * Balance.RateTau), o.RateEma, 1e-6, "taxa do cofre = ouro por segundo de fabrica (metade no 2x)");
+        }
+
+        /// <summary>FASE8 §4: o relogio do VIP, os VIPs sorteados e o VIP pendente vao no save (o que estava na vaga volta pendente com o que
+        /// falta do pacote); o boost nao vai. Save antigo (sem vip=) carrega com o relogio novo e sem VIP; lixo vira o padrao.</summary>
+        [Test]
+        public void Save_RelogioEVipPendente_IdaEVolta_BoostNaoVai_SaveAntigo()
+        {
+            var s = Sold();
+            s.Buy(Upgrade.Shields);
+            Run(s, 3f);
+            Assert.AreEqual(Sim.VipInterval(0) - 3f, s.VipIn, 0.05f, "relogio andando");
+            Assert.IsTrue(s.SummonVip());   // sorteado, ainda sem vaga (sem Tick)
+            s.StartBoost(); s.StartBoost();
+            string text = s.Save(10);
+            StringAssert.Contains("vip=" + s.VipIn.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + ",1,2,6\n", text);   // chamado: 2x3, passa da prateleira de 5
+            StringAssert.DoesNotContain("boost", text);
+            Sim b = Sim.Load(text);
+            Assert.AreEqual(s.VipIn, b.VipIn, 1e-3f);
+            Assert.AreEqual((1, true), (b.VipCount, b.VipActive), "VIP pendente volta");
+            Assert.AreEqual((1f, 0f), (b.BoostMul, b.BoostLeft), "o boost some ao fechar");
+            Assert.AreEqual(text, b.Save(10), "save estavel");
+            b.Tick(Dt, 0f, 0f);
+            Assert.AreEqual((Item.Sword, 6), (Vip(b).Want, Vip(b).Pack), "o pendente pega a 1a vaga ao reabrir, com o pacote do chamado");
+            b.Stock[(int)Item.Sword] = 1;
+            Run(b, 1f);
+            Assert.AreEqual(5, Vip(b).Pack);
+            Sim c = Sim.Load(b.Save(20));
+            Assert.IsTrue(c.VipActive && Vip(c) == null, "a fila nao vai no save: o VIP da vaga volta pendente");
+            c.Tick(Dt, 0f, 0f);
+            Assert.AreEqual(5, Vip(c).Pack, "com o que falta do pacote");
+            Assert.AreEqual(Balance.VipPatienceFor(5) - Dt, Vip(c).Patience, 1e-3f, "paciencia cheia, pelo que falta");
+            var k = new Sim();
+            k.StartBoost(); Run(k, Balance.BoostSeconds + 1f);
+            Assert.Greater(k.BoostCooldown, 0f);
+            Sim kb = Sim.Load(k.Save(1));
+            Assert.AreEqual((0f, true), (kb.BoostCooldown, kb.CanBoost), "a recarga nao vai no save (FASE8 §3)");
+            string old = text.Substring(0, text.IndexOf("vip="));   // save da FASE7
+            Sim o = Sim.Load(old);
+            Assert.AreEqual((Sim.VipInterval(0), 0, false), (o.VipIn, o.VipCount, o.VipActive), "save antigo: relogio novo, sem VIP");
+            Run(o, 1f);
+            Assert.Less(o.VipIn, Sim.VipInterval(0), "ja tinha vendido: o relogio anda");
+            Sim g = Sim.Load(old + "vip=abc,-5,4,2\n");
+            Assert.AreEqual((Sim.VipInterval(0), 0, false), (g.VipIn, g.VipCount, g.VipActive), "lixo vira o padrao; ferramenta sem a linha aberta nao vira VIP");
+            g = Sim.Load(old + "vip=99999,7,5,99\n");
+            Assert.AreEqual((Balance.VipMax, 7, false), (g.VipIn, g.VipCount, g.VipActive), "relogio no teto de 6 min; joia nao e' do balcao");
+            g = Sim.Load(old + "vip=-1,7,3,99\n");
+            g.Tick(Dt, 0f, 0f);
+            Assert.AreEqual((Item.Shield, Balance.VipSummonPackMax), (Vip(g).Want, Vip(g).Pack), "escudo aberto; pacote no teto de 20 (o do chamado)");
+        }
+
         static float SegDist(V2 p, V2 a, V2 b)
         {
             V2 ab = b - a; float l2 = ab.X * ab.X + ab.Y * ab.Y;
