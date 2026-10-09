@@ -52,6 +52,11 @@ Para voltar à 0.5.1: `adb install -r -d client/Builds/android/ForgeStreet-dev.a
 
 ## 3. Medir (o coordenador faz pelo cabo)
 FPS (SurfaceFlinger), memória (`dumpsys meminfo br.com.vstack.forgestreet`), temperatura e erros no logcat. Comparar com a v0.4.1 (60 fps, 252 MB).
+Tudo de uma vez, com o jogo aberto e jogando na tela (testado no emulador):
+```
+bash client/tools/medir_aparelho.sh playtest/poco_051 120
+```
+(Espera 120 s de jogo, mede FPS/p95/quadros > 33 ms, PSS, temperatura e erros, e puxa o diário para `playtest/poco_051/`. Repetir com a 0.6.0 em `playtest/poco_060`.)
 
 ## 4. Puxar o diário e ler
 ```
