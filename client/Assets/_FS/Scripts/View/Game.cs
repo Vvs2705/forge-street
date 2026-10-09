@@ -17,7 +17,7 @@ namespace FS
     /// jogador com a camera em retrato, monta a HUD por codigo e grava o diario de playtest
     /// (persistentDataPath/diario.csv). Nasce sozinho em qualquer cena.
     /// Flags de dev: -autoplay [min] (bot sem render, loga AUTOPLAY por minuto, sai 0/1) | -shot foto.png
-    /// [-shotdelay s] [-shotchest] [-bot] [-menu] | -speed N | -reset (apaga o save) | -testsession (sem persistencia) |
+    /// [-shotdelay s] [-shotchest] [-shotorder] [-bot] [-menu] | -speed N | -reset (apaga o save) | -testsession (sem persistencia) |
     /// -record pasta [-recordsec S] [-recordfps F] (quadros 1080x1920 para os criativos, docs/CRIATIVOS.md) | -buyids 1,5,0@300 |
     /// -warmup S | -hold 0,3,3,3,0,0 | -stock 10,10,10 (fotos de validacao) | -fakeads | -adtest vip|velocidade (Ads.Show no
     /// inicio; docs/LEVELPLAY.md) | -vipnow (chama o VIP depois do warmup) | -boost N (N anuncios de velocidade antes do warmup) |
@@ -25,6 +25,7 @@ namespace FS
     /// liga/desliga Som e Vibracao antes, gravando como o toque). Build dev: tambem pelo intent do Android (Arg).
     /// v0.5c (docs/FASE8_VIP_VELOCIDADE.md s5): botoes "Chamar VIP" e "Velocidade 2x/3x" nos cantos da barra de baixo (Ads.Show ->
     /// Sim.SummonVip / Sim.StartBoost), selo do boost com cronometro, aviso "Cliente VIP!" e diario vip_* / boost_start.
+    /// v0.6c (docs/FASE9_ENCOMENDAS.md s6): cartao da encomenda acima do botao VIP, aviso "Encomenda entregue!" e diario order_*.
     /// </summary>
     public sealed class Game : MonoBehaviour
     {
@@ -74,6 +75,10 @@ namespace FS
         RectTransform _boostSeal; Text _boostMul, _boostTime;
         Banner _vipBanner, _toast;
         bool _vipNow;
+        // v0.6c: cartao da encomenda (FASE9), aviso de entregue e o estado da animacao (_orderKey = OrderCount da encomenda na tela)
+        RectTransform _order; CanvasGroup _orderG; Image _orderIcon, _orderFill, _orderCoin; Text _orderText, _orderPrize;
+        Banner _orderBanner;
+        int _orderKey = -1, _orderSeen = -1; float _orderT, _orderPunch; bool _orderOut;
         static readonly Color AdFace = Art.Hex(0x3B2650), AdOff = Art.Hex(0x5A5560);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -281,6 +286,18 @@ namespace FS
                         _view.Float(e.Pos, "...", Art.Bad, 44);
                         Log("vip_left", Balance.ItemName[e.A], e.B.ToString());
                         break;
+                    // FASE9 (v0.6c): a encomenda nova entra pelo estado do Sim (RefreshOrder, vale tambem para a do save); entregue = som,
+                    // aviso e moedas saindo do cartao (o premio ja entrou no Gold, fora do GoldEarned, como o bau)
+                    case Ev.OrderNew: Log("order_new", Balance.ItemName[e.A], e.B.ToString()); break;
+                    case Ev.OrderDone:
+                        Log("order_done", Balance.ItemName[e.A], e.B.ToString());
+                        if (_order == null) break;   // criativo: sem cartao, o ouro entra direto no numero
+                        Sfx.Play("upgrade");
+                        OrderText(_sim.OrderTarget, _sim.OrderTarget);   // a ultima venda e a entrega caem no mesmo tick: mostra o 5/5
+                        _orderOut = true; _orderT = 0f;
+                        ShowBanner(_orderBanner, $"Encomenda entregue! +{e.B}", 2f);
+                        FlyCoins(_orderCoin.rectTransform.position, e.B);
+                        break;
                 }
             }
             if (!_firstSaleLogged && _sim.FirstSaleTime >= 0f)
@@ -389,6 +406,7 @@ namespace FS
             _panelBtn = ok.GetComponentInChildren<Text>();
             _panel.gameObject.SetActive(false);
             BuildAdUi();
+            BuildOrderUi();
             _fx = Art.Node(_canvas, "Moedas", Vector2.zero, Vector2.one);   // depois da AreaSegura: as moedas passam por cima da faixa da HUD
 
             // Canvas do joystick em escala 1 (px = px): o dp do ARKANA vale direto.
@@ -402,9 +420,14 @@ namespace FS
         /// <param name="burst">&gt; 0: N moedas so de enfeite (o ouro ja foi contado, ex.: VIP servido); 0: 3-6 moedas que levam o valor.</param>
         void FlyCoins(V2 at, int value, int burst = 0)
         {
-            int n = burst > 0 ? burst : Mathf.Clamp(value / 8, 3, 6), given = 0;
             Vector3 from = _cam.WorldToScreenPoint(new Vector3(at.X, at.Y + 0.8f, 0f));
-            from.z = 0f;
+            FlyCoins(new Vector3(from.x, from.y, 0f), value, burst);
+        }
+
+        /// <summary>O mesmo saindo de um ponto da tela em px (v0.6c: o premio da encomenda sai da moeda do cartao).</summary>
+        void FlyCoins(Vector3 from, int value, int burst = 0)
+        {
+            int n = burst > 0 ? burst : Mathf.Clamp(value / 8, 3, 6), given = 0;
             for (int i = 0; i < n; i++)
             {
                 int share = burst > 0 ? 0 : i == n - 1 ? value - given : value / n;
@@ -453,6 +476,7 @@ namespace FS
         {
             TickCoins(Time.deltaTime);
             RefreshAdUi(Mathf.Min(Time.unscaledDeltaTime, 0.1f));   // tempo real (o simulado zera o timeScale), sem o salto do 1o quadro
+            RefreshOrder(Mathf.Min(Time.unscaledDeltaTime, 0.1f));
             // numero rolando: persegue o valor (sobe na venda, desce na compra) em ~0,3 s em vez de pular
             int target = Mathf.Max(0, _sim.Gold - _pending);
             _goldShown = _goldShown < 0f ? target : Mathf.Lerp(target, _goldShown, Mathf.Exp(-GoldRoll * Time.deltaTime));
@@ -580,9 +604,14 @@ namespace FS
             if (!b.R.gameObject.activeSelf) return;
             b.Age += dt;
             if (b.Age >= b.Dur) { b.R.gameObject.SetActive(false); return; }
-            float k = Mathf.Clamp01(b.Age / 0.3f);
-            b.R.localScale = Vector3.one * (k < 0.6f ? Mathf.Lerp(0.3f, 1.1f, k / 0.6f) : Mathf.Lerp(1.1f, 1f, (k - 0.6f) / 0.4f));
+            b.R.localScale = Vector3.one * Pop(b.Age);
             b.G.alpha = Mathf.Clamp01((b.Dur - b.Age) / 0.4f);
+        }
+
+        static float Pop(float age)
+        {
+            float k = Mathf.Clamp01(age / 0.3f);
+            return k < 0.6f ? Mathf.Lerp(0.3f, 1.1f, k / 0.6f) : Mathf.Lerp(1.1f, 1f, (k - 0.6f) / 0.4f);
         }
 
         /// <summary>
@@ -614,6 +643,83 @@ namespace FS
             }
             TickBanner(_vipBanner, dt);
             TickBanner(_toast, dt);
+        }
+
+        // ---------- encomenda (v0.6c, docs/FASE9_ENCOMENDAS.md) ----------
+
+        /// <summary>
+        /// Cartao no estilo da pilula de ouro, no canto de baixo a esquerda (espelho do selo do boost, acima do botao VIP): icone do item,
+        /// "Encomenda 3/5", barra fina e o premio com a moeda. Sob a pilula de ouro ele cobriria o balao do 1o da fila (8 vagas) e as
+        /// moedas da rua, o mesmo motivo que tirou o selo do boost do topo. Criativo (-record): sem cartao nem aviso.
+        /// </summary>
+        void BuildOrderUi()
+        {
+            if (Arg("-record") != null) return;
+            float band = MenuBar.Band;
+            Image edge = Art.Panel(_safe, "Encomenda", Art.Hex(0xF2D9A0), new Vector2(0.02f, band + 0.018f), new Vector2(0.4f, band + 0.07f));
+            edge.raycastTarget = false;
+            Image face = Art.Panel(edge.transform, "Fundo", Art.ComAlfa(Art.Hex(0x2A1E14), 0.95f), Vector2.zero, Vector2.one);
+            face.rectTransform.offsetMin = new Vector2(5f, 5f); face.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            face.raycastTarget = false;
+            _orderIcon = Art.Node(edge.transform, "Item", new Vector2(0.03f, 0.1f), new Vector2(0.23f, 0.9f)).gameObject.AddComponent<Image>();
+            _orderIcon.preserveAspect = true; _orderIcon.raycastTarget = false;
+            _orderText = Art.Outlined(Art.NewText(edge.transform, "Texto", 34, new Vector2(0.25f, 0.44f), new Vector2(0.98f, 0.95f), TextAnchor.MiddleLeft), 2f);
+            _orderText.fontStyle = FontStyle.Bold; _orderText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            Image bar = Art.Node(edge.transform, "Barra", new Vector2(0.26f, 0.2f), new Vector2(0.6f, 0.36f)).gameObject.AddComponent<Image>();
+            bar.color = new Color(0f, 0f, 0f, 0.6f); bar.raycastTarget = false;
+            _orderFill = Art.Node(bar.transform, "Cheio", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            _orderFill.color = Art.Good; _orderFill.raycastTarget = false;
+            _orderCoin = Art.Node(edge.transform, "Moeda", new Vector2(0.63f, 0.08f), new Vector2(0.74f, 0.48f)).gameObject.AddComponent<Image>();
+            _orderCoin.sprite = _coinIcon.sprite; _orderCoin.color = _coinIcon.color; _orderCoin.preserveAspect = true; _orderCoin.raycastTarget = false;
+            _orderPrize = Art.Outlined(Art.NewText(edge.transform, "Premio", 32, new Vector2(0.75f, 0.04f), new Vector2(0.99f, 0.52f), TextAnchor.MiddleLeft), 2f);
+            _orderPrize.fontStyle = FontStyle.Bold; _orderPrize.color = Art.Accent; _orderPrize.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _order = edge.rectTransform;
+            _orderG = edge.gameObject.AddComponent<CanvasGroup>();
+            _orderG.blocksRaycasts = false;
+            _order.gameObject.SetActive(false);
+            _orderBanner = MakeBanner("AvisoEncomenda", new Vector2(0.1f, 0.55f), new Vector2(0.9f, 0.62f), Art.Icon("moeda", "icone"), 42);   // logo abaixo do aviso do VIP
+        }
+
+        /// <summary>Cartao pelo estado do Sim: encomenda nova entra pulando como o aviso, cada venda dela da um pulso e, entregue (o Ev.OrderDone
+        /// liga _orderOut), cresce e some em 0,35 s.</summary>
+        void RefreshOrder(float dt)
+        {
+            if (_order == null) return;
+            TickBanner(_orderBanner, dt);
+            _orderT += dt; _orderPunch = Mathf.Max(0f, _orderPunch - dt);
+            int it = _sim.OrderItem;
+            if (it >= 0 && _orderKey != _sim.OrderCount)
+            {
+                _orderKey = _sim.OrderCount; _orderOut = false; _orderT = 0f; _orderSeen = -1;
+                Sprite s = Art.ItemArt((Item)it, true);
+                _orderIcon.sprite = s != null ? s : Art.ItemSprite((Item)it);
+                _orderIcon.color = s != null ? Color.white : Art.ItemColor[it];
+                _orderPrize.text = "+" + _sim.OrderReward;
+                _order.gameObject.SetActive(true);
+            }
+            if (!_order.gameObject.activeSelf) return;
+            if (_orderOut)
+            {
+                float k = _orderT / 0.35f;
+                if (k >= 1f) { _order.gameObject.SetActive(false); return; }
+                _order.localScale = Vector3.one * (1f + 0.25f * k);
+                _orderG.alpha = 1f - k;
+                return;
+            }
+            if (_sim.OrderProgress != _orderSeen)
+            {
+                if (_orderSeen >= 0) _orderPunch = PunchTime;
+                _orderSeen = _sim.OrderProgress;
+                OrderText(_orderSeen, _sim.OrderTarget);
+            }
+            _order.localScale = Vector3.one * Pop(_orderT) * (1f + 0.12f * Mathf.Sin(Mathf.PI * _orderPunch / PunchTime));
+            _orderG.alpha = 1f;
+        }
+
+        void OrderText(int done, int target)
+        {
+            _orderText.text = $"Encomenda {done}/{target}";
+            _orderFill.rectTransform.anchorMax = new Vector2(target > 0 ? Mathf.Clamp01(done / (float)target) : 0f, 1f);
         }
 
         void OnVipAd() => Ads.Show(Ads.Vip, () =>
@@ -832,6 +938,13 @@ namespace FS
                 float until = Time.realtimeSinceStartup + 180f;
                 while (!_sim.Chests.Exists(c => c.State == 1) && Time.realtimeSinceStartup < until) yield return null;
                 if (!_sim.Chests.Exists(c => c.State == 1)) { Debug.LogError("SHOT: nenhum bau disponivel em 180 s"); Application.Quit(1); yield break; }
+            }
+            else if (Arg("-shotorder") != null)
+            {
+                // v0.6c: espera o aviso da 1a encomenda entregue (ate 180 s) e fotografa -shotdelay s depois (moedas no ar, cartao saindo)
+                float until = Time.realtimeSinceStartup + 180f;
+                while (_orderBanner != null && !_orderBanner.R.gameObject.activeSelf && Time.realtimeSinceStartup < until) yield return null;
+                yield return new WaitForSecondsRealtime(delay);
             }
             else yield return new WaitForSecondsRealtime(delay);
             Debug.Log($"SHOT t={_sim.Time:0.0} upgrades={_sim.UpgradesBought} nobres={_sim.JewelQueue.Count}/{_sim.JewelQueueCap} baus={string.Join(",", _sim.Chests.ConvertAll(c => c.State))} som={Ajustes.Som} vibra={Ajustes.Vibra}");

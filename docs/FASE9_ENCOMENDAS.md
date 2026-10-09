@@ -24,3 +24,11 @@
 - Várias encomendas ao mesmo tempo (3 cartões, como o My Perfect Hotel): uma basta para dar direção; mais cartões cobrem a fila.
 - Prazo e encomenda "do Rei" com prêmio grande: evento de live ops (GDD §9), depois.
 - Pular encomenda por anúncio.
+
+## 6. View (v0.6c)
+- **Cartão** no estilo da pílula de ouro (borda `#F2D9A0`, fundo `#2A1E14`): ícone do item (`item_*`), "Encomenda 3/5", barra fina verde e o prêmio com a moeda. Fica no **canto de baixo à esquerda**, acima do botão VIP, espelho do selo do boost. O pedido era sob a pílula de ouro, mas ali ele cobre o balão do 1º da fila com 8 vagas (`validation_v05b/shots/06_fila_cheia_lote4.png`) e, depois do Corredor, as moedas e os corações da rua. Foi o mesmo motivo que levou o selo do boost para baixo.
+- Entra pulando (0,3 → 1,1 → 1) quando o Sim tem encomenda (vale para a que volta do save) e pulsa a cada venda que conta. Entregue, mostra o 5/5, cresce e some em 0,35 s.
+- **Entregue:** som `upgrade`, aviso "Encomenda entregue! +N" com a moeda (estilo do "Cliente VIP!", logo abaixo dele, então os dois cabem juntos) e moedas voando do cartão até o contador. O número só sobe quando elas chegam, como no baú.
+- A fileira de melhorias aberta cobre o cartão, como cobre o selo do boost. No criativo (`-record`) não há cartão nem aviso: o ouro entra direto no número.
+- **Diário:** `order_new,item,alvo` e `order_done,item,prêmio`. O `client/tools/diario_report.py` mostra recebidas e entregues por testador e os minutos de jogo por encomenda (t_jogo acumulado / entregues, a conta do bot no `BALANCE.md` §20: 3,7).
+- Flag de dev `-shotorder`: a foto espera o aviso da 1ª entrega e sai `-shotdelay` s depois. Validação em `docs/VALIDACAO_V06A.md` §v0.6c.

@@ -90,3 +90,43 @@ Refeito depois de olhar: a 1ª engrenagem (dentes finos de 0,19 do passo) lia co
 - Vibração não foi sentida: o emulador não vibra e o APK do teste de amanhã é o 0.5.1. Conferir no próximo APK de playtest se 15 ms se sente no POCO (alguns motores ignoram pulsos abaixo de ~20 ms) e se 4 por segundo na venda incomoda.
 - A linha `settings` do diário não foi gravada de verdade: rodar sem `-testsession` mexeria no save e no diário reais do PC. Ela sai do mesmo `Log` das outras linhas.
 - O voltar do Android com o painel do cofre aberto continua saindo do jogo, como antes. Só o cartão de configurações fecha com o voltar.
+
+# v0.6c: encomendas (validação, 2026-10-09)
+
+Escopo: a View das encomendas da FASE9 (`docs/FASE9_ENCOMENDAS.md` §6). O Core veio pronto do coordenador (`f05142f`, merge `3808948` na `feat/v0.6-juice`). Mexi em `Game.cs` e `client/tools/diario_report.py`. `bundleVersion` continua 0.5.1 e o `ForgeStreet-dev.apk` não foi refeito.
+
+## O que mudou
+| Pedido | Como ficou |
+|---|---|
+| Cartão | Pílula de ouro em miniatura (borda `#F2D9A0`, fundo `#2A1E14`) com ícone do item, "Encomenda 3/5", barra fina verde, moeda e "+25". **Canto de baixo à esquerda** (0,02–0,40 da largura, na altura do selo do boost), acima do botão VIP. Sob a pílula de ouro, como pedido, ele cobria o balão do 1º da fila com 8 vagas (foto `validation_v05b/06_fila_cheia_lote4.png`) e as moedas e corações da rua depois do Corredor. Foi o mesmo motivo que tirou o selo do boost do topo. |
+| Animação | Entra com o pop do aviso (0,3 → 1,1 → 1 em 0,3 s) quando o Sim tem encomenda (vale para a que volta do save) e pulsa a cada venda que conta. Entregue, mostra o alvo cheio (a última venda e a entrega caem no mesmo tick), cresce 25% e some em 0,35 s. |
+| Entregue | Som `upgrade`, aviso "Encomenda entregue! +N" com a moeda (`MakeBanner`, 0,55–0,62 da altura, logo abaixo do "Cliente VIP!", então os dois cabem juntos) e moedas do cartão até o contador pelo `FlyCoins` do baú (o número só sobe quando elas chegam). |
+| Diário | `order_new,item,alvo` e `order_done,item,prêmio`. O `diario_report.py` ganhou a seção ENCOMENDAS: recebidas e entregues por testador e minutos de jogo por encomenda (t_jogo / entregues, a conta do bot no `BALANCE.md` §20). |
+| `-record` | Sem cartão e sem aviso, como a versão e a engrenagem. O ouro entra direto no número. |
+| Flag de dev | `-shotorder`: a foto espera o aviso da 1ª entrega (até 180 s) e sai `-shotdelay` s depois. Com o bot em tempo variável, o momento da entrega muda a cada execução. |
+
+## Verificação
+| Portão | Resultado |
+|---|---|
+| `dotnet test client/tools/coretests` | 85/85 depois do merge; 86/86 com o teste da revisão (abaixo) |
+| `dotnet build client/tools/viewcheck/view -nologo --artifacts-path %TEMP%\vc6c` | 0 erros, 0 avisos |
+| `python client/tools/diario_report.py --autoteste` | `autoteste OK`. Prova vermelha: a mesma versão sem contar `order_*` sai com exit 1 no assert da seção ENCOMENDAS |
+| `Unity.exe … -executeMethod FS.EditorTools.Setup.BuildWindows -logFile client/Builds/validation_v06c/build_win.log` | "Build Finished, Result: Success." |
+| `ForgeStreet.exe -batchmode -nographics -autoplay 10 -logFile validation_v06c/autoplay.log` | `AUTOPLAY OK venda1=23s upgrades=9 ouro=1535`. Na v0.6b era 8 / 1310: o prêmio adianta uma compra (o `ouro` é o `GoldEarned`, sem o prêmio) |
+| Bot 20 min: `-bot -speed 20 -shotdelay 62` | `SHOT t=1240,1 upgrades=18`, 0 exceções (`logs/06_bot_20min.log`) |
+| Diário de verdade | Não gravado: o `-testsession` das fotos não escreve diário. As linhas saem do mesmo `Log` das outras e o relatório foi provado com linhas sintéticas (4 entregues + 1 aberta em 10 min = "1 a cada 2.5 min") |
+
+Fotos em `client/Builds/validation_v06c/shots/` (janela `-screen-fullscreen 0 -testsession`; logs em `validation_v06c/logs/`). Abri todas.
+
+| Foto | Argumentos | Conferido |
+|---|---|---|
+| `01_encomenda_540.png` + `01z_cartao_zoom.png` | `-bot -speed 10 -shotdelay 9.5` | "Encomenda 3/5" com espada, barra em 60%, "+25". Não encosta no botão VIP nem na versão (build dev); o Depósito fica livre acima |
+| `02_encomenda_432.png` | igual, 432×960 | cartão sobre a grama, abaixo do muro; lê igual |
+| `03_entregue_540.png` | `-bot -speed 10 -shotorder -shotdelay 0.25` | aviso "Encomenda entregue! +25", cartão em 5/5 crescendo e sumindo, moedas subindo para o contador (ouro 19 antes de elas chegarem) |
+| `04_cartao_vip_boost_540.png` | `-bot -boost 1 -stock 5 -speed 2 -shotdelay 26` | cartão "0/5", botão VIP, selo "2× 0:07" e botão "3×" juntos, sem sobrepor (cartão 0,02–0,40, selo 0,69–0,98) |
+| `05z_record_sem_cartao.png` | `-record … -recordsec 5 -recordfps 10 -bot -speed 20` (fundo do último quadro, t = 100 s, com a 1ª encomenda ativa) | criativo sem cartão |
+| `06_bot_20min.png` | `-bot -speed 20 -shotdelay 62` | fim da bateria de 20 min: "Encomenda 8/30" de ferramenta, "+70", longe da fila |
+
+## Fica de fora
+- Som ao chegar encomenda nova: o pop do cartão já chama o olho, e o pedido só falava do som da entrega. Entra se o playtest disser que ninguém viu o cartão.
+- Vibração na entrega: o baú não vibra, então a entrega também não.
