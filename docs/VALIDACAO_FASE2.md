@@ -2,7 +2,7 @@
 
 ## RESUMO
 
-Executado o handoff `PROMPT_CONTINUACAO_CHATGPT.md`, passos A–C; o passo D foi convertido em propostas, sem expansão implementada. Custos 2.200 / 5.500 / 9.000 e joias de 80 após a Vitrine estão no núcleo atual. Core e Unity EditMode: 37/37. Windows compilado e fotografado; Android tem portão separado abaixo. Rune Relay não foi alterado.
+Executado o handoff `PROMPT_CONTINUACAO_CHATGPT.md` (removido em 2026-10-09; está no histórico do git, commit 2df0f0d), passos A–C; o passo D foi convertido em propostas, sem expansão implementada. Custos 2.200 / 5.500 / 9.000 e joias de 80 após a Vitrine estão no núcleo atual. Core e Unity EditMode: 37/37. Windows compilado e fotografado; Android tem portão separado abaixo. Rune Relay não foi alterado.
 
 ## ENTREGAS
 
