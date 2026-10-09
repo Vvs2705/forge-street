@@ -172,7 +172,7 @@ Um revisor leu o diff `main...feat/v0.5` (Core + View + `diario_report.py`) proc
 | viewcheck | 0 erros, 0 avisos |
 | Build Windows + `-autoplay 10` | Success; `AUTOPLAY OK venda1=23s upgrades=8 ouro=1310` |
 | Bot no build a 20× por 20 min (`-bot -speed 20 -vipnow`) | 19 upgrades, 0 exceções (`validation_v051/bot20.log`, foto `validation_v051/shots/01_bot_20min.png`) |
-| Build Android ARM64 | Success; `ForgeStreet-dev.apk` **0.5.1**, 72 504 619 B, SHA-256 `b2f26113…ac23` (refeito com a flag `-cam`) |
+| Build Android ARM64 | Success; `ForgeStreet-dev.apk` **0.5.1**, 72 504 619 B, SHA-256 `e9cb5c0f…852e` (refeito com a flag `-cam` e o voltar do Android) |
 
 Fica para o aparelho: #4 e #6 só aparecem com anúncio real (conta LevelPlay aprovada). A paciência do VIP restaurado continua cheia ao reabrir (decisão da FASE8 §4).
 
@@ -180,3 +180,8 @@ Fica para o aparelho: #4 e #6 só aparecem com anúncio real (conta LevelPlay ap
 - `-cam W`: largura visível em metros (6–11,4; padrão 11,4 = oficina inteira). Abaixo do padrão a câmera segue o jogador pelos clamps que já existiam. Experimento P2-3 do `BENCHMARK_VISUAL.md`, não muda o padrão.
 - No build de desenvolvimento o `Game.Arg` passa a ler também o extra `unity` do intent (o `Ads.Arg` já lia), então todas as flags de dev valem no aparelho via `adb shell am start ... -e unity "..."`. Release: só a linha de comando.
 - Verificação: viewcheck 0/0; build Windows Success; `AUTOPLAY OK venda1=23s upgrades=8 ouro=1310`; fotos `validation_v051/shots/02_cam9.png` e `02_cam8.png` (personagens ~25% e ~40% maiores; a 8 m corta uma coluna de estações e o balão do 1º da fila encosta na borda esquerda).
+
+## Voltar do Android (0.5.1, achado da revisão da v0.6)
+- O voltar (= Esc) salvava e saía mesmo com o "Seu cofre rendeu" aberto, que aparece em quase toda abertura depois de tempo fora. Agora fecha o painel, depois a bandeja de melhorias, e só sai com a tela limpa (`MenuBar.IsOpen`).
+- viewcheck 0/0; build Windows Success; `AUTOPLAY OK venda1=23s upgrades=8 ouro=1310`; APK ARM64 72 506 143 B, SHA-256 `e9cb5c0f…852e`.
+- **Armadilha do build:** depois de trocar de branch, o empacotamento incremental do Gradle deixou ~12 MB de buracos no APK (84,8 MB com as mesmas entradas comprimidas de 72,4 MB). Apagar `client/Library/Bee/Android/Prj/IL2CPP/Gradle/launcher/build` antes do build Android resolve.
