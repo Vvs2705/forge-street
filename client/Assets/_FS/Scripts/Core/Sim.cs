@@ -111,6 +111,9 @@ namespace FS.Core
         /// <summary>s ate o proximo VIP natural (parado ate a 1a venda); VipCount = VIPs ja sorteados, naturais e chamados (semente do intervalo e do
         /// produto). Vao no save.</summary>
         public float VipIn = VipInterval(0); public int VipCount;
+        // FASE9: encomenda ativa (OrderItem -1 = nenhuma) e relogio ate a proxima (so anda depois da 1a venda)
+        public int OrderItem = -1, OrderTarget, OrderProgress, OrderReward, OrderCount; public float OrderIn = Balance.OrderFirstDelay;
+        public long OrderGold;   // premios pagos nesta sessao (metrica do bot; fora do GoldEarned, nao vai no save)
         /// <summary>Velocidade por anuncio: multiplicador (1, 2 ou 3), s restantes e s de recarga (conta do fim do boost), no tempo de jogo. NAO vao no
         /// save. ponytail: a recarga some ao fechar (reabrir o app libera um boost); gravar exige descontar o tempo offline, fica para quando medir abuso.</summary>
         public float BoostMul = 1f, BoostLeft, BoostCooldown;
@@ -303,6 +306,7 @@ namespace FS.Core
             Conveyor(fast);
             Clients(dt);
             Milestones();
+            Orders(dt);
             if (BoostLeft > 0f) { if ((BoostLeft -= dt) <= 0f) { BoostLeft = 0f; BoostMul = 1f; BoostCooldown = Balance.BoostCooldownSeconds; } }   // recarga conta do fim
             else BoostCooldown = Math.Max(0f, BoostCooldown - dt);
 
@@ -841,6 +845,7 @@ namespace FS.Core
         {
             int price = PriceOf(want) * mul;
             Stock[(int)want]--; Gold += price; GoldEarned += price; Sales++; SoldItems[(int)want]++;
+            if ((int)want == OrderItem && OrderProgress < OrderTarget) OrderProgress++;
             if (FirstSaleTime < 0f) FirstSaleTime = Time;
             Emit(Ev.Sold, (int)want, price, pos);
             return price;
@@ -912,6 +917,36 @@ namespace FS.Core
         }
 
         void Emit(Ev kind, int a, int b, V2 pos) => Events.Add(new SimEvent(kind, a, b, pos));
+
+        /// <summary>
+        /// FASE9: encomenda entregue paga o premio (como o bau, FORA do GoldEarned: nao infla a taxa online nem o cofre) e a proxima vem
+        /// OrderGap s depois. A 1a (5 espadas) vem OrderFirstDelay s depois da 1a venda. ponytail: um tipo so (vender N de uma linha), sem
+        /// prazo; "comprar melhoria"/"atender VIP" se o playtest pedir.
+        /// </summary>
+        void Orders(float dt)
+        {
+            if (FirstSaleTime < 0f) return;
+            if (OrderItem >= 0)
+            {
+                if (OrderProgress < OrderTarget) return;
+                Gold = (int)Math.Min(int.MaxValue, (long)Gold + OrderReward);
+                OrderGold += OrderReward;
+                Emit(Ev.OrderDone, OrderItem, OrderReward, Counter.Pos);
+                OrderItem = -1; OrderCount++; OrderIn = Balance.OrderGap;
+                return;
+            }
+            if ((OrderIn -= dt) > 0f) return;
+            var lines = new List<Item>();
+            for (Item p = Item.Sword; p <= Item.Jewel; p++) if (LineUnlocked(p)) lines.Add(p);
+            Item it = lines[OrderCount % lines.Count];
+            OrderItem = (int)it;
+            OrderTarget = OrderCount == 0 ? Balance.OrderFirstTarget
+                : Math.Max(Balance.OrderMin, Math.Min(Balance.OrderMax, (int)Math.Round(Balance.OrderSeconds / ClientInterval(it))));   // pela demanda da linha
+            OrderProgress = 0;
+            OrderReward = Math.Max(Balance.OrderRewardMin, 5 * (int)Math.Round(RateEma * Balance.OrderRewardSeconds / 5.0));
+            OrderIn = 0f;
+            Emit(Ev.OrderNew, OrderItem, OrderTarget, Counter.Pos);
+        }
 
         // ------------------------------------------------------------------ consultas para view, bot e dica
 
@@ -1061,6 +1096,9 @@ namespace FS.Core
             int vipWant = vip != null ? (int)vip.Want : _vipWant, vipPack = vip != null ? vip.Pack : _vipWant >= 0 ? _vipPack : 0;
             sb.Append("vip=").Append(VipIn.ToString("0.###", ci)).Append(',').Append(VipCount).Append(',').Append(vipWant).Append(',').Append(vipPack)
               .Append(',').Append(vip != null ? 1 : 0).Append(',').Append(vip != null ? vip.Paid : 0).Append('\n');   // na vaga?, ja pagou
+            // FASE9: encomenda (item, alvo, progresso, premio, entregues, relogio ate a proxima)
+            sb.Append("ord=").Append(OrderItem).Append(',').Append(OrderTarget).Append(',').Append(OrderProgress).Append(',').Append(OrderReward)
+              .Append(',').Append(OrderCount).Append(',').Append(OrderIn.ToString("0.###", ci)).Append('\n');
             return sb.ToString();
         }
 
@@ -1077,7 +1115,8 @@ namespace FS.Core
             if (string.IsNullOrEmpty(text)) return sim;
             var ci = CultureInfo.InvariantCulture;
             string wk = "";   // carga dos ajudantes: aplicada depois do Recompute (eles nascem dos flags)
-            int vipWant = -1, vipPack = 0, vipPaid = 0; bool vipQuiet = false;   // VIP pendente: so depois do Recompute (a linha do produto tem de estar aberta)
+            int vipWant = -1, vipPack = 0, vipPaid = 0; bool vipQuiet = false;
+            int ordItem = -1, ordTarget = 0, ordProgress = 0, ordReward = 0;   // VIP pendente: so depois do Recompute (a linha do produto tem de estar aberta)
             foreach (string raw in text.Split('\n'))
             {
                 int eq = raw.IndexOf('=');
@@ -1107,6 +1146,15 @@ namespace FS.Core
                     case "px": if (parts.Length == 2) sim.Player.Pos = new V2(F(parts[0], 4.5f), F(parts[1], 3.5f)); break;   // clamp so' depois do Recompute (MaxX depende do Corredor)
                     case "hold": for (int i = 0; i < Math.Min(parts.Length, sim.Player.Held.Length); i++) sim.Player.Held[i] = Math.Max(0, I(parts[i], 0)); break;   // save antigo sem hold=: maos vazias
                     case "wk": wk = val; break;
+                    case "ord":   // FASE9; save antigo sem ord=: do zero. A encomenda so volta depois do Recompute (linha aberta)
+                        if (parts.Length >= 6)
+                        {
+                            ordItem = I(parts[0], -1); ordTarget = Clamp0(I(parts[1], 0), Balance.OrderMax);
+                            ordProgress = Clamp0(I(parts[2], 0), ordTarget); ordReward = Math.Max(0, I(parts[3], 0));
+                            sim.OrderCount = Math.Max(0, I(parts[4], 0));
+                            sim.OrderIn = Math.Max(0f, Math.Min(Balance.OrderFirstDelay, F(parts[5], Balance.OrderFirstDelay)));
+                        }
+                        break;
                     case "vip":   // FASE8; save antigo sem vip=: relogio novo (VipInterval(0)) e nenhum VIP pendente
                         if (parts.Length >= 4)
                         {
@@ -1150,6 +1198,8 @@ namespace FS.Core
                 }
             }
             if (vipPack > 0 && vipWant >= (int)Item.Sword && vipWant <= (int)Item.Tool && sim.LineUnlocked((Item)vipWant)) { sim._vipWant = vipWant; sim._vipPack = vipPack; sim._vipPaid = vipPaid; sim._vipQuiet = vipQuiet; }
+            if (ordItem >= (int)Item.Sword && ordItem <= (int)Item.Jewel && ordTarget > 0 && sim.LineUnlocked((Item)ordItem))
+            { sim.OrderItem = ordItem; sim.OrderTarget = ordTarget; sim.OrderProgress = ordProgress; sim.OrderReward = ordReward; }
             sim.Player.Pos = sim.Collide(Clamp(sim.Player.Pos, sim.MaxX));   // save antigo com o jogador dentro de um corpo: sai pela borda
             // pad escondido devolve o parcial: o save da v0.3 com produtivos novos (Mineiro, Joalheiro 2) esconde o luxo ate completar
             // de novo, e o pad cujo upgrade foi para o menu (FASE6) nunca mais aparece

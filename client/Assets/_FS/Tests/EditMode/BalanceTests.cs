@@ -187,6 +187,11 @@ namespace FS.Tests
             TestContext.WriteLine(windows.ToString());
             float vipShare = 100f * vipGold / Math.Max(1, s.GoldEarned);
             TestContext.WriteLine(string.Format(CultureInfo.InvariantCulture, "VIP: sorteados={0} entraram={1} levaram={2} cansaram={3} ouro={4} ({5:0.0}% da receita)", s.VipCount, vipArrived, vipServed, vipLeft, vipGold, vipShare));
+            // FASE9: encomendas entregues, premio (fora do GoldEarned) como % da receita de vendas, minutos por encomenda depois da 1a venda
+            float orderShare = 100f * s.OrderGold / Math.Max(1, s.GoldEarned);
+            TestContext.WriteLine(string.Format(CultureInfo.InvariantCulture, "encomendas: entregues={0} premio={1} ({2:0.0}% da receita) | {3:0.0} min por encomenda | aberta: {4} {5}/{6}",
+                s.OrderCount, s.OrderGold, orderShare, (end - s.FirstSaleTime) / 60f / Math.Max(1, s.OrderCount), s.OrderItem, s.OrderProgress, s.OrderTarget));
+            Assert.That(orderShare, Is.InRange(3f, 10f), "FASE9: premio das encomendas entre 3% e 10% da receita");
             TestContext.WriteLine(string.Format(CultureInfo.InvariantCulture,
                 "joalheiro={0} lupa={1} vitrine de joias={2} | producao completa={3} | joias/min: joalheria->joalheiro={4:0.0} joalheiro->lupa={5:0.0} depois da producao={6:0.0} | " +
                 "bancada de joias sem lingote: antes do joalheiro={7:0}% joalheiro->lupa={8:0}% joalheiro->60 min={9:0}% | joias={10} | baus abertos: {11}",
@@ -271,7 +276,8 @@ namespace FS.Tests
             Assert.That(gL / gP, Is.InRange(0.97f, 1.03f), "luxo nao altera ouro/min (medido +0,5%)");
             Assert.That(sL / sP, Is.InRange(0.97f, 1.03f), "luxo nao altera vendas/min (medido +0,1%)");
             int luxuryCost = Upgrades.Cost(Upgrade.WorkshopFacade) + Upgrades.Cost(Upgrade.WorkshopFloor) + Upgrades.Cost(Upgrade.JewelryDecor);
-            Assert.AreEqual(plain.Gold + (lux.GoldEarned - plain.GoldEarned) - luxuryCost, lux.Gold, "o luxo cobra exatamente o preco, uma vez, sem devolver ouro");
+            Assert.AreEqual(plain.Gold + (lux.GoldEarned - plain.GoldEarned) + (lux.OrderGold - plain.OrderGold) - luxuryCost, lux.Gold,
+                "o luxo cobra exatamente o preco, uma vez, sem devolver ouro (premio das encomendas fica fora do GoldEarned)");
             Assert.AreEqual((Upgrades.Count, Upgrades.ProductionCount), (lux.UpgradesBought, plain.UpgradesBought));
             Assert.AreEqual(plain.OfflineMaxGold(), lux.OfflineMaxGold(), "luxo nao mexe no teto offline");
         }
