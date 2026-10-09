@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Adicionado
+- **Juice da produção e upgrades visíveis (v0.6a, `BENCHMARK_VISUAL` P2-1/P2-2/P1-5):** faíscas e punch na martelada das bigornas e bancadas, fumaça e boca acesa nas fornalhas, pop do item pronto, "MAX" vermelho sobre a pilha do ferreiro no teto, e os upgrades na cena (fole na fornalha, martelo dourado na bancada, mochila nas costas, poeira das botas). Só View; validação em `docs/VALIDACAO_V06A.md`.
 - **Carga sem bloqueio:** o ferreiro carrega todos os tipos de item ao mesmo tempo, até 3 de cada (6 com a Mochila); ajudantes continuam com um tipo só. Corrige a trava "lingotes na mão + bigornas cheias = não pega espada" (`docs/FASE7_CARGA_BALCAO.md`).
 - **Balcão evolutivo 4 → 8 vagas:** 4 evoluções no menu (150/175/200/225; a 1ª exige a Vitrine), estande sem toldo que cresce com as vagas e mostra o estoque em pé nos encaixes.
 - **Arte v0.5 (Blender, 0 crédito):** ícones de minério, lingote, espada, escudo, martelo, anel e moeda; estande modular; portão e porta de serviço vistos de lado com pilares (`docs/ASSETS.md` §7).

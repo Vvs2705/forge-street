@@ -99,6 +99,7 @@ Pedidos do Vinicius jogando a v0.4.1 e o que virou (detalhes em `docs/FASE7_CARG
 - **Cliente VIP (~5 min, paga mais) e anúncio para chamar o VIP / velocidade 2×–3× por 1 min** → VIP paga 3× por unidade; velocidade com recarga; anúncios pelo Unity LevelPlay (em integração; anúncio simulado com `-fakeads`).
 - Cofre também paga ao voltar de outro app (≥ 60 s fora).
 - Teste comparativo com 4 jogos no emulador: protocolo em `docs/TESTE_COMPARATIVO.md`.
+- **v0.6a (branch `feat/v0.6-juice`, ainda 0.5.1 no build):** faíscas na martelada, fumaça na fornalha, pop do item pronto, "MAX" na pilha cheia e upgrades visíveis na cena (fole, martelo dourado, mochila, poeira das botas). Validação: `docs/VALIDACAO_V06A.md`.
 
 ## v0.4.0 — playtest no aparelho: física, duas bocas, paciência, ambiente e menu (2026-10-07)
 

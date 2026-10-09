@@ -214,6 +214,7 @@ namespace FS
                     case Ev.Deposited: Sfx.Play("drop", 1.1f, 0.08f); break;
                     case Ev.Crafted:
                         Sfx.Play(e.A == (int)Item.Ingot ? "furnace" : "hammer", 1f, 0.12f);
+                        _view.Crafted(e.B);   // v0.6a: o item novo da pilha de saida da pop
                         Log("product_crafted", Balance.ItemName[e.A], _sim.Stations[e.B].Name);
                         break;
                     case Ev.Sold:
