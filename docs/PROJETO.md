@@ -64,6 +64,8 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | P11 | Downloads: fonte OFL (D8), clipes Mixamo, banco de sons; créditos Tripo por lote de Wave | Aprovar por pacote de Wave | A, B, F |
 | P12 | Câmera (D2): oficina inteira 11,4 m × 9 m | Decidir pelo alvo visual 9:16 (ticket A-ART-01) | A |
 | P13 | Verba e conta para o Gate M (teste de criativos) e a regra "Rune Relay vai primeiro" | — | G |
+| P14 | "Chamar VIP" por anúncio sem recarga: quem assiste todo anúncio fecha a produção em 24 min × 43 do F2P (`BALANCE.md` §22) | Recarga no VIP chamado (ex.: 5 min, como a Velocidade) ou teto por hora, como knob do RemoteConfig | A, E |
+| P15 | Unity no CI (GameCI com licença em secret, ou runner próprio) | Sim: o EditMode do Unity pega o que o `dotnet test` não pega (19 falhas de tupla int × long no #20) | A |
 
 Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both" sem custo de FPS); D5 e D6 viram knobs (DM §40, §47); D7 entra no redesign de HUD (§63); D4 (moeda física) fica no branch `exp/moeda-fisica` até a Wave B.
 
@@ -78,23 +80,26 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 
 ## 7. Known issues
 
-| Problema | Prioridade (§132) | Fonte |
-|---|---|---|
-| Save corrompido vira estado inicial e o autosave de 5 s grava por cima, sem volta | **P0** (perda de save) | `Sim.cs:1061`, `Game.cs:36,234,909` |
-| Release lia flags do extra do intent: `-fakeads` dava recompensa com anúncio simulado | P1 (exploit de anúncio) | `Ads.cs:46,103,125-140` |
-| Recarga da Velocidade não vai no save: reabrir o app libera outro boost | P1 (exploit de anúncio) | `Sim.cs:117-119,252-263` |
-| Ciclo de relógio (adiantar → resgatar → voltar → adiantar) repete o cofre: `SavedAt` é regravado com o relógio atual | P1 (exploit de economia) | `Sim.cs:1028-1039`, `Game.cs:909` |
-| Recompensa que chega depois da janela de 2 s é descartada sem log | P1 (ad reward fail) | `Ads.cs:107-108,266-271` |
-| Save grava `v=1` e nunca lê; sem envelope, checksum, backup nem migração explícita | P0 antes de IAP | `Sim.cs:1063-1209` |
-| Custo de upgrade estoura `int` a partir do tier 67 e volta para 5 (latente com o conteúdo atual) | P1 quando houver 120+ upgrades | `Defs.cs:290-291` |
-| Ouro em `int` | P1 com distritos | `Sim.cs:92` |
-| Vibra em toda venda (§72 pede só eventos importantes) | P2 | `Game.cs:262` |
-| 0.6.0 sem aparelho físico | — | `VALIDACAO_V06A.md` |
-| Sem AAB, chave de release, `versionCode` monotônico nem build não-development; targetSdk automático (fixar 36) | antes da loja | `ProjectSettings.asset:181,183`, `Setup.cs:97` |
-| Diário CSV grava também no release e cresce sem limite | P2 | `Game.cs:1070` |
-| viewcheck não compila o caminho `#if UNITY_ANDROID` e só roda com o Unity local | — | `client/tools/viewcheck` |
-| Sem analytics remoto, crash reporting e RemoteConfig | antes de UA | — |
-| Textos no código, sem localização | antes de en/es | DM §109 |
-| Bandeja mostra o cartão travado primeiro; "Ajudantes ágeis" fora do padrão "Ajudantes rápidos" | P2 | `VALIDACAO_V05.md` |
-| Fome da Bigorna 2 (2.582 s em 60 min no bot) | P2 | `BACKLOG_V07.md` |
-| Conta LevelPlay aguardando aprovação | — | `LEVELPLAY.md` |
+| Problema | Prioridade (§132) | Fonte | Correção |
+|---|---|---|---|
+| Save corrompido vira estado inicial e o autosave de 5 s grava por cima, sem volta | **P0** (perda de save) | `Sim.cs:1061`, `Game.cs:36,234,909` | PR #16 (Save 2.0) |
+| Save grava `v=1` e nunca lê; sem envelope, checksum, backup nem migração explícita | P0 antes de IAP | `Sim.cs:1063-1209` | PR #16 |
+| Release lia flags do extra do intent: `-fakeads` dava recompensa com anúncio simulado | P1 (exploit de anúncio) | `Ads.cs:46,103,125-140` | PR #12 |
+| Recompensa que chega depois da janela de 2 s é descartada sem log | P1 (ad reward fail) | `Ads.cs:107-108,266-271` | PR #12 (`ad_reward_late`) |
+| Recarga da Velocidade não vai no save: reabrir o app libera outro boost | P1 (exploit de anúncio) | `Sim.cs:117-119,252-263` | PR #20 |
+| Ciclo de relógio (adiantar → resgatar → voltar → adiantar) repete o cofre | P1 (exploit de economia) | `Sim.cs:1028-1039`, `Game.cs:909` | PR #20 (`SavedAt` monotônico, `clock_back`) |
+| Custo de upgrade estoura `int` a partir do tier 67 e volta para 5; ouro em `int` | P1 com 120+ upgrades / distritos | `Defs.cs:290-291`, `Sim.cs:92` | PR #20 (`long`, HUD "1,23 mi") |
+| "Chamar VIP" sem recarga fura os pisos do §3 | P1 (exploit de economia) | `BALANCE.md` §22 | decisão P14 |
+| Impasse de navegação: 1 em 1.000 partidas o `Sim.Steer` alterna entre duas direções a caminho do pad do Mineiro (bot Ideal a 36,36 ticks/s); conferir se ajudantes podem cair nele | P1 se pegar ajudante (progressão travada) | `BALANCE.md` §22 | ticket de núcleo (Wave A) |
+| Vibra em toda venda (§72 pede só eventos importantes) | P2 | `Game.cs:262` | PR #19 |
+| Sem AAB, chave de release, `versionCode` monotônico nem build não-development; targetSdk automático | antes da loja | `ProjectSettings.asset:181,183`, `Setup.cs:97` | PR #18 (falta a chave real: decisão) |
+| viewcheck não compila o caminho `#if UNITY_ANDROID` e só roda com o Unity local | — | `client/tools/viewcheck` | PR #13 (viewcheck Android); Unity no CI = P15 |
+| `dotnet test` (NUnit 3.14) aceita tupla `int` × `long`; o EditMode do Unity (NUnit 3.5) não | portão | `FSCore.Tests.csproj` | regra: `verify.sh full` antes de todo PR de jogo |
+| 0.6.0 sem aparelho físico | — | `VALIDACAO_V06A.md` | gate de Feature Complete (POCO só em marcos) |
+| Diário CSV grava também no release e cresce sem limite | P2 | `Game.cs:1070` | A-PLAT-06 |
+| Sem analytics remoto, crash reporting e RemoteConfig | antes de UA | — | A-PLAT-08/09 (decisão P8) |
+| Textos no código, sem localização | antes de en/es | DM §109 | — |
+| Bandeja mostra o cartão travado primeiro; "Ajudantes ágeis" fora do padrão "Ajudantes rápidos" | P2 | `VALIDACAO_V05.md` | — |
+| Fome da Bigorna 2 (2.582 s em 60 min no bot) | P2 | `BACKLOG_V07.md` | — |
+| Zona morta ~53% da curva até a produção completa; ouro sem destino depois dela | design | `BALANCE.md` §22 | Waves B (Orders 2.0, Blueprints) e C (distritos) |
+| Conta LevelPlay aguardando aprovação | — | `LEVELPLAY.md` | Vinicius |
