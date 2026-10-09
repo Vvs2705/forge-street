@@ -7,14 +7,14 @@ namespace FS.EditorTools
     /// <summary>
     /// Import das folhas pre-renderizadas (Assets/_FS/Resources/Sprites/**.png): textura crua (Default) que a SpriteSheet
     /// fatia em runtime pelo meta.json. Sem mipmap (ortografica 2D), Clamp (celula vizinha nao vaza no Bilinear), sem
-    /// compressao no PC; ASTC 6x6 no Android. Mudou alguma regra aqui: suba GetVersion para reimportar as folhas.
+    /// compressao no Editor; DXT5 (BC3) no Windows; ASTC 6x6 no Android. Mudou alguma regra aqui: suba GetVersion para reimportar.
     /// </summary>
     public sealed class SpriteImport : AssetPostprocessor
     {
         const string Root = "Assets/_FS/Resources/Sprites/";
         const string Tex = "Assets/_FS/Resources/Textures/";   // chao/rua/parede/madeira: repetidas em Tiled (Art.Ground)
 
-        public override uint GetVersion() => 2;
+        public override uint GetVersion() => 3;
 
         void OnPreprocessTexture()
         {
@@ -30,6 +30,15 @@ namespace FS.EditorTools
             ti.alphaIsTransparency = !tiled;
             ti.npotScale = TextureImporterNPOTScale.None;
             ti.textureCompression = TextureImporterCompression.Uncompressed;
+            // v0.5: com 16 clientes as folhas cruas somavam ~600 MB de textura no build Windows (PC de 7,7 GB). DXT5 = 1/4.
+            // ponytail: DXT5 e nao BC7 para o import das ~130 folhas nao levar minutos; trocar se a borda borrar na foto.
+            ti.SetPlatformTextureSettings(new TextureImporterPlatformSettings
+            {
+                name = "Standalone",
+                overridden = true,
+                maxTextureSize = 4096,
+                format = TextureImporterFormat.DXT5,
+            });
             ti.SetPlatformTextureSettings(new TextureImporterPlatformSettings
             {
                 name = "Android",

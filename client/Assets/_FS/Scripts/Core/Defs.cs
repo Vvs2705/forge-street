@@ -24,7 +24,7 @@ namespace FS.Core
         FurnaceSpeed2,   // fornalha 2,5 s -> 1,6 s
         PlayerSpeed,     // botas 3,0 -> 4,2 m/s
         Tools,           // 3a linha: bancada de ferramentas (1 lingote, paga 16)
-        CounterCapacity, // vitrine: estoque 3 -> 6, fila 4 -> 6, clientes 30% mais frequentes
+        CounterCapacity, // vitrine: estoque 5 -> 10, clientes 30% mais frequentes (a fila saiu dela na FASE7: virou o balcao evolutivo)
         Furnace2,        // 2a fornalha
         Helper3,         // ajudante 3: bancadas -> balcao
         HelperSpeed,     // ajudantes 2,4 -> 3,4 m/s e carga 2 -> 4
@@ -41,12 +41,20 @@ namespace FS.Core
         JewelryDecor,   // luxo: adornos da joalheria
         // fase 4 (docs/FASE4_MINERIO.md): PRODUTIVOS anexados depois dos luxos; saves de 15/17/20/23 flags continuam validos
         Miner,          // mineiro: 2o ajudante papel 0 (deposito -> fornalhas)
-        Jeweler2        // joalheiro 2: 2o ajudante papel 3
+        Jeweler2,       // joalheiro 2: 2o ajudante papel 3
+        // FASE7 (docs/FASE7_CARGA_BALCAO.md): balcao evolutivo no MENU, +1 vaga cada, em cadeia. PRODUTIVOS anexados no fim: saves de
+        // 15/17/20/23/25 flags continuam validos
+        Counter5,       // balcao 4 -> 5 vagas
+        Counter6,       // 5 -> 6
+        Counter7,       // 6 -> 7
+        Counter8        // 7 -> 8
     }
 
     /// <summary>Eventos de um tick, para a view (SFX, particulas, diario). A = item/upgrade/estacao, B = detalhe.
-    /// Milestone: bau de marco apareceu (A = indice em Balance.Milestones, B = ouro); ChestOpened: o jogador abriu (A = indice, B = ouro).</summary>
-    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened }
+    /// Milestone: bau de marco apareceu (A = indice em Balance.Milestones, B = ouro); ChestOpened: o jogador abriu (A = indice, B = ouro).
+    /// FASE8 (anexados): VipArrived = o VIP entrou numa vaga do balcao (A = item, B = unidades do pacote); VipServed = levou o pacote todo
+    /// (A = item, B = ouro que pagou); VipLeft = cansou antes (A = item, B = unidades que faltaram). Cada unidade do VIP sai tambem como Sold (B = 3x o preco).</summary>
+    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft }
 
     /// <summary>Dica contextual da HUD (a view so traduz). Arg = indice do pad (BuyPad), do item, do bau (OpenChest) ou do upgrade (BuyMenu).
     /// BuyMenu ANEXADO no fim (FASE6): a compra mais barata pagavel agora e' um upgrade do menu inferior.</summary>
@@ -107,7 +115,11 @@ namespace FS.Core
         public const float HammerTime0 = 5f, HammerTime1 = 3f;    // bigorna mais lenta que a fornalha com fole: a 2a bigorna "reduz a fila" (§3 3:30)
         public const float ShieldTimeMul = 1.5f, JewelTimeMul = 2f;
         public const int FurnaceIn = 6, FurnaceOut = 4, CrafterIn = 4, CrafterOut = 3;
-        public const int CounterCap0 = 5, CounterCap1 = 10, QueueCap0 = 4, QueueCap1 = 6;
+        public const int CounterCap0 = 5, CounterCap1 = 10;     // estoque do balcao por produto; a Vitrine dobra
+        public const int QueueCap0 = 4, QueueCapMax = 8;        // vagas do balcao (clientes atendidos lado a lado): 4 + 1 por evolucao (FASE7 §2)
+        public const float SlotStep = 0.85f, CounterEnd = 0.2f; // m entre vagas; ponta do balcao alem da ultima vaga
+        /// <summary>Meia-largura do corpo do balcao com `slots` vagas: uma vaga = 0,85 m de balcao + as pontas. 4 vagas: x 2,6-6,4; 8: x 0,9-8,1.</summary>
+        public static float CounterHalfX(int slots) => SlotStep * slots / 2f + CounterEnd;
         public const float PatienceBase = 30f, PatiencePerSecond = 3f;   // paciencia(item) = base + k x producao inicial (FASE5 §1, calibrado no BALANCE.md §13)
         public const int JewelQueueCap = 3;                     // fila da loja de joias (nobres: menos gente)
         public const int JewelQueueCapUp = 5; public const float JewelVitrineClientMul = 0.7f;   // Vitrine de joias: fila 3 -> 5, nobres x0,7 (soma com a Vitrine)
@@ -126,9 +138,23 @@ namespace FS.Core
         public const int JewelPriceUp = 80;                     // Vitrine de joias: nobres pagam mais, sem mudar as outras linhas
         public const int WorkshopFacadeCost = 14000, WorkshopFloorCost = 18000, JewelryDecorCost = 22000;   // luxo: Leva 11, Fachada +8,7 min depois da producao (BALANCE.md §15)
         public const int MinerCost = 3000, Jeweler2Cost = 2400;   // fase 4: regra de retorno 8-12 min, varredura em BALANCE.md §14
+        // FASE7: balcao 5/6/7/8 vagas. Ganho medido 4 -> 8 = +89 ouro/min comprando aos 15 min (0 antes dos 10 e depois dos 30): soma 750
+        // = retorno 8,4 min; o Balcao 5 exige a Vitrine para nao cair nos primeiros 10 min, onde nao rende (BALANCE.md §17)
+        public static readonly int[] CounterSlotCost = { 150, 175, 200, 225 };
         public const int OfflineCapSeconds = 7200; public const float OfflineFactor = 0.25f;   // raia B §5 + coordenador 2026-10-06: teto 2 h, 25% da taxa online
         public const float OfflineMaxNextUpgrades = 2f;         // e nunca mais que 2x o preco do upgrade mais barato ainda travado
         public const float RateTau = 60f;                       // s da media movel de ouro/s (taxa online)
+        // FASE8 (docs/FASE8_VIP_VELOCIDADE.md, medido no BALANCE.md §18): cliente VIP e velocidade por anuncio
+        public const float VipMin = 240f, VipMax = 360f;        // s entre VIPs (sorteio deterministico); o relogio so anda depois da 1a venda
+        public const int VipPackMin = 3, VipPriceMul = 3;       // pacote de no minimo 3 unidades (no maximo a prateleira, CounterCap) de um produto do balcao, 3x o preco cada
+        public const float VipShare = 0.07f;                    // o pacote vale ~7% do ouro de um intervalo medio entre VIPs (sweep de 3/5/6 fixos e 5/7/10%: BALANCE §18)
+        public const float VipPatienceBase = 90f, VipPatiencePerUnit = 6f;   // rodada 3: paciencia do VIP = 90 s + 6 s por unidade do pacote (3 = 108 s, 10 = 150 s, 20 = 210 s)
+        /// <summary>Paciencia do VIP com `units` no pacote (natural e chamado). O cliente normal tem 57-77 s.</summary>
+        public static float VipPatienceFor(int units) => VipPatienceBase + VipPatiencePerUnit * units;
+        public const float VipSummonMinIn = 60f;                // chamar por anuncio: so sem VIP ativo e com o proximo natural a mais de 60 s
+        public const int VipSummonPackMul = 2, VipSummonPackMax = 20;   // o VIP chamado e' EXTRA (nao mexe no relogio natural) e traz 2x o pacote do natural, ate 20 (coordenador)
+        public const float BoostSeconds = 60f, BoostMax = 3f, BoostPlayerMax = 1.3f;   // 1 anuncio = 2x por 60 s, o 2o sobe para 3x; o ferreiro no maximo 1,3x
+        public const float BoostCooldownSeconds = 300f;         // recarga: 5 min de jogo contados do FIM de cada boost (coordenador; sem ela, 2x renovado fechava a producao aos 26:56)
         public static readonly int[] Price = { 0, 0, 10, 25, 16, 60 };     // ouro por item vendido
         public static readonly int[] IngotsPer = { 0, 0, 1, 2, 1, 2 };     // lingotes por produto
         public static readonly string[] ItemName = { "minério", "lingote", "espada", "escudo", "ferramenta", "joia" };
@@ -167,7 +193,8 @@ namespace FS.Core
         /// Baus de marco (docs/AREA2_FASE2.md §3), na ordem de exibicao. Um bau disponivel por vez em cada posicao. O 1o e'
         /// 15 espadas e nao 10 (desvio medido, BALANCE.md §10): com 10 o bau abre aos 1:36 e a 2a bigorna cai abaixo do piso da §3.
         /// </summary>
-        public static readonly V2 WorkshopChest = new V2(2.8f, 12.6f), StreetChest = new V2(10.2f, 9.6f);   // rua: (14,2; 13,0) -> (10,2; 9,6), coordenador (sobreposicao na view)
+        // oficina: (2,8; 12,6) -> (2,2; 12,0) na FASE7, o balcao de 4 vagas (x 2,6-6,4) cobria o bau; rua: (14,2; 13,0) -> (10,2; 9,6), coordenador
+        public static readonly V2 WorkshopChest = new V2(2.2f, 12.0f), StreetChest = new V2(10.2f, 9.6f);
         public static readonly MilestoneDef[] Milestones =
         {
             new MilestoneDef((int)Item.Sword, 15, 60, WorkshopChest, "15 espadas!"),
@@ -196,7 +223,7 @@ namespace FS.Core
 
     public static class Upgrades
     {
-        public const int ProductionCount = 22, Count = 25;   // ProductionCount = quantos NAO sao luxo (os IDs nao precisam ser contiguos)
+        public const int ProductionCount = 26, Count = 29;   // ProductionCount = quantos NAO sao luxo (os IDs nao precisam ser contiguos)
 
         /// <summary>Marca por upgrade, nao por ID: um produtivo anexado depois dos luxos continua produtivo.</summary>
         public static bool IsLuxury(int u) => All[u].Luxury;
@@ -213,7 +240,7 @@ namespace FS.Core
             new UpgradeDef(Upgrade.FurnaceSpeed2, (int)Upgrade.FurnaceSpeed1, "Fole duplo", "Fornalha ainda mais rápida", menu: true),
             new UpgradeDef(Upgrade.PlayerSpeed, -1, "Botas", "Você anda mais rápido", menu: true),
             new UpgradeDef(Upgrade.Tools, (int)Upgrade.Shields, "Ferramentas", "Nova linha: 1 lingote, paga 16"),
-            new UpgradeDef(Upgrade.CounterCapacity, -1, "Vitrine", "Mais estoque, fila e clientes", menu: true),
+            new UpgradeDef(Upgrade.CounterCapacity, -1, "Vitrine", "Mais estoque e mais clientes", menu: true),
             new UpgradeDef(Upgrade.Furnace2, (int)Upgrade.Anvil2, "2ª fornalha", "Dobra os lingotes"),
             new UpgradeDef(Upgrade.Helper3, (int)Upgrade.Helper2, "Ajudante 3", "Leva produtos ao balcão"),
             new UpgradeDef(Upgrade.HelperSpeed, (int)Upgrade.Helper1, "Ajudantes ágeis", "Mais rápidos e carregam 4", menu: true),
@@ -228,6 +255,10 @@ namespace FS.Core
             new UpgradeDef(Upgrade.JewelryDecor, (int)Upgrade.WorkshopFloor, "Joalheria real", "Tapetes e adornos para a joalheria", luxury: true),
             new UpgradeDef(Upgrade.Miner, (int)Upgrade.Jeweler, "Mineiro", "Mais um ajudante leva minério às fornalhas"),
             new UpgradeDef(Upgrade.Jeweler2, (int)Upgrade.Miner, "Joalheiro 2", "Mais um ajudante na joalheria"),
+            new UpgradeDef(Upgrade.Counter5, (int)Upgrade.CounterCapacity, "Balcão 5 vagas", "Atende 5 clientes ao mesmo tempo", menu: true),
+            new UpgradeDef(Upgrade.Counter6, (int)Upgrade.Counter5, "Balcão 6 vagas", "Atende 6 clientes ao mesmo tempo", menu: true),
+            new UpgradeDef(Upgrade.Counter7, (int)Upgrade.Counter6, "Balcão 7 vagas", "Atende 7 clientes ao mesmo tempo", menu: true),
+            new UpgradeDef(Upgrade.Counter8, (int)Upgrade.Counter7, "Balcão 8 vagas", "Atende 8 clientes ao mesmo tempo", menu: true),
         };
 
         /// <summary>custo(tier) = CostBase * CostGrowth^tier, arredondado ao multiplo de 5 (preco legivel no pad).</summary>
@@ -247,6 +278,8 @@ namespace FS.Core
                 case Upgrade.JewelryDecor: return Balance.JewelryDecorCost;
                 case Upgrade.Miner: return Balance.MinerCost;
                 case Upgrade.Jeweler2: return Balance.Jeweler2Cost;
+                case Upgrade.Counter5: case Upgrade.Counter6: case Upgrade.Counter7: case Upgrade.Counter8:
+                    return Balance.CounterSlotCost[tier - (int)Upgrade.Counter5];
             }
             double c = Balance.CostBase * Math.Pow(Balance.CostGrowth, tier);
             return Math.Max(5, (int)(Math.Round(c / 5.0) * 5.0));

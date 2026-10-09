@@ -31,12 +31,13 @@ namespace FS
         static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 
         public static Sprite Square() => Get("sq", (x, y) => true);
-        public static Sprite Rounded() => Get("rounded", (x, y) =>
+        public static Sprite Rounded() => Get("rounded", RoundedIn);
+        static bool RoundedIn(float x, float y)
         {
             const float r = 0.28f;
             float qx = Mathf.Max(Mathf.Abs(x) - (1f - r), 0f), qy = Mathf.Max(Mathf.Abs(y) - (1f - r), 0f);
             return qx * qx + qy * qy <= r * r;
-        });
+        }
         public static Sprite Disc() => Get("disc", (x, y) => x * x + y * y <= 0.96f);
         public static Sprite Ring() => Get("ring", (x, y) => { float d = x * x + y * y; return d <= 0.96f && d >= 0.62f; });
         /// <summary>Anel tracejado (12 tracos): marca de obra no chao dos pads de construcao.</summary>
@@ -84,8 +85,118 @@ namespace FS
             }
         }
 
-        /// <summary>Escala do sprite do item quando desenhado solto (lingote e' uma barra deitada).</summary>
+        /// <summary>Escala da mascara do item (so a reserva sem arte: o lingote e' o quadrado arredondado achatado em barra).</summary>
         public static Vector2 ItemScale(Item i, float s) => i == Item.Ingot ? new Vector2(s * 1.25f, s * 0.6f) : new Vector2(s, s);
+
+        // ---------- arte pre-renderizada dos itens (v0.5, docs/ASSETS.md s7): as mascaras acima viram reserva ----------
+        static readonly string[] ItemArtName = { "item_minerio", "item_lingote", "item_espada", "item_escudo", "item_ferramenta", "item_joia" };
+        const float ArtFill = 1.1f;   // o item ocupa ~116 dos 128 px da celula: escala = tamanho desejado x 1,1
+
+        /// <summary>Quadro `clip` de uma folha de 1 quadro (Resources/Sprites/&lt;name&gt;); null sem a folha.</summary>
+        public static Sprite Icon(string name, string clip) => SpriteSheet.TryGet(name, out SpriteSheet sh) ? sh.Frame(clip, 0, 0f) : null;
+        /// <summary>Item renderizado: `icone` (3/4: balao, cartao) ou `deitado` (pilha, estoque, bocas); null sem a folha.</summary>
+        public static Sprite ItemArt(Item i, bool icon) => Icon(ItemArtName[(int)i], icon ? "icone" : "deitado");
+        /// <summary>Cor base do renderer do item: branco na arte (a cor ja vem no PNG), matiz do item na mascara.</summary>
+        public static Color ItemTint(Item i) => ItemArt(i, false) != null ? Color.white : ItemColor[(int)i];
+
+        /// <summary>Pinta o item com `size` m de lado: arte (contorno no PNG, sem achatar o lingote) ou, sem ela, a mascara de sempre.</summary>
+        public static void PaintItem(SpriteRenderer r, Item i, bool icon, float size)
+        {
+            Sprite art = ItemArt(i, icon);
+            r.sprite = art != null ? art : ItemSprite(i);
+            r.color = art != null ? Color.white : ItemColor[(int)i];
+            Vector2 s = art != null ? Vector2.one * (size * ArtFill) : ItemScale(i, size);
+            r.transform.localScale = new Vector3(s.x, s.y, 1f);
+        }
+
+        /// <summary>
+        /// Anel de paciencia do balao: faixa na borda do retangulo arredondado (o mesmo do Rounded), cheia no sentido horario a
+        /// partir do topo ate `frac`. ponytail: 24 degraus em cache (24 x 16 KB); trocar por shader radial se o degrau aparecer.
+        /// </summary>
+        public static Sprite BalloonRing(float frac)
+        {
+            int k = Mathf.Clamp(Mathf.CeilToInt(frac * 24f), 0, 24);
+            return Get("arc" + k, (x, y) =>
+                RoundedIn(x, y) && !RoundedIn(x / 0.86f, y / 0.84f) && Mathf.Repeat(Mathf.Atan2(x, y) / (Mathf.PI * 2f), 1f) < k / 24f);
+        }
+
+        // ---------- v0.5b (BENCHMARK_VISUAL P1-1..P1-6): placa de obra, juice e seta da dica ----------
+
+        /// <summary>Borda tracejada (16 tracos) de um quadrado arredondado (o mesmo do Rounded): placa de obra no chao.</summary>
+        public static Sprite DashedBox() => Get("dashbox", (x, y) =>
+            RoundedIn(x, y) && !RoundedIn(x / 0.88f, y / 0.88f) && Mathf.Repeat(Mathf.Atan2(y, x) / (Mathf.PI * 2f) * 16f + 0.25f, 1f) < 0.6f);
+        /// <summary>Coracao (curva implicita classica) da venda.</summary>
+        public static Sprite Heart() => Get("heart", (x, y) =>
+        {
+            float X = x * 1.25f, Y = y * 1.25f + 0.2f, a = X * X + Y * Y - 1f;
+            return a * a * a - X * X * Y * Y * Y <= 0f;
+        });
+        /// <summary>Brilho de 4 pontas (astroide) do estouro do balao.</summary>
+        public static Sprite Sparkle() => Get("sparkle", (x, y) => Mathf.Sqrt(Mathf.Abs(x)) + Mathf.Sqrt(Mathf.Abs(y)) <= 0.98f);
+        /// <summary>Tracos do rosto bravo (sobrancelhas em V, olhos, boca para baixo), desenhados por cima de um Disc laranja.</summary>
+        public static Sprite AngryFace() => Get("angry", (x, y) =>
+        {
+            float ax = Mathf.Abs(x);
+            bool brow = ax > 0.12f && ax < 0.62f && Mathf.Abs(y - (0.08f + 0.45f * ax)) < 0.09f;   // sobe para fora: V bravo
+            bool eye = (ax - 0.33f) * (ax - 0.33f) + (y + 0.05f) * (y + 0.05f) < 0.012f;
+            float d = Mathf.Sqrt(x * x + (y + 0.95f) * (y + 0.95f));
+            bool mouth = Mathf.Abs(d - 0.52f) < 0.075f && y > -0.6f && ax < 0.38f;                    // arco de cima de um circulo baixo: boca para baixo
+            return brow || eye || mouth;
+        });
+        /// <summary>Seta da dica apontando para baixo (haste + ponta); `fat` = contorno (desenhado atras, escuro).</summary>
+        public static Sprite Arrow(bool fat) => Get(fat ? "arrow+" : "arrow", (x, y) =>
+        {
+            float g = fat ? 0.12f : 0f;
+            bool shaft = Mathf.Abs(x) < 0.26f + g && y > -0.1f && y < 0.86f + g;
+            bool head = y < 0.06f + g && y > -0.92f - g && Mathf.Abs(x) < (y + 0.92f + g) * 0.85f;
+            return shaft || head;
+        });
+        /// <summary>Avanco rapido (2 triangulos para a direita): botao e selo da velocidade 2x/3x (v0.5c).</summary>
+        public static Sprite FastForward() => Get("ff", (x, y) =>
+        {
+            bool Tri(float x0) => x >= x0 && x <= x0 + 0.9f && Mathf.Abs(y) <= (x0 + 0.9f - x) / 0.9f * 0.78f;
+            return Tri(-0.92f) || Tri(0.02f);
+        });
+
+        /// <summary>Capsula para SpriteRenderer Sliced: pontas de 0,5 unidade fixas, meio estica. Usar size = (w/h, 1) e escala h.</summary>
+        public static Sprite Capsule()
+        {
+            if (Cache.TryGetValue("capsule", out Sprite s) && s != null) return s;
+            s = Sprite.Create(Disc().texture, new Rect(0, 0, Side, Side), new Vector2(0.5f, 0.5f), Side, 0,
+                SpriteMeshType.FullRect, new Vector4(Side / 2 - 1, 0, Side / 2 - 1, 0));
+            Cache["capsule"] = s;
+            return s;
+        }
+
+        /// <summary>Retangulo arredondado 9-fatias para uGUI (Image.Type.Sliced): canto de ~20 px na referencia 1080x1920 em qualquer tamanho.</summary>
+        public static Sprite Box()
+        {
+            if (Cache.TryGetValue("box9", out Sprite s) && s != null) return s;
+            const float r = 20f / 64f * 2f;   // raio de 20 px na textura de 64 (coordenadas [-1, 1])
+            Sprite m = Get("box9mask", (x, y) =>
+            {
+                float qx = Mathf.Max(Mathf.Abs(x) - (1f - r), 0f), qy = Mathf.Max(Mathf.Abs(y) - (1f - r), 0f);
+                return qx * qx + qy * qy <= r * r;
+            });
+            s = Sprite.Create(m.texture, new Rect(0, 0, Side, Side), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(22, 22, 22, 22));
+            Cache["box9"] = s;
+            return s;
+        }
+
+        /// <summary>Vinheta: escurece so as bordas (alfa 0 no centro, ~1 nos cantos); Image por cima do mundo e abaixo da HUD.</summary>
+        public static Sprite Vignette() => Soft("vignette", (x, y) => Mathf.Clamp01((x * x + y * y - 0.55f) / 1.2f));
+
+        /// <summary>Contorno escuro + sombra no texto (numero de ouro, preco, "+25"): le sobre qualquer fundo.</summary>
+        public static Text Outlined(Text t, float px)
+        {
+            var o = t.gameObject.AddComponent<Outline>();
+            o.effectColor = new Color(0.08f, 0.05f, 0.03f, 0.95f);
+            o.effectDistance = new Vector2(px, -px);
+            var sh = t.gameObject.AddComponent<Shadow>();
+            sh.effectColor = new Color(0f, 0f, 0f, 0.5f);
+            sh.effectDistance = new Vector2(0f, -px * 1.6f);
+            return t;
+        }
 
         public static Color StationColor(Station s)
         {
@@ -126,8 +237,9 @@ namespace FS
             return s;
         }
 
-        /// <summary>Brilho de tocha: disco com queda quadratica ate a borda.</summary>
-        public static Sprite Glow() => Soft("glow", (x, y) => { float d = 1f - Mathf.Sqrt(x * x + y * y); return d * d; });
+        /// <summary>Brilho de tocha/fornalha/poste: disco com queda suave (smoothstep invertido). v0.5b: era (1-d)^2, que sumia
+        /// embaixo do sprite da fornalha a 0,6 m do centro; assim a poca de luz aparece no chao em volta.</summary>
+        public static Sprite Glow() => Soft("glow2", (x, y) => { float d = Mathf.Min(1f, Mathf.Sqrt(x * x + y * y)); return (1f - d) * (1f - d) * (1f + 2f * d); });
         /// <summary>Sombra de contato: opaca na esquerda (x = -1), transparente na direita.</summary>
         public static Sprite Fade() => Soft("fade", (x, y) => (1f - x) * 0.5f);
 
@@ -144,7 +256,7 @@ namespace FS
             string key = "chao:" + name;
             if (Cache.TryGetValue(key, out Sprite s) && s != null) return s;
             Texture2D tex = Resources.Load<Texture2D>("Textures/" + name);
-            if (tex == null) tex = Blocks(name);
+            if (tex == null) tex = name == "grama" ? Grass() : Blocks(name);
             tex.wrapMode = TextureWrapMode.Repeat;
             tex.filterMode = FilterMode.Bilinear;
             s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), tex.width / GroundTileM, 0, SpriteMeshType.FullRect);
@@ -179,6 +291,38 @@ namespace FS
                     px[y * n + x] = joint ? j : (row * 7 + col * 13) % 3 == 0 ? b : a;
                 }
             var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { name = name };
+            tex.SetPixels32(px);
+            tex.Apply(false, true);
+            return tex;
+        }
+
+        /// <summary>
+        /// Grama do exterior (v0.5b, BENCHMARK P1-6 "fora da loja ha mundo"): ruido de valor em 2 oitavas sobre 3 verdes-oliva apagados
+        /// (longe do verde #4CD964 da ferramenta) e tufos escuros esparsos; 128 px = GroundTileM, sem emenda (ruido periodico).
+        /// </summary>
+        static Texture2D Grass()
+        {
+            const int n = 128;
+            Color a = Hex(0x5C7A44), b = Hex(0x6A8A4E), c = Hex(0x4E6A3A);
+            float H(int x, int y) { uint h = (uint)((x & 127) * 374761393 + (y & 127) * 668265263); h = (h ^ (h >> 13)) * 1274126177u; return (h & 0xFFFF) / 65535f; }
+            float Noise(float x, float y, int cell)
+            {
+                int x0 = Mathf.FloorToInt(x / cell), y0 = Mathf.FloorToInt(y / cell), m = n / cell;
+                float fx = x / cell - x0, fy = y / cell - y0;
+                fx = fx * fx * (3f - 2f * fx); fy = fy * fy * (3f - 2f * fy);
+                float v00 = H(x0 % m, y0 % m), v10 = H((x0 + 1) % m, y0 % m), v01 = H(x0 % m, (y0 + 1) % m), v11 = H((x0 + 1) % m, (y0 + 1) % m);
+                return Mathf.Lerp(Mathf.Lerp(v00, v10, fx), Mathf.Lerp(v01, v11, fx), fy);
+            }
+            var px = new Color32[n * n];
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float v = 0.65f * Noise(x, y, 32) + 0.35f * Noise(x, y, 8);
+                    Color col = v < 0.42f ? Color.Lerp(c, a, v / 0.42f) : Color.Lerp(a, b, (v - 0.42f) / 0.58f);
+                    if (H(x * 7 + 3, y * 13 + 5) > 0.985f) col = Color.Lerp(col, c * 0.8f, 0.7f);   // tufo
+                    px[y * n + x] = col;
+                }
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { name = "grama" };
             tex.SetPixels32(px);
             tex.Apply(false, true);
             return tex;
@@ -252,8 +396,8 @@ namespace FS
         public static Image Panel(Transform parent, string name, Color color, Vector2 anchorMin, Vector2 anchorMax)
         {
             var img = Node(parent, name, anchorMin, anchorMax).gameObject.AddComponent<Image>();
-            img.sprite = Rounded();
-            img.type = Image.Type.Simple;
+            img.sprite = Box();   // v0.5b: 9-fatias, canto redondo de verdade (o Rounded esticado achatava os cantos)
+            img.type = Image.Type.Sliced;
             img.color = color;
             return img;
         }
@@ -293,6 +437,7 @@ namespace FS
             Tone("leave", 520, 230, 0.35f, 0.2f);      // cliente foi embora
             Tone("drop", 700, 500, 0.06f);             // item depositado
             Tone("offline", 523, 1046, 0.7f);          // cofre
+            Tone("vip", 660, 1480, 0.6f, 0.05f);       // cliente VIP chegou (v0.5c)
         }
 
         /// <summary>Toca no maximo uma vez por `minGap` segundos por nome (varias marteladas no mesmo quadro viram uma).</summary>

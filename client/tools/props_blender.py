@@ -303,4 +303,5 @@ def main():
     print("PROPS_OK")
 
 
-main()
+if __name__ == "__main__":   # importavel por arte_v05_blender.py (primitivas e paleta)
+    main()

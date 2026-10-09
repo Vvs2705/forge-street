@@ -889,3 +889,490 @@ precos (F / P / J)  | Dt 1/30: fachada  piso           joalheria real  | Dt 1/60
 - **Pad do Mineiro** (0,5; 3,5) → **(2,8; 0,6)**, slot 20, no lugar das Botas (pad do menu, invisível; `Sim` ignora pad invisível na busca por posição). Motivo: a 0,62 m da linha Depósito → entrada da Fornalha, o humano pisaria nele de passagem. Bot: produção completa **43:37** (igual), Fachada +8,8 min, ouro/min 44–90 1.626; dotnet 66/66.
 - **Arte das estações** de célula 1,65 m para 1,95 m: com 1,65 a peça tinha 0,9–1,24 m de largura e o corpo sólido 1,3 m (o ferreiro batia numa borda invisível). Só view; nenhum número muda.
 
+## 17. FASE7: carga mista do ferreiro, balcão evolutivo 4 → 8 e venda só com cliente na vaga (contrato `docs/FASE7_CARGA_BALCAO.md`, medido 2026-10-08)
+
+**Vigente.** Origem: playtest do Vinicius na v0.4.1 (POCO F4): a trava dos lingotes com a bigorna cheia, o pedido do balcão evolutivo e "vendas sem ninguém pedindo". Os números de §15/§16 viram **históricos**. Harness: `scratchpad/fs7/h` (fontes reais do core; preços do balcão mudados em runtime), `h2` (vendas por caminho, compila contra o core antigo e o novo) e `red` (mutações). Bot humano, Dt 1/30 (portão) e 1/60.
+
+### 17.1 O que mudou no core
+- **Carga:** `Carrier.Held[6]`.
+  - O ferreiro leva todos os tipos, até `Cap` de cada um; o ajudante, um tipo por vez.
+  - A regra nova sozinha não muda nenhum tick do bot antigo em 90 min: ele nunca passava por uma boca recolhível carregando outra coisa.
+  - O estado da trava (insumo na mão sem nenhuma entrada com espaço) apareceu **0 s** em 90 min de bot.
+- **Balcão:** `Counter5..Counter8` no menu, em cadeia (o 1º exige a Vitrine), +1 vaga cada.
+  - O corpo cresce com as vagas: meia-largura `CounterHalfX(n)` = 0,425·n + 0,2.
+  - As vagas ficam centradas no balcão. A Vitrine perdeu a fila e ficou com estoque e clientes ×0,7.
+  - Baú da oficina (2,8; 12,6) → (2,2; 12,0). Nos 10 min, a diferença entre posições do baú (1.380–1.480 de receita) é ruído do bot: no Dt 1/60 dá 1.450 nas duas.
+- **Venda:** a compra direta da vitrine saiu (§17.2).
+- **Bot:**
+  - só leva ao balcão o produto que ele aceita (`Sim.Deliverable`);
+  - insumo sem destino não o prende;
+  - produto que a fila pede ganha +12 (`Sim.Wanted`).
+  - A dica segue a mesma ordem.
+- **`Sim.Steer`:** considera todos os corpos encostados e descarta rota cuja quina não cabe o personagem (§17.5).
+- **Teto do cofre:** o mais barato **à venda** (§17.5).
+- **Save:** grava a carga na mão (`hold=`, `wk=`).
+
+### 17.2 Etapa C: vendas sem cliente visível (causa medida)
+`Ev.Sold` só sai de `Sim.Sell`, chamado em dois lugares: o atendimento da fila e a compra direta (fila cheia + produto no estoque). A compra direta solta o "+10" na vaga depois da última, sem cliente desenhado.
+
+| bot humano | v0.4.1, 10 min | v0.4.1, 45 min | FASE7, 10 min | FASE7, 45 min |
+|---|---|---|---|---|
+| Dt 1/30: vendas (fila / **direta**) | 107 (87 / **20 = 18,7%**) | 1.544 (945 / **377 = 28,5%**; joias 221 / 1) | 90 (90 / **0**) | 1.212 (1.047 / **0**; joias 165 / 0) |
+| Dt 1/60: vendas (fila / **direta**) | 106 (90 / **16 = 15,1%**) | 1.561 (944 / **400 = 29,8%**) | 78 (78 / **0**) | 1.275 (1.102 / **0**) |
+| fila_cheia \| cansou (1/30) | 65 \| 1 | 1.882 \| 1 | 79 \| 2 | 2.094 \| 2 |
+| receita (1/30) | 1.460 | 32.723 | 1.320 | 27.075 |
+
+- **Outras fontes descartadas:**
+  - `Ev.Offline` não tem `case` no `HandleEvents`: o cofre aparece só no painel.
+  - `Ev.Deposited` do ajudante só toca som.
+  - `Ev.ChestOpened` solta "+ouro" no baú, mas são só 2–3 aberturas no jogo inteiro.
+- **Sem a compra direta e sem mudar mais nada, o bot TRAVAVA aos ~10 min** (renda 0 até os 90 min).
+  - Estado aos 15:00: o bot no balcão com 2 espadas, estoque de espada 5/5, fila = 4 clientes de escudo e 3 escudos prontos na bancada.
+  - Os clientes de espada nunca acham vaga, porque os tempos ficam em fase. É a trava da §9.1, que a compra direta mascarava.
+  - Ela se desfaz pela paciência, pela vaga a mais e pela carga mista, mais a regra do bot/dica "não espere num balcão que não aceita o que está na mão; busque o que a fila pede". Teste: `FilaCheiaDeEscudo_…_DestravaPelaPacienciaPelasVagasEPelaCargaMista`.
+
+### 17.3 Ganho das vagas e preço
+- **Com a compra direta (antes da Etapa C) as vagas valiam zero.** 4 → 8 dadas de graça no minuto T, janela de 10 min: Δ entre −50 e +18 ouro/min, média −2,5. A `fila_cheia` quase não caía (479 → 474 aos 10 min).
+  - A Vitrine antiga (fila 6) e a nova (fila 4) deram a mesma receita em 90 min: 106.215 × 105.834 (Dt 1/30) e 107.041 × 105.941 (Dt 1/60).
+  - A economia é limitada pela produção: no fim chegam ~110 clientes/min contra ~50 vendas/min. Quem não entrava comprava direto do estoque.
+- **Sem a compra direta, as vagas rendem no meio do jogo.** Médias de 5 passos (Dt 1/30, 1/40, 1/45, 1/50, 1/60), janela de 15 min, vagas dadas no minuto T:
+
+| T | ouro/min com 4 vagas | 5 | 6 | 7 | 8 | **4 → 8** | fila_cheia \| cansou (4 → 8 vagas) |
+|---|---|---|---|---|---|---|---|
+| 5 | 303 | −6 | +4 | +1 | −3 | **−4** | 535 \| 1 → 546 \| 4 |
+| 10 | 357 | −10 | −5 | +36 | +4 | **+25** | 804 \| 0 → 790 \| 0 |
+| 15 | 425 | +33 | +1 | +35 | +20 | **+89** | 1.000 \| 1 → 952 \| 1 |
+| 20 | 636 | +5 | +32 | −2 | +22 | **+56** | 982 \| 2 → 965 \| 1 |
+| 25 | 900 | +18 | +33 | −11 | +10 | **+50** | 944 \| 2 → 919 \| 2 |
+| 30 | 1.142 | −10 | 0 | +9 | +11 | **+9** | 897 \| 1 → 872 \| 2 |
+| 40 | 1.431 | −13 | +28 | −14 | +1 | **+2** | 949 \| 0 → 927 \| 0 |
+
+  - **Mais vagas não trocam "fila_cheia" por "cansou"** (nota do benchmark): `cansou` fica em 0–4 em toda linha, porque a paciência por item (57–84 s) segura quem entra. A `fila_cheia` cai pouco (−2% a −5%), já que a produção continua sendo o limite.
+  - O ganho por vaga tem ruído de ±15 e não se separa. **A regra de retorno foi aplicada à soma.** Na faixa 15–25 min, 4 → 8 rendem ~65 ouro/min; comprando aos ~15 min, +89/min.
+- **Preço APLICADO: 150 / 175 / 200 / 225** (soma 750, retorno de 8,4 min sobre +89/min). **O Balcão 5 exige a Vitrine.**
+
+| preços (5/6/7/8) | requisito do Balcão 5 | Esteira (1/30 · 1/60) | vagas compradas (1/30) | produção completa (1/30 · 1/60) |
+|---|---|---|---|---|
+| sem as vagas (4 sempre) | — | 7:28 · 7:30 | — | 49:01 · 47:52 (os 22 antigos) |
+| 160 / 160 / 160 / 160 | nenhum | **11:12 · 11:13** | 6:40–8:32 | 51:09 · 49:44 |
+| 120 / 150 / 180 / 210 | nenhum | **10:23 · 10:33** | 5:08–9:27 | 47:20 · 47:52 |
+| 120 / 150 / 180 / 210 | Vitrine | 7:28 · 7:30 | 13:41–14:43 | 49:52 · 48:02 |
+| **150 / 175 / 200 / 225** | **Vitrine** | **7:28 · 7:30** | **13:45–14:43** | **48:24 · 47:32** |
+| 200 / 250 / 300 / 350 | Vitrine | 7:28 · 7:30 | 13:46–14:48 | 51:10 · 48:32 |
+| 300 / 350 / 400 / 450 | Vitrine | 7:28 · 7:30 | 14:05–14:51 | 50:37 · 50:02 |
+
+  - **Sem requisito**, o preço da regra põe as vagas nos primeiros 5–9 min, onde rendem 0, e a Esteira sai da janela da §3 (≤ 8:30).
+  - **Com a Vitrine**, elas caem logo depois dela (13:28), onde começam a render, e a §3 fica idêntica à base.
+  - **No jogo inteiro**, as vagas se pagam:
+    - ouro/min 15–25 min: +85/+91 (Dt 1/30) e +19/+87 (Dt 1/60) contra a base sem vagas;
+    - receita em 90 min: 95.926 → 98.151 (Dt 1/30) e 98.215 → 99.992 (Dt 1/60), já descontados os 750.
+
+### 17.4 Bot humano antes (v0.4.1) × depois (FASE7), Dt 1/30 (`BalanceTests`)
+| marco | v0.4.1 | FASE7 | janela |
+|---|---|---|---|
+| 1ª venda | 0:22 | 0:22 | < 1:30 |
+| Fole · 2ª bigorna · Ajudante · Escudos | 1:07 · 2:17 · 2:59 · 4:00 | 1:07 · 2:17 · 2:59 · 4:00 | §3 |
+| Esteira | 7:20 | **7:28** (Dt 1/60 7:30) | ≤ 8:30 |
+| receita · compras em 10 min | 1.460 · 9 | **1.320** · 9 (Dt 1/60: 1.450 → 1.170) | — |
+| Vitrine · Balcão 5/6/7/8 | 12:40 · — | 13:28 · 13:45 / 14:05 / 14:28 / 14:43 | — |
+| Corredor · Joalheria | 13:26 · 23:01 | 14:46 · 26:44 | — |
+| Joalheiro · Mineiro · Joalheiro 2 · Lupa | 27:10 · 30:05 · 32:20 · 36:49 | 31:42 · 34:35 · 36:47 · 41:21 | — |
+| **produção completa** | **43:37** (22 produtivos) | **48:24** (26; Dt 1/60 47:32) | 42–48 |
+| Fachada · Piso · Joalheria real | 52:25 · 63:32 · 76:54 | 56:57 (+8,6) · 68:09 (+19,8) · 82:08 (+33,7) | Fachada +8…12 |
+| receita · vendas em 90 min | 106.006 · 3.775 | 98.151 · 3.059 | — |
+| **fila_cheia \| cansou** em 10 / 45 / 60 / 90 min | 65\|1 · 1.882\|1 · 2.758\|1 · 4.519\|1 | 79\|2 · 2.094\|2 · 3.084\|2 · 5.091\|2 | — |
+| fome da joalheria (Joalheiro → 60 min) | 14% | **9%** | ≤ 35% |
+| andar sem decisão (10 min · 45 min) | 34% · 30% | 34% · 23% | < 50% |
+| cofre ofline depois de 10 min | 1.060 | 1.060 | — |
+| baús abertos | 2:53 / 7:18 / 25:46 / 13:23 | 2:53 / 7:26 / 28:57 / 14:42 | — |
+
+| ouro/min (janela de 5 min) | 0–5 | 5–10 | 10–15 | 15–20 | 20–25 | 25–30 | 30–35 | 35–40 | 40–45 | 45–50 | 50–55 | 55–60 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| v0.4.1 | 67 | 225 | 384 | 410 | 658 | 986 | 1.147 | 1.292 | 1.372 | 1.617 | 1.598 | 1.661 |
+| **FASE7** | 65 | 199 | 375 | 424 | 394 | 551 | 992 | 1.138 | 1.274 | 1.397 | 1.656 | 1.551 |
+
+- **O custo é da Etapa C, não das vagas:**
+  - Sem a compra direta, 28–30% das vendas do balcão (que eram clientes invisíveis) viram "fila_cheia". A receita cai 7% em 90 min e as vendas, 19%.
+  - O vale de 20–30 min é a fila entupida de clientes de escudo/ferramenta antes do Ajudante 3 e da Joalheria.
+  - As vagas devolvem parte disso: sem elas, a produção sairia aos 49:01.
+- **A produção completa sai 1:24 depois da janela 42–48 no Dt 1/30** (47:32 no Dt 1/60, dentro). **Não repreçei nada fora da FASE7.** Se o coordenador quiser voltar a ~44 min, as alavancas medidas são o preço das vagas (já no mínimo da regra) ou a paciência e a fila. Fica a decisão.
+- A Fachada sai +8,6 min depois da produção, dentro da regra de +8…12 min, sem mexer no luxo.
+
+### 17.5 Achados corrigidos no caminho
+- **Bolso da Loja de joias (`Sim.Steer`):**
+  - Com a Joalheria real, a loja (x 11,35–12,65; y 11,1–11,9) e os 2 pedestais da frente (10,95 e 13,05; 10,9) deixam vãos de 0,1–0,2 m dos dois lados da boca.
+  - O `Steer` olhava só o 1º corpo encostado e escolhia a quina do vão. Aos 81 min (Dt 1/60, com a carga mista), o bot ficou 9 min parado em (11,40; 10,79): ouro/min 85–90 1.354 e 64 "cansou".
+  - **Correção:** todos os corpos encostados entram na conta, e a rota cuja quina não cabe o personagem (`Sim.Fits`) é descartada. Nada muda antes desse ponto: as partidas são idênticas ao tick até ali. Depois: 85–90 min = 1.625 ouro/min e 0 "cansou".
+  - **Teste:** `Steer_BocaDaLojaDeJoias_EntreLojaEPedestais_SaiDoVao`. A geometria dos pedestais (duplicada em `WorldView.Pedestals`) não mudou.
+- **Teto do cofre (`CheapestLockedCost`):**
+  - O Balcão 5 (150, exige a Vitrine) virou o "menor travado" e derrubou o cofre dos 10 min de 1.060 para 300.
+  - **Agora o teto conta só o que está à venda (pré-requisito comprado)**, e os 10 min voltam a 1.060.
+  - Efeito colateral único: na janela do par, o teto passa de 4.800 (2 × Joalheiro 2, que exige o Mineiro e não está à venda) para **6.000** (2 × Mineiro). Produção completa: 18.000, igual.
+
+### 17.6 Portões remedidos (medido × 1,3, arredondado para cima em 10 s; pisos ~70%)
+- **`Bot_45Minutos…`:** Corredor ≤ 19:20; Joalheria ≤ 34:50; joias/min > 6,3 (medido 9,0). A Joalheria aumenta a renda (371 → 792, +113%).
+- **`Bot_60Minutos_Fase2`:**
+  - tempos: Joalheiro ≤ 41:20; Mineiro ≤ 45:00; Joalheiro 2 ≤ 47:50; Lupa ≤ 53:50; Vitrine de joias dentro dos 60 min;
+  - **as 4 vagas até 19:10** (medido 14:43);
+  - baús: ≤ 3:50 / 9:40 / 37:40 / 19:10;
+  - joias/min depois da produção > 10,3 (medido 14,8);
+  - fome ≤ 35% (medido 9%);
+  - ouro/min 55–60 > 1.085 (medido 1.551).
+- **`Bot_90Minutos_Luxo`:** Fachada ≤ 74:10; Piso ≤ 88:40; Joalheria real ≤ 90:00. Com e sem luxo dentro de ±3%; medido −1,1% em ouro/min e +1,1% em vendas/min.
+- **`Bot_Primeiros10Minutos_BatemASecao3`:** sem mudança.
+
+### 17.7 Testes e prova vermelha
+- **Suíte: 72/72** (66 − 1 substituído + 7 novos). `viewcheck` com o core das fontes: 0 erros, 0 avisos.
+- **Novos (7):**
+  - `Carga_LingotesNoTeto_BigornaCheia_PegaEspadasEVende` (a trava do Vinicius)
+  - `Venda_SempreDeClienteNaVaga_SemCompraDireta`
+  - `FilaCheiaDeEscudo_EspadaNoEstoque_DestravaPelaPacienciaPelasVagasEPelaCargaMista`
+  - `Balcao_4a8Vagas_EmCadeiaNoMenu_ExigeVitrine_VitrineSoEstoqueEClientes`
+  - `Balcao_VagasCentradas_CorpoCresce_SemEngolirPadsBocasERotas` (4..8 vagas)
+  - `Save_CargaDaMao_JogadorMistaEAjudantes_IdaEVolta_SaveAntigoMaosVazias`
+  - `Steer_BocaDaLojaDeJoias_EntreLojaEPedestais_SaiDoVao`
+  - O antigo `FilaCheia_ProdutoNaVitrine_ClienteCompraDireto_NaoTrava` foi trocado pelos dois de venda/trava.
+- **Reescritos ao contrato novo:**
+  - `Capacidade_TetoPorTipo_JogadorMistura_AjudanteNao` (antes: "nunca mistura");
+  - a dica (lingote na mão + espada pronta = pegar a espada);
+  - bocas (a saída recolhe com minério na mão);
+  - fila/Vitrine (a fila cresce no balcão);
+  - a compra de joia com a fila cheia;
+  - luxo e cofre com as vagas e com o teto "à venda";
+  - saves de 25 → 29 flags;
+  - ciclo dos ajudantes com o jogador parado: > 250 vendas em 10 min, medido 288. Antes era > 300, mas a compra direta contava.
+- **Prova vermelha A (core antigo, sem adaptar):** os 2 testes novos que só usam API antiga foram copiados literalmente para uma cópia isolada com o core da v0.4.1 (SHA = HEAD), em `scratchpad/fs7/redold`, com `dotnet build --no-incremental && dotnet test --no-build`:
+  - `Carga_LingotesNoTeto…` vermelho: "recolhe as espadas com os lingotes na mao — Expected True, But was False";
+  - `Venda_SempreDeCliente…` vermelho: "toda venda tem um cliente que saiu da vaga — Expected 0, But was 4";
+  - os mesmos 2 contra o core novo: verdes.
+- **Prova vermelha B (mutações):** cópia isolada do core novo (`scratchpad/fs7/red/red.py`), rebuild limpo a cada mutação, resumo em `red/summary.txt`. Tabela abaixo.
+
+| mutação na cópia | testes vermelhos |
+|---|---|
+| A1 ferreiro com pilha homogênea (`CanPick`) | Carga_LingotesNoTeto, Capacidade_TetoPorTipo, Dica_SegueOEstado, FilaCheiaDeEscudo (rodada à mão; a automática não leu a saída) |
+| A2 dica de produto pronto só de mãos vazias | Dica_SegueOEstado, FilaCheiaDeEscudo |
+| C1 compra direta de volta | Venda_SempreDeClienteNaVaga, VitrineDeJoias_Preco60Antes80Depois |
+| C2 dica "leve ao balcão" com o estoque cheio | FilaCheiaDeEscudo |
+| C3 bot espera no balcão com o estoque cheio | **Bot_45Minutos** (o bot trava aos ~10 min) |
+| B1 Vitrine volta a dar fila (+2) | Balcao_4a8Vagas, Balcao_VagasCentradas, Fila_Cheia |
+| B2 evoluções não somam vaga | Balcao_4a8Vagas, Balcao_VagasCentradas, FilaCheiaDeEscudo, Fila_Cheia |
+| B3 vagas à direita do balcão (antigo) | Balcao_VagasCentradas |
+| B4 corpo do balcão fixo (1,3 m) | Balcao_VagasCentradas |
+| B5 Balcão 5 sem requisito | Balcao_4a8Vagas, Offline_IgnoraLuxo |
+| B6 baú da oficina no lugar antigo | Balcao_VagasCentradas |
+| B7 teto ofline ignora pré-requisito (antigo) | Luxo_EsperaOs26Produtivos, Offline_IgnoraLuxo |
+| S1 save sem `hold=` | Save_CargaDaMao |
+| S2 `Load` do ajudante aceita qualquer tipo | Save_CargaDaMao |
+| S3 `Load` sem teto por tipo do ferreiro | Save_CargaDaMao |
+| P1 `Steer` sem a checagem de quina que cabe | Steer_BocaDaLojaDeJoias |
+| restaurado (SHA da cópia = fontes reais) | verde, 72/72 |
+
+## 18. FASE8: cliente VIP e velocidade 2×/3× por anúncio (contrato `docs/FASE8_VIP_VELOCIDADE.md`, medido 2026-10-08)
+
+**Vigente.** Origem: pedido do Vinicius (VIP que paga 2× ou 3× a cada ~5 min, vídeo para ele vir antes, propaganda para 2× ou 3× por 1 min). Os números de §17.4 viram **históricos**.
+
+Harnesses em `scratchpad/fs8`:
+- `h`: fontes reais do core; `base` = VIP desligado (`VipIn = 1e9`).
+- `sweep.py`: cópias com outra regra de pacote ou paciência.
+- `h/Lock.cs`: um anúncio só, em passo travado.
+- `red.py`: mutações.
+
+Bot humano, Dt 1/30 (portão). As médias usam 5 passos (1/30, 1/40, 1/45, 1/50, 1/60), porque o bot é caótico: um passo sozinho varia ±5% no fim. **Validação do harness:** com o VIP desligado e sem boost, o core novo reproduz §17.4 ao tick (Esteira 7:28, produção 48:24, receita 98.151). Logo, boost em 1× e VIP ausente não mudam nada.
+
+### 18.1 O que mudou no core
+- **VIP:**
+  - **Relógio** (`VipIn`): só depois da 1ª venda e no tempo de jogo. O intervalo é de 4–6 min (`VipInterval(n)`, sequência de Weyl).
+  - **Vaga:** o VIP espera fora da fila cheia e pega a próxima vaga antes de quem chega.
+  - **Pedido:** produto em rodízio (espada → escudo → ferramenta). O pacote é calculado pela renda (§18.2), a 3× por unidade, uma unidade por atendimento.
+  - **Paciência:** 120 s. O VIP que cansa fica fora do `ClientsLost`.
+  - **Eventos:** `VipArrived`, `VipServed`, `VipLeft`. Cada unidade é um `Sold` com B = 3× o preço.
+- **`SummonVip`:** só depois da 1ª venda, sem VIP ativo e com o natural a > 60 s. Na rodada 1, trazia o VIP já e reiniciava o relógio. **Rodada 2 (§18.8):** traz um VIP extra, com 2× o pacote, e não mexe no relógio.
+- **Boost (`StartBoost`):** 2× por 60 s; o 2º anúncio sobe para 3× e reinicia os 60 s. **Rodada 2 (§18.8):** recarga de 5 min contada do fim do boost (`CanBoost`, `BoostCooldown`).
+  - **Acelera:** estações, esteira, ajudantes e chegada de clientes.
+  - **Ferreiro:** no máximo 1,3×.
+  - **No tempo de jogo:** paciência, atendimento, relógio do VIP e o próprio boost.
+- **Taxa online (`RateEma`):** passa a aprender o ouro por segundo de fábrica (dt × boost). Sem boost é idêntica.
+  - Congelar a média durante o boost (1ª versão) deixava a taxa velha para quem renova o boost sem parar: o pacote do VIP ficava em 3 e o cofre ficava na taxa de antes.
+- **Save:** `vip=` guarda o relógio, os VIPs sorteados e o VIP pendente; o da vaga volta pendente. O boost não vai.
+- **Bot:** sem mudança. Ele não assiste anúncio e trata o VIP como um cliente (`Wanted`).
+
+### 18.2 Pacote do VIP (varredura em cópias do core, bot humano, 90 min, Dt 1/30; o % é do ouro da janela de 5 min)
+| regra do pacote | VIP % da receita (1/30 · 1/60) | janelas 5–15 min | 15–30 | 30–90 | produção completa (1/30 · 1/60) |
+|---|---|---|---|---|---|
+| fixo 3 | 2,6 · 2,6 | 9–12 | 5–9 | **0–5** | 48:32 · 48:26 |
+| fixo 5 | 4,4 · 4,1 | **15–19** | 8–12 | 0–6 | 47:39 · 43:32 |
+| `Player.Cap` (3; 6 com a Mochila) | 5,0 · 5,0 | **17–22** | 8–12 | 0–6 | 45:04 · 45:37 |
+| renda 5% | 4,8 · 4,8 | 9–12 | 5–9 | 3–5 | 48:04 · 47:54 |
+| **renda 7% (APLICADO)** | **5,6 · 5,8** | **9–12** | **7–8** | **3–7** | **47:03 · 48:06** |
+| renda 10% | 6,6 · 6,7 | 9–12 | 6–9 | 4–10 | 45:26 · 46:10 |
+
+- **Fórmula:** pacote = clamp(round(7% × 300 s × `RateEma` / (3 × preço)), 3, `CounterCap`).
+- **Por que a renda:**
+  - Com tamanho fixo, o VIP some da conta depois dos 35 min, quando a joia, que ele não pede, domina a renda.
+  - Fixo maior estoura o alvo no começo.
+  - A regra de 7% fica na faixa 5–10% em quase todas as janelas. As exceções são 3–4%, quando o sorteio cai na borda de uma janela.
+- **Pacotes medidos (Dt 1/30):**
+  - 5:36 esp 3 · 10:05 esc 3 · 15:47 fer 3 · 20:44 esp 5 · 24:54 esc 3 · 30:19 fer 6 · 34:59 esp 10 · 40:53 esc 6 · 46:02 fer 10;
+  - depois, espada e ferramenta 10 e escudo 7.
+
+### 18.3 Paciência do VIP (pacote 7%, 90 min, Dt 1/30 + 1/60; "lento" = bot com 1,5 s de reação e 60% de stick)
+| paciência | VIPs que cansaram (bot · lento) | maior tempo na vaga até levar (bot · lento) |
+|---|---|---|
+| 60 s | 11 de 36 · 13 de 35 | 60 s · 58 s (no teto) |
+| 90 s | 0 · 1 | 76 s · 89 s |
+| **120 s (APLICADO)** | **0 · 0** | **76 s · 98 s** |
+| 180 s | 0 · 0 | igual a 120 |
+
+- Na média, a espera por vaga é de 2–3 s (máximo 9–13 s) e o VIP leva o pacote em ~40 s.
+
+### 18.4 Bot A/B, rodada 1 (HISTÓRICO: sem recarga e com o chamado reiniciando o relógio; vigente em §18.8; médias de 5 passos, 90 min)
+| cenário | anúncios | receita 10 / 45 / 90 min | ouro/min 0–10 / 10–30 / 30–60 / 60–90 | Esteira · Corredor · Joalheria · produção · Fachada |
+|---|---|---|---|---|
+| sem VIP (base, = FASE7) | 0 | 1.239 / 27.059 / 98.114 | 124 / 436 / 1.338 / 1.601 | 7:30 · 15:25 · 26:53 · 48:17 · 57:06 |
+| **(a) VIP natural (vigente)** | 0 | 1.361 / 28.980 / 103.341 | 136 / 473 / 1.421 / 1.663 | 7:08 · 15:09 · 25:53 · **46:41** · 55:11 |
+| (b) a + `SummonVip` a cada 5 min | 18 | 1.530 / 30.470 / 106.778 | 153 / 495 / 1.471 / 1.707 | 7:14 · 14:52 · 25:24 · 45:44 · 54:02 |
+| (c) a + boost 2× a cada 5 min | 18 | 1.493 / 39.005 / 127.856 | 149 / 665 / 1.796 / 1.972 | 6:28 · 13:46 · 22:34 · **40:46** · 47:55 |
+| (d) a + boost 3× (2 anúncios) a cada 5 min | 36 | 1.463 / 47.129 / 149.601 | 146 / 787 / 2.135 / 2.278 | 6:31 · 13:16 · 21:13 · 37:37 · 43:50 |
+| (e) abuso: 2× renovado sem parar | 90 | 3.789 / 89.070 / 233.066 | 379 / 1.864 / 3.198 / 3.203 | **4:49** · 8:49 · 14:50 · **26:56** · 31:19 |
+
+- **O VIP natural se paga sozinho:**
+  - +5,3% de receita em 90 min e produção 1:36 mais cedo na média (46:41). No portão (Dt 1/30) ela volta para dentro da janela de 42–48 (47:03); no Dt 1/60 dá 48:06.
+  - A Esteira sai 22 s mais cedo, ainda dentro da §3.
+  - O VIP é 5,7% da receita.
+- **Por anúncio, contra (a):**
+  - `SummonVip`: **+191 ouro** (+3,3% com 18 anúncios);
+  - boost 2×: **+1.362** (+24%, produção −5:55);
+  - boost 3×: **+1.285 por anúncio** (+45%, produção −9:04).
+- **Um anúncio só no minuto T** (passo travado: partidas idênticas até T; ganho nos 10 min seguintes, em minutos da renda daquele momento; médias de 5 passos):
+
+| faixa de T | renda (ouro/min) | `SummonVip` | boost 2× (1 anúncio) | boost 3× (2 anúncios) |
+|---|---|---|---|---|
+| 5–10 min | 205–402 | 117 (0,46 min) | 260 (0,82 min) | 310 (0,92 min) |
+| 15–30 min | 412–1.073 | 169 (0,34 min) | 851 (1,53 min) | 1.409 (2,73 min) |
+| 35–85 min | 1.214–1.707 | 281 (0,19 min) | 1.502 (0,95 min) | 2.971 (1,89 min) |
+
+- **Preço implícito do anúncio:**
+  - Boost: ~**1 min de renda** por anúncio. O 2º anúncio (2× → 3×) vale o mesmo que o 1º depois dos 15 min e quase nada antes, quando o ferreiro, a 1,3×, é o limite.
+  - `SummonVip`: **0,2–0,5 min**, porque o relógio reinicia e o anúncio só adianta a fila de VIPs. Além disso, só o excedente de 2× sobre o preço normal é ganho de verdade, já que a produção é o limite.
+
+### 18.5 Vigente: bot humano FASE7 × FASE8, Dt 1/30 (`BalanceTests`)
+| marco | FASE7 | FASE8 | janela |
+|---|---|---|---|
+| 1ª venda | 0:22 | 0:22 | < 1:30 |
+| Fole · 2ª bigorna · Ajudante · Escudos | 1:07 · 2:17 · 2:59 · 4:00 | 1:07 · 2:17 · 2:59 · 4:00 | §3 |
+| 1º VIP | — | **5:36** (3 espadas, +90) | §3: rewarded opcional em 5:30–6:30 |
+| Esteira | 7:28 | **7:17** | ≤ 8:30 |
+| receita · compras em 10 min | 1.320 · 9 | 1.310 · 8 (as Botas saem aos 10:00) | — |
+| Vitrine · Balcão 5 / 8 | 13:28 · 13:45 / 14:43 | 13:33 · 14:03 / 15:14 | — |
+| Corredor · Joalheria | 14:46 · 26:44 | 15:52 · 26:10 | — |
+| Joalheiro · Mineiro · Joalheiro 2 · Lupa | 31:42 · 34:35 · 36:47 · 41:21 | 31:01 · 33:55 · 35:54 · 40:33 | — |
+| **produção completa** | 48:24 (Dt 1/60 47:32) | **47:03** (Dt 1/60 48:06) | 42–48 |
+| Fachada · Piso · Joalheria real | 56:57 (+8,6) · 68:09 · 82:08 | 55:38 (+8,6) · 66:24 (+19,3) · 79:41 (+32,6) | Fachada +8…12 |
+| receita 90 min | 98.151 | 102.661 (+4,6%) | — |
+| fila_cheia \| cansou (normais) em 90 min | 5.091 \| 2 | 5.226 \| 20 | — |
+| VIP em 60 min | — | 11 sorteados, 11 levaram, 0 cansaram; 3.177 ouro = 6,0% | — |
+| fome da joalheria · andar sem decisão (10 · 45 min) | 9% · 34% · 23% | 9% · 29% · 19% | ≤ 35% · < 50% |
+| cofre ofline depois de 10 min | 1.060 | 820 | — |
+| baús abertos | 2:53 / 7:26 / 28:57 / 14:42 | 2:53 / 7:15 / 28:06 / 15:49 | — |
+
+| ouro/min (janela de 5 min) | 0–5 | 5–10 | 10–15 | 15–20 | 20–25 | 25–30 | 30–35 | 35–40 | 40–45 | 45–50 | 50–55 | 55–60 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FASE7 | 65 | 199 | 375 | 424 | 394 | 551 | 992 | 1.138 | 1.274 | 1.397 | 1.656 | 1.551 |
+| **FASE8** | 65 | 197 | 374 | 414 | 419 | 579 | 1.061 | 1.204 | 1.360 | 1.551 | 1.674 | 1.668 |
+
+- **Cofre de 10 min, 1.060 → 820:** o VIP das 5:36 adianta a Esteira, e as Botas (410) caem 1 tick depois dos 10:00. O teto passa a 2 × 410. É só ordem de compra.
+- **cansou 2 → 20:** são clientes normais. O VIP segura o estoque do produto dele por ~40 s. São +18 em 90 min, contra ~3.000 vendas.
+- **Portões:** os de §17.6 ficaram como estavam e continuam folgados. Não foram afrouxados.
+  - **Novo, em `Bot_60Minutos_Fase2`:** ≥ 8 VIPs levaram o pacote (medido 11), ≤ 1 cansou (medido 0) e VIP entre 4,2% e 10% da receita (medido 6,0%).
+
+### 18.6 Riscos e propostas da rodada 1 (as duas primeiras foram decididas pelo coordenador e aplicadas em §18.8)
+- **Boost sem trava de frequência no core:**
+  - O contrato pede "2º anúncio sobe para 3×". Renovado sem parar (cenário e), o jogo roda ~1,7× mais rápido: produção aos 26:56 e Esteira aos 4:49, perto do piso da §3 (4:15).
+  - **Proposta:** a raia do SDK limita a 1 boost (até 2 anúncios) a cada 5 min. Nessa cadência, a produção sai aos 40:46 (cenário c).
+- **`SummonVip` fraco** (0,2–0,5 min de renda contra ~1 min do boost). Propostas:
+  - (1) o VIP chamado não reinicia o relógio e vira um VIP extra (+1 VIP inteiro, ~0,23 min de renda marginal);
+  - (2) o VIP chamado traz o pacote 2–3× maior;
+  - (3) trocar o botão por "maleta de ouro" (o rewarded mais assistido no MPH, BENCHMARK §8).
+  - Decisão do coordenador.
+- **Pacote pela taxa online:** é estável no bot (`RateEma` = média de 60 s). Num humano que para de jogar por um tempo, a taxa cai e o VIP seguinte vem com o mínimo de 3. É aceitável: o VIP acompanha o ritmo de quem joga.
+
+### 18.7 Testes e prova vermelha, rodada 1 (a rodada 2 está em §18.8)
+- **Suíte: 78/78** (72 + 6 novos). `viewcheck` (core das fontes, `--artifacts-path` temporário): 0 erros, 0 avisos, **sem tocar na View**.
+- **Novos (6):**
+  - `Vip_SoDepoisDa1aVenda_ChegaEntre4e6Min_EsperaAVagaSemSumir`
+  - `Vip_PacoteA3xPorUnidade_UmPorAtendimento_TamanhoPelaRenda_ProdutoAberto`
+  - `Vip_CansaPelaPaciencia_PagaSoOQueLevou_ForaDoClientsLost`
+  - `SummonVip_SoSemVipAtivoEComONaturalAMaisDe60s_ReiniciaORelogio` (reescrito na rodada 2 como `SummonVip_VipExtra_PacoteDobrado_NaoMexeNoRelogio_…`)
+  - `Boost_2xPor60s_2oAnuncioSobePara3x_TetoEExpira_OQueAcelera`
+  - `Save_RelogioEVipPendente_IdaEVolta_BoostNaoVai_SaveAntigo`
+  - Mais o portão do VIP em `Bot_60Minutos_Fase2`.
+- **Prova vermelha (mutações):**
+  - Os testes novos usam API nova, então não há prova contra o core antigo.
+  - Rodei 30 mutações numa cópia isolada (`scratchpad/fs8/red.py`), com rebuild limpo a cada uma, rodando os 6 testes novos + `Bot_60Minutos_Fase2`. Resumo em `red_summary.txt`.
+  - **Todas ficaram vermelhas**, e cada teste novo cai em pelo menos uma.
+
+| mutação na cópia | testes vermelhos |
+|---|---|
+| V1 relógio anda antes da 1ª venda | Vip_SoDepoisDa1aVenda |
+| V2 fila cheia: o VIP some | Vip_SoDepoisDa1aVenda, **Bot_60Minutos_Fase2** |
+| V3 VIP paga 1× | Vip_Pacote, Vip_Cansa, **Bot_60Minutos_Fase2** |
+| V4 VIP sai depois da 1ª unidade | Vip_Pacote, Vip_Cansa, Save_Relogio, **Bot_60Minutos_Fase2** |
+| V5 pacote fixo em 3 | Vip_Pacote, **Bot_60Minutos_Fase2** (VIP < 4,2%) |
+| V6 pacote sem o teto da prateleira | Vip_Pacote |
+| V7 paciência do VIP = a do normal | Vip_SoDepoisDa1aVenda, Vip_Cansa, Save_Relogio, **Bot_60Minutos_Fase2** |
+| V8 VIP cansado no ClientsLost | Vip_Cansa |
+| V9 sempre espada · V10 joia no rodízio do balcão | Vip_Pacote · Vip_Pacote |
+| S1 sem a regra dos 60 s · S2 com VIP ativo · S3 sem reiniciar o relógio · S4 antes da 1ª venda | SummonVip (as 4) |
+| B1 2º anúncio não sobe · B2 não reinicia os 60 s · B3 sem teto 3× · B4 ferreiro sem o 1,3× · B5 estações · B6 ajudantes · B7 chegada sem boost · B8 paciência em tempo de fábrica · B9 não expira · B10 cofre aprende o boost | Boost (as 10) |
+| L1 save sem `vip=` · L2 VIP da vaga fora do save · L3 load aceita produto fechado · L4 load sem teto do relógio · L5 boost no save | Save_Relogio (as 5) |
+| L6 relógio inicial em 0 (save antigo com VIP imediato) | Save_Relogio, Vip_Pacote, Vip_SoDepoisDa1aVenda |
+| restaurado (SHA da cópia = fontes reais `d3bd9d44a7`) | verde, 7/7 |
+
+### 18.8 Rodada 2: decisões do coordenador aplicadas (vigente para a recarga do boost; a paciência do VIP e o teto do VIP chamado mudaram em §18.9)
+
+**Decisões:**
+- **Recarga do boost:** 5 min de jogo, contados do **fim** de cada boost.
+  - `Sim.CanBoost` = (boost ativo e `BoostMul` < 3) ou (sem boost e recarga zerada). `Sim.BoostCooldown` dá os segundos restantes.
+  - O 2º anúncio durante o boost continua subindo para 3× e reiniciando os 60 s.
+  - `StartBoost` recusado devolve 0 e não muda nada.
+- **Recarga fora do save** (decisão minha, autorizada pelo coordenador): reabrir libera um boost. Gravar exigiria descontar o tempo offline. `// ponytail:` no `Sim`.
+- **VIP chamado = VIP EXTRA:** não reinicia nem adianta o relógio natural, e traz 2× o pacote do natural até a prateleira (`Balance.VipSummonPackMul` = 2).
+  - A regra de uso não muda.
+  - Se o natural zerar com o extra na vaga, ele espera o extra sair (≤ 120 s).
+
+O VIP natural e o bot sem anúncio **não mudam** (cenário a idêntico ao tick; `BalanceTests` iguais aos de §18.5).
+
+**Bot A/B, rodada 2** (médias de 5 passos, 90 min; os anúncios saem na marca de 5 min, assim que a recarga ou a regra do VIP deixa):
+
+| cenário | anúncios | receita 10 / 45 / 90 min | ouro/min 0–10 / 10–30 / 30–60 / 60–90 | Esteira · Corredor · Joalheria · produção · Fachada |
+|---|---|---|---|---|
+| sem VIP (base) | 0 | 1.239 / 27.059 / 98.114 | 124 / 436 / 1.338 / 1.601 | 7:30 · 15:25 · 26:53 · 48:17 · 57:06 |
+| **(a) VIP natural** | 0 | 1.361 / 28.980 / 103.341 | 136 / 473 / 1.421 / 1.663 | 7:08 · 15:09 · 25:53 · 46:41 · 55:11 |
+| **(b) a + VIP extra a cada 5 min** | 18 | 1.637 / 34.128 / 111.949 | 164 / 584 / 1.559 / 1.729 | 7:14 · 15:28 · 24:05 · **43:16** · 51:30 |
+| **(c) a + boost 2× (com recarga)** | 15 | 1.493 / 38.705 / 125.404 | 149 / 688 / 1.759 / 1.913 | 6:28 · 13:47 · 23:07 · **41:12** · 48:13 |
+| (d) a + boost 3× (2 anúncios, com recarga) | 30 | 1.463 / 44.847 / 144.525 | 146 / 795 / 2.052 / 2.187 | 6:31 · 13:45 · 21:54 · 38:36 · 45:20 |
+| (e) máximo: 3× toda vez que a recarga deixa | 31 | 1.950 / 47.160 / 143.834 | 195 / 780 / 2.025 / 2.184 | 6:24 · 12:43 · 20:36 · **37:30** · 44:07 |
+
+- **Ganho por anúncio contra (a), em ouro e em minutos da renda média de (a) (1.148 ouro/min):**
+
+| anúncio | rodada 2 | rodada 1 | efeito no jogo |
+|---|---|---|---|
+| VIP extra | **+478 = 0,42 min** | +191 = 0,17 min | +8,3% de receita; produção −3:25 |
+| boost 2× | **+1.471 = 1,28 min** | — | +21%; produção −5:29 |
+| boost 3× | +1.373 = 1,20 min | — | — |
+| máximo | +1.306 = 1,14 min | — | — |
+
+- **A recarga segura o abuso:** o uso máximo fecha a produção aos 37:30, contra 26:56 sem recarga (§18.4, cenário e). A Esteira sai aos 6:24, longe do piso de 4:15 da §3.
+- **VIP extra no bot** (Dt 1/30): 35 sorteados (17 naturais + 18 extras), 34 entraram, 34 levaram, **0 cansaram**; o maior tempo na vaga foi de 103 s.
+  - No bot lento (5 passos, 170 VIPs): 0 cansaram, com máximo de **116 s** contra os 120 s de paciência. Ver os riscos abaixo.
+- **Um anúncio só no minuto T** (passo travado, ganho nos 10 min seguintes, em minutos da renda daquele momento, médias de 5 passos). O boost não muda contra §18.4: um boost isolado não depende da recarga.
+
+| faixa de T | renda (ouro/min) | VIP extra (pacote 2×) | boost 2× (1 anúncio) | boost 3× (2 anúncios) |
+|---|---|---|---|---|
+| 5–10 min | 205–402 | 270 (**1,12 min**; rodada 1: 0,46) | 260 (0,82 min) | 310 (0,92 min) |
+| 15–30 min | 412–1.073 | 629 (**1,31 min**; rodada 1: 0,34) | 851 (1,53 min) | 1.409 (2,73 min) |
+| 35–85 min | 1.214–1.707 | 295 (**0,19 min**; rodada 1: 0,19) | 1.502 (0,95 min) | 2.971 (1,89 min) |
+
+- **Preço implícito do anúncio:**
+  - Boost: ~1 min de renda por anúncio no jogo todo.
+  - VIP extra: ~1 min até os 30 min. Depois cai para 0,19 min, porque o pacote bate na prateleira (10 unidades = 300–750 ouro, contra renda de 1.200–1.700/min).
+
+**Riscos e propostas NÃO aplicados:**
+- **VIP extra no fim do jogo:**
+  - O teto da prateleira (10) segura o pacote, e o anúncio vale 0,19 min depois dos 35 min.
+  - Proposta: teto do chamado = 2 prateleiras (20). Fora deste pedido.
+- **Paciência × pacote 2×:**
+  - No bot lento, o VIP de 10 unidades ficou até 116 s na vaga (paciência de 120 s).
+  - Um humano mais lento pode perder o VIP extra.
+  - Proposta: paciência do VIP = 90 s + 6 s por unidade (108–150 s). Medir no playtest antes.
+- **Recarga fora do save:** fechar e reabrir libera um boost. O custo é um reinício do app por anúncio, então o abuso é improvável. Medir no diário.
+
+**Testes, rodada 2:**
+- **Suíte: 78/78.** `viewcheck`: 0 erros, 0 avisos, sem tocar na View.
+- **Reescritos:**
+  - `SummonVip_VipExtra_PacoteDobrado_NaoMexeNoRelogio_SoSemVipAtivoEComONaturalAMaisDe60s`: o relógio fica em 200 s, o pacote é 6 e o natural chega no horário de antes;
+  - `Boost_…` ganhou a recarga: 0 durante o boost, 299 s 1 s depois do fim, recusa no 3× e na recarga, libera em 300 s;
+  - `Vip_Pacote…` cobre o pacote do chamado (6, 8 e 10 com a Vitrine; 5 sem ela);
+  - `Save_…` cobre a recarga fora do save e o pendente com o pacote do chamado.
+  - Os testes do VIP natural passaram a sortear pelo relógio (`NaturalVip`), não pelo anúncio.
+- **Prova vermelha, rodada 2** (`scratchpad/fs8/red2.py`, 38 mutações, rebuild limpo a cada uma, resumo em `red2_summary.txt`):
+  - as 30 da rodada 1 foram reapontadas para o código novo, e S3 virou "reinicia o relógio" (a regra antiga);
+  - entram 8 novas;
+  - **todas ficaram vermelhas**, e a cópia restaurada (SHA = fontes reais) ficou verde, 7/7.
+
+| mutação nova (rodada 2) | testes vermelhos |
+|---|---|
+| S3 chamado reinicia o relógio (regra da rodada 1) · S7 chamado zera o relógio natural | SummonVip |
+| S5 chamado com o pacote do natural | SummonVip, Vip_Pacote, Save_Relogio |
+| S6 chamado sem o teto da prateleira | Vip_Pacote, Save_Relogio |
+| C1 sem recarga · C2 recarga contada do início · C3 recarga não anda · C4 recusa no 3× reinicia os 60 s | Boost (as 4) |
+| L7 recarga vai no save | Save_Relogio |
+| as 30 da rodada 1, reapontadas | vermelhas como em §18.7 |
+| restaurado (SHA da cópia = fontes reais `126186909d`) | verde, 7/7 |
+
+### 18.9 Rodada 3: paciência do VIP pelo pacote e teto de 20 no VIP chamado (VIGENTE)
+
+**Decisões do coordenador** (o teste de amanhã é com gente, mais lenta que o bot):
+1. **Paciência do VIP** (natural e chamado) = **90 s + 6 s por unidade do pacote** (`Balance.VipPatienceFor`): 3 = 108 s, 10 = 150 s, 20 = 210 s. Antes: 120 s fixos.
+   - O VIP que volta do save calcula a paciência pelo que falta do pacote.
+2. **Teto do VIP chamado = 20** = 2× o natural, sem corte na prateleira. O natural continua até a prateleira.
+   - Como o natural já vem cortado na prateleira (máximo 10), o teto de 20 sai da própria regra. `// ponytail:` no `Sim`: uma prateleira maior que 10 pede o `Math.Min` de volta.
+   - O `Load` aceita VIP pendente com até 20 unidades.
+
+**Bot** (médias de 5 passos, 90 min; entre parênteses, a rodada 2):
+
+| cenário | anúncios | receita 90 min | produção completa | VIPs · cansaram · maior tempo na vaga |
+|---|---|---|---|---|
+| (a) VIP natural | 0 | 103.341 (igual) | 46:41 (igual) | 90 · 0 · 77 s |
+| **(b) a + VIP extra a cada 5 min** | 18 | **116.299** (111.949) | **41:47** (43:16) | 175 · 0 · 129 s |
+| (c) a + boost 2× com recarga | 15 | 125.404 (igual) | 41:12 (igual) | 90 · 0 · 82 s |
+| bot lento, só o natural | 0 | 95.909 (igual) | 50:59 (igual) | 87 · 0 · 98 s |
+| **bot lento + VIP extra** | 18 | 110.121 (109.534) | 45:21 (44:40) | 175 · **1** (faltou 1 unidade de um pacote grande, Dt 1/45) · 138 s |
+
+- **VIP natural:** a curva não muda. O bot não chega perto da paciência: o maior tempo na vaga foi de 77 s, contra 108–150 s.
+  - `BalanceTests` iguais aos de §18.5: portão de 60 min com 11 levaram, 0 cansaram, 6,0%.
+- **VIP extra, por anúncio:**
+  - contra (a): **+720 ouro = 0,63 min de renda** (rodada 2: +478 = 0,42; rodada 1: +191 = 0,17);
+  - em passo travado, um anúncio no minuto T, ganho nos 10 min seguintes:
+
+| faixa de T | pacote médio | ganho por anúncio (min de renda) | rodada 2 |
+|---|---|---|---|
+| 5–10 min | 7 | 1,13 | 1,12 |
+| 15–30 min | 12 | 1,43 | 1,31 |
+| 35–85 min | 18,5 | **0,42** | 0,19 |
+
+- **O boost não muda:** 1,28 min de renda por anúncio no A/B; 0,8–1,5 min isolado.
+
+**Testes, rodada 3:**
+- **Suíte: 78/78.** `viewcheck`: 0 erros, 0 avisos.
+- **Ajustados:**
+  - `Vip_SoDepoisDa1aVenda…`: contrato da paciência, 108 / 150 / 210 s;
+  - `Vip_Pacote…`: chamado 6 / 8 / 20 com a Vitrine e 6 / 10 sem ela;
+  - `Vip_Cansa…`: cansa aos 108 s;
+  - `Save_…`: o pendente do chamado (6) passa da prateleira de 5, a paciência vem do que falta e o lixo é cortado em 20.
+- **Prova vermelha** (`scratchpad/fs8/red3.py`, 8 mutações só nas linhas novas, rebuild limpo, resumo em `red3_summary.txt`): **todas vermelhas**; a cópia restaurada (SHA = fontes reais `763de4c361`) ficou verde, 7/7.
+
+| mutação | testes vermelhos |
+|---|---|
+| P1 paciência fixa em 120 s (regra antiga) | Vip_SoDepoisDa1aVenda, Vip_Cansa |
+| P2 sem os 6 s por unidade · P4 3 s por unidade | Vip_SoDepoisDa1aVenda |
+| P3 paciência do cliente normal | Vip_SoDepoisDa1aVenda, Vip_Cansa, Save_Relogio, **Bot_60Minutos_Fase2** |
+| X1 chamado cortado na prateleira (regra antiga) | Vip_Pacote, Save_Relogio |
+| X2 chamado com o pacote do natural | Vip_Pacote, SummonVip, Save_Relogio |
+| L8 load corta o pendente na prateleira · L9 load sem o teto de 20 | Save_Relogio |
+
+## 19. v0.5.1: Ajudante 3 parado no balcão (revisão de código, 2026-10-09)
+
+**Achado.** Sem a compra direta (FASE7), o estoque do balcão só desce com cliente na vaga. O Ajudante 3 (papel 2, bancadas → balcão) escolhia a fonte sem olhar a prateleira: pegava espada com a prateleira de espada cheia e ficava parado no balcão, enquanto escudo e ferramenta encalhavam. O revisor mediu 68% do tempo parado no bot de 45 min. Na v0.4.1 a compra direta esvaziava a prateleira, então isso não aparecia.
+
+**Correção.** `Sim.Fits`: o Ajudante 3 só busca na bancada cujo produto ainda cabe (`Stock + na mão < CounterCap`), mesma regra do `JewelerSource`. Vale para o `IsSourceFor` e o `PickSource`.
+
+| Medida (Dt 1/30) | v0.5.0 | v0.5.1 |
+|---|---|---|
+| Bot 25 min + **parado 15 min**: vendas · clientes perdidos (`Ocioso_15Min_AjudantesVendemSozinhos`) | 80 · 107 | **209 · 59** |
+| Bot humano 60 min (`Bot_60Minutos_Fase2`): produção completa · vendas · perdidos | 47:03 · 1 789 · 12 | **46:12 · 1 825 · 7** |
+| Ouro/min 25–30 min (`Bot_60Minutos_Fase2`) | 579 | 771 |
+
+A fome da Bigorna 2 (2 481 s → 2 582 s em 60 min) já existia e não muda: com o jogador entregando lingote na Bigorna 1, a 2 fica sem entrada. Fica para o estudo de logística.
+
+Portão novo: `Ocioso_15Min_AjudantesVendemSozinhos` (≥ 150 vendas parado). Prova vermelha: com o `Sim.cs` da 0.5.0 dá 80 e falha.

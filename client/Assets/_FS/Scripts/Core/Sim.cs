@@ -24,23 +24,33 @@ namespace FS.Core
         /// opostos do corpo; deposito e balcoes tem uma zona so (InAt = OutAt). Zona = ate Balance.MouthRadius do ponto.</summary>
         public V2 InAt, OutAt;
         public bool Produces => Kind == Kind.Furnace || Kind == Kind.Crafter;
-        public Box Body => new Box(Pos, Balance.StationHalf);
+        /// <summary>Meia-medida do corpo: Balance.StationHalf; o balcao principal alarga com as vagas (FASE7 §2, Sim.Recompute).</summary>
+        public V2 Half = Balance.StationHalf;
+        public Box Body => new Box(Pos, Half);
     }
 
-    /// <summary>Jogador (Role = -1) ou ajudante (Role 0 minerio, 1 lingote, 2 produto, 3 joalheiro). Pilha homogenea.</summary>
+    /// <summary>Jogador (Role = -1) ou ajudante (Role 0 minerio, 1 lingote, 2 produto, 3 joalheiro). Pilha POR ITEM (FASE7 §1): o
+    /// jogador leva todos os tipos ao mesmo tempo, ate Cap de CADA um; o ajudante continua com um tipo por vez (Sim.CanPick).</summary>
     public sealed class Carrier
     {
         public V2 Pos; public float Speed; public int Cap; public int Role = -1;
-        public Item Item; public int Count;
+        public readonly int[] Held = new int[6];   // quantos de cada Item na mao
         public float ActT, IdleT; public bool Moving;
         public int State;            // ajudante: 0 buscando, 1 entregando
         public int Target = -1;      // ajudante: indice da estacao alvo (-1 = parado)
-        public bool Has(Item i) => Count > 0 && Item == i;
+        public bool Has(Item i) => Held[(int)i] > 0;
+        /// <summary>Total na mao, todos os tipos.</summary>
+        public int Count { get { int n = 0; foreach (int h in Held) n += h; return n; } }
+        /// <summary>Item mais adiantado na cadeia que esta na mao (joia > ferramenta > escudo > espada > lingote > minerio): o que a
+        /// dica e o bot entregam primeiro. Ajudante: o unico tipo dele. Maos vazias: minerio.</summary>
+        public Item Item { get { for (int i = Held.Length - 1; i > 0; i--) if (Held[i] > 0) return (Item)i; return Item.Ore; } }
     }
 
     public sealed class Client
     {
         public Item Want; public float Patience, MaxPatience;
+        /// <summary>FASE8: VIP = pacote de `Pack` unidades (o que ainda falta) a 3x o preco; `Paid` = ouro que ja pagou nesta vaga.</summary>
+        public bool Vip; public int Pack, Paid;
     }
 
     /// <summary>Bau de marco (um por Balance.Milestones, mesmo Index). State: 0 nao batido, 1 disponivel, 2 aberto.</summary>
@@ -97,6 +107,15 @@ namespace FS.Core
         public readonly List<Chest> Chests = new List<Chest>();          // baus de marco, na ordem de Balance.Milestones
         public readonly int[] SoldItems = new int[6];                    // vendas por Item (marcos "10 espadas", "10 joias")
         public float MaxX = Balance.WorkshopW - 0.3f;   // limite direito do jogador: a oficina ate o Corredor, o mapa inteiro depois
+        // FASE8 (docs/FASE8_VIP_VELOCIDADE.md): cliente VIP e velocidade por anuncio
+        /// <summary>s ate o proximo VIP natural (parado ate a 1a venda); VipCount = VIPs ja sorteados, naturais e chamados (semente do intervalo e do
+        /// produto). Vao no save.</summary>
+        public float VipIn = VipInterval(0); public int VipCount;
+        /// <summary>Velocidade por anuncio: multiplicador (1, 2 ou 3), s restantes e s de recarga (conta do fim do boost), no tempo de jogo. NAO vao no
+        /// save. ponytail: a recarga some ao fechar (reabrir o app libera um boost); gravar exige descontar o tempo offline, fica para quando medir abuso.</summary>
+        public float BoostMul = 1f, BoostLeft, BoostCooldown;
+        int _vipWant = -1, _vipPack;   // VIP sorteado esperando vaga (-1 = nenhum)
+        int _vipPaid; bool _vipQuiet;  // VIP que estava na vaga ao salvar: volta com o que ja pagou e sem novo aviso de chegada
 
         // metricas de playtest (GDD §14/§15)
         public float FirstSaleTime = -1f, WalkNoDecision;
@@ -198,11 +217,70 @@ namespace FS.Core
         public bool Sells(Station counter, Item i) => counter.Kind == Kind.Counter && IsProduct(i) && (counter == JewelShop) == (i == Item.Jewel);
         public Station CounterFor(Item product) => product == Item.Jewel ? JewelShop : Counter;
         public List<Client> QueueFor(Item product) => product == Item.Jewel ? JewelQueue : Queue;
+        /// <summary>Produto na mao de `c` que o balcao dele aceita agora (estoque com espaco), o mais adiantado primeiro; Item.Ore = nenhum.</summary>
+        public Item Deliverable(Carrier c)
+        {
+            for (Item i = Item.Jewel; i >= Item.Sword; i--) if (c.Has(i) && Stock[(int)i] < CounterCap) return i;
+            return Item.Ore;
+        }
+        /// <summary>Algum cliente na fila quer `product` e nao ha nenhum no estoque (FASE7 §3: o que destrava a fila sem compra direta).</summary>
+        public bool Wanted(Item product) => Stock[(int)product] == 0 && QueueFor(product).Exists(c => c.Want == product);
         /// <summary>Fama: multiplicador (1 -> 0,4) do intervalo entre clientes, pela quantidade de vendas ate aqui.</summary>
         public float Fame => Math.Max(Balance.FameFloor, (float)Math.Pow(Balance.FamePer10Sales, Sales / 10));
         public float ClientInterval(Item product) => Balance.ClientInterval[(int)product] * Fame * (Bought[(int)Upgrade.CounterCapacity] ? Balance.VitrineClientMul : 1f)
             * (product == Item.Jewel && Bought[(int)Upgrade.JewelVitrine] ? Balance.JewelVitrineClientMul : 1f);
-        public V2 ClientSlot(int i) => new V2(Counter.Pos.X + 0.85f * i, Counter.Pos.Y + 1.0f);
+        /// <summary>Ha um VIP esperando vaga ou numa vaga do balcao.</summary>
+        public bool VipActive => _vipWant >= 0 || Queue.Exists(c => c.Vip);
+        /// <summary>Botao "chamar o VIP" (anuncio): depois da 1a venda, sem VIP ativo e com o natural a mais de 60 s (contra abuso).</summary>
+        public bool CanSummonVip => FirstSaleTime >= 0f && !VipActive && VipIn > Balance.VipSummonMinIn;
+
+        /// <summary>s entre o VIP `n` e o seguinte: 4-6 min, sorteio deterministico (sequencia de Weyl pela razao aurea: sem estado alem de VipCount).</summary>
+        public static float VipInterval(int n) => Balance.VipMin + (Balance.VipMax - Balance.VipMin) * (float)((n + 1) * 0.6180339887498949 % 1.0);
+
+        /// <summary>Anuncio "chamar o VIP": um VIP EXTRA agora (entra na proxima vaga livre), com 2x o pacote do natural (ate 20). NAO mexe no
+        /// relogio natural (so o segura em 0 se ele zerar com o extra ainda na vaga). Fora de CanSummonVip recusa (false).</summary>
+        public bool SummonVip()
+        {
+            if (!CanSummonVip) return false;
+            SpawnVip(true);
+            return true;
+        }
+
+        /// <summary>Botao "velocidade": com boost ativo, ate chegar a 3x; sem boost, so com a recarga (5 min de jogo desde o fim do ultimo) zerada.</summary>
+        public bool CanBoost => BoostLeft > 0f ? BoostMul < Balance.BoostMax : BoostCooldown <= 0f;
+
+        /// <summary>Anuncio "velocidade": 2x por 60 s; outro com o boost ativo sobe para 3x e reinicia os 60 s. Fora de CanBoost recusa: nada muda e
+        /// devolve 0. Senao devolve o multiplicador novo.</summary>
+        public float StartBoost()
+        {
+            if (!CanBoost) return 0f;
+            BoostMul += 1f;   // CanBoost segura o teto de 3x
+            BoostLeft = Balance.BoostSeconds;
+            return BoostMul;
+        }
+
+        /// <summary>
+        /// Sorteia o VIP: produto do balcao principal ja desbloqueado, em rodizio (espada, escudo, ferramenta); fica em _vipWant ate ter vaga.
+        /// Pacote: ~7% do ouro de um intervalo medio (300 s x RateEma) a 3x o preco, entre 3 e a prateleira (CounterCap). ponytail: a taxa online
+        /// e' o termometro (3 no comeco, 10 no fim); fixo em 3 o VIP caia para 1-3% da janela depois dos 35 min, quando a joia domina a renda.
+        /// `extra` = chamado por anuncio: 2x o pacote do natural (o teto de 20 sai daqui: o natural ja vem cortado na prateleira, no maximo 10) e
+        /// o relogio natural fica como esta.
+        /// </summary>
+        void SpawnVip(bool extra)
+        {
+            var lines = new List<Item>();
+            for (Item p = Item.Sword; p <= Item.Tool; p++) if (LineUnlocked(p)) lines.Add(p);
+            _vipWant = (int)lines[VipCount % lines.Count];
+            double raw = Balance.VipShare * (Balance.VipMin + Balance.VipMax) / 2.0 * RateEma / (Balance.VipPriceMul * PriceOf((Item)_vipWant));
+            int pack = Math.Max(Balance.VipPackMin, Math.Min(CounterCap, (int)Math.Round(raw)));
+            _vipPack = extra ? Balance.VipSummonPackMul * pack : pack;   // ponytail: <= 2 x 10 = VipSummonPackMax; prateleira maior que 10 pede o Math.Min de volta
+            VipCount++;
+            if (!extra) VipIn = VipInterval(VipCount);
+        }
+
+        /// <summary>Vaga `i` do balcao (FASE7 §2): QueueCap vagas lado a lado em cima dele, centradas; i = QueueCap = compra direta, logo
+        /// depois da ultima. 4 vagas: x 3,2-5,8; 8 vagas: x 1,5-7,5 (compra direta 8,3), dentro da oficina.</summary>
+        public V2 ClientSlot(int i) => new V2(Counter.Pos.X + Balance.SlotStep * (i - (QueueCap - 1) / 2f), Counter.Pos.Y + 1.0f);
         public V2 JewelSlot(int i) => new V2(JewelShop.Pos.X + 0.85f * (i - 2), JewelShop.Pos.Y + 1.0f);   // centrada na loja: i 0..4 = x 10,3..13,7 (coordenador)
 
         // ------------------------------------------------------------------ tick
@@ -213,20 +291,27 @@ namespace FS.Core
             if (dt <= 0f) return;
             Time += dt;
             int earnedBefore = GoldEarned;
+            // FASE8: o boost acelera estacoes, esteira, ajudantes e a chegada de clientes; o ferreiro (andar e maos) no maximo 1,3x, para o
+            // joystick nao fugir do controle. Paciencia, atendimento, relogio do VIP e o proprio boost correm no tempo de jogo. Sem boost, fast = hand = dt
+            float fast = dt * BoostMul, hand = dt * Math.Min(BoostMul, Balance.BoostPlayerMax);
 
-            MovePlayer(dt, inX, inY);
-            foreach (Carrier w in Workers) WorkerThink(w, dt);
-            Interact(Player, dt);
-            foreach (Carrier w in Workers) Interact(w, dt);
-            foreach (Station s in Stations) Produce(s, dt);
-            Conveyor(dt);
+            MovePlayer(hand, inX, inY);
+            foreach (Carrier w in Workers) WorkerThink(w, fast);
+            Interact(Player, hand);
+            foreach (Carrier w in Workers) Interact(w, fast);
+            foreach (Station s in Stations) Produce(s, fast);
+            Conveyor(fast);
             Clients(dt);
             Milestones();
+            if (BoostLeft > 0f) { if ((BoostLeft -= dt) <= 0f) { BoostLeft = 0f; BoostMul = 1f; BoostCooldown = Balance.BoostCooldownSeconds; } }   // recarga conta do fim
+            else BoostCooldown = Math.Max(0f, BoostCooldown - dt);
 
             int cheapest = CheapestVisibleCost();
             // kill criterion do GDD §26 ("andar entre pilhas sem decisao"): anda de maos vazias sem nenhum pad pagavel = puro deslocamento
             if (Player.Moving && Player.Count == 0 && (cheapest < 0 || Gold < cheapest)) WalkNoDecision += dt;
-            double inst = (GoldEarned - earnedBefore) / (double)dt;
+            // FASE8: ouro por segundo de FABRICA (dt x boost): a taxa do cofre offline e do pacote do VIP nao aprende o boost. ponytail: o
+            // ferreiro so vai a 1,3x, entao no boost a taxa sai um pouco abaixo da real; congelar a media deixava ela velha para quem vive no boost
+            double inst = (GoldEarned - earnedBefore) / (double)fast;
             RateEma += (inst - RateEma) * Math.Min(1.0, dt / Balance.RateTau);
         }
 
@@ -276,31 +361,43 @@ namespace FS.Core
             float dl = d.Len;
             if (dl < 1e-5f) return new V2(0f, 0f);
             float r = Balance.CharRadius;
+            // FASE7: todos os corpos encostados que barram a linha (antes: so o 1o da lista), e rota cuja quina cai dentro de OUTRO corpo
+            // (vao mais estreito que o personagem) e' descartada: na boca da Loja de joias, entre a loja e os pedestais da Joalheria real
+            // (vaos de 0,1-0,2 m), o bot ia e voltava no vao para sempre. ponytail: resolve vao entre 2 corpos; labirinto pede grafo de waypoints.
+            V2 bestStep = d; float bestLen = float.MaxValue;
             foreach (Box b in Solids)
             {
                 V2 n = from - b.Closest(from), shrunk = b.Half + new V2(r - 0.02f, r - 0.02f);
                 if (n.Len > r + 0.01f || !Crosses(from, target, b.Pos, shrunk)) continue;
                 V2 h = b.Half + new V2(r, r);
                 int face = Math.Abs(n.Y) >= Math.Abs(n.X) ? (n.Y < 0f ? 0 : 2) : (n.X > 0f ? 1 : 3);   // 0 baixo, 1 direita, 2 cima, 3 esquerda
-                V2 bestStep = d; float bestLen = float.MaxValue;
                 for (int turn = 1; turn <= 3; turn += 2)   // quinas em ordem anti-horaria; +1 = anti-horario, +3 = horario
                 {
                     int i = turn == 1 ? (face + 1) % 4 : face;
                     V2 step = Corner(b.Pos, h, i) - from;
-                    if (step.Len < 0.05f) step = Corner(b.Pos, h, (i + turn) % 4) - from;   // ja na quina: rumo a proxima
+                    bool open = Fits(from + step, b);
+                    if (step.Len < 0.05f) { step = Corner(b.Pos, h, (i + turn) % 4) - from; open = Fits(from + step, b); }   // ja na quina: rumo a proxima
                     float len = V2.Dist(from, Corner(b.Pos, h, i));
                     for (int k = 0; k < 4 && Crosses(Corner(b.Pos, h, i), target, b.Pos, shrunk); k++)
                     {
                         int j = (i + turn) % 4;
                         len += V2.Dist(Corner(b.Pos, h, i), Corner(b.Pos, h, j));
                         i = j;
+                        open &= Fits(Corner(b.Pos, h, i), b);
                     }
                     len += V2.Dist(Corner(b.Pos, h, i), target);
-                    if (len < bestLen) { bestLen = len; bestStep = step; }
+                    if (open && len < bestLen) { bestLen = len; bestStep = step; }
                 }
-                return bestStep * (1f / bestStep.Len);
             }
-            return d * (1f / dl);
+            return bestStep * (1f / bestStep.Len);
+        }
+
+        /// <summary>O personagem cabe em `p` (quina de rota do Steer) sem entrar em outro corpo que nao `except`?</summary>
+        bool Fits(V2 p, Box except)
+        {
+            foreach (Box o in Solids)
+                if (!(o.Pos.X == except.Pos.X && o.Pos.Y == except.Pos.Y) && o.Dist(p) < Balance.CharRadius - 0.01f) return false;
+            return true;
         }
 
         /// <summary>Quina `i` (0 baixo-esquerda, 1 baixo-direita, 2 cima-direita, 3 cima-esquerda) da caixa de centro `c` e meia-medida `h`.</summary>
@@ -385,8 +482,13 @@ namespace FS.Core
         {
             if (w.Role == 0) return s.Kind == Kind.Deposit;
             if (w.Count > 0 && s.OutItem != w.Item) return false;
+            if (w.Role == 2 && !Fits(w, s)) return false;
             return s.Produces && (w.Role == 1 ? s.Kind == Kind.Furnace : s.Kind == Kind.Crafter) && (s.Out > 0 || w.Target == s.Index);
         }
+
+        /// <summary>Ajudante de produto: so busca o que ainda cabe na prateleira (sem a compra direta o estoque so desce com cliente
+        /// na vaga; com a prateleira cheia ele parava no balcao e escudo/ferramenta encalhavam). Mesma regra do JewelerSource.</summary>
+        bool Fits(Carrier w, Station s) => Stock[(int)s.OutItem] + w.Count < CounterCap;
 
         bool IsDestFor(Carrier w, Station s)
         {
@@ -402,6 +504,7 @@ namespace FS.Core
             {
                 if (!s.Unlocked || !s.Produces || (w.Role == 1 ? s.Kind != Kind.Furnace : s.Kind != Kind.Crafter)) continue;
                 if (w.Count > 0 && s.OutItem != w.Item) continue;
+                if (w.Role == 2 && !Fits(w, s)) continue;
                 if (s.Out == 0 && w.Count == 0 && !(s.Busy && s.Progress > 0.5f)) continue;   // vale esperar o que esta quase pronto
                 float score = s.Out * 10f - V2.Dist(w.Pos, s.Pos);
                 if (score > bestScore) { bestScore = score; best = s; }
@@ -478,9 +581,13 @@ namespace FS.Core
             return null;
         }
 
-        bool CanPick(Carrier c, Item i)
+        /// <summary>Cabe mais um `i` na mao? Teto POR TIPO. Jogador: qualquer tipo, sem bloqueio por misturar (FASE7 §1: mao cheia de
+        /// lingote e entrada da bigorna cheia, ele ainda recolhe as espadas da saida). Ajudante: um tipo por vez, so o do papel dele.</summary>
+        public bool CanPick(Carrier c, Item i)
         {
-            if (c.Count >= c.Cap || (c.Count > 0 && c.Item != i)) return false;
+            if (c.Held[(int)i] >= c.Cap) return false;
+            if (c.Role < 0) return true;
+            if (c.Count > 0 && c.Item != i) return false;
             if (c.Role == 0) return i == Item.Ore;
             if (c.Role == 1) return i == Item.Ingot;
             if (c.Role == 2) return IsProduct(i);
@@ -488,15 +595,20 @@ namespace FS.Core
             return true;
         }
 
-        /// <summary>0 nada, 1 deposita na entrada, 2 pega da saida, 3 pega minerio, 4 abastece o balcao. Boca de entrada nunca
-        /// recolhe e boca de saida nunca deposita (FASE5 §2b): da para abastecer sem tirar o que ja ficou pronto.</summary>
-        int Action(Carrier c, Station s, bool outZone)
+        /// <summary>0 nada, 1 deposita na entrada, 2 pega da saida, 3 pega minerio, 4 abastece o balcao; `item` = o que passa de mao.
+        /// Boca de entrada nunca recolhe e boca de saida nunca deposita (FASE5 §2b): da para abastecer sem tirar o que ja ficou pronto.
+        /// Entrada recebe so o InItem dela, saida entrega so o OutItem, balcao recebe os produtos que vende (FASE7 §1, pilha mista).</summary>
+        int Action(Carrier c, Station s, bool outZone, out Item item)
         {
+            item = s.Kind == Kind.Deposit ? Item.Ore : outZone ? s.OutItem : s.InItem;
             if (c.Role == 3 && s.Index != c.Target) return 0;   // joalheiro so mexe no proprio alvo: nao abastece a bancada do caminho
             switch (s.Kind)
             {
                 case Kind.Deposit: return CanPick(c, Item.Ore) ? 3 : 0;
-                case Kind.Counter: return c.Count > 0 && Sells(s, c.Item) && Stock[(int)c.Item] < CounterCap ? 4 : 0;
+                case Kind.Counter:
+                    for (Item i = Item.Sword; i <= Item.Jewel; i++)
+                        if (c.Has(i) && Sells(s, i) && Stock[(int)i] < CounterCap) { item = i; return 4; }
+                    return 0;
                 default:
                     if (!outZone) return c.Has(s.InItem) && s.In < s.InCap ? 1 : 0;
                     return s.Out > 0 && CanPick(c, s.OutItem) ? 2 : 0;
@@ -517,7 +629,8 @@ namespace FS.Core
                 }
             }
             Station s = StationAt(c.Pos, out bool outZone);
-            int act = s != null ? Action(c, s, outZone) : 0;
+            Item it = Item.Ore;
+            int act = s != null ? Action(c, s, outZone, out it) : 0;
             if (act == 0) { c.ActT = 0f; c.IdleT += dt; return; }
             c.IdleT = 0f;
             c.ActT += dt;
@@ -527,12 +640,13 @@ namespace FS.Core
                 c.ActT -= step;
                 switch (act)
                 {
-                    case 1: c.Count--; s.In++; Emit(Ev.Deposited, (int)c.Item, c.Role, s.Pos); break;
-                    case 2: s.Out--; c.Item = s.OutItem; c.Count++; Emit(Ev.Picked, (int)c.Item, c.Role, s.Pos); break;
-                    case 3: c.Item = Item.Ore; c.Count++; Emit(Ev.Picked, (int)Item.Ore, c.Role, s.Pos); break;
-                    case 4: c.Count--; Stock[(int)c.Item]++; Emit(Ev.Deposited, (int)c.Item, c.Role, s.Pos); break;
+                    case 1: c.Held[(int)it]--; s.In++; break;
+                    case 2: s.Out--; c.Held[(int)it]++; break;
+                    case 3: c.Held[(int)it]++; break;
+                    case 4: c.Held[(int)it]--; Stock[(int)it]++; break;
                 }
-                if (Action(c, s, outZone) != act) { c.ActT = 0f; break; }
+                Emit(act == 2 || act == 3 ? Ev.Picked : Ev.Deposited, (int)it, c.Role, s.Pos);
+                if (Action(c, s, outZone, out it) != act) { c.ActT = 0f; break; }   // balcao: o proximo produto da mao segue no mesmo ritmo
             }
         }
 
@@ -606,6 +720,10 @@ namespace FS.Core
                 if (s.Kind == Kind.Furnace) s.Time = ft;
                 if (s.Kind == Kind.Crafter) s.Time = ht * (s.OutItem == Item.Shield ? Balance.ShieldTimeMul : s.OutItem == Item.Jewel ? jt : 1f);
             }
+            // balcao evolutivo (FASE7 §2): +1 vaga por evolucao comprada; o corpo alarga junto (antes dos Solids)
+            QueueCap = Balance.QueueCap0;
+            for (int u = (int)Upgrade.Counter5; u <= (int)Upgrade.Counter8; u++) if (Bought[u]) QueueCap++;
+            Counter.Half = new V2(Balance.CounterHalfX(QueueCap), Balance.StationHalf.Y);
             // corpos: estacao travada nao e' solida (o pad de compra fica no lugar dela); loja de joias sim (a view desenha a fachada fechada)
             Solids.Clear();
             foreach (Station s in Stations) if (s.Unlocked || s.Kind == Kind.Counter) Solids.Add(s.Body);
@@ -614,7 +732,6 @@ namespace FS.Core
             Player.Speed = Bought[(int)Upgrade.PlayerSpeed] ? Balance.PlayerSpeedUp : Balance.PlayerSpeed;
             Player.Cap = Bought[(int)Upgrade.PlayerCapacity] ? Balance.PlayerCapUp : Balance.PlayerCap;
             CounterCap = Bought[(int)Upgrade.CounterCapacity] ? Balance.CounterCap1 : Balance.CounterCap0;
-            QueueCap = Bought[(int)Upgrade.CounterCapacity] ? Balance.QueueCap1 : Balance.QueueCap0;
             JewelQueueCap = Bought[(int)Upgrade.JewelVitrine] ? Balance.JewelQueueCapUp : Balance.JewelQueueCap;
             HasConveyor = Bought[(int)Upgrade.Conveyor];
             // um ajudante por upgrade de contratacao (papel em HireRole); a lista so cresce, na ordem da compra (o Joalheiro nao exige o Ajudante 3)
@@ -677,10 +794,24 @@ namespace FS.Core
 
         void Clients(float dt)
         {
+            // FASE8: o relogio do VIP corre so depois da 1a venda; no zero sorteia o VIP se nao houver outro ativo (senao segura em 0 ate ele
+            // sair). O sorteado pega a proxima vaga livre ANTES de quem chega neste tick: com a fila cheia ele espera, nao some
+            if (FirstSaleTime >= 0f)
+            {
+                VipIn = Math.Max(0f, VipIn - dt);
+                if (VipIn <= 0f && !VipActive) SpawnVip(false);
+            }
+            if (_vipWant >= 0 && Queue.Count < QueueCap)
+            {
+                float pat = Balance.VipPatienceFor(_vipPack);   // pacote maior, mais tempo: o humano e' mais lento que o bot
+                Queue.Add(new Client { Want = (Item)_vipWant, Patience = pat, MaxPatience = pat, Vip = true, Pack = _vipPack, Paid = _vipPaid });
+                if (!_vipQuiet) Emit(Ev.VipArrived, _vipWant, _vipPack, ClientSlot(Queue.Count - 1));
+                _vipWant = -1; _vipPaid = 0; _vipQuiet = false;
+            }
             for (Item p = Item.Sword; p <= Item.Jewel; p++)
             {
                 if (!LineUnlocked(p)) continue;
-                _clientT[(int)p] -= dt;
+                _clientT[(int)p] -= dt * BoostMul;   // FASE8: a demanda acompanha o boost
                 if (_clientT[(int)p] > 0f) continue;
                 _clientT[(int)p] += ClientInterval(p);
                 bool j = p == Item.Jewel;
@@ -692,7 +823,9 @@ namespace FS.Core
                     q.Add(new Client { Want = p, Patience = patience, MaxPatience = patience });
                     Emit(Ev.ClientArrived, (int)p, q.Count, Slot(j, q.Count - 1));
                 }
-                else if (Stock[(int)p] > 0) Sell(p, Slot(j, cap));   // fila cheia mas o produto esta na vitrine: compra direto (sem isso a fila travava, ver BALANCE.md §9)
+                // fila cheia: vai embora sem comprar. FASE7 §3: a "compra direta da vitrine" (BALANCE §9) saiu, porque vendia sem cliente
+                // visivel ("+10" numa vaga vazia; 28-30% das vendas do balcao em 45 min). A trava que ela resolvia agora se desfaz pela
+                // paciencia por item, pelas vagas do balcao evolutivo e pela carga mista do ferreiro (CoreTests.FilaCheia_...)
                 else { ClientsTurnedAway++; Emit(Ev.ClientLeft, (int)p, 2, Slot(j, cap)); }
             }
             if (Queue.Count > MaxQueue) MaxQueue = Queue.Count;
@@ -704,12 +837,13 @@ namespace FS.Core
 
         public int PriceOf(Item item) => item == Item.Jewel && Bought[(int)Upgrade.JewelVitrine] ? Balance.JewelPriceUp : Balance.Price[(int)item];
 
-        void Sell(Item want, V2 pos)
+        int Sell(Item want, V2 pos, int mul = 1)
         {
-            int price = PriceOf(want);
+            int price = PriceOf(want) * mul;
             Stock[(int)want]--; Gold += price; GoldEarned += price; Sales++; SoldItems[(int)want]++;
             if (FirstSaleTime < 0f) FirstSaleTime = Time;
             Emit(Ev.Sold, (int)want, price, pos);
+            return price;
         }
 
         /// <summary>
@@ -750,21 +884,30 @@ namespace FS.Core
                 // atende o primeiro da fila que da para atender: um cliente de escudo sem escudo no balcao nao trava quem quer espada
                 for (int i = 0; i < q.Count; i++)
                 {
-                    Item want = q[i].Want;
-                    if (Stock[(int)want] <= 0) continue;
-                    q.RemoveAt(i);
+                    Client c = q[i];
+                    if (Stock[(int)c.Want] <= 0) continue;
                     serveT = Balance.ServeTime;
-                    Sell(want, Slot(jewel, i));
+                    if (c.Vip)   // FASE8: uma unidade por atendimento a 3x o preco; fica na vaga ate levar o pacote todo
+                    {
+                        c.Paid += Sell(c.Want, Slot(jewel, i), Balance.VipPriceMul);
+                        if (--c.Pack > 0) break;
+                        q.RemoveAt(i);
+                        Emit(Ev.VipServed, (int)c.Want, c.Paid, Slot(jewel, i));
+                        break;
+                    }
+                    q.RemoveAt(i);
+                    Sell(c.Want, Slot(jewel, i));
                     break;
                 }
             }
             for (int i = q.Count - 1; i >= 0; i--)
             {
-                q[i].Patience -= dt;
-                if (q[i].Patience > 0f) continue;
-                Emit(Ev.ClientLeft, (int)q[i].Want, 0, Slot(jewel, i));
+                Client c = q[i];
+                c.Patience -= dt;
+                if (c.Patience > 0f) continue;
+                if (c.Vip) Emit(Ev.VipLeft, (int)c.Want, c.Pack, Slot(jewel, i));   // FASE8: o VIP fica fora do ClientsLost (metrica dos clientes normais)
+                else { Emit(Ev.ClientLeft, (int)c.Want, 0, Slot(jewel, i)); ClientsLost++; }
                 q.RemoveAt(i);
-                ClientsLost++;
             }
         }
 
@@ -821,12 +964,16 @@ namespace FS.Core
             Pad pad = CheapestAffordablePad();
             if (pad != null) { HintArg = pad.Slot; return Hint.BuyPad; }
             foreach (Chest c in Chests) if (c.State == 1) { HintArg = c.Index; return Hint.OpenChest; }   // o 1o disponivel, na ordem dos marcos
-            if (Player.Count > 0)
-            {
-                HintArg = (int)Player.Item;
-                return IsProduct(Player.Item) ? Hint.ProductToCounter : Player.Item == Item.Ingot ? Hint.IngotToCrafter : Hint.OreToFurnace;
-            }
-            foreach (Station s in Stations) if (s.Unlocked && s.Kind == Kind.Crafter && s.Out > 0) { HintArg = (int)s.OutItem; return Hint.PickProducts; }
+            // FASE7: pilha mista. Produto na mao primeiro; depois produto pronto que ainda cabe na mao (vale com lingote na mao: e' o
+            // que destrava a bancada com a saida cheia); so entao o insumo na mao
+            // FASE7 §3: produto que o balcao nao aceita (estoque cheio) nao segura a dica no balcao; produto que a fila pede vem antes
+            Item deliver = Deliverable(Player);
+            if (deliver != Item.Ore) { HintArg = (int)deliver; return Hint.ProductToCounter; }
+            for (int pass = 0; pass < 2; pass++)
+                foreach (Station s in Stations)
+                    if (s.Unlocked && s.Kind == Kind.Crafter && s.Out > 0 && CanPick(Player, s.OutItem) && (pass == 1 || Wanted(s.OutItem))) { HintArg = (int)s.OutItem; return Hint.PickProducts; }
+            Item raw = Player.Has(Item.Ingot) ? Item.Ingot : Item.Ore;   // insumo mais adiantado na mao
+            if (Player.Has(raw)) { HintArg = (int)raw; return raw == Item.Ingot ? Hint.IngotToCrafter : Hint.OreToFurnace; }
             foreach (Station s in Stations) if (s.Unlocked && s.Kind == Kind.Furnace && s.Out > 0) { HintArg = (int)Item.Ingot; return Hint.PickIngots; }
             if (Queue.Count > 0 && Stock[(int)Queue[0].Want] == 0) { HintArg = (int)Queue[0].Want; return Hint.ClientWaiting; }
             if (JewelQueue.Count > 0 && Stock[(int)Item.Jewel] == 0) { HintArg = (int)Item.Jewel; return Hint.ClientWaiting; }
@@ -855,7 +1002,7 @@ namespace FS.Core
             return gold;
         }
 
-        /// <summary>Menor produtivo nao comprado; producao completa = o produtivo mais caro (hoje a Vitrine de joias, 9.000:
+        /// <summary>Menor produtivo nao comprado e a venda (pre-requisito comprado); producao completa = o produtivo mais caro (hoje a Vitrine de joias, 9.000:
         /// e' o "ultimo" de antes, mas nao muda quando um produtivo mais barato e' anexado ao enum). Luxo nao altera o cofre.</summary>
         public int CheapestLockedCost()
         {
@@ -863,9 +1010,11 @@ namespace FS.Core
             for (int i = 0; i < Upgrades.Count; i++)
             {
                 if (Upgrades.IsLuxury(i)) continue;
-                int c = Upgrades.Cost(i);
+                int c = Upgrades.Cost(i), req = Upgrades.All[i].Requires;
                 top = Math.Max(top, c);
-                if (!Bought[i] && (best < 0 || c < best)) best = c;
+                // FASE7: so o que esta A VENDA (pre-requisito comprado). Sem isso o Balcao 5 (150, exige a Vitrine) baixava o cofre de
+                // 1.060 para 300 aos 10 min; e o Joalheiro 2 (2.400, exige o Mineiro) segurava o teto do par em 4.800 (agora 2x Mineiro)
+                if (!Bought[i] && (req < 0 || Bought[req]) && (best < 0 || c < best)) best = c;
             }
             return best >= 0 ? best : top;
         }
@@ -903,6 +1052,15 @@ namespace FS.Core
             sb.Append("m=").Append(FirstSaleTime.ToString("0.##", ci)).Append(',').Append(Sales).Append(',').Append(GoldEarned).Append(',').Append(OfflineEarned).Append(',')
               .Append(ClientsLost).Append(',').Append(ClientsTurnedAway).Append(',').Append(MaxQueue).Append(',').Append(WalkNoDecision.ToString("0.##", ci)).Append(',').Append(UpgradesBought).Append('\n');
             sb.Append("px=").Append(Player.Pos.ToString()).Append('\n');
+            // FASE7: o que esta na mao volta ao reabrir (jogador: quantos de cada Item; ajudantes "papel:contagens" separados por ';')
+            sb.Append("hold=").Append(string.Join(",", Player.Held)).Append('\n');
+            if (Workers.Count > 0) sb.Append("wk=").Append(string.Join(";", Workers.ConvertAll(w => w.Role + ":" + string.Join(",", w.Held)))).Append('\n');
+            // FASE8: relogio do VIP, VIPs sorteados e o VIP pendente (produto, unidades que faltam). A fila nao vai no save: o VIP que ja estava
+            // na vaga volta como pendente e pega a 1a vaga ao reabrir, com paciencia cheia. O boost nao vai: some ao fechar
+            Client vip = Queue.Find(c => c.Vip);
+            int vipWant = vip != null ? (int)vip.Want : _vipWant, vipPack = vip != null ? vip.Pack : _vipWant >= 0 ? _vipPack : 0;
+            sb.Append("vip=").Append(VipIn.ToString("0.###", ci)).Append(',').Append(VipCount).Append(',').Append(vipWant).Append(',').Append(vipPack)
+              .Append(',').Append(vip != null ? 1 : 0).Append(',').Append(vip != null ? vip.Paid : 0).Append('\n');   // na vaga?, ja pagou
             return sb.ToString();
         }
 
@@ -918,6 +1076,8 @@ namespace FS.Core
             var sim = new Sim();
             if (string.IsNullOrEmpty(text)) return sim;
             var ci = CultureInfo.InvariantCulture;
+            string wk = "";   // carga dos ajudantes: aplicada depois do Recompute (eles nascem dos flags)
+            int vipWant = -1, vipPack = 0, vipPaid = 0; bool vipQuiet = false;   // VIP pendente: so depois do Recompute (a linha do produto tem de estar aberta)
             foreach (string raw in text.Split('\n'))
             {
                 int eq = raw.IndexOf('=');
@@ -945,6 +1105,17 @@ namespace FS.Core
                         }
                         break;
                     case "px": if (parts.Length == 2) sim.Player.Pos = new V2(F(parts[0], 4.5f), F(parts[1], 3.5f)); break;   // clamp so' depois do Recompute (MaxX depende do Corredor)
+                    case "hold": for (int i = 0; i < Math.Min(parts.Length, sim.Player.Held.Length); i++) sim.Player.Held[i] = Math.Max(0, I(parts[i], 0)); break;   // save antigo sem hold=: maos vazias
+                    case "wk": wk = val; break;
+                    case "vip":   // FASE8; save antigo sem vip=: relogio novo (VipInterval(0)) e nenhum VIP pendente
+                        if (parts.Length >= 4)
+                        {
+                            sim.VipIn = Math.Max(0f, Math.Min(Balance.VipMax, F(parts[0], sim.VipIn)));
+                            sim.VipCount = Math.Max(0, I(parts[1], 0));
+                            vipWant = I(parts[2], -1); vipPack = Clamp0(I(parts[3], 0), Balance.VipSummonPackMax);
+                            if (parts.Length >= 6) { vipQuiet = I(parts[4], 0) == 1; vipPaid = Math.Max(0, I(parts[5], 0)); }   // save da 0.5.0: 4 campos
+                        }
+                        break;
                     default:
                         if (key.StartsWith("st") && parts.Length >= 4)
                         {
@@ -962,6 +1133,23 @@ namespace FS.Core
             foreach (bool b in sim.Bought) if (b) sim.UpgradesBought++;
             sim.Recompute();
             for (int i = 2; i < sim.Stock.Length; i++) sim.Stock[i] = Math.Min(sim.Stock[i], sim.CounterCap);   // teto so' e' conhecido depois dos upgrades
+            for (int i = 0; i < sim.Player.Held.Length; i++) sim.Player.Held[i] = Math.Min(sim.Player.Held[i], sim.Player.Cap);   // teto por tipo (Mochila)
+            string[] ws = wk.Split(';');
+            for (int k = 0; k < ws.Length; k++)   // ajudante: so o 1o tipo valido para o papel, ate o teto; lixo = mao vazia
+            {
+                // a lista e' recriada na ordem do HireBy, nao na da compra: vai para o proximo ajudante vazio do mesmo papel.
+                // Save da 0.5.0 (sem "papel:") segue a posicao na lista
+                int colon = ws[k].IndexOf(':'), role = colon > 0 ? I(ws[k].Substring(0, colon), -9) : -9;
+                Carrier w = colon > 0 ? sim.Workers.Find(c => c.Role == role && c.Count == 0) : k < sim.Workers.Count ? sim.Workers[k] : null;
+                if (w == null) continue;
+                string[] h = ws[k].Substring(colon + 1).Split(',');
+                for (int i = 0; i < Math.Min(h.Length, w.Held.Length); i++)
+                {
+                    int n = Clamp0(I(h[i], 0), w.Cap);
+                    if (n > 0 && w.Count == 0 && sim.CanPick(w, (Item)i)) w.Held[i] = n;
+                }
+            }
+            if (vipPack > 0 && vipWant >= (int)Item.Sword && vipWant <= (int)Item.Tool && sim.LineUnlocked((Item)vipWant)) { sim._vipWant = vipWant; sim._vipPack = vipPack; sim._vipPaid = vipPaid; sim._vipQuiet = vipQuiet; }
             sim.Player.Pos = sim.Collide(Clamp(sim.Player.Pos, sim.MaxX));   // save antigo com o jogador dentro de um corpo: sai pela borda
             // pad escondido devolve o parcial: o save da v0.3 com produtivos novos (Mineiro, Joalheiro 2) esconde o luxo ate completar
             // de novo, e o pad cujo upgrade foi para o menu (FASE6) nunca mais aparece

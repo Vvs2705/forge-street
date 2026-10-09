@@ -1,0 +1,6 @@
+7447:2026-10-08T23:49:50,b000ec29,ad_init,478.9,simulado,fakeads
+7448:2026-10-08T23:49:52,b000ec29,session_start,478.9,0.4.1,Nitro ANV15-51 (Acer)
+7449:2026-10-08T23:49:52,b000ec29,offline_claim,478.9,300,7200
+7450:2026-10-08T23:49:52,b000ec29,ad_request,478.9,vip,simulado
+7451:2026-10-08T23:49:52,b000ec29,ad_shown,478.9,vip,simulado
+7457:2026-10-08T23:49:57,b000ec29,ad_reward,478.9,vip,VIP x1 simulado

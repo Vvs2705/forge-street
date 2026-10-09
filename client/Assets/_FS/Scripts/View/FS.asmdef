@@ -1,7 +1,7 @@
 {
     "name": "FS",
     "rootNamespace": "FS",
-    "references": ["FS.Core", "Unity.InputSystem", "UnityEngine.UI"],
+    "references": ["FS.Core", "Unity.InputSystem", "UnityEngine.UI", "Unity.LevelPlay"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

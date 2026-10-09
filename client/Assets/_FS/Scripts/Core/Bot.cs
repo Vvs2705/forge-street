@@ -63,20 +63,26 @@ namespace FS.Core
                 if (c.State == 1 && (chest == null || V2.Dist(p.Pos, c.Pos) < V2.Dist(p.Pos, chest.Pos))) chest = c;
             if (chest != null && V2.Dist(p.Pos, chest.Pos) < ChestDetour) return chest.Pos;
 
-            if (p.Count > 0)
+            // carga mista (FASE7 §1): produto na mao vai ao balcao (o mais adiantado primeiro: joia -> loja de joias); insumo vai a
+            // ENTRADA com espaco, lingote antes de minerio. Insumo sem destino nao prende mais o ferreiro: ele segue recolhendo o que
+            // estiver pronto e ainda couber na mao (teto por tipo), em vez de esperar na fila da entrada
+            // FASE7 §3: sem a compra direta, esperar no balcao com o estoque daquele produto cheio trava (a fila enche de quem quer outro
+            // produto); produto que o balcao nao aceita fica na mao e o bot vai buscar o que a fila pede
+            Item deliver = s.Deliverable(p);
+            if (deliver != Item.Ore) return s.CounterFor(deliver).InAt;
+            for (Item i = Item.Ingot; i >= Item.Ore; i--)
             {
-                if (Sim.IsProduct(p.Item)) return s.CounterFor(p.Item).InAt;   // joia -> loja de joias, o resto -> balcao
-                Station dest = BestInput(s, p.Item, p.Pos);
-                if (dest != null) return dest.InAt;   // insumo -> boca de ENTRADA
-                return p.Item == Item.Ore ? s.FurnaceA.InAt : s.AnvilA.InAt;   // tudo cheio: espera na fila da primeira
+                Station dest = p.Has(i) ? BestInput(s, i, p.Pos) : null;
+                if (dest != null) return dest.InAt;
             }
 
-            Station pick = BestOutput(s, Kind.Crafter, p.Pos);   // produto pronto -> boca de SAIDA
+            Station pick = BestOutput(s, Kind.Crafter, p);   // produto pronto -> boca de SAIDA
             if (pick != null) return pick.OutAt;
-            pick = BestOutput(s, Kind.Furnace, p.Pos);
+            pick = BestOutput(s, Kind.Furnace, p);
             if (pick != null && BestInput(s, Item.Ingot, pick.Pos) != null) return pick.OutAt;
-            if (BestInput(s, Item.Ore, p.Pos) != null) return s.Deposit.OutAt;
+            if (s.CanPick(p, Item.Ore) && BestInput(s, Item.Ore, p.Pos) != null) return s.Deposit.OutAt;
             if (chest != null) return chest.Pos;
+            if (p.Count > 0) return Sim.IsProduct(p.Item) ? s.CounterFor(p.Item).InAt : p.Item == Item.Ore ? s.FurnaceA.InAt : s.AnvilA.InAt;   // tudo cheio e nada a recolher: espera onde vai caber
             // fornalhas cheias e nada pronto: espera onde o proximo lingote vai sair
             Station soon = null;
             foreach (Station st in s.Stations)
@@ -104,14 +110,14 @@ namespace FS.Core
             return best;
         }
 
-        static Station BestOutput(Sim s, Kind kind, V2 from)
+        static Station BestOutput(Sim s, Kind kind, Carrier p)
         {
             Station best = null; float bestScore = float.MinValue;
             foreach (Station st in s.Stations)
             {
-                if (!st.Unlocked || st.Kind != kind || st.Out <= 0) continue;
+                if (!st.Unlocked || st.Kind != kind || st.Out <= 0 || !s.CanPick(p, st.OutItem)) continue;   // teto daquele tipo na mao
                 if (kind == Kind.Crafter && s.Stock[(int)st.OutItem] >= s.CounterCap && st.Out < st.OutCap) continue; // balcao cheio desse produto: deixa na bancada
-                float score = st.Out * 5f - V2.Dist(from, st.OutAt);
+                float score = st.Out * 5f - V2.Dist(p.Pos, st.OutAt) + (kind == Kind.Crafter && s.Wanted(st.OutItem) ? 12f : 0f);   // a fila pede e o estoque nao tem
                 if (score > bestScore) { bestScore = score; best = st; }
             }
             return best;

@@ -3,10 +3,41 @@
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões do Forge Street em [SemVer](https://semver.org/lang/pt-BR/). O histórico anterior ao repositório (2026-10-06 → 2026-10-07) foi reconstruído a partir dos documentos de validação.
 
 ## [Unreleased]
+### Corrigido
+- Achados do teste no POCO F4 (2026-10-09): um voltar às vezes valia por dois (fechava a bandeja e saía do jogo) — trava de 0,4 s; reabrir em menos de 1 min mostrava "31 de ouro em 0 min fora" — a abertura segue a regra de ≥ 60 s.
 ### Adicionado
+- `client/tools/medir_aparelho.sh` (FPS, memória, temperatura, erros e diário pelo cabo); resultado do teste no POCO em `docs/VALIDACAO_V05.md`; portfólio dos 9 jogos em `docs/PORTFOLIO.md`.
+
+## [0.5.1] — 2026-10-09
+### Adicionado
+- **Carga sem bloqueio:** o ferreiro carrega todos os tipos de item ao mesmo tempo, até 3 de cada (6 com a Mochila); ajudantes continuam com um tipo só. Corrige a trava "lingotes na mão + bigornas cheias = não pega espada" (`docs/FASE7_CARGA_BALCAO.md`).
+- **Balcão evolutivo 4 → 8 vagas:** 4 evoluções no menu (150/175/200/225; a 1ª exige a Vitrine), estande sem toldo que cresce com as vagas e mostra o estoque em pé nos encaixes.
+- **Arte v0.5 (Blender, 0 crédito):** ícones de minério, lingote, espada, escudo, martelo, anel e moeda; estande modular; portão e porta de serviço vistos de lado com pilares (`docs/ASSETS.md` §7).
+- **Leitura de venda:** balão grande só no 1º da fila com anel de paciência; mini-ícones nos demais; moedas voando até o contador; quem chega com a fila cheia aparece indo embora.
+- **16 clientes:** 10 novos do Lote 4 (Tripo, 650 créditos) e sorteio embaralhado sem repetir em seguida.
+- O save guarda a carga da mão do ferreiro e dos ajudantes.
+- **Cliente VIP:** ~4–6 min depois da 1ª venda chega um cliente com coroa que paga 3× por unidade (paciência 90 s + 6 s/unidade); aviso, "×3" e pacote "×N" no balão (`docs/FASE8_VIP_VELOCIDADE.md`).
+- **Anúncios recompensados (Unity LevelPlay 9.5.1):** "Chamar VIP" (VIP extra com pacote 2×, até 20) e "Velocidade" (2× por 60 s; o 2º anúncio sobe para 3×; recarga de 5 min). Sem fill, o build de teste mostra um anúncio simulado de 5 s (`-fakeads`); diário registra `ad_*`, `vip_*` e `boost_start` (`docs/LEVELPLAY.md`).
+- `Setup.BuildAndroidEmu`: APK x86_64 para o emulador do PC (o ARM64 cai na tradução do Android 15); validação em `docs/VALIDACAO_V05.md`.
+- `docs/ROTEIRO_TESTE_POCO.md` (teste da v0.5 no aparelho) e `docs/TESTE_COMPARATIVO.md` (protocolo do teste com 4 jogos no emulador).
+- `docs/BENCHMARK_MERCADO.md` e `docs/BENCHMARK_VISUAL.md`: análise de 10 jogos similares.
+### Corrigido
+- **Botão voltar do Android:** não chegava ao jogo (o GameActivity da Unity 6 não passa o voltar ao Input System; testado no emulador). Input "Both" + `Input.GetKeyDown(KeyCode.Escape)`: fecha o painel do cofre e a bandeja de melhorias e, com a tela limpa, sai do jogo. APK reserva só com o Input System para o caso de o "Both" pesar no aparelho (`docs/ROTEIRO_TESTE_POCO.md`, plano B).
+- **Build Android:** `Setup.Build` apaga a saída incremental do Gradle antes de cada build (APK com ~12 MB de buracos ou sem `libunity` ao alternar ARM64/x86_64) e o `BuildAndroidEmu` tira o exclude de `/lib/x86_64` do `mainTemplate.gradle` só durante o build.
+- `diario_report.py` separa "falhas ao mostrar" de "sem anúncio carregado" (antes somava e mostrava falhas sem nenhum pedido).
+- **Ajudante 3 parado no balcão (0.5.1, revisão de código):** pegava espada com a prateleira de espada cheia e esperava no balcão enquanto escudo e ferramenta encalhavam. Agora só busca o que cabe. Jogador parado 15 min: 80 → 209 vendas; produção completa do bot 47:03 → 46:12 (`docs/BALANCE.md` §19).
+- Save: a carga dos ajudantes contratados fora da ordem (Joalheiro antes do Ajudante 3) sumia ao reabrir; cada entrada leva o papel (`wk=papel:contagens`, o save da 0.5.0 ainda abre).
+- VIP que estava na vaga ao fechar: reabrir não repete o aviso "Cliente VIP!" nem o `vip_arrived` no diário, e guarda o ouro que ele já pagou.
+- VIP que esperava ao lado da fila cheia sumia e outro boneco caía do alto ao abrir a vaga; agora ele entra andando de onde estava.
+- Voltar de um anúncio real não abre mais o "Seu cofre rendeu"; o jogo para enquanto o anúncio é pedido (o boost não acaba no segundo antes de o anúncio cobrir a tela), com teto de 15 s para um SDK que não responde.
+- **Vendas fantasma:** a "compra direta" com fila cheia vendia sem cliente visível (18,7% das vendas aos 10 min, 28,5% aos 45); saiu. Toda venda tem cliente na vaga.
+- **Cofre ao voltar de outro app:** antes só a abertura pagava; agora a volta de pausa ≥ 60 s também paga.
+- `Steer` preso entre a Loja de joias e um pedestal; teto do cofre derrubado por upgrade ainda não à venda.
+### Alterado
+- Vitrine: só estoque 5 → 10 e clientes ×0,7 (as vagas passaram para as evoluções do balcão). Produção completa do bot 43:37 → 48:24 (sem a receita invisível).
 - Criativos de UA 9:16 #1, #2 e #8 (GDD §17) gravados do build real, em `client/Builds/creatives/`, com os comandos em `docs/CRIATIVOS.md`.
 - Flags de dev `-record` (quadros 1080×1920 com relógio travado), `-buyids` e `-warmup`.
-- `client/tools/diario_report.py`: relatório do playtest Camada 0 (1ª venda, upgrades humano × bot, clientes perdidos, andar sem decisão, travada/fome por minuto, portões do GDD) com `--autoteste`.
+- `client/tools/diario_report.py`: relatório do playtest Camada 0 (1ª venda, upgrades humano × bot, clientes perdidos, andar sem decisão, travada/fome por minuto, anúncios/VIP/velocidade, portões do GDD com o opt-in de rewarded ≥ 45%) com `--autoteste`.
 ### Corrigido
 - "Fome" visível: estação parada escurece para cinza frio 0,55 (antes 0,78, quase igual à ativa), como pede a ART_BIBLE §6.
 
