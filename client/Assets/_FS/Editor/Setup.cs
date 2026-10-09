@@ -24,7 +24,7 @@ namespace FS.EditorTools
         {
             PlayerSettings.companyName = "V-STACK";
             PlayerSettings.productName = "Forge Street";
-            PlayerSettings.bundleVersion = "0.5.1";
+            PlayerSettings.bundleVersion = "0.6.0";
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, AppId);
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone, AppId);
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
