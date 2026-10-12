@@ -35,7 +35,7 @@ Paciência por item (valores e fila); personagem não entra no corpo de nenhuma 
 ## 5. Estado — Etapa A IMPLEMENTADA e TESTADA no core (Leva 10, raia core/economia, 2026-10-07)
 - **Core:** `Defs.cs`, `Sim.cs`, `Bot.cs`. **NÃO COMPILADO no Unity**: só dotnet (59/59 com a Etapa B) e `viewcheck` (0 erros).
 - **View:** marcar as bocas e desenhar a parede, a porta e os obstáculos pela geometria do core fica com o coordenador.
-- **Onde estão os números:** medição da Etapa A sozinha, varredura de paciência, efeito da parede e prova vermelha em [BALANCE.md §13](BALANCE.md). Etapa B por cima em §14.
+- **Onde estão os números:** medição da Etapa A sozinha, varredura de paciência, efeito da parede e prova vermelha em [BALANCE.md §13](../BALANCE.md). Etapa B por cima em §14.
 - **Paciência:** base 30 s + 3 × produção inicial. Espada 57 s, escudo 76,5 s, ferramenta 57 s, joia 84 s.
   - Desistências em 10 min: 26 → 1.
   - A fila fica cheia 57% do tempo; com 25 s eram 39%. A parede de clientes é a mesma para qualquer paciência que corte a desistência, porque o limite é a oferta.

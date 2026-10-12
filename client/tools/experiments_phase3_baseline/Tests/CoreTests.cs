@@ -382,7 +382,7 @@ namespace FS.Tests
             Assert.Greater(s.ClientsTurnedAway, 0, "sem o produto na vitrine, fila cheia continua mandando embora");
         }
 
-        // ------------------------------------------------------------------ 2a area (docs/AREA2_JOALHERIA.md)
+        // ------------------------------------------------------------------ 2a area (docs/archive/AREA2_JOALHERIA.md)
 
         static Pad PadFor(Sim s, Upgrade u)
         {
@@ -561,7 +561,7 @@ namespace FS.Tests
             Assert.AreEqual(0, s.JewelQueue.Count, "nenhum nobre com a area fechada");
         }
 
-        // ------------------------------------------------------------------ 2a area, fase 2 (docs/AREA2_FASE2.md)
+        // ------------------------------------------------------------------ 2a area, fase 2 (docs/archive/AREA2_FASE2.md)
 
         static int[] Roles(Sim s) => s.Workers.ConvertAll(w => w.Role).ToArray();
 

@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace FS
 {
     /// <summary>
-    /// Menu inferior de melhorias (docs/FASE6_MENU_MELHORIAS.md s3): barra fixa embaixo com o botao "Melhorias"; aberto, uma
+    /// Menu inferior de melhorias (docs/archive/FASE6_MENU_MELHORIAS.md s3): barra fixa embaixo com o botao "Melhorias"; aberto, uma
     /// fileira de cartoes rolavel na horizontal acima dela. Toque no cartao compra na hora (Sim.TryBuyMenu) e o Ev.Bought ja
     /// toca o som e solta o "+nome!" no Game. Cartao comprado some.
     /// v0.5b (BENCHMARK_VISUAL P1-2): cartao creme com borda de couro e chanfro, icone renderizado grande (tools/ui_v05b_blender.py),

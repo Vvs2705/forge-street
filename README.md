@@ -88,7 +88,7 @@ Ao abrir no Editor, a cena `Assets/_FS/Scenes/Main.unity` é vazia de propósito
 
 ## Histórico v0.2 — fase 1: corredor lateral + joalheria (antes dos baús, 2026-10-07)
 
-- Contrato e decisões: `docs/AREA2_JOALHERIA.md`; números do bot: `docs/BALANCE.md` §9.
+- Contrato e decisões: `docs/archive/AREA2_JOALHERIA.md`; números do bot: `docs/BALANCE.md` §9.
 - Mundo 15 m de largura (oficina x 0–9, rua lateral x 9–15). Pad **Corredor (690)** abre a rua e a câmera passa a seguir o X do jogador; pad **Joalheria (1 515)** abre a bancada de joias (2 lingotes → anel, 2× o tempo da bigorna) e a loja de joias com fila própria de nobres (cap 3, paciência 40 s, paga 60).
 - Bot humano: Corredor 15:18, Joalheria 26:02, ouro/min 516 → 925 (+79%). Tudo comprado aos 28:24 (falta ralo de ouro: próximo passo).
 - Arte do Lote 3 em uso: `nobre`, `bancada_joalheria`, `loja_joalheria`, `arco` (entrada/teaser na borda), `carroca` (re-render −45°). `baú` segue fora (milestones não existem).
@@ -101,7 +101,7 @@ Ao abrir no Editor, a cena `Assets/_FS/Scenes/Main.unity` é vazia de propósito
 
 Bot humano, 60 min: Joalheiro 25:25, Lupa 31:12, Vitrine 40:41; receita online 46.377, renda final 1.095 ouro/min, 269 joias e 21.212 ouro disponível. São medidas do bot, ainda não calibradas com pessoas. Custos e histórico em `docs/BALANCE.md` §10.7.
 
-Evidências da continuação: `client/Builds/validation_phase2/`. Core 37/37, prova vermelha isolada e restauração verde, EditMode Unity 37/37, viewcheck 0 erros/0 avisos. Builds Windows/Android `Succeeded`, zero erros; autoplay Windows 60 min OK. APK dev 0.2.0: **46.898.468 bytes (46,9 MB)**, gerado em 07/10 às 15:07:54. Fotos em `shots/` e relatório/comandos em `docs/VALIDACAO_FASE2.md`. Android real e métricas humanas continuam sem validação.
+Evidências da continuação: `client/Builds/validation_phase2/`. Core 37/37, prova vermelha isolada e restauração verde, EditMode Unity 37/37, viewcheck 0 erros/0 avisos. Builds Windows/Android `Succeeded`, zero erros; autoplay Windows 60 min OK. APK dev 0.2.0: **46.898.468 bytes (46,9 MB)**, gerado em 07/10 às 15:07:54. Fotos em `shots/` e relatório/comandos em `docs/archive/VALIDACAO_FASE2.md`. Android real e métricas humanas continuam sem validação.
 
 ## v0.6 — juice, configurações, encomendas e leitura (2026-10-09, branch `feat/v0.6-juice`, APK de teste `ForgeStreet-0.6.0.apk`)
 - **Juice:** faíscas e punch na bigorna, fumaça e boca acesa na fornalha, pop do item pronto, "MAX" na pilha, melhorias visíveis (fole, martelo dourado, mochila, poeira das botas) (`docs/VALIDACAO_V06A.md`).
@@ -113,7 +113,7 @@ Evidências da continuação: `client/Builds/validation_phase2/`. Core 37/37, pr
 
 ## v0.5 — feedback do POCO F4 + análise de jogos similares (2026-10-08, em andamento)
 
-Pedidos do Vinicius jogando a v0.4.1 e o que virou (detalhes em `docs/FASE7_CARGA_BALCAO.md`, `docs/FASE8_VIP_VELOCIDADE.md`, `docs/BENCHMARK_*.md`):
+Pedidos do Vinicius jogando a v0.4.1 e o que virou (detalhes em `docs/archive/FASE7_CARGA_BALCAO.md`, `docs/FASE8_VIP_VELOCIDADE.md`, `docs/BENCHMARK_*.md`):
 - **"Peguei as barras, as máquinas estavam cheias e não consegui pegar os itens da bigorna"** → o ferreiro carrega todos os tipos ao mesmo tempo (até 3 de cada; 6 com a Mochila); ajudantes seguem com um tipo.
 - **"Vendas no balcão sem ninguém pedindo"** → era a compra direta com fila cheia (18,7% das vendas aos 10 min): saiu; toda venda tem cliente na vaga.
 - **Balcão sem toldo, estande que atende 4 e cresce até 8 (+1 por evolução)** → Balcão 5–8 no menu (150/175/200/225), estande modular com o estoque em pé.
@@ -127,20 +127,20 @@ Pedidos do Vinicius jogando a v0.4.1 e o que virou (detalhes em `docs/FASE7_CARG
 ## v0.4.0 — playtest no aparelho: física, duas bocas, paciência, ambiente e menu (2026-10-07)
 
 Pedidos do Vinicius depois de jogar a v0.3.0 num POCO F4:
-- **"O tempo de cada personagem aguardar é muito curto"** → paciência por item = 30 s + 3 × tempo de produção (espada 57 s, escudo 76,5 s, ferramenta 57 s, joia 84 s). Desistências em 10 min: 27 → 1 (`docs/FASE5_FISICA_PACIENCIA.md`).
+- **"O tempo de cada personagem aguardar é muito curto"** → paciência por item = 30 s + 3 × tempo de produção (espada 57 s, escudo 76,5 s, ferramenta 57 s, joia 84 s). Desistências em 10 min: 27 → 1 (`docs/archive/FASE5_FISICA_PACIENCIA.md`).
 - **"Precisa existir física; ele atravessa tudo"** → estações, paredes e decoração sólidas; o ferreiro desliza nas quinas; bot e ajudantes contornam.
 - **"Cada local de criação com dois acessos"** → entrada (só deposita) à esquerda e saída (só recolhe) à direita de cada estação de produção, marcadas no chão com anel e seta na cor do item.
 - **"Chão, paredes, coisas estéticas"** → pedra, assoalho, tijolo, calçamento, tochas e props; parede direita com porta lateral (fechada até o Corredor) e o arco.
-- **"Melhorias no menu da barra abaixo"** → 9 melhorias (Fole, Fole duplo, Mochila, Botas, Vitrine, Ajudantes ágeis, Martelo veloz, Lupa, Vitrine de joias) saem dos pads e viram cartões tocáveis na barra inferior (`docs/FASE6_MENU_MELHORIAS.md`). Construções continuam pads.
-- Fase 4: **Mineiro 3 000 → Joalheiro 2 2 400** (`docs/FASE4_MINERIO.md`); fome da joalheria 52% → 15%.
+- **"Melhorias no menu da barra abaixo"** → 9 melhorias (Fole, Fole duplo, Mochila, Botas, Vitrine, Ajudantes ágeis, Martelo veloz, Lupa, Vitrine de joias) saem dos pads e viram cartões tocáveis na barra inferior (`docs/archive/FASE6_MENU_MELHORIAS.md`). Construções continuam pads.
+- Fase 4: **Mineiro 3 000 → Joalheiro 2 2 400** (`docs/archive/FASE4_MINERIO.md`); fome da joalheria 52% → 15%.
 - Luxo repreçado para **14 000 / 18 000 / 22 000** (Fachada sai +8,7 min depois da produção completa).
 
 ## v0.3.0 — fase 3: luxo visual, destino do ouro (2026-10-07)
 
-- Contrato e evidência: `docs/FASE3_LUXO.md`; números do bot 90 min: `docs/BALANCE.md` §11; validação: `docs/VALIDACAO_FASE3.md` (fotos em `client/Builds/validation_phase3/shots/`).
+- Contrato e evidência: `docs/archive/FASE3_LUXO.md`; números do bot 90 min: `docs/BALANCE.md` §11; validação: `docs/archive/VALIDACAO_FASE3.md` (fotos em `client/Builds/validation_phase3/shots/`).
 - Três compras únicas, liberadas só depois dos 20 upgrades produtivos, sem nenhum bônus de produção: **Fachada nobre 11 000** (soleira/postes dourados + varal de bandeirolas na entrada), **Piso de oficina 14 000** (ladrilhos), **Joalheria real 18 000** (tapete roxo com borda dourada + 4 pedestais de gema). Bot: produção completa 40:41 → Fachada 50:45, Piso 63:46, Joalheria real 79:55; ouro/min idêntico (±1%). Voltar com o cofre no teto (18 000) compra só a Fachada.
 - Preços medidos: 6 000/10 000/16 000 (proposta inicial) compravam a Fachada 5 min após completar a produção e o teto offline pagava dois luxos de uma vez.
-- Logística da joalheria (fome ~52–56%): diagnóstico em `docs/ESTUDO_LOGISTICA.md` — falta lingote NA FONTE (fornalhas 22% sem minério; Ajudante 1 saturado), não transporte; esteira lateral, 2º joalheiro e fornalha lateral perdem no A/B. Próximo A/B planejado: 2º ajudante de minério (não implementado).
+- Logística da joalheria (fome ~52–56%): diagnóstico em `docs/archive/ESTUDO_LOGISTICA.md` — falta lingote NA FONTE (fornalhas 22% sem minério; Ajudante 1 saturado), não transporte; esteira lateral, 2º joalheiro e fornalha lateral perdem no A/B. Próximo A/B planejado: 2º ajudante de minério (não implementado).
 - Pendência técnica: o core trata IDs ≥ 20 como luxo (`ProductionCount`); antes de anexar um upgrade produtivo novo, marcar produtivo/luxo por upgrade.
 
 ## Decisões (log)
@@ -171,7 +171,7 @@ Pedidos do Vinicius depois de jogar a v0.3.0 num POCO F4:
 2. **Playtest Camada 0** (10–20 pessoas, teste interno do Play) lendo `diario.csv` com `python client/tools/diario_report.py playtest/` (seção Playtest abaixo): `first_sale` <90 s em ≥90% (GDD §15); `upgrade_buy` × a §3 (calibra o fator humano do bot); `walk_no_decision` (kill criterion "andar entre pilhas"); `client_left`. Hipótese de passagem: ≥70% compram a 2ª linha (escudos) sem dica e ≥50% dizem qual estação era o gargalo.
 3. **8 criativos 9:16** (GDD §17). **3 gravados** do build real: #1 bigorna vazia → oficina lotada, #2 fila gigante → fole resolve, #8 erro proposital (`client/Builds/creatives/`, `docs/CRIATIVOS.md`). Faltam 5; #3 "onde investir 100 moedas?" é o próximo.
 4. **Decisão do slot idle** pelo playtest e criativos do Forge; Underground continua como alternativa.
-5. **Backlog proposto:** A/B do 2º ajudante de minério (`docs/ESTUDO_LOGISTICA.md`); validar com pessoas se o luxo é desejado (bot comprar não prova interesse). Não ampliar conteúdo antes de medir. IAP e publicação exigem autorização específica; anúncios recompensados (LevelPlay) autorizados em 2026-10-08.
+5. **Backlog proposto:** A/B do 2º ajudante de minério (`docs/archive/ESTUDO_LOGISTICA.md`); validar com pessoas se o luxo é desejado (bot comprar não prova interesse). Não ampliar conteúdo antes de medir. IAP e publicação exigem autorização específica; anúncios recompensados (LevelPlay) autorizados em 2026-10-08.
 
 
 ## Repositório e licença
