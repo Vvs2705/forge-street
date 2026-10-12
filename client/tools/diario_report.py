@@ -22,6 +22,14 @@ Colunas (Game.Log: sem cabecalho, virgula crua, sem aspas): utc, sessao, evento,
   v0.6c: order_new a=item b=quantas vender | order_done a=item b=premio (docs/FASE9_ENCOMENDAS.md)
   v0.7 (Save 2.0): save_corrupt a=arquivos ruins b=status final | save_newer a=schema b=versao | save_error a=excecao
         | save_prefs a=status (Legacy = migrou o save da 0.6 do PlayerPrefs) | clock_back a=segundos que o relogio voltou b=SavedAt
+  v0.7 (A-PLAT-06, taxonomia DM s86/s87; os nomes antigos continuam):
+        session_info a=campo (build|os|ram) b=valor, logo depois do session_start | session_end a=s reais em primeiro plano
+        b=pausa|saiu (sai a cada ida ao segundo plano: vale a ultima da sessao) | fps_bucket a=faixa (55+|45-55|30-45|20-30|<20)
+        b=fps medio, a cada minuto real | tutorial_step a=dica (enum Hint) b=passo, cada dica nova antes da 1a venda
+        | tutorial_complete a=s ate a 1a venda b=passos | rewarded_offer a=placement (b=2x|3x na velocidade), quando o botao aparece
+        disponivel | currency_source a=venda|vip|bau|encomenda|cofre b=ouro e currency_sink a=upgrade|luxo b=ouro, somados por chave
+        a cada minuto de jogo e na pausa/saida
+  O diario so grava no build de desenvolvimento (ou com -playtest) e roda a partir de 1 MB (fica a cauda mais nova).
 """
 import glob
 import math
@@ -49,7 +57,10 @@ BOT = [
 BOT_VENDA1 = "0:22"                                   # 1a venda do bot humano, BALANCE sec.15.2
 GDD3 = {"FurnaceSpeed1": "2:30", "Anvil2": "3:30", "Helper1": "4:30", "Shields": "5:30", "Conveyor": "8:30"}  # fim da janela, GDD sec.3 (= BALANCE sec.15.2)
 FATOR = (1.3, 2.0)                                    # HIPOTESE do BALANCE sec.2: pessoa 1,3-2x mais lenta que o bot humano
-NUM = {"first_sale": "a", "walk_no_decision": "a", "bottleneck_seconds": "ab"}   # campos numericos que o relatorio usa
+NUM = {"first_sale": "a", "walk_no_decision": "a", "bottleneck_seconds": "ab",   # campos numericos que o relatorio usa
+       "session_end": "a", "fps_bucket": "b", "tutorial_step": "b", "tutorial_complete": "ab", "currency_source": "b", "currency_sink": "b"}
+FPS = ("55+", "45-55", "30-45", "20-30", "<20")                       # Diario.FaixaFps, da melhor para a pior
+DICAS = ("GrabOre", "OreToFurnace", "PickIngots", "IngotToCrafter", "PickProducts", "ProductToCounter", "ClientWaiting")  # 1a volta (enum Hint)
 
 
 def seg(mmss):
@@ -104,9 +115,11 @@ def ler(caminhos):
 
 
 def analisar(linhas):
-    tst = defaultdict(lambda: {"venda1": None, "upg": {}, "walk": [], "fim": 0.0, "offline": False, "ads": Counter(), "enc": Counter()})
-    ses = defaultdict(lambda: {"t0": math.inf, "t1": 0.0, "gargalo": []})
+    tst = defaultdict(lambda: {"venda1": None, "upg": {}, "walk": [], "fim": 0.0, "offline": False, "ads": Counter(), "enc": Counter(),
+                               "tut": {}, "tut_ok": None})
+    ses = defaultdict(lambda: {"t0": math.inf, "t1": 0.0, "gargalo": [], "real": None})
     saiu, travou, ads, vip, save = Counter(), Counter(), Counter(), Counter(), Counter()
+    info, fps, oferta, moeda = Counter(), Counter(), Counter(), Counter()   # v0.7 (A-PLAT-06)
     for arq, sid, ev, t, a, b in linhas:
         T, S = tst[arq], ses[(arq, sid)]
         S["t0"], S["t1"], T["fim"] = min(S["t0"], t), max(S["t1"], t), max(T["fim"], t)
@@ -134,6 +147,20 @@ def analisar(linhas):
             T["enc"][ev] += 1
         elif ev.startswith("save_") or ev == "clock_back":
             save[ev] += 1
+        elif ev == "session_end":
+            S["real"] = max(S["real"] or 0.0, a)   # sai a cada pausa: a ultima (maior) vale
+        elif ev == "session_info":
+            info[(a, b)] += 1
+        elif ev == "fps_bucket":
+            fps[a] += 1
+        elif ev == "tutorial_step":
+            T["tut"].setdefault(a, b)
+        elif ev == "tutorial_complete" and T["tut_ok"] is None:
+            T["tut_ok"] = a
+        elif ev == "rewarded_offer":
+            oferta[a] += 1
+        elif ev in ("currency_source", "currency_sink"):
+            moeda[(ev, a)] += b
 
     # Por minuto de jogo. walk e t_jogo sao acumulados no save, entao a razao entre duas amostras vale ate atravessando
     # sessoes; o save a cada 5 s pode voltar alguns segundos no reload (amostra com delta negativo e' pulada).
@@ -156,7 +183,8 @@ def analisar(linhas):
                 minuto[faixa(t)]["travada"].append(60 * (st - ps) / (t - pt))
                 minuto[faixa(t)]["fome"].append(60 * (fo - pf) / (t - pt))
             pt, ps, pf = t, st, fo
-    return {"tst": tst, "ses": ses, "saiu": saiu, "travou": travou, "minuto": minuto, "ads": ads, "vip": vip, "save": save}
+    return {"tst": tst, "ses": ses, "saiu": saiu, "travou": travou, "minuto": minuto, "ads": ads, "vip": vip, "save": save,
+            "info": info, "fps": fps, "oferta": oferta, "moeda": moeda}
 
 
 def humanos(tst, k):
@@ -276,23 +304,78 @@ def relatorio(linhas, ruins=0):
     sv = r["save"]
     s += ["", f"SAVE (v0.7): corrompidos {sv['save_corrupt']} | versao mais nova {sv['save_newer']}"
               f" | erro de disco {sv['save_error']} | lidos do PlayerPrefs {sv['save_prefs']} | relogio voltou {sv['clock_back']}"]
+    s += taxonomia(r)
     s += ["", "PORTOES"]
     s += [f"  [{st}] {texto}" for _, st, texto in portoes(r)]
-    s.append("  nao medidos aqui: tutorial (sem evento), D1/D7 e sessoes/dia (utc existe; Camada 0 nao mede retencao), "
+    s.append("  nao medidos aqui: D1/D7 e sessoes/dia (utc existe; Camada 0 nao mede retencao), "
              "CPI, payer, crash-free (GDD sec.15/sec.26)")
     return "\n".join(s)
 
 
+def taxonomia(r):
+    """Secoes dos eventos v0.7 (A-PLAT-06, DM s86/s87). Diario antigo sem eles: tudo '-', nunca excecao."""
+    tst, ses = r["tst"], r["ses"]
+    reais = [S["real"] for S in ses.values() if S["real"] is not None]
+    s = ["", "SESSAO E APARELHO (v0.7, DM s87; session_end = s reais em primeiro plano, vale a ultima da sessao)",
+         f"  duracao real: mediana {mmss(mediana(reais))} | sessoes com session_end {len(reais)}/{len(ses)}"]
+    for campo in ("build", "os", "ram"):
+        vs = sorted(((v, c) for (k, v), c in r["info"].items() if k == campo), key=lambda x: (-x[1], x[0]))
+        s.append(f"  {campo}: " + (", ".join(f"{v} ({c})" for v, c in vs) or "-"))
+    tot = sum(r["fps"].values())
+    s.append("  fps (fps_bucket, % dos minutos): " + (" | ".join(f"{f} {100 * r['fps'][f] / tot:.0f}%" for f in FPS if r["fps"][f]) or "-"))
+
+    com = [T for T in tst.values() if T["tut"]]
+    nomes = list(DICAS) + sorted({h for T in com for h in T["tut"]} - set(DICAS))
+    ok = [T["tut_ok"] for T in com if T["tut_ok"] is not None]
+    s += ["", "TUTORIAL (tutorial_step: dicas da 1a volta ate a 1a venda; n = testadores que comecaram um jogo novo)",
+          "  " + (" | ".join(f"{h} {sum(1 for T in com if h in T['tut'])}/{len(com)}" for h in nomes if any(h in T["tut"] for T in com)) or "-"),
+          f"  completaram (tutorial_complete) {len(ok)}/{len(com)} | mediana ate a 1a venda {mmss(mediana(ok))}"]
+
+    s += ["", "OFERTAS DE ANUNCIO (rewarded_offer = botao apareceu disponivel; pedido = toque, ad_request)"]
+    for pl in ("vip", "velocidade"):
+        o, p = r["oferta"][pl], r["ads"][("ad_request", pl)]
+        s.append(f"  {pl:<11} ofertas {o} | pedidos {p} | toque/oferta {f'{100 * p / o:.0f}%' if o else '-'}")
+
+    def linha(ev):
+        d = {a: v for (e, a), v in r["moeda"].items() if e == ev}
+        tot = sum(d.values())
+        return tot, " | ".join(f"{k} {v:.0f} ({100 * v / tot:.0f}%)" for k, v in sorted(d.items(), key=lambda x: -x[1])) if tot else "-"
+    (ent, te), (sai, ts) = linha("currency_source"), linha("currency_sink")
+    s += ["", "ECONOMIA (currency_source/currency_sink: ouro somado por origem/destino; mapa fonte -> ralo do BALANCE)",
+          f"  entrou {ent:.0f}: {te}", f"  saiu {sai:.0f}: {ts}", f"  saldo {ent - sai:+.0f}"]
+    return s
+
+
 def autoteste():
-    def jogador(venda1, compras, andar, minutos, sessoes=1, anuncio=False, encomendas=0):
+    def jogador(venda1, compras, andar, minutos, sessoes=1, anuncio=False, encomendas=0, v07=False):
         """Linhas CSV de um testador: walk acumulado no save; travada 5 s/min e fome 10 s/min, que zeram por sessao.
-        encomendas = entregues na 1a sessao (uma a cada 2 min a partir de 1:10) mais uma aberta no fim."""
+        encomendas = entregues na 1a sessao (uma a cada 2 min a partir de 1:10) mais uma aberta no fim.
+        v07 = eventos da taxonomia (A-PLAT-06): contexto, tutorial na 1a sessao, fps e ouro por minuto (55+ em 3 de 4 minutos;
+        venda 100 e upgrade 60 por minuto, vip 90 no anuncio), session_end na pausa do meio e no fim."""
         out, t, w = [], 0.0, 0.0
         por = minutos * 60 / sessoes
         for k in range(sessoes):
             sid, t0 = f"s{k}", t
             ln = lambda ev, tt, a="", b="": out.append(f"2026-10-07T10:00:00,{sid},{ev},{tt:.1f},{a},{b}")
             ln("session_start", t, "0.4.1", "POCO F4")
+            if v07:
+                ln("session_info", t, "build", "9f2c")
+                ln("session_info", t, "os", "Android OS 13 / API-33")
+                ln("session_info", t, "ram", "8GB")
+                if k == 0 and venda1 is not None:
+                    for i, h in enumerate(DICAS[:6]):
+                        ln("tutorial_step", t + 2 * i, h, str(i + 1))
+                    ln("tutorial_complete", venda1, f"{venda1:.1f}", "6")
+                if anuncio and k == 0:
+                    ln("rewarded_offer", t + 300, "vip")
+                    ln("rewarded_offer", t + 335, "velocidade", "2x")
+                    ln("currency_source", t + 360, "vip", "90")
+                for m in range(1, int(por // 60) + 1):
+                    ln("fps_bucket", t0 + 60 * m, "55+" if m % 4 else "45-55", "59" if m % 4 else "50")
+                    ln("currency_source", t0 + 60 * m, "venda", "100")
+                    ln("currency_sink", t0 + 60 * m, "upgrade", "60")
+                ln("session_end", t0 + por / 2, f"{por / 2:.0f}", "pausa")
+                ln("session_end", t0 + por, f"{por:.0f}", "saiu")
             for u, tu in compras.items():
                 if t0 <= tu < t0 + por:
                     ln("upgrade_buy", tu, u, "100")
@@ -349,6 +432,25 @@ def autoteste():
         assert "1.36x" in texto and "andar sem decisao < 50% do tempo de jogo (mediana por testador): 20%" in texto
         assert r["minuto"][3]["travada"] == [5.0] * 10 and r["minuto"][3]["fome"] == [10.0] * 10
         assert mediana(r["minuto"][5]["andar"]) == 20.0
+        # diario antigo (so nomes da v0.6): as secoes da v0.7 saem com '-', sem excecao
+        for x in ("duracao real: mediana - | sessoes com session_end 0/10", "fps (fps_bucket, % dos minutos): -", "ram: -",
+                  "completaram (tutorial_complete) 0/0 | mediana ate a 1a venda -", "ofertas 0 | pedidos 10 | toque/oferta -",
+                  "entrou 0: -", "saldo +0"):
+            assert x in texto, (x, texto)
+
+        # v0.7 (A-PLAT-06): 4 rapidos com a taxonomia + 1 que nunca vendeu, em 2 sessoes de 2 min (sem tutorial_complete)
+        r, p, texto, ruins = rodar([jogador(40, {"Shields": 300}, 0.2, 10, anuncio=True, v07=True) for _ in range(4)]
+                                   + [jogador(None, {}, 0.5, 4, sessoes=2, v07=True)])
+        assert ruins == 0, ruins
+        for x in ("duracao real: mediana 10:00 | sessoes com session_end 6/6",   # 600 x4 e 120 x2: a ultima da sessao vale
+                  "build: 9f2c (6)", "os: Android OS 13 / API-33 (6)", "ram: 8GB (6)",
+                  "fps (fps_bucket, % dos minutos): 55+ 82% | 45-55 18%",          # 36 e 8 de 44 minutos
+                  "GrabOre 4/4 | OreToFurnace 4/4 | PickIngots 4/4 | IngotToCrafter 4/4 | PickProducts 4/4 | ProductToCounter 4/4",
+                  "completaram (tutorial_complete) 4/4 | mediana ate a 1a venda 0:40",
+                  "ofertas 4 | pedidos 0 | toque/oferta 0%", "ofertas 4 | pedidos 4 | toque/oferta 100%",
+                  "entrou 4760: venda 4400 (92%) | vip 360 (8%)", "saiu 2640: upgrade 2640 (100%)", "saldo +2120"):
+            assert x in texto, (x, texto)
+        assert p["venda1"] == "FALHA", p   # os nomes antigos continuam valendo ao lado dos novos (4 de 5 venderam < 90 s)
 
         # 2 sessoes por testador: first_sale repete (conta 1x), travada/fome zeram por sessao (delta continua 5/10),
         # walk acumulado atravessa a sessao (continua 20%), offline_claim aparece

@@ -12,19 +12,22 @@ using UnityEngine.UI;
 namespace FS
 {
     /// <summary>
-    /// Fluxo do jogo, o unico MonoBehaviour de fluxo: carrega/grava o Sim (save.txt pelo SaveStore + espelho no PlayerPrefs), aplica o cofre offline, le o
+    /// Fluxo do jogo, o unico MonoBehaviour de fluxo: carrega/grava o Sim (Salvamento: save.txt pelo SaveStore + espelho no PlayerPrefs), aplica o cofre offline, le o
     /// joystick flutuante (e WASD no PC), avanca a simulacao em passos de ate 1/30 s, toca SFX pelos eventos, segue o
     /// jogador com a camera em retrato, monta a HUD por codigo e grava o diario de playtest
     /// (persistentDataPath/diario.csv). Nasce sozinho em qualquer cena.
+    /// A-PLAT-06: fala com os servicos so pelas costuras IAds, IAnalytics e ISaveStorage (Servicos.cs). O diario (Diario) so grava no
+    /// build de desenvolvimento ou com -playtest (release no aparelho: nada) e roda a partir de 1 MB.
     /// Flags de dev: -autoplay [min] (bot sem render, loga AUTOPLAY por minuto, sai 0/1) | -shot foto.png
     /// [-shotdelay s] [-shotchest] [-shotorder] [-bot] [-menu] | -speed N | -reset (apaga o save) | -testsession (sem persistencia) |
     /// -record pasta [-recordsec S] [-recordfps F] (quadros 1080x1920 para os criativos, docs/CRIATIVOS.md) | -buyids 1,5,0@300 |
-    /// -warmup S | -hold 0,3,3,3,0,0 | -stock 10,10,10 (fotos de validacao) | -fakeads | -adtest vip|velocidade (Ads.Show no
+    /// -warmup S | -hold 0,3,3,3,0,0 | -stock 10,10,10 (fotos de validacao) | -fakeads | -adtest vip|velocidade (IAds.Show no
     /// inicio; docs/LEVELPLAY.md) | -vipnow (chama o VIP depois do warmup) | -boost N (N anuncios de velocidade antes do warmup) |
     /// -cam W (largura visivel em m, 6..11,4; experimento de camera mais perto) | -settings [on|off] (abre as configuracoes; on/off
-    /// liga/desliga Som e Vibracao antes, gravando como o toque) | -cofre N (mostra o painel do cofre com N de ouro, sem dar o ouro).
+    /// liga/desliga Som e Vibracao antes, gravando como o toque) | -cofre N (mostra o painel do cofre com N de ouro, sem dar o ouro) |
+    /// -playtest (liga o diario num build de release; o dev ja grava).
     /// Build dev: tambem pelo intent do Android (Arg).
-    /// v0.5c (docs/FASE8_VIP_VELOCIDADE.md s5): botoes "Chamar VIP" e "Velocidade 2x/3x" nos cantos da barra de baixo (Ads.Show ->
+    /// v0.5c (docs/FASE8_VIP_VELOCIDADE.md s5): botoes "Chamar VIP" e "Velocidade 2x/3x" nos cantos da barra de baixo (IAds.Show ->
     /// Sim.SummonVip / Sim.StartBoost), selo do boost com cronometro, aviso "Cliente VIP!" e diario vip_* / boost_start.
     /// v0.6c (docs/FASE9_ENCOMENDAS.md s6): cartao da encomenda acima do botao VIP, aviso "Encomenda entregue!" e diario order_*.
     /// v0.6d (revisao de UX, docs/VALIDACAO_V06A.md s v0.6d): dica de 1 linha (Textos), botoes a 32 px das bordas, cartao "Venda 5
@@ -59,8 +62,14 @@ namespace FS
         Camera _cam;
         float _speed = 1f, _saveT, _hintT, _minuteT, _adHold, _visW = VisibleWidth, _backT;
         bool _botDrive, _headless, _firstSaleLogged, _testSession, _started, _pausedByAd;
-        bool _noSave;   // A-PLAT-02: save de versao mais nova ou disco ilegivel = a sessao nao grava por cima
-        string _diary, _sid, _savePath;
+        IAds _ads;
+        IAnalytics _diario;
+        Salvamento _save;
+        // A-PLAT-06 (taxonomia s86/s87): s em primeiro plano da sessao, quadros e s reais da janela de fps, passos do tutorial ja logados,
+        // velocidade oferecida no quadro anterior e ouro que entrou/saiu desde a ultima linha currency_* (por origem/destino)
+        float _sessionT, _fpsT; int _fpsN, _tutorial; bool _speedOffer;
+        readonly System.Collections.Generic.Dictionary<string, long> _source = new System.Collections.Generic.Dictionary<string, long>(),
+            _sink = new System.Collections.Generic.Dictionary<string, long>();
         Vector2Int _screen;
         readonly System.Collections.Generic.List<(int u, float t)> _buyAt = new System.Collections.Generic.List<(int u, float t)>();   // -buyids id@t
 
@@ -107,20 +116,21 @@ namespace FS
             Application.targetFrameRate = 60;
             _testSession = Arg("-testsession") != null || Arg("-autoplay") != null || Arg("-record") != null;
             if (Arg("-record") != null) Time.captureFramerate = Mathf.Max(1, (int)ArgF("-recordfps", 30f));   // relogio do jogo = quadro do video
-            _sid = Guid.NewGuid().ToString("N").Substring(0, 8);
-            _diary = Path.Combine(Application.persistentDataPath, "diario.csv");
-            _savePath = Path.Combine(Application.persistentDataPath, "save.txt");
+            // A-PLAT-06: diario so no build de desenvolvimento (o build de playtest de hoje, APK dev e Windows) ou com -playtest (release
+            // do PC); release no aparelho nao grava (nao tem linha de comando, e o extra do intent so vale no dev). Teste: nunca.
+            string dir = Application.persistentDataPath;
+            _diario = new Diario(!_testSession && (Debug.isDebugBuild || Arg("-playtest") != null) ? Path.Combine(dir, "diario.csv") : null);
+            _save = new Salvamento(new SaveStore(Path.Combine(dir, "save.txt")), new SaveEspelho(SaveKey), _diario);
             Sfx.Init(gameObject);
             // ponytail: fotos e smoke usam estado novo sem ler ou gravar o save/diario normal.
-            if (!_testSession && Arg("-reset") != null) { PlayerPrefs.DeleteKey(SaveKey); File.Delete(_savePath); File.Delete(_savePath + ".bak"); }
-            if (_testSession) _sim = new Sim(); else LoadSave();
+            if (!_testSession && Arg("-reset") != null) _save.Apagar();
+            _sim = _testSession ? new Sim() : _save.Carregar();
             DevArgs();
             // -cam W (P2-3 do BENCHMARK_VISUAL, experimento de playtest): largura visivel em m; abaixo de 11,4 a camera segue o jogador
             _visW = Mathf.Clamp(ArgF("-cam", VisibleWidth), 6f, VisibleWidth);
             string cfg = Arg("-settings");
             if (cfg == "on" || cfg == "off") { SetSom(cfg == "on"); SetVibra(cfg == "on"); }   // fotos e teste de persistencia
-            Ads.Logged += (e, a, b) => Log(e, a, b);   // pedido, mostrado, recompensa e falha do anuncio vao para o diario
-            Ads.Init();
+            _ads = Ads.Init((e, a, b) => Log(e, a, b));   // pedido, mostrado, recompensa e falha do anuncio vao para o diario
             _bot = new Bot();
             string sp = Arg("-speed");
             if (!string.IsNullOrEmpty(sp) && float.TryParse(sp, NumberStyles.Float, CultureInfo.InvariantCulture, out float v)) _speed = Mathf.Clamp(v, 0.1f, 50f);
@@ -147,7 +157,11 @@ namespace FS
         void Start()
         {
             if (Arg("-autoplay") != null) { Autoplay(); return; }
-            Log("session_start", Application.version, SystemInfo.deviceModel.Replace(",", " "));
+            Log("session_start", Application.version, SystemInfo.deviceModel);
+            // s87: contexto da sessao, uma linha por campo (o build id e' o GUID do build, nao do aparelho; nada de ID, conta ou local)
+            Log("session_info", "build", string.IsNullOrEmpty(Application.buildGUID) ? "editor" : Application.buildGUID);
+            Log("session_info", "os", SystemInfo.operatingSystem);
+            Log("session_info", "ram", Diario.FaixaRam(SystemInfo.systemMemorySize));
             Offline();
             if (int.TryParse(Arg("-cofre"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int cofre) && cofre > 0) ShowVault(cofre);   // foto do painel
             _started = true;
@@ -163,8 +177,8 @@ namespace FS
         /// <summary>-adtest vip|velocidade (dev): mostra o anuncio no inicio; no aparelho espera ate 15 s o real carregar.</summary>
         IEnumerator AdTest(string p)
         {
-            for (float t = 0f; Ads.Live && !Ads.Real(p) && t < 15f; t += Time.unscaledDeltaTime) yield return null;
-            Ads.Show(p, () => ShowPanel("Anúncio de teste", $"Recompensa recebida: {p}", "OK", ClosePanel),
+            for (float t = 0f; !_ads.Loaded(p) && t < 15f; t += Time.unscaledDeltaTime) yield return null;
+            _ads.Show(p, () => ShowPanel("Anúncio de teste", $"Recompensa recebida: {p}", "OK", ClosePanel),
                 () => ShowPanel("Anúncio de teste", $"Sem recompensa: {p}", "OK", ClosePanel));
         }
 
@@ -178,6 +192,7 @@ namespace FS
             if (gold <= 0) return;
             long shown = Math.Min(elapsed, (long)Balance.OfflineCapSeconds);
             Log("offline_claim", gold.ToString(), shown.ToString());
+            Source("cofre", gold);
             Sfx.Play("offline");
             ShowVault(gold);
             Save();
@@ -221,8 +236,8 @@ namespace FS
 
             // anuncio pedido = jogo parado (paciencia, boost e relogio do VIP): o boost nao acaba no segundo antes de o anuncio real
             // cobrir a tela. ponytail: teto de 15 s de quadros parados por anuncio, para um SDK que nunca responde nao travar o jogo
-            _adHold = Ads.Busy ? _adHold + Mathf.Min(Time.unscaledDeltaTime, 0.1f) : 0f;
-            float dt = Ads.Busy && _adHold < 15f ? 0f : Mathf.Min(Time.deltaTime, 0.1f) * _speed;
+            _adHold = _ads.Busy ? _adHold + Mathf.Min(Time.unscaledDeltaTime, 0.1f) : 0f;
+            float dt = _ads.Busy && _adHold < 15f ? 0f : Mathf.Min(Time.deltaTime, 0.1f) * _speed;
             while (dt > 0f)
             {
                 float step = Mathf.Min(dt, MaxStep);
@@ -250,6 +265,17 @@ namespace FS
                 Log("queue_length", _sim.Queue.Count.ToString(), _sim.MaxQueue.ToString());
                 Log("bottleneck_seconds", stall.ToString("0", CultureInfo.InvariantCulture), starve.ToString("0", CultureInfo.InvariantCulture));
                 Log("walk_no_decision", _sim.WalkNoDecision.ToString("0", CultureInfo.InvariantCulture), _sim.UpgradesBought.ToString());
+                FlushGold();
+            }
+            // s87: sessao em s de primeiro plano (o teto de 1 s por quadro tira o salto da volta do segundo plano) e faixa de fps por
+            // minuto real (a janela zera na volta da pausa)
+            _sessionT += Mathf.Min(Time.unscaledDeltaTime, 1f);
+            _fpsN++; _fpsT += Time.unscaledDeltaTime;
+            if (_fpsT >= 60f)
+            {
+                float fps = _fpsN / _fpsT;
+                Log("fps_bucket", Diario.FaixaFps(fps), fps.ToString("0", CultureInfo.InvariantCulture));
+                _fpsN = 0; _fpsT = 0f;
             }
         }
 
@@ -275,6 +301,7 @@ namespace FS
                         _view.Sold(e.Pos, e.A == (int)Item.Jewel);   // v0.5b: balao estoura com coracao e brilhos
                         FlyCoins(e.Pos, e.B);
                         Log("product_sold", Balance.ItemName[e.A], e.B.ToString());
+                        Source(e.B > _sim.PriceOf((Item)e.A) ? "vip" : "venda", e.B);   // a unidade do VIP sai a preco x3
                         break;
                     case Ev.Bought: Bought(e.A, e.B, e.Pos); break;
                     case Ev.ClientArrived: Sfx.Play("client", 1f, 0.2f); break;
@@ -298,6 +325,7 @@ namespace FS
                         _view.Float(e.Pos, "+" + e.B, Art.Accent, 44);
                         FlyCoins(e.Pos, e.B);
                         Log("chest_opened", e.A.ToString(), e.B.ToString());
+                        Source("bau", e.B);
                         break;
                     // FASE8 (v0.5c): VIP entrou na vaga / levou o pacote (cada unidade ja saiu como Sold) / cansou
                     case Ev.VipArrived:
@@ -324,6 +352,7 @@ namespace FS
                     case Ev.OrderNew: Log("order_new", Balance.ItemName[e.A], e.B.ToString()); break;
                     case Ev.OrderDone:
                         Log("order_done", Balance.ItemName[e.A], e.B.ToString());
+                        Source("encomenda", e.B);
                         Ajustes.Pulso(40, 200);
                         if (_order == null) break;   // criativo: sem cartao, o ouro entra direto no numero
                         Sfx.Play("upgrade");
@@ -338,6 +367,8 @@ namespace FS
             {
                 _firstSaleLogged = true;
                 Log("first_sale", _sim.FirstSaleTime.ToString("0.0", CultureInfo.InvariantCulture));
+                // tutorial = as dicas da 1a volta ate a 1a venda (RefreshHud); so fecha na sessao em que ele aconteceu
+                if (_tutorial > 0) Log("tutorial_complete", _sim.FirstSaleTime.ToString("0.0", CultureInfo.InvariantCulture), _tutorial.ToString(CultureInfo.InvariantCulture));
             }
         }
 
@@ -361,6 +392,24 @@ namespace FS
                 Notice(Upgrades.All[u].Name + "!", icon, tint);
             }
             Log("upgrade_buy", ((Upgrade)u).ToString(), price.ToString());
+            Count(_sink, Upgrades.IsLuxury(u) ? "luxo" : "upgrade", price);
+        }
+
+        // s86 currency_source/currency_sink: o ouro soma por origem/destino e sai numa linha por chave a cada minuto de jogo e na pausa/saida
+        // (venda por venda dobraria o diario: a joalheria vende a cada 0,4 s)
+        void Source(string origem, long gold) => Count(_source, origem, gold);
+
+        static void Count(System.Collections.Generic.Dictionary<string, long> d, string key, long gold)
+        {
+            d.TryGetValue(key, out long v);
+            d[key] = v + gold;
+        }
+
+        void FlushGold()
+        {
+            foreach (var kv in _source) Log("currency_source", kv.Key, kv.Value.ToString(CultureInfo.InvariantCulture));
+            foreach (var kv in _sink) Log("currency_sink", kv.Key, kv.Value.ToString(CultureInfo.InvariantCulture));
+            _source.Clear(); _sink.Clear();
         }
 
         // ---------- camera e HUD ----------
@@ -568,7 +617,12 @@ namespace FS
             _hintT = 0.25f;
             Hint h = _sim.CurrentHint();
             int arg = _sim.HintArg, u = h == Hint.BuyPad ? _sim.Pads[arg].Current(_sim) : -1;   // a placa pode trocar de upgrade com a mesma dica
-            if (h != _hintH || arg != _hintArg || u != _hintU) { _hintH = h; _hintArg = arg; _hintU = u; _hint.text = Textos.Dica(h, arg, _sim); }
+            if (h != _hintH || arg != _hintArg || u != _hintU)
+            {
+                // s86 tutorial_step: cada dica nova antes da 1a venda (a dica inicial e' o tutorial); a = dica, b = passo
+                if (_sim.FirstSaleTime < 0f && (h != _hintH || _tutorial == 0)) Log("tutorial_step", h.ToString(), (++_tutorial).ToString(CultureInfo.InvariantCulture));
+                _hintH = h; _hintArg = arg; _hintU = u; _hint.text = Textos.Dica(h, arg, _sim);
+            }
             _view.ShowHint(h, arg);   // seta no mundo sobre o alvo (P1-1)
         }
 
@@ -701,9 +755,15 @@ namespace FS
         /// </summary>
         void RefreshAdUi()
         {
-            bool vip = _sim.CanSummonVip && Ads.Ready(Ads.Vip);
-            if (_vipBtn.B.gameObject.activeSelf != vip) _vipBtn.B.gameObject.SetActive(vip);
-            bool active = _sim.BoostLeft > 0f, can = _sim.CanBoost && Ads.Ready(Ads.Velocidade), cool = !active && _sim.BoostCooldown > 0f;
+            bool vip = _sim.CanSummonVip && _ads.Ready(Ads.Vip);
+            if (_vipBtn.B.gameObject.activeSelf != vip)
+            {
+                _vipBtn.B.gameObject.SetActive(vip);
+                if (vip) Log("rewarded_offer", Ads.Vip);   // s86: o botao apareceu disponivel
+            }
+            bool active = _sim.BoostLeft > 0f, can = _sim.CanBoost && _ads.Ready(Ads.Velocidade), cool = !active && _sim.BoostCooldown > 0f;
+            if (can && !_speedOffer) Log("rewarded_offer", Ads.Velocidade, active ? "3x" : "2x");   // cinza (recarga) nao e' oferta
+            _speedOffer = can;
             bool show = can || cool;
             if (_speedBtn.B.gameObject.activeSelf != show) _speedBtn.B.gameObject.SetActive(show);
             if (show)
@@ -808,14 +868,14 @@ namespace FS
             _orderFill.rectTransform.anchorMax = new Vector2(target > 0 ? Mathf.Clamp01(done / (float)target) : 0f, 1f);
         }
 
-        void OnVipAd() => Ads.Show(Ads.Vip, () =>
+        void OnVipAd() => _ads.Show(Ads.Vip, () =>
         {
             if (!_sim.SummonVip()) return;   // mudou entre o toque e o fim do anuncio: nada a dar
             Sfx.Play("upgrade");
             Notice("VIP a caminho!", _crown, Color.white);
         }, AdFail);
 
-        void OnSpeedAd() => Ads.Show(Ads.Velocidade, () =>
+        void OnSpeedAd() => _ads.Show(Ads.Velocidade, () =>
         {
             float m = _sim.StartBoost();
             if (m <= 0f) return;
@@ -935,43 +995,11 @@ namespace FS
 
         static long Now() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-        /// <summary>
-        /// A-PLAT-02: arquivo (principal, senao .bak; o que nao abre vai para a quarentena); sem arquivo bom, a chave antiga do PlayerPrefs
-        /// (save da 0.1-0.6 = migracao; da 0.7 = espelho). Nunca grava estado novo por cima de save que nao abriu: o ruim ja saiu do
-        /// caminho (espelho ruim fica em fs.save.corrupt), e versao mais nova ou disco ilegivel deixam a sessao sem gravar.
-        /// </summary>
-        void LoadSave()
-        {
-            SaveEnvelope.Result r = default; int corrupt = 0; string err = null;
-            try { r = SaveStore.Read(_savePath, out corrupt); }
-            catch (Exception e) { err = e.GetType().Name; _noSave = true; }
-            bool prefs = r.Status == SaveEnvelope.Status.Missing || r.Status == SaveEnvelope.Status.Corrupt;
-            if (prefs)
-            {
-                string raw = PlayerPrefs.GetString(SaveKey, "");
-                SaveEnvelope.Result p = SaveEnvelope.Unwrap(raw);
-                if (p.Status == SaveEnvelope.Status.Corrupt) { PlayerPrefs.SetString(SaveKey + ".corrupt", raw); corrupt++; }   // ponytail: 1 vaga de quarentena
-                else if (p.Status != SaveEnvelope.Status.Missing) r = p;
-            }
-            bool ok = r.Status == SaveEnvelope.Status.Ok || r.Status == SaveEnvelope.Status.Legacy;
-            _noSave |= r.Status == SaveEnvelope.Status.NewerSchema;
-            _sim = Sim.Load(ok ? r.Payload : null);
-            if (err != null) Log("save_error", err);
-            if (corrupt > 0) Log("save_corrupt", corrupt.ToString(), r.Status.ToString());   // Ok/Legacy = recuperado; outro = estado novo
-            if (r.Status == SaveEnvelope.Status.NewerSchema) Log("save_newer", r.Schema.ToString(), r.Content);
-            else if (prefs && ok) Log("save_prefs", r.Status.ToString());   // Legacy = migrou o save da 0.6
-        }
-
+        /// <summary>A-PLAT-02/06: o Salvamento grava arquivo + espelho; versao mais nova ou disco ilegivel deixam a sessao sem gravar.</summary>
         void Save()
         {
-            if (_sim == null || _headless || _testSession || _noSave) return;
-            long now = Now();
-            string text = SaveEnvelope.Wrap(_sim.Save(now), Application.version, now);
-            if (_sim.ClockWentBack > 0) Log("clock_back", _sim.ClockWentBack.ToString(), _sim.SavedAt.ToString());   // A-CORE-02: s atras, SavedAt mantido
-            try { SaveStore.Write(_savePath, text); }
-            catch (Exception e) { Log("save_error", e.GetType().Name); }   // disco cheio nao derruba o jogo; o espelho segura o progresso
-            PlayerPrefs.SetString(SaveKey, text);   // espelho na chave antiga: um downgrade para a 0.6 le o mesmo texto
-            PlayerPrefs.Save();
+            if (_sim == null || _headless || _testSession) return;
+            _save.Gravar(_sim, Now(), Application.version);
         }
 
         // Voltar de outro app tambem paga o cofre (antes so a abertura pagava: quem trocava de app perdia o tempo fora).
@@ -980,11 +1008,24 @@ namespace FS
         // _pausedByAd: o anuncio real tira o app da frente; a volta dele nao e' "tempo fora" (nao mostra "Seu cofre rendeu")
         void OnApplicationPause(bool paused)
         {
-            if (paused) { _pausedByAd = Ads.Busy; Save(); }
-            else if (_started && !_pausedByAd && _sim != null && _sim.SavedAt > 0 && Now() - _sim.SavedAt >= 60) Offline();
+            if (paused) { _pausedByAd = _ads.Busy; Save(); EndSession("pausa"); }
+            else
+            {
+                _fpsN = 0; _fpsT = 0f;   // a janela de fps nao mede o tempo fora
+                if (_started && !_pausedByAd && _sim != null && _sim.SavedAt > 0 && Now() - _sim.SavedAt >= 60) Offline();
+            }
         }
         void OnApplicationFocus(bool focus) { if (!focus) Save(); }
-        void OnApplicationQuit() { Save(); }
+        void OnApplicationQuit() { Save(); EndSession("saiu"); }
+
+        /// <summary>s86/s87 session_end: a = s em primeiro plano desde o session_start, b = pausa|saiu. Sai a cada ida ao segundo plano
+        /// (o sistema pode matar o app la sem aviso), entao vale a ultima da sessao; o ouro pendente (currency_*) sai junto.</summary>
+        void EndSession(string why)
+        {
+            if (!_started) return;
+            FlushGold();
+            Log("session_end", _sessionT.ToString("0", CultureInfo.InvariantCulture), why);
+        }
 
         /// <summary>Fotos/teste (dev): -buy N compra os produtivos entre os N primeiros upgrades (ordem do tier) e depois os luxos, -gold G, -px x,y.</summary>
         void DevArgs()
@@ -1080,7 +1121,8 @@ namespace FS
         /// -record pasta [-recordsec S] [-recordfps F]: grava round(S x F) quadros (pasta/fNNNNN.jpg) e sai 0. O relogio do jogo anda
         /// 1/F s por quadro (Time.captureFramerate no Awake), entao maquina lenta nao muda o video; com -speed N cada quadro avanca
         /// N/F s de simulacao (F baixo = time-lapse). Supersample ate ~1920 px de altura: janela 540x960 sai 1080x1920. A janela
-        /// precisa estar visivel (-batchmode/-nographics nao tem tela para capturar).
+        /// precisa estar visivel (-batchmode/-nographics nao tem tela para capturar). ponytail: o unico File/Directory do Game; ferramenta
+        /// de dev dos criativos, nao e' servico (A-PLAT-06 so costura save, analytics e anuncio).
         /// </summary>
         IEnumerator Record(string dir)
         {
@@ -1126,11 +1168,7 @@ namespace FS
             Application.Quit(ok ? 0 : 1);
         }
 
-        void Log(string evt, string a = "", string b = "")
-        {
-            if (_testSession) return;
-            try { File.AppendAllText(_diary, $"{DateTime.UtcNow:yyyy-MM-ddTHH:mm:ss},{_sid},{evt},{_sim.Time.ToString("0.0", CultureInfo.InvariantCulture)},{a},{b}\n"); }
-            catch (Exception) { } // ponytail: diario e' best-effort; disco cheio nunca derruba o jogo
-        }
+        /// <summary>Diario (IAnalytics) com t = Sim.Time; no -testsession o Diario nasce desligado.</summary>
+        void Log(string evt, string a = "", string b = "") => _diario.Log(evt, _sim != null ? _sim.Time : 0f, a, b);
     }
 }

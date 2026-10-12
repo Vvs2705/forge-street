@@ -10,12 +10,13 @@ using Unity.Services.LevelPlay;
 namespace FS
 {
     /// <summary>
-    /// Anuncio premiado (rewarded) do LevelPlay atras de 3 chamadas: Init, Ready, Show. docs/LEVELPLAY.md.
-    /// Placements do jogo = uma ad unit cada no painel: "vip" e "velocidade". Anuncio real so' em aparelho (Android/iOS).
-    /// Anuncio SIMULADO (~5 s, "Anuncio de teste", recompensa no fim): no Editor e no Windows, com -fakeads, e em build de
-    /// desenvolvimento quando o SDK nao tem anuncio pronto. Build de release sem anuncio pronto: Ready = false (o botao some).
-    /// Diario: o evento Logged(evento, placement, detalhe) sai com ad_init, ad_request, ad_shown, ad_reward, ad_fail e
-    /// ad_load_fail; o Game assina e grava no diario.csv.
+    /// Anuncio premiado (rewarded). docs/LEVELPLAY.md. A-PLAT-06: o Game so fala com o IAds que o Init devolve, e ha duas implementacoes:
+    /// AdsLevelPlay (SDK real, so' no aparelho Android/iOS e sem -fakeads) e AdsSimulado (~5 s, "Anuncio de teste", recompensa no fim:
+    /// Editor, Windows e -fakeads; tambem o fallback do LevelPlay em build de desenvolvimento quando o SDK nao tem anuncio pronto).
+    /// Build de release no aparelho sem anuncio pronto: Ready = false (o botao some).
+    /// Placements do jogo = uma ad unit cada no painel: "vip" e "velocidade".
+    /// Diario: ad_init, ad_request, ad_shown, ad_reward, ad_reward_late, ad_fail e ad_load_fail saem pelo `log` do Init (o Game grava).
+    /// Este MonoBehaviour so' hospeda as corrotinas das duas implementacoes.
     /// Flags: -fakeads (sempre simulado) e -adtestsuite (abre o Test Suite do LevelPlay; so' em build de desenvolvimento).
     /// No PC vem da linha de comando; no Android, do extra "unity" do intent (adb shell am start ... -e unity "-fakeads").
     /// </summary>
@@ -23,105 +24,32 @@ namespace FS
     {
         public const string AppKey = "28953c84d";   // Android, app "Forge Street" no painel LevelPlay (nao e' segredo: vai no APK)
         public const string Vip = "vip", Velocidade = "velocidade";
-        static readonly Dictionary<string, string> Units = new Dictionary<string, string>
+        internal static readonly Dictionary<string, string> RewardName = new Dictionary<string, string> { [Vip] = "VIP", [Velocidade] = "Velocidade" };
+
+        static IAds _i;
+        static Action<string, string, string> _log;
+
+        /// <summary>Idempotente. Chamar cedo (Game.Awake). `log`(evento, placement, detalhe) vai para o diario. No aparelho aplica a
+        /// privacidade e inicia o SDK.</summary>
+        public static IAds Init(Action<string, string, string> log)
         {
-            [Vip] = "7dxdva13pxaovoae",          // rewarded_vip: recompensa "VIP" x1
-            [Velocidade] = "gple3wvhz7xm3qk7",   // rewarded_velocidade: recompensa "Velocidade" x1
-        };
-        static readonly Dictionary<string, string> RewardName = new Dictionary<string, string> { [Vip] = "VIP", [Velocidade] = "Velocidade" };
-        const float FakeSeconds = 5f, RewardGrace = 2f;
-
-        /// <summary>(evento, placement, detalhe) para o diario. Sem virgulas: o diario e' CSV.</summary>
-        public static event Action<string, string, string> Logged;
-
-        static Ads _i;
-        static bool _forceFake, _busy;
-        sealed class Request { public string P; public Action Ok, Fail; public bool Done; }
-        static Request _req;
-
-        /// <summary>Idempotente. Chamar cedo (Game.Awake). No aparelho aplica a privacidade e inicia o SDK.</summary>
-        public static void Init()
-        {
-            if (_i != null) return;
-            _forceFake = Arg("-fakeads") != null;
-            _i = new GameObject("Ads").AddComponent<Ads>();
-            DontDestroyOnLoad(_i.gameObject);
-            if (Live) _i.StartSdk();
-            else Emit("ad_init", "simulado", _forceFake ? "fakeads" : Application.platform.ToString());
-        }
-
-        /// <summary>Anuncio na tela (do Show ate a recompensa/falha): o Game congela a simulacao e nao paga cofre na volta.</summary>
-        public static bool Busy => _busy;
-
-        /// <summary>True = SDK real ativo (aparelho Android/iOS, sem -fakeads).</summary>
-        public static bool Live => !Application.isEditor && !_forceFake && Platform;
-
-        /// <summary>Ha anuncio para este placement agora (real carregado, ou simulado onde ele vale). False = esconder o botao.</summary>
-        public static bool Ready(string placement)
-        {
-            if (_i == null || _busy || !Units.ContainsKey(placement)) return false;
-            return Real(placement) || FakeAllowed;
-        }
-
-        /// <summary>True = ha um anuncio REAL carregado para o placement (diagnostico; o jogo usa Ready).</summary>
-        public static bool Real(string placement)
-        {
+            if (_i != null) return _i;
+            _log = log;
+            Ads host = new GameObject("Ads").AddComponent<Ads>();
+            DontDestroyOnLoad(host.gameObject);
+            bool fake = Arg("-fakeads") != null;
 #if UNITY_ANDROID || UNITY_IOS
-            return Live && _ads.TryGetValue(placement, out LevelPlayRewardedAd ad) && ad != null && ad.IsAdReady();
-#else
-            return false;
+            if (!Application.isEditor && !fake) return _i = new AdsLevelPlay(host);
 #endif
+            Emit("ad_init", "simulado", fake ? "fakeads" : Application.platform.ToString());
+            return _i = new AdsSimulado(host);
         }
 
-        /// <summary>
-        /// Mostra o anuncio. Chama exatamente UM dos dois: onReward (assistiu ate o fim) ou onFail (sem anuncio, erro, ou
-        /// fechou antes da recompensa). Os dois rodam na thread principal.
-        /// </summary>
-        public static void Show(string placement, Action onReward, Action onFail)
-        {
-            bool real = Real(placement);
-            Emit("ad_request", placement, real ? "real" : "simulado");
-            string why = _i == null ? "sem_init" : !Units.ContainsKey(placement) ? "placement_desconhecido" : _busy ? "ocupado"
-                : !real && !FakeAllowed ? "sem_anuncio" : null;
-            if (why != null) { Emit("ad_fail", placement, why); onFail?.Invoke(); return; }
-            _busy = true;
-            _req = new Request { P = placement, Ok = onReward, Fail = onFail };
-#if UNITY_ANDROID || UNITY_IOS
-            if (real) { _ads[placement].ShowAd(); return; }
-#endif
-            _i.StartCoroutine(_i.Fake(placement));
-        }
-
-        static bool Platform =>
-#if UNITY_ANDROID || UNITY_IOS
-            true;
-#else
-            false;
-#endif
-
-        // simulado vale fora do aparelho, com -fakeads e em build de desenvolvimento; release no aparelho, nunca
-        static bool FakeAllowed => !Live || Debug.isDebugBuild;
-
-        static void Finish(bool rewarded, string detail)
-        {
-            Request r = _req;
-            if (r == null || r.Done)
-            {
-                if (rewarded) Emit("ad_reward_late", "", detail);   // chegou depois da janela de 2 s: nao paga, fica no diario
-                return;
-            }
-            r.Done = true;
-            _req = null;
-            _busy = false;
-            Emit(rewarded ? "ad_reward" : "ad_fail", r.P, detail);
-            if (rewarded) r.Ok?.Invoke(); else r.Fail?.Invoke();
-        }
-
-        static void Emit(string evt, string a, string b)
+        internal static void Emit(string evt, string a, string b)
         {
             a = (a ?? "").Replace(',', ' '); b = (b ?? "").Replace(',', ' ').Replace('\n', ' ');
             Debug.Log($"ADS {evt} {a} {b}");
-            try { Logged?.Invoke(evt, a, b); }
+            try { _log?.Invoke(evt, a, b); }
             catch (Exception e) { Debug.LogException(e); }   // o diario nunca derruba o fluxo do anuncio
         }
 
@@ -149,22 +77,50 @@ namespace FS
             return i + 1 < a.Count && !a[i + 1].StartsWith("-") ? a[i + 1] : "";
         }
 
-        // ---------- simulado ----------
+#if UNITY_ANDROID || UNITY_IOS
+        void OnDestroy() => (_i as AdsLevelPlay)?.Destroy();
+#endif
+    }
 
-        IEnumerator Fake(string placement)
+    /// <summary>Anuncio SIMULADO: tela "Anuncio de teste" por ~5 s com o tempo do jogo parado (como o real, que pausa o app) e a
+    /// recompensa no fim. Nunca pede nem mostra anuncio real.</summary>
+    sealed class AdsSimulado : IAds
+    {
+        const float Seconds = 5f;
+        readonly MonoBehaviour _host;
+        bool _busy;
+
+        public AdsSimulado(MonoBehaviour host) => _host = host;
+
+        public bool Busy => _busy;
+        public bool Loaded(string placement) => Ads.RewardName.ContainsKey(placement);
+        public bool Ready(string placement) => !_busy && Loaded(placement);
+
+        public void Show(string placement, Action onReward, Action onFail)
+        {
+            Ads.Emit("ad_request", placement, "simulado");
+            string why = !Loaded(placement) ? "placement_desconhecido" : _busy ? "ocupado" : null;
+            if (why != null) { Ads.Emit("ad_fail", placement, why); onFail?.Invoke(); return; }
+            _busy = true;
+            _host.StartCoroutine(Play(placement, onReward));
+        }
+
+        IEnumerator Play(string placement, Action onReward)
         {
             float scale = Time.timeScale;
             Time.timeScale = 0f;   // como o anuncio real (o app fica em pausa por baixo)
             GameObject ui = FakeUi(placement, out Text count);
-            Emit("ad_shown", placement, "simulado");
-            for (float t = FakeSeconds; t > 0f; t -= Time.unscaledDeltaTime)
+            Ads.Emit("ad_shown", placement, "simulado");
+            for (float t = Seconds; t > 0f; t -= Time.unscaledDeltaTime)
             {
                 count.text = Mathf.CeilToInt(t).ToString();
                 yield return null;
             }
-            Destroy(ui);
+            UnityEngine.Object.Destroy(ui);
             Time.timeScale = scale;
-            Finish(true, RewardName[placement] + " x1 simulado");
+            _busy = false;
+            Ads.Emit("ad_reward", placement, Ads.RewardName[placement] + " x1 simulado");
+            onReward?.Invoke();
         }
 
         static GameObject FakeUi(string placement, out Text count)
@@ -184,7 +140,7 @@ namespace FS
             title.fontStyle = FontStyle.Bold;
             title.color = Art.Accent;
             Text sub = Art.NewText(root, "Recompensa", 44, new Vector2(0.05f, 0.55f), new Vector2(0.95f, 0.62f));
-            sub.text = "Recompensa: " + RewardName[placement] + " x1";
+            sub.text = "Recompensa: " + Ads.RewardName[placement] + " x1";
             count = Art.NewText(root, "Contador", 200, new Vector2(0.3f, 0.36f), new Vector2(0.7f, 0.52f));
             count.fontStyle = FontStyle.Bold;
             Text foot = Art.NewText(root, "Rodape", 32, new Vector2(0.05f, 0.24f), new Vector2(0.95f, 0.32f));
@@ -192,17 +148,33 @@ namespace FS
             foot.color = Art.ComAlfa(Art.Ink, 0.6f);
             return go;
         }
-
-        // ---------- SDK real (LevelPlay 9.5.1) ----------
+    }
 
 #if UNITY_ANDROID || UNITY_IOS
-        static readonly Dictionary<string, LevelPlayRewardedAd> _ads = new Dictionary<string, LevelPlayRewardedAd>();
-        static readonly Dictionary<string, float> _retry = new Dictionary<string, float>();
+    /// <summary>SDK real (LevelPlay 9.5.1). Em build de desenvolvimento sem anuncio carregado (emulador, conta sem fill), o AdsSimulado
+    /// entra no lugar; no release, nunca.</summary>
+    sealed class AdsLevelPlay : IAds
+    {
+        static readonly Dictionary<string, string> Units = new Dictionary<string, string>
+        {
+            [Ads.Vip] = "7dxdva13pxaovoae",          // rewarded_vip: recompensa "VIP" x1
+            [Ads.Velocidade] = "gple3wvhz7xm3qk7",   // rewarded_velocidade: recompensa "Velocidade" x1
+        };
+        const float RewardGrace = 2f;
+        sealed class Request { public string P; public Action Ok, Fail; public bool Done; }
+
+        readonly MonoBehaviour _host;
+        readonly AdsSimulado _fake;   // so' em build de desenvolvimento
+        readonly Dictionary<string, LevelPlayRewardedAd> _ads = new Dictionary<string, LevelPlayRewardedAd>();
+        readonly Dictionary<string, float> _retry = new Dictionary<string, float>();
+        Request _req;
         float _initRetry = 10f;
         bool _testSuite;
 
-        void StartSdk()
+        public AdsLevelPlay(MonoBehaviour host)
         {
+            _host = host;
+            if (Debug.isDebugBuild) _fake = new AdsSimulado(host);
             // Privacidade ANTES do Init (docs/LEVELPLAY.md s5). Conservador ate existir tela de consentimento:
             // sem consentimento GDPR (anuncio nao personalizado), "nao vender" CCPA, e COPPA false = painel "Not directed".
             LevelPlayPrivacySettings.SetCOPPA(false);
@@ -211,17 +183,46 @@ namespace FS
             if (Debug.isDebugBuild)
             {
                 LevelPlay.SetAdaptersDebug(true);
-                _testSuite = Arg("-adtestsuite") != null;
+                _testSuite = Ads.Arg("-adtestsuite") != null;
                 if (_testSuite) LevelPlay.SetMetaData("is_test_suite", "enable");   // so' em dev; antes do Init
             }
             LevelPlay.OnInitSuccess += OnInitSuccess;
             LevelPlay.OnInitFailed += OnInitFailed;
-            LevelPlay.Init(AppKey);
+            LevelPlay.Init(Ads.AppKey);
+        }
+
+        public bool Busy => _req != null || (_fake != null && _fake.Busy);
+        public bool Loaded(string p) => _ads.TryGetValue(p, out LevelPlayRewardedAd ad) && ad != null && ad.IsAdReady();
+        public bool Ready(string p) => !Busy && Units.ContainsKey(p) && (Loaded(p) || _fake != null);
+
+        public void Show(string p, Action onReward, Action onFail)
+        {
+            bool real = Loaded(p);
+            if (!real && _fake != null && !Busy) { _fake.Show(p, onReward, onFail); return; }   // dev sem anuncio carregado: o simulado
+            Ads.Emit("ad_request", p, real ? "real" : "simulado");
+            string why = !Units.ContainsKey(p) ? "placement_desconhecido" : Busy ? "ocupado" : !real ? "sem_anuncio" : null;
+            if (why != null) { Ads.Emit("ad_fail", p, why); onFail?.Invoke(); return; }
+            _req = new Request { P = p, Ok = onReward, Fail = onFail };
+            _ads[p].ShowAd();
+        }
+
+        void Finish(bool rewarded, string detail)
+        {
+            Request r = _req;
+            if (r == null || r.Done)
+            {
+                if (rewarded) Ads.Emit("ad_reward_late", "", detail);   // chegou depois da janela de 2 s: nao paga, fica no diario
+                return;
+            }
+            r.Done = true;
+            _req = null;
+            Ads.Emit(rewarded ? "ad_reward" : "ad_fail", r.P, detail);
+            if (rewarded) r.Ok?.Invoke(); else r.Fail?.Invoke();
         }
 
         void OnInitSuccess(LevelPlayConfiguration config)
         {
-            Emit("ad_init", "ok", LevelPlay.PluginVersion);
+            Ads.Emit("ad_init", "ok", LevelPlay.PluginVersion);
             if (Debug.isDebugBuild) LevelPlay.ValidateIntegration();   // relatorio no logcat (tag IntegrationHelper)
             if (_testSuite) LevelPlay.LaunchTestSuite();
             foreach (KeyValuePair<string, string> u in Units)
@@ -231,10 +232,10 @@ namespace FS
                 var ad = new LevelPlayRewardedAd(u.Value);
                 ad.OnAdLoaded += _ => _retry[p] = 30f;
                 ad.OnAdLoadFailed += e => LoadFailed(p, e);
-                ad.OnAdDisplayed += info => Emit("ad_shown", p, info?.AdNetwork);
+                ad.OnAdDisplayed += info => Ads.Emit("ad_shown", p, info?.AdNetwork);
                 ad.OnAdDisplayFailed += (info, e) => { Finish(false, $"exibicao {e?.ErrorCode} {e?.ErrorMessage}"); Load(p); };
                 ad.OnAdRewarded += (info, r) => Finish(true, $"{r?.Name} x{r?.Amount} {info?.AdNetwork}");
-                ad.OnAdClosed += _ => { Load(p); StartCoroutine(ClosedWithoutReward(_req)); };
+                ad.OnAdClosed += _ => { Load(p); _host.StartCoroutine(ClosedWithoutReward(_req)); };
                 _ads[p] = ad;
                 _retry[p] = 30f;
                 Load(p);   // pre-carga de proposito: Ready precisa do anuncio pronto antes de o botao aparecer
@@ -243,14 +244,18 @@ namespace FS
 
         void OnInitFailed(LevelPlayInitError e)
         {
-            Emit("ad_init", "falha", $"{e?.ErrorCode} {e?.ErrorMessage}");
-            Invoke(nameof(RetryInit), _initRetry);
+            Ads.Emit("ad_init", "falha", $"{e?.ErrorCode} {e?.ErrorMessage}");
+            _host.StartCoroutine(RetryInit(_initRetry));
             _initRetry = Mathf.Min(_initRetry * 2f, 300f);
         }
 
-        void RetryInit() => LevelPlay.Init(AppKey);
+        static IEnumerator RetryInit(float wait)
+        {
+            yield return new WaitForSecondsRealtime(wait);
+            LevelPlay.Init(Ads.AppKey);
+        }
 
-        static void Load(string p)
+        void Load(string p)
         {
             if (_ads.TryGetValue(p, out LevelPlayRewardedAd ad) && ad != null && !ad.IsAdReady()) ad.LoadAd();
         }
@@ -258,33 +263,31 @@ namespace FS
         void LoadFailed(string p, LevelPlayAdError e)
         {
             float wait = _retry.TryGetValue(p, out float w) ? w : 30f;
-            Emit("ad_load_fail", p, $"{e?.ErrorCode} {e?.ErrorMessage} retry {wait:0}s");
+            Ads.Emit("ad_load_fail", p, $"{e?.ErrorCode} {e?.ErrorMessage} retry {wait:0}s");
             _retry[p] = Mathf.Min(wait * 2f, 300f);
-            StartCoroutine(LoadLater(p, wait));
+            _host.StartCoroutine(LoadLater(p, wait));
         }
 
-        static IEnumerator LoadLater(string p, float wait)
+        IEnumerator LoadLater(string p, float wait)
         {
             yield return new WaitForSecondsRealtime(wait);
             Load(p);
         }
 
         // OnAdRewarded pode chegar DEPOIS do OnAdClosed (callbacks assincronos): espera um pouco antes de chamar de falha
-        static IEnumerator ClosedWithoutReward(Request r)
+        IEnumerator ClosedWithoutReward(Request r)
         {
             yield return new WaitForSecondsRealtime(RewardGrace);
             if (_req == r) Finish(false, "fechou_sem_recompensa");   // so' o pedido que fechou (um novo Show nao e' afetado)
         }
 
-        void OnDestroy()
+        public void Destroy()
         {
             LevelPlay.OnInitSuccess -= OnInitSuccess;
             LevelPlay.OnInitFailed -= OnInitFailed;
             foreach (LevelPlayRewardedAd ad in _ads.Values) ad?.DestroyAd();
             _ads.Clear();
         }
-#else
-        void StartSdk() { }
-#endif
     }
+#endif
 }
