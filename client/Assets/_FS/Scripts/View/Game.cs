@@ -26,6 +26,10 @@ namespace FS
     /// -cam W (largura visivel em m, 6..11,4; experimento de camera mais perto) | -settings [on|off] (abre as configuracoes; on/off
     /// liga/desliga Som e Vibracao antes, gravando como o toque) | -cofre N (mostra o painel do cofre com N de ouro, sem dar o ouro) |
     /// -playtest (liga o diario num build de release; o dev ja grava).
+    /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
+    /// 1a contratacao) | -recordfull (fila cheia no 1o quadro ou erro) | -recordorder (o -record mantem o cartao da encomenda) | -offline S
+    /// (cofre real de S s fora, 60..7200). Captura que mostraria algo impossivel (compra id@t sem ouro ou pre-requisito, -vipnow depois de
+    /// um warmup sem venda) loga o erro e sai 1 (Falha).
     /// Build dev: tambem pelo intent do Android (Arg).
     /// v0.5c (docs/FASE8_VIP_VELOCIDADE.md s5): botoes "Chamar VIP" e "Velocidade 2x/3x" nos cantos da barra de baixo (IAds.Show ->
     /// Sim.SummonVip / Sim.StartBoost), selo do boost com cronometro, aviso "Cliente VIP!" e diario vip_* / boost_start.
@@ -71,7 +75,8 @@ namespace FS
         readonly System.Collections.Generic.Dictionary<string, long> _source = new System.Collections.Generic.Dictionary<string, long>(),
             _sink = new System.Collections.Generic.Dictionary<string, long>();
         Vector2Int _screen;
-        readonly System.Collections.Generic.List<(int u, float t)> _buyAt = new System.Collections.Generic.List<(int u, float t)>();   // -buyids id@t
+        System.Collections.Generic.List<(int u, float t)> _buyAt = new System.Collections.Generic.List<(int u, float t)>();   // -buyids id@t (Captura.Compras)
+        bool _hired;   // G-UA-02 -recordhire: ja houve Ev.Hired ao vivo
 
         Canvas _joyCanvas;
         RectTransform _canvas, _labels, _safe, _panel, _fx;
@@ -123,6 +128,8 @@ namespace FS
             Application.targetFrameRate = 60;
             _testSession = Arg("-testsession") != null || Arg("-autoplay") != null || Arg("-record") != null;
             if (Arg("-record") != null) Time.captureFramerate = Mathf.Max(1, (int)ArgF("-recordfps", 30f));   // relogio do jogo = quadro do video
+            // G-UA-02: fumaca, faiscas e poeira sorteiam no UnityEngine.Random; semente fixa = os mesmos quadros em 2 execucoes
+            if (Arg("-record") != null || Arg("-preset") != null) UnityEngine.Random.InitState(Captura.Semente);
             // A-PLAT-06: diario so no build de desenvolvimento (o build de playtest de hoje, APK dev e Windows) ou com -playtest (release
             // do PC); release no aparelho nao grava (nao tem linha de comando, e o extra do intent so vale no dev). Teste: nunca.
             string dir = Application.persistentDataPath;
@@ -163,6 +170,7 @@ namespace FS
 
         void Start()
         {
+            if (_headless) return;   // Falha ja no Awake (preset desconhecido, compra impossivel no warmup): nada grava
             if (Arg("-autoplay") != null) { Autoplay(); return; }
             Log("session_start", Application.version, SystemInfo.deviceModel);
             // s87: contexto da sessao, uma linha por campo (o build id e' o GUID do build, nao do aparelho; nada de ID, conta ou local)
@@ -172,6 +180,14 @@ namespace FS
             _started = true;   // A-PLAT-07: Loading -> Playing; o save grava daqui em diante (o resgate do cofre logo abaixo ja grava)
             Offline();
             if (int.TryParse(Arg("-cofre"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int cofre) && cofre > 0) ShowVault(cofre);   // foto do painel
+            // G-UA-02 -offline S: o cofre de verdade, como na volta do jogador depois de S s fora (o -cofre N so desenha o painel com N)
+            string off = Arg("-offline");
+            if (off != null)
+            {
+                long fora = Captura.OfflineSegundos(off);
+                if (fora < 0) { Falha($"OFFLINE: '{off}' fora de 60..{Balance.OfflineCapSeconds} s"); return; }
+                if (PagaCofre(fora, _sim.LastClaim + 1) <= 0) { Falha("OFFLINE: cofre vazio (o warmup nao teve vendas)"); return; }
+            }
             _botDrive = Arg("-bot") != null;
             string shot = Arg("-shot");
             if (!string.IsNullOrEmpty(shot)) StartCoroutine(Shot(shot));
@@ -195,14 +211,21 @@ namespace FS
             if (_sim.SavedAt <= 0) return;
             long elapsed = Now() - _sim.SavedAt;
             if (elapsed < 60) return;   // mesma regra da volta de pausa: abrir de novo em < 1 min mostrava "31 de ouro em 0 min fora" (POCO F4)
-            long gold = _sim.ApplyOffline(elapsed, _sim.SavedAt);
-            if (gold <= 0) return;
+            PagaCofre(elapsed, _sim.SavedAt);
+        }
+
+        /// <summary>Paga o cofre de `elapsed` s fora (claim idempotente por `claim`), mostra o painel e devolve o ouro (0 = nada).</summary>
+        long PagaCofre(long elapsed, long claim)
+        {
+            long gold = _sim.ApplyOffline(elapsed, claim);
+            if (gold <= 0) return 0;
             long shown = Math.Min(elapsed, (long)Balance.OfflineCapSeconds);
             Log("offline_claim", gold.ToString(), shown.ToString());
             Source("cofre", gold);
             Sfx.Play("offline");
             ShowVault(gold);
             Save();
+            return gold;
         }
 
         /// <summary>v0.6d: cartao creme do cofre: titulo, "+N" grande com a moeda, uma linha e PEGAR (saiu a frase dos 25% e do teto).</summary>
@@ -323,7 +346,7 @@ namespace FS
                         Log("client_left", Balance.ItemName[e.A], e.B == 0 ? "cansou" : "fila_cheia");
                         break;
                     case Ev.Bottleneck: Log("bottleneck", _sim.Stations[e.A].Name, "saida_cheia"); break;
-                    case Ev.Hired: Sfx.Play("hire"); Log("worker_hired", e.A.ToString()); break;
+                    case Ev.Hired: Sfx.Play("hire"); Log("worker_hired", e.A.ToString()); _hired = true; break;
                     case Ev.Unlocked: Log("station_unlock", _sim.Stations[e.B].Name); break;
                     // baus de marco (docs/AREA2_FASE2.md s3/s4): bateu = som de moeda agudo + o ferreiro comemora (o bau aparece
                     // pulsando no WorldView); abriu = moedas e "+ouro" como uma venda, e o bau some
@@ -460,7 +483,8 @@ namespace FS
 
         void BuildHud()
         {
-            new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
+            // G-UA-02: gravando, sem EventSystem: o mouse parado sobre um botao mudava a cor dele (hover) entre 2 execucoes
+            if (Arg("-record") == null) new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
             var canvasGo = new GameObject("HUD", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasGo.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
             var sc = canvasGo.GetComponent<CanvasScaler>();
@@ -615,7 +639,7 @@ namespace FS
         {
             TickCoins(Time.deltaTime);
             RefreshAdUi();
-            float real = Mathf.Min(Time.unscaledDeltaTime, 0.1f);   // tempo real (o simulado zera o timeScale), sem o salto do 1o quadro
+            float real = Mathf.Min(Captura.Passo, 0.1f);   // tempo real (o simulado zera o timeScale; gravando, o do quadro), sem o salto do 1o quadro
             RefreshOrder(real);
             TickNotice(real);
             // numero rolando: persegue o valor (sobe na venda, desce na compra) em ~0,3 s em vez de pular
@@ -792,7 +816,7 @@ namespace FS
             {
                 _boostMul.text = _sim.BoostMul.ToString("0") + "×";
                 _boostTime.text = Clock(_sim.BoostLeft);
-                _boostSeal.localScale = Vector3.one * (1f + 0.04f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 3f)));
+                _boostSeal.localScale = Vector3.one * (1f + 0.04f * Mathf.Abs(Mathf.Sin(Captura.Agora * 3f)));
             }
         }
 
@@ -801,13 +825,14 @@ namespace FS
         /// <summary>
         /// Cartao no estilo da pilula de ouro, no canto de baixo a esquerda (espelho do selo do boost, acima do botao VIP): icone do item,
         /// "Venda 5 espadas", barra com "3/5" e o premio com a moeda. Sob a pilula de ouro ele cobriria o balao do 1o da fila (8 vagas) e as
-        /// moedas da rua, o mesmo motivo que tirou o selo do boost do topo. Criativo (-record): sem cartao nem aviso.
+        /// moedas da rua, o mesmo motivo que tirou o selo do boost do topo. Criativo (-record): sem cartao nem aviso, salvo com -recordorder
+        /// (G-UA-02, preset order).
         /// v0.6d: 420 x 104 px a 32 px da borda e 24 px acima do botao VIP (era 0,02-0,40 da largura, colado nele); titulo com verbo,
         /// a conta "3/5" em cima da barra de 20 px.
         /// </summary>
         void BuildOrderUi()
         {
-            if (Arg("-record") != null) return;
+            if (Arg("-record") != null && Arg("-recordorder") == null) return;
             Image edge = Art.Panel(_safe, "Encomenda", Art.HudEdge, new Vector2(0f, AdTop), new Vector2(0f, AdTop));
             edge.rectTransform.pivot = Vector2.zero; edge.rectTransform.sizeDelta = new Vector2(420f, 104f);
             edge.rectTransform.anchoredPosition = new Vector2(Edge, 24f);
@@ -1059,19 +1084,19 @@ namespace FS
         /// <summary>Fotos/teste (dev): -buy N compra os produtivos entre os N primeiros upgrades (ordem do tier) e depois os luxos, -gold G, -px x,y.</summary>
         void DevArgs()
         {
+            string preset = Arg("-preset");
+            if (preset != null)
+            {
+                if (Captura.Flags(preset) == null) { Falha($"PRESET desconhecido '{preset}' (validos: {Captura.Nomes})"); return; }
+                Debug.Log($"PRESET {preset}: {Captura.Flags(preset)}");
+            }
             if (int.TryParse(Arg("-buy"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
                 for (int pass = 0; pass < 2; pass++)   // o Buy recusa luxo antes da producao completa, e ha produtivos (Mineiro, Joalheiro 2) depois dos luxos
                     for (int i = 0; i < Math.Min(n, Upgrades.Count); i++)
                         if (Upgrades.IsLuxury(i) == (pass == 1)) _sim.Buy((Upgrade)i);
             // -buyids 1,5,0@300 (criativos): compra estes ids do enum Upgrade fora da ordem do -buy (ex.: 4 bancadas e 1 fornalha
             // sem fole); "id@t" compra quando o relogio do jogo passa de t s, na ordem dada, cobrando o preco (TimedBuys).
-            foreach (string tok in (Arg("-buyids") ?? "").Split(','))
-            {
-                string[] p = tok.Split('@');
-                if (!int.TryParse(p[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int id) || id < 0 || id >= Upgrades.Count) continue;
-                if (p.Length == 1) _sim.Buy((Upgrade)id);
-                else if (float.TryParse(p[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float at)) _buyAt.Add((id, at));
-            }
+            _buyAt = Captura.Compras(_sim, Arg("-buyids"));
             if (long.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long g)) _sim.Gold = Math.Max(0, g);   // A-CORE-06: aceita > int (foto da HUD)
             string[] px = (Arg("-px") ?? "").Split(',');
             if (px.Length == 2 && float.TryParse(px[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x)
@@ -1080,7 +1105,8 @@ namespace FS
             // v0.5c: -boost N = N anuncios de velocidade (1 = 2x, 2 = 3x) ANTES do warmup (warmup >= 60 = foto da recarga)
             if (int.TryParse(Arg("-boost"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int nb)) for (int i = 0; i < nb; i++) _sim.StartBoost();
             float warm = ArgF("-warmup", 0f);
-            for (float t = 0f; t < warm; t += MaxStep) { _sim.Tick(MaxStep, 0f, 0f); TimedBuys(); }
+            for (float t = 0f; t < warm && !_headless; t += MaxStep) { _sim.Tick(MaxStep, 0f, 0f); TimedBuys(); }
+            if (_headless) return;   // compra id@t impossivel no warmup (Falha)
             // fotos da v0.5, depois do warmup: -hold 0,3,3,3,0,0 = carga mista do ferreiro (por Item, ate o teto de cada tipo) e
             // -stock 10,10,10 = estoque do balcao (espada, escudo, ferramenta, joia; ate o teto). A fila do warmup compra ja no 1o tick.
             string[] hold = (Arg("-hold") ?? "").Split(','), stock = (Arg("-stock") ?? "").Split(',');
@@ -1089,32 +1115,40 @@ namespace FS
             for (int i = 0; i < Math.Min(stock.Length, 4); i++)
                 if (int.TryParse(stock[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out int s)) _sim.Stock[2 + i] = Math.Max(0, Math.Min(s, _sim.CounterCap));
             // -vipnow: chama o VIP depois do warmup (fila cheia = ele espera ao lado); se ainda nao pode, tenta a cada quadro (Update).
-            // ponytail: cheat de dev, marca a 1a venda se ainda nao houve (CanSummonVip pede a 1a venda)
+            // G-UA-02: nao marca mais a 1a venda falsa (o CanSummonVip pede uma de verdade). Depois de um -warmup sem venda real e' erro
+            // (o VIP nao viria no comeco, preset vip); sem warmup ele espera a 1a venda real (FS-C-26: -bot -vipnow)
             if (Arg("-vipnow") != null)
             {
-                if (_sim.FirstSaleTime < 0f) _sim.FirstSaleTime = _sim.Time;
+                if (warm > 0f && _sim.FirstSaleTime < 0f) { Falha($"VIPNOW: o warmup de {warm:0} s nao teve venda real"); return; }
                 _vipNow = !_sim.SummonVip();
             }
         }
 
-        /// <summary>-buyids id@t: compra quando _sim.Time passa de t e cobra o preco (sem ouro bastante fica em 0).</summary>
+        /// <summary>-buyids id@t: compra quando _sim.Time passa de t e cobra o preco (Captura.Vence). G-UA-02: sem ouro ou sem
+        /// pre-requisito naquele instante e' erro e sai 1 (antes o ouro ia a 0 e o pre-requisito era ignorado).</summary>
         void TimedBuys()
         {
-            for (int i = 0; i < _buyAt.Count;)
-            {
-                if (_sim.Time < _buyAt[i].t) { i++; continue; }
-                var u = (Upgrade)_buyAt[i].u;
-                _buyAt.RemoveAt(i);
-                // ponytail: cheat de dev, o Buy nao confere pre-requisito; a ordem da lista e' responsabilidade de quem grava
-                if (_sim.Buy(u)) _sim.Gold = Math.Max(0, _sim.Gold - Upgrades.Cost(u));
-            }
+            string erro = Captura.Vence(_sim, _buyAt);
+            if (erro == null) return;
+            _buyAt.Clear();   // um erro so
+            Falha("BUYIDS " + erro);
+        }
+
+        /// <summary>G-UA-02: captura que mostraria algo impossivel (ou preset errado) loga o erro, para tudo como o autoplay e sai 1.</summary>
+        void Falha(string msg)
+        {
+            Debug.LogError(msg);
+            _headless = true;   // Update, Save e Start param
+            StopAllCoroutines();
+            Application.Quit(1);
         }
 
         static float ArgF(string name, float def) => float.TryParse(Arg(name), NumberStyles.Float, CultureInfo.InvariantCulture, out float v) ? v : def;
 
-        // build de desenvolvimento: Ads.Arg tambem le o extra "unity" do intent, entao as flags valem no aparelho
-        // (adb shell am start -n br.com.vstack.forgestreet/com.unity3d.player.UnityPlayerGameActivity -e unity "-cam 9"). Release: so linha de comando
-        static string Arg(string name) => Ads.Arg(name);
+        // build de desenvolvimento: Ads.Args tambem le o extra "unity" do intent, entao as flags valem no aparelho
+        // (adb shell am start -n br.com.vstack.forgestreet/com.unity3d.player.UnityPlayerGameActivity -e unity "-cam 9"). Release: so linha de comando.
+        // G-UA-02: o que a linha de comando nao tem vem do -preset (Captura.Arg)
+        static string Arg(string name) => Captura.Arg(Ads.Args(), name);
 
         static string Clock(float s) => $"{(int)(s / 60f)}:{(int)(s % 60f):00}";
 
@@ -1156,19 +1190,33 @@ namespace FS
         IEnumerator Record(string dir)
         {
             Directory.CreateDirectory(dir);
+            // G-UA-02 -recordhire (preset first_worker): o 1o quadro e' o da 1a contratacao ao vivo (Ev.Hired); ate t = 600 s de jogo
+            if (Arg("-recordhire") != null)
+            {
+                while (!_hired && _sim.Time < 600f) yield return null;
+                if (!_hired) { Falha("RECORD: nenhuma contratacao ate t=600 s (-recordhire)"); yield break; }
+            }
             int frames = Mathf.RoundToInt(ArgF("-recordsec", 15f) * Time.captureFramerate);
             int k = Mathf.Max(1, Mathf.RoundToInt(1920f / Screen.height));
             var eof = new WaitForEndOfFrame();
             for (int n = 0; n < frames; n++)
             {
                 yield return eof;
+                // G-UA-02 -recordfull (preset huge_queue): a fila tem de estar cheia ja no 1o quadro
+                if (n == 0 && Arg("-recordfull") != null && _sim.Queue.Count < _sim.QueueCap)
+                {
+                    Falha($"RECORD: fila {_sim.Queue.Count}/{_sim.QueueCap} no 1o quadro (-recordfull)");
+                    yield break;
+                }
                 Texture2D tex = ScreenCapture.CaptureScreenshotAsTexture(k);
                 // ponytail: JPG 95 em vez de PNG; 1080x1920 em PNG passa de 2 MB por quadro e 900 quadros pesam no disco
                 File.WriteAllBytes(Path.Combine(dir, $"f{n:00000}.jpg"), tex.EncodeToJPG(95));
-                if (n == 0) Debug.Log($"RECORD {tex.width}x{tex.height} x{k} {frames} quadros -> {dir}");
+                if (n == 0) Debug.Log($"RECORD {tex.width}x{tex.height} x{k} {frames} quadros t={_sim.Time:0.0} -> {dir}");
                 Destroy(tex);
             }
-            Debug.Log($"RECORD OK t={_sim.Time:0.0} fila={_sim.Queue.Count}/{_sim.QueueCap} upgrades={_sim.UpgradesBought} ouro={_sim.Gold}");
+            Debug.Log($"RECORD OK t={_sim.Time:0.0} fila={_sim.Queue.Count}/{_sim.QueueCap} upgrades={_sim.UpgradesBought} ouro={_sim.Gold} fornalhas={_view.Fornalhas()}");
+            string preset = Arg("-preset");
+            if (preset != null) Debug.Log($"PRESET {preset} ok");
             Application.Quit(0);
         }
 
