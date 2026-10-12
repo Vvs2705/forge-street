@@ -28,7 +28,8 @@ CLIENT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Scripts/View/Textos.cs', 'Assets/_FS/Scripts/View/SaveStore.cs',
           'Assets/_FS/Scripts/View/StationView.cs', 'Assets/_FS/Scripts/View/Servicos.cs', 'Assets/_FS/Scripts/View/Estado.cs',
           'Assets/_FS/Scripts/View/Captura.cs', 'Assets/_FS/Scripts/View/Som.cs', 'Assets/_FS/Scripts/View/Privacidade.cs',
-          'Assets/_FS/Scripts/View/EsteiraView.cs', 'tools/coretests']
+          'Assets/_FS/Scripts/View/EsteiraView.cs', 'Assets/_FS/Scripts/View/Enquadramento.cs', 'Assets/_FS/Scripts/View/Loc.cs',
+          'tools/coretests']
 SIM, DEFS = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs'
 
 

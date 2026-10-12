@@ -460,6 +460,8 @@ namespace FS
         /// <summary>"Tudo" (o -settings on|off e a linha SHOT): ligado se algum dos dois esta; gravar mexe nos dois.</summary>
         public static bool Som { get => Musica || Efeitos; set { Musica = value; Efeitos = value; } }
         public static bool Vibra { get => TemVibra && Read(VibraKey, ref _vibra); set => Write(VibraKey, ref _vibra, value); }
+        /// <summary>DM §109: codigo do idioma escolhido nas Configuracoes ("pt", "en", "es"); vazio = segue o aparelho (Loc.Escolher).</summary>
+        public static string Idioma { get => PlayerPrefs.GetString("fs_idioma", ""); set { PlayerPrefs.SetString("fs_idioma", value); PlayerPrefs.Save(); } }
 
         /// <summary>Le uma vez e guarda; sem a chave vale a `legado` (ou ligado).</summary>
         static bool Read(string key, ref int v, string legado = null)
