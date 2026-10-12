@@ -60,7 +60,14 @@ namespace FS
         static readonly Vector2 Chimney = new Vector2(-0.21f, 0.8f), Mouth = new Vector2(-0.21f, -0.2f), Ash = new Vector2(-0.19f, -0.17f),
             LampAt = new Vector2(0.52f, 0.62f), SpillTop = new Vector2(1.14f, 0.0f), SpillFloor = new Vector2(1.52f, -0.5f);
         const float LuzM = 4f, LuzA = 0.3f, MouthS = 0.7f, GhostS = 0.42f, SpillTilt = 28f;
-        const float SmokeEvery = 0.33f, HotEvery = 0.2f, SmokeLife = 1.1f, HotSparkLife = 0.4f;   // ativa 3 baforadas/s; overdrive 5/s + 2 faiscas cada
+        const float SmokeEvery = 0.33f, HotEvery = 0.2f, SmokeLife = 1.1f, HotSparkLife = 0.5f;   // ativa 3 baforadas/s; overdrive 5/s + 3 faiscas cada
+        // Overdrive (B-ART-08; na folha de contato da v0.7a era o estado mais fraco: em cinza, so uma boca um pouco maior que a da ativa).
+        // Agora muda a FORMA: fogo de 0,85 x 1,1 m saindo da boca e subindo pela frente (nucleo quase branco, o mais claro da fornalha em
+        // cinza), tremulando; anel de calor que se abre da boca de 0,45 a 1,9 m 2x/s; 3 faiscas de 0,34 m por baforada (eram 2 de 0,24).
+        // No aparelho (~95 px/m) o fogo tem ~100 px de altura e o anel chega a ~180 px; na janela de 540 (47 px/m), metade. Conferido num
+        // mock sobre a foto da v0.7a (cor e cinza); o -shot real e' do coordenador.
+        const float FlameW = 0.85f, FlameH = 1.1f, CoreW = 0.4f, CoreH = 0.6f, PulseS = 0.5f, PulseFrom = 0.45f, PulseTo = 1.9f, HotSparkS = 0.34f;
+        const int HotSparks = 3;
         static readonly Color Smoke = new Color(0.55f, 0.55f, 0.58f, 0.5f), Gray = new Color(0.5f, 0.5f, 0.5f, 1f), Banked = new Color(0.82f, 0.78f, 0.78f, 1f),
             Soot = new Color(0.07f, 0.06f, 0.06f, 0.85f), BulbOff = Art.Hex(0x7A1E26);
 
@@ -71,7 +78,7 @@ namespace FS
         const float HitS = 0.12f, HitAmp = 0.06f, HitShake = 0.02f, BlowS = 0.2f, BlowAmp = 0.1f, BlowShake = 0.045f, HitVol = 0.25f, SparkLife = 0.3f;
 
         readonly WorldView _w; readonly Station _s; readonly Transform _root, _lamp; readonly SpriteRenderer _base;
-        readonly SpriteRenderer _glow, _mouth, _ash, _ghost, _ring, _halo, _bulb, _spillTop, _spillFloor;
+        readonly SpriteRenderer _glow, _mouth, _ash, _ghost, _ring, _halo, _bulb, _spillTop, _spillFloor, _flame, _core, _pulse;
         readonly Color _ghostC;
         readonly bool _baked;
         readonly int _front;
@@ -98,6 +105,11 @@ namespace FS
             // poca de luz quente no chao (P1-6) e boca acesa por cima da arte (v0.6a)
             _glow = Art.NewSprite(root, "Luz", Art.Glow(), Art.ComAlfa(WorldView.GlowColor, 0f), WorldView.GlowOrder, new Vector2(0f, 0.2f), Vector2.one * LuzM);
             _mouth = Art.NewSprite(root, "Boca", Art.Glow(), Art.ComAlfa(WorldView.SparkB, 0f), _front + 2, Mouth, Vector2.one * MouthS);   // sobre a cinza
+            // overdrive: lingua de fogo (laranja + nucleo claro) sobre a boca e o anel de calor (ligados so no Refresh)
+            _flame = Art.NewSprite(root, "Chama", Art.Glow(), Art.ComAlfa(WorldView.SparkB, 0.95f), _front + 3, Mouth, new Vector2(FlameW, FlameH));
+            _core = Art.NewSprite(root, "ChamaNucleo", Art.Glow(), Color.Lerp(WorldView.SparkA, Color.white, 0.55f), _front + 4, Mouth, new Vector2(CoreW, CoreH));
+            _pulse = Art.NewSprite(root, "AnelCalor", Art.Ring(), WorldView.SparkA, _front + 3, Mouth, Vector2.one * PulseFrom);
+            _flame.enabled = _core.enabled = _pulse.enabled = false;
             // fria/sem minerio: tampa de cinza sobre a brasa pintada (boca apagada); sem minerio: minerio fantasma boiando num anel tracejado
             _ash = Art.NewSprite(root, "Cinza", Art.Rounded(), Soot, _front + 1, Ash, new Vector2(0.32f, 0.12f));
             _ring = Art.NewSprite(root, "FaltaAnel", Art.DashedRing(), Art.ComAlfa(Art.Ink, 0.8f), _front + 2, Mouth, Vector2.one * 0.64f);
@@ -122,7 +134,8 @@ namespace FS
         /// Um quadro. Forma + movimento por estado: fria = boca tampada, nada se mexe; aquecendo = boca acesa crescendo e luz abrindo, sem
         /// fumaca; ativa = boca e luz pulsando + 3 baforadas/s; sem minerio = boca tampada + minerio fantasma boiando no anel girando;
         /// saida cheia = lampada pulsando (1,3 Hz, suave: sem flash) + lingotes transbordando, sem faisca nem fumaca; overdrive = boca e luz
-        /// maiores, pulso no dobro + 5 baforadas/s com faiscas saindo da boca. `pulse` = o pulso vermelho da pilha travada (WorldView).
+        /// maiores, pulso no dobro, chama alta saindo da boca, anel de calor abrindo 2x/s + 5 baforadas/s com 3 faiscas grandes cada (B-ART-08).
+        /// `pulse` = o pulso vermelho da pilha travada (WorldView).
         /// </summary>
         public void Refresh(float dt, bool boost, float pulse)
         {
@@ -149,13 +162,26 @@ namespace FS
             _glow.color = Art.ComAlfa(WorldView.GlowColor, ga);
             _glow.transform.localScale = Vector3.one * (LuzM * gs);
 
+            bool over = e == Fornalha.Overdrive;
             _mouth.enabled = work;
             if (work)
             {
-                bool hot = e == Fornalha.Overdrive;
-                float ma = hot ? 0.85f + 0.15f * Mathf.Sin(w7 * 2f) : e == Fornalha.Aquecendo ? 0.2f + 0.4f * c : 0.5f + 0.25f * Mathf.Sin(w7);
-                _mouth.color = Art.ComAlfa(hot ? Color.Lerp(WorldView.SparkB, WorldView.SparkA, 0.5f) : WorldView.SparkB, ma);
-                _mouth.transform.localScale = Vector3.one * (MouthS * (hot ? 1.4f : e == Fornalha.Aquecendo ? 0.35f + 0.65f * c : 1f));
+                float ma = over ? 0.85f + 0.15f * Mathf.Sin(w7 * 2f) : e == Fornalha.Aquecendo ? 0.2f + 0.4f * c : 0.5f + 0.25f * Mathf.Sin(w7);
+                _mouth.color = Art.ComAlfa(over ? Color.Lerp(WorldView.SparkB, WorldView.SparkA, 0.5f) : WorldView.SparkB, ma);
+                _mouth.transform.localScale = Vector3.one * (MouthS * (over ? 1.4f : e == Fornalha.Aquecendo ? 0.35f + 0.65f * c : 1f));
+            }
+            _flame.enabled = _core.enabled = _pulse.enabled = over;
+            if (over)
+            {
+                // chama: tremula em 2 senos fora de fase (estica e afina junto), com a base presa na boca; anel: abre rapido e some
+                float t = Time.time + _s.Index * 0.37f, fl = 1f + 0.12f * Mathf.Sin(t * 13f) + 0.06f * Mathf.Sin(t * 31f);
+                _flame.transform.localScale = new Vector3(FlameW * (2f - fl), FlameH * fl, 1f);
+                _flame.transform.localPosition = new Vector3(Mouth.x, Mouth.y + 0.3f * FlameH * fl, 0f);
+                _core.transform.localScale = new Vector3(CoreW * (2f - fl), CoreH * fl, 1f);
+                _core.transform.localPosition = new Vector3(Mouth.x, Mouth.y + 0.25f * CoreH * fl, 0f);
+                float k = Mathf.Repeat(t, PulseS) / PulseS;
+                _pulse.transform.localScale = Vector3.one * Mathf.Lerp(PulseFrom, PulseTo, 1f - (1f - k) * (1f - k));
+                _pulse.color = Art.ComAlfa(WorldView.SparkA, 0.9f * (1f - k));
             }
             // tampa de cinza: inteira parada sem brasa, some com o calor no aquecendo (a brasa pintada "acende")
             float ash = e == Fornalha.Fria || e == Fornalha.SemMinerio ? 1f : e == Fornalha.Aquecendo ? 1f - c : 0f;
@@ -188,21 +214,20 @@ namespace FS
             // fumaca so ativa e overdrive (aquecendo ainda nao fumega; travada e parada nunca); a 1a baforada sai assim que chega la
             if (e != Fornalha.Ativa && e != Fornalha.Overdrive) { _puffT = 0f; return; }
             if ((_puffT -= dt) > 0f) return;
-            bool over = e == Fornalha.Overdrive;
             _puffT = over ? HotEvery : SmokeEvery;
-            if (!_w.Ambiente(_root, over ? 3 : 1)) return;
+            if (!_w.Ambiente(_root, over ? 1 + HotSparks : 1)) return;
             int order = _front + 2;   // na frente da arte; quem passa na frente da estacao cobre
             Vector3 o = _root.localPosition + (Vector3)Chimney;
             float dx = Random.Range(-0.08f, 0.12f);
             _w.Spawn(Art.Disc(), Smoke, o, o + new Vector3(dx, 0.5f, 0f), o + new Vector3(dx * 2.5f + 0.1f, 1f, 0f), SmokeLife, 0.2f, 0.6f, true, 0f, null, order);
             if (!over) return;
             Vector3 m = _root.localPosition + (Vector3)Mouth;
-            for (int i = 0; i < 2; i++)   // faiscas extras: saltam da boca em arco e caem na frente dela
+            for (int i = 0; i < HotSparks; i++)   // faiscas extras: saltam da boca em arco e caem na frente dela
             {
                 float a = Random.Range(0.15f, 0.85f) * Mathf.PI;
-                Vector3 d = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * Random.Range(0.4f, 0.7f);
+                Vector3 d = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * Random.Range(0.55f, 0.95f);
                 _w.Spawn(Art.Sparkle(), WorldView.SparkA, m, m + d * 0.8f + new Vector3(0f, 0.1f, 0f), m + new Vector3(d.x * 1.2f, d.y * 0.5f - 0.3f, 0f),
-                    HotSparkLife, 0.24f, 0.06f, true, 360f, WorldView.SparkB, order + 1);
+                    HotSparkLife, HotSparkS, 0.08f, true, 360f, WorldView.SparkB, order + 3);   // por cima da chama
             }
         }
 
