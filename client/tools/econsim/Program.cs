@@ -104,7 +104,7 @@ static class EconSim
         float U(Upgrade u) => s.UpgradeTime[(int)u];
         r.Marcos = new[] { s.FirstSaleTime, U(Upgrade.FurnaceSpeed1), U(Upgrade.Conveyor), U(Upgrade.SideCorridor), U(Upgrade.Helper3), U(Upgrade.Jewelry), Producao(s), U(Upgrade.WorkshopFacade) };
         long luxSpent = 0;
-        for (int i = 0; i < Upgrades.Count; i++) if (Upgrades.IsLuxury(i) && s.Bought[i]) { r.Luxo++; luxSpent += Upgrades.Cost(i); }
+        for (int i = 0; i < Upgrades.Count; i++) if (Upgrades.IsLuxury(i) && s.Bought[i]) { r.Luxo++; luxSpent += s.T.Cost(i); }
         long paid = s.Pads.Sum(pad => (long)pad.Paid);   // pad de luxo pago pela metade tambem e' ouro gasto
         r.PosProd = goldAtProd < 0 ? 0 : s.Gold + luxSpent + paid - goldAtProd;
         r.Parado = s.Gold; r.AdsVip = bot.AdsVip; r.AdsBoost = bot.AdsBoost; r.Csv = csv.ToString();

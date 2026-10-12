@@ -25,7 +25,8 @@ import xml.etree.ElementTree as ET
 
 CLIENT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 # o que o FSCore.Tests.csproj compila (caminhos relativos a client/), mais o próprio projeto
-COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Scripts/View/Textos.cs', 'tools/coretests']
+COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Scripts/View/Textos.cs', 'Assets/_FS/Scripts/View/SaveStore.cs',
+          'Assets/_FS/Scripts/View/StationView.cs', 'Assets/_FS/Scripts/View/Servicos.cs', 'Assets/_FS/Scripts/View/Estado.cs', 'tools/coretests']
 SIM, DEFS = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs'
 
 
@@ -50,8 +51,10 @@ MUTACOES = [
         'claim offline com o mesmo id paga de novo (perde a idempotência)'),
     mut('off-teto-relativo', DEFS, 'OfflineMaxNextUpgrades = 2f;', 'OfflineMaxNextUpgrades = 3f;',
         'cofre limitado a 3x o upgrade travado mais barato em vez de 2x'),
+    mut('off-trava-tuning', DEFS, 'OfflineCap => Math.Min(OfflineMaxSeconds, Balance.OfflineCapSeconds);', 'OfflineCap => OfflineMaxSeconds;',
+        'Tuning passa da trava de 2 h do offline (A-CORE-03)'),
     # encomendas
-    mut('ord-premio-nao-pago', SIM, '(long)Gold + OrderReward)', '(long)Gold)',
+    mut('ord-premio-nao-pago', SIM, ' Gold += OrderReward;', ' ;',
         'encomenda entregue não paga o prêmio'),
     mut('ord-premio-segundos', DEFS, 'OrderRewardSeconds = 10f;', 'OrderRewardSeconds = 20f;',
         'prêmio da encomenda = 20 s da taxa online em vez de 10 s'),
@@ -65,12 +68,16 @@ MUTACOES = [
     mut('save-ord-progresso', SIM, 'ordProgress = Clamp0(I(parts[2], 0), ordTarget);', 'ordProgress = Clamp0(I(parts[1], 0), ordTarget);',
         'load lê o progresso da encomenda do campo do alvo'),
     # VIP e boost
-    mut('vip-multiplicador', SIM, 'Slot(jewel, i), Balance.VipPriceMul);', 'Slot(jewel, i), 2);',
+    mut('vip-multiplicador', SIM, 'Slot(jewel, i), T.VipPriceMul);', 'Slot(jewel, i), 2);',
         'VIP paga 2x o preço por unidade em vez de 3x'),
     mut('boost-multiplicador', SIM, 'BoostMul += 1f;', 'BoostMul += 2f;',
         '1o anúncio de velocidade já dá 3x (em vez de 2x)'),
     mut('boost-recarga', DEFS, 'BoostCooldownSeconds = 300f;', 'BoostCooldownSeconds = 240f;',
         'recarga do boost 5 min -> 4 min'),
+    mut('vip-chamado-recarga', DEFS, 'VipChamadoRecarga = 300f;', 'VipChamadoRecarga = 240f;',
+        'recarga do Chamar VIP 5 min -> 4 min (P14)'),
+    mut('anuncio-antes-da-melhoria', DEFS, 'AnunciosDepoisDaPrimeiraMelhoria = true;', 'AnunciosDepoisDaPrimeiraMelhoria = false;',
+        'Velocidade e Chamar VIP liberados antes da 1a melhoria (D6)'),
     # fila e clientes
     mut('fila-vaga-a-mais', SIM, 'if (q.Count < cap)', 'if (q.Count <= cap)',
         'fila aceita um cliente além das vagas'),

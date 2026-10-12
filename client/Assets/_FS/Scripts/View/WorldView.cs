@@ -1367,7 +1367,7 @@ namespace FS
             if (v.Root.gameObject.activeSelf != on) v.Root.gameObject.SetActive(on);
             if (v.PriceBox.gameObject.activeSelf != on) v.PriceBox.gameObject.SetActive(on);
             if (!on) { v.Label.enabled = false; return; }
-            long cost = Upgrades.Cost(u), remaining = cost - v.P.Paid;
+            long cost = _sim.T.Cost(u), remaining = cost - v.P.Paid;
             bool affordable = _sim.Gold >= remaining;
             float frac = cost > 0 ? v.P.Paid / (float)cost : 0f;
             v.Fill.transform.localScale = Vector3.one * (PadSize * 0.92f * Mathf.Sqrt(frac));

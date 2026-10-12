@@ -15,7 +15,7 @@ namespace FS.Core
         /// <summary>Maior nome de upgrade: Textos.DicaMax (26) menos "Compre os " (10), a dica mais curta do menu. A dica inteira e' do
         /// TextosTests: o Textos.cs fica na view e o Core nao o enxerga.</summary>
         public const int NameMax = 16;
-        /// <summary>Os 15 do v0.1 seguem 50 x 1,30^tier; da 2a area em diante cada um tem preco proprio (Upgrades.Cost).</summary>
+        /// <summary>Os 15 do v0.1 seguem 50 x 1,30^tier; da 2a area em diante cada um tem preco proprio (Tuning.Cost).</summary>
         public const int FormulaTiers = (int)Upgrade.SideCorridor;
 
         /// <summary>Todas as regras. Sem argumentos = o conteudo real; o teste injeta uma COPIA quebrada no que quiser.</summary>
@@ -23,7 +23,7 @@ namespace FS.Core
         {
             upgrades ??= Upgrades.All;
             costs ??= RealCosts();
-            prices ??= Balance.Price;
+            prices ??= Tuning.Padrao.Price;
             milestones ??= Balance.Milestones;
             world ??= World();
             var e = new List<string>();
@@ -42,8 +42,8 @@ namespace FS.Core
 
         public static long[] RealCosts()
         {
-            var c = new long[Upgrades.Count];
-            for (int i = 0; i < c.Length; i++) c[i] = Upgrades.Cost(i);
+            var c = new long[Upgrades.Count]; var t = new Tuning();
+            for (int i = 0; i < c.Length; i++) c[i] = t.Cost(i);
             return c;
         }
 

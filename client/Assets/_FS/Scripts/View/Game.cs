@@ -150,7 +150,7 @@ namespace FS
             BuildHud();
             _view = new GameObject("Mundo").AddComponent<WorldView>();
             _view.Init(_sim, _cam, _labels);
-            _menu = new MenuBar(_safe, _sim, u => Bought(u, Upgrades.Cost(u), _sim.Player.Pos));
+            _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos));
             _cfg.SetAsLastSibling();     // configuracoes e painel modal cobrem a barra de melhorias
             _panel.SetAsLastSibling();
             if (Arg("-menu") != null) _menu.Toggle();   // foto com a fileira aberta
@@ -197,7 +197,7 @@ namespace FS
             if (elapsed < 60) return;   // mesma regra da volta de pausa: abrir de novo em < 1 min mostrava "31 de ouro em 0 min fora" (POCO F4)
             long gold = _sim.ApplyOffline(elapsed, _sim.SavedAt);
             if (gold <= 0) return;
-            long shown = Math.Min(elapsed, (long)Balance.OfflineCapSeconds);
+            long shown = Math.Min(elapsed, _sim.T.OfflineCap);
             Log("offline_claim", gold.ToString(), shown.ToString());
             Source("cofre", gold);
             Sfx.Play("offline");
@@ -761,15 +761,18 @@ namespace FS
         }
 
         /// <summary>
-        /// Cada quadro (tempo real: o simulado zera o timeScale): VIP so com Sim.CanSummonVip e anuncio pronto; velocidade com CanBoost e
-        /// anuncio pronto mostra o proximo multiplicador, fora disso (sem boost e com recarga) fica cinza com o tempo; no 3x some (o selo
-        /// diz tudo). Selo do boost com o multiplicador e o cronometro, pulsando.
+        /// Cada quadro (tempo real: o simulado zera o timeScale): VIP com Sim.CanSummonVip e anuncio pronto; na recarga de 5 min (P14, sem VIP
+        /// na rua) fica cinza com o tempo, como a velocidade. Velocidade com CanBoost e anuncio pronto mostra o proximo multiplicador, fora disso
+        /// (sem boost e com recarga) fica cinza com o tempo; no 3x some (o selo diz tudo). Flag desligada (Tuning) esconde o botao; antes da 1a
+        /// melhoria (D6) os dois Can* recusam e nao ha recarga, entao os dois ficam escondidos (e sem rewarded_offer).
+        /// Selo do boost com o multiplicador e o cronometro, pulsando.
         /// </summary>
         void RefreshAdUi()
         {
-            bool vip = _sim.CanSummonVip && _ads.Ready(Ads.Vip);
-            if (_vipBtn.B.gameObject.activeSelf != vip) _vipBtn.B.gameObject.SetActive(vip);
-            bool active = _sim.BoostLeft > 0f, can = _sim.CanBoost && _ads.Ready(Ads.Velocidade), cool = !active && _sim.BoostCooldown > 0f;
+            bool vip = _sim.CanSummonVip && _ads.Ready(Ads.Vip), vipCool = _sim.T.Vip && _sim.T.VipChamado && !_sim.VipActive && _sim.VipCooldown > 0f;
+            if (_vipBtn.B.gameObject.activeSelf != (vip || vipCool)) _vipBtn.B.gameObject.SetActive(vip || vipCool);
+            if (vip || vipCool) Paint(_vipBtn, vip, Color.white, vip ? "VIP" : Clock(_sim.VipCooldown));
+            bool active = _sim.BoostLeft > 0f, can = _sim.CanBoost && _ads.Ready(Ads.Velocidade), cool = _sim.T.Velocidade && !active && _sim.BoostCooldown > 0f;
             // s86 rewarded_offer: uma por aparicao do botao disponivel (cinza da recarga nao e' oferta), contada quando da para tocar
             // (A-PLAT-07: Estados.Anuncia; por baixo de painel ela espera o painel fechar)
             bool on = Estados.Anuncia(EstadoAtual);
@@ -779,14 +782,7 @@ namespace FS
             else if (on && !_speedOffer) { _speedOffer = true; Log("rewarded_offer", Ads.Velocidade, active ? "3x" : "2x"); }
             bool show = can || cool;
             if (_speedBtn.B.gameObject.activeSelf != show) _speedBtn.B.gameObject.SetActive(show);
-            if (show)
-            {
-                _speedBtn.B.interactable = can;
-                _speedBtn.Face.color = can ? AdFace : AdOff;
-                _speedBtn.Icon.color = can ? Art.Accent : Art.ComAlfa(Art.Ink, 0.45f);
-                _speedBtn.Video.SetActive(can);
-                _speedBtn.Label.text = can ? (active ? "→3×" : "2×") : Clock(_sim.BoostCooldown);   // v0.6d: com boost, o PROXIMO nivel ("3×" lia como o atual)
-            }
+            if (show) Paint(_speedBtn, can, Art.Accent, can ? (active ? "→3×" : "2×") : Clock(_sim.BoostCooldown));   // v0.6d: com boost, o PROXIMO nivel ("3×" lia como o atual)
             if (_boostSeal.gameObject.activeSelf != active) _boostSeal.gameObject.SetActive(active);
             if (active)
             {
@@ -794,6 +790,16 @@ namespace FS
                 _boostTime.text = Clock(_sim.BoostLeft);
                 _boostSeal.localScale = Vector3.one * (1f + 0.04f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 3f)));
             }
+        }
+
+        /// <summary>Botao de anuncio pronto (face da HUD, icone em `on`, selo de video) ou na recarga (cinza, sem video, legenda = cronometro).</summary>
+        static void Paint(AdBtn b, bool can, Color on, string label)
+        {
+            b.B.interactable = can;
+            b.Face.color = can ? AdFace : AdOff;
+            b.Icon.color = can ? on : Art.ComAlfa(Art.Ink, 0.45f);
+            b.Video.SetActive(can);
+            b.Label.text = label;
         }
 
         // ---------- encomenda (v0.6c, docs/FASE9_ENCOMENDAS.md) ----------
@@ -902,7 +908,7 @@ namespace FS
                 if (m <= 0f) return;
                 Sfx.Play("upgrade", 1.2f);
                 _view.Float(_sim.Player.Pos, $"Velocidade {m:0}×!", Art.Accent, 48);
-                Log("boost_start", m.ToString("0", CultureInfo.InvariantCulture), Balance.BoostSeconds.ToString("0", CultureInfo.InvariantCulture));
+                Log("boost_start", m.ToString("0", CultureInfo.InvariantCulture), _sim.T.BoostSeconds.ToString("0", CultureInfo.InvariantCulture));
             }, AdFail);
         }
 
@@ -1106,7 +1112,7 @@ namespace FS
                 var u = (Upgrade)_buyAt[i].u;
                 _buyAt.RemoveAt(i);
                 // ponytail: cheat de dev, o Buy nao confere pre-requisito; a ordem da lista e' responsabilidade de quem grava
-                if (_sim.Buy(u)) _sim.Gold = Math.Max(0, _sim.Gold - Upgrades.Cost(u));
+                if (_sim.Buy(u)) _sim.Gold = Math.Max(0, _sim.Gold - _sim.T.Cost(u));
             }
         }
 

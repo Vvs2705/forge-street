@@ -9,7 +9,7 @@ namespace FS.Core
 
     /// <summary>
     /// Os 15 upgrades do MVP (GDD §18/§19) + 2 da 2a area (v0.2) + 3 da joalheria (fase 2). A ORDEM do enum e' a ordem de compra pretendida (tier): o custo sai de
-    /// Upgrades.Cost(tier). Cada um muda o FLUXO (desbloqueia estacao, contrata, remove caminhada) ou um numero
+    /// Tuning.Cost(tier). Cada um muda o FLUXO (desbloqueia estacao, contrata, remove caminhada) ou um numero
     /// que desloca o gargalo; a raia B pediu decisao real de onde investir, nao so "estacao vermelha = upgrade".
     /// </summary>
     public enum Upgrade
@@ -92,8 +92,9 @@ namespace FS.Core
     }
 
     /// <summary>
-    /// Numeros do jogo. Todos HIPOTESE: o Bot (BalanceTests) e' quem confirma que a §3 do GDD bate; os valores
-    /// medidos estao em docs/BALANCE.md. Mudou aqui, roda `dotnet test` e atualiza o BALANCE.md.
+    /// Numeros FIXOS do jogo: geometria, IDs, receitas, efeitos de upgrade e limites de seguranca. Os de economia e ritmo que o RemoteConfig e
+    /// os eventos ajustam estao no Tuning (A-CORE-03). Todos HIPOTESE: o Bot (BalanceTests) e' quem confirma que a §3 do GDD bate; os valores
+    /// medidos estao em docs/BALANCE.md. Mudou aqui ou no Tuning, roda `dotnet test` e atualiza o BALANCE.md.
     /// </summary>
     public static class Balance
     {
@@ -107,6 +108,7 @@ namespace FS.Core
         public const float WorkerReach = 0.3f;                  // ajudante para a 0,3 m do ponto da boca (dentro da zona)
         // impasse do Sim.Steer: andando 1 s sem sair de 0,75 m (> 2 passos do mais rapido, ajudante 3x a 30 ticks/s = 0,34 m; quem anda livre sai em < 0,45 s)
         public const float StuckRadius = 0.75f, StuckSeconds = 1f;
+        // efeitos de upgrade e de maos: a View pre-aloca as pilhas por PlayerCapUp/WorkerCapUp (viram dado no WorkerDef, B-CORE-04)
         public const float PlayerSpeed = 3f, PlayerSpeedUp = 4.2f;
         public const int PlayerCap = 3, PlayerCapUp = 6;
         public const float WorkerSpeed = 2.4f, WorkerSpeedUp = 3.4f;
@@ -114,63 +116,22 @@ namespace FS.Core
         public const float WorkerPatience = 1.2f;              // s parado na fonte vazia antes de ir entregar o que tem
         public const float GrabTime = 0.4f;                     // 1 minerio do deposito
         public const float TransferTime = 0.2f;                 // 1 item pego/depositado
-        public const float FurnaceTime0 = 4f, FurnaceTime1 = 2.5f, FurnaceTime2 = 1.6f;
-        public const float HammerTime0 = 5f, HammerTime1 = 3f;    // bigorna mais lenta que a fornalha com fole: a 2a bigorna "reduz a fila" (§3 3:30)
-        public const float ShieldTimeMul = 1.5f, JewelTimeMul = 2f;
         public const int FurnaceIn = 6, FurnaceOut = 4, CrafterIn = 4, CrafterOut = 3;
-        public const int CounterCap0 = 5, CounterCap1 = 10;     // estoque do balcao por produto; a Vitrine dobra
-        public const int QueueCap0 = 4, QueueCapMax = 8;        // vagas do balcao (clientes atendidos lado a lado): 4 + 1 por evolucao (FASE7 §2)
+        public const int QueueCapMax = 8;                       // trava de geometria: 8 vagas cabem na oficina; Tuning.QueueCap0 + evolucoes nunca passa
         public const float SlotStep = 0.85f, CounterEnd = 0.2f; // m entre vagas; ponta do balcao alem da ultima vaga
         /// <summary>Meia-largura do corpo do balcao com `slots` vagas: uma vaga = 0,85 m de balcao + as pontas. 4 vagas: x 2,6-6,4; 8: x 0,9-8,1.</summary>
         public static float CounterHalfX(int slots) => SlotStep * slots / 2f + CounterEnd;
-        public const float PatienceBase = 30f, PatiencePerSecond = 3f;   // paciencia(item) = base + k x producao inicial (FASE5 §1, calibrado no BALANCE.md §13)
-        public const int JewelQueueCap = 3;                     // fila da loja de joias (nobres: menos gente)
-        public const int JewelQueueCapUp = 5; public const float JewelVitrineClientMul = 0.7f;   // Vitrine de joias: fila 3 -> 5, nobres x0,7 (soma com a Vitrine)
-        public const float JewelSpeedMul = 0.6f;                // Lupa: tempo da bancada de joias x0,6
+        public const int JewelQueueCap = 3;                     // fila da loja de joias (nobres: menos gente); geometria: o JewelSlot centra ate 5 vagas
+        public const int JewelQueueCapUp = 5;                   // Vitrine de joias: fila 3 -> 5 (o ContentValidator confere as vagas ate aqui)
         public const float ServeTime = 0.4f;                    // s entre duas vendas no balcao
-        public const float FirstClientAt = 8f;                  // o 1o cliente de espada chega cedo (§3: venda em <90 s)
-        public static readonly float[] ClientInterval = { 0, 0, 6f, 9f, 8f, 14f }; // s entre clientes, por linha, no inicio
-        public const float FamePer10Sales = 0.94f, FameFloor = 0.4f; // "fama": a cada 10 vendas os clientes chegam 6% mais rapido, ate 2,5x
-        public const float VitrineClientMul = 0.7f;             // CounterCapacity atrai mais gente
-        public const float ConveyorTime = 1f;                   // s por lingote na esteira
         public const float PadDrainSeconds = 1f;                // tempo para pagar um pad inteiro com ouro na mao
         public const float PadDwell = 0.5f;                     // andando por cima, so paga depois deste tempo (atravessar nao gasta); parado paga na hora
-        public const int CostBase = 50; public const float CostGrowth = 1.30f; // custo(tier) = 50 * 1,30^tier, arredondado a 5 (varredura em docs/BALANCE.md)
-        public const int SideCorridorCost = 690, JewelryCost = 1515;          // 2a area: fora da formula (coordenador 2026-10-07, BALANCE.md §9)
-        public const int JewelerCost = 2200, JewelSpeedCost = 5500, JewelVitrineCost = 9000;   // fase 2: decisao aprovada (BALANCE.md §10.7)
-        public const int JewelPriceUp = 80;                     // Vitrine de joias: nobres pagam mais, sem mudar as outras linhas
-        public const int WorkshopFacadeCost = 14000, WorkshopFloorCost = 18000, JewelryDecorCost = 22000;   // luxo: Leva 11, Fachada +8,7 min depois da producao (BALANCE.md §15)
-        public const int MinerCost = 3000, Jeweler2Cost = 2400;   // fase 4: regra de retorno 8-12 min, varredura em BALANCE.md §14
-        // FASE7: balcao 5/6/7/8 vagas. Ganho medido 4 -> 8 = +89 ouro/min comprando aos 15 min (0 antes dos 10 e depois dos 30): soma 750
-        // = retorno 8,4 min; o Balcao 5 exige a Vitrine para nao cair nos primeiros 10 min, onde nao rende (BALANCE.md §17)
-        public static readonly int[] CounterSlotCost = { 150, 175, 200, 225 };
-        public const int OfflineCapSeconds = 7200; public const float OfflineFactor = 0.25f;   // raia B §5 + coordenador 2026-10-06: teto 2 h, 25% da taxa online
-        public const float OfflineMaxNextUpgrades = 2f;         // e nunca mais que 2x o preco do upgrade mais barato ainda travado
+        /// <summary>Guardrail do estudio (offline com teto de 2 h; managers e premium mexem na taxa, nao no tempo): trava do nucleo, NUNCA knob.
+        /// O Tuning.OfflineMaxSeconds so encurta (Tuning.OfflineCap).</summary>
+        public const int OfflineCapSeconds = 7200;
         public const float RateTau = 60f;                       // s da media movel de ouro/s (taxa online)
-        // FASE8 (docs/FASE8_VIP_VELOCIDADE.md, medido no BALANCE.md §18): cliente VIP e velocidade por anuncio
-        public const float VipMin = 240f, VipMax = 360f;        // s entre VIPs (sorteio deterministico); o relogio so anda depois da 1a venda
-        public const int VipPackMin = 3, VipPriceMul = 3;       // pacote de no minimo 3 unidades (no maximo a prateleira, CounterCap) de um produto do balcao, 3x o preco cada
-        public const float VipShare = 0.07f;                    // o pacote vale ~7% do ouro de um intervalo medio entre VIPs (sweep de 3/5/6 fixos e 5/7/10%: BALANCE §18)
-        public const float VipPatienceBase = 90f, VipPatiencePerUnit = 6f;   // rodada 3: paciencia do VIP = 90 s + 6 s por unidade do pacote (3 = 108 s, 10 = 150 s, 20 = 210 s)
-        /// <summary>Paciencia do VIP com `units` no pacote (natural e chamado). O cliente normal tem 57-77 s.</summary>
-        public static float VipPatienceFor(int units) => VipPatienceBase + VipPatiencePerUnit * units;
-        public const float VipSummonMinIn = 60f;                // chamar por anuncio: so sem VIP ativo e com o proximo natural a mais de 60 s
-        public const int VipSummonPackMul = 2, VipSummonPackMax = 20;   // o VIP chamado e' EXTRA (nao mexe no relogio natural) e traz 2x o pacote do natural, ate 20 (coordenador)
-        public const float BoostSeconds = 60f, BoostMax = 3f, BoostPlayerMax = 1.3f;   // 1 anuncio = 2x por 60 s, o 2o sobe para 3x; o ferreiro no maximo 1,3x
-        // FASE9 (docs/FASE9_ENCOMENDAS.md): encomenda = vender N de uma linha aberta; uma por vez, sem prazo nem falha
-        public const float OrderFirstDelay = 45f, OrderGap = 20f;   // s depois da 1a venda; s entre uma entregue e a proxima
-        public const int OrderFirstTarget = 5, OrderMin = 3, OrderMax = 30;   // a 1a e' 5 espadas; depois N = OrderSeconds da renda da linha
-        public const float OrderSeconds = 150f, OrderRewardSeconds = 10f;     // premio ~10 s da taxa online: 4,2% da receita no bot de 60 min (BALANCE §20)
-        public const int OrderRewardMin = 25;
-        public const float BoostCooldownSeconds = 300f;         // recarga: 5 min de jogo contados do FIM de cada boost (coordenador; sem ela, 2x renovado fechava a producao aos 26:56)
-        public static readonly int[] Price = { 0, 0, 10, 25, 16, 60 };     // ouro por item vendido
-        public static readonly int[] IngotsPer = { 0, 0, 1, 2, 1, 2 };     // lingotes por produto
+        public static readonly int[] IngotsPer = { 0, 0, 1, 2, 1, 2 };     // lingotes por produto (receita: vira RecipeDef no B-CORE-01)
         public static readonly string[] ItemName = { "minério", "lingote", "espada", "escudo", "ferramenta", "joia" };
-
-        /// <summary>Segundos na fila antes de desistir: base + k x tempo de producao da linha no inicio (fornalha inicial x
-        /// lingotes + bancada inicial). Espada 9 s, escudo 15,5 s, ferramenta 9 s, joia 18 s.</summary>
-        public static float PatienceFor(Item item) => PatienceBase + PatiencePerSecond *
-            (FurnaceTime0 * IngotsPer[(int)item] + HammerTime0 * (item == Item.Shield ? ShieldTimeMul : item == Item.Jewel ? JewelTimeMul : 1f));
 
         /// <summary>Parede direita da oficina (x 9,0-9,6, y 0-14), solida, com duas aberturas em pares y0, y1: a porta lateral na
         /// altura da joalheria (5,6-7,4) e o arco (11,6-13,4). As pontas dos segmentos sao os batentes (o arco nao tem poste solto).</summary>
@@ -210,6 +171,117 @@ namespace FS.Core
             new MilestoneDef((int)Item.Jewel, 10, 600, StreetChest, "10 joias!"),
             new MilestoneDef(-1, 200, 1200, WorkshopChest, "200 vendas!"),
         };
+    }
+
+    /// <summary>
+    /// A-CORE-03: numeros de economia e ritmo que o RemoteConfig e os eventos ajustam, por INSTANCIA (cada Sim le o dele, `Sim.T`). Os padroes
+    /// sao os de sempre (BALANCE.md): com `new Tuning()` o bot de 60 min sai identico. Geometria, IDs, receitas, efeitos de upgrade e limites de
+    /// seguranca ficam const no Balance; o teto offline de 2 h e' trava do nucleo (Balance.OfflineCapSeconds), nunca knob.
+    /// Flag desligada: o sistema para de oferecer ou gerar o NOVO (encomenda, VIP, anuncio, bau); o que ja estava em andamento termina (boost
+    /// ativo, VIP pendente ou na vaga, encomenda aberta, bau na tela) e o estado vai e volta no save intacto: religar continua de onde parou.
+    /// ponytail: sem validacao de faixa alem das travas (offline, vagas); o RemoteConfig (A-PLAT-08) valida o JSON antes de aplicar.
+    /// </summary>
+    public sealed class Tuning
+    {
+        /// <summary>Os padroes numa copia nova a cada leitura (o Tuning e' mutavel: ninguem muda o padrao do outro).</summary>
+        public static Tuning Padrao => new Tuning();
+
+        // feature flags
+        public bool Encomendas = true, Vip = true, VipChamado = true, Velocidade = true, Baus = true;
+        /// <summary>P3/V10: o intersticial so existe como flag, DESLIGADA por padrao; liga depois do A/B no Limited Release. Nada le ainda.</summary>
+        public bool Interstitial;
+
+        // precos e custos
+        public int[] Price = { 0, 0, 10, 25, 16, 60 };          // ouro por item vendido
+        public int JewelPriceUp = 80;                           // Vitrine de joias: nobres pagam mais, sem mudar as outras linhas
+        public int CostBase = 50; public float CostGrowth = 1.30f; // custo(tier) = 50 * 1,30^tier, arredondado a 5 (varredura em docs/BALANCE.md)
+        public int SideCorridorCost = 690, JewelryCost = 1515;  // 2a area: fora da formula (coordenador 2026-10-07, BALANCE.md §9)
+        public int JewelerCost = 2200, JewelSpeedCost = 5500, JewelVitrineCost = 9000;   // fase 2: decisao aprovada (BALANCE.md §10.7)
+        public int WorkshopFacadeCost = 14000, WorkshopFloorCost = 18000, JewelryDecorCost = 22000;   // luxo: Leva 11, Fachada +8,7 min depois da producao (BALANCE.md §15)
+        public int MinerCost = 3000, Jeweler2Cost = 2400;       // fase 4: regra de retorno 8-12 min, varredura em BALANCE.md §14
+        // FASE7: balcao 5/6/7/8 vagas. Ganho medido 4 -> 8 = +89 ouro/min comprando aos 15 min (0 antes dos 10 e depois dos 30): soma 750
+        // = retorno 8,4 min; o Balcao 5 exige a Vitrine para nao cair nos primeiros 10 min, onde nao rende (BALANCE.md §17)
+        public int[] CounterSlotCost = { 150, 175, 200, 225 };
+
+        // tempos das estacoes
+        public float FurnaceTime0 = 4f, FurnaceTime1 = 2.5f, FurnaceTime2 = 1.6f;
+        public float HammerTime0 = 5f, HammerTime1 = 3f;        // bigorna mais lenta que a fornalha com fole: a 2a bigorna "reduz a fila" (§3 3:30)
+        public float ShieldTimeMul = 1.5f, JewelTimeMul = 2f;
+        public float JewelSpeedMul = 0.6f;                      // Lupa: tempo da bancada de joias x0,6
+        public float ConveyorTime = 1f;                         // s por lingote na esteira
+
+        // clientes, paciencia e vagas
+        public int CounterCap0 = 5, CounterCap1 = 10;           // estoque do balcao por produto; a Vitrine dobra
+        public int QueueCap0 = 4;                               // vagas do balcao (clientes lado a lado): 4 + 1 por evolucao (FASE7 §2), ate Balance.QueueCapMax
+        public float PatienceBase = 30f, PatiencePerSecond = 3f; // paciencia(item) = base + k x producao inicial (FASE5 §1, calibrado no BALANCE.md §13)
+        public float FirstClientAt = 8f;                        // o 1o cliente de espada chega cedo (§3: venda em <90 s)
+        public float[] ClientInterval = { 0, 0, 6f, 9f, 8f, 14f }; // s entre clientes, por linha, no inicio
+        public float FamePer10Sales = 0.94f, FameFloor = 0.4f;  // "fama": a cada 10 vendas os clientes chegam 6% mais rapido, ate 2,5x
+        public float VitrineClientMul = 0.7f;                   // CounterCapacity atrai mais gente
+        public float JewelVitrineClientMul = 0.7f;              // Vitrine de joias: nobres x0,7 (soma com a Vitrine)
+
+        // FASE8 (docs/FASE8_VIP_VELOCIDADE.md, medido no BALANCE.md §18): cliente VIP e velocidade por anuncio
+        public float VipMin = 240f, VipMax = 360f;              // s entre VIPs (sorteio deterministico); o relogio so anda depois da 1a venda
+        public int VipPackMin = 3, VipPriceMul = 3;             // pacote de no minimo 3 unidades (no maximo a prateleira, CounterCap) de um produto do balcao, 3x o preco cada
+        public float VipShare = 0.07f;                          // o pacote vale ~7% do ouro de um intervalo medio entre VIPs (sweep de 3/5/6 fixos e 5/7/10%: BALANCE §18)
+        public float VipPatienceBase = 90f, VipPatiencePerUnit = 6f;   // rodada 3: paciencia do VIP = 90 s + 6 s por unidade do pacote (3 = 108 s, 10 = 150 s, 20 = 210 s)
+        public float VipSummonMinIn = 60f;                      // chamar por anuncio: so sem VIP ativo e com o proximo natural a mais de 60 s
+        public int VipSummonPackMul = 2, VipSummonPackMax = 20; // o VIP chamado e' EXTRA (nao mexe no relogio natural) e traz 2x o pacote do natural, ate 20 (coordenador)
+        public float VipChamadoRecarga = 300f;                  // P14/V11: 5 min de jogo entre um "Chamar VIP" e o proximo, contados de quando o chamado SAI (levou o pacote ou cansou)
+        public float BoostSeconds = 60f, BoostMax = 3f, BoostPlayerMax = 1.3f;   // 1 anuncio = 2x por 60 s, o 2o sobe para 3x; o ferreiro no maximo 1,3x
+        public float BoostCooldownSeconds = 300f;               // recarga: 5 min de jogo contados do FIM de cada boost (coordenador; sem ela, 2x renovado fechava a producao aos 26:56)
+        public bool AnunciosDepoisDaPrimeiraMelhoria = true;    // D6/V18: Velocidade e Chamar VIP so depois da 1a melhoria comprada (o boost no segundo 0 e o VIP da 1a venda furavam o §3)
+
+        // FASE9 (docs/FASE9_ENCOMENDAS.md): encomenda = vender N de uma linha aberta; uma por vez, sem prazo nem falha
+        public float OrderFirstDelay = 45f, OrderGap = 20f;     // s depois da 1a venda; s entre uma entregue e a proxima
+        public int OrderFirstTarget = 5, OrderMin = 3, OrderMax = 30;   // a 1a e' 5 espadas; depois N = OrderSeconds da renda da linha
+        public float OrderSeconds = 150f, OrderRewardSeconds = 10f;     // premio ~10 s da taxa online: 4,2% da receita no bot de 60 min (BALANCE §20)
+        public int OrderRewardMin = 25;
+
+        // offline (raia B §5 + coordenador 2026-10-06)
+        public float OfflineFactor = 0.25f;                     // 25% da taxa online
+        public float OfflineMaxNextUpgrades = 2f;               // e nunca mais que 2x o preco do upgrade mais barato ainda travado
+        public int OfflineMaxSeconds = Balance.OfflineCapSeconds;   // um evento pode ENCURTAR; passar das 2 h nao passa (OfflineCap)
+        /// <summary>Teto de tempo do cofre que vale: o knob, nunca acima da trava do nucleo (Balance.OfflineCapSeconds = 7.200 s).</summary>
+        public long OfflineCap => Math.Min(OfflineMaxSeconds, Balance.OfflineCapSeconds);
+
+        /// <summary>Segundos na fila antes de desistir: base + k x tempo de producao da linha no inicio (fornalha inicial x
+        /// lingotes + bancada inicial). Espada 9 s, escudo 15,5 s, ferramenta 9 s, joia 18 s.</summary>
+        public float PatienceFor(Item item) => PatienceBase + PatiencePerSecond *
+            (FurnaceTime0 * Balance.IngotsPer[(int)item] + HammerTime0 * (item == Item.Shield ? ShieldTimeMul : item == Item.Jewel ? JewelTimeMul : 1f));
+
+        /// <summary>Paciencia do VIP com `units` no pacote (natural e chamado). O cliente normal tem 57-77 s.</summary>
+        public float VipPatienceFor(int units) => VipPatienceBase + VipPatiencePerUnit * units;
+
+        /// <summary>s entre o VIP `n` e o seguinte: 4-6 min, sorteio deterministico (sequencia de Weyl pela razao aurea: sem estado alem de VipCount).</summary>
+        public float VipInterval(int n) => VipMin + (VipMax - VipMin) * (float)((n + 1) * 0.6180339887498949 % 1.0);
+
+        /// <summary>custo(tier) = CostBase * CostGrowth^tier, arredondado ao multiplo de 5 (preco legivel no pad). A-CORE-06: long, ate
+        /// Upgrades.CostMax (em int estourava no tier 67 e o Math.Max devolvia 5).</summary>
+        public long Cost(int tier)
+        {
+            // ponytail: a 2a area sai da formula porque fica no FIM do enum (save antigo de 15/17 flags) com preco de meio de
+            // jogo. Mais uma area assim = trocar por uma tabela de precos por upgrade.
+            switch ((Upgrade)tier)
+            {
+                case Upgrade.SideCorridor: return SideCorridorCost;
+                case Upgrade.Jewelry: return JewelryCost;
+                case Upgrade.Jeweler: return JewelerCost;
+                case Upgrade.JewelSpeed: return JewelSpeedCost;
+                case Upgrade.JewelVitrine: return JewelVitrineCost;
+                case Upgrade.WorkshopFacade: return WorkshopFacadeCost;
+                case Upgrade.WorkshopFloor: return WorkshopFloorCost;
+                case Upgrade.JewelryDecor: return JewelryDecorCost;
+                case Upgrade.Miner: return MinerCost;
+                case Upgrade.Jeweler2: return Jeweler2Cost;
+                case Upgrade.Counter5: case Upgrade.Counter6: case Upgrade.Counter7: case Upgrade.Counter8:
+                    return CounterSlotCost[tier - (int)Upgrade.Counter5];
+            }
+            double c = Math.Min(CostBase * Math.Pow(CostGrowth, tier), Upgrades.CostMax);
+            return Math.Max(5, (long)Math.Round(c / 5.0) * 5);   // x5 em long: em double, acima de 2^53 o produto perdia o multiplo de 5
+        }
+
+        public long Cost(Upgrade u) => Cost((int)u);
     }
 
     /// <summary>Marco: vender `Count` de `Item` (-1 = qualquer produto) paga `Gold` num bau em `Pos`.</summary>
@@ -269,34 +341,8 @@ namespace FS.Core
             new UpgradeDef(Upgrade.Counter8, (int)Upgrade.Counter7, "Balcão 8 vagas", "Atende 8 clientes ao mesmo tempo", menu: true),
         };
 
-        /// <summary>A-CORE-06: teto da curva (1e18, cabe em long com folga para somar ouro). 50 x 1,3^tier chega nele no tier 144.</summary>
+        /// <summary>A-CORE-06: teto da curva (1e18, cabe em long com folga para somar ouro). 50 x 1,3^tier chega nele no tier 144. O custo
+        /// de cada upgrade e' do Tuning (Tuning.Cost); o teto e' trava, nao knob.</summary>
         public const long CostMax = 1000000000000000000;
-
-        /// <summary>custo(tier) = CostBase * CostGrowth^tier, arredondado ao multiplo de 5 (preco legivel no pad). A-CORE-06: long, ate CostMax
-        /// (em int estourava no tier 67 e o Math.Max devolvia 5).</summary>
-        public static long Cost(int tier)
-        {
-            // ponytail: a 2a area sai da formula porque fica no FIM do enum (save antigo de 15/17 flags) com preco de meio de
-            // jogo. Mais uma area assim = trocar por uma tabela de precos por upgrade.
-            switch ((Upgrade)tier)
-            {
-                case Upgrade.SideCorridor: return Balance.SideCorridorCost;
-                case Upgrade.Jewelry: return Balance.JewelryCost;
-                case Upgrade.Jeweler: return Balance.JewelerCost;
-                case Upgrade.JewelSpeed: return Balance.JewelSpeedCost;
-                case Upgrade.JewelVitrine: return Balance.JewelVitrineCost;
-                case Upgrade.WorkshopFacade: return Balance.WorkshopFacadeCost;
-                case Upgrade.WorkshopFloor: return Balance.WorkshopFloorCost;
-                case Upgrade.JewelryDecor: return Balance.JewelryDecorCost;
-                case Upgrade.Miner: return Balance.MinerCost;
-                case Upgrade.Jeweler2: return Balance.Jeweler2Cost;
-                case Upgrade.Counter5: case Upgrade.Counter6: case Upgrade.Counter7: case Upgrade.Counter8:
-                    return Balance.CounterSlotCost[tier - (int)Upgrade.Counter5];
-            }
-            double c = Math.Min(Balance.CostBase * Math.Pow(Balance.CostGrowth, tier), CostMax);
-            return Math.Max(5, (long)Math.Round(c / 5.0) * 5);   // x5 em long: em double, acima de 2^53 o produto perdia o multiplo de 5
-        }
-
-        public static long Cost(Upgrade u) => Cost((int)u);
     }
 }
