@@ -73,6 +73,46 @@ setsar=1[main];
 [main][card]concat=n=2:v=1:a=0,scale=out_range=tv:out_color_matrix=bt709,format=yuv420p[v]
 ```
 
+## Presets de captura (G-UA-02)
+
+`-preset <nome>` expande para as flags abaixo (`client/Assets/_FS/Scripts/View/Captura.cs`). A pasta vem do `-record` e a linha de comando vence o preset: `-preset vip -recordsec 10` só troca a duração. Os tempos saíram do Core com o mesmo warmup do jogo, e o `CapturaTests` monta cada preset no `dotnet test`: se uma mudança de Balance quebrar um deles, o teste falha e o preset precisa de recalibragem.
+
+| preset | o que grava (duração padrão) | flags |
+|---|---|---|
+| `start` | Save novo, o bot começa a jogar (4 s) | `-bot` |
+| `huge_queue` | Balcão de 8 vagas com a fila 8/8 parada, sem produção (8 s). Sai com 1 se a fila não estiver cheia no 1º quadro | `-buyids 10,25,26,27,28 -warmup 45 -px 4.5,8.2 -recordfull` |
+| `first_worker` | A 1ª contratação ao vivo: o bot paga o Ajudante e ele começa a carregar. A gravação começa no `Hired` (t ≈ 29,7 s) e dura 10 s | `-bot -buyids 0,1,3,4,9 -hold 0,3,3,3,0,0 -recordhire` |
+| `conveyor` | Câmera perto (7 m) seguindo o ferreiro, com a esteira levando lingotes (12 s) | `-bot -buyids 0,1,2,3,4,5,6 -warmup 20 -cam 7` |
+| `vip` | VIP chamado depois de vendas reais, como no FS-C-24 (30 s). Sai com 1 se o warmup não vendeu | `-buyids 1,2,3,5,6,10,12,14 -warmup 200 -px 4.5,8.2 -vipnow` |
+| `order` | Cartão "Venda 5 espadas" enchendo até "Encomenda entregue! +30" aos ~17 s (20 s) | `-buyids 0,…,14 -warmup 60 -px 4.5,8.2 -recordorder` |
+| `offline` | Painel "Bem-vindo de volta!" com o cofre real de 2 h fora: +1380, o teto de 2× o Corredor (4 s) | `-buyids 0,…,14,25,…,28 -warmup 120 -px 4.5,8.2 -offline 7200` |
+| `full_district` | Interino até a Wave C: a oficina inteira com os luxos (15 s) | `-buy 29 -warmup 120 -px 4.5,8.2` |
+| `district_unlock` | Interino até a Wave C: compra o Corredor aos 100 s com 704 de ouro e a câmera abre a rua lateral (8 s). A Joalheria fica de fora: o ouro só cobre os 1.515 dela ~3 min depois | `-buyids 0,…,14,25,…,28,15@100 -warmup 98 -px 8,8.2` |
+
+Flags novas: `-recordhire` (o 1º quadro é o da 1ª contratação, até t = 600 s), `-recordfull` (fila cheia no 1º quadro ou erro), `-recordorder` (o `-record` mantém o cartão e o aviso da encomenda) e `-offline S` (roda o `Sim.ApplyOffline` real com S de 60 a 7.200 s e mostra o cofre; o `-cofre N` continua só desenhando o painel).
+
+- **Mesmo comando, mesmos quadros.** Com `-record` ou `-preset`, o `UnityEngine.Random` (fumaça, faíscas e poeira) recebe semente fixa. Os pulsos e avisos da HUD que corriam no relógio real usam o relógio do quadro, e o `-record` não cria o EventSystem, então o mouse parado em cima de um botão não muda a cor dele.
+- **Nada impossível.** `-buyids id@t` sem ouro ou sem o pré-requisito naquele instante loga `BUYIDS …` e sai com 1. Antes, o ouro ia a 0 e o pré-requisito era ignorado. O `-vipnow` não marca mais uma 1ª venda falsa: depois de um `-warmup` sem venda real ele sai com 1, e sem warmup espera a 1ª venda real (FS-C-26).
+- **Log.** `PRESET <nome>: <flags>` no início e `RECORD … t=` no 1º quadro. No fim saem `RECORD OK t=… fila=… ouro=… fornalhas=…` e `PRESET <nome> ok`.
+
+Gravar cada preset 2× e comparar os SHA dos quadros (Git Bash). O `-record` e o `-logFile` vão com caminho absoluto, porque um caminho relativo cai em `ForgeStreet_Data/`. Cada quadro tem ~0,7 MB, então a 2ª pasta é apagada depois do hash. Os 12 primeiros quadros ficam fora dos cortes (rótulos na posição da janela anterior): se a diferença aparecer só neles, rode de novo.
+
+```bash
+cd client/Builds/win
+Q="$(cygpath -m "$TEMP")/fs_presets"
+W="-screen-fullscreen 0 -screen-width 540 -screen-height 960"
+for p in start huge_queue first_worker conveyor vip order offline full_district district_unlock; do
+  mkdir -p "$Q/$p"
+  for r in 1 2; do
+    ./ForgeStreet.exe $W -preset $p -record "$Q/$p/$r" -logFile "$Q/$p/$r.log"; echo "$p/$r saiu $?"
+    grep -E "RECORD OK|PRESET $p ok|BUYIDS|VIPNOW|OFFLINE|RECORD:" "$Q/$p/$r.log"
+    (cd "$Q/$p/$r" && sha256sum f*.jpg) > "$Q/$p/$r.sha"
+  done
+  cmp -s "$Q/$p/1.sha" "$Q/$p/2.sha" && echo "$p: MESMOS QUADROS" || diff "$Q/$p/1.sha" "$Q/$p/2.sha" | head
+  rm -rf "$Q/$p/2"
+done
+```
+
 ## Reproduzir
 
 Primeiro faça o build Windows (README). A janela do jogo precisa ficar visível durante a gravação (`-batchmode`/`-nographics` não têm tela para capturar). Cada quadro tem ~0,7 MB: grave fora do repo. A simulação não tem aleatoriedade e `-record` trava o relógio em 1/F s por quadro, então o mesmo comando gera os mesmos quadros. Os números de quadro dos filtros dependem disso.
