@@ -2218,7 +2218,7 @@ namespace FS.Tests
             Run(s, 3f);
             Assert.IsFalse(s.VipActive, "levou o pacote");
             Assert.AreEqual(6 * Tuning.Padrao.VipPriceMul * Tuning.Padrao.Price[(int)Item.Sword], s.Gold, "6 espadas a 3x");
-            Assert.IsTrue(s.CanSummonVip, "sem VIP e com o natural longe: pode de novo");
+            Assert.IsFalse(s.CanSummonVip || s.SummonVip(), "P14: o chamado levou o pacote, recarga de 5 min (ExploitTests)");
             float due = s.Time + s.VipIn;
             Assert.AreEqual(200f - s.Time, s.VipIn, 0.05f, "o relogio natural andou so o tempo de jogo");
             while (!s.VipActive && s.Time < due + 1f) s.Tick(Dt, 0f, 0f);
@@ -2299,7 +2299,7 @@ namespace FS.Tests
             Assert.AreEqual(Tuning.Padrao.VipInterval(0) - 3f, s.VipIn, 0.05f, "relogio andando");
             Assert.IsTrue(s.SummonVip());   // sorteado, ainda sem vaga (sem Tick)
             string text = s.Save(10);
-            StringAssert.Contains("vip=" + s.VipIn.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + ",1,2,6,0,0\n", text);   // chamado: 2x3, passa da prateleira de 5; ainda fora da vaga, nada pago
+            StringAssert.Contains("vip=" + s.VipIn.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + ",1,2,6,0,0,1\n", text);   // chamado: 2x3, passa da prateleira de 5; ainda fora da vaga, nada pago; P14: chamado = 1
             Sim b = Sim.Load(text);
             Assert.AreEqual(s.VipIn, b.VipIn, 1e-3f);
             Assert.AreEqual((1, true), (b.VipCount, b.VipActive), "VIP pendente volta");

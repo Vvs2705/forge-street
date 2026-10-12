@@ -74,6 +74,8 @@ MUTACOES = [
         '1o anúncio de velocidade já dá 3x (em vez de 2x)'),
     mut('boost-recarga', DEFS, 'BoostCooldownSeconds = 300f;', 'BoostCooldownSeconds = 240f;',
         'recarga do boost 5 min -> 4 min'),
+    mut('vip-chamado-recarga', DEFS, 'VipChamadoRecarga = 300f;', 'VipChamadoRecarga = 240f;',
+        'recarga do Chamar VIP 5 min -> 4 min (P14)'),
     # fila e clientes
     mut('fila-vaga-a-mais', SIM, 'if (q.Count < cap)', 'if (q.Count <= cap)',
         'fila aceita um cliente além das vagas'),

@@ -60,8 +60,9 @@ namespace FS.Core
     public sealed class Client
     {
         public Item Want; public float Patience, MaxPatience;
-        /// <summary>FASE8: VIP = pacote de `Pack` unidades (o que ainda falta) a 3x o preco; `Paid` = ouro que ja pagou nesta vaga.</summary>
-        public bool Vip; public int Pack, Paid;
+        /// <summary>FASE8: VIP = pacote de `Pack` unidades (o que ainda falta) a 3x o preco; `Paid` = ouro que ja pagou nesta vaga. P14: `Summoned` =
+        /// chamado por anuncio (quando ele sai, comeca a recarga do botao).</summary>
+        public bool Vip, Summoned; public int Pack, Paid;
     }
 
     /// <summary>Bau de marco (um por Balance.Milestones, mesmo Index). State: 0 nao batido, 1 disponivel, 2 aberto.</summary>
@@ -132,7 +133,10 @@ namespace FS.Core
         /// <summary>Velocidade por anuncio: multiplicador (1, 2 ou 3), s restantes e s de recarga (conta do fim do boost), no tempo de jogo. A-CORE-02:
         /// os tres vao no save (bst=): reabrir nao libera outro boost e o ativo volta com o que restou; o tempo fora nao corre nenhum (como na pausa).</summary>
         public float BoostMul = 1f, BoostLeft, BoostCooldown;
-        int _vipWant = -1, _vipPack;   // VIP sorteado esperando vaga (-1 = nenhum)
+        /// <summary>P14 (V11): s de recarga do "Chamar VIP", no tempo de jogo; comeca quando o VIP chamado sai (levou o pacote ou cansou), entao
+        /// com ele na vaga o botao ja esta travado por VipActive. Vai no save (vipc=), como o boost: reabrir nao libera outro.</summary>
+        public float VipCooldown;
+        int _vipWant = -1, _vipPack; bool _vipSummoned;   // VIP sorteado esperando vaga (-1 = nenhum); chamado por anuncio?
         int _vipPaid; bool _vipQuiet;  // VIP que estava na vaga ao salvar: volta com o que ja pagou e sem novo aviso de chegada
 
         // metricas de playtest (GDD §14/§15)
@@ -258,8 +262,9 @@ namespace FS.Core
             * (product == Item.Jewel && Bought[(int)Upgrade.JewelVitrine] ? T.JewelVitrineClientMul : 1f);
         /// <summary>Ha um VIP esperando vaga ou numa vaga do balcao.</summary>
         public bool VipActive => _vipWant >= 0 || Queue.Exists(c => c.Vip);
-        /// <summary>Botao "chamar o VIP" (anuncio): flags Vip e VipChamado, depois da 1a venda, sem VIP ativo e com o natural a mais de 60 s (contra abuso).</summary>
-        public bool CanSummonVip => T.Vip && T.VipChamado && FirstSaleTime >= 0f && !VipActive && VipIn > T.VipSummonMinIn;
+        /// <summary>Botao "chamar o VIP" (anuncio): flags Vip e VipChamado, depois da 1a venda, sem VIP ativo, com o natural a mais de 60 s e a
+        /// recarga de 5 min (P14) zerada (contra abuso).</summary>
+        public bool CanSummonVip => T.Vip && T.VipChamado && FirstSaleTime >= 0f && !VipActive && VipIn > T.VipSummonMinIn && VipCooldown <= 0f;
 
         /// <summary>Anuncio "chamar o VIP": um VIP EXTRA agora (entra na proxima vaga livre), com 2x o pacote do natural (ate 20). NAO mexe no
         /// relogio natural (so o segura em 0 se ele zerar com o extra ainda na vaga). Fora de CanSummonVip recusa (false).</summary>
@@ -299,6 +304,7 @@ namespace FS.Core
             double raw = T.VipShare * (T.VipMin + T.VipMax) / 2.0 * RateEma / (T.VipPriceMul * PriceOf((Item)_vipWant));
             int pack = Math.Max(T.VipPackMin, Math.Min(CounterCap, (int)Math.Round(raw)));
             _vipPack = extra ? Math.Min(T.VipSummonPackMax, T.VipSummonPackMul * pack) : pack;   // padrao: 2 x 10 = 20, o teto so corta prateleira de Tuning maior
+            _vipSummoned = extra;
             VipCount++;
             if (!extra) VipIn = T.VipInterval(VipCount);
         }
@@ -326,6 +332,7 @@ namespace FS.Core
             foreach (Carrier w in Workers) Interact(w, fast);
             foreach (Station s in Stations) Produce(s, fast);
             Conveyor(fast);
+            VipCooldown = Math.Max(0f, VipCooldown - dt);   // P14: no tempo de jogo; o Serve recarrega quando o chamado sai
             Clients(dt);
             Milestones();
             Orders(dt);
@@ -843,9 +850,9 @@ namespace FS.Core
             if (_vipWant >= 0 && Queue.Count < QueueCap)
             {
                 float pat = T.VipPatienceFor(_vipPack);   // pacote maior, mais tempo: o humano e' mais lento que o bot
-                Queue.Add(new Client { Want = (Item)_vipWant, Patience = pat, MaxPatience = pat, Vip = true, Pack = _vipPack, Paid = _vipPaid });
+                Queue.Add(new Client { Want = (Item)_vipWant, Patience = pat, MaxPatience = pat, Vip = true, Summoned = _vipSummoned, Pack = _vipPack, Paid = _vipPaid });
                 if (!_vipQuiet) Emit(Ev.VipArrived, _vipWant, _vipPack, ClientSlot(Queue.Count - 1));
-                _vipWant = -1; _vipPaid = 0; _vipQuiet = false;
+                _vipWant = -1; _vipPaid = 0; _vipQuiet = false; _vipSummoned = false;
             }
             for (Item p = Item.Sword; p <= Item.Jewel; p++)
             {
@@ -934,6 +941,7 @@ namespace FS.Core
                         c.Paid += Sell(c.Want, Slot(jewel, i), T.VipPriceMul);
                         if (--c.Pack > 0) break;
                         q.RemoveAt(i);
+                        if (c.Summoned) VipCooldown = T.VipChamadoRecarga;   // P14: a recarga conta de quando o chamado sai
                         Emit(Ev.VipServed, (int)c.Want, c.Paid, Slot(jewel, i));
                         break;
                     }
@@ -949,6 +957,7 @@ namespace FS.Core
                 if (c.Patience > 0f) continue;
                 if (c.Vip) Emit(Ev.VipLeft, (int)c.Want, c.Pack, Slot(jewel, i));   // FASE8: o VIP fica fora do ClientsLost (metrica dos clientes normais)
                 else { Emit(Ev.ClientLeft, (int)c.Want, 0, Slot(jewel, i)); ClientsLost++; }
+                if (c.Summoned) VipCooldown = T.VipChamadoRecarga;   // P14: cansou tambem conta (sem isso, deixar ir embora furava a recarga)
                 q.RemoveAt(i);
             }
         }
@@ -1146,7 +1155,9 @@ namespace FS.Core
             Client vip = Queue.Find(c => c.Vip);
             int vipWant = vip != null ? (int)vip.Want : _vipWant, vipPack = vip != null ? vip.Pack : _vipWant >= 0 ? _vipPack : 0;
             sb.Append("vip=").Append(VipIn.ToString("0.###", ci)).Append(',').Append(VipCount).Append(',').Append(vipWant).Append(',').Append(vipPack)
-              .Append(',').Append(vip != null ? 1 : 0).Append(',').Append(vip != null ? vip.Paid : 0).Append('\n');   // na vaga?, ja pagou
+              .Append(',').Append(vip != null ? 1 : 0).Append(',').Append(vip != null ? vip.Paid : 0)   // na vaga?, ja pagou
+              .Append(',').Append((vip != null ? vip.Summoned : _vipWant >= 0 && _vipSummoned) ? 1 : 0).Append('\n');   // P14: chamado? (a recarga comeca quando ele sair)
+            sb.Append("vipc=").Append(VipCooldown.ToString("0.###", ci)).Append('\n');   // P14: recarga do Chamar VIP
             // FASE9: encomenda (item, alvo, progresso, premio, entregues, relogio ate a proxima)
             sb.Append("ord=").Append(OrderItem).Append(',').Append(OrderTarget).Append(',').Append(OrderProgress).Append(',').Append(OrderReward)
               .Append(',').Append(OrderCount).Append(',').Append(OrderIn.ToString("0.###", ci)).Append('\n');
@@ -1175,7 +1186,7 @@ namespace FS.Core
             for (; v < Schema; v++) text = Migrations[v - 1](text);
             var ci = CultureInfo.InvariantCulture;
             string wk = "";   // carga dos ajudantes: aplicada depois do Recompute (eles nascem dos flags)
-            int vipWant = -1, vipPack = 0, vipPaid = 0; bool vipQuiet = false;
+            int vipWant = -1, vipPack = 0, vipPaid = 0; bool vipQuiet = false, vipSummoned = false;
             int ordItem = -1, ordTarget = 0, ordProgress = 0, ordReward = 0;   // VIP pendente: so depois do Recompute (a linha do produto tem de estar aberta)
             foreach (string raw in text.Split('\n'))
             {
@@ -1222,8 +1233,10 @@ namespace FS.Core
                             sim.VipCount = Math.Max(0, I(parts[1], 0));
                             vipWant = I(parts[2], -1); vipPack = Clamp0(I(parts[3], 0), T.VipSummonPackMax);
                             if (parts.Length >= 6) { vipQuiet = I(parts[4], 0) == 1; vipPaid = Math.Max(0, I(parts[5], 0)); }   // save da 0.5.0: 4 campos
+                            if (parts.Length >= 7) vipSummoned = I(parts[6], 0) == 1;   // P14; save de antes: natural (nao recarrega ao sair)
                         }
                         break;
+                    case "vipc": sim.VipCooldown = Math.Max(0f, Math.Min(T.VipChamadoRecarga, F(val, 0f))); break;   // P14; save antigo sem vipc=: sem recarga
                     case "bst":   // A-CORE-02; save antigo sem bst=: sem boost e sem recarga (como antes). Sem tempo = sem boost; ativo = 2x ou 3x
                         if (parts.Length >= 3)
                         {
@@ -1265,7 +1278,7 @@ namespace FS.Core
                     if (n > 0 && w.Count == 0 && sim.CanPick(w, (Item)i)) w.Held[i] = n;
                 }
             }
-            if (vipPack > 0 && vipWant >= (int)Item.Sword && vipWant <= (int)Item.Tool && sim.LineUnlocked((Item)vipWant)) { sim._vipWant = vipWant; sim._vipPack = vipPack; sim._vipPaid = vipPaid; sim._vipQuiet = vipQuiet; }
+            if (vipPack > 0 && vipWant >= (int)Item.Sword && vipWant <= (int)Item.Tool && sim.LineUnlocked((Item)vipWant)) { sim._vipWant = vipWant; sim._vipPack = vipPack; sim._vipPaid = vipPaid; sim._vipQuiet = vipQuiet; sim._vipSummoned = vipSummoned; }
             if (ordItem >= (int)Item.Sword && ordItem <= (int)Item.Jewel && ordTarget > 0 && sim.LineUnlocked((Item)ordItem))
             { sim.OrderItem = ordItem; sim.OrderTarget = ordTarget; sim.OrderProgress = ordProgress; sim.OrderReward = ordReward; }
             sim.Player.Pos = sim.Collide(Clamp(sim.Player.Pos, sim.MaxX));   // save antigo com o jogador dentro de um corpo: sai pela borda

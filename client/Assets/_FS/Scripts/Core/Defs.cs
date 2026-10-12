@@ -227,6 +227,7 @@ namespace FS.Core
         public float VipPatienceBase = 90f, VipPatiencePerUnit = 6f;   // rodada 3: paciencia do VIP = 90 s + 6 s por unidade do pacote (3 = 108 s, 10 = 150 s, 20 = 210 s)
         public float VipSummonMinIn = 60f;                      // chamar por anuncio: so sem VIP ativo e com o proximo natural a mais de 60 s
         public int VipSummonPackMul = 2, VipSummonPackMax = 20; // o VIP chamado e' EXTRA (nao mexe no relogio natural) e traz 2x o pacote do natural, ate 20 (coordenador)
+        public float VipChamadoRecarga = 300f;                  // P14/V11: 5 min de jogo entre um "Chamar VIP" e o proximo, contados de quando o chamado SAI (levou o pacote ou cansou)
         public float BoostSeconds = 60f, BoostMax = 3f, BoostPlayerMax = 1.3f;   // 1 anuncio = 2x por 60 s, o 2o sobe para 3x; o ferreiro no maximo 1,3x
         public float BoostCooldownSeconds = 300f;               // recarga: 5 min de jogo contados do FIM de cada boost (coordenador; sem ela, 2x renovado fechava a producao aos 26:56)
 
