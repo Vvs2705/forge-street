@@ -45,15 +45,17 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | V5 | Sem prestige destrutivo (Royal Charter) | DM §11 |
 | V6 | Conteúdo em definições + Content Validator | DM §108, §126 |
 | V7 | Preservar `FS.Core`, determinismo, bot, testes, proveniência e pipeline de criativos | LEIA_PRIMEIRO; DM §0 |
-| V8 | Crédito de IA, download de arquivo, merge, tag e Release só com aval do Vinicius | `CLAUDE.md` |
+| V8 | Commit, push, PR e merge sempre autorizados depois do `verify.sh full` (regra do Vinicius, 2026-10-12); tag, Release, loja, crédito de IA, download, conta, pagamento e chave real só com aval | `CLAUDE.md` |
+| V9 | **P1:** só o ouro ativo até a Wave E; carteira com IDs de moeda; Blueprint é desbloqueio; Reputation não é moeda; Gems na Wave E com mapa fonte → ralo | Vinicius, 2026-10-12 |
+| V10 | **P3:** interstitial implementado atrás de feature flag **desligada**; liga só depois de A/B no Limited Release; a loja não promete "sem anúncio forçado" até lá | Vinicius, 2026-10-12 |
+| V11 | **P14:** "Chamar VIP" por anúncio com recarga de 5 min (knob de RemoteConfig), como a Velocidade | Vinicius, 2026-10-12 |
+| V12 | Desenvolvimento contínuo até o 100% (DM §164), em levas; placar no §8 | Vinicius, 2026-10-12 |
 
 ## 5. Decisões pendentes (Vinicius)
 
 | # | Decisão | Recomendação do time | Bloqueia |
 |---|---|---|---|
-| P1 | "1 moeda no MVP" × Gold/Gems/Blueprint Tokens/Event Currency (§12) | Carteira com IDs de moeda já na Wave A, só ouro ativo até a Wave E; Blueprint como desbloqueio, Reputation não é moeda; cada moeda entra com mapa fonte → ralo no `BALANCE.md` | B, D, E |
 | P2 | Teto offline 2 h × teto ampliável por premium/assinatura (§27, §43) | 2 h como trava no núcleo; managers e premium aumentam a **taxa**, não o tempo; cofre 2× por anúncio dobra o mesmo resgate uma vez | C, E |
-| P3 | Interstitial autorizado (§41) × "zero interstitial" do FS-5 e da `CLAUDE.md` | Implementar atrás de feature flag **desligada**; decidir por A/B no Limited Release | E, ASO |
 | P4 | "Release 0.6.0 só depois do POCO" × POCO só em marcos | Release `v0.6.0` como pre-release com a evidência do emulador | versões |
 | P5 | Rerolls com Gems, "chest; cosmetic chance", offline chest (§12, §19, §40, §82) × nada aleatório pago | Baú com conteúdo fixo mostrado antes; reroll mostra a próxima opção antes de pagar; tirar "chance"; teste negativo no núcleo | B, D, E |
 | P6 | Metas de retenção: GDD 26/5 × DM 28/7 (agressivo 32/9) | 26/5 = continuar; 28/7 e 32/9 = metas internas | dashboards |
@@ -64,7 +66,6 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | P11 | Downloads: fonte OFL (D8), clipes Mixamo, banco de sons; créditos Tripo por lote de Wave | Aprovar por pacote de Wave | A, B, F |
 | P12 | Câmera (D2): oficina inteira 11,4 m × 9 m | Decidir pelo alvo visual 9:16 (ticket A-ART-01) | A |
 | P13 | Verba e conta para o Gate M (teste de criativos) e a regra "Rune Relay vai primeiro" | — | G |
-| P14 | "Chamar VIP" por anúncio sem recarga: quem assiste todo anúncio fecha a produção em 24 min × 43 do F2P (`BALANCE.md` §22) | Recarga no VIP chamado (ex.: 5 min, como a Velocidade) ou teto por hora, como knob do RemoteConfig | A, E |
 | P15 | Unity no CI (GameCI com licença em secret, ou runner próprio) | Sim: o EditMode do Unity pega o que o `dotnet test` não pega (19 falhas de tupla int × long no #20) | A |
 
 Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both" sem custo de FPS); D5 e D6 viram knobs (DM §40, §47); D7 entra no redesign de HUD (§63); D4 (moeda física) fica no branch `exp/moeda-fisica` até a Wave B.
@@ -89,7 +90,7 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 | Recarga da Velocidade não vai no save: reabrir o app libera outro boost | P1 (exploit de anúncio) | `Sim.cs:117-119,252-263` | PR #20 |
 | Ciclo de relógio (adiantar → resgatar → voltar → adiantar) repete o cofre | P1 (exploit de economia) | `Sim.cs:1028-1039`, `Game.cs:909` | PR #20 (`SavedAt` monotônico, `clock_back`) |
 | Custo de upgrade estoura `int` a partir do tier 67 e volta para 5; ouro em `int` | P1 com 120+ upgrades / distritos | `Defs.cs:290-291`, `Sim.cs:92` | PR #20 (`long`, HUD "1,23 mi") |
-| "Chamar VIP" sem recarga fura os pisos do §3 | P1 (exploit de economia) | `BALANCE.md` §22 | decisão P14 |
+| "Chamar VIP" sem recarga fura os pisos do §3 | P1 (exploit de economia) | `BALANCE.md` §22 | decidido (V11): recarga de 5 min — Leva 5 |
 | Impasse de navegação: 1 em 1.000 partidas o `Sim.Steer` alterna entre duas direções a caminho do pad do Mineiro (bot Ideal a 36,36 ticks/s); conferir se ajudantes podem cair nele | P1 se pegar ajudante (progressão travada) | `BALANCE.md` §22 | ticket de núcleo (Wave A) |
 | Vibra em toda venda (§72 pede só eventos importantes) | P2 | `Game.cs:262` | PR #19 |
 | Sem AAB, chave de release, `versionCode` monotônico nem build não-development; targetSdk automático | antes da loja | `ProjectSettings.asset:181,183`, `Setup.cs:97` | PR #18 (falta a chave real: decisão) |
@@ -103,3 +104,34 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 | Fome da Bigorna 2 (2.582 s em 60 min no bot) | P2 | `BACKLOG_V07.md` | — |
 | Zona morta ~53% da curva até a produção completa; ouro sem destino depois dela | design | `BALANCE.md` §22 | Waves B (Orders 2.0, Blueprints) e C (distritos) |
 | Conta LevelPlay aguardando aprovação | — | `LEVELPLAY.md` | Vinicius |
+
+## 8. Progresso rumo ao 100% (definição de jogo completo, DM §164)
+
+Estimativa honesta do coordenador, atualizada a cada leva. 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado".
+
+| Item (§164) | % | Onde está | Próximo passo |
+|---|---|---|---|
+| Core polido | 40 | loop completo, Save 2.0, exploits fechados, ouro long, Steer sem impasse, validator | `Tuning`/flags (A-CORE-03), IDs estáveis (A-CORE-04), `Sim` em partes |
+| 6 distritos | 15 | Old Forge + rua lateral (1º distrito incompleto) | `DistrictDef` + Império (C-CORE-01/02) |
+| 35–45 produtos | 10 | 4 produtos vendáveis (espada, escudo, ferramenta, joia) | `ItemDef`/`RecipeDef` multi-insumo (B-CORE-01) |
+| Workers | 25 | 4 papéis de ajudante, sem nível nem especialidade | `WorkerDef` (B-CORE-04) |
+| Quality | 0 | — | B-CORE-03 |
+| Orders | 10 | Encomendas (1 tipo, 1 vaga) | Orders 2.0, 8 tipos (B-CORE-05) |
+| Royal Contracts | 0 | — | D-CORE-04 |
+| Blueprints | 0 | — | B-CORE-07 |
+| Masterworks | 0 | — | B-CORE-08 |
+| Collection | 0 | — | B-CORE-08 |
+| Reputation | 0 | — | B-CORE-06 |
+| Daily / Weekly / Achievements | 0 | baús de marco (embrião) | D-CORE-01/02 |
+| Events (LiveOps) | 0 | — | D-CORE-03 + calendário |
+| Pass | 0 | — | D-CORE-04 |
+| Ads | 30 | 2 rewarded no LevelPlay; consentimento fixo; recarga do VIP decidida | consentimento (E-PLAT-01), placements por config (E-PLAT-02), interstitial com flag (E-PLAT-03) |
+| IAP | 0 | — | E-PLAT-04/05 (sem moeda premium até a Wave E) |
+| Analytics | 10 | diário CSV local | costura `IAnalytics` + taxonomia (A-PLAT-06) |
+| RemoteConfig | 0 | — | A-PLAT-08 (depende do A-CORE-03) |
+| Save | 70 | Save 2.0 (envelope, atômico, .bak, migração) | cloud save (opcional), `ISaveStorage` |
+| Release pipeline | 50 | AAB assinado por env, `verify release`, 16 KB, API 36 | chave real (aval), Unity no CI (P15), release automatizada |
+| Arte final | 15 | fornalha 6 estados, HUD numa paleta, preset "forja" em prova | alvo visual 9:16 (P12), herói, elenco, distritos |
+| Áudio final | 5 | 11 tons sintetizados; vibração por importância | identidade sonora + mixer (A-AUD-23, banco de sons = aval) |
+| Store assets | 5 | banco de 37 criativos (22 prontos) | presets de captura (G-UA-02), ícone/screenshots |
+| **Média** | **~12** | | |
