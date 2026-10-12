@@ -57,6 +57,7 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | V17 | Clientes nomeados (FS-3) entram como clientes marcados dentro das famílias; corações são trilha, não moeda (GDD v2 §7, §21) | padrão do time, 2026-10-12 — revisar |
 | V18 | **D6 (decidido por padrão):** Velocidade e "Chamar VIP" só depois da 1ª melhoria (knob `Tuning.AnunciosDepoisDaPrimeiraMelhoria`) | padrão do time, 2026-10-12 — revisar |
 | V19 | Pisos do §3 com anúncio: medir no econsim contando ~30 s por anúncio antes de mexer em regra (o bot sem esse tempo fica 7–12 s abaixo em 3 marcos) | padrão do time, 2026-10-12 — revisar |
+| V20 | **LiveOps (decidido por padrão, `LIVEOPS_V1.md` §7):** eventos às 13:00 UTC e diárias às 04:00 do aparelho; temporada de 35 dias com a semana 5 de folga; Pass de 30 níveis × 600 XP (F2P fecha a trilha free em ~28 dias); projeto da Masterwork no Hunt como fonte extra (a grátis permanente continua); premium só cosmético, conveniência e Gems (nunca ouro, Renome, XP ou Blueprint) e preço na Wave E; teto de 100 XP/dia de encomendas; minério raro só como skin; eventos de 6 dias | padrão do time, 2026-10-12 — revisar |
 
 ## 5. Decisões pendentes (Vinicius)
 
