@@ -151,15 +151,15 @@ namespace FS
             RectTransform root = Art.Node(go.transform, "Fundo", Vector2.zero, Vector2.one);
             root.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.94f);   // bloqueia o toque no jogo
             Text title = Art.NewText(root, "Titulo", 72, new Vector2(0.05f, 0.62f), new Vector2(0.95f, 0.72f));
-            title.text = "Anúncio de teste";
+            title.text = Loc.T("adtest.titulo");
             title.fontStyle = FontStyle.Bold;
             title.color = Art.Accent;
             Text sub = Art.NewText(root, "Recompensa", 44, new Vector2(0.05f, 0.55f), new Vector2(0.95f, 0.62f));
-            sub.text = "Recompensa: " + Ads.RewardName[placement] + " x1";
+            sub.text = Loc.T("adtest.premio", Loc.T("ads." + placement));   // ads.vip, ads.velocidade (o RewardName fica no diario)
             count = Art.NewText(root, "Contador", 200, new Vector2(0.3f, 0.36f), new Vector2(0.7f, 0.52f));
             count.fontStyle = FontStyle.Bold;
             Text foot = Art.NewText(root, "Rodape", 32, new Vector2(0.05f, 0.24f), new Vector2(0.95f, 0.32f));
-            foot.text = "Simulado: nenhum anúncio real foi pedido nem exibido";
+            foot.text = Loc.T("adtest.rodape");
             foot.color = Art.ComAlfa(Art.Ink, 0.6f);
             return go;
         }
