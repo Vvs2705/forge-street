@@ -18,6 +18,7 @@ namespace FS
     /// Diario: ad_init, ad_request, ad_shown, ad_reward, ad_reward_late, ad_fail e ad_load_fail saem pelo `log` do Init (o Game grava).
     /// Este MonoBehaviour so' hospeda as corrotinas das duas implementacoes.
     /// Flags: -fakeads (sempre simulado) e -adtestsuite (abre o Test Suite do LevelPlay; so' em build de desenvolvimento).
+    /// E-PLAT-01: o SDK so inicia depois da resposta da tela de idade (Privacidade.cs); sem resposta, ad_init "espera" e nenhum botao.
     /// No PC vem da linha de comando; no Android, do extra "unity" do intent (adb shell am start ... -e unity "-fakeads").
     /// </summary>
     public sealed class Ads : MonoBehaviour
@@ -30,7 +31,7 @@ namespace FS
         static Action<string, string, string> _log;
 
         /// <summary>Idempotente. Chamar cedo (Game.Awake). `log`(evento, placement, detalhe) vai para o diario. No aparelho aplica a
-        /// privacidade e inicia o SDK.</summary>
+        /// privacidade da resposta gravada e inicia o SDK; sem resposta, espera o Responder.</summary>
         public static IAds Init(Action<string, string, string> log)
         {
             if (_i != null) return _i;
@@ -43,6 +44,19 @@ namespace FS
 #endif
             Emit("ad_init", "simulado", fake ? "fakeads" : Application.platform.ToString());
             return _i = new AdsSimulado(host);
+        }
+
+        /// <summary>E-PLAT-01: a resposta gravada (PlayerPrefs) com a versao atual do texto; false = a tela pergunta.</summary>
+        public static bool Resposta(out Faixa f, out bool aceitou) => Privacidade.Ler(PlayerPrefs.GetString(Privacidade.Chave, ""), out f, out aceitou);
+
+        /// <summary>E-PLAT-01: grava a resposta (gravar = false no -testsession) e passa ao SDK. A 1a resposta inicia o SDK; mudar depois
+        /// do Init vale por completo ao reabrir o jogo (AdsLevelPlay.Iniciar).</summary>
+        public static void Responder(Faixa f, bool aceitou, bool gravar)
+        {
+            if (gravar) { PlayerPrefs.SetString(Privacidade.Chave, Privacidade.Gravar(f, aceitou)); PlayerPrefs.Save(); }
+#if UNITY_ANDROID || UNITY_IOS
+            (_i as AdsLevelPlay)?.Iniciar(f, aceitou);
+#endif
         }
 
         internal static void Emit(string evt, string a, string b)
@@ -170,17 +184,43 @@ namespace FS
         readonly Dictionary<string, float> _retry = new Dictionary<string, float>();
         Request _req;
         float _initRetry = 10f;
-        bool _testSuite;
+        bool _testSuite, _parado;
+        string _resposta;   // Privacidade.Gravar da resposta aplicada no Init; null = SDK nao iniciado (nada do LevelPlay foi tocado)
 
         public AdsLevelPlay(MonoBehaviour host)
         {
             _host = host;
             if (Debug.isDebugBuild) _fake = new AdsSimulado(host);
-            // Privacidade ANTES do Init (docs/LEVELPLAY.md s5). Conservador ate existir tela de consentimento:
-            // sem consentimento GDPR (anuncio nao personalizado), "nao vender" CCPA, e COPPA false = painel "Not directed".
-            LevelPlayPrivacySettings.SetCOPPA(false);
-            LevelPlayPrivacySettings.SetGDPRConsent(false);
-            LevelPlayPrivacySettings.SetCCPA(true);
+            if (Ads.Resposta(out Faixa f, out bool aceitou)) Iniciar(f, aceitou);
+            else Ads.Emit("ad_init", "espera", "consentimento");   // a tela de idade chama o Ads.Responder
+        }
+
+        /// <summary>
+        /// E-PLAT-01: privacidade da resposta e LevelPlay.Init, uma vez por processo. Ordem da doc (Regulation advanced settings, SDK 9.5):
+        /// metadados e LevelPlayPrivacySettings ANTES do Init; tabela em docs/LEVELPLAY.md s6. Resposta diferente depois do Init: GDPR e
+        /// CCPA vao na hora, mas COPPA, ID de publicidade e Familias so valem antes do Init e o anuncio ja carregado veio com a resposta
+        /// antiga, entao nenhum anuncio ate reabrir o jogo (Ready e Loaded = false).
+        /// </summary>
+        public void Iniciar(Faixa faixa, bool aceitou)
+        {
+            var f = Privacidade.Flags(faixa, aceitou);
+            string resposta = Privacidade.Gravar(faixa, aceitou);
+            if (_resposta != null)
+            {
+                if (resposta == _resposta) return;
+                LevelPlayPrivacySettings.SetGDPRConsent(f.Consentimento);
+                LevelPlayPrivacySettings.SetCCPA(f.NaoVender);
+                _parado = true;
+                Debug.Log($"ADS privacidade mudou para {Privacidade.Diario(faixa)} gdpr={f.Consentimento} ccpa={f.NaoVender}: sem anuncio ate reabrir");
+                return;
+            }
+            _resposta = resposta;
+            if (f.SemId) LevelPlay.SetMetaData("is_deviceid_optout", "true");                // o SDK nao le o ID de publicidade (AAID)
+            if (f.Familias) LevelPlay.SetMetaData("Google_Family_Self_Certified_SDKS", "true");   // so redes autocertificadas do Familias
+            LevelPlayPrivacySettings.SetCOPPA(f.Coppa);
+            LevelPlayPrivacySettings.SetGDPRConsent(f.Consentimento);
+            LevelPlayPrivacySettings.SetCCPA(f.NaoVender);
+            Debug.Log($"ADS privacidade {Privacidade.Diario(faixa)} coppa={f.Coppa} gdpr={f.Consentimento} ccpa={f.NaoVender} aaid_optout={f.SemId} familias={f.Familias}");
             if (Debug.isDebugBuild)
             {
                 LevelPlay.SetAdaptersDebug(true);
@@ -193,8 +233,9 @@ namespace FS
         }
 
         public bool Busy => _req != null || (_fake != null && _fake.Busy);
-        public bool Loaded(string p) => _ads.TryGetValue(p, out LevelPlayRewardedAd ad) && ad != null && ad.IsAdReady();
-        public bool Ready(string p) => !Busy && Units.ContainsKey(p) && (Loaded(p) || _fake != null);
+        public bool Loaded(string p) => !_parado && _ads.TryGetValue(p, out LevelPlayRewardedAd ad) && ad != null && ad.IsAdReady();
+        // sem resposta (SDK parado) ou resposta mudada nesta sessao: botao escondido, inclusive o fallback simulado do dev
+        public bool Ready(string p) => _resposta != null && !_parado && !Busy && Units.ContainsKey(p) && (Loaded(p) || _fake != null);
 
         public void Show(string p, Action onReward, Action onFail)
         {
@@ -284,6 +325,7 @@ namespace FS
 
         public void Destroy()
         {
+            if (_resposta == null) return;   // SDK nunca iniciou: nada do LevelPlay a tocar
             LevelPlay.OnInitSuccess -= OnInitSuccess;
             LevelPlay.OnInitFailed -= OnInitFailed;
             foreach (LevelPlayRewardedAd ad in _ads.Values) ad?.DestroyAd();
