@@ -35,9 +35,10 @@ namespace FS
             public bool Baked;   // Base e' o sprite pre-renderizado (sem icone)
             public bool Stand;   // balcao principal desenhado pelo estande modular (BuildStand), sem Base nem grade de estoque
             public float PopT = -1f;   // nasceu agora (compra): pop 0 -> 1,1 -> 1
-            // v0.6a: escala de repouso da arte (punch) e da pilha (pop), relogio da martelada
-            public Vector3 BaseScale, PileScale; public float HitT, PunchT = -1f, ItemPopT = -1f;
+            // v0.6a: escala de repouso da pilha (pop do item novo)
+            public Vector3 PileScale; public float ItemPopT = -1f;
             public StationView Forno;   // A-ART-06: os 6 estados da fornalha (StationView)
+            public StationView Bancada; // A-ART-07: martelo no compasso da bigorna/bancada (StationView)
         }
         /// <summary>Placa de obra: fundo escuro, enchimento de ouro, borda tracejada, icone do que constroi; preco (moeda + valor) e nome na HUD.</summary>
         sealed class PadV
@@ -206,12 +207,10 @@ namespace FS
         static readonly Color Carpet = Color.Lerp(Art.ItemColor[(int)Item.Jewel], Art.Bg, 0.55f);   // #59447F: a joia do estoque ainda le por cima
         const float CarpetW = 1.1f;
         static readonly V2[] Pedestals = { new V2(10.95f, 8.4f), new V2(13.05f, 8.4f), new V2(10.95f, 10.9f), new V2(13.05f, 10.9f) };
-        // v0.6a (P2-1): martelada a cada 0,45 s com 8-10 faiscas em 0,3 s e punch 1 -> 1,06 -> 1 em 0,12 s (a fornalha esta na
-        // StationView). Pontos medidos nos PNG (celula 1,95 m / 256 px, a partir do pivo): topo da bigorna (-0,18; 0,45) e tampo das bancadas (0; 0,3).
-        const float HitEvery = 0.45f, SparkLife = 0.3f, PunchTime = 0.12f, PunchAmp = 0.06f, ItemPop = 0.2f;
+        // v0.6a (P2-1): pop do item pronto 0 -> 1,15 -> 1 em 0,2 s. A martelada (faiscas, punch) foi para a StationView no A-ART-07.
+        const float ItemPop = 0.2f;
         const int FxAmbient = 40;   // faisca, fumaca e poeira so com menos de 40 efeitos vivos: venda, moedas e obra nunca ficam sem vaga
         internal static readonly Color SparkA = Art.Hex(0xFFD166), SparkB = Art.Hex(0xFF7A1F);
-        static readonly Vector2 AnvilTop = new Vector2(-0.18f, 0.45f), BenchTop = new Vector2(0f, 0.3f);
         // P2-2: icone do upgrade como prop. Fole na parede esquerda da fornalha (a direita ja tem o fole da arte), acima da pilha de
         // entrada; martelo dourado encostado no lado direito da bancada, acima da pilha de saida; mochila nas costas do ferreiro.
         static readonly Vector2 BellowsAt = new Vector2(-0.7f, 0.55f), HammerAt = new Vector2(0.66f, 0.22f);
@@ -462,13 +461,11 @@ namespace FS
                 Art.NewSprite(v.Root, "Sombra", Art.Disc(), new Color(0f, 0f, 0f, 0.25f), 1, Vector2.zero, new Vector2(1.55f, 0.7f));
                 v.Base = Art.NewSprite(v.Root, "Arte", art, Color.white, Depth(s.Pos.Y), Vector2.zero, Vector2.one);
                 v.Baked = true;
-                v.BaseScale = Vector3.one;
             }
             else
             {
                 Color c = Art.StationColor(s);
                 v.Base = Art.NewSprite(v.Root, "Base", Art.Rounded(), c, 2, Vector2.zero, new Vector2(1.5f, 1.1f));
-                v.BaseScale = v.Base.transform.localScale;
                 Sprite icon = s.Kind == Kind.Counter ? Art.Star() : s.Kind == Kind.Deposit ? Art.Rock() : Art.ItemSprite(s.OutItem);
                 Color ic = s.Kind == Kind.Counter ? Art.Accent : s.Kind == Kind.Deposit ? Art.ItemColor[0] : Art.ItemColor[(int)s.OutItem];
                 Vector2 isc = s.Kind == Kind.Counter || s.Kind == Kind.Deposit ? new Vector2(0.5f, 0.5f) : Art.ItemScale(s.OutItem, 0.5f);
@@ -498,7 +495,11 @@ namespace FS
                 Prop(v.Root, "melhoria_fole", Upgrade.FurnaceSpeed1, BellowsAt, BellowsS, Depth(s.Pos.Y) + 1, (int)Upgrade.FurnaceSpeed2);
                 Prop(v.Root, "melhoria_fole_duplo", Upgrade.FurnaceSpeed2, BellowsAt, BellowsS * 1.15f, Depth(s.Pos.Y) + 1);
             }
-            if (s.Kind == Kind.Crafter) Prop(v.Root, "melhoria_martelo", Upgrade.HammerSpeed, HammerAt, HammerS, Depth(s.Pos.Y) + 1);   // Martelo veloz
+            if (s.Kind == Kind.Crafter)
+            {
+                v.Bancada = new StationView(this, s, v.Root, v.Base, v.Baked);   // A-ART-07: martelo, faiscas, som e "+1" no compasso
+                Prop(v.Root, "melhoria_martelo", Upgrade.HammerSpeed, HammerAt, HammerS, Depth(s.Pos.Y) + 1);   // Martelo veloz
+            }
             if (s.Kind == Kind.Counter && !v.Stand)
             {
                 var sold = new List<Item>();   // loja de joias: so joia; balcao sem os modulos do estande: espada/escudo/ferramenta
@@ -1258,7 +1259,7 @@ namespace FS
                     if (popping) v.OutPile[i].transform.localScale = i == pop ? v.PileScale * ps : v.PileScale;
                 }
                 if (v.Forno != null) v.Forno.Refresh(dt, _sim.BoostLeft > 0f, pulse);   // A-ART-06: arte, luz, boca e efeitos da fornalha
-                else Juice(v, dt);
+                else v.Bancada.Refresh(dt, false, pulse);   // A-ART-07: martelo, faiscas e som no compasso da peca
                 float p = s.Busy ? s.Progress : 0f;
                 float fh = BarH - 0.05f, fw = Mathf.Lerp(fh, BarW - 0.05f, p);
                 v.BarFill.enabled = p > 0.01f;
@@ -1273,41 +1274,13 @@ namespace FS
                     for (int i = 0; i < 6; i++) v.Stock[p * 6 + i].enabled = i < _sim.Stock[(int)v.StockItems[p]];
         }
 
-        /// <summary>
-        /// v0.6a (P2-1), bigorna/bancada: martelada a cada 0,45 s (8-10 faiscas #FFD166 -> #FF7A1F em 0,3 s do tampo e punch da arte).
-        /// Efeito so com a estacao na camera e abaixo de FxAmbient; o punch roda sempre (custa uma escala). Fornalha: StationView.
-        /// </summary>
-        void Juice(StationV v, float dt)
+        /// <summary>Ev.Crafted (Game): o item novo da pilha de saida da pop 0 -> 1,15 -> 1 em 0,2 s (P2-1); na bigorna/bancada, o golpe
+        /// final do compasso com "+1" (A-ART-07).</summary>
+        public void Crafted(int station)
         {
-            Station s = v.S;
-            // revisao da v0.6: pronta com a saida cheia o Sim deixa Busy com Progress 1; isso e' trava (pulso vermelho na pilha), nao trabalho
-            bool work = s.Busy && s.Progress < 1f;
-            if (v.PunchT >= 0f)
-            {
-                v.PunchT += dt;
-                float k = Mathf.Clamp01(v.PunchT / PunchTime);
-                v.Base.transform.localScale = v.BaseScale * (1f + PunchAmp * Mathf.Sin(Mathf.PI * k));
-                if (k >= 1f) v.PunchT = -1f;
-            }
-            if (!work) { v.HitT = 0f; return; }   // a 1a martelada sai assim que volta a trabalhar
-            if ((v.HitT -= dt) > 0f) return;
-            v.HitT = HitEvery;
-            v.PunchT = 0f;
-            int n = Random.Range(8, 11);
-            if (!Ambiente(v.Root, n)) return;
-            int order = Depth(s.Pos.Y) + 2;   // na frente da arte; quem passa na frente da estacao cobre
-            Vector3 o = v.Root.localPosition + (Vector3)(s.OutItem == Item.Sword ? AnvilTop : BenchTop);
-            for (int i = 0; i < n; i++)   // leque para cima, cada uma em arco que cai; 0,26 m (~25 px no aparelho): 0,16 sumia na foto
-            {
-                float a = Random.Range(0.12f, 0.88f) * Mathf.PI;
-                Vector3 d = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * Random.Range(0.45f, 0.8f);
-                Spawn(Art.Sparkle(), SparkA, o, o + d * 0.8f + new Vector3(0f, 0.1f, 0f), o + new Vector3(d.x * 1.2f, d.y * 0.5f - 0.25f, 0f),
-                    SparkLife, 0.26f, 0.08f, true, 360f, SparkB, order);
-            }
+            foreach (StationV v in _stations)
+                if (v.S.Index == station) { v.ItemPopT = 0f; v.Bancada?.Feito(); }
         }
-
-        /// <summary>Ev.Crafted (Game): o item novo da pilha de saida da pop 0 -> 1,15 -> 1 em 0,2 s (P2-1).</summary>
-        public void Crafted(int station) { foreach (StationV v in _stations) if (v.S.Index == station) v.ItemPopT = 0f; }
 
         /// <summary>
         /// "MAX" (P1-5): o ferreiro esta numa boca de onde recolheria um tipo que ja esta no teto (o deposito, ou a saida com produto
@@ -1579,9 +1552,11 @@ namespace FS
         }
 
         /// <summary>Efeito ambiente (faisca, fumaca) cabe: a estacao esta na camera e os `n` novos nao passam de FxAmbient vivos.</summary>
-        internal bool Ambiente(Transform root, int n)
+        internal bool Ambiente(Transform root, int n) => _fxLive + n <= FxAmbient && NaTela(root);
+
+        /// <summary>O ponto esta na camera (com 10% de folga): som e "+1" da bigorna so de quem se ve (A-ART-07).</summary>
+        internal bool NaTela(Transform root)
         {
-            if (_fxLive + n > FxAmbient) return false;
             Vector3 vp = _cam.WorldToViewportPoint(root.position);
             return vp.x >= -0.1f && vp.x <= 1.1f && vp.y >= -0.1f && vp.y <= 1.1f;
         }
