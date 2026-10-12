@@ -61,13 +61,13 @@ namespace FS
         MenuBar _menu;
         Camera _cam;
         float _speed = 1f, _saveT, _hintT, _minuteT, _adHold, _visW = VisibleWidth, _backT;
-        bool _botDrive, _headless, _firstSaleLogged, _testSession, _started, _pausedByAd;
+        bool _botDrive, _headless, _firstSaleLogged, _testSession, _started, _pausedByAd, _paused;
         IAds _ads;
         IAnalytics _diario;
         Salvamento _save;
         // A-PLAT-06 (taxonomia s86/s87): s em primeiro plano da sessao, quadros e s reais da janela de fps, passos do tutorial ja logados,
-        // velocidade oferecida no quadro anterior e ouro que entrou/saiu desde a ultima linha currency_* (por origem/destino)
-        float _sessionT, _fpsT; int _fpsN, _tutorial; bool _speedOffer;
+        // oferta de anuncio ja contada nesta aparicao do botao e ouro que entrou/saiu desde a ultima linha currency_* (por origem/destino)
+        float _sessionT, _fpsT; int _fpsN, _tutorial; bool _vipOffer, _speedOffer;
         readonly System.Collections.Generic.Dictionary<string, long> _source = new System.Collections.Generic.Dictionary<string, long>(),
             _sink = new System.Collections.Generic.Dictionary<string, long>();
         Vector2Int _screen;
@@ -104,6 +104,13 @@ namespace FS
         static readonly Color AdFace = Art.HudFace, AdOff = MenuBar.GrayDark;   // A-UI-16: era roxo #3B2650 / #5A5560; a borda de ouro e o ▶ marcam o anuncio
         // v0.6d: botoes de anuncio e cartoes de baixo a 32 px das bordas da area segura, com largura fixa; topo dos botoes de anuncio
         const float Edge = 32f, AdW = 140f, AdTop = MenuBar.Band - 0.004f;
+
+        /// <summary>A-PLAT-07: o estado do jogo, so derivado dos flags (Estados.De; tabela em Estado.cs). O voltar, o Save e os anuncios
+        /// consultam aqui.</summary>
+        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config,
+            _order != null && _orderOut && _order.gameObject.activeSelf);
+        bool Painel => _panel != null && _panel.gameObject.activeSelf;
+        bool Config => _cfg != null && _cfg.gameObject.activeSelf;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -162,9 +169,9 @@ namespace FS
             Log("session_info", "build", string.IsNullOrEmpty(Application.buildGUID) ? "editor" : Application.buildGUID);
             Log("session_info", "os", SystemInfo.operatingSystem);
             Log("session_info", "ram", Diario.FaixaRam(SystemInfo.systemMemorySize));
+            _started = true;   // A-PLAT-07: Loading -> Playing; o save grava daqui em diante (o resgate do cofre logo abaixo ja grava)
             Offline();
             if (int.TryParse(Arg("-cofre"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int cofre) && cofre > 0) ShowVault(cofre);   // foto do painel
-            _started = true;
             _botDrive = Arg("-bot") != null;
             string shot = Arg("-shot");
             if (!string.IsNullOrEmpty(shot)) StartCoroutine(Shot(shot));
@@ -213,15 +220,19 @@ namespace FS
             if (back && Time.unscaledTime >= _backT)
             {
                 _backT = Time.unscaledTime + 0.4f;
-                // voltar do Android (revisao da v0.6): fecha o que estiver aberto, de cima para baixo; so com nada aberto grava e sai
-                if (_panel.gameObject.activeSelf) ClosePanel();
-                else if (_cfg.gameObject.activeSelf) _cfg.gameObject.SetActive(false);
-                else if (_menu.IsOpen) _menu.Toggle();
-                else { Save(); Application.Quit(); return; }
+                // voltar do Android (revisao da v0.6; A-PLAT-07 pelo estado): fecha o que estiver aberto, de cima para baixo; no anuncio
+                // (o simulado recebe o voltar) nada; so com nada aberto grava e sai
+                switch (Estados.AoVoltar(EstadoAtual, Painel, _menu.IsOpen))
+                {
+                    case Voltar.FechaPainel: ClosePanel(); break;
+                    case Voltar.FechaConfig: _cfg.gameObject.SetActive(false); break;
+                    case Voltar.FechaMenu: _menu.Toggle(); break;
+                    case Voltar.GravaESai: Save(); Application.Quit(); return;
+                }
             }
             if (_screen.x != Screen.width || _screen.y != Screen.height) Fit();
 
-            bool modal = _panel.gameObject.activeSelf || _cfg.gameObject.activeSelf;
+            bool modal = Painel || Config;
             _joy.Blocked = modal;
             _joy.BottomPx = _menu.TopPx;
             _joy.Tick();
@@ -236,8 +247,9 @@ namespace FS
 
             // anuncio pedido = jogo parado (paciencia, boost e relogio do VIP): o boost nao acaba no segundo antes de o anuncio real
             // cobrir a tela. ponytail: teto de 15 s de quadros parados por anuncio, para um SDK que nunca responde nao travar o jogo
-            _adHold = _ads.Busy ? _adHold + Mathf.Min(Time.unscaledDeltaTime, 0.1f) : 0f;
-            float dt = _ads.Busy && _adHold < 15f ? 0f : Mathf.Min(Time.deltaTime, 0.1f) * _speed;
+            bool ad = EstadoAtual == Estado.Ad;
+            _adHold = ad ? _adHold + Mathf.Min(Time.unscaledDeltaTime, 0.1f) : 0f;
+            float dt = ad && _adHold < 15f ? 0f : Mathf.Min(Time.deltaTime, 0.1f) * _speed;
             while (dt > 0f)
             {
                 float step = Mathf.Min(dt, MaxStep);
@@ -756,14 +768,15 @@ namespace FS
         void RefreshAdUi()
         {
             bool vip = _sim.CanSummonVip && _ads.Ready(Ads.Vip);
-            if (_vipBtn.B.gameObject.activeSelf != vip)
-            {
-                _vipBtn.B.gameObject.SetActive(vip);
-                if (vip) Log("rewarded_offer", Ads.Vip);   // s86: o botao apareceu disponivel
-            }
+            if (_vipBtn.B.gameObject.activeSelf != vip) _vipBtn.B.gameObject.SetActive(vip);
             bool active = _sim.BoostLeft > 0f, can = _sim.CanBoost && _ads.Ready(Ads.Velocidade), cool = !active && _sim.BoostCooldown > 0f;
-            if (can && !_speedOffer) Log("rewarded_offer", Ads.Velocidade, active ? "3x" : "2x");   // cinza (recarga) nao e' oferta
-            _speedOffer = can;
+            // s86 rewarded_offer: uma por aparicao do botao disponivel (cinza da recarga nao e' oferta), contada quando da para tocar
+            // (A-PLAT-07: Estados.Anuncia; por baixo de painel ela espera o painel fechar)
+            bool on = Estados.Anuncia(EstadoAtual);
+            if (!vip) _vipOffer = false;
+            else if (on && !_vipOffer) { _vipOffer = true; Log("rewarded_offer", Ads.Vip); }
+            if (!can) _speedOffer = false;
+            else if (on && !_speedOffer) { _speedOffer = true; Log("rewarded_offer", Ads.Velocidade, active ? "3x" : "2x"); }
             bool show = can || cool;
             if (_speedBtn.B.gameObject.activeSelf != show) _speedBtn.B.gameObject.SetActive(show);
             if (show)
@@ -868,21 +881,30 @@ namespace FS
             _orderFill.rectTransform.anchorMax = new Vector2(target > 0 ? Mathf.Clamp01(done / (float)target) : 0f, 1f);
         }
 
-        void OnVipAd() => _ads.Show(Ads.Vip, () =>
+        // A-PLAT-07: o toque so pede anuncio jogando (Estados.Anuncia); o -adtest (dev) chama o IAds direto
+        void OnVipAd()
         {
-            if (!_sim.SummonVip()) return;   // mudou entre o toque e o fim do anuncio: nada a dar
-            Sfx.Play("upgrade");
-            Notice("VIP a caminho!", _crown, Color.white);
-        }, AdFail);
+            if (!Estados.Anuncia(EstadoAtual)) return;
+            _ads.Show(Ads.Vip, () =>
+            {
+                if (!_sim.SummonVip()) return;   // mudou entre o toque e o fim do anuncio: nada a dar
+                Sfx.Play("upgrade");
+                Notice("VIP a caminho!", _crown, Color.white);
+            }, AdFail);
+        }
 
-        void OnSpeedAd() => _ads.Show(Ads.Velocidade, () =>
+        void OnSpeedAd()
         {
-            float m = _sim.StartBoost();
-            if (m <= 0f) return;
-            Sfx.Play("upgrade", 1.2f);
-            _view.Float(_sim.Player.Pos, $"Velocidade {m:0}×!", Art.Accent, 48);
-            Log("boost_start", m.ToString("0", CultureInfo.InvariantCulture), Balance.BoostSeconds.ToString("0", CultureInfo.InvariantCulture));
-        }, AdFail);
+            if (!Estados.Anuncia(EstadoAtual)) return;
+            _ads.Show(Ads.Velocidade, () =>
+            {
+                float m = _sim.StartBoost();
+                if (m <= 0f) return;
+                Sfx.Play("upgrade", 1.2f);
+                _view.Float(_sim.Player.Pos, $"Velocidade {m:0}×!", Art.Accent, 48);
+                Log("boost_start", m.ToString("0", CultureInfo.InvariantCulture), Balance.BoostSeconds.ToString("0", CultureInfo.InvariantCulture));
+            }, AdFail);
+        }
 
         void AdFail()
         {
@@ -995,10 +1017,11 @@ namespace FS
 
         static long Now() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-        /// <summary>A-PLAT-02/06: o Salvamento grava arquivo + espelho; versao mais nova ou disco ilegivel deixam a sessao sem gravar.</summary>
+        /// <summary>A-PLAT-02/06: o Salvamento grava arquivo + espelho; versao mais nova ou disco ilegivel deixam a sessao sem gravar.
+        /// A-PLAT-07: Boot/Loading nao gravam (Estados.Grava): um foco perdido antes do Start avancava o SavedAt e comia o cofre.</summary>
         void Save()
         {
-            if (_sim == null || _headless || _testSession) return;
+            if (_headless || _testSession || !Estados.Grava(EstadoAtual)) return;
             _save.Gravar(_sim, Now(), Application.version);
         }
 
@@ -1008,9 +1031,15 @@ namespace FS
         // _pausedByAd: o anuncio real tira o app da frente; a volta dele nao e' "tempo fora" (nao mostra "Seu cofre rendeu")
         void OnApplicationPause(bool paused)
         {
-            if (paused) { _pausedByAd = _ads.Busy; Save(); EndSession("pausa"); }
+            if (paused)
+            {
+                _pausedByAd = EstadoAtual == Estado.Ad;   // antes do _paused: Ad vence Paused (o anuncio real tira o app da frente)
+                _paused = true;
+                Save(); EndSession("pausa");
+            }
             else
             {
+                _paused = false;
                 _fpsN = 0; _fpsT = 0f;   // a janela de fps nao mede o tempo fora
                 if (_started && !_pausedByAd && _sim != null && _sim.SavedAt > 0 && Now() - _sim.SavedAt >= 60) Offline();
             }

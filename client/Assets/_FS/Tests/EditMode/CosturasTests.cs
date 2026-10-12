@@ -218,4 +218,50 @@ namespace FS.Tests
                 new[] { Diario.FaixaFps(12f), Diario.FaixaFps(29.9f), Diario.FaixaFps(30f), Diario.FaixaFps(50f), Diario.FaixaFps(55f), Diario.FaixaFps(60f) });
         }
     }
+
+    /// <summary>A-PLAT-07: a tabela dos estados (prioridade dos flags) e o que voltar, save e anuncio fazem em cada um. O roteiro do voltar
+    /// da V06A (s141/s161: painel, configuracoes, bandeja, tela limpa sai) vale em Playing e Transition; no anuncio o voltar e' ignorado.</summary>
+    public class EstadosTests
+    {
+        static readonly Estado[] Todos = (Estado[])Enum.GetValues(typeof(Estado));
+
+        [Test]
+        public void De_PrioridadeDosFlags()
+        {
+            Assert.AreEqual(Estado.Boot, Estados.De(false, true, true, true, true, true), "sem save carregado nada mais conta");
+            Assert.AreEqual(Estado.Loading, Estados.De(true, false, true, true, true, true), "antes do Start");
+            Assert.AreEqual(Estado.Ad, Estados.De(true, true, true, true, true, true), "o anuncio real tambem pausa o app: Ad vence Paused");
+            Assert.AreEqual(Estado.Paused, Estados.De(true, true, false, true, true, true));
+            Assert.AreEqual(Estado.Modal, Estados.De(true, true, false, false, true, true));
+            Assert.AreEqual(Estado.Transition, Estados.De(true, true, false, false, false, true));
+            Assert.AreEqual(Estado.Playing, Estados.De(true, true, false, false, false, false));
+        }
+
+        [Test]
+        public void Voltar_FechaDeCimaParaBaixo_SoSaiComTelaLimpa()
+        {
+            foreach (Estado e in new[] { Estado.Playing, Estado.Transition })
+            {
+                Assert.AreEqual(Voltar.FechaMenu, Estados.AoVoltar(e, false, true), e + ": bandeja aberta");
+                Assert.AreEqual(Voltar.GravaESai, Estados.AoVoltar(e, false, false), e + ": tela limpa");
+            }
+            Assert.AreEqual(Voltar.FechaPainel, Estados.AoVoltar(Estado.Modal, true, true), "painel (cofre) por cima da bandeja: fecha o painel");
+            Assert.AreEqual(Voltar.FechaConfig, Estados.AoVoltar(Estado.Modal, false, true), "configuracoes");
+            foreach (Estado e in new[] { Estado.Ad, Estado.Boot, Estado.Loading, Estado.Paused })
+                foreach (bool painel in new[] { false, true })
+                    foreach (bool menu in new[] { false, true })
+                        Assert.AreEqual(Voltar.Ignora, Estados.AoVoltar(e, painel, menu), $"{e} painel={painel} menu={menu}: nunca sai nem fecha");
+        }
+
+        [Test]
+        public void SaveEAnuncio_PorEstado()
+        {
+            foreach (Estado e in Todos)
+            {
+                Assert.AreEqual(e != Estado.Boot && e != Estado.Loading, Estados.Grava(e), "grava: " + e);
+                Assert.AreEqual(e == Estado.Playing || e == Estado.Transition, Estados.Anuncia(e), "anuncia: " + e);
+            }
+            Assert.AreEqual(7, Todos.Length, "estado novo = decidir voltar, save e anuncio dele aqui");
+        }
+    }
 }
