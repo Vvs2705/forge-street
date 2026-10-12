@@ -60,7 +60,7 @@
 ¹ "VAZIA" quer dizer sem trabalho: a oficina já nasce com fornalha e depósito (`BENCHMARK_MERCADO.md` §3). Para um teste estrito, use a variante de texto "COMECEI COM UMA BIGORNA".
 ² FS-C-14 e os do VIP mostram o botão ▶ do rewarded (HUD real, opt-in). O vídeo não diz "grátis" nem "sem anúncio".
 ³ As duas metades são execuções reais, e o placar é o contador de ouro da própria HUD. Se a diferença ficar pequena, o vídeo termina na pergunta, sem inventar vencedor.
-⁴ Um VIP por vídeo (P14). O `-vipnow` só vale com uma venda real no warmup, porque ele marca a 1ª venda quando ainda não houve (`Game.cs:959-963`).
+⁴ Um VIP por vídeo (P14). Desde o G-UA-02, o `-vipnow` não marca mais uma 1ª venda falsa: depois de um `-warmup` sem venda real ele sai com erro, e sem warmup (FS-C-26) espera a 1ª venda real.
 
 ## a) Presets do §78 → flags de hoje (spec do G-UA-02)
 
@@ -92,7 +92,7 @@ Requisitos comuns (aceite do G-UA-02):
 3. O log ganha `PRESET <nome> ok`, além do `RECORD OK` com fila, ouro e o estado da fornalha.
 4. Os textos continuam na faixa y 1250–1620; com `-menu`, em y 1250/1400.
 
-**Faltam implementar:** `huge queue` (checagem), `first worker`, `conveyor`, `VIP` (trava da venda real), `order`, `offline` e o alias `-preset` com os requisitos 1–3, sem depender de Wave. Ficam para as Waves: `audio` (A), `Masterwork`, `hero` e `worker` (B), `full district`, `district unlock` e `rival` (C), `Royal Contract` (D).
+**Feito no G-UA-02** (tabela e comandos em [`CRIATIVOS.md`](CRIATIVOS.md), "Presets de captura"): o alias `-preset` com os requisitos 1–3 e os presets `start`, `huge_queue`, `first_worker`, `conveyor`, `vip`, `order` e `offline`, além de `full_district` e `district_unlock` como interinos. Ficam para as Waves: `audio` (A), `Masterwork`, `hero` e `worker` (B), `full district`, `district unlock` e `rival` (C), `Royal Contract` (D).
 
 ## b) Os 8 do teste de CPI (GDD §16 A), em ordem de produção
 

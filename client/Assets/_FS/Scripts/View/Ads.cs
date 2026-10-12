@@ -53,9 +53,12 @@ namespace FS
             catch (Exception e) { Debug.LogException(e); }   // o diario nunca derruba o fluxo do anuncio
         }
 
-        /// <summary>Valor da flag (null = ausente, "" = sem valor). Linha de comando + extra "unity" do intent no Android
-        /// (so' em build de desenvolvimento: no release o intent e' de qualquer app e -fakeads daria recompensa sem anuncio).</summary>
-        public static string Arg(string name)
+        /// <summary>Valor da flag (null = ausente, "" = sem valor), so da linha de comando (Args); o Game.Arg ainda olha o -preset.</summary>
+        public static string Arg(string name) => Captura.Valor(Args(), name);
+
+        /// <summary>Linha de comando + extra "unity" do intent no Android (so' em build de desenvolvimento: no release o intent e' de
+        /// qualquer app e -fakeads daria recompensa sem anuncio).</summary>
+        public static List<string> Args()
         {
             var a = new List<string>(Environment.GetCommandLineArgs());
 #if UNITY_ANDROID && !UNITY_EDITOR
@@ -72,9 +75,7 @@ namespace FS
             }
             catch (Exception) { }   // sem intent legivel = sem flags
 #endif
-            int i = a.IndexOf(name);
-            if (i < 0) return null;
-            return i + 1 < a.Count && !a[i + 1].StartsWith("-") ? a[i + 1] : "";
+            return a;
         }
 
 #if UNITY_ANDROID || UNITY_IOS

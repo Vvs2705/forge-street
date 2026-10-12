@@ -214,7 +214,7 @@ namespace FS
         /// <summary>Estado dos cartoes 4x/s (so reescreve o que mudou); a cada quadro o badge pulsa e, aberta, o toque e o respiro.</summary>
         public void Refresh(float dt)
         {
-            if (_ready > 0) _badge.localScale = Vector3.one * (1f + 0.08f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 4f)));
+            if (_ready > 0) _badge.localScale = Vector3.one * (1f + 0.08f * Mathf.Abs(Mathf.Sin(Captura.Agora * 4f)));   // gravando: relogio do quadro
             if (_open) Anima();
             _t -= dt;
             if (_t > 0f) return;
@@ -272,7 +272,7 @@ namespace FS
         /// <summary>A cada quadro com a fileira aberta: cartao apertado encolhe e o botao afunda; o preco do disponivel respira (2 Hz).</summary>
         void Anima()
         {
-            float k = 1f + Breath * Mathf.Abs(Mathf.Sin(Time.unscaledTime * Mathf.PI * 2f));
+            float k = 1f + Breath * Mathf.Abs(Mathf.Sin(Captura.Agora * Mathf.PI * 2f));
             foreach (Card c in _cards)
             {
                 if (c.Estado == Cartao.Comprado || (int)c.Estado < 0) continue;
