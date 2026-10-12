@@ -157,7 +157,7 @@ namespace FS
             BuildHud();
             _view = new GameObject("Mundo").AddComponent<WorldView>();
             _view.Init(_sim, _cam, _labels);
-            _menu = new MenuBar(_safe, _sim, u => Bought(u, Upgrades.Cost(u), _sim.Player.Pos));
+            _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos));
             _cfg.SetAsLastSibling();     // configuracoes e painel modal cobrem a barra de melhorias
             _panel.SetAsLastSibling();
             if (Arg("-menu") != null) _menu.Toggle();   // foto com a fileira aberta
@@ -219,7 +219,7 @@ namespace FS
         {
             long gold = _sim.ApplyOffline(elapsed, claim);
             if (gold <= 0) return 0;
-            long shown = Math.Min(elapsed, (long)Balance.OfflineCapSeconds);
+            long shown = Math.Min(elapsed, _sim.T.OfflineCap);
             Log("offline_claim", gold.ToString(), shown.ToString());
             Source("cofre", gold);
             Sfx.Play("offline");
@@ -285,6 +285,7 @@ namespace FS
 
             if (_vipNow && _sim.CanSummonVip) _vipNow = !_sim.SummonVip();
             _view.Refresh(Time.deltaTime);
+            Sfx.Tick(_sim, Time.unscaledDeltaTime);   // A-AUD-23: musica e ambiente que cresce com estacoes trabalhando e fila
             FollowCamera(Time.deltaTime);
             RefreshHud();
             _menu.Refresh(Time.deltaTime);
@@ -390,7 +391,7 @@ namespace FS
                         Source("encomenda", e.B);
                         Ajustes.Pulso(40, 200);
                         if (_order == null) break;   // criativo: sem cartao, o ouro entra direto no numero
-                        Sfx.Play("upgrade");
+                        Sfx.Play("order");
                         OrderText(_sim.OrderTarget, _sim.OrderTarget);   // a ultima venda e a entrega caem no mesmo tick: mostra o 5/5
                         _orderOut = true; _orderT = 0f;
                         Notice(Delivered + e.B, _coinIcon.sprite, _coinIcon.color);
@@ -785,15 +786,18 @@ namespace FS
         }
 
         /// <summary>
-        /// Cada quadro (tempo real: o simulado zera o timeScale): VIP so com Sim.CanSummonVip e anuncio pronto; velocidade com CanBoost e
-        /// anuncio pronto mostra o proximo multiplicador, fora disso (sem boost e com recarga) fica cinza com o tempo; no 3x some (o selo
-        /// diz tudo). Selo do boost com o multiplicador e o cronometro, pulsando.
+        /// Cada quadro (tempo real: o simulado zera o timeScale): VIP com Sim.CanSummonVip e anuncio pronto; na recarga de 5 min (P14, sem VIP
+        /// na rua) fica cinza com o tempo, como a velocidade. Velocidade com CanBoost e anuncio pronto mostra o proximo multiplicador, fora disso
+        /// (sem boost e com recarga) fica cinza com o tempo; no 3x some (o selo diz tudo). Flag desligada (Tuning) esconde o botao; antes da 1a
+        /// melhoria (D6) os dois Can* recusam e nao ha recarga, entao os dois ficam escondidos (e sem rewarded_offer).
+        /// Selo do boost com o multiplicador e o cronometro, pulsando.
         /// </summary>
         void RefreshAdUi()
         {
-            bool vip = _sim.CanSummonVip && _ads.Ready(Ads.Vip);
-            if (_vipBtn.B.gameObject.activeSelf != vip) _vipBtn.B.gameObject.SetActive(vip);
-            bool active = _sim.BoostLeft > 0f, can = _sim.CanBoost && _ads.Ready(Ads.Velocidade), cool = !active && _sim.BoostCooldown > 0f;
+            bool vip = _sim.CanSummonVip && _ads.Ready(Ads.Vip), vipCool = _sim.T.Vip && _sim.T.VipChamado && !_sim.VipActive && _sim.VipCooldown > 0f;
+            if (_vipBtn.B.gameObject.activeSelf != (vip || vipCool)) _vipBtn.B.gameObject.SetActive(vip || vipCool);
+            if (vip || vipCool) Paint(_vipBtn, vip, Color.white, vip ? "VIP" : Clock(_sim.VipCooldown));
+            bool active = _sim.BoostLeft > 0f, can = _sim.CanBoost && _ads.Ready(Ads.Velocidade), cool = _sim.T.Velocidade && !active && _sim.BoostCooldown > 0f;
             // s86 rewarded_offer: uma por aparicao do botao disponivel (cinza da recarga nao e' oferta), contada quando da para tocar
             // (A-PLAT-07: Estados.Anuncia; por baixo de painel ela espera o painel fechar)
             bool on = Estados.Anuncia(EstadoAtual);
@@ -803,14 +807,7 @@ namespace FS
             else if (on && !_speedOffer) { _speedOffer = true; Log("rewarded_offer", Ads.Velocidade, active ? "3x" : "2x"); }
             bool show = can || cool;
             if (_speedBtn.B.gameObject.activeSelf != show) _speedBtn.B.gameObject.SetActive(show);
-            if (show)
-            {
-                _speedBtn.B.interactable = can;
-                _speedBtn.Face.color = can ? AdFace : AdOff;
-                _speedBtn.Icon.color = can ? Art.Accent : Art.ComAlfa(Art.Ink, 0.45f);
-                _speedBtn.Video.SetActive(can);
-                _speedBtn.Label.text = can ? (active ? "→3×" : "2×") : Clock(_sim.BoostCooldown);   // v0.6d: com boost, o PROXIMO nivel ("3×" lia como o atual)
-            }
+            if (show) Paint(_speedBtn, can, Art.Accent, can ? (active ? "→3×" : "2×") : Clock(_sim.BoostCooldown));   // v0.6d: com boost, o PROXIMO nivel ("3×" lia como o atual)
             if (_boostSeal.gameObject.activeSelf != active) _boostSeal.gameObject.SetActive(active);
             if (active)
             {
@@ -818,6 +815,16 @@ namespace FS
                 _boostTime.text = Clock(_sim.BoostLeft);
                 _boostSeal.localScale = Vector3.one * (1f + 0.04f * Mathf.Abs(Mathf.Sin(Captura.Agora * 3f)));
             }
+        }
+
+        /// <summary>Botao de anuncio pronto (face da HUD, icone em `on`, selo de video) ou na recarga (cinza, sem video, legenda = cronometro).</summary>
+        static void Paint(AdBtn b, bool can, Color on, string label)
+        {
+            b.B.interactable = can;
+            b.Face.color = can ? AdFace : AdOff;
+            b.Icon.color = can ? on : Art.ComAlfa(Art.Ink, 0.45f);
+            b.Video.SetActive(can);
+            b.Label.text = label;
         }
 
         // ---------- encomenda (v0.6c, docs/FASE9_ENCOMENDAS.md) ----------
@@ -927,7 +934,7 @@ namespace FS
                 if (m <= 0f) return;
                 Sfx.Play("upgrade", 1.2f);
                 _view.Float(_sim.Player.Pos, $"Velocidade {m:0}×!", Art.Accent, 48);
-                Log("boost_start", m.ToString("0", CultureInfo.InvariantCulture), Balance.BoostSeconds.ToString("0", CultureInfo.InvariantCulture));
+                Log("boost_start", m.ToString("0", CultureInfo.InvariantCulture), _sim.T.BoostSeconds.ToString("0", CultureInfo.InvariantCulture));
             }, AdFail);
         }
 
@@ -940,9 +947,9 @@ namespace FS
         // ---------- configuracoes: som e vibracao (v0.6b, BENCHMARK_VISUAL P2-4; a versao saiu da HUD para ca, P1-1) ----------
 
         /// <summary>
-        /// Engrenagem na faixa de cima (a direita da dica, mesmo estilo da pilula de ouro) abre o cartao creme do menu: Som, Vibracao
-        /// (so no Android; no PC aparece apagada), a versao e FECHAR. Nao e' pausa: como o painel do cofre, trava o joystick e a
-        /// oficina segue trabalhando (o ferreiro para). Criativo (-record): sem engrenagem.
+        /// Engrenagem na faixa de cima (a direita da dica, mesmo estilo da pilula de ouro) abre o cartao creme do menu: Musica, Efeitos
+        /// (A-AUD-23: eram uma chave Som so), Vibracao (so no Android; no PC aparece apagada), a versao e FECHAR. Nao e' pausa: como o
+        /// painel do cofre, trava o joystick e a oficina segue trabalhando (o ferreiro para). Criativo (-record): sem engrenagem.
         /// </summary>
         void BuildSettings(RectTransform top)
         {
@@ -956,22 +963,23 @@ namespace FS
                 icon.sprite = Art.Gear(); icon.color = Art.HudEdge; icon.preserveAspect = true; icon.raycastTarget = false;
                 Button gb = gear.gameObject.AddComponent<Button>();
                 gb.targetGraphic = gear;
-                gb.onClick.AddListener(() => { Sfx.Play("drop"); _cfg.gameObject.SetActive(true); });
+                gb.onClick.AddListener(() => { Sfx.Play("click"); _cfg.gameObject.SetActive(true); });
             }
 
             _cfg = Art.Node(_safe, "Configuracoes", Vector2.zero, Vector2.one);
             _cfg.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);   // escurece e segura os toques do resto
-            Image edge = Art.Panel(_cfg, "Cartao", MenuBar.Leather, new Vector2(0.1f, 0.33f), new Vector2(0.9f, 0.67f));
+            Image edge = Art.Panel(_cfg, "Cartao", MenuBar.Leather, new Vector2(0.1f, 0.3f), new Vector2(0.9f, 0.7f));   // 3 chaves: 0,34 -> 0,40 da tela
             Image face = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(6f, 14f); face.rectTransform.offsetMax = new Vector2(-6f, -6f);   // chanfro de couro embaixo
             face.raycastTarget = false;
-            Text title = Art.NewText(face.transform, "Titulo", 60, new Vector2(0.05f, 0.8f), new Vector2(0.95f, 0.97f));
+            Text title = Art.NewText(face.transform, "Titulo", 60, new Vector2(0.05f, 0.84f), new Vector2(0.95f, 0.97f));
             title.text = "Configurações"; title.fontStyle = FontStyle.Bold; title.color = MenuBar.Brown;
-            Chave(face.transform, "Som", 0.58f, () => Ajustes.Som, v => { SetSom(v); if (v) Sfx.Play("coin"); }, true);
-            Chave(face.transform, "Vibração", 0.38f, () => Ajustes.Vibra, v => { SetVibra(v); if (v) Ajustes.Confirmar(); }, Ajustes.TemVibra);
-            Text ver = Art.NewText(face.transform, "Versao", 32, new Vector2(0.05f, 0.25f), new Vector2(0.95f, 0.35f));
+            Chave(face.transform, "Música", 0.67f, () => Ajustes.Musica, v => SetSom("musica", v), true);
+            Chave(face.transform, "Efeitos", 0.51f, () => Ajustes.Efeitos, v => SetSom("efeitos", v), true);
+            Chave(face.transform, "Vibração", 0.35f, () => Ajustes.Vibra, v => { SetVibra(v); if (v) Ajustes.Confirmar(); }, Ajustes.TemVibra);
+            Text ver = Art.NewText(face.transform, "Versao", 32, new Vector2(0.05f, 0.24f), new Vector2(0.95f, 0.32f));
             ver.text = "Forge Street v" + Application.version; ver.color = Art.ComAlfa(MenuBar.Brown, 0.65f);
-            Button close = Art.NewButton(face.transform, "FECHAR", 46, MenuBar.Leather, new Vector2(0.25f, 0.05f), new Vector2(0.75f, 0.22f), () => _cfg.gameObject.SetActive(false));
+            Button close = Art.NewButton(face.transform, "FECHAR", 46, MenuBar.Leather, new Vector2(0.25f, 0.05f), new Vector2(0.75f, 0.2f), () => _cfg.gameObject.SetActive(false));
             close.GetComponentInChildren<Text>().color = MenuBar.Cream;
             _cfg.gameObject.SetActive(false);
         }
@@ -980,12 +988,13 @@ namespace FS
         // nos dois (so a Vibracao do PC continua apagada)
         static readonly Color OnFace = Art.Hex(0x5BD16B), OnInk = Art.Hex(0x1F3B12), OffFace = Art.Hex(0x8C7B6B), OffEdge = Art.Hex(0x6B5D50), RowInk = Art.Hex(0x3B2A1A);
 
-        /// <summary>Linha "rotulo + chave": pilula verde (LIGADO) ou cinza (DESLIGADO) com chanfro e bolinha branca; o texto diz o estado.</summary>
+        /// <summary>Linha "rotulo + chave" (0,14 do cartao): pilula verde (LIGADO) ou cinza (DESLIGADO) com chanfro e bolinha branca; o texto
+        /// diz o estado. O toque faz "click" (so se os Efeitos ficaram ligados).</summary>
         void Chave(Transform parent, string label, float y, Func<bool> get, Action<bool> set, bool enabled)
         {
-            Text l = Art.NewText(parent, label, 50, new Vector2(0.07f, y), new Vector2(0.48f, y + 0.17f), TextAnchor.MiddleLeft);
+            Text l = Art.NewText(parent, label, 50, new Vector2(0.07f, y), new Vector2(0.48f, y + 0.14f), TextAnchor.MiddleLeft);
             l.text = label; l.fontStyle = FontStyle.Bold; l.color = RowInk;
-            Image edge = Art.Panel(parent, label + " Chave", MenuBar.GreenDark, new Vector2(0.5f, y + 0.01f), new Vector2(0.93f, y + 0.16f));
+            Image edge = Art.Panel(parent, label + " Chave", MenuBar.GreenDark, new Vector2(0.5f, y + 0.01f), new Vector2(0.93f, y + 0.13f));
             Image face = Art.Panel(edge.transform, "Face", OnFace, Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(0f, 7f); face.raycastTarget = false;
             Image knob = Art.Node(face.transform, "Bolinha", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
@@ -1006,7 +1015,7 @@ namespace FS
                 state.rectTransform.anchorMax = new Vector2(on ? 0.72f : 0.97f, 1f);
                 state.text = on ? "LIGADO" : "DESLIGADO";
             }
-            b.onClick.AddListener(() => { set(!get()); Paint(); });
+            b.onClick.AddListener(() => { set(!get()); Paint(); Sfx.Play("click"); });
             Paint();
             if (enabled) return;
             // sem vibrador (PC): apagada e sem toque
@@ -1015,7 +1024,12 @@ namespace FS
             l.color = Art.ComAlfa(RowInk, 0.45f);
         }
 
-        void SetSom(bool on) { Ajustes.Som = on; Log("settings", "som", on ? "1" : "0"); }
+        void SetSom(bool on) { Ajustes.Som = on; Log("settings", "som", on ? "1" : "0"); }   // -settings on|off: musica e efeitos juntos
+        void SetSom(string qual, bool on)
+        {
+            if (qual == "musica") Ajustes.Musica = on; else Ajustes.Efeitos = on;
+            Log("settings", qual, on ? "1" : "0");
+        }
         void SetVibra(bool on) { Ajustes.Vibra = on; Log("settings", "vibra", on ? "1" : "0"); }
 
         /// <param name="gold">&gt; 0: linha da moeda com "+gold" grande (cofre); 0: so o texto.</param>

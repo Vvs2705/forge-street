@@ -86,7 +86,7 @@ namespace FS
                 string nao = PodeComprar(s, u);
                 if (nao != null) return $"-buyids {u}@{t.ToString(CultureInfo.InvariantCulture)}: {nao}";
                 s.Buy((Upgrade)u);
-                s.Gold -= Upgrades.Cost(u);
+                s.Gold -= s.T.Cost(u);
             }
             return null;
         }
@@ -99,7 +99,7 @@ namespace FS
             if (s.Bought[u]) return d.Name + " ja comprado";
             if (d.Requires >= 0 && !s.Bought[d.Requires]) return d.Name + " sem " + Upgrades.All[d.Requires].Name;
             if (d.Luxury && !s.ProductionComplete) return d.Name + ": luxo antes da producao completa";
-            long c = Upgrades.Cost(u);
+            long c = s.T.Cost(u);
             return s.Gold < c ? $"{d.Name} custa {c}, ouro {s.Gold}" : null;
         }
 

@@ -425,7 +425,7 @@ namespace FS
             Image img = Panel(parent, "Btn " + label, color, anchorMin, anchorMax);
             var b = img.gameObject.AddComponent<Button>();
             b.targetGraphic = img;
-            b.onClick.AddListener(() => onClick());
+            b.onClick.AddListener(() => { Sfx.Play("click"); onClick(); });
             Text t = NewText(img.transform, "Label", size, Vector2.zero, Vector2.one);
             t.text = label;
             t.color = HudFace;
@@ -434,75 +434,19 @@ namespace FS
         }
     }
 
-    /// <summary>SFX sintetizados (padrao do Sintese.cs do COE): varredura de seno com decaimento, opcional ruido.</summary>
-    public static class Sfx
-    {
-        static AudioSource _src;
-        static readonly Dictionary<string, AudioClip> Clips = new Dictionary<string, AudioClip>();
-        static readonly Dictionary<string, float> LastPlayed = new Dictionary<string, float>();
-
-        public static void Init(GameObject host)
-        {
-            _src = host.AddComponent<AudioSource>();
-            _src.playOnAwake = false;
-            Tone("ore", 160, 70, 0.14f, 0.55f);        // pedra batendo
-            Tone("furnace", 180, 420, 0.35f, 0.65f);   // sopro da fornalha
-            Tone("hammer", 1500, 500, 0.09f, 0.25f);   // martelada
-            Tone("coin", 1300, 2100, 0.14f);           // moeda
-            Tone("upgrade", 420, 1250, 0.5f);          // compra
-            Tone("hire", 520, 880, 0.35f, 0.1f);       // contratacao
-            Tone("client", 980, 740, 0.16f);           // cliente chegou
-            Tone("leave", 520, 230, 0.35f, 0.2f);      // cliente foi embora
-            Tone("drop", 700, 500, 0.06f);             // item depositado
-            Tone("offline", 523, 1046, 0.7f);          // cofre
-            Tone("vip", 660, 1480, 0.6f, 0.05f);       // cliente VIP chegou (v0.5c)
-            // A-ART-07: a MESMA martelada no compasso da bigorna, com espera propria: as batidas nao engolem o golpe final (Ev.Crafted)
-            Clips["martelo"] = Clips["hammer"];
-        }
-
-        /// <summary>Toca no maximo uma vez por `minGap` segundos por nome (varias marteladas no mesmo quadro viram uma).</summary>
-        public static void Play(string name, float pitch = 1f, float minGap = 0.05f, float vol = 0.55f)
-        {
-            if (_src == null || !Ajustes.Som || !Clips.TryGetValue(name, out AudioClip c)) return;   // Som desligado = nada toca
-            if (LastPlayed.TryGetValue(name, out float last) && Time.unscaledTime - last < minGap) return;
-            LastPlayed[name] = Time.unscaledTime;
-            _src.pitch = pitch;
-            _src.PlayOneShot(c, vol);
-        }
-
-        static void Tone(string name, float f0, float f1, float dur, float noise = 0f)
-        {
-            const int rate = 44100;
-            int n = Mathf.CeilToInt(dur * rate);
-            var data = new float[n];
-            var rng = new System.Random(name.GetHashCode());
-            double phase = 0;
-            for (int i = 0; i < n; i++)
-            {
-                float t = i / (float)n;
-                phase += 2 * Math.PI * Mathf.Lerp(f0, f1, t) / rate;
-                float env = Mathf.Min(1f, i / 200f) * Mathf.Exp(-4f * t);
-                float v = (float)Math.Sin(phase) * (1f - noise) + ((float)rng.NextDouble() * 2f - 1f) * noise;
-                data[i] = v * env * 0.5f;
-            }
-            AudioClip clip = AudioClip.Create(name, n, 1, rate, false);
-            clip.SetData(data, 0);
-            Clips[name] = clip;
-        }
-    }
-
     /// <summary>
-    /// Configuracoes (v0.6b, BENCHMARK_VISUAL P2-4): Som e Vibracao no PlayerPrefs (fs_som, fs_vibra; 1 = ligado), fora do save de
-    /// progresso, entao valem tambem no -testsession. Pulso = VibrationEffect.createOneShot(ms, forca) do Android; no PC e no editor
-    /// nao faz nada. A-AUD-22 (Documento Mestre s72, "nao vibrar a cada pequena venda"): quem chama escolhe ms e forca por importancia
+    /// Configuracoes (v0.6b, BENCHMARK_VISUAL P2-4): Musica, Efeitos e Vibracao no PlayerPrefs (fs_musica, fs_efeitos, fs_vibra; 1 =
+    /// ligado), fora do save de progresso, entao valem tambem no -testsession. A-AUD-23 (DM s110, music/sfx separados): sem a chave nova,
+    /// Musica e Efeitos herdam a fs_som da v0.6 (quem desligou o Som continua sem som); o ambiente vai com os Efeitos.
+    /// Pulso = VibrationEffect.createOneShot(ms, forca) do Android; no PC e no editor nao faz nada. A-AUD-22 (Documento Mestre s72, "nao vibrar a cada pequena venda"): quem chama escolhe ms e forca por importancia
     /// (Game.HandleEvents/Bought) e o teto e' de 4 pulsos por segundo (so um pulso mais forte fura a espera).
     /// </summary>
     public static class Ajustes
     {
-        const string SomKey = "fs_som", VibraKey = "fs_vibra";
+        const string SomKey = "fs_som", MusicaKey = "fs_musica", EfeitosKey = "fs_efeitos", VibraKey = "fs_vibra";
         const float MinGap = 0.25f;   // teto: 4 pulsos por segundo de forca igual ou menor
         public static readonly bool TemVibra = Application.platform == RuntimePlatform.Android;
-        static int _som = -1, _vibra = -1, _lastAmp;   // cache: o Sfx.Play pergunta a cada som
+        static int _musica = -1, _efeitos = -1, _vibra = -1, _lastAmp;   // cache: o Sfx.Play pergunta a cada som
         static float _last = -99f;
 #if UNITY_ANDROID && !UNITY_EDITOR
         static AndroidJavaObject _vib;
@@ -511,10 +455,18 @@ namespace FS
         static bool _quebrou;
 #endif
 
-        public static bool Som { get => Read(SomKey, ref _som); set => Write(SomKey, ref _som, value); }
+        public static bool Musica { get => Read(MusicaKey, ref _musica, SomKey); set => Write(MusicaKey, ref _musica, value); }
+        public static bool Efeitos { get => Read(EfeitosKey, ref _efeitos, SomKey); set => Write(EfeitosKey, ref _efeitos, value); }
+        /// <summary>"Tudo" (o -settings on|off e a linha SHOT): ligado se algum dos dois esta; gravar mexe nos dois.</summary>
+        public static bool Som { get => Musica || Efeitos; set { Musica = value; Efeitos = value; } }
         public static bool Vibra { get => TemVibra && Read(VibraKey, ref _vibra); set => Write(VibraKey, ref _vibra, value); }
 
-        static bool Read(string key, ref int v) { if (v < 0) v = PlayerPrefs.GetInt(key, 1); return v == 1; }
+        /// <summary>Le uma vez e guarda; sem a chave vale a `legado` (ou ligado).</summary>
+        static bool Read(string key, ref int v, string legado = null)
+        {
+            if (v < 0) v = PlayerPrefs.GetInt(key, legado == null ? 1 : PlayerPrefs.GetInt(legado, 1));
+            return v == 1;
+        }
         static void Write(string key, ref int v, bool on) { v = on ? 1 : 0; PlayerPrefs.SetInt(key, v); PlayerPrefs.Save(); }
 
         /// <summary>Confirma o "ligar" da Vibracao com a vibracao padrao do sistema (como o Rune Relay).</summary>

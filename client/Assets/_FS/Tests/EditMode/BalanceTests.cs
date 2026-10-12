@@ -42,7 +42,7 @@ namespace FS.Tests
             var sb = new StringBuilder();
             sb.AppendLine("primeira venda: " + Clock(s.FirstSaleTime));
             for (int i = 0; i < Upgrades.Count; i++)
-                sb.AppendLine($"  {Clock(s.UpgradeTime[i])}  {(Upgrade)i} ({Upgrades.Cost(i)} ouro)");
+                sb.AppendLine($"  {Clock(s.UpgradeTime[i])}  {(Upgrade)i} ({s.T.Cost(i)} ouro)");
             foreach (Station st in s.Stations)
                 if (st.Produces) sb.AppendLine(string.Format(CultureInfo.InvariantCulture, "  {0,-12} fome={1,5:0}s travada={2,5:0}s feitos={3}", st.Name, st.StarveSeconds, st.StallSeconds, st.Crafted));
             sb.AppendLine(string.Format(CultureInfo.InvariantCulture, "  andar sem decisao: {0:0}s de {1:0}s ({2:0}%)", s.WalkNoDecision, s.Time, 100f * s.WalkNoDecision / Math.Max(1f, s.Time)));
@@ -276,7 +276,7 @@ namespace FS.Tests
                 Assert.AreEqual((earnedP[m], salesP[m]), (earnedL[m], salesL[m]), $"identicas ate a 1a compra de luxo (minuto {m})");
             Assert.That(gL / gP, Is.InRange(0.97f, 1.03f), "luxo nao altera ouro/min (medido +0,5%)");
             Assert.That(sL / sP, Is.InRange(0.97f, 1.03f), "luxo nao altera vendas/min (medido +0,1%)");
-            long luxuryCost = Upgrades.Cost(Upgrade.WorkshopFacade) + Upgrades.Cost(Upgrade.WorkshopFloor) + Upgrades.Cost(Upgrade.JewelryDecor);
+            long luxuryCost = lux.T.Cost(Upgrade.WorkshopFacade) + lux.T.Cost(Upgrade.WorkshopFloor) + lux.T.Cost(Upgrade.JewelryDecor);
             Assert.AreEqual(plain.Gold + (lux.GoldEarned - plain.GoldEarned) + (lux.OrderGold - plain.OrderGold) - luxuryCost, lux.Gold,
                 "o luxo cobra exatamente o preco, uma vez, sem devolver ouro (premio das encomendas fica fora do GoldEarned)");
             Assert.AreEqual((Upgrades.Count, Upgrades.ProductionCount), (lux.UpgradesBought, plain.UpgradesBought));
@@ -300,7 +300,7 @@ namespace FS.Tests
             var s = new Sim();
             Play(s, 600f);
             Assert.Greater(s.RateEma, 0.1, "taxa online medida existe");
-            int raw = (int)Math.Floor(s.RateEma * Balance.OfflineFactor * Balance.OfflineCapSeconds);
+            int raw = (int)Math.Floor(s.RateEma * s.T.OfflineFactor * Balance.OfflineCapSeconds);
             long gold = s.ApplyOffline(8 * 3600, 1);
             Assert.AreEqual(Math.Min(raw, s.OfflineMaxGold()), gold);
             Assert.LessOrEqual(gold, 2 * s.CheapestLockedCost(), "o cofre nunca compra o resto do jogo sozinho");

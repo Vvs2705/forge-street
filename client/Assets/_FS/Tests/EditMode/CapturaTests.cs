@@ -54,7 +54,7 @@ namespace FS.Tests
             s.Time = 2.5f;
             StringAssert.Contains("ouro 0", Captura.Vence(s, at));           // sem ouro (antes o ouro ia a 0 e comprava)
             Assert.IsFalse(s.Bought[(int)Upgrade.Helper2]);
-            s.Gold = Upgrades.Cost(Upgrade.FurnaceSpeed1) + 7;
+            s.Gold = s.T.Cost(Upgrade.FurnaceSpeed1) + 7;
             Assert.IsNull(Captura.Vence(s, at));                              // 0@3 ainda nao venceu
             s.Time = 3.5f;
             Assert.IsNull(Captura.Vence(s, at));

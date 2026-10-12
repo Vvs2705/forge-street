@@ -55,6 +55,9 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | V15 | Charter do Old Forge = produção completa + Renome 400 + 1 Masterwork; o rival (FS-4) só entra depois de A/B no bot (GDD v2 §11, §21) | padrão do time, 2026-10-12 — revisar |
 | V16 | Eventos usam só pontos de evento (não moeda) até a Wave E, coerente com V9 (GDD v2 §16) | padrão do time, 2026-10-12 — revisar |
 | V17 | Clientes nomeados (FS-3) entram como clientes marcados dentro das famílias; corações são trilha, não moeda (GDD v2 §7, §21) | padrão do time, 2026-10-12 — revisar |
+| V18 | **D6 (decidido por padrão):** Velocidade e "Chamar VIP" só depois da 1ª melhoria (knob `Tuning.AnunciosDepoisDaPrimeiraMelhoria`) | padrão do time, 2026-10-12 — revisar |
+| V19 | Pisos do §3 com anúncio: medir no econsim contando ~30 s por anúncio antes de mexer em regra (o bot sem esse tempo fica 7–12 s abaixo em 3 marcos) | padrão do time, 2026-10-12 — revisar |
+| V20 | **LiveOps (decidido por padrão, `LIVEOPS_V1.md` §7):** eventos às 13:00 UTC e diárias às 04:00 do aparelho; temporada de 35 dias com a semana 5 de folga; Pass de 30 níveis × 600 XP (F2P fecha a trilha free em ~28 dias); projeto da Masterwork no Hunt como fonte extra (a grátis permanente continua); premium só cosmético, conveniência e Gems (nunca ouro, Renome, XP ou Blueprint) e preço na Wave E; teto de 100 XP/dia de encomendas; minério raro só como skin; eventos de 6 dias | padrão do time, 2026-10-12 — revisar |
 
 ## 5. Decisões pendentes (Vinicius)
 
@@ -115,7 +118,7 @@ Estimativa honesta do coordenador, atualizada a cada leva. 100% = o item do §16
 
 | Item (§164) | % | Onde está | Próximo passo |
 |---|---|---|---|
-| Core polido | 40 | loop completo, Save 2.0, exploits fechados, ouro long, Steer sem impasse, validator | `Tuning`/flags (A-CORE-03), IDs estáveis (A-CORE-04), `Sim` em partes |
+| Core polido | 50 | loop completo, Save 2.0, exploits fechados, ouro long, Steer sem impasse, validator | IDs estáveis (A-CORE-04), `Sim` em partes, Wave B |
 | 6 distritos | 15 | Old Forge + rua lateral (1º distrito incompleto) | `DistrictDef` + Império (C-CORE-01/02) |
 | 35–45 produtos | 10 | 4 produtos vendáveis (espada, escudo, ferramenta, joia) | `ItemDef`/`RecipeDef` multi-insumo (B-CORE-01) |
 | Workers | 25 | 4 papéis de ajudante, sem nível nem especialidade | `WorkerDef` (B-CORE-04) |
@@ -126,16 +129,16 @@ Estimativa honesta do coordenador, atualizada a cada leva. 100% = o item do §16
 | Masterworks | 0 | — | B-CORE-08 |
 | Collection | 0 | — | B-CORE-08 |
 | Reputation | 0 | — | B-CORE-06 |
-| Daily / Weekly / Achievements | 0 | baús de marco (embrião) | D-CORE-01/02 |
-| Events (LiveOps) | 0 | — | D-CORE-03 + calendário |
-| Pass | 0 | — | D-CORE-04 |
+| Daily / Weekly / Achievements | 0 | baús de marco (embrião) | implementar D-CORE-01/02 sobre o desenho do [`LIVEOPS_V1.md`](LIVEOPS_V1.md) §4–§5 (34 diárias, 16 semanais, login de 7 dias, 77 conquistas, ledger) |
+| Events (LiveOps) | 0 | — | implementar D-CORE-03 sobre o calendário e o `EventDef` do [`LIVEOPS_V1.md`](LIVEOPS_V1.md) §2, §5 (8 semanas + 2 reservas) |
+| Pass | 0 | — | implementar D-CORE-04 sobre o Pass S1/S2 do [`LIVEOPS_V1.md`](LIVEOPS_V1.md) §3, §5 (30 níveis, premium desligado até a Wave E) |
 | Ads | 30 | 2 rewarded no LevelPlay; consentimento fixo; recarga do VIP decidida | consentimento (E-PLAT-01), placements por config (E-PLAT-02), interstitial com flag (E-PLAT-03) |
 | IAP | 0 | — | E-PLAT-04/05 (sem moeda premium até a Wave E) |
-| Analytics | 10 | diário CSV local | costura `IAnalytics` + taxonomia (A-PLAT-06) |
-| RemoteConfig | 0 | — | A-PLAT-08 (depende do A-CORE-03) |
+| Analytics | 25 | `IAnalytics` + taxonomia §86/§87 no diário local, rotação | provedor remoto (A-PLAT-09, decisão P8) |
+| RemoteConfig | 15 | `Tuning` de instância com knobs e flags (A-CORE-03); falta a fonte remota | A-PLAT-08 (provedor = decisão P8) |
 | Save | 70 | Save 2.0 (envelope, atômico, .bak, migração) | cloud save (opcional), `ISaveStorage` |
 | Release pipeline | 50 | AAB assinado por env, `verify release`, 16 KB, API 36 | chave real (aval), Unity no CI (P15), release automatizada |
-| Arte final | 15 | fornalha 6 estados, HUD numa paleta, preset "forja" em prova | alvo visual 9:16 (P12), herói, elenco, distritos |
+| Arte final | 20 | fornalha 6 estados, bigorna no compasso, HUD numa paleta, cartões v2, preset "forja" em prova | alvo visual 9:16 (P12), herói, elenco, distritos |
 | Áudio final | 5 | 11 tons sintetizados; vibração por importância | identidade sonora + mixer (A-AUD-23, banco de sons = aval) |
 | Store assets | 5 | banco de 37 criativos (22 prontos) | presets de captura (G-UA-02), ícone/screenshots |
-| **Média** | **~12** | | |
+| **Média** | **~14** | | |

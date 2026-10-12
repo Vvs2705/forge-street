@@ -96,7 +96,7 @@ namespace FS
 
             var menu = new List<int>();
             for (int u = 0; u < Upgrades.Count; u++) if (Upgrades.All[u].InMenu) menu.Add(u);
-            menu.Sort((a, c) => Upgrades.Cost(a).CompareTo(Upgrades.Cost(c)));
+            menu.Sort((a, c) => _sim.T.Cost(a).CompareTo(_sim.T.Cost(c)));
             for (int i = 0; i < menu.Count; i++) _cards.Add(BuildCard(_content, menu[i], i));   // Ord = posicao por preco, desempate dentro do estado
             _tray.gameObject.SetActive(false);
         }
@@ -132,7 +132,7 @@ namespace FS
         Card BuildCard(RectTransform parent, int u, int ord)
         {
             UpgradeDef d = Upgrades.All[u];
-            var c = new Card { U = u, Ord = ord, Cost = Textos.Ouro(Upgrades.Cost(u)) };
+            var c = new Card { U = u, Ord = ord, Cost = Textos.Ouro(_sim.T.Cost(u)) };
             Image edge = Art.Panel(parent, d.Name, Leather, Vector2.zero, Vector2.one);
             c.Go = edge.gameObject;
             c.Go.AddComponent<LayoutElement>().preferredWidth = CardW;
@@ -152,11 +152,11 @@ namespace FS
             c.Effect = Art.NewText(face.transform, "Beneficio", 30, new Vector2(0.03f, 0.37f), new Vector2(0.97f, 0.58f));
             c.Effect.fontStyle = FontStyle.Bold; c.Effect.color = Brown;
             c.Effect.resizeTextForBestFit = true; c.Effect.resizeTextMinSize = 18; c.Effect.resizeTextMaxSize = 30;
-            c.Effect.text = Textos.Beneficio(u);
+            c.Effect.text = Textos.Beneficio(_sim.T, u);
             c.Detail = Art.NewText(face.transform, "AntesDepois", 24, new Vector2(0.03f, 0.26f), new Vector2(0.97f, 0.37f));
             c.Detail.supportRichText = true; c.Detail.color = Leather;
             c.Detail.resizeTextForBestFit = true; c.Detail.resizeTextMinSize = 16; c.Detail.resizeTextMaxSize = 24;
-            c.Detail.text = Textos.AntesDepois(u).Replace("→", Arrow);
+            c.Detail.text = Textos.AntesDepois(_sim.T, u).Replace("→", Arrow);
             // "Faltam N" (so sem ouro) no lugar do antes → depois: pilula da HUD (borda creme, face marrom), texto e' o sinal, nao a cor
             Image tag = Art.Panel(face.transform, "Falta", Art.HudEdge, new Vector2(0.1f, 0.265f), new Vector2(0.9f, 0.365f));
             tag.raycastTarget = false;
@@ -226,7 +226,7 @@ namespace FS
                 if (e == Cartao.Disponivel) ready++;
                 if (e != c.Estado) Mostra(c, e);
                 if (e != Cartao.SemOuro) continue;
-                long f = Upgrades.Cost(c.U) - _sim.Gold;
+                long f = _sim.T.Cost(c.U) - _sim.Gold;
                 if (f != c.Falta) { c.Falta = f; c.Tag.text = Textos.Falta(f); }
             }
             if (_sort)

@@ -1431,3 +1431,15 @@ Robustez (250 passos de tick por perfil, 1.000 partidas): produção completa m�
 3. **Ouro sem destino depois da produção completa** (BACKLOG_V07 item 2): ~29 mil até os 60 min e ~84 mil até os 90; só os 54 mil de luxo absorvem, e o luxo acaba por volta dos 72 min. É o argumento econômico dos distritos (Wave C).
 
 **QA:** 1 em 1.000 partidas travou — o Ideal a 36,36 ticks/s parou aos 31 min em (8,4; 6,1) a caminho do pad do Mineiro, com o `Sim.Steer` alternando entre (0,71; 0,70) e (−0,71; −0,70). Impasse de navegação no núcleo; conferir se os ajudantes podem cair nele (ticket para a raia de núcleo).
+
+### 22.1 A-CORE-03, P14 e D6 (2026-10-12)
+
+Com o `Tuning` padrão o econsim é idêntico ao byte; F2P, Ideal e Slow não mudam (não usam anúncio). **P14:** recarga de 5 min no "Chamar VIP", contada de quando o chamado sai. **D6:** Velocidade e "Chamar VIP" só depois da 1ª melhoria.
+
+| AdWatcher | Fole | Esteira | Corredor | Joalheria | Produção completa | Zona morta | Ouro depois da produção | VIPs (VIP/boost) |
+|---|---|---|---|---|---|---|---|---|
+| antes (main) | 0:28 | 3:56 | 7:53 | 12:29 | 24:46 | 8 | 89 439 | 58 (48/10) |
+| P14 | 0:28 | 5:46 | 11:43 | 18:32 | 34:40 | 15 | 54 126 | 21 (10/10) |
+| P14 + D6 | **1:07** | 6:07 | 11:36 | 18:44 | **34:06** | 16 | 54 414 | 21 (10/10) |
+
+Pisos do §3 (média de 250 passos de tick, AdWatcher com D6): Fole 1:02 (piso 0:45, 0% abaixo); 2ª bigorna 1:38 (1:45, 85% abaixo); Ajudante 2:05 (2:15, 100%); Escudos 2:33 (2:45, 100%); Esteira 6:04 (4:15, 0%). Sobram 7–12 s nos três marcos do meio, mas o `Sim` não conta o tempo de assistir (~30 s por anúncio, 2 anúncios até os Escudos): em tempo real os pisos são cumpridos. **Decisão por padrão (V19):** o econsim passa a contar o tempo do anúncio antes de mexer em regra de jogo. O achado 1 do §22 fica resolvido. Os números do Ideal no §22 mudaram com a correção do impasse de navegação (44:05 em vez de 43:53).
