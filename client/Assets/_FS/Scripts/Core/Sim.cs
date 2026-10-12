@@ -192,7 +192,7 @@ namespace FS.Core
 
             // Pads fora das linhas de caminhada (coluna x=1,5 e diagonais ate o balcao): atravessar um pad nao pode gastar.
             // FASE6: os pads de upgrades do menu (Fole, Mochila, Botas, Vitrine, Ajudantes ageis, Martelo veloz, Lupa, Vitrine de
-            // joias) continuam na lista porque o save e' por indice de slot, mas ficam invisiveis para sempre (Pad.Current).
+            // joias) continuam na lista (o indice do pad e' o da View e da dica; o save e' por ID desde o schema 2), mas ficam invisiveis para sempre (Pad.Current).
             Slot(0.5f, 6.5f, Upgrade.FurnaceSpeed1, Upgrade.FurnaceSpeed2);
             Slot(FurnaceB.Pos.X, FurnaceB.Pos.Y, Upgrade.Furnace2);
             Slot(AnvilB.Pos.X, AnvilB.Pos.Y, Upgrade.Anvil2);
@@ -1112,10 +1112,59 @@ namespace FS.Core
         // soma, schema e versao do jogo ficam no SaveEnvelope)
 
         /// <summary>A-CORE-01: versao do payload (linha v=). Subir = anexar o passo em Migrations (Migracao_TodaVersaoAnteriorTemPasso cobra).
-        /// Campo novo que nao muda o significado de save antigo (hold=, vip=, ord=) nao sobe.</summary>
-        public const int Schema = 1;
-        /// <summary>Migracoes sobre o texto bruto, antes do parse: Migrations[i] leva o schema i+1 ao i+2. Vazio: so existe o schema 1 (0.1-0.7).</summary>
-        public static readonly Func<string, string>[] Migrations = { };
+        /// Campo novo que nao muda o significado de save antigo (hold=, vip=, ord=) nao sobe. 2 = A-CORE-04 (upgrades e parcial dos pads por ID):
+        /// upgrade novo, em qualquer lugar do enum, nao sobe mais o schema.</summary>
+        public const int Schema = 2;
+        /// <summary>Migracoes sobre o texto bruto, antes do parse: Migrations[i] leva o schema i+1 ao i+2. Schema 1 = 0.1-0.7.</summary>
+        public static readonly Func<string, string>[] Migrations = { V1ParaV2 };
+
+        /// <summary>A-CORE-04: ordem do enum na 0.1-0.7 (schema 1), CONGELADA: e' como o up= daquelas versoes se le. Nunca mude nem reordene; o
+        /// ContentValidator.Ids cobra que todos continuam na tabela.</summary>
+        public static readonly string[] IdsV1 =
+        {
+            "fole", "bigorna2", "ajudante1", "escudos", "mochila", "ajudante2", "esteira", "fole_duplo", "botas", "ferramentas", "vitrine", "fornalha2",
+            "ajudante3", "ajudantes_ageis", "martelo_veloz", "corredor", "joalheria", "joalheiro1", "lupa", "vitrine_joias", "fachada_nobre",
+            "piso_oficina", "joalheria_real", "mineiro", "joalheiro2", "balcao5", "balcao6", "balcao7", "balcao8",
+        };
+        /// <summary>Pads do schema 1 por slot (cadeia de IDs, CONGELADA): o pads= da 0.1-0.7 e' o parcial por indice de slot.</summary>
+        static readonly string[] PadsV1 =
+        {
+            "fole fole_duplo", "fornalha2", "bigorna2", "escudos", "ferramentas", "ajudante1 ajudante2 ajudante3", "ajudantes_ageis", "mochila", "botas",
+            "esteira", "martelo_veloz", "vitrine", "corredor", "joalheria", "joalheiro1", "lupa", "vitrine_joias", "fachada_nobre", "piso_oficina",
+            "joalheria_real", "mineiro", "joalheiro2",
+        };
+
+        /// <summary>
+        /// Schema 1 -> 2: up= (flags na ordem IdsV1), ut= (instante por indice) e pads= (parcial por slot) viram ups=id:instante e upp=id:pago,
+        /// pelas listas congeladas. O parcial do slot vai para o 1o upgrade nao comprado da cadeia (toda comprada: o ultimo; o Load devolve o
+        /// ouro do pad que nao aparece). O resto do texto passa intacto; lixo segue adiante e o Load le com o default.
+        /// </summary>
+        static string V1ParaV2(string text)
+        {
+            string up = "", ut = "", pads = "";
+            var rest = new StringBuilder();
+            foreach (string raw in text.Split('\n'))
+            {
+                int eq = raw.IndexOf('=');
+                string key = eq > 0 ? raw.Substring(0, eq).Trim() : "", val = eq > 0 ? raw.Substring(eq + 1).Trim() : "";
+                if (key == "up") up = val; else if (key == "ut") ut = val; else if (key == "pads") pads = val; else rest.Append(raw).Append('\n');
+            }
+            string[] t = ut.Split(','), paid = pads.Split(',');
+            var ups = new List<string>(); var bought = new HashSet<string>();
+            for (int i = 0; i < Math.Min(up.Length, IdsV1.Length); i++)
+                if (up[i] == '1') { bought.Add(IdsV1[i]); ups.Add(IdsV1[i] + ":" + (i < t.Length ? t[i].Trim() : "-1")); }
+            var upp = new List<string>();
+            for (int i = 0; i < Math.Min(paid.Length, PadsV1.Length); i++)
+            {
+                string[] chain = PadsV1[i].Split(' ');
+                upp.Add((Array.Find(chain, c => !bought.Contains(c)) ?? chain[chain.Length - 1]) + ":" + paid[i].Trim());
+            }
+            return rest.Append("ups=").Append(string.Join(",", ups)).Append("\nupp=").Append(string.Join(",", upp)).Append('\n').ToString();
+        }
+
+        /// <summary>A-CORE-04: IDs do save que este build nao conhece (conteudo de um build mais novo, depois de um downgrade): ficam de fora no
+        /// Load (o parcial de pad volta ao ouro) e o Salvamento loga save_ids_desconhecidos. Nao vai no save: regravar os descarta.</summary>
+        public int UnknownIds;
 
         public string Save(long nowUnix)
         {
@@ -1130,13 +1179,24 @@ namespace FS.Core
             sb.Append("v=").Append(Schema).Append('\n');
             sb.Append("t=").Append(Time.ToString("0.###", ci)).Append('\n');
             sb.Append("gold=").Append(Gold).Append('\n');
+            // A-CORE-04: comprados por ID estavel (id:instante da compra em s de jogo; -1 = desconhecido), na ordem da tabela; o Load nao depende dela
+            var ups = new List<string>();
+            foreach (UpgradeDef d in Upgrades.All) if (Bought[(int)d.Up]) ups.Add(d.Id + ":" + UpgradeTime[(int)d.Up].ToString("0.##", ci));
+            sb.Append("ups=").Append(string.Join(",", ups)).Append('\n');
+            // espelho para a 0.1-0.6 sem envelope (downgrade le o mesmo texto: Salvamento.Gravar): flags na ordem CONGELADA IdsV1, nunca na do
+            // enum. O Load do schema 2 ignora; parcial de pad e instantes nao descem
             var up = new StringBuilder();
-            foreach (bool b in Bought) up.Append(b ? '1' : '0');
+            foreach (string id in IdsV1) { int u = Upgrades.IndexOf(id); up.Append(u >= 0 && Bought[u] ? '1' : '0'); }
             sb.Append("up=").Append(up).Append('\n');
-            sb.Append("ut=").Append(Join(UpgradeTime)).Append('\n');
-            var pads = new StringBuilder();
-            foreach (Pad p in Pads) pads.Append(p.Paid).Append(',');
-            sb.Append("pads=").Append(pads).Append('\n');
+            // parcial de pad pelo ID do upgrade que ele esta pagando: o 1o nao comprado da cadeia (toda comprada: o ultimo; o Load devolve)
+            var upp = new List<string>();
+            foreach (Pad p in Pads)
+            {
+                if (p.Paid <= 0) continue;
+                int k = Array.FindIndex(p.Chain, c => !Bought[(int)c]);
+                upp.Add(Upgrades.All[(int)p.Chain[k < 0 ? p.Chain.Length - 1 : k]].Id + ":" + p.Paid);
+            }
+            sb.Append("upp=").Append(string.Join(",", upp)).Append('\n');
             foreach (Station s in Stations)
                 if (s.Produces) sb.Append("st").Append(s.Index).Append('=').Append(s.In).Append(',').Append(s.Out).Append(',').Append(s.Busy ? 1 : 0).Append(',').Append(s.Progress.ToString("0.###", ci)).Append(',').Append(s.Crafted).Append('\n');
             sb.Append("stock=").Append(Stock[2]).Append(',').Append(Stock[3]).Append(',').Append(Stock[4]).Append(',').Append(Stock[5]).Append('\n');
@@ -1170,15 +1230,9 @@ namespace FS.Core
             return sb.ToString();
         }
 
-        static string Join(float[] v)
-        {
-            var sb = new StringBuilder();
-            for (int i = 0; i < v.Length; i++) { if (i > 0) sb.Append(','); sb.Append(v[i].ToString("0.##", CultureInfo.InvariantCulture)); }
-            return sb.ToString();
-        }
-
-        /// <summary>Carrega o payload sobre `tuning` (null = padrao): os tetos do load (boost, VIP, encomenda) sao os do Tuning da partida.</summary>
-        public static Sim Load(string text, Tuning tuning = null)
+        /// <summary>Carrega o payload sobre `tuning` (null = padrao): os tetos do load (boost, VIP, encomenda) sao os do Tuning da partida.
+        /// `table` = a tabela que resolve os IDs (A-CORE-04; null = Upgrades.All): so o teste injeta outra ordem.</summary>
+        public static Sim Load(string text, Tuning tuning = null, UpgradeDef[] table = null)
         {
             var sim = new Sim(tuning);
             Tuning T = sim.T;   // os tetos abaixo
@@ -1191,6 +1245,7 @@ namespace FS.Core
             string wk = "";   // carga dos ajudantes: aplicada depois do Recompute (eles nascem dos flags)
             int vipWant = -1, vipPack = 0, vipPaid = 0; bool vipQuiet = false, vipSummoned = false;
             int ordItem = -1, ordTarget = 0, ordProgress = 0, ordReward = 0;   // VIP pendente: so depois do Recompute (a linha do produto tem de estar aberta)
+            long refund = 0;   // parcial de pad sem pad (ID desconhecido ou upgrade so de menu): volta ao ouro depois do gold=
             foreach (string raw in text.Split('\n'))
             {
                 int eq = raw.IndexOf('=');
@@ -1201,9 +1256,29 @@ namespace FS.Core
                 {
                     case "t": sim.Time = F(val, 0f); break;
                     case "gold": sim.Gold = Math.Max(0, L(val, 0)); break;
-                    case "up": for (int i = 0; i < Math.Min(val.Length, Upgrades.Count); i++) sim.Bought[i] = val[i] == '1'; break;
-                    case "ut": for (int i = 0; i < Math.Min(parts.Length, Upgrades.Count); i++) sim.UpgradeTime[i] = F(parts[i], -1f); break;
-                    case "pads": for (int i = 0; i < Math.Min(parts.Length, sim.Pads.Count); i++) sim.Pads[i].Paid = Math.Max(0, L(parts[i], 0)); break;
+                    // A-CORE-04: por ID (up=/ut=/pads= do schema 1 ja viraram isto no V1ParaV2; o espelho up= do schema 2 fica sem leitor). ID
+                    // desconhecido fica de fora e conta em UnknownIds; o parcial vai ao pad cuja cadeia tem o upgrade
+                    case "ups":
+                        foreach (string tok in parts)
+                        {
+                            string[] kv = tok.Split(':');
+                            int u = Upgrades.IndexOf(kv[0].Trim(), table);
+                            if (u >= 0) { sim.Bought[u] = true; sim.UpgradeTime[u] = kv.Length > 1 ? F(kv[1], -1f) : -1f; }
+                            else if (kv[0].Trim().Length > 0) sim.UnknownIds++;
+                        }
+                        break;
+                    case "upp":
+                        foreach (string tok in parts)
+                        {
+                            string[] kv = tok.Split(':');
+                            long paid = kv.Length > 1 ? Math.Max(0, L(kv[1], 0)) : 0;
+                            if (paid <= 0) continue;
+                            int u = Upgrades.IndexOf(kv[0].Trim(), table);
+                            Pad pad = u >= 0 ? sim.Pads.Find(p => Array.IndexOf(p.Chain, (Upgrade)u) >= 0) : null;
+                            if (pad != null) pad.Paid += paid; else refund += paid;
+                            if (u < 0) sim.UnknownIds++;
+                        }
+                        break;
                     case "stock": for (int i = 0; i < Math.Min(parts.Length, sim.Stock.Length - 2); i++) sim.Stock[2 + i] = Math.Max(0, I(parts[i], 0)); break;   // save antigo: 3 numeros, joia fica 0
                     case "sold": for (int i = 0; i < Math.Min(parts.Length, sim.SoldItems.Length - 2); i++) sim.SoldItems[2 + i] = Math.Max(0, I(parts[i], 0)); break;   // save antigo sem sold=: conta do zero
                     case "ms": for (int i = 0; i < Math.Min(parts.Length, sim.Chests.Count); i++) sim.Chests[i].State = Clamp0(I(parts[i], 0), 2); break;      // save antigo sem ms=: nenhum marco
@@ -1261,6 +1336,7 @@ namespace FS.Core
                         break;
                 }
             }
+            sim.Gold += refund;
             sim.UpgradesBought = 0;
             foreach (bool b in sim.Bought) if (b) sim.UpgradesBought++;
             sim.Recompute();
