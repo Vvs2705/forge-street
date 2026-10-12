@@ -126,9 +126,9 @@ Estimativa honesta do coordenador, atualizada a cada leva. 100% = o item do §16
 | Masterworks | 0 | — | B-CORE-08 |
 | Collection | 0 | — | B-CORE-08 |
 | Reputation | 0 | — | B-CORE-06 |
-| Daily / Weekly / Achievements | 0 | baús de marco (embrião) | D-CORE-01/02 |
-| Events (LiveOps) | 0 | — | D-CORE-03 + calendário |
-| Pass | 0 | — | D-CORE-04 |
+| Daily / Weekly / Achievements | 0 | baús de marco (embrião) | implementar D-CORE-01/02 sobre o desenho do [`LIVEOPS_V1.md`](LIVEOPS_V1.md) §4–§5 (34 diárias, 16 semanais, login de 7 dias, 77 conquistas, ledger) |
+| Events (LiveOps) | 0 | — | implementar D-CORE-03 sobre o calendário e o `EventDef` do [`LIVEOPS_V1.md`](LIVEOPS_V1.md) §2, §5 (8 semanas + 2 reservas) |
+| Pass | 0 | — | implementar D-CORE-04 sobre o Pass S1/S2 do [`LIVEOPS_V1.md`](LIVEOPS_V1.md) §3, §5 (30 níveis, premium desligado até a Wave E) |
 | Ads | 30 | 2 rewarded no LevelPlay; consentimento fixo; recarga do VIP decidida | consentimento (E-PLAT-01), placements por config (E-PLAT-02), interstitial com flag (E-PLAT-03) |
 | IAP | 0 | — | E-PLAT-04/05 (sem moeda premium até a Wave E) |
 | Analytics | 10 | diário CSV local | costura `IAnalytics` + taxonomia (A-PLAT-06) |
