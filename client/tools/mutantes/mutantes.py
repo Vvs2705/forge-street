@@ -69,6 +69,10 @@ MUTACOES = [
         'load lê a chave saved= para o LastClaim (chave lida no campo errado)'),
     mut('save-ord-progresso', SIM, 'ordProgress = Clamp0(I(parts[2], 0), ordTarget);', 'ordProgress = Clamp0(I(parts[1], 0), ordTarget);',
         'load lê o progresso da encomenda do campo do alvo'),
+    mut('save-id-por-posicao', DEFS, 'return d != null ? (int)d.Up : -1;', 'return Array.IndexOf(table ?? All, d);',
+        'ID do save resolvido pela posição na tabela, não pelo upgrade (A-CORE-04: reordenar a tabela troca o progresso)'),
+    mut('save-v1-ordem', SIM, '"fole", "bigorna2", "ajudante1",', '"fole", "ajudante1", "bigorna2",',
+        'ordem congelada do schema 1 trocada: o up= da 0.1-0.7 migra para os upgrades errados'),
     # VIP e boost
     mut('vip-multiplicador', SIM, 'Slot(jewel, i), T.VipPriceMul);', 'Slot(jewel, i), 2);',
         'VIP paga 2x o preço por unidade em vez de 3x'),

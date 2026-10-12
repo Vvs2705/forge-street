@@ -6,9 +6,9 @@ namespace FS.Core
     /// <summary>
     /// A-CORE-05 (DOCUMENTO_MESTRE §108): confere o conteudo do jogo e devolve as violacoes legiveis (lista vazia = ok). Roda no
     /// `dotnet test` (ContentValidatorTests). Cada regra e' uma funcao curta sobre os DADOS que recebe, nunca sobre a tabela direto:
-    /// quando o conteudo virar dados com ID em string (A-CORE-04), troca so a fonte em Validate() e as regras ficam.
+    /// quando o conteudo virar dados (B-CORE-01), troca so a fonte em Validate() e as regras ficam. O UpgradeDef ja tem ID em string (A-CORE-04).
     /// ponytail: icone por ID, chave de analytics e localizacao nao existem no conteudo (nome e descricao sao texto pt-BR no
-    /// Defs.cs); viram regras aqui quando o UpgradeDef/ItemDef ganharem esses campos (A-CORE-04, B-CORE-01).
+    /// Defs.cs); viram regras aqui quando o UpgradeDef/ItemDef ganharem esses campos (B-CORE-01).
     /// </summary>
     public static class ContentValidator
     {
@@ -56,17 +56,25 @@ namespace FS.Core
             return w;
         }
 
-        /// <summary>Um por ID, na ordem do enum (= tier; o save e' por indice).</summary>
+        /// <summary>Um por enum, na ordem do enum (= indice do Sim e tier do custo). A-CORE-04: ID estavel nao vazio, so [a-z0-9_], unico; e todo
+        /// ID do schema 1 (Sim.IdsV1, como o save da 0.1-0.7 migra) continua na tabela. O golden do ContentValidatorTests pega o resto.</summary>
         public static IEnumerable<string> Ids(UpgradeDef[] all)
         {
             int n = Enum.GetValues(typeof(Upgrade)).Length;
             if (all.Length != n || Upgrades.Count != n) yield return $"id: tabela com {all.Length}, Upgrades.Count = {Upgrades.Count}, enum com {n}";
             var seen = new HashSet<Upgrade>();
+            var ids = new HashSet<string>();
             for (int i = 0; i < all.Length; i++)
             {
-                if (all[i].Id != (Upgrade)i) yield return $"id: tabela[{i}] e' {all[i].Id}, fora da ordem do enum (tier)";
-                if (!seen.Add(all[i].Id)) yield return $"id: {all[i].Id} repetido";
+                if (all[i].Up != (Upgrade)i) yield return $"id: tabela[{i}] e' {all[i].Up}, fora da ordem do enum (tier)";
+                if (!seen.Add(all[i].Up)) yield return $"id: {all[i].Up} repetido";
+                string id = all[i].Id;
+                if (string.IsNullOrEmpty(id)) yield return $"id: {all[i].Up} sem ID estavel";
+                else if (!Array.TrueForAll(id.ToCharArray(), c => c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_')) yield return $"id: \"{id}\" ({all[i].Up}) fora de [a-z0-9_]";
+                else if (!ids.Add(id)) yield return $"id: \"{id}\" repetido";
             }
+            foreach (string id in Sim.IdsV1)
+                if (!ids.Contains(id)) yield return $"id: \"{id}\" do schema 1 sumiu da tabela (save da 0.1-0.7 perde a compra; renomear ou apagar pede passo em Sim.Migrations)";
         }
 
         /// <summary>Pre-requisito existe e e' de tier menor (o que ja impede ciclo na tabela em ordem).</summary>
@@ -75,8 +83,8 @@ namespace FS.Core
             for (int i = 0; i < all.Length; i++)
             {
                 int r = all[i].Requires;
-                if (r < -1 || r >= all.Length) yield return $"requisito: {all[i].Id} exige {r}, que nao existe";
-                else if (r >= i) yield return $"requisito: {all[i].Id} exige {all[r].Id}, de tier igual ou maior";
+                if (r < -1 || r >= all.Length) yield return $"requisito: {all[i].Up} exige {r}, que nao existe";
+                else if (r >= i) yield return $"requisito: {all[i].Up} exige {all[r].Up}, de tier igual ou maior";
             }
         }
 
@@ -111,7 +119,7 @@ namespace FS.Core
             for (int u = 0; u < n; u++)
             {
                 if (bought[u]) continue;
-                Upgrade id = all[u].Id;
+                Upgrade id = all[u].Up;
                 bool hasPad = w.Pads.Exists(p => Array.IndexOf(p.Chain, id) >= 0);
                 yield return all[u].InMenu || hasPad
                     ? $"alcance: {id} nunca fica a venda a partir do inicio (ciclo, requisito inalcancavel, produtivo que exige luxo ou cadeia do pad)"
@@ -126,12 +134,12 @@ namespace FS.Core
             foreach (UpgradeDef d in all)
             {
                 if (!d.Luxury) { prod++; continue; }
-                if (d.InMenu) yield return $"luxo: {d.Id} no menu (luxo e' de pad, depois de toda a producao)";
-                if (d.Requires < 0) yield return $"luxo: {d.Id} sem requisito (o Sim.Buy le Bought[Requires] do luxo)";
+                if (d.InMenu) yield return $"luxo: {d.Up} no menu (luxo e' de pad, depois de toda a producao)";
+                if (d.Requires < 0) yield return $"luxo: {d.Up} sem requisito (o Sim.Buy le Bought[Requires] do luxo)";
             }
             if (prod != Upgrades.ProductionCount) yield return $"luxo: {prod} produtivos marcados, Upgrades.ProductionCount = {Upgrades.ProductionCount}";
             foreach (Station s in w.Stations)
-                if (s.UnlockBy >= 0 && s.UnlockBy < all.Length && all[s.UnlockBy].Luxury) yield return $"luxo: {all[s.UnlockBy].Id} abre a estacao {s.Name} (luxo nao produz)";
+                if (s.UnlockBy >= 0 && s.UnlockBy < all.Length && all[s.UnlockBy].Luxury) yield return $"luxo: {all[s.UnlockBy].Up} abre a estacao {s.Name} (luxo nao produz)";
         }
 
         /// <summary>Custo positivo, multiplo de 5 (preco legivel) e subindo tier a tier na parte da formula.</summary>
@@ -149,9 +157,9 @@ namespace FS.Core
         {
             foreach (UpgradeDef d in all)
             {
-                if (string.IsNullOrWhiteSpace(d.Name)) yield return $"texto: {d.Id} sem nome";
-                else if (d.Name.Length > NameMax) yield return $"texto: {d.Id} \"{d.Name}\" passa de {NameMax} caracteres (nao cabe na dica do menu)";
-                if (string.IsNullOrWhiteSpace(d.Desc)) yield return $"texto: {d.Id} sem descricao";
+                if (string.IsNullOrWhiteSpace(d.Name)) yield return $"texto: {d.Up} sem nome";
+                else if (d.Name.Length > NameMax) yield return $"texto: {d.Up} \"{d.Name}\" passa de {NameMax} caracteres (nao cabe na dica do menu)";
+                if (string.IsNullOrWhiteSpace(d.Desc)) yield return $"texto: {d.Up} sem descricao";
             }
         }
 

@@ -30,6 +30,8 @@
     <Compile Include="../../Assets/_FS/Scripts/View/Som.cs" />
     <!-- E-PLAT-01: regras de privacidade (faixa x aceite -> flags do LevelPlay); a tela fica atras de #if !FS_CORETESTS -->
     <Compile Include="../../Assets/_FS/Scripts/View/Privacidade.cs" />
+    <!-- A-ART-03: alvo da camera (puro) para o EnquadramentoTests -->
+    <Compile Include="../../Assets/_FS/Scripts/View/Enquadramento.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />

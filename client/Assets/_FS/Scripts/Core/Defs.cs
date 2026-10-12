@@ -11,6 +11,7 @@ namespace FS.Core
     /// Os 15 upgrades do MVP (GDD §18/§19) + 2 da 2a area (v0.2) + 3 da joalheria (fase 2). A ORDEM do enum e' a ordem de compra pretendida (tier): o custo sai de
     /// Tuning.Cost(tier). Cada um muda o FLUXO (desbloqueia estacao, contrata, remove caminhada) ou um numero
     /// que desloca o gargalo; a raia B pediu decisao real de onde investir, nao so "estacao vermelha = upgrade".
+    /// A-CORE-04: o save grava o UpgradeDef.Id (string), nunca este numero; os comentarios "saves de N flags" abaixo sao do schema 1 (0.1-0.7).
     /// </summary>
     public enum Upgrade
     {
@@ -293,12 +294,15 @@ namespace FS.Core
 
     public sealed class UpgradeDef
     {
-        public readonly Upgrade Id;
+        /// <summary>A-CORE-04: ID estavel (convencao em Upgrades.All). E' o que o save grava; nunca muda depois de publicado.</summary>
+        public readonly string Id;
+        /// <summary>Handle do codigo: indice em Bought/All e tier da formula de custo. O save nao depende dele.</summary>
+        public readonly Upgrade Up;
         public readonly int Requires;   // indice de outro upgrade ou -1
         public readonly string Name, Desc;
         public readonly bool Luxury;    // luxo: so depois de TODOS os produtivos, fora de ProductionComplete e do teto offline
-        public readonly bool InMenu;    // FASE6: comprado por toque no menu inferior (Sim.TryBuyMenu), nunca em pad; o pad antigo fica na lista (save por indice)
-        public UpgradeDef(Upgrade id, int requires, string name, string desc, bool luxury = false, bool menu = false) { Id = id; Requires = requires; Name = name; Desc = desc; Luxury = luxury; InMenu = menu; }
+        public readonly bool InMenu;    // FASE6: comprado por toque no menu inferior (Sim.TryBuyMenu), nunca em pad; o pad antigo fica na lista (pad = indice da View)
+        public UpgradeDef(Upgrade up, string id, int requires, string name, string desc, bool luxury = false, bool menu = false) { Up = up; Id = id; Requires = requires; Name = name; Desc = desc; Luxury = luxury; InMenu = menu; }
     }
 
     public static class Upgrades
@@ -308,37 +312,51 @@ namespace FS.Core
         /// <summary>Marca por upgrade, nao por ID: um produtivo anexado depois dos luxos continua produtivo.</summary>
         public static bool IsLuxury(int u) => All[u].Luxury;
 
+        /// <summary>A-CORE-04: indice (= (int)Upgrade) do upgrade com este ID, ou -1 (desconhecido). Vai pelo `Up` da definicao, nunca pela
+        /// posicao na tabela: reordenar a tabela ou o enum nao muda o que um ID significa. `table` = so o teste injeta. ponytail: busca linear em 29.</summary>
+        public static int IndexOf(string id, UpgradeDef[] table = null)
+        {
+            UpgradeDef d = Array.Find(table ?? All, x => x.Id == id);
+            return d != null ? (int)d.Up : -1;
+        }
+
+        /// <summary>
+        /// Na ordem do enum (ContentValidator.Ids cobra). ID (A-CORE-04) = nome do cartao em pt-BR, ASCII minusculo sem acento, so [a-z0-9_]:
+        /// palavras ligadas por "_" e sem "de"; o nivel de uma serie vai colado no fim (ajudante1..3, joalheiro1..2, bigorna2, fornalha2,
+        /// balcao5..8). O save grava o ID: renomear o cartao NAO renomeia o ID; renomear ou apagar um ID pede passo em Sim.Migrations (o
+        /// golden do ContentValidatorTests fica vermelho). ID novo entra no fim do golden.
+        /// </summary>
         public static readonly UpgradeDef[] All =
         {
-            new UpgradeDef(Upgrade.FurnaceSpeed1, -1, "Fole", "Fornalha mais rápida", menu: true),
-            new UpgradeDef(Upgrade.Anvil2, -1, "Bigorna 2", "Mais espadas por minuto"),
-            new UpgradeDef(Upgrade.Helper1, -1, "Ajudante", "Leva minério à fornalha"),
-            new UpgradeDef(Upgrade.Shields, -1, "Escudos", "Nova linha: 2 lingotes, paga 25"),
-            new UpgradeDef(Upgrade.PlayerCapacity, -1, "Mochila", "Carrega 6 em vez de 3", menu: true),
-            new UpgradeDef(Upgrade.Helper2, (int)Upgrade.Helper1, "Ajudante 2", "Leva lingotes às bancadas"),
-            new UpgradeDef(Upgrade.Conveyor, -1, "Esteira", "Fornalha → bigorna sem andar"),
-            new UpgradeDef(Upgrade.FurnaceSpeed2, (int)Upgrade.FurnaceSpeed1, "Fole duplo", "Fornalha ainda mais rápida", menu: true),
-            new UpgradeDef(Upgrade.PlayerSpeed, -1, "Botas", "Você anda mais rápido", menu: true),
-            new UpgradeDef(Upgrade.Tools, (int)Upgrade.Shields, "Ferramentas", "Nova linha: 1 lingote, paga 16"),
-            new UpgradeDef(Upgrade.CounterCapacity, -1, "Vitrine", "Mais estoque e mais clientes", menu: true),
-            new UpgradeDef(Upgrade.Furnace2, (int)Upgrade.Anvil2, "Fornalha 2", "Dobra os lingotes"),
-            new UpgradeDef(Upgrade.Helper3, (int)Upgrade.Helper2, "Ajudante 3", "Leva produtos ao balcão"),
-            new UpgradeDef(Upgrade.HelperSpeed, (int)Upgrade.Helper1, "Ajudantes ágeis", "Mais rápidos e carregam 4", menu: true),
-            new UpgradeDef(Upgrade.HammerSpeed, -1, "Martelo veloz", "Bancadas mais rápidas", menu: true),
-            new UpgradeDef(Upgrade.SideCorridor, -1, "Corredor", "Abre a rua lateral"),
-            new UpgradeDef(Upgrade.Jewelry, (int)Upgrade.SideCorridor, "Joalheria", "Nova linha: 2 lingotes, paga 60"),
-            new UpgradeDef(Upgrade.Jeweler, (int)Upgrade.Jewelry, "Joalheiro", "Ajudante leva lingotes à joalheria e joias à loja"),
-            new UpgradeDef(Upgrade.JewelSpeed, (int)Upgrade.Jewelry, "Lupa", "Joalheria mais rápida", menu: true),
-            new UpgradeDef(Upgrade.JewelVitrine, (int)Upgrade.Jewelry, "Vitrine de joias", "Nobres pagam 80 e a fila cresce", menu: true),
-            new UpgradeDef(Upgrade.WorkshopFacade, (int)Upgrade.JewelVitrine, "Fachada nobre", "Entrada dourada e bandeirolas", luxury: true),
-            new UpgradeDef(Upgrade.WorkshopFloor, (int)Upgrade.WorkshopFacade, "Piso de oficina", "Ladrilhos para valorizar a oficina", luxury: true),
-            new UpgradeDef(Upgrade.JewelryDecor, (int)Upgrade.WorkshopFloor, "Joalheria real", "Tapetes e adornos para a joalheria", luxury: true),
-            new UpgradeDef(Upgrade.Miner, (int)Upgrade.Jeweler, "Mineiro", "Mais um ajudante leva minério às fornalhas"),
-            new UpgradeDef(Upgrade.Jeweler2, (int)Upgrade.Miner, "Joalheiro 2", "Mais um ajudante na joalheria"),
-            new UpgradeDef(Upgrade.Counter5, (int)Upgrade.CounterCapacity, "Balcão 5 vagas", "Atende 5 clientes ao mesmo tempo", menu: true),
-            new UpgradeDef(Upgrade.Counter6, (int)Upgrade.Counter5, "Balcão 6 vagas", "Atende 6 clientes ao mesmo tempo", menu: true),
-            new UpgradeDef(Upgrade.Counter7, (int)Upgrade.Counter6, "Balcão 7 vagas", "Atende 7 clientes ao mesmo tempo", menu: true),
-            new UpgradeDef(Upgrade.Counter8, (int)Upgrade.Counter7, "Balcão 8 vagas", "Atende 8 clientes ao mesmo tempo", menu: true),
+            new UpgradeDef(Upgrade.FurnaceSpeed1, "fole", -1, "Fole", "Fornalha mais rápida", menu: true),
+            new UpgradeDef(Upgrade.Anvil2, "bigorna2", -1, "Bigorna 2", "Mais espadas por minuto"),
+            new UpgradeDef(Upgrade.Helper1, "ajudante1", -1, "Ajudante", "Leva minério à fornalha"),
+            new UpgradeDef(Upgrade.Shields, "escudos", -1, "Escudos", "Nova linha: 2 lingotes, paga 25"),
+            new UpgradeDef(Upgrade.PlayerCapacity, "mochila", -1, "Mochila", "Carrega 6 em vez de 3", menu: true),
+            new UpgradeDef(Upgrade.Helper2, "ajudante2", (int)Upgrade.Helper1, "Ajudante 2", "Leva lingotes às bancadas"),
+            new UpgradeDef(Upgrade.Conveyor, "esteira", -1, "Esteira", "Fornalha → bigorna sem andar"),
+            new UpgradeDef(Upgrade.FurnaceSpeed2, "fole_duplo", (int)Upgrade.FurnaceSpeed1, "Fole duplo", "Fornalha ainda mais rápida", menu: true),
+            new UpgradeDef(Upgrade.PlayerSpeed, "botas", -1, "Botas", "Você anda mais rápido", menu: true),
+            new UpgradeDef(Upgrade.Tools, "ferramentas", (int)Upgrade.Shields, "Ferramentas", "Nova linha: 1 lingote, paga 16"),
+            new UpgradeDef(Upgrade.CounterCapacity, "vitrine", -1, "Vitrine", "Mais estoque e mais clientes", menu: true),
+            new UpgradeDef(Upgrade.Furnace2, "fornalha2", (int)Upgrade.Anvil2, "Fornalha 2", "Dobra os lingotes"),
+            new UpgradeDef(Upgrade.Helper3, "ajudante3", (int)Upgrade.Helper2, "Ajudante 3", "Leva produtos ao balcão"),
+            new UpgradeDef(Upgrade.HelperSpeed, "ajudantes_ageis", (int)Upgrade.Helper1, "Ajudantes ágeis", "Mais rápidos e carregam 4", menu: true),
+            new UpgradeDef(Upgrade.HammerSpeed, "martelo_veloz", -1, "Martelo veloz", "Bancadas mais rápidas", menu: true),
+            new UpgradeDef(Upgrade.SideCorridor, "corredor", -1, "Corredor", "Abre a rua lateral"),
+            new UpgradeDef(Upgrade.Jewelry, "joalheria", (int)Upgrade.SideCorridor, "Joalheria", "Nova linha: 2 lingotes, paga 60"),
+            new UpgradeDef(Upgrade.Jeweler, "joalheiro1", (int)Upgrade.Jewelry, "Joalheiro", "Ajudante leva lingotes à joalheria e joias à loja"),
+            new UpgradeDef(Upgrade.JewelSpeed, "lupa", (int)Upgrade.Jewelry, "Lupa", "Joalheria mais rápida", menu: true),
+            new UpgradeDef(Upgrade.JewelVitrine, "vitrine_joias", (int)Upgrade.Jewelry, "Vitrine de joias", "Nobres pagam 80 e a fila cresce", menu: true),
+            new UpgradeDef(Upgrade.WorkshopFacade, "fachada_nobre", (int)Upgrade.JewelVitrine, "Fachada nobre", "Entrada dourada e bandeirolas", luxury: true),
+            new UpgradeDef(Upgrade.WorkshopFloor, "piso_oficina", (int)Upgrade.WorkshopFacade, "Piso de oficina", "Ladrilhos para valorizar a oficina", luxury: true),
+            new UpgradeDef(Upgrade.JewelryDecor, "joalheria_real", (int)Upgrade.WorkshopFloor, "Joalheria real", "Tapetes e adornos para a joalheria", luxury: true),
+            new UpgradeDef(Upgrade.Miner, "mineiro", (int)Upgrade.Jeweler, "Mineiro", "Mais um ajudante leva minério às fornalhas"),
+            new UpgradeDef(Upgrade.Jeweler2, "joalheiro2", (int)Upgrade.Miner, "Joalheiro 2", "Mais um ajudante na joalheria"),
+            new UpgradeDef(Upgrade.Counter5, "balcao5", (int)Upgrade.CounterCapacity, "Balcão 5 vagas", "Atende 5 clientes ao mesmo tempo", menu: true),
+            new UpgradeDef(Upgrade.Counter6, "balcao6", (int)Upgrade.Counter5, "Balcão 6 vagas", "Atende 6 clientes ao mesmo tempo", menu: true),
+            new UpgradeDef(Upgrade.Counter7, "balcao7", (int)Upgrade.Counter6, "Balcão 7 vagas", "Atende 7 clientes ao mesmo tempo", menu: true),
+            new UpgradeDef(Upgrade.Counter8, "balcao8", (int)Upgrade.Counter7, "Balcão 8 vagas", "Atende 8 clientes ao mesmo tempo", menu: true),
         };
 
         /// <summary>A-CORE-06: teto da curva (1e18, cabe em long com folga para somar ouro). 50 x 1,3^tier chega nele no tier 144. O custo
