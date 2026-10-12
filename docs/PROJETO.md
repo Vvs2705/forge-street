@@ -50,6 +50,11 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | V10 | **P3:** interstitial implementado atrás de feature flag **desligada**; liga só depois de A/B no Limited Release; a loja não promete "sem anúncio forçado" até lá | Vinicius, 2026-10-12 |
 | V11 | **P14:** "Chamar VIP" por anúncio com recarga de 5 min (knob de RemoteConfig), como a Velocidade | Vinicius, 2026-10-12 |
 | V12 | Desenvolvimento contínuo até o 100% (DM §164), em levas; placar no §8 | Vinicius, 2026-10-12 |
+| V13 | **P10 (decidido por padrão):** golpe de mestre sobe a peça 1 nível (Normal → Fina → Superior); só o golpe numa peça que já sairia Superior, com o projeto e as condições, vira Masterwork, que vai para o Hall e nunca é vendida; ajudantes e offline nunca fazem (GDD v2 §9, §13, §21) | padrão do time, 2026-10-12 — revisar |
+| V14 | Categoria `Meta`: níveis de estação e de worker ficam fora da "produção completa" e do teto offline, como o luxo (GDD v2 §8–9) | padrão do time, 2026-10-12 — revisar |
+| V15 | Charter do Old Forge = produção completa + Renome 400 + 1 Masterwork; o rival (FS-4) só entra depois de A/B no bot (GDD v2 §11, §21) | padrão do time, 2026-10-12 — revisar |
+| V16 | Eventos usam só pontos de evento (não moeda) até a Wave E, coerente com V9 (GDD v2 §16) | padrão do time, 2026-10-12 — revisar |
+| V17 | Clientes nomeados (FS-3) entram como clientes marcados dentro das famílias; corações são trilha, não moeda (GDD v2 §7, §21) | padrão do time, 2026-10-12 — revisar |
 
 ## 5. Decisões pendentes (Vinicius)
 
@@ -62,7 +67,6 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | P7 | "Não ampliar conteúdo antes de medir com gente" (`BACKLOG_V07.md`) × Waves B/C | Waves seguem; medição roda em paralelo (Closed testers + bot lento) e não bloqueia | B, C |
 | P8 | Provedores de analytics / crash / RemoteConfig / attribution e custo | Escolher na Wave A; tudo atrás de interface com mock | A |
 | P9 | Conta do Play Console e testadores (Closed exige 12 por 14 dias em conta pessoal) | Abrir o Internal já na Wave A | G |
-| P10 | Regra da obra-prima (FS-2: vendida a 3×) × Masterwork não vendida (§16) | Só a mão do ferreiro chega ao tier Masterwork; Masterwork vai para o Hall | B |
 | P11 | Downloads: fonte OFL (D8), clipes Mixamo, banco de sons; créditos Tripo por lote de Wave | Aprovar por pacote de Wave | A, B, F |
 | P12 | Câmera (D2): oficina inteira 11,4 m × 9 m | Decidir pelo alvo visual 9:16 (ticket A-ART-01) | A |
 | P13 | Verba e conta para o Gate M (teste de criativos) e a regra "Rune Relay vai primeiro" | — | G |

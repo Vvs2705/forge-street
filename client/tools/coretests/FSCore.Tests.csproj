@@ -17,6 +17,10 @@
     <Compile Include="../../Assets/_FS/Scripts/View/Textos.cs" />
     <!-- A-PLAT-02: save em arquivo (so System.IO) para o SaveTests -->
     <Compile Include="../../Assets/_FS/Scripts/View/SaveStore.cs" />
+    <!-- A-PLAT-06: costuras, Diario e Salvamento (puros) para o CosturasTests -->
+    <Compile Include="../../Assets/_FS/Scripts/View/Servicos.cs" />
+    <!-- A-PLAT-07: tabela dos estados do jogo (pura) -->
+    <Compile Include="../../Assets/_FS/Scripts/View/Estado.cs" />
     <Compile Include="../../Assets/_FS/Scripts/View/StationView.cs" />
   </ItemGroup>
   <ItemGroup>

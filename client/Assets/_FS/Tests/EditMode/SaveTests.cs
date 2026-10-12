@@ -35,14 +35,14 @@ namespace FS.Tests
         }
 
         /// <summary>Envelope montado a mao (prova o formato: sha256 = SHA-256 hex do resto) e com qualquer schema.</summary>
-        static string Envelope(int schema, string payload)
+        internal static string Envelope(int schema, string payload)
         {
             string body = "schema=" + schema + "\ncontent=9.9.9\nat=5\n" + payload;
             using (SHA256 sha = SHA256.Create())
                 return "sha256=" + BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(body))).Replace("-", "").ToLowerInvariant() + "\n" + body;
         }
 
-        static string Wrap(int gold)
+        internal static string Wrap(int gold)
         {
             var s = new Sim { Gold = gold };
             return SaveEnvelope.Wrap(s.Save(1), "0.7.0", 1);

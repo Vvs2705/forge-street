@@ -22,7 +22,7 @@ Os antigos 32:20, 951 ouro/min, 276 joias e 35–53% de fome são **históricos*
 
 ## 1. Ouro sem destino — opções PROPOSTAS
 
-A direção documental é rua→distrito e certificação sem reset, conforme [GDD §§4–5](GDD.md). Isso é planejamento, não conteúdo já produzido nem retenção validada.
+A direção documental é rua→distrito e certificação sem reset, conforme [GDD v1 §§4–5](archive/GDD_v1_MVP.md) (vigente: distritos e Royal Charter no [GDD v2](GDD.md) §6 e §11). Isso é planejamento, não conteúdo já produzido nem retenção validada.
 
 | Opção | Escopo e preços PROPOSTOS | Limite |
 |---|---|---|
