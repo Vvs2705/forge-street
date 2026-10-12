@@ -21,7 +21,7 @@ namespace FS
     public sealed class MenuBar
     {
         public const float Band = 0.085f;   // fracao da tela da barra; a camera reserva essa faixa como reserva a de cima
-        const float Tray = 0.2f;            // fileira de cartoes, acima da barra, so quando aberta (~384 px: cartao de ~360)
+        public const float Tray = 0.2f;     // fileira de cartoes, acima da barra, so quando aberta (~384 px: cartao de ~360); a camera desce (Enquadramento)
         const float CardW = 270f;           // px na referencia 1080x1920
         // relevo do botao de preco (px da face acima da base escura): disponivel convida ao toque, cinza achatado, apertado afunda
         const float Raised = 7f, Flat = 2f, PressScale = 0.94f, Breath = 0.04f;
