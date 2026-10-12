@@ -1,6 +1,6 @@
 # Forge Street — Art Bible v0.1 (PROPOSTO, 2026-10-06)
 
-Status: PROPOSTO pela raia 2 (concept-art lead + character 3D + art director), ainda não aprovado nem medido no aparelho. Regra de jogo vem do `GDD.md` §11 ("stylized low-poly premium, câmera oblíqua, silhuetas grandes, produção filmável"). A view atual (`client/Assets/_FS/Scripts/View/Art.cs`) já lê cada item por **cor + forma**; esta bíblia herda esses matizes para que HUD, playtest e criativos não mudem de leitura quando a arte entrar. Lista de assets e prompts: `ASSETS.md`.
+Status: PROPOSTO pela raia 2 (concept-art lead + character 3D + art director), ainda não aprovado nem medido no aparelho. Regra de jogo vinha do GDD v1, `archive/GDD_v1_MVP.md` §11 ("stylized low-poly premium, câmera oblíqua, silhuetas grandes, produção filmável"); a direção vigente está no `GDD.md` §18. A view atual (`client/Assets/_FS/Scripts/View/Art.cs`) já lê cada item por **cor + forma**; esta bíblia herda esses matizes para que HUD, playtest e criativos não mudem de leitura quando a arte entrar. Lista de assets e prompts: `ASSETS.md`.
 
 ## 1. Pilares visuais
 
