@@ -188,7 +188,7 @@ namespace FS
         const float FlameY = 0.46f, GlowSize = 2.6f, GlowAlpha = 0.2f;
         // Placa de obra (P1-4): 1,2 m (= Balance.PadRadius x 2), icone de 0,7 m acima do meio, preco (moeda + valor) no terco de baixo
         const float PadSize = 1.2f, PadIconBox = 0.66f, PadIconY = 0.13f, PadPriceY = -0.33f, PadCoinEvery = 0.06f;
-        static readonly Color GrateC = Art.Hex(0x2B2E36), GrateBar = Art.Hex(0x4F5866), PalletC = Art.Hex(0x6B4428), PlankC = Art.Hex(0x9A6A3E);
+        internal static readonly Color GrateC = Art.Hex(0x2B2E36), GrateBar = Art.Hex(0x4F5866), PalletC = Art.Hex(0x6B4428), PlankC = Art.Hex(0x9A6A3E);
         const float NearLabel = 2.6f, LabelFade = 0.25f, TutorialLabels = 60f;   // nome de estacao/placa: perto do jogador ou no 1o minuto (fade curto: meio-alfa lia como defeito)
         const float StationPop = 0.35f, BubblePop = 0.32f;
         const float BarW = 1.2f, BarH = 0.16f, BarY = -0.74f;   // barra de progresso arredondada (era 1,3 x 0,12 reta)
@@ -199,7 +199,7 @@ namespace FS
         static readonly Vector3 VipWaitOff = new Vector3(0.95f, 0.35f, 0f);
         static readonly Color VipCream = Art.Hex(0xFFF3D2);
         const int FxOrder = 3500, FxMax = 64;
-        static readonly Color Dust = new Color(0.86f, 0.78f, 0.66f, 0.55f), HeartC = Art.Hex(0xFF4D6D), AngryC = Art.Hex(0xFF6B3D);
+        internal static readonly Color Dust = new Color(0.86f, 0.78f, 0.66f, 0.55f), HeartC = Art.Hex(0xFF4D6D), AngryC = Art.Hex(0xFF6B3D);
         internal static readonly Color GlowColor = Art.Hex(0xFF9A3D);
         static float PropShadow(string n) => n switch { "tocha" => 0f, "balde" => 0.4f, "barril" => 0.6f, "prateleira" or "suporte_armas" or "lenha" => 0.9f, _ => 0.75f };
         static Color Gray(float v) => new Color(v, v, v, 1f);
@@ -263,7 +263,7 @@ namespace FS
         Text _max; float _maxT, _maxAge;              // "MAX" sobre a pilha do ferreiro (RefreshMax)
         Sprite _coin, _crown;
         ClientV _vipWait;
-        Transform _conveyor; SpriteRenderer[] _convDots; float _convLen;
+        EsteiraView _esteira;   // B-ART-08: faixa, lingotes em transito, clac e particulas
         int _clientSeq, _bought;
         Floater _sale; int _saleSum;   // v0.6d: ultimo "+N" de venda (SaleFloat soma nele)
         float _streetHalfW;
@@ -302,7 +302,7 @@ namespace FS
             foreach (Station s in sim.Stations) _stations.Add(BuildStation(s));
             foreach (Pad p in sim.Pads) _pads.Add(BuildPad(p));
             foreach (Chest c in sim.Chests) _chests.Add(BuildChest(c));
-            BuildConveyor();
+            _esteira = new EsteiraView(this, sim, transform);
             _player = BuildCarrier(sim.Player, Art.Player, 0.62f, Balance.PlayerCapUp * sim.Player.Held.Length);   // FASE7: ate o teto de CADA tipo
             // v0.6a (P2-2): mochila nas costas do ferreiro (RefreshCarrier a poe do lado das costas); "MAX" (P1-5) na HUD
             Transform pack = _player.Body != null ? Prop(_player.Root, "melhoria_mochila", Upgrade.PlayerCapacity, Vector2.zero, PackS, 0) : null;
@@ -762,23 +762,6 @@ namespace FS
             Art.NewSprite(root, "Brilho", Art.Star(), Art.Accent, d + 4, at + new Vector2(-0.06f, 0.84f), Vector2.one * 0.12f);
         }
 
-        void BuildConveyor()
-        {
-            Vector3 a = W(_sim.FurnaceA.Pos), b = W(_sim.AnvilA.Pos);
-            _convLen = Vector3.Distance(a, b) - 1.2f;
-            _conveyor = new GameObject("Esteira").transform;
-            _conveyor.SetParent(transform, false);
-            _conveyor.localPosition = (a + b) * 0.5f + new Vector3(0.45f, 0f, 0f);
-            Art.NewSprite(_conveyor, "Trilho", Art.Square(), Art.Dim, 1, Vector2.zero, new Vector2(0.34f, _convLen));
-            _convDots = new SpriteRenderer[4];
-            for (int i = 0; i < 4; i++)
-            {
-                _convDots[i] = Art.NewSprite(_conveyor, "Lingote", null, Color.white, 2, Vector2.zero, Vector2.one);
-                Art.PaintItem(_convDots[i], Item.Ingot, false, 0.3f);
-            }
-            _conveyor.gameObject.SetActive(false);
-        }
-
         CarrierV BuildCarrier(Carrier c, Color color, float size, int maxStack)
         {
             var v = new CarrierV { C = c, Root = new GameObject(c.Role < 0 ? "Jogador" : "Ajudante " + c.Role).transform };
@@ -1023,21 +1006,12 @@ namespace FS
             RefreshArea();
             for (int i = 0; i < _glows.Count; i++)   // tochas tremulam: 2 senos fora de fase por tocha
                 _glows[i].color = Art.ComAlfa(GlowColor, GlowAlpha + 0.05f * Mathf.Sin(Time.time * 9f + i * 2.1f) + 0.03f * Mathf.Sin(Time.time * 23f + i));
+            _esteira.Refresh();   // antes das estacoes: a pilha da Bigorna desconta o lingote em cima da faixa ja neste quadro
             foreach (StationV v in _stations) RefreshStation(v, pulse, dt);
             RefreshStand(dt);
             foreach (PadV v in _pads) RefreshPad(v, dt);
             foreach (ChestV v in _chests) RefreshChest(v);
             foreach (LuxV v in _lux) RefreshLux(v, dt);
-
-            bool conv = _sim.HasConveyor;
-            if (_conveyor.gameObject.activeSelf != conv) _conveyor.gameObject.SetActive(conv);
-            if (conv)
-                for (int i = 0; i < _convDots.Length; i++)
-                {
-                    float t = Mathf.Repeat(Time.time * 0.45f + i / (float)_convDots.Length, 1f);
-                    _convDots[i].transform.localPosition = new Vector3(0f, (t - 0.5f) * _convLen, 0f);
-                    _convDots[i].enabled = _sim.FurnaceA.Out > 0 || _sim.AnvilA.In > 0;
-                }
 
             if (_sim.UpgradesBought != _bought) { _bought = _sim.UpgradesBought; Cheer(); }   // comprou upgrade
             RefreshCarrier(_player, dt);
@@ -1241,7 +1215,8 @@ namespace FS
             }
             if (s.Produces)
             {
-                for (int i = 0; i < v.InPile.Length; i++) v.InPile[i].enabled = i < s.In;
+                int inn = s == _sim.AnvilA ? s.In - _esteira.Levando : s.In;   // B-ART-08: o lingote da esteira so entra na pilha quando chega
+                for (int i = 0; i < v.InPile.Length; i++) v.InPile[i].enabled = i < inn;
                 bool blocked = s.Blocked || (s.Out >= s.OutCap);
                 int pop = -1; float ps = 1f;   // v0.6a: o item que acabou de sair (Ev.Crafted) da pop 0 -> 1,15 -> 1
                 bool popping = v.ItemPopT >= 0f;   // revisao da v0.6: escala so durante a pop (e no quadro em que ela acaba volta a 1)
@@ -1561,11 +1536,13 @@ namespace FS
             return vp.x >= -0.1f && vp.x <= 1.1f && vp.y >= -0.1f && vp.y <= 1.1f;
         }
 
-        /// <summary>Estado de cada fornalha aberta, para a linha SHOT do -shot (A-ART-06: confere a foto contra a decisao).</summary>
+        /// <summary>Estado de cada fornalha aberta e da esteira (B-ART-08: levando N / parada), para as linhas SHOT do -shot e RECORD OK do
+        /// -record (A-ART-06: confere a foto contra a decisao).</summary>
         public string Fornalhas()
         {
             var sb = new System.Text.StringBuilder();
             foreach (StationV v in _stations) if (v.Forno != null && v.S.Unlocked) sb.Append(v.S.Name).Append('=').Append(v.Forno.Atual).Append(' ');
+            if (_sim.HasConveyor) sb.Append("Esteira=").Append(_esteira.Levando > 0 ? "levando" + _esteira.Levando : "parada");
             return sb.ToString().TrimEnd();
         }
 

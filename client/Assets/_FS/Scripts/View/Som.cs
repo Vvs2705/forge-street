@@ -19,12 +19,12 @@ namespace FS
     {
         public const int Taxa = 22050, TaxaMusica = 16000;
 
-        /// <summary>Nomes que o jogo toca (Game, StationView, Art). "martelo" = batida do compasso; "hammer" = golpe final da peca.</summary>
+        /// <summary>Nomes que o jogo toca (Game, StationView, EsteiraView, Art). "martelo" = batida do compasso; "hammer" = golpe final da peca.</summary>
         public static readonly string[] Nomes =
-            { "ore", "furnace", "hammer", "martelo", "coin", "upgrade", "hire", "client", "leave", "drop", "offline", "vip", "order", "click" };
+            { "ore", "furnace", "hammer", "martelo", "coin", "upgrade", "hire", "client", "leave", "drop", "offline", "vip", "order", "click", "esteira" };
 
         /// <summary>Variacoes por nome (o Sfx alterna): o que repete muito nao soa igual duas vezes seguidas.</summary>
-        public static int Variacoes(string nome) => nome switch { "hammer" => 3, "martelo" => 3, "coin" => 3, "ore" => 2, "drop" => 2, _ => 1 };
+        public static int Variacoes(string nome) => nome switch { "hammer" => 3, "martelo" => 3, "coin" => 3, "ore" => 2, "drop" => 2, "esteira" => 2, _ => 1 };
 
         // ---------- efeitos ----------
 
@@ -87,6 +87,15 @@ namespace FS
                     Modo(b, Taxa, 0f, 1340f * s, 0.35f, 0.014f);
                     Modo(b, Taxa, 0f, 200f * s, 0.6f, 0.04f);
                     pico = 0.8f; break;
+                }
+                case "esteira":   // B-ART-08: "clac" da esteira (uma divisa passando pelo tambor, tocado a 20%): estalo do elo de ferro + tum curto do rolo
+                {
+                    b = Buf(0.16f); float s = v == 0 ? 1f : 1.06f;
+                    Ruido(b, Taxa, g, 0f, 0.012f, 0.8f, 0f, 0.002f, 7000f, 900f);
+                    Modo(b, Taxa, 0f, 880f * s, 0.7f, 0.012f);
+                    Modo(b, Taxa, 0.004f, 2350f * s, 0.35f, 0.006f);
+                    Modo(b, Taxa, 0f, 140f * s, 0.8f, 0.03f);
+                    pico = 0.75f; break;
                 }
                 case "click":   // UI: tique curto
                     b = Buf(0.06f);

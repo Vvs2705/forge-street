@@ -22,6 +22,8 @@
     <!-- A-PLAT-07: tabela dos estados do jogo (pura) -->
     <Compile Include="../../Assets/_FS/Scripts/View/Estado.cs" />
     <Compile Include="../../Assets/_FS/Scripts/View/StationView.cs" />
+    <!-- B-ART-08: esteira viva (Velocidade/Entra/Anda/Avanca puros; o desenho atras do #if) -->
+    <Compile Include="../../Assets/_FS/Scripts/View/EsteiraView.cs" />
     <!-- G-UA-02: presets de captura e compras do -buyids (o relogio da HUD fica atras do #if) -->
     <Compile Include="../../Assets/_FS/Scripts/View/Captura.cs" />
     <!-- A-AUD-23: sintese dos sons (pura); o Sfx (Unity) fica atras de #if !FS_CORETESTS -->
