@@ -25,7 +25,8 @@ namespace FS
     /// inicio; docs/LEVELPLAY.md) | -vipnow (chama o VIP depois do warmup) | -boost N (N anuncios de velocidade antes do warmup) |
     /// -cam W (largura visivel em m, 6..11,4; experimento de camera mais perto) | -settings [on|off] (abre as configuracoes; on/off
     /// liga/desliga Som e Vibracao antes, gravando como o toque) | -cofre N (mostra o painel do cofre com N de ouro, sem dar o ouro) |
-    /// -playtest (liga o diario num build de release; o dev ja grava).
+    /// -playtest (liga o diario num build de release; o dev ja grava) | -privacidade [18] (abre a tela de idade mesmo com resposta ou no
+    /// -testsession, onde a resposta nao e' gravada; 18 = direto no consentimento).
     /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
     /// 1a contratacao) | -recordfull (fila cheia no 1o quadro ou erro) | -recordorder (o -record mantem o cartao da encomenda) | -offline S
     /// (cofre real de S s fora, 60..7200). Captura que mostraria algo impossivel (compra id@t sem ouro ou pre-requisito, -vipnow depois de
@@ -84,6 +85,7 @@ namespace FS
         RectTransform _panelRow;   // v0.6d: moeda + "+N" do cofre no painel
         Hint _hintH; int _hintArg = -1, _hintU;   // v0.6d: a dica so e' remontada quando muda (sem string nova a cada 0,25 s)
         RectTransform _cfg;   // v0.6b: cartao de configuracoes (Som, Vibracao, versao)
+        TelaPrivacidade _priv;   // E-PLAT-01: idade + consentimento (Privacidade.cs)
         Action _panelAction;
         Image _coinIcon;
         sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
@@ -112,10 +114,11 @@ namespace FS
 
         /// <summary>A-PLAT-07: o estado do jogo, so derivado dos flags (Estados.De; tabela em Estado.cs). O voltar, o Save e os anuncios
         /// consultam aqui.</summary>
-        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config,
+        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv,
             _order != null && _orderOut && _order.gameObject.activeSelf);
         bool Painel => _panel != null && _panel.gameObject.activeSelf;
         bool Config => _cfg != null && _cfg.gameObject.activeSelf;
+        bool Priv => _priv != null && _priv.Aberta;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -160,6 +163,11 @@ namespace FS
             _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos));
             _cfg.SetAsLastSibling();     // configuracoes e painel modal cobrem a barra de melhorias
             _panel.SetAsLastSibling();
+            // E-PLAT-01: sem resposta (ou com texto novo) a tela de idade abre por cima de tudo e o SDK de anuncio espera (Ads.Responder).
+            // Fotos e smoke (-testsession, -record, -autoplay) nao a veem, salvo com -privacidade [18]
+            _priv = new TelaPrivacidade(_safe, Responder);
+            string priv = Arg("-privacidade");
+            if (priv != null || (!_testSession && !Ads.Resposta(out _, out _))) _priv.Abrir(null, priv == "18");
             if (Arg("-menu") != null) _menu.Toggle();   // foto com a fileira aberta
             if (cfg != null) _cfg.gameObject.SetActive(true);
             _joy = new Joystick(_joyCanvas.transform);
@@ -245,7 +253,8 @@ namespace FS
                 _backT = Time.unscaledTime + 0.4f;
                 // voltar do Android (revisao da v0.6; A-PLAT-07 pelo estado): fecha o que estiver aberto, de cima para baixo; no anuncio
                 // (o simulado recebe o voltar) nada; so com nada aberto grava e sai
-                switch (Estados.AoVoltar(EstadoAtual, Painel, _menu.IsOpen))
+                if (Priv) _priv.Voltar();   // E-PLAT-01: consentimento -> idade; revisao fecha; 1a abertura fica
+                else switch (Estados.AoVoltar(EstadoAtual, Painel, _menu.IsOpen))
                 {
                     case Voltar.FechaPainel: ClosePanel(); break;
                     case Voltar.FechaConfig: _cfg.gameObject.SetActive(false); break;
@@ -255,7 +264,7 @@ namespace FS
             }
             if (_screen.x != Screen.width || _screen.y != Screen.height) Fit();
 
-            bool modal = Painel || Config;
+            bool modal = Painel || Config || Priv;
             _joy.Blocked = modal;
             _joy.BottomPx = _menu.TopPx;
             _joy.Tick();
@@ -272,7 +281,9 @@ namespace FS
             // cobrir a tela. ponytail: teto de 15 s de quadros parados por anuncio, para um SDK que nunca responde nao travar o jogo
             bool ad = EstadoAtual == Estado.Ad;
             _adHold = ad ? _adHold + Mathf.Min(Time.unscaledDeltaTime, 0.1f) : 0f;
-            float dt = ad && _adHold < 15f ? 0f : Mathf.Min(Time.deltaTime, 0.1f) * _speed;
+            // E-PLAT-01: a tela de idade tambem para a oficina (na 1a abertura o cliente nao vai embora enquanto o jogador le); o -bot
+            // segue jogando por baixo (smoke do emulador num APK recem-instalado)
+            float dt = (ad && _adHold < 15f) || (Priv && !_botDrive) ? 0f : Mathf.Min(Time.deltaTime, 0.1f) * _speed;
             while (dt > 0f)
             {
                 float step = Mathf.Min(dt, MaxStep);
@@ -979,7 +990,14 @@ namespace FS
             Chave(face.transform, "Vibração", 0.35f, () => Ajustes.Vibra, v => { SetVibra(v); if (v) Ajustes.Confirmar(); }, Ajustes.TemVibra);
             Text ver = Art.NewText(face.transform, "Versao", 32, new Vector2(0.05f, 0.24f), new Vector2(0.95f, 0.32f));
             ver.text = "Forge Street v" + Application.version; ver.color = Art.ComAlfa(MenuBar.Brown, 0.65f);
-            Button close = Art.NewButton(face.transform, "FECHAR", 46, MenuBar.Leather, new Vector2(0.25f, 0.05f), new Vector2(0.75f, 0.2f), () => _cfg.gameObject.SetActive(false));
+            // E-PLAT-01: PRIVACIDADE reabre a tela de idade para rever ou revogar (CANCELAR fecha sem mudar)
+            Button priv = Art.NewButton(face.transform, "PRIVACIDADE", 40, MenuBar.Leather, new Vector2(0.05f, 0.05f), new Vector2(0.49f, 0.2f), () =>
+            {
+                _cfg.gameObject.SetActive(false);
+                _priv.Abrir(Ads.Resposta(out Faixa f, out bool a) ? Privacidade.Atual(f, a) : Privacidade.Rodape);
+            });
+            priv.GetComponentInChildren<Text>().color = MenuBar.Cream;
+            Button close = Art.NewButton(face.transform, "FECHAR", 40, MenuBar.Leather, new Vector2(0.51f, 0.05f), new Vector2(0.95f, 0.2f), () => _cfg.gameObject.SetActive(false));
             close.GetComponentInChildren<Text>().color = MenuBar.Cream;
             _cfg.gameObject.SetActive(false);
         }
@@ -1031,6 +1049,14 @@ namespace FS
             Log("settings", qual, on ? "1" : "0");
         }
         void SetVibra(bool on) { Ajustes.Vibra = on; Log("settings", "vibra", on ? "1" : "0"); }
+
+        /// <summary>E-PLAT-01: resposta da tela de idade -> Ads (grava fora do -testsession e inicia o SDK) e o diario (faixa e
+        /// personalizado sim/nao; nada de dado pessoal).</summary>
+        void Responder(Faixa f, bool aceitou)
+        {
+            Ads.Responder(f, aceitou, !_testSession);
+            Log("consent_answer", Privacidade.Diario(f), Privacidade.Flags(f, aceitou).Consentimento ? "sim" : "nao");
+        }
 
         /// <param name="gold">&gt; 0: linha da moeda com "+gold" grande (cofre); 0: so o texto.</param>
         void ShowPanel(string title, string body, string button, Action action, long gold = 0)
