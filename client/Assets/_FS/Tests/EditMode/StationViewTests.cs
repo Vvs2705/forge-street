@@ -41,8 +41,8 @@ namespace FS.Tests
         [Test]
         public void Bigorna_CompassoFechaNoCrafted()
         {
-            Assert.AreEqual(11, StationView.Batidas(Balance.HammerTime0), "espada 5 s: 0,45 s");
-            Assert.AreEqual(7, StationView.Batidas(Balance.HammerTime1), "Martelo veloz 3 s: 0,43 s");
+            Assert.AreEqual(11, StationView.Batidas(Tuning.Padrao.HammerTime0), "espada 5 s: 0,45 s");
+            Assert.AreEqual(7, StationView.Batidas(Tuning.Padrao.HammerTime1), "Martelo veloz 3 s: 0,43 s");
             Assert.AreEqual(2, StationView.Batidas(0.1f));
             Assert.IsFalse(StationView.Batida(0.95f, 1f, 11), "pronta esperando vaga nao bate");
             Assert.IsFalse(StationView.Batida(0.95f, 0.02f, 11), "peca nova nao bate");

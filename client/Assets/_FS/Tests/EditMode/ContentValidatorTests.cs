@@ -116,7 +116,7 @@ namespace FS.Tests
         [Test]
         public void Receitas_SemPrecoSemEstacaoSemCompradorESemInsumo_Acusa()
         {
-            int[] preco = (int[])Balance.Price.Clone();
+            int[] preco = (int[])Tuning.Padrao.Price.Clone();
             preco[(int)Item.Shield] = 0;
             Sim w = ContentValidator.World();
             w.Stations.Remove(w.ToolBench);                      // ferramenta sem bancada
