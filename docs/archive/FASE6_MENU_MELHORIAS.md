@@ -31,7 +31,7 @@ TryBuyMenu (ouro, pré-requisito, idempotência, evento); upgrade de menu não t
 ## 5. Estado do CORE: IMPLEMENTADO e TESTADO (Leva 11, raia core/economia, 2026-10-07)
 - **Arquivos:** `Core/Defs.cs`, `Core/Sim.cs`, `Core/Bot.cs`, `Tests/EditMode/CoreTests.cs`, `Tests/EditMode/BalanceTests.cs`.
 - **Testes:** dotnet 66/66 e `viewcheck` com 0 erros e 0 avisos, já com a `MenuBar.cs` do coordenador. **NÃO COMPILADO no Unity.**
-- **Onde estão os números:** [BALANCE.md §15](BALANCE.md).
+- **Onde estão os números:** [BALANCE.md §15](../BALANCE.md).
 
 ### API final para a view
 | membro | o que é |

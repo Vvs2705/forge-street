@@ -44,7 +44,7 @@ namespace FS
         const float Margin = 1.2f;                               // m alem do conteudo nas bordas: pad e rotulo nunca cortados (foto 01)
         // Largura visivel = oficina + margens (11,4 m): em retrato a camera cabe a oficina INTEIRA (coordenador,
         // 2026-10-06, fotos 05-08: com 7,6 m visiveis o mundo de 9 m cortava uma coluna de cada lado em qualquer clamp).
-        // 2a area (docs/AREA2_JOALHERIA.md s1): mesma escala; a rua lateral entra seguindo o jogador depois do Corredor.
+        // 2a area (docs/archive/AREA2_JOALHERIA.md s1): mesma escala; a rua lateral entra seguindo o jogador depois do Corredor.
         const float VisibleWidth = Balance.WorkshopW + 2f * Margin;
         // fracao da tela reservada a faixa de cima; o mundo nao chega la. v0.5b (BENCHMARK P1-1): 0,15 -> 0,075 (~144 px na referencia),
         // so 2 pilulas (ouro | dica) sem painel cheio e sem o numero de versao
@@ -349,7 +349,7 @@ namespace FS
                     case Ev.Bottleneck: Log("bottleneck", _sim.Stations[e.A].Name, "saida_cheia"); break;
                     case Ev.Hired: Sfx.Play("hire"); Log("worker_hired", e.A.ToString()); _hired = true; break;
                     case Ev.Unlocked: Log("station_unlock", _sim.Stations[e.B].Name); break;
-                    // baus de marco (docs/AREA2_FASE2.md s3/s4): bateu = som de moeda agudo + o ferreiro comemora (o bau aparece
+                    // baus de marco (docs/archive/AREA2_FASE2.md s3/s4): bateu = som de moeda agudo + o ferreiro comemora (o bau aparece
                     // pulsando no WorldView); abriu = moedas e "+ouro" como uma venda, e o bau some
                     case Ev.Milestone:
                         Sfx.Play("coin", 1.4f);

@@ -29,10 +29,10 @@ namespace FS.Core
         Helper3,         // ajudante 3: bancadas -> balcao
         HelperSpeed,     // ajudantes 2,4 -> 3,4 m/s e carga 2 -> 4
         HammerSpeed,     // bancadas 2,0 s -> 1,3 s
-        // 2a area (docs/AREA2_JOALHERIA.md): no FIM do enum, saves antigos com 15 flags continuam validos
+        // 2a area (docs/archive/AREA2_JOALHERIA.md): no FIM do enum, saves antigos com 15 flags continuam validos
         SideCorridor,    // §3 6:30  abre a rua lateral (x 9-15)
         Jewelry,         // §3 9:30  4a linha: bancada de joias (2 lingotes, paga 60) + loja de joias
-        // 2a area, fase 2 (docs/AREA2_FASE2.md): ANEXADOS, saves de 15/17 flags continuam validos
+        // 2a area, fase 2 (docs/archive/AREA2_FASE2.md): ANEXADOS, saves de 15/17 flags continuam validos
         Jeweler,         // joalheiro (ajudante papel 3): lingote -> bancada de joias, joia -> loja de joias
         JewelSpeed,      // lupa: bancada de joias x0,6
         JewelVitrine     // vitrine de joias: fila 3 -> 5, nobres x0,7
@@ -102,7 +102,7 @@ namespace FS.Core
         public static readonly string[] ItemName = { "minério", "lingote", "espada", "escudo", "ferramenta", "joia" };
 
         /// <summary>
-        /// Baus de marco (docs/AREA2_FASE2.md §3), na ordem de exibicao. Um bau disponivel por vez em cada posicao. O 1o e'
+        /// Baus de marco (docs/archive/AREA2_FASE2.md §3), na ordem de exibicao. Um bau disponivel por vez em cada posicao. O 1o e'
         /// 15 espadas e nao 10 (desvio medido, BALANCE.md §10): com 10 o bau abre aos 1:36 e a 2a bigorna cai abaixo do piso da §3.
         /// </summary>
         public static readonly V2 WorkshopChest = new V2(2.8f, 12.6f), StreetChest = new V2(10.2f, 9.6f);   // rua: (14,2; 13,0) -> (10,2; 9,6), coordenador (sobreposicao na view)

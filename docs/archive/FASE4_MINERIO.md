@@ -23,7 +23,7 @@
 Mineiro cria ajudante papel 0 extra; Joalheiro 2 cria papel 3 extra; requisitos; luxo espera os 22 produtivos; save antigo (23 flags) carrega; bot 60/90 min com limites medido + 30%; prova vermelha em cópia.
 
 ## 5. Estado — IMPLEMENTADO e TESTADO no core (Leva 10, raia core/economia, 2026-10-07)
-Feito **por cima da Etapa A** de `FASE5_FISICA_PACIENCIA.md` (física, bocas, parede, paciência), na ordem pedida pelo coordenador. **NÃO COMPILADO no Unity**: dotnet 59/59 e `viewcheck` com 0 erros. Números e varreduras em [BALANCE.md §14](BALANCE.md).
+Feito **por cima da Etapa A** de `FASE5_FISICA_PACIENCIA.md` (física, bocas, parede, paciência), na ordem pedida pelo coordenador. **NÃO COMPILADO no Unity**: dotnet 59/59 e `viewcheck` com 0 erros. Números e varreduras em [BALANCE.md §14](../BALANCE.md).
 
 | ID | enum | preço APLICADO | requer | pad | por quê |
 |---|---|---|---|---|---|
