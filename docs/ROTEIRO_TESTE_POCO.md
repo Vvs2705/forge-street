@@ -147,10 +147,10 @@ Trocar de build: `adb uninstall $P` (apaga o save do aparelho; o backup está em
 **G11–G13. FPS, memória e temperatura** (§151 "FPS", §113 "thermal"; com o áudio procedural e a esteira)
 - **Fazer:** no início do G5, a série de temperatura por minuto (em segundo plano) e 6 janelas de medida a cada ~4,5 min (como na 0.5.1):
   ```
-  for i in $(seq 31); do echo "$(date +%T) $(adb shell dumpsys battery | grep -m1 temperature | awk '{print $2/10}')"; sleep 60; done > $G/temperatura.txt &
+  bash client/tools/medir_aparelho.sh $G/serie --temp-serie 30 > $G/serie.log 2>&1 &   # $G/serie/temperatura.csv: 31 linhas
   for i in 1 2 3 4 5 6; do bash client/tools/medir_aparelho.sh $G/perf_$i 270; done
   ```
-  (O `medir_aparelho.sh` também tenta puxar o diário, que o release não grava: ignorar. A série de temperatura e o versionCode instalado entram no próprio script no I-PLAT-02.)
+  (O `medir_aparelho.sh` também tenta puxar o diário, que o release não grava: ignorar. Desde o I-PLAT-02 o `aparelho.txt` de cada pasta traz versionCode, versionName, targetSdk e `page_size` instalados, e o `temperatura.csv` traz por minuto a bateria, o status do `thermalservice` e o FPS/p95 dos últimos ~2 s.)
 - **Medir:** por janela, FPS médio, p95 e quadros > 33 ms (linha `FPS:`), `TOTAL PSS` e temperatura/status térmico.
 - **PASS (proposta do QA; ajustar antes do gate, nunca depois):**
   - **G11 FPS:** em todas as janelas, FPS médio ≥ 58, p95 ≤ 17 ms e no máximo 1% dos quadros acima de 33 ms.
@@ -211,7 +211,7 @@ Copiar esta seção para o `VALIDACAO_<versão>.md` da versão e preencher lá; 
 | G10 | Toque | | | | |
 | G11 | FPS | | médio, p95, % > 33 ms (pior janela) | `perf_*/` | |
 | G12 | Memória (PSS) | | 1ª e última janela, pico (MB) | `perf_*/meminfo.txt` | |
-| G13 | Temperatura | | início → fim (°C), status térmico | `temperatura.txt` | |
+| G13 | Temperatura | | início → fim (°C), status térmico | `serie/temperatura.csv` | |
 | G14 | Save atômico (save.txt + .bak) | | | `save_ls.txt` | |
 | G15 | Segundo plano e volta | | | | |
 | G16 | Offline (cofre) | | valor do painel × ouro | | |
