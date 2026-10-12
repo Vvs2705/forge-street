@@ -61,23 +61,26 @@ Não foram criados placements no painel. Cada recompensa tem a sua ad unit, e o 
 ## 3. API (`namespace FS`, assembly `FS` da View)
 
 ```csharp
-public sealed class Ads : MonoBehaviour
+// A-PLAT-06: o Game fala só com a costura IAds (Scripts/View/Servicos.cs); o Ads.Init escolhe a implementação.
+public interface IAds
+{
+    bool Busy { get; }                                               // do Show até a recompensa/falha (estado Ad)
+    bool Ready(string placement);                                    // false = esconder o botão
+    bool Loaded(string placement);                                   // anúncio já carregado (o simulado, sempre)
+    void Show(string placement, Action onReward, Action onFail);     // chama exatamente UM dos dois
+}
+public sealed class Ads : MonoBehaviour   // fábrica: AdsLevelPlay (aparelho) ou AdsSimulado (Editor, Windows, -fakeads, fallback dev)
 {
     public const string AppKey = "28953c84d";
     public const string Vip = "vip", Velocidade = "velocidade";
-    public static event Action<string, string, string> Logged;      // (evento, placement, detalhe) -> diário
-    public static void Init();                                       // idempotente; Game.Awake chama
-    public static bool Live { get; }                                 // SDK real ativo (aparelho, sem -fakeads)
-    public static bool Ready(string placement);                      // false = esconder o botão
-    public static bool Real(string placement);                       // há anúncio REAL carregado (diagnóstico)
-    public static void Show(string placement, Action onReward, Action onFail);
-    public static string Arg(string name);                           // flag da linha de comando ou do intent Android (intent só em build de desenvolvimento)
+    public static IAds Init(Action<string, string, string> log);     // log (evento, placement, detalhe) -> IAnalytics
+    public static string Arg(string name);                           // flag da linha de comando ou do intent (intent só em build de desenvolvimento)
 }
 ```
 
 - `Show` chama **exatamente um** dos dois callbacks, sempre na thread principal. `onReward` vem do `OnAdRewarded` do SDK, ou do fim do simulado. `onFail` cobre: placement desconhecido, outro anúncio na tela, sem anúncio, erro de exibição, e "fechou sem recompensa".
 - No SDK, o `OnAdRewarded` pode chegar depois do `OnAdClosed`. Por isso a falha por fechamento espera 2 s antes de valer. Se a recompensa chegar depois desses 2 s, ela não paga e fica no log e no diário como `ad_reward_late`. É um caso raro.
-- **Uso esperado pelo coordenador:** `botao.SetActive(Ads.Ready(Ads.Vip))` e, no toque, `Ads.Show(Ads.Vip, DarVip, () => {})`. A recompensa é aplicada **só** no `onReward`.
+- **Uso esperado pelo coordenador:** `botao.SetActive(ads.Ready(Ads.Vip))` e, no toque, `ads.Show(Ads.Vip, DarVip, () => {})` (com `ads` = o `IAds` do `Ads.Init`). A recompensa é aplicada **só** no `onReward`.
 - A pré-carga é feita de propósito: as 2 ad units carregam logo depois do init e recarregam ao fechar. Sem isso, o `Ready` nunca ficaria true a tempo de o botão aparecer. Uma falha de carga tenta de novo em 30 s, 60 s, 120 s… até o teto de 300 s.
 - Se o init falhar, ele tenta de novo em 10 s, 20 s… até o teto de 300 s.
 
@@ -94,7 +97,7 @@ O simulado é um painel uGUI preto, com sortingOrder 1000, que bloqueia o toque.
 
 ### Diário (`diario.csv`)
 
-O `Game` assina `Ads.Logged` e grava pelo mesmo `Log()` dos outros eventos. Com `-testsession` nada é gravado, como sempre.
+O `Ads.Init` recebe o `log` do `Game`, que grava pelo mesmo `IAnalytics` dos outros eventos. Com `-testsession` nada é gravado, como sempre.
 
 | evento | a | b |
 |---|---|---|
@@ -169,7 +172,7 @@ Fonte: [Integration testing (Unity Docs)](https://docs.unity.com/en-us/grow/leve
 
 ## 6. Privacidade (configuração conservadora; não é parecer jurídico)
 
-Configurado no código, **antes** do `LevelPlay.Init` (`Ads.StartSdk`):
+Configurado no código, **antes** do `LevelPlay.Init` (no `AdsLevelPlay`):
 
 | Chamada | Valor | Por quê |
 |---|---|---|
