@@ -69,11 +69,11 @@ namespace FS.Tests
             StandAt(s, s.FurnaceA.OutAt, 14f);            // 3 lingotes a 4 s + pegar na saida
             Assert.AreEqual((Item.Ingot, 3), (s.Player.Item, s.Player.Count), "pegou os 3 lingotes sozinho");
             StandAt(s, s.AnvilA.InAt, 1f);
-            StandAt(s, s.AnvilA.OutAt, 3f * Balance.HammerTime0 + 2f);   // 3 espadas
+            StandAt(s, s.AnvilA.OutAt, 3f * Tuning.Padrao.HammerTime0 + 2f);   // 3 espadas
             Assert.AreEqual((Item.Sword, 3), (s.Player.Item, s.Player.Count), "pegou 3 espadas");
             long gold = s.Gold;
             StandAt(s, s.Counter.InAt, 3f);               // 3 clientes de espada ja esperam (8 s, 14 s, 20 s)
-            Assert.AreEqual(gold + 3 * Balance.Price[(int)Item.Sword], s.Gold, "cada cliente pagou uma espada");
+            Assert.AreEqual(gold + 3 * Tuning.Padrao.Price[(int)Item.Sword], s.Gold, "cada cliente pagou uma espada");
             Assert.AreEqual(3, s.Sales);
             Assert.Greater(s.FirstSaleTime, 0f);
             Assert.Less(s.FirstSaleTime, 90f, "GDD §15: primeira venda em <90 s");
@@ -161,11 +161,11 @@ namespace FS.Tests
             StandAt(s, s.AnvilA.OutAt, 1f);
             Assert.IsTrue(s.Player.Has(Item.Sword), "recolhe as espadas com os lingotes na mao (antes travava aqui)");
             Assert.AreEqual(0, s.AnvilA.Out, "as 3 espadas sairam da bigorna");
-            StandAt(s, s.Counter.InAt, Balance.FirstClientAt + 1f);
+            StandAt(s, s.Counter.InAt, Tuning.Padrao.FirstClientAt + 1f);
             Assert.IsFalse(s.Player.Has(Item.Sword), "as espadas foram para o balcao");
             Assert.AreEqual(Balance.PlayerCap, s.Player.Count, "os lingotes continuam na mao");
             Assert.Greater(s.Sales, 0, "o cliente de espada comprou");
-            Assert.AreEqual(s.Sales * Balance.Price[(int)Item.Sword], s.Gold);
+            Assert.AreEqual(s.Sales * Tuning.Padrao.Price[(int)Item.Sword], s.Gold);
         }
 
         [Test]
@@ -215,17 +215,17 @@ namespace FS.Tests
         public void Cliente_PagaEVaiEmbora_OuCansaESai()
         {
             var s = new Sim();
-            Run(s, Balance.FirstClientAt + 0.1f);
+            Run(s, Tuning.Padrao.FirstClientAt + 0.1f);
             Assert.AreEqual(1, s.Queue.Count, "1o cliente chegou");
             s.Stock[(int)Item.Sword] = 1;
             Run(s, 0.5f);
             Assert.AreEqual(0, s.Queue.Count, "atendido saiu da fila");
-            Assert.AreEqual(Balance.Price[(int)Item.Sword], s.Gold);
+            Assert.AreEqual(Tuning.Padrao.Price[(int)Item.Sword], s.Gold);
 
             var bored = new Sim();
-            Run(bored, Balance.FirstClientAt + 0.1f);
+            Run(bored, Tuning.Padrao.FirstClientAt + 0.1f);
             Assert.AreEqual(1, bored.Queue.Count);
-            Run(bored, Balance.PatienceFor(Item.Sword) + 0.5f);
+            Run(bored, Tuning.Padrao.PatienceFor(Item.Sword) + 0.5f);
             Assert.AreEqual(1, bored.ClientsLost, "sem estoque, cansou e foi embora (friccao, nao derrota)");
             Assert.AreEqual(0, bored.Gold);
         }
@@ -235,7 +235,7 @@ namespace FS.Tests
         {
             var s = new Sim();
             Run(s, 60f);
-            Assert.AreEqual(Balance.QueueCap0, s.Queue.Count, "fila tem teto");
+            Assert.AreEqual(Tuning.Padrao.QueueCap0, s.Queue.Count, "fila tem teto");
             Assert.Greater(s.ClientsTurnedAway, 0);
             foreach (Client c in s.Queue) Assert.AreEqual(Item.Sword, c.Want, "sem escudos desbloqueados ninguem pede escudo");
             s.Buy(Upgrade.Shields);
@@ -254,11 +254,11 @@ namespace FS.Tests
             var s = new Sim();
             s.Buy(Upgrade.Shields);
             s.ShieldBench.In = 3;
-            Run(s, Balance.HammerTime0 * Balance.ShieldTimeMul + 0.2f);
+            Run(s, Tuning.Padrao.HammerTime0 * Tuning.Padrao.ShieldTimeMul + 0.2f);
             Assert.AreEqual((1, 1), (s.ShieldBench.In, s.ShieldBench.Out), "2 lingotes viraram 1 escudo, sobrou 1");
             Run(s, 10f);
             Assert.AreEqual(1, s.ShieldBench.Out, "1 lingote nao basta para outro escudo");
-            Assert.AreEqual(25, Balance.Price[(int)Item.Shield]);
+            Assert.AreEqual(25, Tuning.Padrao.Price[(int)Item.Shield]);
         }
 
         [Test]
@@ -268,7 +268,7 @@ namespace FS.Tests
             s.Gold = 20;
             Pad pad = s.Pads[5];   // cadeia da contratacao (Fole e Mochila foram para o menu, FASE6)
             Assert.AreEqual((int)Upgrade.Helper1, pad.Current(s));
-            long cost = Upgrades.Cost(Upgrade.Helper1);
+            long cost = Tuning.Padrao.Cost(Upgrade.Helper1);
             StandAt(s, pad.Pos, 2f);
             Assert.AreEqual((0L, 20L), (s.Gold, pad.Paid), "despeja o que tem e guarda o parcial");
             Assert.IsFalse(s.Bought[(int)Upgrade.Helper1]);
@@ -303,10 +303,10 @@ namespace FS.Tests
             Assert.AreEqual(29, Upgrades.Count);
             Assert.AreEqual(29, Upgrades.All.Length);
             Assert.AreEqual(29, Enum.GetValues(typeof(Upgrade)).Length);
-            Assert.AreEqual((3000L, 2400L), (Upgrades.Cost(Upgrade.Miner), Upgrades.Cost(Upgrade.Jeweler2)), "fase 4: medido na Leva 10 (BALANCE.md §14)");
-            Assert.AreEqual((14000L, 18000L, 22000L), (Upgrades.Cost(Upgrade.WorkshopFacade), Upgrades.Cost(Upgrade.WorkshopFloor), Upgrades.Cost(Upgrade.JewelryDecor)), "luxo: Leva 11 (BALANCE.md §15)");
-            Assert.AreEqual((690L, 1515L), (Upgrades.Cost(Upgrade.SideCorridor), Upgrades.Cost(Upgrade.Jewelry)), "2a area fora da formula (coordenador 2026-10-07)");
-            Assert.AreEqual((2200L, 5500L, 9000L), (Upgrades.Cost(Upgrade.Jeweler), Upgrades.Cost(Upgrade.JewelSpeed), Upgrades.Cost(Upgrade.JewelVitrine)), "fase 2: custos aprovados (AREA2_FASE2 §6)");
+            Assert.AreEqual((3000L, 2400L), (Tuning.Padrao.Cost(Upgrade.Miner), Tuning.Padrao.Cost(Upgrade.Jeweler2)), "fase 4: medido na Leva 10 (BALANCE.md §14)");
+            Assert.AreEqual((14000L, 18000L, 22000L), (Tuning.Padrao.Cost(Upgrade.WorkshopFacade), Tuning.Padrao.Cost(Upgrade.WorkshopFloor), Tuning.Padrao.Cost(Upgrade.JewelryDecor)), "luxo: Leva 11 (BALANCE.md §15)");
+            Assert.AreEqual((690L, 1515L), (Tuning.Padrao.Cost(Upgrade.SideCorridor), Tuning.Padrao.Cost(Upgrade.Jewelry)), "2a area fora da formula (coordenador 2026-10-07)");
+            Assert.AreEqual((2200L, 5500L, 9000L), (Tuning.Padrao.Cost(Upgrade.Jeweler), Tuning.Padrao.Cost(Upgrade.JewelSpeed), Tuning.Padrao.Cost(Upgrade.JewelVitrine)), "fase 2: custos aprovados (AREA2_FASE2 §6)");
             foreach (Upgrade u in new[] { Upgrade.Jeweler, Upgrade.JewelSpeed, Upgrade.JewelVitrine })
                 Assert.AreEqual((int)Upgrade.Jewelry, Upgrades.All[(int)u].Requires, $"{u} requer a Joalheria");
             var ids = new HashSet<Upgrade>();
@@ -317,17 +317,17 @@ namespace FS.Tests
                 int req = Upgrades.All[i].Requires;
                 if (req >= 0) Assert.Less(req, i, "pre-requisito e' sempre de tier menor");
             }
-            Assert.AreEqual(Balance.CostBase, Upgrades.Cost(0));
+            Assert.AreEqual(Tuning.Padrao.CostBase, Tuning.Padrao.Cost(0));
             // curva literal (mutante eco-custo-crescimento): mexer no CostGrowth tem de ficar vermelho, nao so caber na faixa
-            Assert.AreEqual(65, Upgrades.Cost(Upgrade.Anvil2)); Assert.AreEqual(315, Upgrades.Cost(Upgrade.FurnaceSpeed2)); Assert.AreEqual(895, Upgrades.Cost(Upgrade.Furnace2));   // separados: o NUnit 3.5 do Unity compara tupla tipo a tipo (int x long)
+            Assert.AreEqual(65, Tuning.Padrao.Cost(Upgrade.Anvil2)); Assert.AreEqual(315, Tuning.Padrao.Cost(Upgrade.FurnaceSpeed2)); Assert.AreEqual(895, Tuning.Padrao.Cost(Upgrade.Furnace2));   // separados: o NUnit 3.5 do Unity compara tupla tipo a tipo (int x long)
             for (int i = 1; i < Upgrades.Count; i++)
             {
-                Assert.AreEqual(0, Upgrades.Cost(i) % 5, "preco legivel");
+                Assert.AreEqual(0, Tuning.Padrao.Cost(i) % 5, "preco legivel");
                 if (i >= (int)Upgrade.SideCorridor) continue;   // so os 15 do v0.1 seguem a formula
-                double ratio = Upgrades.Cost(i) / (double)Upgrades.Cost(i - 1);
-                Assert.That(ratio, Is.InRange(1.15, 1.5), $"tier {i}: {Upgrades.Cost(i - 1)} -> {Upgrades.Cost(i)}");
+                double ratio = Tuning.Padrao.Cost(i) / (double)Tuning.Padrao.Cost(i - 1);
+                Assert.That(ratio, Is.InRange(1.15, 1.5), $"tier {i}: {Tuning.Padrao.Cost(i - 1)} -> {Tuning.Padrao.Cost(i)}");
             }
-            Assert.Greater(Upgrades.Cost(Upgrade.Jewelry), Upgrades.Cost(Upgrade.SideCorridor), "a Joalheria custa mais que o Corredor que ela exige");
+            Assert.Greater(Tuning.Padrao.Cost(Upgrade.Jewelry), Tuning.Padrao.Cost(Upgrade.SideCorridor), "a Joalheria custa mais que o Corredor que ela exige");
             // todo upgrade acaba a venda (pad visivel, ou o menu se for InMenu): pre-requisitos alcancaveis em ordem de tier e depois os luxos
             var s = new Sim();
             var order = new List<int>();
@@ -355,12 +355,12 @@ namespace FS.Tests
             for (int t = 0; t <= 200; t++)
             {
                 if (t >= (int)Upgrade.SideCorridor && t < Upgrades.Count) continue;
-                long c = Upgrades.Cost(t);
+                long c = Tuning.Padrao.Cost(t);
                 Assert.That((c > prev || c == Upgrades.CostMax) && c % 5 == 0 && c <= Upgrades.CostMax, $"tier {t}: {prev} -> {c}");
                 prev = c;
             }
-            Assert.Greater(Upgrades.Cost(67), (long)int.MaxValue, "o tier 67 passa do int sem voltar para 5");
-            Assert.AreEqual(Upgrades.CostMax, Upgrades.Cost(200), "o tier 200 fica no teto");
+            Assert.Greater(Tuning.Padrao.Cost(67), (long)int.MaxValue, "o tier 67 passa do int sem voltar para 5");
+            Assert.AreEqual(Upgrades.CostMax, Tuning.Padrao.Cost(200), "o tier 200 fica no teto");
         }
 
         /// <summary>Ouro perto de int.MaxValue: a venda, o bau, a encomenda e o cofre somam sem dar a volta (em int o ouro ficava negativo).</summary>
@@ -368,11 +368,11 @@ namespace FS.Tests
         public void Ouro_PertoDeIntMax_VendaBauEncomendaECofreNaoDaoAVolta()
         {
             var s = new Sim();
-            Run(s, Balance.FirstClientAt + 0.1f);
+            Run(s, Tuning.Padrao.FirstClientAt + 0.1f);
             long start = int.MaxValue - 5L;
             s.Gold = start; s.GoldEarned = start; s.Stock[(int)Item.Sword] = 1;
             Run(s, 0.5f);
-            int price = Balance.Price[(int)Item.Sword];
+            int price = Tuning.Padrao.Price[(int)Item.Sword];
             Assert.AreEqual((start + price, start + price, 1), (s.Gold, s.GoldEarned, s.Sales), "a venda passa do int.MaxValue");
             s.Chests[0].State = 1; s.Player.Pos = s.Chests[0].Pos;
             s.FirstSaleTime = 1f; s.OrderItem = (int)Item.Sword; s.OrderTarget = 1; s.OrderProgress = 1; s.OrderReward = 100;
@@ -398,7 +398,7 @@ namespace FS.Tests
             Assert.AreEqual((5000000000L, 6000000000L, 3000000000L, 40L), (b.Gold, b.GoldEarned, b.OfflineEarned, b.Pads[2].Paid));
             Assert.AreEqual(text, b.Save(1), "save estavel");
             Assert.IsTrue(b.TryBuyMenu(Upgrade.FurnaceSpeed1));
-            Assert.AreEqual(5000000000L - Upgrades.Cost(Upgrade.FurnaceSpeed1), b.Gold, "a compra cobra o preco, sem estouro");
+            Assert.AreEqual(5000000000L - Tuning.Padrao.Cost(Upgrade.FurnaceSpeed1), b.Gold, "a compra cobra o preco, sem estouro");
         }
 
         [Test]
@@ -422,21 +422,21 @@ namespace FS.Tests
         {
             var s = new Sim();
             s.RateEma = 1000.0;   // taxa absurda: so o teto relativo segura
-            Assert.AreEqual(2 * Upgrades.Cost(Upgrade.FurnaceSpeed1), s.ApplyOffline(7200, 1), "nada comprado: 2x o fole");
+            Assert.AreEqual(2 * Tuning.Padrao.Cost(Upgrade.FurnaceSpeed1), s.ApplyOffline(7200, 1), "nada comprado: 2x o fole");
             s.Buy(Upgrade.FurnaceSpeed1);
-            Assert.AreEqual(2 * Upgrades.Cost(Upgrade.Anvil2), s.ApplyOffline(7200, 2), "fole comprado: 2x a 2a bigorna");
+            Assert.AreEqual(2 * Tuning.Padrao.Cost(Upgrade.Anvil2), s.ApplyOffline(7200, 2), "fole comprado: 2x a 2a bigorna");
             s.Buy(Upgrade.Anvil2); s.Buy(Upgrade.Helper1); s.Buy(Upgrade.Shields);
-            Assert.AreEqual(2 * Upgrades.Cost(Upgrade.PlayerCapacity), s.ApplyOffline(7200, 3), "o mais barato ainda travado");
+            Assert.AreEqual(2 * Tuning.Padrao.Cost(Upgrade.PlayerCapacity), s.ApplyOffline(7200, 3), "o mais barato ainda travado");
             for (int i = 0; i <= (int)Upgrade.CounterCapacity; i++) s.Buy((Upgrade)i);
-            Assert.AreEqual(2 * Upgrades.Cost(Upgrade.Counter5), s.ApplyOffline(7200, 4), "FASE7: com a Vitrine, o Balcao 5 (150) e' o menor travado");
+            Assert.AreEqual(2 * Tuning.Padrao.Cost(Upgrade.Counter5), s.ApplyOffline(7200, 4), "FASE7: com a Vitrine, o Balcao 5 (150) e' o menor travado");
             BuyCounterTiers(s);
-            Assert.AreEqual(2 * Upgrades.Cost(Upgrade.SideCorridor), s.ApplyOffline(7200, 5), "o MENOR travado (Corredor 690), nao o proximo tier (2a fornalha 895)");
+            Assert.AreEqual(2 * Tuning.Padrao.Cost(Upgrade.SideCorridor), s.ApplyOffline(7200, 5), "o MENOR travado (Corredor 690), nao o proximo tier (2a fornalha 895)");
             for (int i = 0; i <= (int)Upgrade.Jewelry; i++) s.Buy((Upgrade)i);
-            Assert.AreEqual(2 * Upgrades.Cost(Upgrade.Jeweler), s.ApplyOffline(7200, 6), "fase 2: o menor travado e' o Joalheiro (2200)");
+            Assert.AreEqual(2 * Tuning.Padrao.Cost(Upgrade.Jeweler), s.ApplyOffline(7200, 6), "fase 2: o menor travado e' o Joalheiro (2200)");
             for (int i = 0; i < Upgrades.Count; i++) s.Buy((Upgrade)i);
-            Assert.AreEqual(2 * Upgrades.Cost(Upgrade.JewelVitrine), s.ApplyOffline(7200, 7), "tudo comprado: 2x o ultimo (Vitrine de joias 9000 = 18000)");
+            Assert.AreEqual(2 * Tuning.Padrao.Cost(Upgrade.JewelVitrine), s.ApplyOffline(7200, 7), "tudo comprado: 2x o ultimo (Vitrine de joias 9000 = 18000)");
             var low = new Sim(); low.RateEma = 0.01;   // taxa baixa: vale a taxa, nao o teto
-            Assert.AreEqual((int)Math.Floor(0.01 * Balance.OfflineFactor * Balance.OfflineCapSeconds), low.ApplyOffline(7200, 1));
+            Assert.AreEqual((int)Math.Floor(0.01 * Tuning.Padrao.OfflineFactor * Balance.OfflineCapSeconds), low.ApplyOffline(7200, 1));
         }
 
         [Test]
@@ -452,7 +452,7 @@ namespace FS.Tests
             Assert.AreEqual(s.Gold, b.Gold);
             Assert.AreEqual(s.Time, b.Time, 0.01f);
             Assert.IsTrue(b.Bought[(int)Upgrade.FurnaceSpeed1] && b.Bought[(int)Upgrade.Helper1]);
-            Assert.AreEqual(Balance.FurnaceTime1, b.FurnaceA.Time, "efeitos re-derivados dos flags");
+            Assert.AreEqual(Tuning.Padrao.FurnaceTime1, b.FurnaceA.Time, "efeitos re-derivados dos flags");
             Assert.AreEqual(1, b.Workers.Count, "ajudante volta");
             Assert.AreEqual((s.FurnaceA.In, s.FurnaceA.Out, true), (b.FurnaceA.In, b.FurnaceA.Out, b.FurnaceA.Busy));
             Assert.AreEqual(s.FurnaceA.Progress, b.FurnaceA.Progress, 0.01f);
@@ -467,7 +467,7 @@ namespace FS.Tests
             {
                 Sim g = Sim.Load(junk);
                 Assert.GreaterOrEqual(g.Gold, 0, junk);
-                Assert.LessOrEqual(g.Stock[2], Balance.CounterCap0);
+                Assert.LessOrEqual(g.Stock[2], Tuning.Padrao.CounterCap0);
                 Assert.LessOrEqual(g.FurnaceA.In, Balance.FurnaceIn);
                 Assert.IsFalse(double.IsNaN(g.RateEma));
                 Assert.AreEqual(0, g.UpgradesBought);
@@ -539,7 +539,7 @@ namespace FS.Tests
         {
             var s = new Sim();
             s.Buy(Upgrade.Shields);
-            for (int i = 0; i < Balance.QueueCap0; i++) s.Queue.Add(new Client { Want = Item.Shield, Patience = 999f, MaxPatience = 999f });
+            for (int i = 0; i < Tuning.Padrao.QueueCap0; i++) s.Queue.Add(new Client { Want = Item.Shield, Patience = 999f, MaxPatience = 999f });
             s.Stock[(int)Item.Sword] = s.CounterCap;
             int served = 0, sold = 0;
             for (float t = 0f; t < 30f; t += Dt)
@@ -568,16 +568,16 @@ namespace FS.Tests
             {
                 var t = new Sim();
                 t.Buy(Upgrade.Shields);
-                for (int i = 0; i < Balance.QueueCap0; i++) t.Queue.Add(new Client { Want = Item.Shield, Patience = patience, MaxPatience = patience });
+                for (int i = 0; i < Tuning.Padrao.QueueCap0; i++) t.Queue.Add(new Client { Want = Item.Shield, Patience = patience, MaxPatience = patience });
                 t.Stock[(int)Item.Sword] = t.CounterCap;
                 return t;
             }
-            var a = Trap(Balance.PatienceFor(Item.Shield));
-            Run(a, Balance.PatienceFor(Item.Shield) + 2f * Balance.ClientInterval[(int)Item.Sword] + 1f);
+            var a = Trap(Tuning.Padrao.PatienceFor(Item.Shield));
+            Run(a, Tuning.Padrao.PatienceFor(Item.Shield) + 2f * Tuning.Padrao.ClientInterval[(int)Item.Sword] + 1f);
             Assert.Greater(a.SoldItems[(int)Item.Sword], 0, "paciencia: os de escudo cansam, a vaga abre e a espada vende");
             var b = Trap(999f);
             b.Buy(Upgrade.CounterCapacity); b.Buy(Upgrade.Counter5);
-            Run(b, Balance.FirstClientAt + 0.5f);
+            Run(b, Tuning.Padrao.FirstClientAt + 0.5f);
             Assert.AreEqual(1, b.SoldItems[(int)Item.Sword], "vaga a mais: o 1o cliente de espada entra e compra sem ninguem cansar");
             var c = Trap(999f);
             Hold(c, Item.Sword, Balance.PlayerCap);
@@ -628,7 +628,7 @@ namespace FS.Tests
             Assert.AreEqual((3, 0), (s.JewelBench.In, s.JewelBench.Out), "fechada nao produz");
             s.Buy(Upgrade.Jewelry);
             Assert.IsTrue(s.JewelBench.Unlocked && s.JewelShop.Unlocked && s.LineUnlocked(Item.Jewel));
-            float t = Balance.HammerTime0 * Balance.JewelTimeMul;
+            float t = Tuning.Padrao.HammerTime0 * Tuning.Padrao.JewelTimeMul;
             Assert.AreEqual(t, s.JewelBench.Time, 1e-4f);
             Run(s, t - 0.3f);
             Assert.AreEqual((1, 0), (s.JewelBench.In, s.JewelBench.Out), "consumiu 2 lingotes e ainda martela");
@@ -638,7 +638,7 @@ namespace FS.Tests
             Run(s, 2f * t);
             Assert.AreEqual(1, s.JewelBench.Out, "1 lingote nao basta para outra joia");
             s.Buy(Upgrade.HammerSpeed);
-            Assert.AreEqual(Balance.HammerTime1 * Balance.JewelTimeMul, s.JewelBench.Time, 1e-4f, "martelo veloz vale para a joalheria");
+            Assert.AreEqual(Tuning.Padrao.HammerTime1 * Tuning.Padrao.JewelTimeMul, s.JewelBench.Time, 1e-4f, "martelo veloz vale para a joalheria");
         }
 
         [Test]
@@ -666,9 +666,9 @@ namespace FS.Tests
         {
             var s = new Sim();
             s.Buy(Upgrade.SideCorridor); s.Buy(Upgrade.Jewelry);
-            Run(s, Balance.ClientInterval[(int)Item.Jewel] + 0.1f);
+            Run(s, Tuning.Padrao.ClientInterval[(int)Item.Jewel] + 0.1f);
             Assert.AreEqual(1, s.JewelQueue.Count, "1o nobre chegou aos 14 s");
-            Assert.AreEqual((Item.Jewel, Balance.PatienceFor(Item.Jewel)), (s.JewelQueue[0].Want, s.JewelQueue[0].MaxPatience));
+            Assert.AreEqual((Item.Jewel, Tuning.Padrao.PatienceFor(Item.Jewel)), (s.JewelQueue[0].Want, s.JewelQueue[0].MaxPatience));
             foreach (Client c in s.Queue) Assert.AreNotEqual(Item.Jewel, c.Want, "joia nunca na fila do balcao");
             s.Stock[(int)Item.Jewel] = 1;
             long gold = s.Gold; int sold = 0;
@@ -684,7 +684,7 @@ namespace FS.Tests
             var q = new Sim();
             q.Buy(Upgrade.CounterCapacity); q.Buy(Upgrade.SideCorridor); q.Buy(Upgrade.Jewelry);
             int max = 0, away = 0; float tired = -1f;
-            for (float t = 0f; t < Balance.ClientInterval[(int)Item.Jewel] + Balance.PatienceFor(Item.Jewel) + 5f; t += Dt)
+            for (float t = 0f; t < Tuning.Padrao.ClientInterval[(int)Item.Jewel] + Tuning.Padrao.PatienceFor(Item.Jewel) + 5f; t += Dt)
             {
                 q.Tick(Dt, 0f, 0f);
                 max = Math.Max(max, q.JewelQueue.Count);
@@ -697,7 +697,7 @@ namespace FS.Tests
             }
             Assert.AreEqual(Balance.JewelQueueCap, max, "fila de joias tem teto 3");
             Assert.Greater(away, 0, "o 4o nobre nao entrou");
-            Assert.AreEqual(Balance.ClientInterval[(int)Item.Jewel] + Balance.PatienceFor(Item.Jewel), tired, 0.1f, "paciencia da joia");
+            Assert.AreEqual(Tuning.Padrao.ClientInterval[(int)Item.Jewel] + Tuning.Padrao.PatienceFor(Item.Jewel), tired, 0.1f, "paciencia da joia");
         }
 
         [Test]
@@ -739,7 +739,7 @@ namespace FS.Tests
             Assert.IsTrue(b.Bought[(int)Upgrade.SideCorridor] && b.Bought[(int)Upgrade.Jewelry] && b.Bought[(int)Upgrade.Helper1]);
             Assert.AreEqual(3, b.UpgradesBought);
             Assert.IsTrue(b.JewelBench.Unlocked && b.JewelShop.Unlocked, "re-derivado dos flags");
-            Assert.AreEqual(Balance.HammerTime0 * Balance.JewelTimeMul, b.JewelBench.Time, 1e-4f);
+            Assert.AreEqual(Tuning.Padrao.HammerTime0 * Tuning.Padrao.JewelTimeMul, b.JewelBench.Time, 1e-4f);
             Assert.AreEqual(2, b.Stock[(int)Item.Jewel]);
             Assert.AreEqual((3, 1), (b.JewelBench.In, b.JewelBench.Out));
             Assert.AreEqual(13f, b.Player.Pos.X, 0.01f, "na rua lateral continua na rua");
@@ -838,7 +838,7 @@ namespace FS.Tests
             float anvil = s.AnvilA.Time, jewel = s.JewelBench.Time;
             Assert.AreEqual((-1, true), (PadFor(s, Upgrade.JewelSpeed).Current(s), s.MenuAvailable((int)Upgrade.JewelSpeed)), "a venda no menu, sem pad");
             s.Buy(Upgrade.JewelSpeed);
-            float t = Balance.HammerTime0 * Balance.JewelTimeMul * Balance.JewelSpeedMul;
+            float t = Tuning.Padrao.HammerTime0 * Tuning.Padrao.JewelTimeMul * Tuning.Padrao.JewelSpeedMul;
             Assert.AreEqual(jewel * 0.6f, s.JewelBench.Time, 1e-4f, "x0,6");
             Assert.AreEqual(t, s.JewelBench.Time, 1e-4f);
             Assert.AreEqual(anvil, s.AnvilA.Time, "a bigorna nao muda");
@@ -848,7 +848,7 @@ namespace FS.Tests
             Run(s, 0.5f);
             Assert.AreEqual(1, s.JewelBench.Out, "joia em 6 s em vez de 10");
             s.Buy(Upgrade.HammerSpeed);
-            Assert.AreEqual(Balance.HammerTime1 * Balance.JewelTimeMul * Balance.JewelSpeedMul, s.JewelBench.Time, 1e-4f, "soma com o Martelo veloz");
+            Assert.AreEqual(Tuning.Padrao.HammerTime1 * Tuning.Padrao.JewelTimeMul * Tuning.Padrao.JewelSpeedMul, s.JewelBench.Time, 1e-4f, "soma com o Martelo veloz");
             Assert.AreEqual(s.JewelBench.Time, Sim.Load(s.Save(1)).JewelBench.Time, 1e-4f, "re-derivado do save");
         }
 
@@ -862,7 +862,7 @@ namespace FS.Tests
             s.Buy(Upgrade.JewelVitrine);
             Assert.AreEqual(5, s.JewelQueueCap, "fila 3 -> 5");
             Assert.AreEqual(jewel * 0.7f, s.ClientInterval(Item.Jewel), 1e-4f, "nobres x0,7 (soma com a Vitrine)");
-            Assert.AreEqual((sword, Balance.QueueCap0), (s.ClientInterval(Item.Sword), s.QueueCap), "o balcao principal nao muda");
+            Assert.AreEqual((sword, Tuning.Padrao.QueueCap0), (s.ClientInterval(Item.Sword), s.QueueCap), "o balcao principal nao muda");
             int max = 0;
             for (float t = 0f; t < 60f; t += Dt) { s.Tick(Dt, 0f, 0f); max = Math.Max(max, s.JewelQueue.Count); }
             Assert.AreEqual(5, max, "sem joia, a fila de nobres enche ate 5");
@@ -879,7 +879,7 @@ namespace FS.Tests
                 if (upgraded) s.Buy(Upgrade.JewelVitrine);
                 int price = upgraded ? 80 : 60;
                 if (direct)
-                    while (s.Time + Dt < Balance.ClientInterval[(int)Item.Jewel]) s.Tick(Dt, 0f, 0f);
+                    while (s.Time + Dt < Tuning.Padrao.ClientInterval[(int)Item.Jewel]) s.Tick(Dt, 0f, 0f);
                 int queue = direct ? s.JewelQueueCap : 1;   // direct = um nobre chega com a fila cheia (FASE7: vai embora; nao ha compra direta)
                 for (int i = 0; i < queue; i++) s.JewelQueue.Add(new Client { Want = Item.Jewel, Patience = 999f, MaxPatience = 999f });
                 s.Stock[(int)Item.Jewel] = 1;
@@ -911,7 +911,7 @@ namespace FS.Tests
             MilestoneDef m0 = Balance.Milestones[0];
             s.SoldItems[(int)Item.Sword] = m0.Count - 1; s.Stock[(int)Item.Sword] = 1;   // a proxima venda de espada bate o marco
             int fired = 0;
-            for (float t = 0f; t < Balance.FirstClientAt + 5f; t += Dt)
+            for (float t = 0f; t < Tuning.Padrao.FirstClientAt + 5f; t += Dt)
             {
                 s.Tick(Dt, 0f, 0f);
                 foreach (SimEvent e in s.Events)
@@ -1054,7 +1054,7 @@ namespace FS.Tests
                 Assert.IsFalse(s.ProductionComplete, "falta o produtivo anexado");
                 Assert.AreEqual(-1, PadFor(s, Upgrade.WorkshopFacade).Current(s), "luxo espera o anexado");
                 Assert.IsFalse(s.Buy(Upgrade.WorkshopFacade));
-                Assert.AreEqual(Upgrades.Cost(sim), s.CheapestLockedCost(), "entra no teto offline como menor travado");
+                Assert.AreEqual(Tuning.Padrao.Cost(sim), s.CheapestLockedCost(), "entra no teto offline como menor travado");
                 Assert.IsTrue(s.Buy(Upgrade.JewelryDecor), "compra direta sem producao completa");
                 Assert.IsTrue(s.ProductionComplete);
                 Assert.IsTrue(s.Buy(Upgrade.WorkshopFacade), "agora o luxo abre");
@@ -1068,7 +1068,7 @@ namespace FS.Tests
         {
             var s = CompleteProduction();
             long luxury = 0;
-            foreach (Upgrade u in Luxury) luxury += Upgrades.Cost(u);
+            foreach (Upgrade u in Luxury) luxury += Tuning.Padrao.Cost(u);
             long budget = luxury + 333;
             s.Gold = budget;
             int bought = 0;
@@ -1086,12 +1086,12 @@ namespace FS.Tests
                         if (e.Kind == Ev.Bought)
                         {
                             bought++;
-                            Assert.AreEqual(((int)u, (int)Upgrades.Cost(u)), (e.A, e.B));
+                            Assert.AreEqual(((int)u, (int)Tuning.Padrao.Cost(u)), (e.A, e.B));
                             Assert.IsTrue(At(e.Pos, p.Pos));
                         }
                 }
                 Assert.IsTrue(s.Bought[(int)u]);
-                Assert.AreEqual(goldAfterPartial - (Upgrades.Cost(u) - partial), s.Gold, "so cobra o restante");
+                Assert.AreEqual(goldAfterPartial - (Tuning.Padrao.Cost(u) - partial), s.Gold, "so cobra o restante");
                 Assert.AreEqual(0, p.Paid);
                 Assert.IsFalse(p.Armed, "tick de compra desarma o pad");
                 long gold = s.Gold;
@@ -1173,9 +1173,9 @@ namespace FS.Tests
             }
             var vit = new Sim(); vit.RateEma = 100;
             for (int i = 0; i <= (int)Upgrade.PlayerSpeed; i++) vit.Buy((Upgrade)i);   // o estado do bot aos 10 min
-            Assert.AreEqual(2 * Upgrades.Cost(Upgrade.Tools), vit.OfflineMaxGold(), "FASE7: o Balcao 5 (150) exige a Vitrine, nao esta a venda e nao baixa o cofre");
+            Assert.AreEqual(2 * Tuning.Padrao.Cost(Upgrade.Tools), vit.OfflineMaxGold(), "FASE7: o Balcao 5 (150) exige a Vitrine, nao esta a venda e nao baixa o cofre");
             for (int i = 0; i <= (int)Upgrade.CounterCapacity; i++) vit.Buy((Upgrade)i);
-            Assert.AreEqual(2 * Upgrades.Cost(Upgrade.Counter5), vit.OfflineMaxGold(), "FASE7: Vitrine sem as vagas = 2x o Balcao 5");
+            Assert.AreEqual(2 * Tuning.Padrao.Cost(Upgrade.Counter5), vit.OfflineMaxGold(), "FASE7: Vitrine sem as vagas = 2x o Balcao 5");
             var full = CompleteProduction(); full.Gold = 0; full.RateEma = 100;
             Assert.AreEqual(18000, full.ApplyOffline(8 * 3600, 10), "luxos ainda travados nao abaixam o teto para 12000");
             foreach (Upgrade u in Luxury)
@@ -1201,7 +1201,7 @@ namespace FS.Tests
             Assert.AreEqual((900L, 17), (s.Gold, s.UpgradesBought));
             Assert.IsFalse(s.Bought[(int)Upgrade.Jeweler] || s.Bought[(int)Upgrade.JewelSpeed] || s.Bought[(int)Upgrade.JewelVitrine]);
             CollectionAssert.AreEqual(new[] { 0, 1, 2 }, Roles(s), "sem joalheiro");
-            Assert.AreEqual((Balance.JewelQueueCap, Balance.HammerTime1 * Balance.JewelTimeMul), (s.JewelQueueCap, s.JewelBench.Time));
+            Assert.AreEqual((Balance.JewelQueueCap, Tuning.Padrao.HammerTime1 * Tuning.Padrao.JewelTimeMul), (s.JewelQueueCap, s.JewelBench.Time));
             CollectionAssert.AreEqual(new[] { 0, 0, 0, 0 }, s.Chests.ConvertAll(c => c.State), "nenhum marco");
             Assert.AreEqual((int)Upgrade.Jeweler, PadFor(s, Upgrade.Jeweler).Current(s), "pad novo visivel (Joalheria comprada) e zerado");
             Assert.AreEqual(13f, s.Player.Pos.X, 0.01f);
@@ -1218,7 +1218,7 @@ namespace FS.Tests
         [Test]
         public void Paciencia_PorItem_ProporcionalAProducaoInicial()
         {
-            Assert.AreEqual((57f, 76.5f, 57f, 84f), (Balance.PatienceFor(Item.Sword), Balance.PatienceFor(Item.Shield), Balance.PatienceFor(Item.Tool), Balance.PatienceFor(Item.Jewel)),
+            Assert.AreEqual((57f, 76.5f, 57f, 84f), (Tuning.Padrao.PatienceFor(Item.Sword), Tuning.Padrao.PatienceFor(Item.Shield), Tuning.Padrao.PatienceFor(Item.Tool), Tuning.Padrao.PatienceFor(Item.Jewel)),
                 "30 + 3 x (fornalha 4 s x lingotes + bancada 5 s x multiplicador)");
             var s = new Sim();
             s.Buy(Upgrade.Shields); s.Buy(Upgrade.Tools); s.Buy(Upgrade.SideCorridor); s.Buy(Upgrade.Jewelry);
@@ -1227,8 +1227,8 @@ namespace FS.Tests
             for (float t = 0f; t < 120f; t += Dt)
             {
                 s.Tick(Dt, 0f, 0f);
-                foreach (Client c in s.Queue) { seen.Add(c.Want); Assert.AreEqual(Balance.PatienceFor(c.Want), c.MaxPatience, "fila do balcao: paciencia do proprio item"); }
-                foreach (Client c in s.JewelQueue) { seen.Add(c.Want); Assert.AreEqual(Balance.PatienceFor(Item.Jewel), c.MaxPatience); }
+                foreach (Client c in s.Queue) { seen.Add(c.Want); Assert.AreEqual(Tuning.Padrao.PatienceFor(c.Want), c.MaxPatience, "fila do balcao: paciencia do proprio item"); }
+                foreach (Client c in s.JewelQueue) { seen.Add(c.Want); Assert.AreEqual(Tuning.Padrao.PatienceFor(Item.Jewel), c.MaxPatience); }
                 foreach (SimEvent e in s.Events)
                 {
                     if (e.A != (int)Item.Shield) continue;
@@ -1237,7 +1237,7 @@ namespace FS.Tests
                 }
             }
             Assert.AreEqual(4, seen.Count, "espada, escudo, ferramenta e joia passaram pelas filas");
-            Assert.AreEqual(Balance.PatienceFor(Item.Shield), shieldOut - shieldIn, 0.1f, "o 1o cliente de escudo, sem escudo, cansa em 76,5 s");
+            Assert.AreEqual(Tuning.Padrao.PatienceFor(Item.Shield), shieldOut - shieldIn, 0.1f, "o 1o cliente de escudo, sem escudo, cansa em 76,5 s");
         }
 
         /// <summary>Todos os corpos possiveis: estacoes desbloqueadas, loja e a decoracao inteira (luxo comprado).</summary>
@@ -1491,12 +1491,12 @@ namespace FS.Tests
             Assert.IsFalse(s.ProductionComplete, "os 20 de antes nao bastam");
             Assert.AreEqual(-1, PadFor(s, Upgrade.WorkshopFacade).Current(s));
             Assert.IsFalse(s.Buy(Upgrade.WorkshopFacade));
-            Assert.AreEqual(2 * Upgrades.Cost(Upgrade.Counter5), s.OfflineMaxGold(), "teto offline: 2x o menor travado (Balcao 5)");
+            Assert.AreEqual(2 * Tuning.Padrao.Cost(Upgrade.Counter5), s.OfflineMaxGold(), "teto offline: 2x o menor travado (Balcao 5)");
             BuyCounterTiers(s);
             Assert.IsFalse(s.ProductionComplete || s.Buy(Upgrade.WorkshopFacade), "as 4 vagas sem o par tambem nao");
-            Assert.AreEqual(2 * Upgrades.Cost(Upgrade.Miner), s.OfflineMaxGold(), "teto offline: 2x o menor a venda (Mineiro; o Joalheiro 2 exige o Mineiro)");
+            Assert.AreEqual(2 * Tuning.Padrao.Cost(Upgrade.Miner), s.OfflineMaxGold(), "teto offline: 2x o menor a venda (Mineiro; o Joalheiro 2 exige o Mineiro)");
             s.Buy(Upgrade.Miner);
-            Assert.AreEqual(2 * Upgrades.Cost(Upgrade.Jeweler2), s.OfflineMaxGold(), "com o Mineiro: 2x o Joalheiro 2");
+            Assert.AreEqual(2 * Tuning.Padrao.Cost(Upgrade.Jeweler2), s.OfflineMaxGold(), "com o Mineiro: 2x o Joalheiro 2");
             Assert.IsFalse(s.ProductionComplete || s.Buy(Upgrade.WorkshopFacade), "so o Mineiro tambem nao");
             s.Buy(Upgrade.Jeweler2);
             Assert.IsTrue(s.ProductionComplete);
@@ -1694,7 +1694,7 @@ namespace FS.Tests
         public void TryBuyMenu_Ouro_PreRequisito_Idempotente_PadRecusado_Evento()
         {
             var s = new Sim();
-            long fole = Upgrades.Cost(Upgrade.FurnaceSpeed1);
+            long fole = Tuning.Padrao.Cost(Upgrade.FurnaceSpeed1);
             s.Gold = fole - 1;
             Assert.IsFalse(s.TryBuyMenu(Upgrade.FurnaceSpeed1), "ouro insuficiente");
             Assert.AreEqual((fole - 1, false, 0), (s.Gold, s.Bought[(int)Upgrade.FurnaceSpeed1], s.Events.Count));
@@ -1719,9 +1719,9 @@ namespace FS.Tests
             Assert.IsFalse(s.TryBuyMenu(Upgrade.FurnaceSpeed1), "ja comprado: no-op");
             Assert.AreEqual((100000L, 1, 0), (s.Gold, s.UpgradesBought, s.Events.Count));
             Assert.IsTrue(s.TryBuyMenu(Upgrade.FurnaceSpeed2), "pre-requisito comprado abre o proximo");
-            Assert.AreEqual(100000 - Upgrades.Cost(Upgrade.FurnaceSpeed2), s.Gold);
+            Assert.AreEqual(100000 - Tuning.Padrao.Cost(Upgrade.FurnaceSpeed2), s.Gold);
             Run(s, 1f);
-            Assert.AreEqual(100000 - Upgrades.Cost(Upgrade.FurnaceSpeed2), s.Gold, "nada drena depois (sem pad parcial)");
+            Assert.AreEqual(100000 - Tuning.Padrao.Cost(Upgrade.FurnaceSpeed2), s.Gold, "nada drena depois (sem pad parcial)");
         }
 
         [Test]
@@ -1736,7 +1736,7 @@ namespace FS.Tests
                 Assert.IsTrue(viaPad.Buy(u), u + " pelo caminho do pad (Drain -> Buy)");
                 Assert.AreNotEqual(before, Derived(viaMenu), u + ": efeito aplicado");
                 Assert.AreEqual(Derived(viaPad), Derived(viaMenu), u + ": mesmo efeito do pad");
-                Assert.AreEqual(viaPad.Gold - Upgrades.Cost(u), viaMenu.Gold, u + ": cobra o preco uma vez");
+                Assert.AreEqual(viaPad.Gold - Tuning.Padrao.Cost(u), viaMenu.Gold, u + ": cobra o preco uma vez");
                 Assert.AreEqual(Derived(viaMenu), Derived(Sim.Load(viaMenu.Save(1))), u + ": re-derivado do save");
             }
         }
@@ -1761,7 +1761,7 @@ namespace FS.Tests
         public void Dica_BuyMenu_QuandoOMaisBaratoPagavelEDoMenu_BuyPadQuandoEDoPad()
         {
             var s = new Sim();
-            long fole = Upgrades.Cost(Upgrade.FurnaceSpeed1), anvil = Upgrades.Cost(Upgrade.Anvil2);
+            long fole = Tuning.Padrao.Cost(Upgrade.FurnaceSpeed1), anvil = Tuning.Padrao.Cost(Upgrade.Anvil2);
             Assert.Less(fole, anvil, "premissa: Fole (menu) 50 < 2a bigorna (pad) 65");
             s.Gold = fole - 1;
             Assert.AreEqual(Hint.GrabOre, s.CurrentHint(), "nada pagavel");
@@ -1790,7 +1790,7 @@ namespace FS.Tests
             {
                 var s = new Sim();
                 V2 start = s.Player.Pos;
-                s.Gold = Upgrades.Cost(Upgrade.FurnaceSpeed1);   // 50: so o Fole (menu) e' pagavel
+                s.Gold = Tuning.Padrao.Cost(Upgrade.FurnaceSpeed1);   // 50: so o Fole (menu) e' pagavel
                 int ticks = 0, bought = 0;
                 while (!s.Bought[(int)Upgrade.FurnaceSpeed1] && ticks < 90) { bot.Step(s, Dt); ticks++; bought += Count(s, Ev.Bought); }
                 Assert.IsTrue(s.Bought[(int)Upgrade.FurnaceSpeed1], "comprou no menu");
@@ -1800,7 +1800,7 @@ namespace FS.Tests
             // pad mais barato que o menu: o bot anda ate o pad, como antes
             var t = new Sim();
             t.Buy(Upgrade.FurnaceSpeed1);
-            t.Gold = Upgrades.Cost(Upgrade.Anvil2);   // 65: 2a bigorna (pad); Mochila (menu) custa 145
+            t.Gold = Tuning.Padrao.Cost(Upgrade.Anvil2);   // 65: 2a bigorna (pad); Mochila (menu) custa 145
             var b = new Bot();
             for (int i = 0; i < 300 && !t.Bought[(int)Upgrade.Anvil2]; i++) b.Step(t, Dt);
             Assert.IsTrue(t.Bought[(int)Upgrade.Anvil2], "foi ao pad e pagou");
@@ -1841,7 +1841,7 @@ namespace FS.Tests
             var j = new Sim();
             j.Buy(Upgrade.SideCorridor); j.Buy(Upgrade.Jewelry); j.Buy(Upgrade.Conveyor);
             Hold(j, Item.Ingot, 2);
-            StandAt(j, j.JewelBench.InAt, Balance.HammerTime0 * Balance.JewelTimeMul + 1f);
+            StandAt(j, j.JewelBench.InAt, Tuning.Padrao.HammerTime0 * Tuning.Padrao.JewelTimeMul + 1f);
             Assert.AreEqual((0, 1), (j.Player.Count, j.JewelBench.Out), "depositou na entrada, a joia ficou na saida");
             StandAt(j, j.JewelBench.OutAt, 0.5f);
             Assert.AreEqual((Item.Jewel, 1), (j.Player.Item, j.Player.Count), "recolheu na saida");
@@ -1868,19 +1868,19 @@ namespace FS.Tests
                 Assert.AreEqual(req, d.Requires, u + ": em cadeia (o 1o exige a Vitrine)");
                 req = (int)u;
             }
-            CollectionAssert.AreEqual(new[] { 150, 175, 200, 225 }, Array.ConvertAll(CounterTiers, u => Upgrades.Cost(u)), "BALANCE §17");
+            CollectionAssert.AreEqual(new[] { 150, 175, 200, 225 }, Array.ConvertAll(CounterTiers, u => Tuning.Padrao.Cost(u)), "BALANCE §17");
             var s = Rich();
-            Assert.AreEqual((Balance.QueueCap0, false), (s.QueueCap, s.MenuAvailable((int)Upgrade.Counter5)), "4 vagas; Balcao 5 so depois da Vitrine");
+            Assert.AreEqual((Tuning.Padrao.QueueCap0, false), (s.QueueCap, s.MenuAvailable((int)Upgrade.Counter5)), "4 vagas; Balcao 5 so depois da Vitrine");
             float sword = s.ClientInterval(Item.Sword);
             Assert.IsTrue(s.TryBuyMenu(Upgrade.CounterCapacity));
-            Assert.AreEqual((Balance.QueueCap0, Balance.CounterCap1), (s.QueueCap, s.CounterCap), "Vitrine: estoque 5 -> 10, a fila nao muda");
-            Assert.AreEqual(sword * Balance.VitrineClientMul, s.ClientInterval(Item.Sword), 1e-4f, "Vitrine: clientes x0,7");
+            Assert.AreEqual((Tuning.Padrao.QueueCap0, Tuning.Padrao.CounterCap1), (s.QueueCap, s.CounterCap), "Vitrine: estoque 5 -> 10, a fila nao muda");
+            Assert.AreEqual(sword * Tuning.Padrao.VitrineClientMul, s.ClientInterval(Item.Sword), 1e-4f, "Vitrine: clientes x0,7");
             Assert.AreEqual("Mais estoque e mais clientes", Upgrades.All[(int)Upgrade.CounterCapacity].Desc);
             Assert.IsFalse(s.TryBuyMenu(Upgrade.Counter6), "fora da ordem nao compra");
             for (int k = 0; k < CounterTiers.Length; k++)
             {
                 Assert.IsTrue(s.TryBuyMenu(CounterTiers[k]), CounterTiers[k].ToString());
-                Assert.AreEqual(Balance.QueueCap0 + 1 + k, s.QueueCap, "+1 vaga por evolucao");
+                Assert.AreEqual(Tuning.Padrao.QueueCap0 + 1 + k, s.QueueCap, "+1 vaga por evolucao");
             }
             Assert.AreEqual((Balance.QueueCapMax, Balance.QueueCapMax), (s.QueueCap, Sim.Load(s.Save(1)).QueueCap), "8 vagas, re-derivadas do save");
             int max = 0;
@@ -1888,7 +1888,7 @@ namespace FS.Tests
             Assert.AreEqual(Balance.QueueCapMax, max, "sem produto, 8 clientes esperam lado a lado");
             // save da v0.4.1 (25 flags) com a Vitrine: 4 vagas (a Vitrine nao da mais fila) e o Balcao 5 a venda
             Sim old = Sim.Load("v=1\nt=900\ngold=500\nup=1111111111100000000000000\n");
-            Assert.AreEqual((Balance.QueueCap0, Balance.CounterCap1, true), (old.QueueCap, old.CounterCap, old.MenuAvailable((int)Upgrade.Counter5)));
+            Assert.AreEqual((Tuning.Padrao.QueueCap0, Tuning.Padrao.CounterCap1, true), (old.QueueCap, old.CounterCap, old.MenuAvailable((int)Upgrade.Counter5)));
             StringAssert.Contains("up=11111111111000000000000000000\n", old.Save(2));
         }
 
@@ -1896,9 +1896,9 @@ namespace FS.Tests
         public void Balcao_VagasCentradas_CorpoCresce_SemEngolirPadsBocasERotas()
         {
             var s = AllBodies();   // tudo comprado: luxo e decoracao inteira; o laco testa 4..8 vagas
-            for (int n = Balance.QueueCap0; n <= Balance.QueueCapMax; n++)
+            for (int n = Tuning.Padrao.QueueCap0; n <= Balance.QueueCapMax; n++)
             {
-                for (int k = 0; k < CounterTiers.Length; k++) s.Bought[(int)CounterTiers[k]] = k < n - Balance.QueueCap0;
+                for (int k = 0; k < CounterTiers.Length; k++) s.Bought[(int)CounterTiers[k]] = k < n - Tuning.Padrao.QueueCap0;
                 s.Recompute();
                 Box body = s.Counter.Body;
                 Assert.AreEqual(n, s.QueueCap);
@@ -1981,13 +1981,13 @@ namespace FS.Tests
         {
             var n = new Sim();
             Run(n, 120f);
-            Assert.AreEqual((-1, Balance.OrderFirstDelay), (n.OrderItem, n.OrderIn), "sem venda o relogio nao anda");
+            Assert.AreEqual((-1, Tuning.Padrao.OrderFirstDelay), (n.OrderItem, n.OrderIn), "sem venda o relogio nao anda");
             var s = Sold();
-            Run(s, Balance.OrderFirstDelay - 1f);
+            Run(s, Tuning.Padrao.OrderFirstDelay - 1f);
             Assert.AreEqual(-1, s.OrderItem, "aos 44 s ainda nao");
             Assert.IsTrue(RunUntil(s, Ev.OrderNew, 2f), "OrderNew aos 45 s");
-            Assert.AreEqual(((int)Item.Sword, Balance.OrderFirstTarget, 0), (s.OrderItem, s.OrderTarget, s.OrderProgress));
-            Assert.GreaterOrEqual(s.OrderReward, Balance.OrderRewardMin);
+            Assert.AreEqual(((int)Item.Sword, Tuning.Padrao.OrderFirstTarget, 0), (s.OrderItem, s.OrderTarget, s.OrderProgress));
+            Assert.GreaterOrEqual(s.OrderReward, Tuning.Padrao.OrderRewardMin);
             Assert.AreEqual(0, s.OrderReward % 5, "premio redondo");
         }
 
@@ -2012,9 +2012,9 @@ namespace FS.Tests
             }
             Assert.IsTrue(done, "entregou");
             Assert.AreEqual(reward, (s.Gold - gold) - (s.GoldEarned - earned), "premio no ouro, fora do GoldEarned");
-            Assert.GreaterOrEqual(s.SoldItems[(int)Item.Sword] - before, Balance.OrderFirstTarget);
+            Assert.GreaterOrEqual(s.SoldItems[(int)Item.Sword] - before, Tuning.Padrao.OrderFirstTarget);
             Assert.AreEqual((-1, 1), (s.OrderItem, s.OrderCount));
-            Run(s, Balance.OrderGap - 1f);
+            Run(s, Tuning.Padrao.OrderGap - 1f);
             Assert.AreEqual(-1, s.OrderItem, "intervalo de 20 s");
             Assert.IsTrue(RunUntil(s, Ev.OrderNew, 2f), "a 2a chega");
         }
@@ -2033,9 +2033,9 @@ namespace FS.Tests
                 s.OrderItem = -1; s.OrderCount = k; s.OrderIn = 0f;
                 s.Tick(Dt, 0f, 0f);
                 seen.Add(s.OrderItem);
-                int want = Math.Max(Balance.OrderMin, Math.Min(Balance.OrderMax, (int)Math.Round(Balance.OrderSeconds * 4.0 / (3 * s.PriceOf((Item)s.OrderItem)))));
+                int want = Math.Max(Tuning.Padrao.OrderMin, Math.Min(Tuning.Padrao.OrderMax, (int)Math.Round(Tuning.Padrao.OrderSeconds * 4.0 / (3 * s.PriceOf((Item)s.OrderItem)))));
                 Assert.AreEqual(want, s.OrderTarget, $"tamanho da encomenda {k}");
-                Assert.AreEqual(Math.Max(Balance.OrderRewardMin, 5 * (int)Math.Round(4.0 * Balance.OrderRewardSeconds / 5.0)), s.OrderReward);
+                Assert.AreEqual(Math.Max(Tuning.Padrao.OrderRewardMin, 5 * (int)Math.Round(4.0 * Tuning.Padrao.OrderRewardSeconds / 5.0)), s.OrderReward);
             }
             CollectionAssert.AreEqual(new[] { 3, 4, 2, 3, 4, 2 }, seen, "escudo, ferramenta, espada...; sem joia (joalheria fechada)");
         }
@@ -2055,9 +2055,9 @@ namespace FS.Tests
             Assert.AreEqual(text, b.Save(10), "save estavel");
             string old = string.Join("\n", Array.FindAll(text.Split('\n'), l => !l.StartsWith("ord=")));
             Sim o = Sim.Load(old);
-            Assert.AreEqual((-1, 0, Balance.OrderFirstDelay), (o.OrderItem, o.OrderCount, o.OrderIn), "save antigo: do zero");
+            Assert.AreEqual((-1, 0, Tuning.Padrao.OrderFirstDelay), (o.OrderItem, o.OrderCount, o.OrderIn), "save antigo: do zero");
             Sim g = Sim.Load(old + "ord=x,-4,99,-1,-2,abc\n");
-            Assert.AreEqual((-1, 0, Balance.OrderFirstDelay), (g.OrderItem, g.OrderCount, g.OrderIn), "lixo vira o padrao");
+            Assert.AreEqual((-1, 0, Tuning.Padrao.OrderFirstDelay), (g.OrderItem, g.OrderCount, g.OrderIn), "lixo vira o padrao");
             g = Sim.Load(old + "ord=5,10,2,100,3,0\n");
             Assert.AreEqual((-1, 3), (g.OrderItem, g.OrderCount), "joia sem joalheria nao volta; a contagem fica");
             g = Sim.Load(old + "ord=2,5,99,100,0,0\n");
@@ -2093,13 +2093,13 @@ namespace FS.Tests
         public void Vip_SoDepoisDa1aVenda_ChegaEntre4e6Min_EsperaAVagaSemSumir()
         {
             float min = float.MaxValue, max = 0f;
-            for (int n = 0; n < 200; n++) { min = Math.Min(min, Sim.VipInterval(n)); max = Math.Max(max, Sim.VipInterval(n)); }
-            Assert.That(min, Is.InRange(Balance.VipMin, Balance.VipMin + 10f), "sorteio cobre 4 min");
-            Assert.That(max, Is.InRange(Balance.VipMax - 10f, Balance.VipMax), "sorteio cobre 6 min");
+            for (int n = 0; n < 200; n++) { min = Math.Min(min, Tuning.Padrao.VipInterval(n)); max = Math.Max(max, Tuning.Padrao.VipInterval(n)); }
+            Assert.That(min, Is.InRange(Tuning.Padrao.VipMin, Tuning.Padrao.VipMin + 10f), "sorteio cobre 4 min");
+            Assert.That(max, Is.InRange(Tuning.Padrao.VipMax - 10f, Tuning.Padrao.VipMax), "sorteio cobre 6 min");
             var s = new Sim();
             float clock = s.VipIn;
-            Assert.AreEqual(Sim.VipInterval(0), clock);
-            Run(s, Balance.VipMax + 30f);   // sem estoque ninguem compra
+            Assert.AreEqual(Tuning.Padrao.VipInterval(0), clock);
+            Run(s, Tuning.Padrao.VipMax + 30f);   // sem estoque ninguem compra
             Assert.AreEqual((clock, false, 0), (s.VipIn, s.VipActive, s.VipCount), "antes da 1a venda o relogio fica parado");
             s.Stock[(int)Item.Sword] = 1;
             Run(s, 0.5f);
@@ -2107,10 +2107,10 @@ namespace FS.Tests
             Assert.Greater(t0, 0f, "1a venda");
             s.Queue.Clear();
             for (int i = 0; i < s.QueueCap; i++) s.Queue.Add(new Client { Want = Item.Sword, Patience = 999f, MaxPatience = 999f });   // fila cheia de quem nao cansa
-            while (!s.VipActive && s.Time < t0 + Balance.VipMax + 1f) s.Tick(Dt, 0f, 0f);
+            while (!s.VipActive && s.Time < t0 + Tuning.Padrao.VipMax + 1f) s.Tick(Dt, 0f, 0f);
             Assert.AreEqual(t0 + clock, s.Time, 0.5f, "chega quando o intervalo sorteado zera, contado da 1a venda");
             Assert.AreEqual(1, s.VipCount);
-            Assert.That(s.VipIn, Is.InRange(Balance.VipMin, Balance.VipMax), "o proximo ja foi sorteado");
+            Assert.That(s.VipIn, Is.InRange(Tuning.Padrao.VipMin, Tuning.Padrao.VipMax), "o proximo ja foi sorteado");
             Run(s, 30f);
             Assert.IsTrue(s.VipActive && Vip(s) == null && s.Queue.Count == s.QueueCap, "fila cheia: espera fora da fila e nao some");
             s.Stock[(int)Item.Sword] = 1;   // um cliente compra e libera a vaga
@@ -2119,10 +2119,10 @@ namespace FS.Tests
             Client vip = Vip(s);
             Assert.AreEqual(1, arrived, "entrou na vaga que abriu");
             Assert.IsNotNull(vip);
-            Assert.AreEqual(((int)Item.Sword, Balance.VipPackMin), (ev.A, ev.B), "so a espada esta aberta; renda baixa = pacote minimo");
+            Assert.AreEqual(((int)Item.Sword, Tuning.Padrao.VipPackMin), (ev.A, ev.B), "so a espada esta aberta; renda baixa = pacote minimo");
             Assert.AreEqual(s.ClientSlot(s.Queue.IndexOf(vip)).ToString(), ev.Pos.ToString(), "evento na vaga dele");
-            Assert.AreEqual((108f, 150f, 210f), (Balance.VipPatienceFor(3), Balance.VipPatienceFor(10), Balance.VipPatienceFor(20)), "paciencia do VIP = 90 s + 6 s por unidade");
-            Assert.AreEqual((Balance.VipPatienceFor(Balance.VipPackMin), Balance.VipPackMin), (vip.MaxPatience, vip.Pack));
+            Assert.AreEqual((108f, 150f, 210f), (Tuning.Padrao.VipPatienceFor(3), Tuning.Padrao.VipPatienceFor(10), Tuning.Padrao.VipPatienceFor(20)), "paciencia do VIP = 90 s + 6 s por unidade");
+            Assert.AreEqual((Tuning.Padrao.VipPatienceFor(Tuning.Padrao.VipPackMin), Tuning.Padrao.VipPackMin), (vip.MaxPatience, vip.Pack));
             Assert.LessOrEqual(s.Queue.Count, s.QueueCap);
         }
 
@@ -2134,15 +2134,15 @@ namespace FS.Tests
         public void Vip_PacoteA3xPorUnidade_UmPorAtendimento_TamanhoPelaRenda_ProdutoAberto()
         {
             var s = Sold();
-            Assert.AreEqual((Item.Sword, Balance.VipPackMin), (NaturalVip(s).Want, Vip(s).Pack));
-            s.Stock[(int)Item.Sword] = Balance.VipPackMin;
+            Assert.AreEqual((Item.Sword, Tuning.Padrao.VipPackMin), (NaturalVip(s).Want, Vip(s).Pack));
+            s.Stock[(int)Item.Sword] = Tuning.Padrao.VipPackMin;
             var paid = new List<int>(); int served = -1;
             for (float t = 0f; t < 3f; t += Dt)
             {
                 s.Tick(Dt, 0f, 0f);
                 foreach (SimEvent e in s.Events) { if (e.Kind == Ev.Sold) paid.Add(e.B); if (e.Kind == Ev.VipServed) served = e.B; }
             }
-            int unit = Balance.VipPriceMul * Balance.Price[(int)Item.Sword];
+            int unit = Tuning.Padrao.VipPriceMul * Tuning.Padrao.Price[(int)Item.Sword];
             CollectionAssert.AreEqual(new[] { unit, unit, unit }, paid, "3 unidades, uma por atendimento, 3x o preco");
             Assert.AreEqual((3 * unit, 3L * unit, 3), (served, s.Gold, s.Sales), "VipServed com o total; ouro e vendas contam");
             Assert.IsFalse(s.VipActive, "levou o pacote e foi embora");
@@ -2151,16 +2151,16 @@ namespace FS.Tests
                 var p = Sold(); p.RateEma = rate;
                 if (vitrine) p.Buy(Upgrade.CounterCapacity);
                 if (!extra) return NaturalVip(p).Pack;
-                p.VipIn = Balance.VipMax; Assert.IsTrue(p.SummonVip()); p.Tick(Dt, 0f, 0f);
+                p.VipIn = Tuning.Padrao.VipMax; Assert.IsTrue(p.SummonVip()); p.Tick(Dt, 0f, 0f);
                 return Vip(p).Pack;
             }
-            double four = 4.0 * unit / (Balance.VipShare * 300.0);   // renda em que o natural pede 4 espadas (7% de 300 s, a 3x)
-            Assert.AreEqual(Balance.VipPackMin, Pack(0.0, false), "renda baixa: 3");
+            double four = 4.0 * unit / (Tuning.Padrao.VipShare * 300.0);   // renda em que o natural pede 4 espadas (7% de 300 s, a 3x)
+            Assert.AreEqual(Tuning.Padrao.VipPackMin, Pack(0.0, false), "renda baixa: 3");
             Assert.AreEqual(4, Pack(four, false), "4 espadas = 7% de 300 s de renda, a 3x");
-            Assert.AreEqual(Balance.CounterCap0, Pack(1000.0, false), "teto: a prateleira (5)");
-            Assert.AreEqual(Balance.CounterCap1, Pack(1000.0, true), "com a Vitrine, 10");
-            Assert.AreEqual((6, 8, Balance.VipSummonPackMax), (Pack(0.0, true, true), Pack(four, true, true), Pack(1000.0, true, true)), "chamado: 2x o natural, ate 20");
-            Assert.AreEqual((6, 2 * Balance.CounterCap0), (Pack(0.0, false, true), Pack(1000.0, false, true)), "chamado passa da prateleira: 2x3 = 6 e 2x5 = 10 sem a Vitrine");
+            Assert.AreEqual(Tuning.Padrao.CounterCap0, Pack(1000.0, false), "teto: a prateleira (5)");
+            Assert.AreEqual(Tuning.Padrao.CounterCap1, Pack(1000.0, true), "com a Vitrine, 10");
+            Assert.AreEqual((6, 8, Tuning.Padrao.VipSummonPackMax), (Pack(0.0, true, true), Pack(four, true, true), Pack(1000.0, true, true)), "chamado: 2x o natural, ate 20");
+            Assert.AreEqual((6, 2 * Tuning.Padrao.CounterCap0), (Pack(0.0, false, true), Pack(1000.0, false, true)), "chamado passa da prateleira: 2x3 = 6 e 2x5 = 10 sem a Vitrine");
             var r = Sold();
             r.Buy(Upgrade.Shields); r.Buy(Upgrade.Tools); r.Buy(Upgrade.SideCorridor); r.Buy(Upgrade.Jewelry);
             var wants = new List<Item>();
@@ -2177,9 +2177,9 @@ namespace FS.Tests
             NaturalVip(s);
             s.Stock[(int)Item.Sword] = 1;
             Run(s, 1f);
-            int unit = Balance.VipPriceMul * Balance.Price[(int)Item.Sword];
-            Assert.AreEqual((Balance.VipPackMin - 1, (long)unit), (Vip(s).Pack, s.Gold), "levou 1 do pacote");
-            int left = -1, lost = 0; float leftAt = -1f, pat = Balance.VipPatienceFor(Balance.VipPackMin);
+            int unit = Tuning.Padrao.VipPriceMul * Tuning.Padrao.Price[(int)Item.Sword];
+            Assert.AreEqual((Tuning.Padrao.VipPackMin - 1, (long)unit), (Vip(s).Pack, s.Gold), "levou 1 do pacote");
+            int left = -1, lost = 0; float leftAt = -1f, pat = Tuning.Padrao.VipPatienceFor(Tuning.Padrao.VipPackMin);
             for (float t = 0f; t < pat; t += Dt)
             {
                 s.Tick(Dt, 0f, 0f);
@@ -2189,7 +2189,7 @@ namespace FS.Tests
                     if (e.Kind == Ev.ClientLeft && e.B == 0) lost++;
                 }
             }
-            Assert.AreEqual(Balance.VipPackMin - 1, left, "VipLeft com as unidades que faltaram");
+            Assert.AreEqual(Tuning.Padrao.VipPackMin - 1, left, "VipLeft com as unidades que faltaram");
             Assert.AreEqual(pat, leftAt, 0.1f, "90 + 6 x 3 = 108 s desde que entrou na vaga");
             Assert.IsFalse(s.VipActive);
             Assert.Greater(lost, 0, "os clientes normais de espada tambem cansaram");
@@ -2205,19 +2205,19 @@ namespace FS.Tests
             var s = new Sim();
             s.Buy(Upgrade.CounterCapacity);   // prateleira de 10: o dobro cabe
             Assert.IsFalse(s.CanSummonVip || s.SummonVip(), "antes da 1a venda nao tem VIP");
-            s.FirstSaleTime = 1f; s.VipIn = Balance.VipSummonMinIn;
+            s.FirstSaleTime = 1f; s.VipIn = Tuning.Padrao.VipSummonMinIn;
             Assert.IsFalse(s.CanSummonVip || s.SummonVip(), "o natural chega em 60 s: nao gasta o anuncio");
             s.VipIn = 200f;
             Assert.IsTrue(s.CanSummonVip && s.SummonVip());
             Assert.AreEqual((200f, 1, true), (s.VipIn, s.VipCount, s.VipActive), "VIP extra agora; o relogio natural fica como estava");
             Assert.IsFalse(s.SummonVip(), "esperando vaga: recusa");
             s.Tick(Dt, 0f, 0f);
-            Assert.AreEqual(Balance.VipSummonPackMul * Balance.VipPackMin, Vip(s).Pack, "pacote 2x o do natural (3 -> 6)");
+            Assert.AreEqual(Tuning.Padrao.VipSummonPackMul * Tuning.Padrao.VipPackMin, Vip(s).Pack, "pacote 2x o do natural (3 -> 6)");
             Assert.IsFalse(s.CanSummonVip || s.SummonVip(), "VIP na fila: recusa");
             s.Stock[(int)Item.Sword] = s.CounterCap;
             Run(s, 3f);
             Assert.IsFalse(s.VipActive, "levou o pacote");
-            Assert.AreEqual(6 * Balance.VipPriceMul * Balance.Price[(int)Item.Sword], s.Gold, "6 espadas a 3x");
+            Assert.AreEqual(6 * Tuning.Padrao.VipPriceMul * Tuning.Padrao.Price[(int)Item.Sword], s.Gold, "6 espadas a 3x");
             Assert.IsTrue(s.CanSummonVip, "sem VIP e com o natural longe: pode de novo");
             float due = s.Time + s.VipIn;
             Assert.AreEqual(200f - s.Time, s.VipIn, 0.05f, "o relogio natural andou so o tempo de jogo");
@@ -2236,16 +2236,16 @@ namespace FS.Tests
         {
             var s = new Sim();
             Assert.AreEqual((1f, 0f, 0f, true), (s.BoostMul, s.BoostLeft, s.BoostCooldown, s.CanBoost));
-            Assert.AreEqual((2f, Balance.BoostSeconds), (s.StartBoost(), s.BoostLeft), "1 anuncio: 2x por 60 s");
+            Assert.AreEqual((2f, Tuning.Padrao.BoostSeconds), (s.StartBoost(), s.BoostLeft), "1 anuncio: 2x por 60 s");
             Assert.IsTrue(s.CanBoost, "no 2x da para subir");
             Run(s, 30f);
-            Assert.AreEqual(Balance.BoostSeconds - 30f, s.BoostLeft, 0.05f, "corre no tempo de jogo");
-            Assert.AreEqual((3f, Balance.BoostSeconds), (s.StartBoost(), s.BoostLeft), "2o anuncio com o boost ativo: 3x e reinicia os 60 s");
+            Assert.AreEqual(Tuning.Padrao.BoostSeconds - 30f, s.BoostLeft, 0.05f, "corre no tempo de jogo");
+            Assert.AreEqual((3f, Tuning.Padrao.BoostSeconds), (s.StartBoost(), s.BoostLeft), "2o anuncio com o boost ativo: 3x e reinicia os 60 s");
             Assert.IsFalse(s.CanBoost, "teto 3x");
             Run(s, 1f);
             float left = s.BoostLeft;
             Assert.AreEqual((0f, 3f, left), (s.StartBoost(), s.BoostMul, s.BoostLeft), "no 3x recusa e nada muda");
-            Run(s, Balance.BoostSeconds - 2f);
+            Run(s, Tuning.Padrao.BoostSeconds - 2f);
             Assert.AreEqual((3f, 0f), (s.BoostMul, s.BoostCooldown), "a recarga so comeca no fim do boost");
             Run(s, 2f);
             Assert.AreEqual((1f, 0f), (s.BoostMul, s.BoostLeft), "expirou");
@@ -2259,13 +2259,13 @@ namespace FS.Tests
 
             Sim[] Trio() { var m = new[] { new Sim(), new Sim(), new Sim() }; m[1].StartBoost(); m[2].StartBoost(); m[2].StartBoost(); return m; }   // 1x, 2x, 3x
             Sim[] f = Trio();
-            foreach (Sim x in f) { x.FurnaceA.In = Balance.FurnaceIn; Run(x, Balance.FurnaceTime0 + 0.5f); }
+            foreach (Sim x in f) { x.FurnaceA.In = Balance.FurnaceIn; Run(x, Tuning.Padrao.FurnaceTime0 + 0.5f); }
             Assert.AreEqual((1, 2, 3), (f[0].Crafted[(int)Item.Ingot], f[1].Crafted[(int)Item.Ingot], f[2].Crafted[(int)Item.Ingot]), "estacao: 2x e 3x");
             Sim[] p = Trio();
             foreach (Sim x in p) Run(x, 0.5f, 1f, 0f);
             float dx = p[0].Player.Pos.X - 4.5f;
-            Assert.AreEqual(Balance.BoostPlayerMax, (p[1].Player.Pos.X - 4.5f) / dx, 1e-3f, "ferreiro a 1,3x no boost 2x");
-            Assert.AreEqual(Balance.BoostPlayerMax, (p[2].Player.Pos.X - 4.5f) / dx, 1e-3f, "e no 3x tambem: no maximo 1,3x");
+            Assert.AreEqual(Tuning.Padrao.BoostPlayerMax, (p[1].Player.Pos.X - 4.5f) / dx, 1e-3f, "ferreiro a 1,3x no boost 2x");
+            Assert.AreEqual(Tuning.Padrao.BoostPlayerMax, (p[2].Player.Pos.X - 4.5f) / dx, 1e-3f, "e no 3x tambem: no maximo 1,3x");
             Sim[] w = Trio();
             foreach (Sim x in w) { x.Buy(Upgrade.Helper1); Run(x, 0.5f); }
             float wd = V2.Dist(w[0].Workers[0].Pos, Sim.HireSpot);
@@ -2277,7 +2277,7 @@ namespace FS.Tests
                 for (float t = 0f; t < 30f; t += Dt) { c[k].Tick(Dt, 0f, 0f); arrivals[k] += Count(c[k], Ev.ClientArrived) + Count(c[k], Ev.ClientLeft); }
             Assert.AreEqual((4, 9, 14), (arrivals[0], arrivals[1], arrivals[2]), "chegada de clientes: 8 s e 6 s entre eles, divididos por 2 e 3");
             Assert.AreEqual((0, 0), (c[2].ClientsLost, c[2].Queue.Count - c[2].QueueCap), "fila cheia e ninguem cansou: paciencia no tempo de jogo");
-            Assert.AreEqual(Balance.PatienceFor(Item.Sword) - (30f - Balance.FirstClientAt / 3f), c[2].Queue[0].Patience, 0.15f, "o 1o esperou 27 s de jogo, nao 82 s de fabrica");
+            Assert.AreEqual(Tuning.Padrao.PatienceFor(Item.Sword) - (30f - Tuning.Padrao.FirstClientAt / 3f), c[2].Queue[0].Patience, 0.15f, "o 1o esperou 27 s de jogo, nao 82 s de fabrica");
             var v = Sold(); v.VipIn = 200f; v.StartBoost(); v.StartBoost();
             Run(v, 10f);
             Assert.AreEqual(190f, v.VipIn, 0.05f, "relogio do VIP no tempo de jogo");
@@ -2285,7 +2285,7 @@ namespace FS.Tests
             o.StartBoost();
             o.Stock[(int)Item.Sword] = 1; o.Queue.Add(new Client { Want = Item.Sword, Patience = 99f, MaxPatience = 99f });
             o.Tick(Dt, 0f, 0f);
-            Assert.AreEqual(Balance.Price[(int)Item.Sword] / (2.0 * Balance.RateTau), o.RateEma, 1e-6, "taxa do cofre = ouro por segundo de fabrica (metade no 2x)");
+            Assert.AreEqual(Tuning.Padrao.Price[(int)Item.Sword] / (2.0 * Balance.RateTau), o.RateEma, 1e-6, "taxa do cofre = ouro por segundo de fabrica (metade no 2x)");
         }
 
         /// <summary>FASE8 §4: o relogio do VIP, os VIPs sorteados e o VIP pendente vao no save (o que estava na vaga volta pendente com o que
@@ -2296,7 +2296,7 @@ namespace FS.Tests
             var s = Sold();
             s.Buy(Upgrade.Shields);
             Run(s, 3f);
-            Assert.AreEqual(Sim.VipInterval(0) - 3f, s.VipIn, 0.05f, "relogio andando");
+            Assert.AreEqual(Tuning.Padrao.VipInterval(0) - 3f, s.VipIn, 0.05f, "relogio andando");
             Assert.IsTrue(s.SummonVip());   // sorteado, ainda sem vaga (sem Tick)
             string text = s.Save(10);
             StringAssert.Contains("vip=" + s.VipIn.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture) + ",1,2,6,0,0\n", text);   // chamado: 2x3, passa da prateleira de 5; ainda fora da vaga, nada pago
@@ -2316,19 +2316,19 @@ namespace FS.Tests
             Assert.AreEqual(5, Vip(c).Pack, "com o que falta do pacote");
             Assert.AreEqual((0, Vip(b).Paid), (Count(c, Ev.VipArrived), Vip(c).Paid), "revisao v0.5 #5: ja estava na vaga, sem novo aviso/vip_arrived e com o que ja pagou");
             Assert.Greater(Vip(c).Paid, 0);
-            Assert.AreEqual(Balance.VipPatienceFor(5) - Dt, Vip(c).Patience, 1e-3f, "paciencia cheia, pelo que falta");
+            Assert.AreEqual(Tuning.Padrao.VipPatienceFor(5) - Dt, Vip(c).Patience, 1e-3f, "paciencia cheia, pelo que falta");
             string old = text.Substring(0, text.IndexOf("vip="));   // save da FASE7
             Sim o = Sim.Load(old);
-            Assert.AreEqual((Sim.VipInterval(0), 0, false), (o.VipIn, o.VipCount, o.VipActive), "save antigo: relogio novo, sem VIP");
+            Assert.AreEqual((Tuning.Padrao.VipInterval(0), 0, false), (o.VipIn, o.VipCount, o.VipActive), "save antigo: relogio novo, sem VIP");
             Run(o, 1f);
-            Assert.Less(o.VipIn, Sim.VipInterval(0), "ja tinha vendido: o relogio anda");
+            Assert.Less(o.VipIn, Tuning.Padrao.VipInterval(0), "ja tinha vendido: o relogio anda");
             Sim g = Sim.Load(old + "vip=abc,-5,4,2\n");
-            Assert.AreEqual((Sim.VipInterval(0), 0, false), (g.VipIn, g.VipCount, g.VipActive), "lixo vira o padrao; ferramenta sem a linha aberta nao vira VIP");
+            Assert.AreEqual((Tuning.Padrao.VipInterval(0), 0, false), (g.VipIn, g.VipCount, g.VipActive), "lixo vira o padrao; ferramenta sem a linha aberta nao vira VIP");
             g = Sim.Load(old + "vip=99999,7,5,99\n");
-            Assert.AreEqual((Balance.VipMax, 7, false), (g.VipIn, g.VipCount, g.VipActive), "relogio no teto de 6 min; joia nao e' do balcao");
+            Assert.AreEqual((Tuning.Padrao.VipMax, 7, false), (g.VipIn, g.VipCount, g.VipActive), "relogio no teto de 6 min; joia nao e' do balcao");
             g = Sim.Load(old + "vip=-1,7,3,99\n");
             g.Tick(Dt, 0f, 0f);
-            Assert.AreEqual((Item.Shield, Balance.VipSummonPackMax), (Vip(g).Want, Vip(g).Pack), "escudo aberto; pacote no teto de 20 (o do chamado)");
+            Assert.AreEqual((Item.Shield, Tuning.Padrao.VipSummonPackMax), (Vip(g).Want, Vip(g).Pack), "escudo aberto; pacote no teto de 20 (o do chamado)");
         }
 
         static float SegDist(V2 p, V2 a, V2 b)

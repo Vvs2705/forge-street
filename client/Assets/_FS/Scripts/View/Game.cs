@@ -133,7 +133,7 @@ namespace FS
             BuildHud();
             _view = new GameObject("Mundo").AddComponent<WorldView>();
             _view.Init(_sim, _cam, _labels);
-            _menu = new MenuBar(_safe, _sim, u => Bought(u, Upgrades.Cost(u), _sim.Player.Pos));
+            _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos));
             _cfg.SetAsLastSibling();     // configuracoes e painel modal cobrem a barra de melhorias
             _panel.SetAsLastSibling();
             if (Arg("-menu") != null) _menu.Toggle();   // foto com a fileira aberta
@@ -176,7 +176,7 @@ namespace FS
             if (elapsed < 60) return;   // mesma regra da volta de pausa: abrir de novo em < 1 min mostrava "31 de ouro em 0 min fora" (POCO F4)
             long gold = _sim.ApplyOffline(elapsed, _sim.SavedAt);
             if (gold <= 0) return;
-            long shown = Math.Min(elapsed, (long)Balance.OfflineCapSeconds);
+            long shown = Math.Min(elapsed, _sim.T.OfflineCap);
             Log("offline_claim", gold.ToString(), shown.ToString());
             Sfx.Play("offline");
             ShowVault(gold);
@@ -821,7 +821,7 @@ namespace FS
             if (m <= 0f) return;
             Sfx.Play("upgrade", 1.2f);
             _view.Float(_sim.Player.Pos, $"Velocidade {m:0}×!", Art.Accent, 48);
-            Log("boost_start", m.ToString("0", CultureInfo.InvariantCulture), Balance.BoostSeconds.ToString("0", CultureInfo.InvariantCulture));
+            Log("boost_start", m.ToString("0", CultureInfo.InvariantCulture), _sim.T.BoostSeconds.ToString("0", CultureInfo.InvariantCulture));
         }, AdFail);
 
         void AdFail()
@@ -1036,7 +1036,7 @@ namespace FS
                 var u = (Upgrade)_buyAt[i].u;
                 _buyAt.RemoveAt(i);
                 // ponytail: cheat de dev, o Buy nao confere pre-requisito; a ordem da lista e' responsabilidade de quem grava
-                if (_sim.Buy(u)) _sim.Gold = Math.Max(0, _sim.Gold - Upgrades.Cost(u));
+                if (_sim.Buy(u)) _sim.Gold = Math.Max(0, _sim.Gold - _sim.T.Cost(u));
             }
         }
 

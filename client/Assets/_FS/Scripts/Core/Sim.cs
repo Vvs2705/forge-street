@@ -99,6 +99,8 @@ namespace FS.Core
     /// </summary>
     public sealed class Sim
     {
+        /// <summary>A-CORE-03: numeros de economia/ritmo e feature flags desta partida (RemoteConfig e eventos). Padrao = `new Tuning()`.</summary>
+        public readonly Tuning T;
         public float Time;
         /// <summary>A-CORE-06: ouro, custos e somas em long (o save e' texto: cabe sem mudar o formato). ponytail: soma sem saturar; 9,2e18 nao
         /// se alcanca jogando (1 milhao/s por 100 anos = 3e15), so editando o save.</summary>
@@ -115,7 +117,7 @@ namespace FS.Core
         public readonly List<Client> JewelQueue = new List<Client>();   // fila da loja de joias (2a area)
         public readonly int[] Stock = new int[6];                        // por Item; Stock[Jewel] fica na loja de joias
         public readonly List<SimEvent> Events = new List<SimEvent>();
-        public int CounterCap = Balance.CounterCap0, QueueCap = Balance.QueueCap0, JewelQueueCap = Balance.JewelQueueCap;
+        public int CounterCap, QueueCap, JewelQueueCap;   // derivados no Recompute
         public bool HasConveyor;
         public readonly List<Chest> Chests = new List<Chest>();          // baus de marco, na ordem de Balance.Milestones
         public readonly int[] SoldItems = new int[6];                    // vendas por Item (marcos "10 espadas", "10 joias")
@@ -123,9 +125,9 @@ namespace FS.Core
         // FASE8 (docs/FASE8_VIP_VELOCIDADE.md): cliente VIP e velocidade por anuncio
         /// <summary>s ate o proximo VIP natural (parado ate a 1a venda); VipCount = VIPs ja sorteados, naturais e chamados (semente do intervalo e do
         /// produto). Vao no save.</summary>
-        public float VipIn = VipInterval(0); public int VipCount;
+        public float VipIn; public int VipCount;
         // FASE9: encomenda ativa (OrderItem -1 = nenhuma) e relogio ate a proxima (so anda depois da 1a venda)
-        public int OrderItem = -1, OrderTarget, OrderProgress, OrderReward, OrderCount; public float OrderIn = Balance.OrderFirstDelay;
+        public int OrderItem = -1, OrderTarget, OrderProgress, OrderReward, OrderCount; public float OrderIn;
         public long OrderGold;   // premios pagos nesta sessao (metrica do bot; fora do GoldEarned, nao vai no save)
         /// <summary>Velocidade por anuncio: multiplicador (1, 2 ou 3), s restantes e s de recarga (conta do fim do boost), no tempo de jogo. A-CORE-02:
         /// os tres vao no save (bst=): reabrir nao libera outro boost e o ativo volta com o que restou; o tempo fora nao corre nenhum (como na pausa).</summary>
@@ -158,12 +160,16 @@ namespace FS.Core
         static readonly Upgrade[] HireBy = { Upgrade.Helper1, Upgrade.Helper2, Upgrade.Helper3, Upgrade.Jeweler, Upgrade.Miner, Upgrade.Jeweler2 };
         static readonly int[] HireRole = { 0, 1, 2, 3, 0, 3 };   // Mineiro = 2o papel 0, Joalheiro 2 = 2o papel 3 (FASE4_MINERIO)
 
-        readonly float[] _clientT = { 0, 0, Balance.FirstClientAt, Balance.ClientInterval[3], Balance.ClientInterval[4], Balance.ClientInterval[5] };
+        readonly float[] _clientT;
         float _serveT, _serveJ, _convT, _padDwell;
         Pad _padUnder;
 
-        public Sim()
+        public Sim(Tuning tuning = null)
         {
+            T = tuning ?? new Tuning();
+            VipIn = T.VipInterval(0);
+            OrderIn = T.OrderFirstDelay;
+            _clientT = new[] { 0f, 0f, T.FirstClientAt, T.ClientInterval[3], T.ClientInterval[4], T.ClientInterval[5] };
             for (int i = 0; i < Upgrades.Count; i++) UpgradeTime[i] = -1f;
             // Bocas (FASE5 §2b): (inX, inY) = lado da ENTRADA; a SAIDA fica no lado oposto. Toda estacao que produz: entrada a
             // esquerda, saida a direita (pilhas da view InPile -1,05 / OutPile +1,05). Fornalha, Bigorna e Joalheria eram
@@ -247,16 +253,13 @@ namespace FS.Core
         /// <summary>Algum cliente na fila quer `product` e nao ha nenhum no estoque (FASE7 §3: o que destrava a fila sem compra direta).</summary>
         public bool Wanted(Item product) => Stock[(int)product] == 0 && QueueFor(product).Exists(c => c.Want == product);
         /// <summary>Fama: multiplicador (1 -> 0,4) do intervalo entre clientes, pela quantidade de vendas ate aqui.</summary>
-        public float Fame => Math.Max(Balance.FameFloor, (float)Math.Pow(Balance.FamePer10Sales, Sales / 10));
-        public float ClientInterval(Item product) => Balance.ClientInterval[(int)product] * Fame * (Bought[(int)Upgrade.CounterCapacity] ? Balance.VitrineClientMul : 1f)
-            * (product == Item.Jewel && Bought[(int)Upgrade.JewelVitrine] ? Balance.JewelVitrineClientMul : 1f);
+        public float Fame => Math.Max(T.FameFloor, (float)Math.Pow(T.FamePer10Sales, Sales / 10));
+        public float ClientInterval(Item product) => T.ClientInterval[(int)product] * Fame * (Bought[(int)Upgrade.CounterCapacity] ? T.VitrineClientMul : 1f)
+            * (product == Item.Jewel && Bought[(int)Upgrade.JewelVitrine] ? T.JewelVitrineClientMul : 1f);
         /// <summary>Ha um VIP esperando vaga ou numa vaga do balcao.</summary>
         public bool VipActive => _vipWant >= 0 || Queue.Exists(c => c.Vip);
-        /// <summary>Botao "chamar o VIP" (anuncio): depois da 1a venda, sem VIP ativo e com o natural a mais de 60 s (contra abuso).</summary>
-        public bool CanSummonVip => FirstSaleTime >= 0f && !VipActive && VipIn > Balance.VipSummonMinIn;
-
-        /// <summary>s entre o VIP `n` e o seguinte: 4-6 min, sorteio deterministico (sequencia de Weyl pela razao aurea: sem estado alem de VipCount).</summary>
-        public static float VipInterval(int n) => Balance.VipMin + (Balance.VipMax - Balance.VipMin) * (float)((n + 1) * 0.6180339887498949 % 1.0);
+        /// <summary>Botao "chamar o VIP" (anuncio): flags Vip e VipChamado, depois da 1a venda, sem VIP ativo e com o natural a mais de 60 s (contra abuso).</summary>
+        public bool CanSummonVip => T.Vip && T.VipChamado && FirstSaleTime >= 0f && !VipActive && VipIn > T.VipSummonMinIn;
 
         /// <summary>Anuncio "chamar o VIP": um VIP EXTRA agora (entra na proxima vaga livre), com 2x o pacote do natural (ate 20). NAO mexe no
         /// relogio natural (so o segura em 0 se ele zerar com o extra ainda na vaga). Fora de CanSummonVip recusa (false).</summary>
@@ -267,8 +270,9 @@ namespace FS.Core
             return true;
         }
 
-        /// <summary>Botao "velocidade": com boost ativo, ate chegar a 3x; sem boost, so com a recarga (5 min de jogo desde o fim do ultimo) zerada.</summary>
-        public bool CanBoost => BoostLeft > 0f ? BoostMul < Balance.BoostMax : BoostCooldown <= 0f;
+        /// <summary>Botao "velocidade" (flag Velocidade): com boost ativo, ate chegar a 3x; sem boost, so com a recarga (5 min de jogo desde o fim
+        /// do ultimo) zerada. Flag desligada nao corta o boost ja ativo: ele acaba no tempo dele.</summary>
+        public bool CanBoost => T.Velocidade && (BoostLeft > 0f ? BoostMul < T.BoostMax : BoostCooldown <= 0f);
 
         /// <summary>Anuncio "velocidade": 2x por 60 s; outro com o boost ativo sobe para 3x e reinicia os 60 s. Fora de CanBoost recusa: nada muda e
         /// devolve 0. Senao devolve o multiplicador novo.</summary>
@@ -276,7 +280,7 @@ namespace FS.Core
         {
             if (!CanBoost) return 0f;
             BoostMul += 1f;   // CanBoost segura o teto de 3x
-            BoostLeft = Balance.BoostSeconds;
+            BoostLeft = T.BoostSeconds;
             return BoostMul;
         }
 
@@ -292,11 +296,11 @@ namespace FS.Core
             var lines = new List<Item>();
             for (Item p = Item.Sword; p <= Item.Tool; p++) if (LineUnlocked(p)) lines.Add(p);
             _vipWant = (int)lines[VipCount % lines.Count];
-            double raw = Balance.VipShare * (Balance.VipMin + Balance.VipMax) / 2.0 * RateEma / (Balance.VipPriceMul * PriceOf((Item)_vipWant));
-            int pack = Math.Max(Balance.VipPackMin, Math.Min(CounterCap, (int)Math.Round(raw)));
-            _vipPack = extra ? Balance.VipSummonPackMul * pack : pack;   // ponytail: <= 2 x 10 = VipSummonPackMax; prateleira maior que 10 pede o Math.Min de volta
+            double raw = T.VipShare * (T.VipMin + T.VipMax) / 2.0 * RateEma / (T.VipPriceMul * PriceOf((Item)_vipWant));
+            int pack = Math.Max(T.VipPackMin, Math.Min(CounterCap, (int)Math.Round(raw)));
+            _vipPack = extra ? Math.Min(T.VipSummonPackMax, T.VipSummonPackMul * pack) : pack;   // padrao: 2 x 10 = 20, o teto so corta prateleira de Tuning maior
             VipCount++;
-            if (!extra) VipIn = VipInterval(VipCount);
+            if (!extra) VipIn = T.VipInterval(VipCount);
         }
 
         /// <summary>Vaga `i` do balcao (FASE7 §2): QueueCap vagas lado a lado em cima dele, centradas; i = QueueCap = compra direta, logo
@@ -314,7 +318,7 @@ namespace FS.Core
             long earnedBefore = GoldEarned;
             // FASE8: o boost acelera estacoes, esteira, ajudantes e a chegada de clientes; o ferreiro (andar e maos) no maximo 1,3x, para o
             // joystick nao fugir do controle. Paciencia, atendimento, relogio do VIP e o proprio boost correm no tempo de jogo. Sem boost, fast = hand = dt
-            float fast = dt * BoostMul, hand = dt * Math.Min(BoostMul, Balance.BoostPlayerMax);
+            float fast = dt * BoostMul, hand = dt * Math.Min(BoostMul, T.BoostPlayerMax);
 
             MovePlayer(hand, inX, inY);
             foreach (Carrier w in Workers) WorkerThink(w, fast);
@@ -325,7 +329,7 @@ namespace FS.Core
             Clients(dt);
             Milestones();
             Orders(dt);
-            if (BoostLeft > 0f) { if ((BoostLeft -= dt) <= 0f) { BoostLeft = 0f; BoostMul = 1f; BoostCooldown = Balance.BoostCooldownSeconds; } }   // recarga conta do fim
+            if (BoostLeft > 0f) { if ((BoostLeft -= dt) <= 0f) { BoostLeft = 0f; BoostMul = 1f; BoostCooldown = T.BoostCooldownSeconds; } }   // recarga conta do fim
             else BoostCooldown = Math.Max(0f, BoostCooldown - dt);
 
             long cheapest = CheapestVisibleCost();
@@ -687,7 +691,7 @@ namespace FS.Core
         {
             int u = pad.Current(this);
             if (u < 0) return;
-            long cost = Upgrades.Cost(u);
+            long cost = T.Cost(u);
             pad.Acc += cost / Balance.PadDrainSeconds * dt;
             long want = (long)pad.Acc;
             pad.Acc -= want;
@@ -708,7 +712,7 @@ namespace FS.Core
             UpgradeTime[(int)u] = Time;
             UpgradesBought++;
             Recompute();
-            Emit(Ev.Bought, (int)u, (int)Math.Min(int.MaxValue, Upgrades.Cost(u)), PadOf(u));   // ponytail: evento e' int; acima de 2,1 bi sai no teto (so o diario le)
+            Emit(Ev.Bought, (int)u, (int)Math.Min(int.MaxValue, T.Cost(u)), PadOf(u));   // ponytail: evento e' int; acima de 2,1 bi sai no teto (so o diario le)
             foreach (Station s in Stations) if (s.UnlockBy == (int)u) Emit(Ev.Unlocked, (int)s.OutItem, s.Index, s.Pos);
             if (Workers.Count > workersBefore) Emit(Ev.Hired, Workers.Count - 1, 0, HireSpot);
             return true;
@@ -721,7 +725,7 @@ namespace FS.Core
         /// </summary>
         public bool TryBuyMenu(Upgrade u)
         {
-            long cost = Upgrades.Cost(u);
+            long cost = T.Cost(u);
             if (!MenuAvailable((int)u) || Gold < cost || !Buy(u)) return false;
             Gold -= cost;
             return true;
@@ -744,18 +748,19 @@ namespace FS.Core
         /// <summary>Deriva TUDO dos flags Bought (idempotente: vale depois de Buy e depois de Load).</summary>
         public void Recompute()
         {
-            float ft = Bought[(int)Upgrade.FurnaceSpeed2] ? Balance.FurnaceTime2 : Bought[(int)Upgrade.FurnaceSpeed1] ? Balance.FurnaceTime1 : Balance.FurnaceTime0;
-            float ht = Bought[(int)Upgrade.HammerSpeed] ? Balance.HammerTime1 : Balance.HammerTime0;
-            float jt = Balance.JewelTimeMul * (Bought[(int)Upgrade.JewelSpeed] ? Balance.JewelSpeedMul : 1f);
+            float ft = Bought[(int)Upgrade.FurnaceSpeed2] ? T.FurnaceTime2 : Bought[(int)Upgrade.FurnaceSpeed1] ? T.FurnaceTime1 : T.FurnaceTime0;
+            float ht = Bought[(int)Upgrade.HammerSpeed] ? T.HammerTime1 : T.HammerTime0;
+            float jt = T.JewelTimeMul * (Bought[(int)Upgrade.JewelSpeed] ? T.JewelSpeedMul : 1f);
             foreach (Station s in Stations)
             {
                 if (s.UnlockBy >= 0) s.Unlocked = Bought[s.UnlockBy];
                 if (s.Kind == Kind.Furnace) s.Time = ft;
-                if (s.Kind == Kind.Crafter) s.Time = ht * (s.OutItem == Item.Shield ? Balance.ShieldTimeMul : s.OutItem == Item.Jewel ? jt : 1f);
+                if (s.Kind == Kind.Crafter) s.Time = ht * (s.OutItem == Item.Shield ? T.ShieldTimeMul : s.OutItem == Item.Jewel ? jt : 1f);
             }
             // balcao evolutivo (FASE7 §2): +1 vaga por evolucao comprada; o corpo alarga junto (antes dos Solids)
-            QueueCap = Balance.QueueCap0;
+            QueueCap = T.QueueCap0;
             for (int u = (int)Upgrade.Counter5; u <= (int)Upgrade.Counter8; u++) if (Bought[u]) QueueCap++;
+            QueueCap = Math.Min(QueueCap, Balance.QueueCapMax);   // trava de geometria: um QueueCap0 maior no Tuning nao tira o balcao da oficina
             Counter.Half = new V2(Balance.CounterHalfX(QueueCap), Balance.StationHalf.Y);
             // corpos: estacao travada nao e' solida (o pad de compra fica no lugar dela); loja de joias sim (a view desenha a fachada fechada)
             Solids.Clear();
@@ -764,7 +769,7 @@ namespace FS.Core
             MaxX = (Bought[(int)Upgrade.SideCorridor] ? Balance.WorldW : Balance.WorkshopW) - 0.3f;
             Player.Speed = Bought[(int)Upgrade.PlayerSpeed] ? Balance.PlayerSpeedUp : Balance.PlayerSpeed;
             Player.Cap = Bought[(int)Upgrade.PlayerCapacity] ? Balance.PlayerCapUp : Balance.PlayerCap;
-            CounterCap = Bought[(int)Upgrade.CounterCapacity] ? Balance.CounterCap1 : Balance.CounterCap0;
+            CounterCap = Bought[(int)Upgrade.CounterCapacity] ? T.CounterCap1 : T.CounterCap0;
             JewelQueueCap = Bought[(int)Upgrade.JewelVitrine] ? Balance.JewelQueueCapUp : Balance.JewelQueueCap;
             HasConveyor = Bought[(int)Upgrade.Conveyor];
             // um ajudante por upgrade de contratacao (papel em HireRole); a lista so cresce, na ordem da compra (o Joalheiro nao exige o Ajudante 3)
@@ -816,9 +821,9 @@ namespace FS.Core
         {
             if (!HasConveyor) return;
             _convT += dt;
-            while (_convT >= Balance.ConveyorTime)
+            while (_convT >= T.ConveyorTime)
             {
-                _convT -= Balance.ConveyorTime;
+                _convT -= T.ConveyorTime;
                 if (FurnaceA.Out <= 0 || AnvilA.In >= AnvilA.InCap) { _convT = 0f; break; }
                 FurnaceA.Out--; AnvilA.In++;
                 Emit(Ev.Deposited, (int)Item.Ingot, 9, AnvilA.Pos);   // B = 9: veio pela esteira
@@ -828,15 +833,16 @@ namespace FS.Core
         void Clients(float dt)
         {
             // FASE8: o relogio do VIP corre so depois da 1a venda; no zero sorteia o VIP se nao houver outro ativo (senao segura em 0 ate ele
-            // sair). O sorteado pega a proxima vaga livre ANTES de quem chega neste tick: com a fila cheia ele espera, nao some
-            if (FirstSaleTime >= 0f)
+            // sair). O sorteado pega a proxima vaga livre ANTES de quem chega neste tick: com a fila cheia ele espera, nao some.
+            // Flag Vip desligada: o relogio para e nao sorteia; o VIP que ja estava sorteado (pendente do save) ainda entra e leva o pacote
+            if (T.Vip && FirstSaleTime >= 0f)
             {
                 VipIn = Math.Max(0f, VipIn - dt);
                 if (VipIn <= 0f && !VipActive) SpawnVip(false);
             }
             if (_vipWant >= 0 && Queue.Count < QueueCap)
             {
-                float pat = Balance.VipPatienceFor(_vipPack);   // pacote maior, mais tempo: o humano e' mais lento que o bot
+                float pat = T.VipPatienceFor(_vipPack);   // pacote maior, mais tempo: o humano e' mais lento que o bot
                 Queue.Add(new Client { Want = (Item)_vipWant, Patience = pat, MaxPatience = pat, Vip = true, Pack = _vipPack, Paid = _vipPaid });
                 if (!_vipQuiet) Emit(Ev.VipArrived, _vipWant, _vipPack, ClientSlot(Queue.Count - 1));
                 _vipWant = -1; _vipPaid = 0; _vipQuiet = false;
@@ -850,7 +856,7 @@ namespace FS.Core
                 bool j = p == Item.Jewel;
                 List<Client> q = QueueFor(p);
                 int cap = j ? JewelQueueCap : QueueCap;
-                float patience = Balance.PatienceFor(p);
+                float patience = T.PatienceFor(p);
                 if (q.Count < cap)
                 {
                     q.Add(new Client { Want = p, Patience = patience, MaxPatience = patience });
@@ -868,7 +874,7 @@ namespace FS.Core
 
         V2 Slot(bool jewel, int i) => jewel ? JewelSlot(i) : ClientSlot(i);
 
-        public int PriceOf(Item item) => item == Item.Jewel && Bought[(int)Upgrade.JewelVitrine] ? Balance.JewelPriceUp : Balance.Price[(int)item];
+        public int PriceOf(Item item) => item == Item.Jewel && Bought[(int)Upgrade.JewelVitrine] ? T.JewelPriceUp : T.Price[(int)item];
 
         int Sell(Item want, V2 pos, int mul = 1)
         {
@@ -884,6 +890,7 @@ namespace FS.Core
         /// Baus de marco (docs/AREA2_FASE2.md §3): o jogador em cima de um disponivel abre e ganha o ouro (uma vez: State 2
         /// vai no save); um marco batido so vira bau quando nao ha outro disponivel no mesmo lugar (um por vez na tela), e
         /// entao emite Milestone. O ouro do bau NAO entra em GoldEarned (nao infla a taxa online nem o cofre offline).
+        /// Flag Baus desligada: nenhum bau novo aparece; o que ja estava na tela ainda abre.
         /// </summary>
         void Milestones()
         {
@@ -893,6 +900,7 @@ namespace FS.Core
                 c.State = 2; Gold += c.Gold;
                 Emit(Ev.ChestOpened, c.Index, c.Gold, c.Pos);
             }
+            if (!T.Baus) return;
             foreach (Chest c in Chests)
             {
                 MilestoneDef m = Balance.Milestones[c.Index];
@@ -923,7 +931,7 @@ namespace FS.Core
                     serveT = Balance.ServeTime;
                     if (c.Vip)   // FASE8: uma unidade por atendimento a 3x o preco; fica na vaga ate levar o pacote todo
                     {
-                        c.Paid += Sell(c.Want, Slot(jewel, i), Balance.VipPriceMul);
+                        c.Paid += Sell(c.Want, Slot(jewel, i), T.VipPriceMul);
                         if (--c.Pack > 0) break;
                         q.RemoveAt(i);
                         Emit(Ev.VipServed, (int)c.Want, c.Paid, Slot(jewel, i));
@@ -950,7 +958,8 @@ namespace FS.Core
         /// <summary>
         /// FASE9: encomenda entregue paga o premio (como o bau, FORA do GoldEarned: nao infla a taxa online nem o cofre) e a proxima vem
         /// OrderGap s depois. A 1a (5 espadas) vem OrderFirstDelay s depois da 1a venda. ponytail: um tipo so (vender N de uma linha), sem
-        /// prazo; "comprar melhoria"/"atender VIP" se o playtest pedir.
+        /// prazo; "comprar melhoria"/"atender VIP" se o playtest pedir. Flag Encomendas desligada: a aberta ainda entrega e paga; o relogio
+        /// da proxima para e nenhuma nova abre.
         /// </summary>
         void Orders(float dt)
         {
@@ -961,19 +970,19 @@ namespace FS.Core
                 Gold += OrderReward;
                 OrderGold += OrderReward;
                 Emit(Ev.OrderDone, OrderItem, OrderReward, CounterFor((Item)OrderItem).Pos);   // joia: na loja de joias
-                OrderItem = -1; OrderCount++; OrderIn = Balance.OrderGap;
+                OrderItem = -1; OrderCount++; OrderIn = T.OrderGap;
                 return;
             }
-            if ((OrderIn -= dt) > 0f) return;
+            if (!T.Encomendas || (OrderIn -= dt) > 0f) return;
             var lines = new List<Item>();
             for (Item p = Item.Sword; p <= Item.Jewel; p++) if (LineUnlocked(p)) lines.Add(p);
             Item it = lines[OrderCount % lines.Count];
             OrderItem = (int)it;
-            OrderTarget = OrderCount == 0 ? Balance.OrderFirstTarget
-                : Math.Max(Balance.OrderMin, Math.Min(Balance.OrderMax, (int)Math.Round(Balance.OrderSeconds * RateEma / (lines.Count * PriceOf(it)))));
+            OrderTarget = OrderCount == 0 ? T.OrderFirstTarget
+                : Math.Max(T.OrderMin, Math.Min(T.OrderMax, (int)Math.Round(T.OrderSeconds * RateEma / (lines.Count * PriceOf(it)))));
             // ~150 s da renda real dividida entre as linhas (no comeco o gargalo e' a producao, nao o cliente: pela demanda a 2a ja pedia 27 espadas)
             OrderProgress = 0;
-            OrderReward = Math.Max(Balance.OrderRewardMin, 5 * (int)Math.Round(RateEma * Balance.OrderRewardSeconds / 5.0));
+            OrderReward = Math.Max(T.OrderRewardMin, 5 * (int)Math.Round(RateEma * T.OrderRewardSeconds / 5.0));
             OrderIn = 0f;
             Emit(Ev.OrderNew, OrderItem, OrderTarget, CounterFor(it).Pos);
         }
@@ -987,7 +996,7 @@ namespace FS.Core
             {
                 int u = p.Current(this);
                 if (u < 0) continue;
-                long remaining = Upgrades.Cost(u) - p.Paid;
+                long remaining = T.Cost(u) - p.Paid;
                 if (best < 0 || remaining < best) best = remaining;
             }
             return best;
@@ -1001,7 +1010,7 @@ namespace FS.Core
             {
                 int u = p.Current(this);
                 if (u < 0) continue;
-                long remaining = Upgrades.Cost(u) - p.Paid;
+                long remaining = T.Cost(u) - p.Paid;
                 if (remaining <= Gold && remaining < bestRemaining) { bestRemaining = remaining; best = p; }
             }
             return best;
@@ -1015,9 +1024,9 @@ namespace FS.Core
         {
             int best = -1;
             for (int u = 0; u < Upgrades.Count; u++)
-                if (MenuAvailable(u) && Upgrades.Cost(u) <= Gold && (best < 0 || Upgrades.Cost(u) < Upgrades.Cost(best))) best = u;
+                if (MenuAvailable(u) && T.Cost(u) <= Gold && (best < 0 || T.Cost(u) < T.Cost(best))) best = u;
             Pad pad = best >= 0 ? CheapestAffordablePad() : null;
-            return pad != null && Upgrades.Cost(pad.Current(this)) - pad.Paid < Upgrades.Cost(best) ? -1 : best;
+            return pad != null && T.Cost(pad.Current(this)) - pad.Paid < T.Cost(best) ? -1 : best;
         }
 
         public int HintArg;
@@ -1058,8 +1067,8 @@ namespace FS.Core
         {
             if (elapsedSeconds <= 0 || claimId <= LastClaim) return 0;
             LastClaim = claimId;
-            long capped = Math.Min(elapsedSeconds, (long)Balance.OfflineCapSeconds);
-            long gold = (long)Math.Min(Math.Floor(RateEma * Balance.OfflineFactor * capped), OfflineMaxGold());
+            long capped = Math.Min(elapsedSeconds, T.OfflineCap);   // A-CORE-03: o Tuning so encurta; 2 h e' trava (Balance.OfflineCapSeconds)
+            long gold = (long)Math.Min(Math.Floor(RateEma * T.OfflineFactor * capped), OfflineMaxGold());
             if (gold <= 0) return 0;
             Gold += gold;
             OfflineEarned += gold;
@@ -1075,7 +1084,7 @@ namespace FS.Core
             for (int i = 0; i < Upgrades.Count; i++)
             {
                 if (Upgrades.IsLuxury(i)) continue;
-                long c = Upgrades.Cost(i); int req = Upgrades.All[i].Requires;
+                long c = T.Cost(i); int req = Upgrades.All[i].Requires;
                 top = Math.Max(top, c);
                 // FASE7: so o que esta A VENDA (pre-requisito comprado). Sem isso o Balcao 5 (150, exige a Vitrine) baixava o cofre de
                 // 1.060 para 300 aos 10 min; e o Joalheiro 2 (2.400, exige o Mineiro) segurava o teto do par em 4.800 (agora 2x Mineiro)
@@ -1085,7 +1094,7 @@ namespace FS.Core
         }
 
         /// <summary>Teto relativo do cofre: 2x o proximo upgrade travado.</summary>
-        public long OfflineMaxGold() => (long)Math.Round(Balance.OfflineMaxNextUpgrades * CheapestLockedCost());
+        public long OfflineMaxGold() => (long)Math.Round(T.OfflineMaxNextUpgrades * CheapestLockedCost());
 
         // ------------------------------------------------------------------ save/load (chave=valor; lixo do payload vira estado inicial;
         // soma, schema e versao do jogo ficam no SaveEnvelope)
@@ -1154,9 +1163,11 @@ namespace FS.Core
             return sb.ToString();
         }
 
-        public static Sim Load(string text)
+        /// <summary>Carrega o payload sobre `tuning` (null = padrao): os tetos do load (boost, VIP, encomenda) sao os do Tuning da partida.</summary>
+        public static Sim Load(string text, Tuning tuning = null)
         {
-            var sim = new Sim();
+            var sim = new Sim(tuning);
+            Tuning T = sim.T;   // os tetos abaixo
             if (string.IsNullOrEmpty(text)) return sim;
             // schema: sem v= (lixo, testes) = 1; maior que Schema (downgrade) = melhor esforco, como a 0.6 faz com o save da 0.7
             int v = 1;
@@ -1198,27 +1209,27 @@ namespace FS.Core
                     case "ord":   // FASE9; save antigo sem ord=: do zero. A encomenda so volta depois do Recompute (linha aberta)
                         if (parts.Length >= 6)
                         {
-                            ordItem = I(parts[0], -1); ordTarget = Clamp0(I(parts[1], 0), Balance.OrderMax);
+                            ordItem = I(parts[0], -1); ordTarget = Clamp0(I(parts[1], 0), T.OrderMax);
                             ordProgress = Clamp0(I(parts[2], 0), ordTarget); ordReward = Math.Max(0, I(parts[3], 0));
                             sim.OrderCount = Math.Max(0, I(parts[4], 0));
-                            sim.OrderIn = Math.Max(0f, Math.Min(Balance.OrderFirstDelay, F(parts[5], Balance.OrderFirstDelay)));
+                            sim.OrderIn = Math.Max(0f, Math.Min(T.OrderFirstDelay, F(parts[5], T.OrderFirstDelay)));
                         }
                         break;
                     case "vip":   // FASE8; save antigo sem vip=: relogio novo (VipInterval(0)) e nenhum VIP pendente
                         if (parts.Length >= 4)
                         {
-                            sim.VipIn = Math.Max(0f, Math.Min(Balance.VipMax, F(parts[0], sim.VipIn)));
+                            sim.VipIn = Math.Max(0f, Math.Min(T.VipMax, F(parts[0], sim.VipIn)));
                             sim.VipCount = Math.Max(0, I(parts[1], 0));
-                            vipWant = I(parts[2], -1); vipPack = Clamp0(I(parts[3], 0), Balance.VipSummonPackMax);
+                            vipWant = I(parts[2], -1); vipPack = Clamp0(I(parts[3], 0), T.VipSummonPackMax);
                             if (parts.Length >= 6) { vipQuiet = I(parts[4], 0) == 1; vipPaid = Math.Max(0, I(parts[5], 0)); }   // save da 0.5.0: 4 campos
                         }
                         break;
                     case "bst":   // A-CORE-02; save antigo sem bst=: sem boost e sem recarga (como antes). Sem tempo = sem boost; ativo = 2x ou 3x
                         if (parts.Length >= 3)
                         {
-                            sim.BoostLeft = Math.Max(0f, Math.Min(Balance.BoostSeconds, F(parts[1], 0f)));
-                            sim.BoostMul = sim.BoostLeft > 0f ? Math.Max(2f, Math.Min(Balance.BoostMax, (float)Math.Round(F(parts[0], 2f)))) : 1f;
-                            sim.BoostCooldown = Math.Max(0f, Math.Min(Balance.BoostCooldownSeconds, F(parts[2], 0f)));
+                            sim.BoostLeft = Math.Max(0f, Math.Min(T.BoostSeconds, F(parts[1], 0f)));
+                            sim.BoostMul = sim.BoostLeft > 0f ? Math.Max(2f, Math.Min(T.BoostMax, (float)Math.Round(F(parts[0], 2f)))) : 1f;
+                            sim.BoostCooldown = Math.Max(0f, Math.Min(T.BoostCooldownSeconds, F(parts[2], 0f)));
                         }
                         break;
                     default:

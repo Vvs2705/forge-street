@@ -83,7 +83,7 @@ namespace FS
 
             var menu = new List<int>();
             for (int u = 0; u < Upgrades.Count; u++) if (Upgrades.All[u].InMenu) menu.Add(u);
-            menu.Sort((a, c) => Upgrades.Cost(a).CompareTo(Upgrades.Cost(c)));
+            menu.Sort((a, c) => _sim.T.Cost(a).CompareTo(_sim.T.Cost(c)));
             foreach (int u in menu) _cards.Add(BuildCard(content, u));
             _tray.gameObject.SetActive(false);
         }
@@ -177,20 +177,20 @@ namespace FS
         }
         static (Sprite, Color) ItemIcon(Item i) => Art.ItemArt(i, true) is Sprite s ? (s, Color.white) : (Art.ItemSprite(i), Art.ItemColor[(int)i]);
 
-        /// <summary>Efeito em numeros, lidos do Balance (mudou o balanco, muda o cartao); sem numero simples, a frase de sempre.</summary>
-        static string Effect(Upgrade u)
+        /// <summary>Efeito em numeros, lidos do Balance e do Tuning da partida (mudou o balanco, muda o cartao); sem numero simples, a frase de sempre.</summary>
+        string Effect(Upgrade u)
         {
             int n = (int)u - (int)Upgrade.Counter5 + 5;
             return u switch
             {
-                Upgrade.FurnaceSpeed1 => Arrow(N(Balance.FurnaceTime0), N(Balance.FurnaceTime1) + " s"),
-                Upgrade.FurnaceSpeed2 => Arrow(N(Balance.FurnaceTime1), N(Balance.FurnaceTime2) + " s"),
+                Upgrade.FurnaceSpeed1 => Arrow(N(_sim.T.FurnaceTime0), N(_sim.T.FurnaceTime1) + " s"),
+                Upgrade.FurnaceSpeed2 => Arrow(N(_sim.T.FurnaceTime1), N(_sim.T.FurnaceTime2) + " s"),
                 Upgrade.PlayerCapacity => Arrow(N(Balance.PlayerCap), N(Balance.PlayerCapUp)),
                 Upgrade.PlayerSpeed => Arrow(N(Balance.PlayerSpeed), N(Balance.PlayerSpeedUp) + " m/s"),
-                Upgrade.CounterCapacity => "estoque " + Arrow(N(Balance.CounterCap0), N(Balance.CounterCap1)),
+                Upgrade.CounterCapacity => "estoque " + Arrow(N(_sim.T.CounterCap0), N(_sim.T.CounterCap1)),
                 Upgrade.HelperSpeed => "carga " + Arrow(N(Balance.WorkerCap), N(Balance.WorkerCapUp)),
-                Upgrade.HammerSpeed => Arrow(N(Balance.HammerTime0), N(Balance.HammerTime1) + " s"),
-                Upgrade.JewelSpeed => "tempo −" + N(100f * (1f - Balance.JewelSpeedMul)) + "%",
+                Upgrade.HammerSpeed => Arrow(N(_sim.T.HammerTime0), N(_sim.T.HammerTime1) + " s"),
+                Upgrade.JewelSpeed => "tempo −" + N(100f * (1f - _sim.T.JewelSpeedMul)) + "%",
                 Upgrade.JewelVitrine => "fila " + Arrow(N(Balance.JewelQueueCap), N(Balance.JewelQueueCapUp)),
                 Upgrade.Counter5 or Upgrade.Counter6 or Upgrade.Counter7 or Upgrade.Counter8 => Arrow(N(n - 1), n + " vagas"),
                 _ => Upgrades.All[(int)u].Desc,
@@ -211,7 +211,7 @@ namespace FS
             {
                 UpgradeDef d = Upgrades.All[c.U];
                 bool bought = _sim.Bought[c.U], locked = d.Requires >= 0 && !_sim.Bought[d.Requires];
-                long cost = Upgrades.Cost(c.U);
+                long cost = _sim.T.Cost(c.U);
                 bool can = !bought && !locked && _sim.Gold >= cost;
                 if (can) ready++;
                 if (c.Go.activeSelf != !bought) c.Go.SetActive(!bought);
