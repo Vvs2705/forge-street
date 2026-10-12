@@ -42,17 +42,13 @@ namespace FS
     {
         const string SaveKey = "fs.save";
         const float SaveEvery = 5f, MaxStep = 1f / 30f;
-        const float Margin = 1.2f;                               // m alem do conteudo nas bordas: pad e rotulo nunca cortados (foto 01)
-        // Largura visivel = oficina + margens (11,4 m): em retrato a camera cabe a oficina INTEIRA (coordenador,
-        // 2026-10-06, fotos 05-08: com 7,6 m visiveis o mundo de 9 m cortava uma coluna de cada lado em qualquer clamp).
-        // 2a area (docs/archive/AREA2_JOALHERIA.md s1): mesma escala; a rua lateral entra seguindo o jogador depois do Corredor.
-        const float VisibleWidth = Balance.WorkshopW + 2f * Margin;
+        // Largura visivel (A-ART-03, P12 decidido por padrao): 9 m, a camera segue o ferreiro e puxa a fila para cima (Enquadramento).
+        // Era 11,4 m = oficina inteira + margens (o -cam 11.4 volta a ela).
+        const float VisibleWidth = Enquadramento.Largura;
         // fracao da tela reservada a faixa de cima; o mundo nao chega la. v0.5b (BENCHMARK P1-1): 0,15 -> 0,075 (~144 px na referencia),
         // so 2 pilulas (ouro | dica) sem painel cheio e sem o numero de versao
         const float HudBand = 0.075f;
         const float GoldRoll = 12f;                              // 1/s do numero rolando: ~0,3 s ate o valor novo (P0-5)
-        // topo do conteudo: fila de clientes (pe em y 14) + balao grande do 1o da fila (v0.5: topo do anel em ~16,05 m) + "+10"
-        const float ContentTop = Balance.WorldH + 2.1f;
         // Moedas da venda (BENCHMARK_VISUAL P0-5, versao visual): saem do cliente e voam ate a moeda da HUD; o numero so sobe quando
         // elas chegam (o ouro do Sim ja mudou: mostra Gold - _pending) e a moeda e o numero pulsam 1 -> 1,15 -> 1.
         const float CoinFlight = 0.4f, CoinGap = 0.04f, CoinPx = 56f, PunchTime = 0.2f;
@@ -143,8 +139,8 @@ namespace FS
             if (!_testSession && Arg("-reset") != null) _save.Apagar();
             _sim = _testSession ? new Sim() : _save.Carregar();
             DevArgs();
-            // -cam W (P2-3 do BENCHMARK_VISUAL, experimento de playtest): largura visivel em m; abaixo de 11,4 a camera segue o jogador
-            _visW = Mathf.Clamp(ArgF("-cam", VisibleWidth), 6f, VisibleWidth);
+            // -cam W (dev, P2-3 do BENCHMARK_VISUAL): largura visivel em m, 6..11,4 (padrao 9; 11,4 = a camera antiga, fotos de antes)
+            _visW = Mathf.Clamp(ArgF("-cam", VisibleWidth), 6f, Enquadramento.OficinaInteira);
             string cfg = Arg("-settings");
             if (cfg == "on" || cfg == "off") { SetSom(cfg == "on"); SetVibra(cfg == "on"); }   // fotos e teste de persistencia
             _ads = Ads.Init((e, a, b) => Log(e, a, b));   // pedido, mostrado, recompensa e falha do anuncio vao para o diario
@@ -461,36 +457,34 @@ namespace FS
 
         // ---------- camera e HUD ----------
 
+        float _hudFrac, _barFrac, _trayFrac;   // A-ART-03: fracao da altura da tela sob a faixa de cima, a barra e a barra + bandeja (Fit)
+
         void Fit()
         {
             _screen = new Vector2Int(Screen.width, Screen.height);
             AreaSegura.AncorarDentro(_safe, AreaSegura.Atual());
             Rect sa = Screen.safeArea;
             _view.HudBottomPx = sa.yMin + sa.height * (1f - HudBand);   // v0.6d: o balao do 1o da fila fica 24 px abaixo da faixa de cima
+            // pela area segura, como a HUD: com recorte no topo (POCO) a faixa desce e a camera reserva o que ela cobre de verdade
+            float h = Mathf.Max(1, Screen.height);
+            _hudFrac = 1f - _view.HudBottomPx / h;
+            _barFrac = (sa.yMin + sa.height * MenuBar.Band) / h;
+            _trayFrac = (sa.yMin + sa.height * (MenuBar.Band + MenuBar.Tray)) / h;
         }
 
         /// <summary>
-        /// Ortografica em retrato com a oficina inteira visivel (VisibleWidth = oficina + margens). Antes do Corredor o
-        /// limite direito e' a oficina: os clamps colapsam no centro dela e a camera fica parada (a rua escura e o arco
-        /// aparecem na borda como teaser). Depois do Corredor segue o X do jogador presa ao mapa inteiro [0, WorldW] com
-        /// `Margin` de folga (AREA2 s1). A faixa da HUD no topo e' reservada: o balcao, a fila e o "+10" nunca ficam
-        /// embaixo do painel de ouro.
+        /// Ortografica em retrato, _visW m na largura (9 m; -cam muda). O alvo sai do Enquadramento (puro, testado no coretests): X segue
+        /// o jogador preso ao mapa andavel com margem (antes do Corredor a oficina, depois a rua; AREA2 s1); Y fica o mais alto possivel
+        /// (fila e balao na base da faixa da HUD) deixando 1,5 m sob o pe do ferreiro, e com a bandeja de Melhorias aberta desce ate ela
+        /// cobrir so a fileira do Deposito. O que nao cabe da fila vira o balao preso abaixo da HUD (WorldView.OnScreen).
         /// </summary>
         void FollowCamera(float dt)
         {
             float aspect = Screen.width / (float)Mathf.Max(1, Screen.height);
-            float size = _visW / (2f * aspect);
-            _cam.orthographicSize = size;
-            float halfW = size * aspect, halfH = size;
-            V2 p = _sim.Player.Pos;
+            _cam.orthographicSize = _visW / (2f * aspect);
             float right = _sim.Bought[(int)Upgrade.SideCorridor] ? Balance.WorldW : Balance.WorkshopW;
-            float minX = halfW - Margin, maxX = right - halfW + Margin;
-            float minY = halfH - Margin - 2f * halfH * MenuBar.Band;     // borda de baixo em -Margin, acima da barra de melhorias
-            float maxY = ContentTop - halfH + 2f * halfH * HudBand;       // topo do conteudo encosta na base da faixa da HUD
-            float tx = minX > maxX ? right / 2f : Mathf.Clamp(p.X, minX, maxX);
-            float ty = minY > maxY ? (minY + maxY) / 2f : Mathf.Clamp(p.Y + 0.6f, minY, maxY);
-            Vector3 target = new Vector3(tx, ty, -10f);
-            _cam.transform.position = Vector3.Lerp(_cam.transform.position, target, 1f - Mathf.Exp(-6f * dt));
+            V2 a = Enquadramento.Alvo(_sim.Player.Pos, aspect, _visW, right, _hudFrac, _barFrac, _menu.IsOpen ? _trayFrac : 0f);
+            _cam.transform.position = Vector3.Lerp(_cam.transform.position, new Vector3(a.X, a.Y, -10f), 1f - Mathf.Exp(-6f * dt));
         }
 
         void BuildHud()

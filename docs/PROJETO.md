@@ -62,6 +62,7 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | V20 | **LiveOps (decidido por padrão, `LIVEOPS_V1.md` §7):** eventos às 13:00 UTC e diárias às 04:00 do aparelho; temporada de 35 dias com a semana 5 de folga; Pass de 30 níveis × 600 XP (F2P fecha a trilha free em ~28 dias); projeto da Masterwork no Hunt como fonte extra (a grátis permanente continua); premium só cosmético, conveniência e Gems (nunca ouro, Renome, XP ou Blueprint) e preço na Wave E; teto de 100 XP/dia de encomendas; minério raro só como skin; eventos de 6 dias | padrão do time, 2026-10-12 — revisar |
 | V21 | **Privacidade (decidido por padrão):** 13–17 anos também sem ID de publicidade (`is_deviceid_optout`), além de nada personalizado — leitura conservadora do ECA Digital; custa receita nessa faixa (uma linha em `Privacidade.Flags`) | padrão do time, 2026-10-12 — revisar |
 | V22 | **IDs (decidido por padrão):** IDs de melhoria sem prefixo (`fole`, não `up_fole`; os outros `*Def` da Wave B terão prefixo); espelho `up=` mantido no save só para downgrade à 0.1–0.6; IDs nunca são renomeados depois de publicados | padrão do time, 2026-10-12 — revisar |
+| V23 | **P12 / D2 (decidido por padrão, A-ART-03):** câmera com 9 m na largura (era 11,4). Ferreiro a 9,9% da largura da tela pela altura (0,89 m no Idle S); 9 m é a menor largura em que a fila de 8 vagas cabe na horizontal com o ferreiro na fornalha da esquerda. A câmera fica o mais alto possível (fila e balão na base da HUD) com 1,5 m sob o pé do ferreiro: da fileira das fornalhas para cima a fila cabe inteira em 9:16, 9:20 e 10:16; no Depósito só o 9:20 (POCO) cabe tudo, e nos outros o balão fica preso abaixo da HUD. A bandeja aberta cobre só a fileira do Depósito. `-cam 11.4` volta à câmera antiga (`View/Enquadramento.cs`) | padrão do time, 2026-10-12 — revisar |
 
 ## 5. Decisões pendentes (Vinicius)
 
@@ -75,7 +76,6 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | P8 | Provedores de analytics / crash / RemoteConfig / attribution e custo | Escolher na Wave A; tudo atrás de interface com mock | A |
 | P9 | Conta do Play Console e testadores (Closed exige 12 por 14 dias em conta pessoal) | Abrir o Internal já na Wave A | G |
 | P11 | Downloads: fonte OFL (D8), clipes Mixamo, banco de sons; créditos Tripo por lote de Wave | Aprovar por pacote de Wave | A, B, F |
-| P12 | Câmera (D2): oficina inteira 11,4 m × 9 m | Decidir pelo alvo visual 9:16 (ticket A-ART-01) | A |
 | P13 | Verba e conta para o Gate M (teste de criativos) e a regra "Rune Relay vai primeiro" | — | G |
 | P15 | Unity no CI (GameCI com licença em secret, ou runner próprio) | Sim: o EditMode do Unity pega o que o `dotnet test` não pega (19 falhas de tupla int × long no #20) | A |
 
