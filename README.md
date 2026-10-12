@@ -8,7 +8,7 @@
 
 **Como vai ser jogar:** você começa sozinho carregando tudo no braço e termina comandando uma rua de forjas que trabalha sozinha. Sessões de 3 a 12 minutos.
 
-- **GDD:** `docs/GDD.md` (§3 primeiros 10 min e §18 MVP são o alvo desta v0.1).
+- **GDD:** `docs/GDD.md` (v2: produto completo, a régua do 100%); números iniciais da Wave B em `docs/ECONOMIA_WAVE_B.md`. O GDD v1 do MVP (§3 primeiros 10 min e §18 MVP, alvo da v0.1) está em `docs/archive/GDD_v1_MVP.md`.
 - **Balance medido pelo bot:** `docs/BALANCE.md`.
 - **Por que este jogo:** `../00_PESQUISA/VEREDITO_VALIDACAO.md` (slot idle disputado com o Underground Inc.; este greybox existe para o teste de criativos e o playtest Camada 0).
 

@@ -2,7 +2,7 @@
 
 **Data:** 2026-10-08 · **Raia:** benchmark de mercado e loop (ORQUESTRADOR; personas Market Research + Game Development Director) · **Pedido:** "faça uma análise agora de jogos similares e veja o que estamos perdendo para esses jogos" / "compare com outros jogos e note que nosso jogo ainda está bem cru".
 
-**Método.** Dez jogos reais (seis da família idle arcade / tycoon e quatro de forja), pesquisados na web em 08/10/2026 só por leitura pública: lojas, desconstruções, guias e reviews. Os fatos que sustentam a recomendação foram conferidos numa segunda leitura direta: Burger Please! e My Perfect Hotel (arpubrothers), Pizza Ready! (LevelWinner) e My Mini Mart (PocketGamer.biz/wnhub). O estado do Forge Street saiu do código (`client/Assets/_FS/Scripts/Core/Sim.cs`, `Defs.cs`), do `README.md`, do `docs/GDD.md` e do `docs/BALANCE.md`.
+**Método.** Dez jogos reais (seis da família idle arcade / tycoon e quatro de forja), pesquisados na web em 08/10/2026 só por leitura pública: lojas, desconstruções, guias e reviews. Os fatos que sustentam a recomendação foram conferidos numa segunda leitura direta: Burger Please! e My Perfect Hotel (arpubrothers), Pizza Ready! (LevelWinner) e My Mini Mart (PocketGamer.biz/wnhub). O estado do Forge Street saiu do código (`client/Assets/_FS/Scripts/Core/Sim.cs`, `Defs.cs`), do `README.md`, do GDD v1 (hoje `docs/archive/GDD_v1_MVP.md`; os "GDD §n" deste documento são dele) e do `docs/BALANCE.md`.
 
 **Legenda.** **[F]** fato com fonte · **[I]** inferência nossa · **[O]** opinião/recomendação. "não confirmado" = nenhuma fonte legível confirmou. Instalações e notas são da Play Store (EUA) quando a página abriu. Quando não abriu, vêm do ApkCombo e a linha diz isso. A maior parte das mecânicas vem de guias de 2022–2024, e as versões atuais podem ter mudado.
 
@@ -256,4 +256,4 @@ Fora do top 5, mas logo depois: missões curtas (B6) e a troca de loja/distrito 
 - Udonis, "Arcade idle": lista de títulos por estúdio; D1 ~50% e D0 ~25 min (SensorTower/Homa, dado promocional). https://www.blog.udonis.co/mobile-marketing/mobile-games/arcade-idle
 - PocketGamer.biz, desconstrução do My Mini Mart (Azur Games, 2023). https://www.pocketgamer.biz/feature/81292/under-the-hood-deconstructing-the-top-hypercasual-games/ · versão RU: https://wnhub.io/ru/news/game-design/item-40717
 - Gamigion, Pizza Ready! (análise de IAP e downloads). https://www.gamigion.com/pizza/
-- Estado do Forge Street: `README.md`, `docs/GDD.md` §2–§9 e §14–§17, `docs/BALANCE.md` §5, §9 e §13–§15, `client/Assets/_FS/Scripts/Core/Sim.cs` (`CanPick`, `Clients`, `Save`) e `Defs.cs` (capacidades e upgrades).
+- Estado do Forge Street: `README.md`, `docs/archive/GDD_v1_MVP.md` §2–§9 e §14–§17, `docs/BALANCE.md` §5, §9 e §13–§15, `client/Assets/_FS/Scripts/Core/Sim.cs` (`CanPick`, `Clients`, `Save`) e `Defs.cs` (capacidades e upgrades).

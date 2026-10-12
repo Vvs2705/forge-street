@@ -1,532 +1,581 @@
-# GDD 03 — FORGE STREET
-## Idle/Tycoon Hybrid / Portrait / Android + iOS
+# GDD v2 — FORGE STREET
+## Tycoon de crafting · retrato · Android primeiro · produto completo
 
-> **Revisão 2026-10-09 (comparativo de mercado):** comparativo com 11 similares (os 10 do `BENCHMARK_MERCADO.md` + Hammer & Steel) e os dados do teste no POCO F4 em [`COMPETITIVO.md`](COMPETITIVO.md). O que mudou, sem renumerar nada:
-> - **§15 e §26:** o "continuar" passa a D1 ≥ 26% e D7 ≥ 5% (era 28%/7%, acima do top quartil do GameAnalytics 2026), com coorte de 1,5–2k installs, comparação pago × pago e cancelamento só depois de 2 iterações (veredito de 2026-10-06). Pagante só a partir de 5k installs. Os portões que o código usa (1ª venda < 90 s, opt-in ≥ 45%, "andar sem decisão") não mudam.
-> - **§3:** os tempos continuam sendo o alvo do **bot**. A pessoa real foi 1,7–3,7× mais lenta, e 67 clientes cansaram. O alvo humano entra em §3.1.
-> - **§4/§6/§7/§13:** "prestige-lite não resetável" vira **troca de rua/distrito** (não é prestige); **1 moeda** (ouro) até a v0.2; nada aleatório pago (ECA Digital); o offline não tem anti-cheat sem backend, e o texto agora diz isso.
-> - **§2 e §25:** ganham a tensão que faltava ao core e dois riscos novos (tema de fantasia mais estreito; ritmo humano).
-> - **Novo §27 (Diferenciais competitivos)** e **§28 (Posicionamento)**; o §17 ganha os criativos 11–13 desses diferenciais. Os 3 primeiros: demanda que acompanha a oficina, golpe de mestre (obra-prima só do ferreiro) e "anúncio só quando você pede".
+Versão 2.0 · 2026-10-12 · Dono: Vinicius · Raia DESIGN (Leva 5 do ORQUESTRADOR).
+Direção: [`DOCUMENTO_MESTRE_PRODUCAO_V1.md`](DOCUMENTO_MESTRE_PRODUCAO_V1.md) ("DM §n"). Estado, decisões e placar: [`PROJETO.md`](PROJETO.md). Tickets: [`PRODUCAO_V1_MAPA_TICKETS.md`](PRODUCAO_V1_MAPA_TICKETS.md). Números da Wave B: [`ECONOMIA_WAVE_B.md`](ECONOMIA_WAVE_B.md). Números medidos: [`BALANCE.md`](BALANCE.md). Mercado: [`COMPETITIVO.md`](COMPETITIVO.md) e [`BENCHMARK_MERCADO.md`](BENCHMARK_MERCADO.md).
 
-> **Hipótese comercial:** o crescimento visual “uma bigorna → uma rua produtiva inteira” pode gerar UA forte, enquanto rewarded ads e automação criam monetização natural sem exigir backend no MVP.
+---
 
-# 1. VISÃO DO PRODUTO
+## 0. Como ler este documento
 
-**Nome:** Forge Street  
-**Gênero:** Idle/Tycoon Hybrid / management casual  
-**Plataforma:** Android primeiro.  
-**Orientação:** Portrait.  
-**Público:** 13–50+, idle/tycoon, crafting, fantasy casual.  
-**Proposta:** transformar uma oficina minúscula em uma cadeia artesanal viva.  
-**Fantasy:** “eu construí a melhor rua de artesãos do reino”.  
-**Diferencial:** produção física legível — minério entra, metal funde, item é martelado, cliente leva. A evolução é visível no cenário, não apenas em números.
+- **Para que serve:** é a régua do produto completo. O jogo está "100%" quando os 23 itens do §23 cumprem o critério escrito lá (mesma lista do `PROJETO.md` §8, onde fica o placar).
+- **Precedência:** em conflito, vale o Documento Mestre (DM §186) e as decisões vigentes V1–V12 do `PROJETO.md` §4. Este GDD aplica as duas coisas ao design. Onde o DM e uma decisão vigente divergem, a decisão vence e o texto diz isso (ex.: DM §12 "Blueprint Tokens" × V9 "Blueprint é desbloqueio").
+- **Estado de cada sistema** (escala do `PROJETO.md`): PROPOSTO → APROVADO → IMPLEMENTADO → INTEGRADO → TESTADO → VALIDADO → LANÇADO. Cada seção traz uma linha "Estado · Wave · tickets".
+- **GDD v1:** o GDD do MVP está em [`archive/GDD_v1_MVP.md`](archive/GDD_v1_MVP.md). Referências do tipo "GDD §n" em documentos e código anteriores a 2026-10-12 (ex.: `BALANCE.md`, `Bot_Primeiros10Minutos_BatemASecao3`) apontam para o v1. As janelas da primeira sessão (v1 §3) continuam vigentes e estão no §3.3 daqui.
+- **Números:** todo número de design é **hipótese até o bot medir** (`client/tools/econsim`, `BalanceTests`). Números medidos só no `BALANCE.md`.
 
-# 2. GAMEPLAY
+**Pilares que valem para todos os sistemas**
+1. **Simples no momento, fundo na meta** (DM §169): o toque continua sendo andar, carregar e escolher o gargalo; a profundidade fica nos sistemas de dias e semanas.
+2. **Determinismo sem sorteio** (V7): nenhum sistema usa RNG. Qualidade por acumulador, encomendas por rodízio, VIP por sequência de Weyl. Mesma entrada, mesmo resultado; o jogador sempre consegue explicar o que aconteceu.
+3. **Nada aleatório pago** (V4; ECA Digital, Lei 15.211/2025): baú tem conteúdo fixo e visível antes; "trocar" mostra a próxima opção antes de pagar ou assistir.
+4. **Conteúdo em dados + Content Validator** (V6, DM §108, §126): nada de `if (district == 4)`; cada `*Def` passa no validator antes de entrar.
+5. **Uma moeda até a Wave E** (V9): só o ouro. Reputation é trilha, Blueprint é posse.
+6. **Toda recompensa tem ID de transação** e prêmio que não é venda fica fora do `GoldEarned` (não infla taxa online, cofre nem VIP; `BALANCE.md` §20).
+7. **Ativo rende mais que offline e que fundo de distrito** (DM §27, C-CORE-03).
 
-## Core mechanic
-Controle de um gerente/personagem por joystick simples:
-- recolher minério/lingotes;
-- depositar em estação;
-- retirar produto;
-- entregar ao balcão;
-- comprar upgrades pisando em pads.
+**O que mudou do v1 (resumo):** produto completo em 6 distritos (DM §7) no lugar do MVP de 1 área; "prestige-lite" virou **Royal Charter sem reset** (V5); Gems saem do MVP e entram só na Wave E (V9); Blueprint deixa de ser recurso e vira desbloqueio (V9); interstitial implementado atrás de flag desligada (V10), não "desligado para sempre"; os FS-1…FS-7 foram reconciliados com o DM (§21); metas de retenção têm três níveis (§20, decisão P6).
 
-Com progressão:
-- contratar trabalhadores;
-- automatizar transporte;
-- abrir novas bancadas;
-- produzir espadas, escudos, ferramentas, joias.
+---
 
-## Core loop
-`produzir → vender → melhorar → contratar → automatizar → expandir → nova linha`
+## 1. Visão e promessa
 
-## Vitória/derrota
-Não há “derrota” tradicional.
-Objetivo curto: concluir milestones de expansão.
-Fricção:
-- filas;
-- gargalos;
-- estoque;
-- velocidade.
+**Definição (DM §193):** Forge Street é um tycoon de crafting medieval-fantástico para mobile no qual uma pequena oficina manual cresce para uma rede de distritos automatizados, com produção visível, gargalos, trabalhadores, contratos, Blueprints, Masterworks, eventos, Season Pass e progressão de longo prazo.
 
-**Tensão (revisão 2026-10-09).** A validação apontou que os gargalos "se resolvem sozinhos" (a estação com fila pede upgrade, decisão óbvia) e que a automação tira a função do avatar. A tensão vem de três fontes, sem derrota punitiva:
-- **perda visível:** o cliente cansa (anel de paciência) e quem chega com a fila cheia dá meia-volta (IMPLEMENTADO desde a v0.5.1);
-- **mão do mestre:** a obra-prima só sai do ferreiro (§27, FS-2, PROPOSTO), então ficar na bigorna compete com carregar e comprar;
-- **concorrência:** um rival do outro lado da rua leva os clientes que você não atende (§27, FS-4, PROPOSTO, depois do playtest).
+**Hook (DM §80):** "Comece com uma bigorna. Termine comandando um distrito inteiro de artesãos."
 
-## Sessão
-3–12 min; progresso offline limitado.
+**Promessa (DM §194):**
+- Gameplay: "Eu construí isso."
+- Meta: "Sempre existe algo novo para melhorar, automatizar, colecionar ou desbloquear."
+- Negócio: o produto tem conteúdo, retenção e monetização para crescer depois do lançamento.
 
-# 3. PRIMEIROS 10 MINUTOS
+**Diferencial central:** produção física legível (minério entra, metal funde, item é martelado, cliente leva) e **a mão do ferreiro continua importando** depois da automação: só ele chega ao tier Masterwork (§9, §21 FS-2).
 
-**0:00–0:45** — oficina vazia. Jogador pega 3 minérios, deposita na fornalha e vê primeiro lingote.
+**Posicionamento (do v1 §28, mantido):** para quem gosta de ver uma operação crescer sem ser interrompido, Forge Street é o tycoon de forja em que a sua mão ainda importa e o jogo se ajusta ao seu ritmo, calibrado com bot e com gente de verdade. Inimigo: o idle que interrompe a cada minuto e pune quem está aprendendo (reclamação nº 1 do formato, `COMPETITIVO.md` c.1).
 
-**0:45–1:30** — leva lingote à bigorna; NPC anima marteladas; espada aparece; cliente paga. Primeira satisfação em <90 s.
+**Fora do escopo da v1.0:** PvP, guildas, mapa mundial, backend próprio grande. A arquitetura não deve impedir leaderboard, amigos, visitar forja e guildas depois (DM §38).
 
-**1:30–2:30** — compra velocidade da fornalha pisando num pad. Transformação visível.
+---
 
-**2:30–3:30** — abre segunda bigorna; fila reduz.
+## 2. Público e plataforma
 
-**3:30–4:30** — primeira contratação de ajudante; automação parcial.
+| Item | Valor | Fonte |
+|---|---|---|
+| Gênero | tycoon de crafting / idle arcade híbrido, management casual | DM §168 |
+| Público | 13–50+, fãs de idle/tycoon, crafting e fantasia casual. Inclui adolescentes: vale o ECA Digital (nada aleatório pago; menor de 18 sem anúncio personalizado, E-PLAT-01) | v1 §1; `PROJETO.md` V4 |
+| Plataforma | Android primeiro (minSdk 26, ARM64, target API 36, 16 KB). iOS depois do Global, sem data | DM §96–98; `PROJETO.md` §1 |
+| Orientação | retrato, uma mão | DM §156 |
+| Sessão | 3–12 min; várias sessões por dia (meta 2+ entre retidos) | v1 §2, §15 |
+| Idiomas | pt-BR, en, es (texto fora do código) | DM §109 |
+| Desempenho | 60 fps em aparelho forte; 30/45 estáveis em intermediário por perfil (Battery/Balanced/High) | DM §111–112 |
+| Aparelho de marco | POCO F4 só nos 4 gates (Feature Complete, RC, bug Android físico, build de publicação) | V2, DM §2 |
+| Lançamento | Internal → Closed → Limited Release → Global (estratégia de publicação, não MVP) | DM §165 |
 
-**4:30–5:30** — unlocked escudos; nova matéria-prima.
+---
 
-**5:30–6:30** — rewarded opcional: “trabalhador temporário 3 min” ou “2× receita por 3 min”. O jogador pode ignorar.
+## 3. Core loop e os 5 loops de retenção
 
-**6:30–7:30** — abre corredor lateral; rua começa a aparecer.
+Estado: loop base IMPLEMENTADO (v0.6) · meta loops por Wave (B–E).
 
-**7:30–8:30** — milestone “10 espadas”; baú visual com decoração.
+### 3.1 Core loop (DM §5)
 
-**8:30–9:30** — primeira máquina/esteira simples reduz caminhada.
+```
+COLETAR MINÉRIO → PROCESSAR (fornalha) → FABRICAR (bigorna/bancada) → ABASTECER (balcão)
+→ VENDER / ENTREGAR → GANHAR OURO / RENOME / BLUEPRINT → LER O GARGALO
+→ UPGRADE / WORKER / AUTOMAÇÃO → NOVA LINHA → ORDER / CONTRACT → DISTRITO
+→ AUTOMATIZAR O DISTRITO ANTIGO → EVENTOS / MASTERWORKS / PASS → IMPÉRIO ARTESANAL
+```
 
-**9:30–10:00** — teaser da loja de joalheria fechada; razão clara para voltar.
+A decisão central do minuto a minuto é **ler qual etapa trava** (estação "travada" = saída cheia, vermelho; "fome" = sem insumo, cinza) e investir ali. Tensão sem derrota: cliente que cansa ou dá meia-volta (perda visível), a obra-prima que só sai da mão do ferreiro (competir por tempo do avatar) e, se aprovado, o rival na rua (FS-4).
 
-## 3.1 Ritmo humano (revisão 2026-10-09)
+### 3.2 Cinco loops de retenção (DM §6)
 
-Os tempos acima são o alvo do **bot** (`BALANCE.md` §2; o bot tem de chegar antes). No 1º teste com gente (POCO F4, `VALIDACAO_V05.md`), a pessoa foi **1,7–3,7× mais lenta**: Fole 3:21, Escudos 14:45 e Esteira 14:54, contra 2:30 / 5:30 / 8:30. Nesse tempo, 67 clientes de espada cansaram e 471 deram meia-volta com a fila cheia.
+| Loop | Conteúdo | Sistemas | Wave |
+|---|---|---|---|
+| Segundos | coletar, levar, fabricar, vender, golpe de mestre | núcleo, Quality (golpe) | já existe / B |
+| Minutos | upgrade, worker, nível de estação, Order | upgrades, Workers, Orders 2.0 | já existe / B |
+| Sessão | automação, nova linha, major unlock, Masterwork | Quality, Masterworks, Reputation | B |
+| Dias | Blueprint, Masterwork, distrito, daily, evento, login de 7 dias | Blueprints, distritos, Daily, LiveOps | B, C, D |
+| Semanas | Season, Pass, Royal Contracts, novos distritos | Pass, Contracts, Charter | C, D |
 
-Alvo humano (PROPOSTO, a medir no playtest Camada 0 com o `diario_report.py`):
-- 1ª venda < 90 s para ≥ 90% (não muda; §15);
-- mediana dos testadores ≤ 2× o bot nos marcos Fole, Escudos e Esteira;
-- clientes perdidos (cansou + meia-volta) nos primeiros 15 min ≤ metade do que o POCO mostrou.
+### 3.3 Primeira sessão (FTUE) — janelas do bot
 
-A primeira alavanca é a "demanda que respira" (§27, FS-1): na largada, a chegada de clientes acompanha a vazão real da oficina. Ela deve ser provada antes num **bot lento** (velocidade e decisão ×0,4).
+Tutorial curto, sem explicar sistemas futuros (DM §81): pegar minério → fornalha → lingote → fabricar → vender → comprar upgrade; depois worker, Order e rewarded.
 
-# 4. PRIMEIRO DIA
+Metas internas (DM §81): 1ª venda < 90 s · upgrade significativo < 3 min · automação < 5–7 min · produto novo < 8–10 min.
 
-Conteúdo:
-- 3 linhas: espada, escudo, ferramenta;
-- 2 matérias-primas;
-- 8 estações;
-- 6 trabalhadores;
-- 25 upgrades;
-- 2 áreas;
-- 1 “prestige-lite” de distrito não resetável no D1.
-
-> Revisão 2026-10-09: sem reset, "prestige" não é prestige, é só mais um tier (raia B da validação). O item passa a se chamar **troca de rua/distrito**: depois da produção completa (~42 min no bot, `BACKLOG_V07.md` item 2), a oficina "se forma" e abre uma rua nova com layout novo, como a troca de loja do gênero (`BENCHMARK_MERCADO.md` B7). Prestige com reset só entra se for validado (§6). O FS-4 do §27 propõe que a rua nova seja a forja do rival.
-
-Primeiro rewarded aos 5–7 min.
-Primeiro IAP após o jogador automatizar a primeira linha:
-- Remove Ads;
-- Starter Smith Pack.
-
-Retorno:
-- cofre offline;
-- pedido especial do dia seguinte;
-- área 3 em progresso.
-
-# 5. PROGRESSÃO
-
-**Curta:** estação e trabalhador.  
-**Média:** linha de produção e nova loja.  
-**Longa:** rua → distrito → bairros temáticos.
-
-- D1: forja básica.
-- D3: joalheria/armaduras leves.
-- D7: segundo distrito.
-- D14: pedidos especiais e coleção de blueprints.
-- D30: festival de artesanato.
-- D60: nova cidade.
-- D90: eventos sazonais reutilizáveis.
-
-# 6. ECONOMIA
-
-**Gold:** soft currency.
-Fontes:
-- vendas;
-- offline;
-- pedidos;
-- rewarded.
-
-Sinks:
-- estação;
-- worker;
-- velocidade;
-- capacidade;
-- expansão.
-
-**Gems:** hard currency.
-Fontes:
-- milestones;
-- eventos;
-- IAP.
-
-Sinks:
-- upgrades premium de conveniência;
-- cosmetics;
-- acelerar desbloqueio sem teto exclusivo.
-
-**Blueprints:** progression resource; gameplay-first.
-
-Inflação:
-- curva exponencial controlada por área;
-- reset parcial apenas se prestige for validado.
-
-**Guardrails (revisão 2026-10-09, veredito da validação):**
-- **1 moeda (ouro) até a v0.2.** Gems e Blueprints só entram quando existir ralo para elas no mapa de fontes e ralos. Fonte sem ralo é inflação anunciada.
-- Prêmios fora do `GoldEarned` (baú, Encomenda) continuam fora da base do offline e do VIP (`BALANCE.md` §20).
-- O offline nunca dá gem nem moeda de evento.
-- **Nada aleatório pago** (baú, roleta, gacha): ECA Digital, Lei 15.211/2025, em vigor desde 17/03/2026. O VIP (sequência de Weyl) e as Encomendas (rodízio) já são determinísticos. Qualquer "baú" tem conteúdo fixo e visível.
-- Toda concessão tem id de transação (já vale no cofre: `Sim.ApplyOffline(elapsed, claimId)`).
-
-# 7. MONETIZAÇÃO
-
-## Rewarded
-- 2× receita 3–5 min;
-- worker temporário;
-- claim 2× offline;
-- pedido especial;
-- baú de blueprint.
-
-## Interstitial
-Somente após milestone/saída de área; cap forte.
-No early game, priorizar rewarded.
-
-## IAP
-- Remove Ads;
-- Starter Pack;
-- gems;
-- permanent helper convenience moderada;
-- cosmetic forge themes.
-
-Não vender multiplicadores absurdos que invalidem loop.
-
-**Revisão 2026-10-09.**
-- **Interstitial:** desligado na v0.1 (veredito). A proposta FS-5 do §27 é mantê-lo desligado **para sempre**, como promessa de marca ("anúncio só quando você pede"), porque é a reclamação nº 1 nos líderes (`COMPETITIVO.md` c). Nesse caso, "Remove Ads" dá lugar a um "Pacote do Mestre" (cofre 2× permanente + skin). **Decisão do Vinicius.**
-- **"Baú de blueprint" por anúncio:** só com conteúdo fixo e visível antes de assistir.
-- **Rewarded já no jogo (v0.5.1):** "Chamar VIP" e "Velocidade 2×/3×". Na fila: cofre 2× (decisão D5 do `BACKLOG_V07.md`, não confundir com o FS-5 do §27).
-- **Gate de dinheiro da fase B = IAA de rewarded** (opt-in, impressões/DAU, ARPDAU). Conversão de pagante só a partir de 5k installs.
-
-# 8. RETENÇÃO
-
-D1: cofre offline + próxima loja.  
-D3: blueprint e novo produto.  
-D7: distrito novo.  
-D14: evento de encomendas.  
-D30: city expansion.
-
-Daily:
-- pedido do dia;
-- bônus moderado;
-- coleção.
-
-# 9. LIVE OPS
-
-Baixo custo:
-- Double Order Weekend;
-- Royal Contract;
-- Blacksmith Festival;
-- Rare Ore Rush;
-- Blueprint Hunt.
-
-Eventos reutilizam linhas existentes com metas e visuais.
-
-# 10. CONTEÚDO
-
-MVP:
-- 1 área;
-- 3 produtos;
-- 5 estações;
-- 3 workers;
-- 15 upgrades.
-
-Lançamento se validado:
-- 4 distritos;
-- 8–12 produtos;
-- 20–30 estações;
-- 12 workers visuais;
-- 5 eventos;
-- 40–60 upgrades;
-- 20 cosmetics.
-
-# 11. ARTE
-
-Stylized low-poly premium.
-Câmera isométrica/3D oblíqua.
-Silhuetas grandes, materiais claros.
-Produção deve ser filmável.
-
-A forja pode reutilizar conhecimento de assets fantasy do COE, mas IP e identidade visual devem ser próprios.
-
-# 12. ÁUDIO
-
-- minério;
-- furnace;
-- hammer;
-- coin;
-- upgrade;
-- worker hire;
-- customer;
-- milestone.
-
-Loop musical leve; som da produção é parte do prazer.
-
-# 13. TECNOLOGIA
-
-Unity/C#.
-
-Módulos:
-- `Station`
-- `ProductionRecipe`
-- `WorkerAgent`
-- `QueueSystem`
-- `UpgradeSystem`
-- `OfflineProgress`
-- `EconomyManager`
-- `SaveManager`
-- `AnalyticsManager`
-- `AdsManager`
-- `IAPManager`
-- `RemoteConfig`
-- `LiveOpsManager`
-- `Audio/Haptics`
-
-Simulação offline usa timestamp validado e limites anti-clock-cheat básicos.
-
-> Revisão 2026-10-09: sem backend não existe timestamp validado. Save local não é anti-cheat; no máximo detecta relógio que voltou. A regra vigente (`BALANCE.md` §5) aceita a trapaça local com teto: 25% da taxa online × até 2 h, teto de 2× o upgrade mais barato ainda travado, Δt ≤ 0 paga 0, o cofre só abre com ≥ 60 s fora e cada claim tem id de transação. É o que o gênero faz sem servidor.
-
-# 14. ANALYTICS
-
-- tutorial_complete
-- station_unlock
-- upgrade_buy
-- product_crafted
-- product_sold
-- queue_length
-- bottleneck_seconds
-- worker_hired
-- rewarded_offer/complete
-- offline_claim
-- district_unlock
-- iap_purchase
-- currency_source/sink
-
-Métricas:
-- D1/D7;
-- sessions/day;
-- session duration;
-- rewarded views/DAU;
-- offline return rate;
-- upgrade cadence;
-- payer conversion;
-- ARPDAU.
-
-# 15. KPIs — TARGETS INTERNOS
-
-- tutorial ≥90%;
-- primeira venda <90 s para ≥90% dos jogadores;
-- D1 ≥26% (era ≥28%; revisão 2026-10-09);
-- D3 ≥14%;
-- D7 ≥5% (era ≥7%; revisão 2026-10-09);
-- D30 ≥2%;
-- 2+ sessões/dia entre retidos;
-- rewarded opt-in ≥45%;
-- 2–5 rewarded/DAU sem queda de retenção;
-- payer conversion ≥1%;
-- crash-free >99.5%.
-
-UA low-cost Android:
-- CPI ≤ ~US$0,70 promissor;
-- 0,70–1,10 iterar;
-- >1,10 exige LTV bem maior.
-
-**Como ler estes números (revisão 2026-10-09, veredito da validação).**
-- O alvo antigo de D1 ≥ 28% / D7 ≥ 7% ficava acima do top quartil do GameAnalytics 2026 (D1 mediano ~20%, top-25% ~30%; D7 mediano < 4%, top-25% 6–7%). O "continuar" passa a **D1 ≥ 26% e D7 ≥ 5%**.
-- **Amostra:** coorte de 1,5–2k installs pagos, comparando pago com pago. Com 1k installs, a margem do D7 é ±1,7 pp; com 2k, ±1,2 pp.
-- **Pagante:** só se mede a partir de 5k installs. Antes disso, o gate de dinheiro é o IAA de rewarded (opt-in, impressões/DAU, ARPDAU).
-- Os portões que o `diario_report.py` e os testes usam (1ª venda < 90 s para ≥ 90%, opt-in ≥ 45%, andar sem decisão) **não mudam**.
-- **Diferenciais (§27):** cada um tem a sua métrica no `COMPETITIVO.md` d (ex.: FS-1 "demanda que respira" = clientes perdidos −50% no bot lento).
-
-# 16. SOFT LAUNCH
-
-A: 6–10 criativos, BR/PH/ID.  
-B: 1.000–2.000 installs para loop/retention.  
-C: 3.000–5.000 com monetização e pequena amostra CA/AU.
-
-Hipóteses:
-- transformação visual reduz CPI;
-- rewarded é aceito por acelerar gargalo;
-- offline progress traz D1/D3.
-
-# 17. 10 CRIATIVOS UA
-
-1. bigorna vazia → rua lotada em 15 s;
-2. fila gigante causada por fornalha lenta → upgrade resolve;
-3. “onde investir 100 moedas?” duas estações;
-4. trabalhador lento vs automatizado;
-5. minério bruto → espada brilhante em cadeia;
-6. “não deixe clientes esperando”;
-7. antes/depois de contratar 5 workers;
-8. erro proposital: 5 bigornas, 1 furnace;
-9. rare ore aparece e produção acelera;
-10. rua inteira funcionando em loop satisfatório.
-
-Revisão 2026-10-09 (criativos dos diferenciais, §27; entram no mesmo teste e não substituem os 10):
-
-11. golpe de mestre: anel de tempo, acerto perfeito, faísca dourada e a obra-prima vendida a 3×;
-12. "o goblin voltou": um freguês com nome volta, enche o 5º coração e deixa a marca na rua;
-13. rival do outro lado da rua com fila enorme → a sua oficina vira o jogo → placa "VENDIDO" na forja dele.
-
-# 18. MVP
-
-- 1 área;
-- 3 produtos;
-- 5 estações;
-- 3 workers;
-- progress/save;
-- offline capped;
-- analytics;
-- rewarded placeholder/test;
-- 8 criativos.
-
-Sem:
-- mapa mundial;
-- guilda;
-- PvP;
-- backend;
-- 10 cidades.
-
-# 19. V0.1
-
-Core + 15 upgrades + Android.
-
-# 20. V0.2
-
-Se CPI/D1 passarem:
-- segunda área;
-- ads/IAP;
-- remote config;
-- orders;
-- 1 evento.
-
-# 21. V1.0
-
-Se D7/LTV passarem:
-- 4 distritos;
-- 8+ produtos;
-- live ops;
-- iOS;
-- localization;
-- 3–5 eventos.
-
-# 22. PRODUÇÃO
-
-| Área | Peso |
+Janelas da primeira sessão (v1 §3, **vigentes**; o `Bot_Primeiros10Minutos_BatemASecao3` aceita do piso — 30% do tempo para o Fole, 50% para os demais — até o tempo da tabela; `BALANCE.md` §2):
+
+| Tempo | Marco |
 |---|---|
-| Programação | Médio |
-| Design | Médio |
-| Arte | Médio |
-| UI | Baixo–Médio |
-| Áudio | Baixo |
-| Backend | Baixo |
-| Analytics | Médio |
-| Conteúdo | Baixo–Médio |
+| 0:00–0:45 | oficina; 3 minérios na fornalha; 1º lingote |
+| 0:45–1:30 | lingote na bigorna; espada; cliente paga (**1ª venda < 90 s**) |
+| 1:30–2:30 | Fole (velocidade da fornalha) |
+| 2:30–3:30 | 2ª bigorna |
+| 3:30–4:30 | 1º ajudante |
+| 4:30–5:30 | Escudos |
+| 5:30–6:30 | 1º rewarded opcional (VIP aos ~5:36 no bot, `BALANCE.md` §18.5) |
+| ≤ 8:30 | Esteira |
+| 9:30–10:00 | razão clara para voltar (teaser do próximo passo) |
 
-Complexidade: **5/10**.
+**Regra da Wave B:** nenhum sistema novo pode mexer nos primeiros 10 min. Quality, níveis de estação e tipos novos de Order abrem depois das Ferramentas (~10:46 no bot).
 
-# 23. REUTILIZAÇÃO
+### 3.4 Ritmo humano
 
-COE:
-- crafting concepts;
-- fantasy prop pipeline;
-- save/domain patterns.
+No POCO F4 a pessoa foi **1,7–3,7× mais lenta** que o bot; 67 clientes de espada cansaram e 471 deram meia-volta (`VALIDACAO_V05.md`; `COMPETITIVO.md` c.6). Alvo humano (PROPOSTO, mede no Closed com `diario_report.py`): mediana ≤ 2× o bot nos marcos Fole, Escudos e Esteira; clientes perdidos nos primeiros 15 min ≤ metade do POCO. Primeira alavanca: FS-1 (§21), provada antes no bot Slow.
 
-ARKANA:
-- mobile input;
-- pooling;
-- animation;
-- profiling.
+### 3.5 Do D0 ao D90 (DM §82–84)
 
-Compartilhado:
-- MobileCore.
+| Momento | Novidade obrigatória | Sistemas |
+|---|---|---|
+| D0 | cadeia completa, 1º worker, Orders, cofre, preview do Hall (1º projeto de Masterwork aos ~100 espadas), teaser do distrito seguinte, 1º rewarded opcional | núcleo, Orders, Blueprints |
+| D1 | grande marco de distrito: Royal Charter do Old Forge → Armorer's Row | Charter, Reputation |
+| D3 | Blueprint de estação, especialidade de worker, distrito novo | Blueprints, Workers |
+| D7 | Royal Contract, evento, marco de coleção | Contracts, LiveOps, Collection |
+| D30 | vários distritos, Season, eventos, Masterworks | tudo |
+| D60 | Arcane Foundry | distrito 5 |
+| D90 | ciclos de endgame no Grand Forge; próxima cidade (pós-lançamento, DM §9) | distrito 6 |
 
-# 24. IA
+---
 
-- conceitos de estação;
-- icon temp;
-- material variants;
-- code/test assistance;
-- UA storyboards;
-- localization;
-- balance simulation offline.
+## 4. Fantasia de progressão
 
-Não runtime.
+Estado: PROPOSTO (escada) · personagem/ferramentas em parte IMPLEMENTADO (Mochila, Botas).
 
-# 25. RISCOS
+```
+EU FAÇO TUDO SOZINHO → TENHO UM AJUDANTE → GERENCIO UMA OFICINA → CONTROLO UMA RUA
+→ ADMINISTRO VÁRIOS DISTRITOS → ATENDO O REINO → MEU NOME É REFERÊNCIA EM TODO O MAPA
+```
 
-**Parece cópia de idle arcade.**  
-Diferenciar pela cadeia artesanal e decisões de gargalo, não apenas andar coletando dinheiro.
+Cada degrau muda seis coisas (DM §4): mecânica, economia, visual, som, social e comercial.
 
-**Rewarded excessivo.**  
-Opt-in e cap.
+| Degrau | Mecânica | Visual / som | Renome (§14) |
+|---|---|---|---|
+| Sozinho | carregar tudo, 3 itens | oficina vazia, um martelo | Aprendiz |
+| Um ajudante | 1º ajudante | 2º personagem andando | — |
+| Oficina | linhas, esteira, níveis de estação, Quality | fornalha em overdrive, esteira viva | Ferreiro da rua |
+| Rua | joalheria, Hall de obras-primas | fachada, pedestais, rua cheia | Mestre artesão |
+| Distritos | Charter, managers, renda de fundo | mapa de distritos | Fornecedor do reino |
+| Reino | Royal Contracts, Arsenal | estandartes reais, música "royal" | níveis 6–8 |
+| Referência | Grand Forge, exportação, Masterworks lendárias | catedral de forja | níveis 9–10 |
 
-**Offline quebra economia.**  
-Cap + remote tuning.
+**Personagem (DM §25):** roupa simples → avental → cinto → luvas → ferramenta → uniforme de mestre → visual de guilda/real. Três estágios visuais na Wave B (B-ART-05, ligados ao Renome 0, 3 e 4); o resto entre gameplay e cosmético.
 
-**Conteúdo vira só números maiores.**  
-Novas linhas precisam mudar fluxo/layout.
+**Ferramentas do jogador (DM §26), sem inventário RPG:** botas = velocidade (Botas, existe); luvas/carrinho = carga (Mochila, existe); martelo = golpe de mestre (Quality, §9); livro-caixa = vagas de Order (Renome 1 e 3, §10).
 
-**Tema de fantasia com apelo mais estreito** (revisão 2026-10-09).  
-Os quatro líderes do formato usam temas do cotidiano. No tema forja, Forge & Fortune (Supercent) tem 1K+ instalações e Hammer & Steel tem 70 avaliações. Mitigação: o teste de criativos decide; incluir 2 criativos que vendem o **ofício** (a obra-prima, o freguês que volta) e não a fantasia.
+**Narrativa leve (DM §36–37):** oficina herdada, mercador mentor, guilda, capitão real, mestre artesão e um rival comercial. Sem cutscene longa; falas curtas em marcos (Charter, Masterwork, Renome). O rival aparece em marcos e eventos, sem PvP; a versão "rival na rua" é o FS-4 (§21).
 
-**Ritmo humano bem abaixo do bot** (revisão 2026-10-09).  
-A pessoa foi 1,7–3,7× mais lenta no POCO F4, e o começo pune quem ainda não sabe produzir (67 clientes cansaram). Mitigação: §3.1 e a "demanda que respira" (§27, FS-1), provadas antes num bot lento.
+---
 
-**Avatar sem função depois da automação** (revisão 2026-10-09, raia B).  
-Mitigação: obra-prima só do ferreiro (§27, FS-2).
+## 5. Economia
 
-# 26. KILL CRITERIA
+Estado: ouro IMPLEMENTADO (long, Wave A) · carteira com IDs PROPOSTO (Wave B) · Gems Wave E · tickets A-CORE-06, B-*, E-PLAT-*.
 
-## CONTINUAR
-- D1 ≥26% (era ≥28%; revisão 2026-10-09);
-- D7 ≥5% (era ≥7%; revisão 2026-10-09);
-- rewarded opt-in ≥45%;
-- ≥2 sessões/dia nos retidos;
-- CPI dentro da faixa;
-- jogadores identificam gargalos sem tutorial pesado.
+### 5.1 Moedas e trilhas (V9 / P1)
 
-## ITERAR
-- D1 22–26%;
-- D7 4.5–5%;
-- CPI até 50% acima;
-- boa retenção, mas pouca volta offline;
-- muita caminhada sem decisão.
-
-## CANCELAR
-- D1 <22% após 2 iterações;
-- D7 <4.5%;
-- CPI >2× target em 10 criativos;
-- loop vira “andar entre pilhas” sem decisão;
-- rewarded necessário para progressão normal.
-
-> Revisão 2026-10-09: todos os cortes valem para uma coorte de 1,5–2k installs pagos (pago × pago) e só depois de 2 iterações. Um corte de criativo (CPI > 2× em 10 criativos) também vale para os criativos dos diferenciais do §27: se nem o golpe de mestre nem o freguês fiel baixarem o CPI, o problema é o tema, não o loop.
-
-# 27. DIFERENCIAIS COMPETITIVOS (revisão 2026-10-09)
-
-Resumo. O detalhe de cada um (por que, como, custo, risco e validação) e as fontes estão em [`COMPETITIVO.md`](COMPETITIVO.md) d–e. Status de todos: **PROPOSTO**. Custo: P ≤ 1 semana · M 2–4 semanas · G ≥ 1 mês.
-
-| # | Diferencial | O que os similares fazem | Custo | Prova barata |
+| Recurso | Natureza | Gasta? | Entra | Na HUD |
 |---|---|---|---|---|
-| FS-1 | **Demanda que respira:** nos primeiros ~15 min, a chegada de clientes acompanha a vazão real da oficina (`RateEma`, como as Encomendas) | fluxo fixo (não confirmado) | P | bot lento ×0,4: clientes perdidos −50% sem o ouro/min subir > 5% |
-| FS-2 | **Golpe de mestre:** parado na bigorna, o ferreiro acerta um anel de 0,8 s e faz uma obra-prima (3× no balcão, completa a encomenda). Ajudantes nunca fazem | o avatar só carrega | M | criativo "acerto perfeito" × controle; ≥ 50% usam ≥ 2× por sessão |
-| FS-3 | **Clientela fiel:** 5 fregueses com nome (mago, elfa, goblin, cavaleiro, nobre; a arte já existe) com encomendas pessoais e 5 corações; no fim, uma marca na rua com +5% fixo | clientes sem rosto | M | criativo "o goblin voltou"; testador lembra o nome |
-| FS-4 | **Ferreiro rival na rua,** pilotado pelo `Bot.cs`: leva os clientes que você não atende; quando você o supera, compra a forja dele, que vira a próxima rua (§4) | nenhum encontrado | G | A/B no bot antes de qualquer arte |
-| FS-5 | **Anúncio só quando você pede:** zero interstitial e zero banner, para sempre; "Pacote do Mestre" no lugar do Remove Ads | interstitial pesado | P | página da loja com e sem a frase; opt-in ≥ 45% |
-| FS-6 | **Galeria de obras-primas:** 12 pedestais na rua, ordem fixa, +5% por linha completa | livro de coleção em menu (Shop Titans) | M | ≥ 30% abrem o catálogo sozinhos |
-| FS-7 | **Cofre que conta:** a volta mostra o que cada linha rendeu e qual estação travou, com "ver" | pop-up com número e 2× | P | ≥ 30% compram a melhoria apontada em 60 s |
+| Ouro (`gold`) | moeda | sim | já existe | sempre |
+| Reputation ("Renome") | trilha monotônica com níveis | **não** | B | selo de nível (não é saldo) |
+| Blueprint | posse (desbloqueio) | **não é token** | B | Collection / cartão da receita |
+| Pass XP | trilha da temporada | não | D | tela do Pass |
+| Pontos de evento | trilha do evento | não | D | tela do evento |
+| Gems (`gems`) | moeda premium | sim | **E**, só com mapa fonte → ralo no `BALANCE.md` | só quando relevante (DM §64) |
+| Moeda de evento | moeda temporária | sim | decisão (P1 / D-CORE-03); no máximo 1 por vez | durante o evento |
 
-**Ordem recomendada:** FS-1 → FS-2 → FS-5 (decisão do Vinicius), depois FS-3. O FS-4 entra junto com a troca de rua (§4), depois do playtest Camada 0.
+A carteira guarda saldos por ID de moeda desde a Wave B (só `gold` ativo), para a Wave E entrar sem migrar save. Clareza para o jogador (DM §13): **Ouro = crescer · Gems = conveniência/cosmético · Blueprint = descobrir · Renome = quanto o reino te conhece.**
 
-**Invariantes de design** (cada uma vira teste negativo no `coretests`, se o diferencial entrar):
-- FS-1 nunca **aumenta** a chegada de clientes nem dá ouro.
-- A obra-prima (FS-2) não sai de ajudante nem do offline, e não passa de 8% da receita no bot.
-- Fregueses (FS-3), rival (FS-4) e galeria (FS-6) não sorteiam nada e não vendem nada.
-- Toda recompensa nova tem id de transação.
+### 5.2 Ouro: fontes e ralos
 
-# 28. POSICIONAMENTO (revisão 2026-10-09)
+| Fontes | Wave | Entra no `GoldEarned`? |
+|---|---|---|
+| Vendas no balcão (inclui VIP 3× e o multiplicador de qualidade) | já / B | sim |
+| Encomendas (Orders 2.0) | já / B | não |
+| Baús de marco | já | não |
+| Cofre offline | já | não (é derivado da taxa) |
+| Royal Contracts, diárias, eventos | D | não |
+| Renda de fundo dos distritos com manager | C | não |
 
-Para quem gosta de ver uma operação crescer sem ser interrompido, **Forge Street** é o idle arcade de forja em que **a sua mão ainda importa** (a obra-prima só sai do ferreiro) e **o jogo se ajusta ao seu ritmo**, porque foi calibrado com bot e com gente de verdade, sem anúncio forçado.
+| Ralos | Wave |
+|---|---|
+| Estações e pads (construir), upgrades do menu | já |
+| Luxo/decoração (sem efeito de produção) | já |
+| Níveis de estação (qualidade + velocidade + aparência) | B |
+| Contratar e subir nível de workers | B |
+| Abrir e construir distritos 2–6; managers | C |
+| Ralos de utilidade de evento | D |
 
-- **Inimigo:** o idle que interrompe a cada minuto e pune quem ainda está aprendendo.
-- **Prova:** bot + diário de playtest (`BALANCE.md`, `diario_report.py`), 60 fps no POCO F4, nenhum interstitial.
-- **Códigos distintivos:** bandana vermelha do ferreiro, faísca dourada da obra-prima, estados "travada" (vermelho) e "fome" (cinza) nas estações.
+**Regras de escala:** custos de cada distrito em "minutos de renda esperada" e prêmios em "segundos de taxa online" (`RateEma`), como as Encomendas já fazem (`BALANCE.md` §20). Upgrade produtivo deve se pagar em 8–12 min de renda (regra de retorno da fase 4, `BALANCE.md` §14). Sintomas que o econsim vigia (DM §107): inflação, zona morta, paywall, distrito sem fim, recurso transbordando.
+
+**Problemas medidos que a economia nova tem de resolver** (`BALANCE.md` §22): zona morta de ~23 dos ~43 min até a produção completa (meta Wave B: ≤ 12 min); ~29 mil de ouro sem destino aos 60 min (meta Wave B: ≤ 10 mil); "Chamar VIP" sem recarga fecha a produção 44% mais cedo (resolvido por V11: recarga de 5 min).
+
+### 5.3 Offline (regra vigente, `BALANCE.md` §5)
+
+`ouro = min(RateEma × 0,25 × min(Δt, 7.200 s), 2 × menor upgrade travado)`; Δt ≤ 0 paga 0; cofre só abre com ≥ 60 s fora; cada resgate tem `claimId`; `SavedAt` nunca recua (`clock_back`). O **teto de 2 h é trava no núcleo, nunca knob**. Managers e premium mexem na **taxa**, não no tempo (recomendação da decisão P2). O offline nunca dá Gem, moeda de evento, Blueprint nem Masterwork.
+
+### 5.4 Exploits que viram teste (DM §133)
+
+Relógio, reabrir o app, offline duplicado, recompensa de anúncio duplicada, restore de IAP, reset de evento, encomenda duplicada. Os de ouro já são testes (A-CORE-02); cada sistema novo traz o seu teste negativo (ver `ECONOMIA_WAVE_B.md` §9).
+
+---
+
+## 6. Distritos 1–6
+
+Estado: Old Forge IMPLEMENTADO (oficina + rua lateral) · 2–6 PROPOSTO · Wave C · tickets C-CORE-01..05, C-ART-13, C-UI-20.
+
+Regra (DM §145): cada distrito tem identidade visual, família de produto, **uma mecânica nova**, major unlock, Orders próprios e Masterworks. Distrito que só muda números não entra. Cada distrito é um `DistrictDef` (uma instância de `Sim` por distrito + camada Império com carteira e Renome compartilhados).
+
+| # | Distrito | Identidade | Família de produto | Mecânica nova | Orders próprios | Masterworks | Major unlock |
+|---|---|---|---|---|---|---|---|
+| 1 | **Old Forge** | oficina herdada; pedra, madeira, brasa laranja | espada, escudo, ferramenta; joia simples na rua lateral (teaser do tier 3) | cadeia física, gargalo, ajudantes, esteira, **Quality e golpe de mestre** | Common, Bulk, Quality, Rush, Mixed, Blueprint, Royal (Renome 2) | 10 (`ECONOMIA_WAVE_B.md` §6) | Charter → Armorer's Row |
+| 2 | **Armorer's Row** | rua de armeiros; ferro escuro, couro, rebites | elmo, peitoral, grevas, manoplas, lança, machado de guerra, maça | **montagem** (assembly): peça de 2–3 componentes numa bancada de montagem; **liga** como material de qualidade | Bulk pesado ("equipar a milícia"), Quality com liga | 10 | carroça de couro do fornecedor; Fundidor (Smelter) |
+| 3 | **Artisan Quarter** | bairro de ourives; ouro, cobre, vitrines, lanternas | colar, broche, cinzel (ferramenta fina), castiçal (ornamento), caixa de joias, cálice (utensílio), fivela (acessório) | **margem × volume**: bancada configurável escolhe o produto; clientes ricos com ticket alto, pouca gente e paciência longa | Mixed de 3 componentes, pedidos de clientes ricos | 10 | lapidação de gemas |
+| 4 | **Royal Arsenal** | pátio militar; estandartes azul e ouro | kit da guarda, kit do batedor, alabarda cerimonial, espada de gala, armadura de gala, insígnia real | **Royal Contracts** com cotas e prazo-bônus; Renome real | Royal, Contract-linked | 10 | contratos reais permanentes |
+| 5 | **Arcane Foundry** | fundição arcana; roxo, ciano, runas, cristal | lâmina rúnica, escudo rúnico, amuleto arcano, cajado de liga, anel de cristal, lanterna arcana, liga celeste | **energização/estabilidade**: a estação arcana tem um medidor determinístico; produzir acima do ritmo estável pausa a estação (decisão de ritmo, sem sorteio) | Quality Superior, Event "Arcane Week" | 10 | minério rúnico e cristal |
+| 6 | **Grand Forge** | catedral de forja; todas as paletas | panóplia do campeão, lâmina estelar, coroa do reino, estátua de bronze, sino da catedral, relicário real | **síntese e exportação**: produtos que pedem componentes de outros distritos; o Mensageiro (Courier) leva lotes de exportação | elite contracts | 10 | endgame: ciclos de exportação e Masterworks lendárias |
+
+**Distritos antigos não somem (DM §10):** depois do Charter, um manager assume, a renda vira fundo, o jogador pode voltar, eventos ainda acontecem e os upgrades finais ficam. A renda de fundo é sempre menor que a ativa (invariante testada, C-CORE-03).
+
+**Pós-lançamento (DM §9):** Forge Street → Port City → Mountain Foundry → Royal Capital, reaproveitando os sistemas e trocando recursos, cadeia, layout, arte, clientes e eventos.
+
+---
+
+## 7. Produtos (tier 1–5) e clientes
+
+Estado: 4 produtos IMPLEMENTADO · `ItemDef`/`RecipeDef` PROPOSTO · Wave B (dados) e C (conteúdo) · B-CORE-01, B-CORE-02.
+
+**Meta da v1.0:** 35–45 produtos vendáveis (DM §7). A lista abaixo dá **38**; intermediários (minério, lingote, couro, placa, rebite, gema, liga, minério rúnico, cristal) não contam.
+
+| Tier (DM §14) | Produtos | Distrito |
+|---|---|---|
+| 1 | espada, escudo, ferramenta, espada longa (via Blueprint) | 1 |
+| 2 | elmo, peitoral, grevas, manoplas, lança, machado de guerra, maça | 2 |
+| 3 | joia simples (já no distrito 1), colar, broche, cinzel, castiçal, caixa de joias, cálice, fivela | 1 e 3 |
+| 4 | kit da guarda, kit do batedor, alabarda cerimonial, espada de gala, armadura de gala, insígnia real | 4 |
+| 5 | lâmina rúnica, escudo rúnico, amuleto arcano, cajado de liga, anel de cristal, lanterna arcana, liga celeste | 5 |
+| 5+ (síntese) | panóplia do campeão, lâmina estelar, coroa do reino, estátua de bronze, sino da catedral, relicário real | 6 |
+
+Cada produto declara (DM §14): insumos, estações, tempo, preço, posição no rodízio de Orders (substitui o "order weight" do DM, que pressupõe sorteio), visual, desbloqueio, Blueprint e regras de qualidade. Esquema em `ECONOMIA_WAVE_B.md` §8.
+
+**Clientes (DM §20, §57):** famílias viajante, guarda, aventureiro, mercador, nobre, emissário real, colecionador, VIP (e camponês no distrito 2+). Diferem em ticket, paciência, produto, comportamento e recompensa; a silhueta comunica a classe (o pedido não depende só do balão). Paciência vigente: base + k × tempo de produção (`BALANCE.md` §13). O cliente colecionador abre no Renome 2 e só leva Fina ou melhor.
+
+**VIP (DM §21, preservar):** a cada 4–6 min por sequência de Weyl, pacote a 3× por unidade, paciência 90 s + 6 s por unidade (`BALANCE.md` §18.9). "Chamar VIP" por anúncio traz um VIP extra com pacote 2× até 20 e **recarga de 5 min** (V11). Apresentação nova na Wave B (B-ART-11): entrada especial, som, FX e pedido destacado.
+
+---
+
+## 8. Workers e managers
+
+Estado: 6 ajudantes de papel fixo IMPLEMENTADO · `WorkerDef` com nível e especialidade PROPOSTO · Wave B (Old Forge) e C (papéis de distrito) · B-CORE-04, B-ART-09, C-CORE-03.
+
+**Papéis (DM §22):**
+
+| Papel | Faz | No jogo hoje | Entra |
+|---|---|---|---|
+| Carregador (Porter) | leva minério, lingote, produto | Ajudante 1, 2, 3, Mineiro, Joalheiro, Joalheiro 2 | já |
+| Oficial (Smith) | opera uma família de estação: qualidade e um pouco de velocidade | — | B |
+| Balconista (Clerk) | atende: paciência e ritmo de atendimento | — | B |
+| Almoxarife (Quartermaster) | mais armazenamento nas saídas e no balcão | — | B |
+| Mestre de obras (Foreman) | buff de área (qualidade e velocidade) | — | B |
+| Fundidor (Smelter) | opera fornalha de liga | — | C (distrito 2) |
+| Mensageiro (Courier) | entrega Orders e exportação | — | C (distrito 6) |
+| Manager | assume o distrito depois do Charter | — | C |
+
+**Progressão (DM §23):** nível (1–10; 1–5 no Old Forge), velocidade, capacidade, especialidade (espadas, escudos, ferramentas, joias, armaduras, carga, atendimento) e cosmético. No máximo 1–2 traços fortes por worker. **Workers são personagens fixos nomeados em dados**: o jogador escolhe quem contratar; nenhum traço é sorteado. Meta da v1.0: 20–30 workers funcionais (DM §7). Números iniciais no `ECONOMIA_WAVE_B.md` §2.
+
+**Managers (DM §24):** entram com o Charter, automatizam a coleta e geram renda de fundo; o manager sobe a **taxa** do distrito em fundo e do offline, nunca o teto de 2 h (P2). Não elimina o motivo de revisita: eventos, Masterworks e contratos do distrito continuam pedindo o jogador.
+
+---
+
+## 9. Quality
+
+Estado: PROPOSTO · Wave B · B-CORE-03 · decisão P10 (fórmula). Números: `ECONOMIA_WAVE_B.md` §1.
+
+Quatro níveis (DM §15): **Normal · Fina · Superior · Masterwork**.
+
+- **Sem RNG; regra explicável.** Cada estação de fabricar soma "pontos de qualidade" `q` das fontes que o DM lista: nível da estação, worker (oficial da especialidade), Blueprint (técnica da família), material (liga, distrito 2+) e buff (mestre de obras, evento). A parte inteira de `q` é o nível garantido; a parte fracionária enche um **acumulador por estação**: quando ele passa de 1, aquela peça sai um nível acima. Com `q = 0,25`, exatamente 1 peça em cada 4 sai Fina. A UI mostra a barra da estação ("próxima Fina em 2 peças") e o `QualityBreakdown()` lista cada fonte.
+- **Preço:** Normal 1×, Fina 1,5×, Superior 2,5× (no balcão e no VIP). Masterwork **não é vendida**.
+- **Golpe de mestre (FS-2 reconciliado):** só o ferreiro, parado na boca da bigorna/bancada com o insumo, acerta um anel de 0,8 s e sobe a peça **um nível**. Ajudantes, managers e offline nunca fazem. Recarga de 20 s (knob). Errar não pune.
+- **Masterwork:** é o nível acima de Superior e **só a mão do ferreiro chega lá** — golpe de mestre numa peça que já sairia Superior, com o projeto (Blueprint) da Masterwork e as condições dela cumpridas. A peça vai para o **Hall** (§13), não para o balcão. Sem as condições, o golpe em Superior fica Superior (vendida a 2,5×).
+- **Automação chega no máximo a Superior.** Peças carregam o nível na pilha, nos ajudantes e no estoque; o balcão vende a melhor primeiro.
+- **Save antigo:** tudo Normal, acumuladores em zero.
+
+---
+
+## 10. Orders 2.0
+
+Estado: Encomendas (1 tipo, 1 vaga) IMPLEMENTADO · 8 tipos PROPOSTO · Wave B · B-CORE-05. Números: `ECONOMIA_WAVE_B.md` §3.
+
+| Tipo (DM §18) | O que pede | Prêmio | Abre |
+|---|---|---|---|
+| Common | N de um produto (= a encomenda atual) | ouro | sempre |
+| Bulk | quantidade grande | mais ouro e Renome | 2 linhas e 5 entregues |
+| Quality | N de qualidade mínima (Fina; Superior no Renome 3) | ouro alto, Renome | 1ª fonte de qualidade |
+| Rush | N com prazo | prazo é **só bônus**: no prazo, prêmio dobrado; fora, prêmio normal | 8 entregues |
+| Mixed | 2–3 produtos | ouro, Renome | 3 linhas |
+| Royal | quantidade + qualidade Fina | ouro alto e muito Renome; projeto de Masterwork real | Renome 2 |
+| Blueprint | N de um produto | um Blueprint (o próximo pendente da lista do distrito) | Renome 1 |
+| Event | definido pelo `EventDef` | pontos de evento | evento ativo (Wave D) |
+
+**Regras:**
+- **Rodízio determinístico, sem sorteio:** cada distrito tem um ciclo fixo de tipos (Old Forge: `Common, Common, Bulk, Quality, Common, Mixed, Rush, Blueprint, Common, Royal`); tipo ainda travado vira Common. O produto segue o rodízio das linhas abertas, como hoje.
+- **Nunca falha, nunca pune.** Sem prazo de falha (B-CORE-05: Rush só com bônus).
+- **Vagas:** 1 no começo, 2 no Renome 1, 3 no Renome 3 (o "livro-caixa" do DM §26). Cada unidade vendida conta para no máximo uma encomenda.
+- **Prêmio** em segundos de taxa online, fora do `GoldEarned`, com ID de transação.
+- **Meta da v1.0:** 50+ `OrderDef` (DM §7). FS-3 (fregueses com nome) entra como encomenda com `clientId`, não como 9º tipo.
+- Rewarded opcionais: "bônus da encomenda" e "trocar encomenda" (mostra a próxima do rodízio antes de assistir) — §17.
+
+---
+
+## 11. Royal Contracts e Royal Charter
+
+Estado: PROPOSTO · Charter Wave C (C-CORE-03) · Contracts Wave D (D-CORE-04).
+
+**Royal Contract (DM §19):** objetivo de médio prazo, em paralelo ao loop. Ex.: "Equipar 20 guardas" = 20 espadas + 20 escudos + 20 elmos. Entregar desvia produto do balcão: a decisão é vender agora ou cumprir o contrato.
+- Recompensas: ouro, **Blueprint (desbloqueio, não token, V9)**, Renome e, se houver baú, **conteúdo fixo mostrado antes**. A "cosmetic chance/controlada" do DM §19 sai: nada de chance (P5).
+- Prazo só como bônus; contrato nunca bloqueia o core loop (o bot fecha todos os distritos sem nenhum contrato).
+- Meta da v1.0: 12 Royal Contracts (DM §7). Recompensa 1×, com ID de transação.
+
+**Royal Charter (DM §11):** a "formatura" do distrito, **sem reset** (V5).
+- Condições do Old Forge (PROPOSTO): produção completa + Renome 4 + 1 Masterwork registrada. Distritos seguintes: o mesmo padrão com o nível de Renome do distrito; quando os Royal Contracts existirem (Wave D), os Charters do distrito 4 em diante pedem também 1 contrato.
+- Concede: libera o próximo distrito, +100 de Renome, insígnia, manager e renda de fundo do distrito, fala de marco. Um Charter por distrito, 1×.
+- A troca de distrito é o momento natural de interstitial **se** a flag estiver ligada (§17).
+
+---
+
+## 12. Blueprints
+
+Estado: PROPOSTO · Wave B · B-CORE-07 · V9 (Blueprint é desbloqueio). Lista inicial: `ECONOMIA_WAVE_B.md` §4.
+
+- **Blueprint é posse, não token.** Ter o Blueprint libera uma coisa específica e permanente: receita (produto ou variante), nível de estação, técnica de qualidade, projeto de Masterwork, especialização ou variante cosmética. Não existe saldo nem troca.
+- **Fontes (DM §17):** gameplay (marcos de produção), Orders (tipo Blueprint e Royal), Royal Contracts, eventos, Pass, achievements e, só na Wave E, loja como **aceleração**.
+- **Regra "receita essencial nunca só paga"** (DM §17; regra do validator): todo Blueprint marcado essencial (o que trava progressão de distrito, Charter, Masterwork exigida ou contrato) tem pelo menos uma fonte grátis alcançável; loja e trilha premium do Pass nunca são a única fonte. O validator falha o build se isso quebrar.
+- **Sem sorteio:** a próxima recompensa de Blueprint é a próxima pendente da lista ordenada do distrito, mostrada no cartão da encomenda.
+- **Meta da v1.0:** 60+ Blueprints (DM §7).
+
+---
+
+## 13. Masterworks e Collection
+
+Estado: PROPOSTO · Wave B · B-CORE-08 · P10. Lista e marcos: `ECONOMIA_WAVE_B.md` §6–§7.
+
+**Masterworks (DM §16):** peças de coleção com aparência exclusiva, registro no Hall, condição especial, nunca vendidas.
+- Como sair uma: golpe de mestre numa peça que já sairia Superior + Blueprint da Masterwork + condição especial (contagem vendida, nível de estação, encomendas de um tipo, nível de oficial, Renome). Nada pago, nada de anúncio como condição.
+- **Hall = Galeria (FS-6):** pedestais físicos no distrito (crescimento visível e filmável) e a aba Masterworks do livro. Cada Masterwork entra 1×; a segunda vez sob as mesmas condições sai Superior e é vendida.
+- Recompensas: Renome, cosmético (pedestal, estandarte, martelo do ferreiro), achievement e marcos de coleção. Família completa no distrito: +5% fixo no preço daquela família (FS-6).
+- Meta da v1.0: 60 Masterworks, 10 por distrito (DM §7). Exemplos do DM: King's Sunblade, Shield of the First Guard, Ember Crown — todas no Old Forge.
+
+**Collection Book (DM §34):** dá valor de coleção ao que já foi produzido.
+- Abas: produtos (produto × qualidade), Masterworks, workers, clientes, distritos, Blueprints.
+- **Derivada dos contadores** (vendas por item e qualidade, contratações, posses): o save só guarda os marcos já resgatados, com ID de transação.
+- Marcos dão Renome e cosméticos (DM §34), nunca ouro direto. Abre no 1º Blueprint de Masterwork (~100 espadas), como preview do D0 (DM §82).
+
+---
+
+## 14. Reputation ("Renome")
+
+Estado: PROPOSTO · Wave B · B-CORE-06. Limiares: `ECONOMIA_WAVE_B.md` §5.
+
+- **Não é moeda** (DM §35, V9): monotônica, nunca gasta, nunca cai. Existe um total e níveis com nome.
+- **Fontes:** Orders (por tipo), Royal Contracts, qualidade (peças Superiores vendidas), Masterworks, marcos de coleção, baús de marco, Charter e eventos.
+- **Libera (DM §35):** clientes (colecionador), vagas de Order, tipos de Order (Blueprint, Royal), workers (almoxarife, mestre de obras), cosméticos e estágios visuais do herói, falas de história, contratos e o Charter de cada distrito.
+- **Níveis:** 0 Aprendiz · 1 Ferreiro da rua · 2 Oficina conhecida · 3 Mestre artesão · 4 Fornecedor do reino (Charter do Old Forge) · 5–10 nos distritos 2–6.
+- **Save antigo (0.6):** entra com Renome = encomendas entregues + 5 × baús abertos (retroativo determinístico).
+- Na HUD aparece como selo de nível, nunca como saldo ao lado do ouro (DM §64).
+
+---
+
+## 15. Metas diárias, semanais e achievements
+
+Estado: baús de marco IMPLEMENTADO (embrião) · resto PROPOSTO · Wave D · D-CORE-01/02, D-PROD-03.
+
+- **Daily (DM §30):** 3 missões curtas por dia sobre o fluxo de eventos `Ev` (vender 20 produtos, concluir 2 Orders, melhorar estação, coletar o cofre, chamar VIP — esta última sempre com alternativa sem anúncio no mesmo dia). Recompensa até a Wave E: ouro (segundos de taxa), Pass XP e Renome; Gems pequenas só depois da Wave E.
+- **Weekly (DM §31):** concluir Orders, produzir famílias, cumprir Contracts, participar de evento.
+- **Achievements (DM §32):** crafting, workers, distritos, Orders, Masterworks, automação, economia. Recompensas: Blueprint, insígnia, cosmético, Pass XP (Gems só depois da Wave E).
+- **Login de 7 dias (DM §135):** ciclo de 7 dias, **reset não punitivo** (perder um dia não volta ao dia 1), catch-up leve.
+- **Volume da v1.0** (D-PROD-03): ≥ 30 modelos de daily, ≥ 12 de weekly, ≥ 60 achievements, cada um ligado a um evento da taxonomia (DM §86).
+- **Calendário e ledger** (D-CORE-01): o núcleo recebe `nowUnix`; nenhuma recompensa duplica em save/load, reabertura ou relógio para trás. Trapaça local de relógio aceita até haver hora de servidor (decisão de D-CORE-01).
+
+---
+
+## 16. LiveOps e Pass
+
+Estado: PROPOSTO · Wave D (sistemas) e E (compra do Pass) · D-CORE-03/04, D-PROD-01/02.
+
+**Evento em dados (DM §28):** `EventDef` com id, início/fim, requisitos, missões, recompensas, moeda (ou pontos), visual, modificadores (sobre o `Tuning`) e ofertas. Nunca hardcode de evento no fluxo central; **evento novo entra só com dados** (aceite da Wave D).
+
+**Templates (DM §29), 8:** Forge Frenzy, Royal Week, Rare Ore Rush, Blacksmith Festival, Masterwork Hunt, Merchant Caravan, Armorer's Challenge, Arcane Week.
+
+**Calendário (DM §121–123, D-PROD-01):** 8 semanas pré-planejadas + 2 reservas antes do Global.
+- Season 1 — Royal Commission: Royal Week, Forge Frenzy, Armorer's Challenge, Masterwork Hunt "King's Sunblade".
+- Season 2 — Ember Festival: Blacksmith Festival, Rare Ore Rush, Merchant Caravan, Masterwork Hunt "Ember Crown".
+- Reservas: Forge Frenzy-B e Royal Week-B, rodando só com o distrito 1.
+
+**Moeda de evento:** até decisão (P1 / D-CORE-03), eventos usam **pontos de evento** (trilha não gastável com recompensas por limiar). Se a moeda de evento entrar, é uma por vez (DM §12) e nunca vem do offline.
+
+**Masterwork Pass (DM §33):** temporada de 28–35 dias, trilha free e premium; XP de daily, weekly, Orders e eventos. Premium: cosméticos, decorações, conveniência e (depois da Wave E) Gems. **Nada obrigatório de progressão só no premium** (regra do validator). O bot F2P fecha a trilha free (D-PROD-02). A compra do premium é IAP da Wave E.
+
+---
+
+## 17. Monetização
+
+Estado: 2 rewarded IMPLEMENTADO (LevelPlay 9.5.1; conta aguardando aprovação) · resto PROPOSTO · Wave E · E-PLAT-01..07, E-UI-21.
+
+**Princípio (DM §39):** pagar acelera, amplia opções ou melhora a aparência; nunca torna a experiência grátis deliberadamente ruim. Kill criterion herdado do v1 §26: **rewarded necessário para a progressão normal = cancelar**. O bot F2P, sem anúncio, fecha todo o conteúdo.
+
+**Pré-requisito de toda monetização comercial:** tela de idade + consentimento antes de iniciar qualquer SDK (E-PLAT-01); menor de 18 sem anúncio personalizado; nada de consentimento fixo no release (DM §94).
+
+### 17.1 Rewarded (DM §40), tudo por RemoteConfig
+
+| Placement | O que dá | Recarga / teto (knob) | Estado |
+|---|---|---|---|
+| Chamar VIP | VIP extra, pacote 2× até 20 | 5 min (V11) | IMPLEMENTADO; recarga na Leva 5 |
+| Velocidade ("Forge Rush") | 2× por 60 s; 2º anúncio sobe a 3× | 5 min contados do fim | IMPLEMENTADO |
+| Cofre 2× | dobra aquele resgate, uma vez | 1 por resgate | PROPOSTO (D5) |
+| Bônus da encomenda | +50% do ouro da encomenda ativa (não Renome, não Blueprint) | 1 por encomenda | PROPOSTO |
+| Trocar encomenda | pula para a próxima do rodízio, **mostrada antes** de assistir | 1 por encomenda | PROPOSTO (substitui o "Blueprint Reroll", P5) |
+| Supply Drop | entrega fixa de lingotes (60 s de produção da fornalha), mostrada antes | 10 min | PROPOSTO |
+| Bônus de evento | pontos de evento extras, valor mostrado antes | por evento | Wave D |
+
+Teto diário total por knob; botões de anúncio só depois da 1ª melhoria (decisão D6 do `BACKLOG_V07.md`). Recompensa entregue 1× (E-PLAT-02); recompensa tardia logada.
+
+### 17.2 Interstitial (DM §41, V10)
+
+Implementado atrás de **feature flag desligada**. Só liga depois de A/B no Limited Release. Regras quando ligado: nunca no tutorial, nunca durante ação, só no estado `Transition` (troca de distrito, volta ao mapa, depois de sequência de marcos), cap por sessão e cooldown, removido pela compra "Remove Ads". Enquanto a flag está desligada a loja **não promete** "sem anúncio forçado" (V10). Banner: nenhum.
+
+### 17.3 IAP (DM §42–47), Wave E
+
+Sem moeda premium antes da Wave E (V9). Tudo compra direta com conteúdo fixo e visível; sem lootbox (DM §45).
+
+| Produto | Conteúdo | Nota |
+|---|---|---|
+| Remove Ads **ou** Pacote do Mestre | se o interstitial ligar: remove interstitial (rewarded continua opcional). Se continuar desligado: Pacote do Mestre = cofre 2× permanente + skin de oficina | decisão P3 depois do A/B; FS-5 |
+| Starter Smith Pack | 1ª compra: Gems, cosmético, boost; alto valor percebido | aparece depois da 1ª automação, nunca no 1º minuto (DM §47) |
+| Gem Packs | faixas de preço | Gems com mapa fonte → ralo antes |
+| Master Blacksmith Bundle | skin, Gems, consumíveis | — |
+| District Bundle | oferta contextual ao abrir distrito | offer engine (DM §46) |
+| Event Bundle | durante eventos | — |
+| Masterwork Pass | trilha premium da temporada | §16 |
+
+Faixas de preço de referência do mercado (não decididas): No Ads US$ 3,99–9,99 e passes US$ 8,99–9,99 nos similares (`BENCHMARK_MERCADO.md` §2, §8); "Pacote do Mestre" proposto a US$ 2,99–4,99 (`COMPETITIVO.md` FS-5).
+
+**Payer ladder (DM §45):** low (Starter, Remove Ads/Pacote do Mestre), regular (Pass, bundles), high (Gem packs, Master Blacksmith). **Gems (Wave E):** fontes = compra, achievements, Pass, pequena distribuição grátis; ralos = cosméticos, conveniência, bundles, utilidade de evento e "trocar" com a próxima opção visível. **Assinatura:** fora da v1.0 (DM §43). **Shop (DM §44):** Featured, Pass, Gems, Cosmetics, Bundles; não abre sozinha toda sessão; sem dark pattern. **Cosméticos (DM §48–49):** aparecem de verdade no jogo; slots simples de decoração.
+
+**Segurança (DM §93, E-PLAT-04):** recibo, restore, entitlements re-derivados do recibo, compra pendente confirmada só depois do save gravado.
+
+---
+
+## 18. Arte e áudio (direção)
+
+Estado: sprites pré-renderizados IMPLEMENTADO (V3); fornalha em 6 estados e HUD numa paleta (Wave A); resto PROPOSTO · arte contínua desde a Wave A, fechamento na Wave F · Art Bible: [`ART_BIBLE.md`](ART_BIBLE.md); proveniência: [`PROVENIENCIA.md`](PROVENIENCIA.md).
+
+**Direção visual (DM §51):** *Stylized Medieval Crafting Diorama* — formas robustas, silhuetas grandes, materiais limpos, cores quentes, luz de forja, personagens expressivos, objetos exagerados, VFX fortes. Premium, divertido, reconhecível em 9:16. Nenhum asset é protegido por já existir (DM §50).
+- **Pipeline (V3, DM §58, §74):** modelo 3D → rig → animação → preset de render → folha de sprites → atlas → Unity → QA visual → proveniência. Crédito de IA (Tripo etc.) e download só com aval.
+- **Paleta (DM §52):** madeira, pedra, ferro, couro, cobre; laranja/amarelo = calor, verde = sucesso, azul = informação, vermelho = gargalo. Cor nunca é o único sinal (estado é forma também).
+- **Estações:** fornalha com 6 estados legíveis sem texto (fria, aquecendo, ativa, sem minério, saída cheia, overdrive; DM §54); bigorna com martelo, faísca, impacto, som, progresso e pop (DM §55); esteira como "antes/depois" vivo (DM §56). **Nível de estação muda a aparência** (Wave B).
+- **Qualidade legível:** Fina = brilho prata; Superior = brilho dourado; Masterwork = faísca dourada + câmera tremendo + pedestal.
+- **Personagens (DM §57–60):** animações mínimas (jogador e worker: idle, walk, carry, interact/work, celebrate; cliente: walk, wait, happy, frustrated, leave; especiais: hammer, smelt, counter); silhueta por papel de worker e por família de cliente.
+- **VFX (DM §61–62):** faísca, brasa, calor, impacto; moedas; flash, poeira de obra, feixe de nível; revelação de Blueprint e brilho de Masterwork; pacote de tema por evento. Tudo em pool com teto por perfil. "Juice" = visual + som + vibração + movimento em upgrade, contratação, distrito, Masterwork, VIP, contrato e recompensa do Pass.
+- **Códigos distintivos:** bandana vermelha do ferreiro, faísca dourada da obra-prima, "travada" vermelha e "fome" cinza, anel de ouro dos pads, heráldica bigorna + chama.
+- **Gates:** Visual Robustness Gate (DM §73, 8 perguntas por tela) e No Placeholder Gate (DM §178) no release.
+- **Marca (DM §179–180):** logo de metal/madeira com bigorna/martelo, legível pequeno; tipografia OFL (A-UI-15); 4 variantes de ícone para teste (DM §77).
+
+**Áudio (DM §70–72):** a oficina "respira": camadas de fogo, metal, martelo, esteira, moedas, multidão, carroça e ambiente, que **crescem junto com o negócio**. Músicas: main, workshop, royal, event, arcane (medieval estilizado, sem cansar). Mixer Music/SFX/Ambience (A-AUD-23); nenhuma senoide sintetizada no release. Vibração só em eventos importantes (upgrade, Masterwork, desbloqueio, VIP, venda grande), nunca em toda venda.
+
+---
+
+## 19. UX e HUD
+
+Estado: menu inferior, dicas e cartão de encomenda IMPLEMENTADO · redesign PROPOSTO (A-UI-15..19, C-UI-20, E-UI-21).
+
+- **HUD (DM §64):** ouro; Gems só quando relevante (Wave E); Order ativa (até 3 cartões compactos); objetivo contextual; menu. Renome aparece como selo de nível na tela do distrito/perfil e num aviso ao subir, nunca como saldo. Nada de dez moedas na tela.
+- **Uma mão, retrato, hierarquia clara** (DM §156); a UI não parece painel de administração. Avisos numa fila fora da área de jogo (A-UI-19).
+- **Cartão de upgrade (DM §65):** nome, efeito, custo, ícone e benefício (ex.: "Fole Reforçado · +25% velocidade da fornalha · 500"). Nível de estação mostra "+0,15 qualidade · 1 em cada 7 sai Fina".
+- **Estação:** barra de qualidade (acumulador) e o `QualityBreakdown()` ao tocar; anel do golpe de mestre num lugar fixo, só com o ferreiro parado na boca (não briga com o joystick).
+- **Telas novas:** mapa de distritos (progresso, renda, evento, próximo unlock, Masterworks; DM §66), tela de distrito (DM §67), Collection Book e Hall, Shop (cartões claros, sem 15 popups; DM §68), Pass (free/premium, prévia, tema, XP; DM §69).
+- **Revelação progressiva:** Orders aos 0:45; Quality e níveis de estação depois das Ferramentas (~11 min); selo de Renome no nível 1 (~15–25 min); Collection no 1º projeto de Masterwork; mapa de distritos no Charter. Não explicar sistema futuro cedo (DM §81).
+- **Volta do jogador (DM §136 + FS-7):** um cartão só — boas-vindas, cofre que conta (o que cada linha rendeu e qual estação travou, com "ver"), evento ativo e a Order. Nunca cinco popups.
+- **Estados de jogo formais (DM §128):** Boot, Loading, Playing, Modal, Ad, Paused, Transition (A-PLAT-07); o Voltar do Android funciona em todos.
+- **Acessibilidade (DM §110–111):** volume de música e efeitos, vibração liga/desliga, cor + forma, reduzir efeitos, texto legível, modo bateria; perfis Battery/Balanced/High sem tirar informação de jogo.
+
+---
+
+## 20. Métricas e KPIs
+
+Estado: diário CSV local IMPLEMENTADO (12 dos 31 eventos do DM §86) · analytics remoto PROPOSTO · A-PLAT-06/09, G-UA-05 · decisões P6 e P8.
+
+**Taxonomia (DM §86):** os 31 eventos (`session_start` … `event_complete`) por `IAnalytics`, só depois do consentimento; contexto de desempenho (DM §87: versão, build, modelo, SO, classe de memória, faixa de fps, duração, crash), sem dado pessoal desnecessário. Ad revenue por impressão (DM §95). Todo A/B com id, variante, snapshot do config, início, fim e métricas (DM §89).
+
+**Retenção (decisão P6 pendente):**
+
+| Nível | D1 | D3 | D7 | D30 | Uso |
+|---|---|---|---|---|---|
+| Continuar (kill criteria, v1 §15/§26) | ≥ 26% | ≥ 14% | ≥ 5% | ≥ 2% | decide continuar / iterar / cancelar |
+| Meta interna base (DM §115) | ≥ 28% | ≥ 14% | ≥ 7% | ≥ 2% | meta do time |
+| Meta agressiva (DM §115) | ≥ 32% | — | ≥ 9% | ≥ 3% | aspiração |
+
+Leitura: coorte de 1,5–2k installs pagos, pago × pago; cancelar só depois de 2 iterações; pagante só a partir de 5k installs (v1 §15). Referência de mercado citada no v1: GameAnalytics 2026, D1 mediano ~20% e top-25% ~30%; D7 mediano < 4% e top-25% 6–7%.
+
+**Portões de jogo (não mudam):** tutorial ≥ 90%; 1ª venda < 90 s para ≥ 90%; rewarded opt-in ≥ 45%; 2–5 rewarded/DAU sem queda de retenção; 2+ sessões/dia nos retidos; andar sem decisão < 50%; crash-free > 99,5%.
+
+**Outros grupos (DM §116–118, §139–141):**
+- Monetização: opt-in, completion, ads/DAU, ad ARPDAU, payer conversion (≥ 1%), ARPPU, IAP ARPDAU, starter e pass conversion, blended ARPDAU.
+- Engajamento e meta: Orders/sessão, upgrades/sessão, progresso de distrito, participação em evento, uso da coleção, tempo entre transformações visíveis, Royal Contracts, progressão do Pass.
+- Gameplay: `first_sale`, ritmo de upgrade, densidade de decisão, `walk_no_decision`, `client_left`, conclusão de distrito; % de vendas Fina ou melhor; golpes de mestre/sessão.
+- Qualidade técnica: crash-free, ANR-free, tempo de carga, fps, falha de save, falha de compra.
+- UA: hook rate, CTR, IPM, CPI (≤ US$ 0,70 promissor; 0,70–1,10 iterar; > 1,10 exige LTV maior — v1 §15), conversão da loja, ROAS D7/D30, fadiga de criativo.
+- Diferenciais: a métrica de cada FS em `COMPETITIVO.md` d (ex.: FS-1 = clientes perdidos −50% no bot lento).
+
+---
+
+## 21. Diferenciais FS-1…FS-7 reconciliados com o Documento Mestre
+
+Fonte dos diferenciais: `COMPETITIVO.md` d–e (todos HIPÓTESE até bot, Closed e teste de criativos).
+
+| # | Diferencial | Ponto de atrito com o DM | Reconciliação proposta | Wave / estado |
+|---|---|---|---|---|
+| FS-1 | Demanda que respira (chegada acompanha a vazão nos ~15 min iniciais) | nenhum; serve à meta "1ª venda < 90 s" e ao bot Slow (DM §81, §106) | Knob do `Tuning` atrás de flag (A-CORE-03). Invariantes: nunca aumenta a chegada, nunca dá ouro, desliga sozinha. Prova: bot Slow com clientes perdidos −50% sem o ouro/min do F2P subir > 5% | B · PROPOSTO |
+| FS-2 | Golpe de mestre: obra-prima só do ferreiro, "vendida a 3×" | DM §16: Masterwork **não é vendida**, vai para o Hall | **P10:** o golpe sobe a peça 1 nível (Normal→Fina→Superior, vendidas a 1,5×/2,5×); **só o golpe numa peça que já sairia Superior, com o projeto e as condições, chega ao tier Masterwork**, que vai para o Hall. A "obra-prima a 3×" vira "peça Superior a 2,5×" no dia a dia e "a obra-prima entra no Hall" no marco. Criativo #11 / FS-C-28 troca o fecho. Invariantes: ajudante, manager e offline nunca; ≤ 8% da receita no bot; recarga 20 s | B · PROPOSTO (P10) |
+| FS-3 | Clientela fiel: 5 fregueses com nome e 5 corações | DM §20 (famílias), §35 (Renome libera clientes), §18 (8 tipos de Order) | Freguês = `ClientDef` nomeado dentro de uma família (mago, elfa, goblin, cavaleiro, nobre; arte existente). "Encomenda pessoal" = `OrderDef` Common/Quality/Bulk com `clientId`, não um 9º tipo. Corações = afinidade derivada das entregas daquele freguês (trilha, não moeda). A marca na rua (+5% fixo na linha) é recompensa da aba Clientes. Visitas no rodízio, sem sorteio | B/C · PROPOSTO |
+| FS-4 | Ferreiro rival na rua, pilotado pelo `Bot.cs`; vencer = comprar a forja dele | DM §37 (rival em marcos/eventos, sem PvP) e §11 (Charter abre o distrito) | O rival é a **camada narrativa do Charter do Old Forge**: superar o rival vira uma das condições do Charter, e "comprar a forja dele" é a cena do major unlock de Armorer's Row. Ele só leva cliente que você não atendeu; nunca rouba ouro. Entra só depois do A/B no bot (≤ 15% dos clientes de quem joga bem, ≤ 35% do Slow) | C · PROPOSTO |
+| FS-5 | "Anúncio só quando você pede": zero interstitial e banner para sempre | DM §41 autoriza interstitial; V10 manda implementar atrás de flag desligada | O jogo **cumpre** a promessa enquanto a flag está desligada; a loja **não promete** até o A/B do Limited Release (V10). Banner: nenhum. Se a flag ficar desligada de vez, "Remove Ads" vira "Pacote do Mestre" (cofre 2× permanente + skin; sobe a taxa, não o teto, coerente com P2) | E · APROVADO em parte (V10); final = P3 |
+| FS-6 | Galeria de obras-primas: 12 pedestais, +5% por linha completa | DM §16 (Hall) e §34 (Collection) | A Galeria **é** o Hall: pedestais físicos no distrito + aba Masterworks. 10 por distrito (60 na v1.0, DM §7) no lugar de 12. O +5% por família completa vira marco de coleção, fixo e sem sorteio | B · PROPOSTO |
+| FS-7 | Cofre que conta (o que cada linha rendeu, qual estação travou, "ver") | DM §136 (volta: boas-vindas, offline, resumo, evento, Order; sem 5 popups) | O cofre que conta **é** o "resumo" do DM §136, num cartão só com a Order e o evento. Pagamento inalterado (25% × até 2 h, `claimId`) | B · PROPOSTO |
+
+**Ordem sugerida:** FS-1 e FS-2 (com a Quality) na Wave B; FS-7 junto do redesign da volta; FS-6 com os Masterworks; FS-3 depois do `ClientDef`; FS-4 com o Charter na Wave C; FS-5 decidido pelo A/B do Limited Release.
+
+---
+
+## 22. Decisões abertas de que este GDD depende
+
+As decisões estão no `PROJETO.md` §5; aqui só o que trava design:
+
+| # | Decisão | Recomendação deste GDD | Trava |
+|---|---|---|---|
+| P10 | Golpe de mestre × Masterwork não vendida | §9 e §21 FS-2: Masterwork = Superior + golpe + projeto, vai para o Hall | B-CORE-03, B-CORE-08 |
+| P2 | Teto offline × premium/assinatura | trava de 2 h; manager e premium mexem na taxa | C-CORE-03, E |
+| P5 | Rerolls, "chest", "cosmetic chance" | baú fixo e visível; trocar mostra a próxima antes; sem "chance" | B (Orders), D, E |
+| P6 | Metas de retenção | três níveis do §20 | dashboards |
+| P1 (resto) | Moeda de evento | pontos de evento até decidir | D-CORE-03 |
+| — | Fórmula e números da Wave B | os do `ECONOMIA_WAVE_B.md`, validados pelo bot antes de aprovar | B-CORE-03..08 |
+| — | FS-3 e FS-4 entram? | FS-3 na B/C com arte existente; FS-4 só depois do A/B no bot | B, C |
+
+---
+
+## 23. Definição de pronto (100%)
+
+Forge Street está **completo** (DM §164) quando os 23 itens abaixo cumprem o critério — a mesma lista do `PROJETO.md` §8, onde fica o placar em %. "Pronto" = pronto para Release Candidate (Wave H), não "começado". Completo não significa "nunca mais atualizar": o live game continua. Além dos 23, o RC exige Feature Complete (DM §163) e `POCO_RELEASE_GATE = PASS` (DM §151).
+
+| # | Item (§164) | Critério verificável de 100% |
+|---|---|---|
+| 1 | **Core polido** | `verify.sh full` verde; 0 known issue P0/P1 aberto no `PROJETO.md` §7; núcleo determinístico com passo fixo (mesma entrada de toques → mesma partida, teste de replay); 1.000 partidas do econsim por perfil sem deadlock; 1ª venda < 90 s em ≥ 90% e andar sem decisão < 50% no diário do Closed |
+| 2 | **6 distritos** | 6 `DistrictDef` aprovados pelo validator; cada um com kit visual próprio, família de produto, 1 mecânica nova com teste no `coretests`, Orders próprios, 10 Masterworks e Charter; bot F2P conclui os 6 sem zona morta maior que a meta do econsim; `grep` por `district ==` no código = 0 |
+| 3 | **35–45 produtos** | entre 35 e 45 `ItemDef` vendáveis, cada um com `RecipeDef`, preço, ícone, texto em pt-BR/en/es e chave de analytics; validator verde; o bot vende cada um pelo menos 1× |
+| 4 | **Workers** | 20–30 `WorkerDef` com papel, nível, especialidade (≤ 2 traços) e cosmético; os 8 papéis do §8 com teste no núcleo; teste de silhueta ≥ 5/7 (B-ART-09); nenhum traço sorteado |
+| 5 | **Quality** | 4 níveis em dados; teste de determinismo (q = 0,25 → exatamente 1 Fina a cada 4); `QualityBreakdown()` explica 100% das peças; Masterwork só pelo golpe do ferreiro (teste negativo com ajudante e offline); prêmio de qualidade e golpe dentro das faixas do `BALANCE.md` |
+| 6 | **Orders** | 8 tipos em dados, 1 teste por tipo; ≥ 50 `OrderDef`; rodízio sem RNG (teste negativo); Rush sem penalidade; 1 unidade conta para 1 encomenda; prêmio com ID de transação, fora do `GoldEarned` |
+| 7 | **Royal Contracts** | 12 contratos em dados; bot fecha todos os distritos sem cumprir nenhum (não bloqueiam o core); recompensa 1× com ID de transação; baú só de conteúdo fixo |
+| 8 | **Blueprints** | ≥ 60 `BlueprintDef`; regra do validator "essencial nunca só paga" com teste negativo; todo essencial tem fonte grátis alcançável no bot F2P; nenhum saldo de Blueprint no save (é posse) |
+| 9 | **Masterworks** | 60 `MasterworkDef` (10 por distrito); bot Perfect registra todas; nenhuma vendida nem no `GoldEarned`; todas visíveis no Hall; nenhuma condição exige anúncio ou compra (validator) |
+| 10 | **Collection** | 6 abas derivadas dos contadores; marcos 1× com ID de transação; save antigo recupera a coleção pelos contadores; ≥ 30% abrem a coleção sem dica no Closed (métrica do FS-6) |
+| 11 | **Reputation** | monotônica (teste: nenhum caminho reduz); sem API de gasto; 10 níveis em dados; cada nível libera algo visível; save antigo recebe o retroativo |
+| 12 | **Daily / Weekly / Achievements** | ≥ 30 / ≥ 12 / ≥ 60 modelos, cada um ligado a um evento do DM §86; login de 7 dias não punitivo; nenhuma recompensa duplica em save/load, reabertura ou relógio para trás (testes) |
+| 13 | **Events (LiveOps)** | 8 templates; um evento novo entra com diff só de dados (prova num PR); calendário de 8 semanas + 2 reservas; `event_enter`/`event_complete` na telemetria; reset de evento não duplica recompensa |
+| 14 | **Pass** | temporada configurável de 28–35 dias em dados; bot F2P fecha a trilha free; validator: nada obrigatório só no premium; compra do premium com restore |
+| 15 | **Ads** | consentimento e idade antes do SDK (E-PLAT-01); placements por RemoteConfig com recarga no núcleo (VIP 5 min, Velocidade 5 min); interstitial atrás de flag com os 5 vetos testados; recompensa 1×; receita por impressão no analytics |
+| 16 | **IAP** | Unity IAP com restore em instalação limpa; compra pendente confirmada só depois do save; mocks de compra interrompida, duplicada e restaurada verdes; entitlements do recibo; nenhum item aleatório pago (teste/validator) |
+| 17 | **Analytics** | os 31 eventos do DM §86 por `IAnalytics`, só depois do consentimento; dicionário de analytics publicado; dashboards de retenção, monetização e UA (G-UA-05); crash reporting com símbolos por build |
+| 18 | **RemoteConfig** | os knobs do DM §88 vindo do `Tuning`; flags do DM §130 desligam feature sem build; travas de guardrail testadas (offline ≤ 7.200 s, caps de anúncio); snapshot de config em todo A/B |
+| 19 | **Save** | Save 2.0 (envelope, checksum, atômico, `.bak`, migração) + migração testada de todas as versões publicadas (H-PLAT-02) + `contentVersion`; save de compra protegido; cloud save conforme decisão |
+| 20 | **Release pipeline** | `verify release` verde no AAB (API 36, ARM64, 16 KB, assinatura, `versionCode` crescente, não-development, privacidade); release automatizada tag → AAB → trilha interna (G-PLAT-03); Unity no CI (P15) |
+| 21 | **Arte final** | auditoria do No Placeholder Gate (DM §178) com 0 item; Visual Robustness Gate (DM §73) 8/8 em cada tela; brand system (logo, tipografia, cores, iconografia); proveniência completa |
+| 22 | **Áudio final** | nenhuma senoide sintetizada no release; mixer Music/SFX/Ambience; 5 músicas; ambiente em camadas que cresce com o negócio; vibração só nos eventos importantes; ajustes de som/vibração |
+| 23 | **Store assets** | 4 ícones testados, 2 × 8 screenshots, feature graphic e vídeo, cada peça aprovada no gate §73; ASO em pt-BR/en/es; criativos dos presets de captura (DM §78) |
