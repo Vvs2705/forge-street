@@ -1,10 +1,10 @@
 # Estudo de logística — joalheria sem lingote (Leva 8, evidência 4 de `FASE3_LUXO.md`)
 
-**Data:** 2026-10-07. **Raia:** economia/QA. **Estado:** diagnóstico MEDIDO; A/B MEDIDO numa cópia temporária do core. **Nada implementado no jogo**: nenhuma linha de `client/Assets` mudou. Os números de luxo ficam em [BALANCE.md §11](BALANCE.md) e não entram aqui.
+**Data:** 2026-10-07. **Raia:** economia/QA. **Estado:** diagnóstico MEDIDO; A/B MEDIDO numa cópia temporária do core. **Nada implementado no jogo**: nenhuma linha de `client/Assets` mudou. Os números de luxo ficam em [BALANCE.md §11](../BALANCE.md) e não entram aqui.
 
 > **Atualização Leva 10 (2026-10-07):** o par Mineiro → Joalheiro 2 foi **implementado** por cima da física da fase 5. O resultado, com o A/B refeito com física, está em §6.
 >
-> **Atualização Leva 9 (2026-10-07, raia core/economia):** A/B do **2º ajudante de minério isolado** medido em §5. **Nenhuma variante do escopo passa os 4 critérios** (genérico 1/4 bases, dedicado à Fornalha 2 0/4), então **nada de logística foi implementado**. A pendência de arquitetura de §4 está resolvida: a marca de luxo agora é por upgrade (`UpgradeDef.Luxury`, [BALANCE.md §12](BALANCE.md)), sem mudança de comportamento.
+> **Atualização Leva 9 (2026-10-07, raia core/economia):** A/B do **2º ajudante de minério isolado** medido em §5. **Nenhuma variante do escopo passa os 4 critérios** (genérico 1/4 bases, dedicado à Fornalha 2 0/4), então **nada de logística foi implementado**. A pendência de arquitetura de §4 está resolvida: a marca de luxo agora é por upgrade (`UpgradeDef.Luxury`, [BALANCE.md §12](../BALANCE.md)), sem mudança de comportamento.
 
 ## Fonte congelada e método
 
@@ -98,7 +98,7 @@ Para o próximo A/B (HIPÓTESE, não preço): pela regra `custo ≈ Δouro/min �
 
 ## 4. Riscos e limites
 
-- **Arquitetura (RESOLVIDA na Leva 9):** qualquer vencedor vira upgrade produtivo novo, com ID ≥ 23, depois dos luxos. O core assumia produtivos contíguos 0..19 (`Pad.Current`, `Buy`, `ProductionComplete`, `CheapestLockedCost`). Agora a marca é por upgrade (`UpgradeDef.Luxury` / `Upgrades.IsLuxury`); o teste `Marca_ProdutivoAnexadoDepoisDosLuxos_ETratadoComoProdutivo` prova que um produtivo anexado depois dos luxos é tratado como produtivo ([BALANCE.md §12](BALANCE.md)).
+- **Arquitetura (RESOLVIDA na Leva 9):** qualquer vencedor vira upgrade produtivo novo, com ID ≥ 23, depois dos luxos. O core assumia produtivos contíguos 0..19 (`Pad.Current`, `Buy`, `ProductionComplete`, `CheapestLockedCost`). Agora a marca é por upgrade (`UpgradeDef.Luxury` / `Upgrades.IsLuxury`); o teste `Marca_ProdutivoAnexadoDepoisDosLuxos_ETratadoComoProdutivo` prova que um produtivo anexado depois dos luxos é tratado como produtivo ([BALANCE.md §12](../BALANCE.md)).
 - **Teto offline:** um 21º produtivo de ~3.000 derrubaria o teto de 18.000 para ~6.000 até ser comprado (regra "2× o menor travado"). É efeito de desenho a decidir, não bug.
 - O bot humano não leva minério no fim de jogo. Uma pessoa pode levar, e isso mudaria o tamanho da fome. É HIPÓTESE até o playtest.
 - As posições escolhidas (fonte da esteira = Fornalha 2; fornalha lateral em (12; 3,5)) são minhas e não constam do PROXIMOS_EXPERIMENTOS. A fornalha lateral não depende da posição enquanto o minério vier do Ajudante 1 saturado.
@@ -106,11 +106,11 @@ Para o próximo A/B (HIPÓTESE, não preço): pela regra `custo ≈ Δouro/min �
 
 ## 5. A/B do 2º ajudante de minério, isolado (Leva 9, 2026-10-07)
 
-**Estado:** MEDIDO. **Nenhuma variante do escopo passa os 4 critérios.** Por isso nada de logística entrou em `client/Assets`, nenhum upgrade novo existe e nenhum preço foi aprovado. `docs/FASE4_MINERIO.md` não foi criado, porque o contrato só existiria com um vencedor.
+**Estado:** MEDIDO. **Nenhuma variante do escopo passa os 4 critérios.** Por isso nada de logística entrou em `client/Assets`, nenhum upgrade novo existe e nenhum preço foi aprovado. `docs/archive/FASE4_MINERIO.md` não foi criado, porque o contrato só existiria com um vencedor.
 
 ### 5.1 Método
 
-- **Fonte:** core real depois da marca de luxo da Leva 9 ([BALANCE.md §12](BALANCE.md)). SHA-256: `Sim.cs` b0332cde…bc818ea, `Defs.cs` da2ba2e0…23943b1, `Bot.cs` 110e0a5d…749519f. A marca não muda a partida: em 90 min, com e sem luxo e com Dt 1/30 e 1/60, o core antigo e o novo produzem a mesma saída byte a byte (BALANCE §12).
+- **Fonte:** core real depois da marca de luxo da Leva 9 ([BALANCE.md §12](../BALANCE.md)). SHA-256: `Sim.cs` b0332cde…bc818ea, `Defs.cs` da2ba2e0…23943b1, `Bot.cs` 110e0a5d…749519f. A marca não muda a partida: em 90 min, com e sem luxo e com Dt 1/30 e 1/60, o core antigo e o novo produzem a mesma saída byte a byte (BALANCE §12).
 - **Cópia:** `%TEMP%\fs_ab9\ab\core`, com ganchos **desligados por padrão**: `Carrier.Only` (destino fixo de um papel 0) e `Sim.JewelerNoWait` (só nas exploratórias). Com os ganchos desligados, o controle da cópia repete o controle de §2 ao centésimo: 7,21 joias/min, 56%, 1.094,0 ouro/min e 35,74 outras vendas/min na base A.
 - **Mesmo método de §0:** cada variante refaz a partida desde 0:00 com o bot humano e sem os pads de luxo. O harness confere que o save no início da janela é igual ao do controle (SHA impresso no log) antes de aplicar a variante. As quatro bases são as mesmas de §0: **A** Dt 1/30, 41–60 · **B** Dt 1/60, 41–60 · **C** Dt 1/30, 45–64 · **D** Dt 1/60, 50–69.
 - **Variantes:**
@@ -169,11 +169,11 @@ Para o próximo A/B (HIPÓTESE, não preço): pela regra `custo ≈ Δouro/min �
 
 ## 6. Resultado da implementação (Leva 10, 2026-10-07, raia core/economia)
 
-**Estado:** o par **Mineiro → Joalheiro 2** está IMPLEMENTADO e TESTADO no core (`docs/FASE4_MINERIO.md` §5, [BALANCE.md §14](BALANCE.md)). Mineiro 3.000, Joalheiro 2 2.400, IDs 23/24. Foi feito por cima da física da fase 5 (`docs/FASE5_FISICA_PACIENCIA.md`: corpos sólidos, duas bocas por estação, parede lateral com porta e arco, paciência por item). **NÃO COMPILADO no Unity.**
+**Estado:** o par **Mineiro → Joalheiro 2** está IMPLEMENTADO e TESTADO no core (`docs/archive/FASE4_MINERIO.md` §5, [BALANCE.md §14](../BALANCE.md)). Mineiro 3.000, Joalheiro 2 2.400, IDs 23/24. Foi feito por cima da física da fase 5 (`docs/archive/FASE5_FISICA_PACIENCIA.md`: corpos sólidos, duas bocas por estação, parede lateral com porta e arco, paciência por item). **NÃO COMPILADO no Unity.**
 
 **A premissa do estudo mudou com a física.** Na mesma partida do bot humano, a bancada de joias sem lingote (Joalheiro → 60 min) foi de:
 - 52% antes da física (§1, janela 41–60: 56%);
-- **33%** com a física, sem o par ([BALANCE §13.4](BALANCE.md));
+- **33%** com a física, sem o par ([BALANCE §13.4](../BALANCE.md));
 - **12%** com o par.
 
 A parede lateral sozinha custa +2 pp de fome (31% → 33%).

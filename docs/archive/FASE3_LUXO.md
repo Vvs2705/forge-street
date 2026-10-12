@@ -25,7 +25,7 @@ Bloquear pads de luxo até a produção completa, inclusive quando Vitrine de jo
 
 ## Evidência medida (raia economia/QA, 2026-10-07)
 
-**1. Bot de 90 min: FECHADA** ([BALANCE.md §11](BALANCE.md), teste `Bot_90Minutos_Luxo`).
+**1. Bot de 90 min: FECHADA** ([BALANCE.md §11](../BALANCE.md), teste `Bot_90Minutos_Luxo`).
 - Os 20 produtivos saem no mesmo tick com e sem luxo; produção completa aos **40:41**. Os primeiros 10 min são idênticos (§3 do GDD verde), e sem luxo os 60 min batem §10.7 (46.377 / 21.212).
 - **Vigente, 11.000 / 14.000 / 18.000** (aplicado em `Defs.cs` só nas 3 constantes; `CoreTests` de custo e orçamento ajustados):
   - Luxo: Fachada **50:45** (+10,1 min depois da produção completa), Piso **63:46** (+23,1), Joalheria real **79:55** (+39,2). Os três saem dentro dos 90 min, e os intervalos crescem (10,1 / 13,0 / 16,1 min).
@@ -43,7 +43,7 @@ Bloquear pads de luxo até a produção completa, inclusive quando Vitrine de jo
 
 ## Pendência técnica — RESOLVIDA (Leva 9, 2026-10-07)
 
-**Resolvida na Leva 9:** a marca produtivo/luxo agora é por upgrade (`UpgradeDef.Luxury` / `Upgrades.IsLuxury`), com teste ([BALANCE.md §12](BALANCE.md)). Na Leva 10 ela foi usada de verdade: Mineiro (23) e Joalheiro 2 (24) entraram como produtivos depois dos luxos, e o save de 23 flags tem teste (`Save_Antigo23Flags_…`, [BALANCE.md §14](BALANCE.md)). O texto abaixo é o registro histórico.
+**Resolvida na Leva 9:** a marca produtivo/luxo agora é por upgrade (`UpgradeDef.Luxury` / `Upgrades.IsLuxury`), com teste ([BALANCE.md §12](../BALANCE.md)). Na Leva 10 ela foi usada de verdade: Mineiro (23) e Joalheiro 2 (24) entraram como produtivos depois dos luxos, e o save de 23 flags tem teste (`Save_Antigo23Flags_…`, [BALANCE.md §14](../BALANCE.md)). O texto abaixo é o registro histórico.
 
 **IDs produtivos ≥ 23.** O core assume que os produtivos são os IDs contíguos 0..19 e os luxos 20..22: `Upgrades.ProductionCount`, `Pad.Current`, `Sim.Buy`, `ProductionComplete` e `CheapestLockedCost` (teto offline). Um upgrade produtivo futuro, como o 2º ajudante de minério se vencer o A/B, teria de ser anexado como ID 23 por causa do save, e então seria tratado como luxo: ficaria bloqueado até a produção completa, fora do teto offline e fora de `ProductionComplete`. Antes de anexar qualquer produtivo, o dono do core precisa de uma marca produtivo/luxo por upgrade (tabela ou flag em `UpgradeDef`), com teste de save antigo de 23 flags.
 
