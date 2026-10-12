@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Variante Android do viewcheck: compila os #if UNITY_ANDROID (Ads.cs com o LevelPlay, JNI do Art.cs) que o view/ nunca ve.
+       ENABLE_LEGACY_INPUT_MANAGER = activeInputHandler 2 do player (voltar do Android no Game.cs). Uso: client/tools/verify.sh quick -->
+  <Import Project="..\unity_refs.props" />
+  <PropertyGroup>
+    <AssemblyName>FS</AssemblyName>
+    <DefineConstants>$(DefineConstants);UNITY_ANDROID;ENABLE_LEGACY_INPUT_MANAGER</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(ProjClient)\Assets\_FS\Scripts\View\*.cs" />
+    <!-- a API publica do LevelPlay nao muda por plataforma: a DLL compilada pelo Editor serve de referencia -->
+    <Reference Include="$(ProjClient)\Library\ScriptAssemblies\Unity.LevelPlay.dll" Private="false" />
+  </ItemGroup>
+</Project>

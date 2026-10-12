@@ -7,12 +7,17 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- A-ART-06: StationView.cs entra so com a parte pura (Estado/Calor); o desenho fica atras de #if !FS_CORETESTS -->
+    <DefineConstants>$(DefineConstants);FS_CORETESTS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../Assets/_FS/Scripts/Core/**/*.cs" />
     <Compile Include="../../Assets/_FS/Tests/EditMode/**/*.cs" />
     <!-- v0.6d: textos da HUD (puros, sem UnityEngine) para o TextosTests -->
     <Compile Include="../../Assets/_FS/Scripts/View/Textos.cs" />
+    <!-- A-PLAT-02: save em arquivo (so System.IO) para o SaveTests -->
+    <Compile Include="../../Assets/_FS/Scripts/View/SaveStore.cs" />
+    <Compile Include="../../Assets/_FS/Scripts/View/StationView.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />

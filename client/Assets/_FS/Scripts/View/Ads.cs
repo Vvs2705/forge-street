@@ -105,7 +105,11 @@ namespace FS
         static void Finish(bool rewarded, string detail)
         {
             Request r = _req;
-            if (r == null || r.Done) return;
+            if (r == null || r.Done)
+            {
+                if (rewarded) Emit("ad_reward_late", "", detail);   // chegou depois da janela de 2 s: nao paga, fica no diario
+                return;
+            }
             r.Done = true;
             _req = null;
             _busy = false;
@@ -121,11 +125,13 @@ namespace FS
             catch (Exception e) { Debug.LogException(e); }   // o diario nunca derruba o fluxo do anuncio
         }
 
-        /// <summary>Valor da flag (null = ausente, "" = sem valor). Linha de comando + extra "unity" do intent no Android.</summary>
+        /// <summary>Valor da flag (null = ausente, "" = sem valor). Linha de comando + extra "unity" do intent no Android
+        /// (so' em build de desenvolvimento: no release o intent e' de qualquer app e -fakeads daria recompensa sem anuncio).</summary>
         public static string Arg(string name)
         {
             var a = new List<string>(Environment.GetCommandLineArgs());
 #if UNITY_ANDROID && !UNITY_EDITOR
+            if (Debug.isDebugBuild)
             try
             {
                 using (var up = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))

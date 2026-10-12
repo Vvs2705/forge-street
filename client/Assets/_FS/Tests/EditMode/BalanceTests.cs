@@ -96,7 +96,7 @@ namespace FS.Tests
         public void Bot_45Minutos_SegundaArea_CorredorEJoalheria()
         {
             var s = new Sim(); var bot = new Bot();
-            var earned = new int[46];   // GoldEarned no fim de cada minuto
+            var earned = new long[46];   // GoldEarned no fim de cada minuto
             int jewels = 0, jewelGold = 0, jewelTired = 0, jewelAway = 0, nextMinute = 1;
             var log = new StringBuilder();
             for (float t = 0f; t < 45f * 60f; t += Dt)
@@ -144,7 +144,7 @@ namespace FS.Tests
         public void Bot_60Minutos_Fase2()
         {
             var s = new Sim(); var bot = new Bot();
-            var earned = new int[61]; var jewelsAt = new int[61];
+            var earned = new long[61]; var jewelsAt = new int[61];
             var chestOpen = new float[s.Chests.Count];
             for (int i = 0; i < chestOpen.Length; i++) chestOpen[i] = -1f;
             int jewels = 0, nextMinute = 1, vipArrived = 0, vipServed = 0, vipLeft = 0, vipGold = 0;   // FASE8: VIP natural (o bot nao assiste anuncio)
@@ -236,7 +236,8 @@ namespace FS.Tests
             plain.Pads.RemoveAll(p => Upgrades.IsLuxury((int)p.Chain[0]));   // baseline: luxo nunca a venda
             Assert.AreEqual(lux.Pads.Count - 3, plain.Pads.Count);
             Bot bl = new Bot(), bp = new Bot();
-            int[] earnedL = new int[M + 1], earnedP = new int[M + 1], salesL = new int[M + 1], salesP = new int[M + 1], goldL = new int[M + 1], goldP = new int[M + 1];
+            long[] earnedL = new long[M + 1], earnedP = new long[M + 1], goldL = new long[M + 1], goldP = new long[M + 1];
+            int[] salesL = new int[M + 1], salesP = new int[M + 1];
             for (int next = 1; next <= M;)
             {
                 bl.Step(lux, Dt); bp.Step(plain, Dt);
@@ -275,7 +276,7 @@ namespace FS.Tests
                 Assert.AreEqual((earnedP[m], salesP[m]), (earnedL[m], salesL[m]), $"identicas ate a 1a compra de luxo (minuto {m})");
             Assert.That(gL / gP, Is.InRange(0.97f, 1.03f), "luxo nao altera ouro/min (medido +0,5%)");
             Assert.That(sL / sP, Is.InRange(0.97f, 1.03f), "luxo nao altera vendas/min (medido +0,1%)");
-            int luxuryCost = Upgrades.Cost(Upgrade.WorkshopFacade) + Upgrades.Cost(Upgrade.WorkshopFloor) + Upgrades.Cost(Upgrade.JewelryDecor);
+            long luxuryCost = Upgrades.Cost(Upgrade.WorkshopFacade) + Upgrades.Cost(Upgrade.WorkshopFloor) + Upgrades.Cost(Upgrade.JewelryDecor);
             Assert.AreEqual(plain.Gold + (lux.GoldEarned - plain.GoldEarned) + (lux.OrderGold - plain.OrderGold) - luxuryCost, lux.Gold,
                 "o luxo cobra exatamente o preco, uma vez, sem devolver ouro (premio das encomendas fica fora do GoldEarned)");
             Assert.AreEqual((Upgrades.Count, Upgrades.ProductionCount), (lux.UpgradesBought, plain.UpgradesBought));
@@ -300,7 +301,7 @@ namespace FS.Tests
             Play(s, 600f);
             Assert.Greater(s.RateEma, 0.1, "taxa online medida existe");
             int raw = (int)Math.Floor(s.RateEma * Balance.OfflineFactor * Balance.OfflineCapSeconds);
-            int gold = s.ApplyOffline(8 * 3600, 1);
+            long gold = s.ApplyOffline(8 * 3600, 1);
             Assert.AreEqual(Math.Min(raw, s.OfflineMaxGold()), gold);
             Assert.LessOrEqual(gold, 2 * s.CheapestLockedCost(), "o cofre nunca compra o resto do jogo sozinho");
             TestContext.WriteLine($"offline 8 h depois de 10 min de jogo: {gold} ouro (taxa {s.RateEma:0.00}/s; pela taxa seriam {raw}; proximo upgrade travado custa {s.CheapestLockedCost()})");

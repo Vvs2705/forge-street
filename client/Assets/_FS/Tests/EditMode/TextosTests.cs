@@ -21,5 +21,22 @@ namespace FS.Tests
             Assert.AreEqual("Pise na placa da Bigorna 2", Textos.Placa((int)Upgrade.Anvil2));
             Assert.AreEqual("Compre o Fole em Melhorias", Textos.Menu((int)Upgrade.FurnaceSpeed1));
         }
+
+        static string O(long v) => Textos.Ouro(v).Replace('\u00A0', ' ');   // a HUD usa espaco que nao quebra linha
+
+        [Test]
+        public void Ouro_CabeNaPilula_EscalaPtBrTruncada()
+        {
+            Assert.AreEqual("0", O(0));
+            Assert.AreEqual("999999", O(999999));
+            Assert.AreEqual("1 mi", O(1000000));
+            Assert.AreEqual("1,15 mi", O(1150000));   // sem float: nao vira 1,14
+            Assert.AreEqual("1,05 mi", O(1059999));   // trunca, nunca arredonda para cima
+            Assert.AreEqual("12,3 mi", O(12399999));
+            Assert.AreEqual("999 mi", O(999999999));
+            Assert.AreEqual("5 bi", O(5000000000));
+            Assert.AreEqual("9,22 qui", O(long.MaxValue));
+            for (long v = 1; v > 0 && v < long.MaxValue / 7; v *= 7) Assert.LessOrEqual(O(v).Length, 8, v.ToString());
+        }
     }
 }

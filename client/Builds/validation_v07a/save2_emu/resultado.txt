@@ -1,0 +1,47 @@
+== boot: 1 (API 35)
+== 1) instala a 0.6.0 limpa e o bot joga 90 s
+Success
+    versionName=0.6.0
+cena ok
+fs.save no PlayerPrefs: 532 bytes; ['gold=15', 'up=11111100000000000000000000000']
+total 44
+drwxrws--- 3 u0_a212 ext_data_rw  4096 2026-10-09 16:24 .
+drwxrws--- 3 u0_a212 ext_data_rw  4096 2026-10-09 16:23 ..
+-rw-rw---- 1 u0_a212 ext_data_rw 14828 2026-10-09 16:25 diario.csv
+drwxr-s--- 4 u0_a212 ext_data_rw  4096 2026-10-09 16:23 il2cpp
+== 2) instala o Save 2.0 POR CIMA (-r) e abre sem flags
+Success
+    versionName=0.6.0
+cena ok
+total 64
+drwxrws--- 3 u0_a212 ext_data_rw  4096 2026-10-09 16:26 .
+drwxrws--- 3 u0_a212 ext_data_rw  4096 2026-10-09 16:25 ..
+-rw-rw---- 1 u0_a212 ext_data_rw 16847 2026-10-09 16:26 diario.csv
+drwxr-s--- 4 u0_a212 ext_data_rw  4096 2026-10-09 16:25 il2cpp
+-rw-rw---- 1 u0_a212 ext_data_rw   644 2026-10-09 16:26 save.txt
+-rw-rw---- 1 u0_a212 ext_data_rw   643 2026-10-09 16:26 save.txt.bak
+sha256=d8297703392bdaf2cc914e463c82ccceaabf5ffda50ee0423d7e095af0809653
+schema=1
+content=0.6.0
+at=1791563186
+== ouro 0.6: gold=15 | ouro depois da migração: gold=15
+== up 0.6: up=11111100000000000000000000000 | up novo: up=11111100000000000000000000000
+2026-10-09T16:25:51,22d91796,save_prefs,379.7,Legacy,
+== 3) reabre (force-stop antes): progresso tem de continuar
+== ouro reaberto: gold=15 | up: up=11111100000000000000000000000
+== 4) corrompe 1 byte do save.txt (gold=1 -> gold=9...) e reabre: carrega o .bak, quarentena, save_corrupt
+total 72
+drwxrws--- 3 u0_a212 ext_data_rw  4096 2026-10-09 16:27 .
+drwxrws--- 3 u0_a212 ext_data_rw  4096 2026-10-09 16:26 ..
+-rw-rw---- 1 u0_a212 ext_data_rw 18433 2026-10-09 16:27 diario.csv
+drwxr-s--- 4 u0_a212 ext_data_rw  4096 2026-10-09 16:25 il2cpp
+-rw-rw---- 1 u0_a212 ext_data_rw   645 2026-10-09 16:27 save.txt
+-rw-rw---- 1 u0_a212 ext_data_rw   644 2026-10-09 16:27 save.txt.bak
+-rw-rw---- 1 shell   ext_data_rw   644 2026-10-09 16:26 save.txt.corrupt-20261009-162656
+== ouro depois da corrupção: gold=15 (antes: gold=15)
+2026-10-09T16:25:51,22d91796,save_prefs,379.7,Legacy,
+2026-10-09T16:26:56,ba3dd64a,save_corrupt,417.8,1,Ok
+== exceções no logcat do pacote: 0 fatais; 0 linhas Unity com Exception
+== fim
+
+[exited with code 0]

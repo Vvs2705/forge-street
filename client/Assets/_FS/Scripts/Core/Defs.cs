@@ -105,6 +105,8 @@ namespace FS.Core
         public const float CharRadius = 0.25f;                  // jogador, ajudantes e bot
         public const float MouthRadius = 0.4f;                  // zona da boca: centro do personagem a ate 0,4 m do ponto da boca (encostado)
         public const float WorkerReach = 0.3f;                  // ajudante para a 0,3 m do ponto da boca (dentro da zona)
+        // impasse do Sim.Steer: andando 1 s sem sair de 0,75 m (> 2 passos do mais rapido, ajudante 3x a 30 ticks/s = 0,34 m; quem anda livre sai em < 0,45 s)
+        public const float StuckRadius = 0.75f, StuckSeconds = 1f;
         public const float PlayerSpeed = 3f, PlayerSpeedUp = 4.2f;
         public const int PlayerCap = 3, PlayerCapUp = 6;
         public const float WorkerSpeed = 2.4f, WorkerSpeedUp = 3.4f;
@@ -267,8 +269,12 @@ namespace FS.Core
             new UpgradeDef(Upgrade.Counter8, (int)Upgrade.Counter7, "Balcão 8 vagas", "Atende 8 clientes ao mesmo tempo", menu: true),
         };
 
-        /// <summary>custo(tier) = CostBase * CostGrowth^tier, arredondado ao multiplo de 5 (preco legivel no pad).</summary>
-        public static int Cost(int tier)
+        /// <summary>A-CORE-06: teto da curva (1e18, cabe em long com folga para somar ouro). 50 x 1,3^tier chega nele no tier 144.</summary>
+        public const long CostMax = 1000000000000000000;
+
+        /// <summary>custo(tier) = CostBase * CostGrowth^tier, arredondado ao multiplo de 5 (preco legivel no pad). A-CORE-06: long, ate CostMax
+        /// (em int estourava no tier 67 e o Math.Max devolvia 5).</summary>
+        public static long Cost(int tier)
         {
             // ponytail: a 2a area sai da formula porque fica no FIM do enum (save antigo de 15/17 flags) com preco de meio de
             // jogo. Mais uma area assim = trocar por uma tabela de precos por upgrade.
@@ -287,10 +293,10 @@ namespace FS.Core
                 case Upgrade.Counter5: case Upgrade.Counter6: case Upgrade.Counter7: case Upgrade.Counter8:
                     return Balance.CounterSlotCost[tier - (int)Upgrade.Counter5];
             }
-            double c = Balance.CostBase * Math.Pow(Balance.CostGrowth, tier);
-            return Math.Max(5, (int)(Math.Round(c / 5.0) * 5.0));
+            double c = Math.Min(Balance.CostBase * Math.Pow(Balance.CostGrowth, tier), CostMax);
+            return Math.Max(5, (long)Math.Round(c / 5.0) * 5);   // x5 em long: em double, acima de 2^53 o produto perdia o multiplo de 5
         }
 
-        public static int Cost(Upgrade u) => Cost((int)u);
+        public static long Cost(Upgrade u) => Cost((int)u);
     }
 }

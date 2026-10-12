@@ -45,6 +45,21 @@ namespace FS
             return Cabe($"Compre {Artigo(n)} {n} em Melhorias", $"Compre {Artigo(n)} {n}");
         }
 
+        static readonly string[] Escala = { "\u00A0mi", "\u00A0bi", "\u00A0tri", "\u00A0qua", "\u00A0qui" };   // curtas (8 caracteres no maximo, "9,22 qui"); espaco que nao quebra linha
+
+        /// <summary>Ouro da HUD: inteiro ate 999999; acima, ate 3 algarismos + escala ("1,23 mi", "12,3 bi", "5 bi") para caber
+        /// na pilula numa linha (A-CORE-06: com long, 5000000000 quebrava em 2). Trunca: nunca mostra mais do que o jogador tem.</summary>
+        public static string Ouro(long v)
+        {
+            if (v < 1000000) return v.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            long scale = 1000000; int k = 0;
+            while (v / scale >= 1000 && k < Escala.Length - 1) { scale *= 1000; k++; }
+            long q = v / scale;
+            int dec = q >= 100 ? 0 : q >= 10 ? 1 : 2;   // inteiro (ex.: 512), sem float: 1150000 nao vira "1,14"
+            string f = dec == 0 ? "" : ((v % scale) / (scale / (dec == 2 ? 100 : 10))).ToString().PadLeft(dec, '0').TrimEnd('0');
+            return q + (f.Length > 0 ? "," + f : "") + Escala[k];
+        }
+
         /// <summary>Titulo do cartao da encomenda: verbo + N + item no plural ("Venda 5 espadas").</summary>
         public static string Venda(int n, int item) => $"Venda {n} {Plural[item]}";
 

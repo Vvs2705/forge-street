@@ -57,14 +57,15 @@ namespace FS
             _base.pivot = new Vector2(0.5f, 0.5f);
             _base.sizeDelta = new Vector2(side, side);
             Image fundo = _base.gameObject.AddComponent<Image>();
-            fundo.sprite = Art.Disc(); fundo.color = new Color(0.03f, 0.04f, 0.08f, 0.35f); fundo.raycastTarget = false;
+            // A-UI-16: marrom e creme da HUD (eram azul-escuro e branco-azulado)
+            fundo.sprite = Art.Disc(); fundo.color = Art.ComAlfa(Art.HudFace, 0.35f); fundo.raycastTarget = false;
             RectTransform anel = Art.Node(_base, "Anel", Vector2.zero, Vector2.one);
             _ring = anel.gameObject.AddComponent<Image>();
-            _ring.sprite = Art.Ring(); _ring.color = new Color(0.82f, 0.88f, 1f, 0.45f); _ring.raycastTarget = false;
+            _ring.sprite = Art.Ring(); _ring.color = Art.ComAlfa(Art.HudEdge, 0.45f); _ring.raycastTarget = false;
             _knob = Art.Node(_base, "Miolo", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
             _knob.sizeDelta = new Vector2(knob, knob);
             Image miolo = _knob.gameObject.AddComponent<Image>();
-            miolo.sprite = Art.Disc(); miolo.color = new Color(0.9f, 0.93f, 1f, 0.9f); miolo.raycastTarget = false;
+            miolo.sprite = Art.Disc(); miolo.color = Art.ComAlfa(MenuBar.Cream, 0.9f); miolo.raycastTarget = false;
             _base.gameObject.SetActive(false);
         }
 
