@@ -1443,3 +1443,18 @@ Com o `Tuning` padrão o econsim é idêntico ao byte; F2P, Ideal e Slow não mu
 | P14 + D6 | **1:07** | 6:07 | 11:36 | 18:44 | **34:06** | 16 | 54 414 | 21 (10/10) |
 
 Pisos do §3 (média de 250 passos de tick, AdWatcher com D6): Fole 1:02 (piso 0:45, 0% abaixo); 2ª bigorna 1:38 (1:45, 85% abaixo); Ajudante 2:05 (2:15, 100%); Escudos 2:33 (2:45, 100%); Esteira 6:04 (4:15, 0%). Sobram 7–12 s nos três marcos do meio, mas o `Sim` não conta o tempo de assistir (~30 s por anúncio, 2 anúncios até os Escudos): em tempo real os pisos são cumpridos. **Decisão por padrão (V19):** o econsim passa a contar o tempo do anúncio antes de mexer em regra de jogo. O achado 1 do §22 fica resolvido. Os números do Ideal no §22 mudaram com a correção do impasse de navegação (44:05 em vez de 43:53).
+
+### 22.2 V19: econsim em tempo de relógio (2026-10-12)
+
+Cada anúncio assistido gasta 30 s de relógio com o jogo parado (`--anuncio-seg`); `--anuncio-seg 0` reproduz o §22.1 byte a byte. 250 partidas, AdWatcher, pisos do §3 sem → com o tempo do anúncio:
+
+| Marco (piso) | sem o tempo do anúncio | com 30 s por anúncio |
+|---|---|---|
+| Fole (0:45) | 1:02 (0% abaixo) | 1:02 (0%) |
+| 2ª bigorna (1:45) | 1:38 (85%) | **2:38 (0%)** |
+| Ajudante (2:15) | 2:05 (100%) | **3:05 (0%)** |
+| Escudos (2:45) | 2:33 (100%) | **3:33 (0%)** |
+| Esteira (4:15) | 6:04 (0%) | 7:04 (0%) |
+| Produção completa | 34:51 | **40:57** de relógio (F2P 43:15) |
+
+18,6 anúncios por hora (9 VIP, 9 boost), ~9 min de anúncio por hora. Em relógio, os anúncios custam ~40 s antes da 2ª bigorna e devolvem 2:18 até a produção completa. **V19 fechado:** nenhuma regra de jogo muda.
