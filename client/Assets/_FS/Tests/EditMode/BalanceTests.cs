@@ -88,7 +88,7 @@ namespace FS.Tests
         }
 
         /// <summary>
-        /// 2a area (docs/AREA2_JOALHERIA.md): o bot humano joga 45 min e MEDE quando compra Corredor e Joalheria, quantas
+        /// 2a area (docs/archive/AREA2_JOALHERIA.md): o bot humano joga 45 min e MEDE quando compra Corredor e Joalheria, quantas
         /// joias vende e o ouro/min antes e depois. Os limites sao folgados (medido + ~30%, ver BALANCE.md §9): protegem
         /// contra regressao, nao fixam a curva.
         /// </summary>
@@ -136,7 +136,7 @@ namespace FS.Tests
         }
 
         /// <summary>
-        /// Fase 2 (docs/AREA2_FASE2.md): o bot humano joga 60 min e MEDE quando compra Joalheiro/Lupa/Vitrine de joias,
+        /// Fase 2 (docs/archive/AREA2_FASE2.md): o bot humano joga 60 min e MEDE quando compra Joalheiro/Lupa/Vitrine de joias,
         /// quando abre cada bau, joias/min e % da bancada de joias sem lingote antes e depois do Joalheiro, e ouro/min por
         /// janela de 5 min. Limites folgados (medido + 30%, BALANCE.md §10): portao de regressao, nao fixam a curva.
         /// </summary>
@@ -223,7 +223,7 @@ namespace FS.Tests
         }
 
         /// <summary>
-        /// Fase 3 (docs/FASE3_LUXO.md): o bot humano joga 90 min duas vezes no mesmo passo, com e sem os pads de luxo.
+        /// Fase 3 (docs/archive/FASE3_LUXO.md): o bot humano joga 90 min duas vezes no mesmo passo, com e sem os pads de luxo.
         /// Luxo e' so ralo: os 22 produtivos saem no mesmo tick, as partidas sao identicas ate a 1a compra de luxo e, dali
         /// em diante, ouro/min e vendas/min so diferem pelo desvio do bot ate o pad (medido +0,5% / +0,1%). O saldo final
         /// difere exatamente pelo preco do luxo (54.000 desde a Leva 11). Limites folgados (medido + 30%, BALANCE.md §15): portao de regressao.

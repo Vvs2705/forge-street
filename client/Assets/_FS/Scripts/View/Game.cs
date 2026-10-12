@@ -25,7 +25,12 @@ namespace FS
     /// inicio; docs/LEVELPLAY.md) | -vipnow (chama o VIP depois do warmup) | -boost N (N anuncios de velocidade antes do warmup) |
     /// -cam W (largura visivel em m, 6..11,4; experimento de camera mais perto) | -settings [on|off] (abre as configuracoes; on/off
     /// liga/desliga Som e Vibracao antes, gravando como o toque) | -cofre N (mostra o painel do cofre com N de ouro, sem dar o ouro) |
-    /// -playtest (liga o diario num build de release; o dev ja grava).
+    /// -playtest (liga o diario num build de release; o dev ja grava) | -privacidade [18] (abre a tela de idade mesmo com resposta ou no
+    /// -testsession, onde a resposta nao e' gravada; 18 = direto no consentimento).
+    /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
+    /// 1a contratacao) | -recordfull (fila cheia no 1o quadro ou erro) | -recordorder (o -record mantem o cartao da encomenda) | -offline S
+    /// (cofre real de S s fora, 60..7200). Captura que mostraria algo impossivel (compra id@t sem ouro ou pre-requisito, -vipnow depois de
+    /// um warmup sem venda) loga o erro e sai 1 (Falha).
     /// Build dev: tambem pelo intent do Android (Arg).
     /// v0.5c (docs/FASE8_VIP_VELOCIDADE.md s5): botoes "Chamar VIP" e "Velocidade 2x/3x" nos cantos da barra de baixo (IAds.Show ->
     /// Sim.SummonVip / Sim.StartBoost), selo do boost com cronometro, aviso "Cliente VIP!" e diario vip_* / boost_start.
@@ -40,7 +45,7 @@ namespace FS
         const float Margin = 1.2f;                               // m alem do conteudo nas bordas: pad e rotulo nunca cortados (foto 01)
         // Largura visivel = oficina + margens (11,4 m): em retrato a camera cabe a oficina INTEIRA (coordenador,
         // 2026-10-06, fotos 05-08: com 7,6 m visiveis o mundo de 9 m cortava uma coluna de cada lado em qualquer clamp).
-        // 2a area (docs/AREA2_JOALHERIA.md s1): mesma escala; a rua lateral entra seguindo o jogador depois do Corredor.
+        // 2a area (docs/archive/AREA2_JOALHERIA.md s1): mesma escala; a rua lateral entra seguindo o jogador depois do Corredor.
         const float VisibleWidth = Balance.WorkshopW + 2f * Margin;
         // fracao da tela reservada a faixa de cima; o mundo nao chega la. v0.5b (BENCHMARK P1-1): 0,15 -> 0,075 (~144 px na referencia),
         // so 2 pilulas (ouro | dica) sem painel cheio e sem o numero de versao
@@ -71,7 +76,8 @@ namespace FS
         readonly System.Collections.Generic.Dictionary<string, long> _source = new System.Collections.Generic.Dictionary<string, long>(),
             _sink = new System.Collections.Generic.Dictionary<string, long>();
         Vector2Int _screen;
-        readonly System.Collections.Generic.List<(int u, float t)> _buyAt = new System.Collections.Generic.List<(int u, float t)>();   // -buyids id@t
+        System.Collections.Generic.List<(int u, float t)> _buyAt = new System.Collections.Generic.List<(int u, float t)>();   // -buyids id@t (Captura.Compras)
+        bool _hired;   // G-UA-02 -recordhire: ja houve Ev.Hired ao vivo
 
         Canvas _joyCanvas;
         RectTransform _canvas, _labels, _safe, _panel, _fx;
@@ -79,6 +85,7 @@ namespace FS
         RectTransform _panelRow;   // v0.6d: moeda + "+N" do cofre no painel
         Hint _hintH; int _hintArg = -1, _hintU;   // v0.6d: a dica so e' remontada quando muda (sem string nova a cada 0,25 s)
         RectTransform _cfg;   // v0.6b: cartao de configuracoes (Som, Vibracao, versao)
+        TelaPrivacidade _priv;   // E-PLAT-01: idade + consentimento (Privacidade.cs)
         Action _panelAction;
         Image _coinIcon;
         sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
@@ -107,10 +114,11 @@ namespace FS
 
         /// <summary>A-PLAT-07: o estado do jogo, so derivado dos flags (Estados.De; tabela em Estado.cs). O voltar, o Save e os anuncios
         /// consultam aqui.</summary>
-        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config,
+        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv,
             _order != null && _orderOut && _order.gameObject.activeSelf);
         bool Painel => _panel != null && _panel.gameObject.activeSelf;
         bool Config => _cfg != null && _cfg.gameObject.activeSelf;
+        bool Priv => _priv != null && _priv.Aberta;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -123,6 +131,8 @@ namespace FS
             Application.targetFrameRate = 60;
             _testSession = Arg("-testsession") != null || Arg("-autoplay") != null || Arg("-record") != null;
             if (Arg("-record") != null) Time.captureFramerate = Mathf.Max(1, (int)ArgF("-recordfps", 30f));   // relogio do jogo = quadro do video
+            // G-UA-02: fumaca, faiscas e poeira sorteiam no UnityEngine.Random; semente fixa = os mesmos quadros em 2 execucoes
+            if (Arg("-record") != null || Arg("-preset") != null) UnityEngine.Random.InitState(Captura.Semente);
             // A-PLAT-06: diario so no build de desenvolvimento (o build de playtest de hoje, APK dev e Windows) ou com -playtest (release
             // do PC); release no aparelho nao grava (nao tem linha de comando, e o extra do intent so vale no dev). Teste: nunca.
             string dir = Application.persistentDataPath;
@@ -153,6 +163,11 @@ namespace FS
             _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos));
             _cfg.SetAsLastSibling();     // configuracoes e painel modal cobrem a barra de melhorias
             _panel.SetAsLastSibling();
+            // E-PLAT-01: sem resposta (ou com texto novo) a tela de idade abre por cima de tudo e o SDK de anuncio espera (Ads.Responder).
+            // Fotos e smoke (-testsession, -record, -autoplay) nao a veem, salvo com -privacidade [18]
+            _priv = new TelaPrivacidade(_safe, Responder);
+            string priv = Arg("-privacidade");
+            if (priv != null || (!_testSession && !Ads.Resposta(out _, out _))) _priv.Abrir(null, priv == "18");
             if (Arg("-menu") != null) _menu.Toggle();   // foto com a fileira aberta
             if (cfg != null) _cfg.gameObject.SetActive(true);
             _joy = new Joystick(_joyCanvas.transform);
@@ -163,6 +178,7 @@ namespace FS
 
         void Start()
         {
+            if (_headless) return;   // Falha ja no Awake (preset desconhecido, compra impossivel no warmup): nada grava
             if (Arg("-autoplay") != null) { Autoplay(); return; }
             Log("session_start", Application.version, SystemInfo.deviceModel);
             // s87: contexto da sessao, uma linha por campo (o build id e' o GUID do build, nao do aparelho; nada de ID, conta ou local)
@@ -172,6 +188,14 @@ namespace FS
             _started = true;   // A-PLAT-07: Loading -> Playing; o save grava daqui em diante (o resgate do cofre logo abaixo ja grava)
             Offline();
             if (int.TryParse(Arg("-cofre"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int cofre) && cofre > 0) ShowVault(cofre);   // foto do painel
+            // G-UA-02 -offline S: o cofre de verdade, como na volta do jogador depois de S s fora (o -cofre N so desenha o painel com N)
+            string off = Arg("-offline");
+            if (off != null)
+            {
+                long fora = Captura.OfflineSegundos(off);
+                if (fora < 0) { Falha($"OFFLINE: '{off}' fora de 60..{Balance.OfflineCapSeconds} s"); return; }
+                if (PagaCofre(fora, _sim.LastClaim + 1) <= 0) { Falha("OFFLINE: cofre vazio (o warmup nao teve vendas)"); return; }
+            }
             _botDrive = Arg("-bot") != null;
             string shot = Arg("-shot");
             if (!string.IsNullOrEmpty(shot)) StartCoroutine(Shot(shot));
@@ -195,14 +219,21 @@ namespace FS
             if (_sim.SavedAt <= 0) return;
             long elapsed = Now() - _sim.SavedAt;
             if (elapsed < 60) return;   // mesma regra da volta de pausa: abrir de novo em < 1 min mostrava "31 de ouro em 0 min fora" (POCO F4)
-            long gold = _sim.ApplyOffline(elapsed, _sim.SavedAt);
-            if (gold <= 0) return;
+            PagaCofre(elapsed, _sim.SavedAt);
+        }
+
+        /// <summary>Paga o cofre de `elapsed` s fora (claim idempotente por `claim`), mostra o painel e devolve o ouro (0 = nada).</summary>
+        long PagaCofre(long elapsed, long claim)
+        {
+            long gold = _sim.ApplyOffline(elapsed, claim);
+            if (gold <= 0) return 0;
             long shown = Math.Min(elapsed, _sim.T.OfflineCap);
             Log("offline_claim", gold.ToString(), shown.ToString());
             Source("cofre", gold);
             Sfx.Play("offline");
             ShowVault(gold);
             Save();
+            return gold;
         }
 
         /// <summary>v0.6d: cartao creme do cofre: titulo, "+N" grande com a moeda, uma linha e PEGAR (saiu a frase dos 25% e do teto).</summary>
@@ -222,7 +253,8 @@ namespace FS
                 _backT = Time.unscaledTime + 0.4f;
                 // voltar do Android (revisao da v0.6; A-PLAT-07 pelo estado): fecha o que estiver aberto, de cima para baixo; no anuncio
                 // (o simulado recebe o voltar) nada; so com nada aberto grava e sai
-                switch (Estados.AoVoltar(EstadoAtual, Painel, _menu.IsOpen))
+                if (Priv) _priv.Voltar();   // E-PLAT-01: consentimento -> idade; revisao fecha; 1a abertura fica
+                else switch (Estados.AoVoltar(EstadoAtual, Painel, _menu.IsOpen))
                 {
                     case Voltar.FechaPainel: ClosePanel(); break;
                     case Voltar.FechaConfig: _cfg.gameObject.SetActive(false); break;
@@ -232,7 +264,7 @@ namespace FS
             }
             if (_screen.x != Screen.width || _screen.y != Screen.height) Fit();
 
-            bool modal = Painel || Config;
+            bool modal = Painel || Config || Priv;
             _joy.Blocked = modal;
             _joy.BottomPx = _menu.TopPx;
             _joy.Tick();
@@ -249,7 +281,9 @@ namespace FS
             // cobrir a tela. ponytail: teto de 15 s de quadros parados por anuncio, para um SDK que nunca responde nao travar o jogo
             bool ad = EstadoAtual == Estado.Ad;
             _adHold = ad ? _adHold + Mathf.Min(Time.unscaledDeltaTime, 0.1f) : 0f;
-            float dt = ad && _adHold < 15f ? 0f : Mathf.Min(Time.deltaTime, 0.1f) * _speed;
+            // E-PLAT-01: a tela de idade tambem para a oficina (na 1a abertura o cliente nao vai embora enquanto o jogador le); o -bot
+            // segue jogando por baixo (smoke do emulador num APK recem-instalado)
+            float dt = (ad && _adHold < 15f) || (Priv && !_botDrive) ? 0f : Mathf.Min(Time.deltaTime, 0.1f) * _speed;
             while (dt > 0f)
             {
                 float step = Mathf.Min(dt, MaxStep);
@@ -262,6 +296,7 @@ namespace FS
 
             if (_vipNow && _sim.CanSummonVip) _vipNow = !_sim.SummonVip();
             _view.Refresh(Time.deltaTime);
+            Sfx.Tick(_sim, Time.unscaledDeltaTime);   // A-AUD-23: musica e ambiente que cresce com estacoes trabalhando e fila
             FollowCamera(Time.deltaTime);
             RefreshHud();
             _menu.Refresh(Time.deltaTime);
@@ -323,9 +358,9 @@ namespace FS
                         Log("client_left", Balance.ItemName[e.A], e.B == 0 ? "cansou" : "fila_cheia");
                         break;
                     case Ev.Bottleneck: Log("bottleneck", _sim.Stations[e.A].Name, "saida_cheia"); break;
-                    case Ev.Hired: Sfx.Play("hire"); Log("worker_hired", e.A.ToString()); break;
+                    case Ev.Hired: Sfx.Play("hire"); Log("worker_hired", e.A.ToString()); _hired = true; break;
                     case Ev.Unlocked: Log("station_unlock", _sim.Stations[e.B].Name); break;
-                    // baus de marco (docs/AREA2_FASE2.md s3/s4): bateu = som de moeda agudo + o ferreiro comemora (o bau aparece
+                    // baus de marco (docs/archive/AREA2_FASE2.md s3/s4): bateu = som de moeda agudo + o ferreiro comemora (o bau aparece
                     // pulsando no WorldView); abriu = moedas e "+ouro" como uma venda, e o bau some
                     case Ev.Milestone:
                         Sfx.Play("coin", 1.4f);
@@ -367,7 +402,7 @@ namespace FS
                         Source("encomenda", e.B);
                         Ajustes.Pulso(40, 200);
                         if (_order == null) break;   // criativo: sem cartao, o ouro entra direto no numero
-                        Sfx.Play("upgrade");
+                        Sfx.Play("order");
                         OrderText(_sim.OrderTarget, _sim.OrderTarget);   // a ultima venda e a entrega caem no mesmo tick: mostra o 5/5
                         _orderOut = true; _orderT = 0f;
                         Notice(Delivered + e.B, _coinIcon.sprite, _coinIcon.color);
@@ -460,7 +495,8 @@ namespace FS
 
         void BuildHud()
         {
-            new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
+            // G-UA-02: gravando, sem EventSystem: o mouse parado sobre um botao mudava a cor dele (hover) entre 2 execucoes
+            if (Arg("-record") == null) new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
             var canvasGo = new GameObject("HUD", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasGo.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
             var sc = canvasGo.GetComponent<CanvasScaler>();
@@ -615,7 +651,7 @@ namespace FS
         {
             TickCoins(Time.deltaTime);
             RefreshAdUi();
-            float real = Mathf.Min(Time.unscaledDeltaTime, 0.1f);   // tempo real (o simulado zera o timeScale), sem o salto do 1o quadro
+            float real = Mathf.Min(Captura.Passo, 0.1f);   // tempo real (o simulado zera o timeScale; gravando, o do quadro), sem o salto do 1o quadro
             RefreshOrder(real);
             TickNotice(real);
             // numero rolando: persegue o valor (sobe na venda, desce na compra) em ~0,3 s em vez de pular
@@ -788,7 +824,7 @@ namespace FS
             {
                 _boostMul.text = _sim.BoostMul.ToString("0") + "×";
                 _boostTime.text = Clock(_sim.BoostLeft);
-                _boostSeal.localScale = Vector3.one * (1f + 0.04f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 3f)));
+                _boostSeal.localScale = Vector3.one * (1f + 0.04f * Mathf.Abs(Mathf.Sin(Captura.Agora * 3f)));
             }
         }
 
@@ -807,13 +843,14 @@ namespace FS
         /// <summary>
         /// Cartao no estilo da pilula de ouro, no canto de baixo a esquerda (espelho do selo do boost, acima do botao VIP): icone do item,
         /// "Venda 5 espadas", barra com "3/5" e o premio com a moeda. Sob a pilula de ouro ele cobriria o balao do 1o da fila (8 vagas) e as
-        /// moedas da rua, o mesmo motivo que tirou o selo do boost do topo. Criativo (-record): sem cartao nem aviso.
+        /// moedas da rua, o mesmo motivo que tirou o selo do boost do topo. Criativo (-record): sem cartao nem aviso, salvo com -recordorder
+        /// (G-UA-02, preset order).
         /// v0.6d: 420 x 104 px a 32 px da borda e 24 px acima do botao VIP (era 0,02-0,40 da largura, colado nele); titulo com verbo,
         /// a conta "3/5" em cima da barra de 20 px.
         /// </summary>
         void BuildOrderUi()
         {
-            if (Arg("-record") != null) return;
+            if (Arg("-record") != null && Arg("-recordorder") == null) return;
             Image edge = Art.Panel(_safe, "Encomenda", Art.HudEdge, new Vector2(0f, AdTop), new Vector2(0f, AdTop));
             edge.rectTransform.pivot = Vector2.zero; edge.rectTransform.sizeDelta = new Vector2(420f, 104f);
             edge.rectTransform.anchoredPosition = new Vector2(Edge, 24f);
@@ -921,9 +958,9 @@ namespace FS
         // ---------- configuracoes: som e vibracao (v0.6b, BENCHMARK_VISUAL P2-4; a versao saiu da HUD para ca, P1-1) ----------
 
         /// <summary>
-        /// Engrenagem na faixa de cima (a direita da dica, mesmo estilo da pilula de ouro) abre o cartao creme do menu: Som, Vibracao
-        /// (so no Android; no PC aparece apagada), a versao e FECHAR. Nao e' pausa: como o painel do cofre, trava o joystick e a
-        /// oficina segue trabalhando (o ferreiro para). Criativo (-record): sem engrenagem.
+        /// Engrenagem na faixa de cima (a direita da dica, mesmo estilo da pilula de ouro) abre o cartao creme do menu: Musica, Efeitos
+        /// (A-AUD-23: eram uma chave Som so), Vibracao (so no Android; no PC aparece apagada), a versao e FECHAR. Nao e' pausa: como o
+        /// painel do cofre, trava o joystick e a oficina segue trabalhando (o ferreiro para). Criativo (-record): sem engrenagem.
         /// </summary>
         void BuildSettings(RectTransform top)
         {
@@ -937,22 +974,30 @@ namespace FS
                 icon.sprite = Art.Gear(); icon.color = Art.HudEdge; icon.preserveAspect = true; icon.raycastTarget = false;
                 Button gb = gear.gameObject.AddComponent<Button>();
                 gb.targetGraphic = gear;
-                gb.onClick.AddListener(() => { Sfx.Play("drop"); _cfg.gameObject.SetActive(true); });
+                gb.onClick.AddListener(() => { Sfx.Play("click"); _cfg.gameObject.SetActive(true); });
             }
 
             _cfg = Art.Node(_safe, "Configuracoes", Vector2.zero, Vector2.one);
             _cfg.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);   // escurece e segura os toques do resto
-            Image edge = Art.Panel(_cfg, "Cartao", MenuBar.Leather, new Vector2(0.1f, 0.33f), new Vector2(0.9f, 0.67f));
+            Image edge = Art.Panel(_cfg, "Cartao", MenuBar.Leather, new Vector2(0.1f, 0.3f), new Vector2(0.9f, 0.7f));   // 3 chaves: 0,34 -> 0,40 da tela
             Image face = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(6f, 14f); face.rectTransform.offsetMax = new Vector2(-6f, -6f);   // chanfro de couro embaixo
             face.raycastTarget = false;
-            Text title = Art.NewText(face.transform, "Titulo", 60, new Vector2(0.05f, 0.8f), new Vector2(0.95f, 0.97f));
+            Text title = Art.NewText(face.transform, "Titulo", 60, new Vector2(0.05f, 0.84f), new Vector2(0.95f, 0.97f));
             title.text = "Configurações"; title.fontStyle = FontStyle.Bold; title.color = MenuBar.Brown;
-            Chave(face.transform, "Som", 0.58f, () => Ajustes.Som, v => { SetSom(v); if (v) Sfx.Play("coin"); }, true);
-            Chave(face.transform, "Vibração", 0.38f, () => Ajustes.Vibra, v => { SetVibra(v); if (v) Ajustes.Confirmar(); }, Ajustes.TemVibra);
-            Text ver = Art.NewText(face.transform, "Versao", 32, new Vector2(0.05f, 0.25f), new Vector2(0.95f, 0.35f));
+            Chave(face.transform, "Música", 0.67f, () => Ajustes.Musica, v => SetSom("musica", v), true);
+            Chave(face.transform, "Efeitos", 0.51f, () => Ajustes.Efeitos, v => SetSom("efeitos", v), true);
+            Chave(face.transform, "Vibração", 0.35f, () => Ajustes.Vibra, v => { SetVibra(v); if (v) Ajustes.Confirmar(); }, Ajustes.TemVibra);
+            Text ver = Art.NewText(face.transform, "Versao", 32, new Vector2(0.05f, 0.24f), new Vector2(0.95f, 0.32f));
             ver.text = "Forge Street v" + Application.version; ver.color = Art.ComAlfa(MenuBar.Brown, 0.65f);
-            Button close = Art.NewButton(face.transform, "FECHAR", 46, MenuBar.Leather, new Vector2(0.25f, 0.05f), new Vector2(0.75f, 0.22f), () => _cfg.gameObject.SetActive(false));
+            // E-PLAT-01: PRIVACIDADE reabre a tela de idade para rever ou revogar (CANCELAR fecha sem mudar)
+            Button priv = Art.NewButton(face.transform, "PRIVACIDADE", 40, MenuBar.Leather, new Vector2(0.05f, 0.05f), new Vector2(0.49f, 0.2f), () =>
+            {
+                _cfg.gameObject.SetActive(false);
+                _priv.Abrir(Ads.Resposta(out Faixa f, out bool a) ? Privacidade.Atual(f, a) : Privacidade.Rodape);
+            });
+            priv.GetComponentInChildren<Text>().color = MenuBar.Cream;
+            Button close = Art.NewButton(face.transform, "FECHAR", 40, MenuBar.Leather, new Vector2(0.51f, 0.05f), new Vector2(0.95f, 0.2f), () => _cfg.gameObject.SetActive(false));
             close.GetComponentInChildren<Text>().color = MenuBar.Cream;
             _cfg.gameObject.SetActive(false);
         }
@@ -961,12 +1006,13 @@ namespace FS
         // nos dois (so a Vibracao do PC continua apagada)
         static readonly Color OnFace = Art.Hex(0x5BD16B), OnInk = Art.Hex(0x1F3B12), OffFace = Art.Hex(0x8C7B6B), OffEdge = Art.Hex(0x6B5D50), RowInk = Art.Hex(0x3B2A1A);
 
-        /// <summary>Linha "rotulo + chave": pilula verde (LIGADO) ou cinza (DESLIGADO) com chanfro e bolinha branca; o texto diz o estado.</summary>
+        /// <summary>Linha "rotulo + chave" (0,14 do cartao): pilula verde (LIGADO) ou cinza (DESLIGADO) com chanfro e bolinha branca; o texto
+        /// diz o estado. O toque faz "click" (so se os Efeitos ficaram ligados).</summary>
         void Chave(Transform parent, string label, float y, Func<bool> get, Action<bool> set, bool enabled)
         {
-            Text l = Art.NewText(parent, label, 50, new Vector2(0.07f, y), new Vector2(0.48f, y + 0.17f), TextAnchor.MiddleLeft);
+            Text l = Art.NewText(parent, label, 50, new Vector2(0.07f, y), new Vector2(0.48f, y + 0.14f), TextAnchor.MiddleLeft);
             l.text = label; l.fontStyle = FontStyle.Bold; l.color = RowInk;
-            Image edge = Art.Panel(parent, label + " Chave", MenuBar.GreenDark, new Vector2(0.5f, y + 0.01f), new Vector2(0.93f, y + 0.16f));
+            Image edge = Art.Panel(parent, label + " Chave", MenuBar.GreenDark, new Vector2(0.5f, y + 0.01f), new Vector2(0.93f, y + 0.13f));
             Image face = Art.Panel(edge.transform, "Face", OnFace, Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(0f, 7f); face.raycastTarget = false;
             Image knob = Art.Node(face.transform, "Bolinha", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
@@ -987,7 +1033,7 @@ namespace FS
                 state.rectTransform.anchorMax = new Vector2(on ? 0.72f : 0.97f, 1f);
                 state.text = on ? "LIGADO" : "DESLIGADO";
             }
-            b.onClick.AddListener(() => { set(!get()); Paint(); });
+            b.onClick.AddListener(() => { set(!get()); Paint(); Sfx.Play("click"); });
             Paint();
             if (enabled) return;
             // sem vibrador (PC): apagada e sem toque
@@ -996,8 +1042,21 @@ namespace FS
             l.color = Art.ComAlfa(RowInk, 0.45f);
         }
 
-        void SetSom(bool on) { Ajustes.Som = on; Log("settings", "som", on ? "1" : "0"); }
+        void SetSom(bool on) { Ajustes.Som = on; Log("settings", "som", on ? "1" : "0"); }   // -settings on|off: musica e efeitos juntos
+        void SetSom(string qual, bool on)
+        {
+            if (qual == "musica") Ajustes.Musica = on; else Ajustes.Efeitos = on;
+            Log("settings", qual, on ? "1" : "0");
+        }
         void SetVibra(bool on) { Ajustes.Vibra = on; Log("settings", "vibra", on ? "1" : "0"); }
+
+        /// <summary>E-PLAT-01: resposta da tela de idade -> Ads (grava fora do -testsession e inicia o SDK) e o diario (faixa e
+        /// personalizado sim/nao; nada de dado pessoal).</summary>
+        void Responder(Faixa f, bool aceitou)
+        {
+            Ads.Responder(f, aceitou, !_testSession);
+            Log("consent_answer", Privacidade.Diario(f), Privacidade.Flags(f, aceitou).Consentimento ? "sim" : "nao");
+        }
 
         /// <param name="gold">&gt; 0: linha da moeda com "+gold" grande (cofre); 0: so o texto.</param>
         void ShowPanel(string title, string body, string button, Action action, long gold = 0)
@@ -1065,21 +1124,19 @@ namespace FS
         /// <summary>Fotos/teste (dev): -buy N compra os produtivos entre os N primeiros upgrades (ordem do tier) e depois os luxos, -gold G, -px x,y.</summary>
         void DevArgs()
         {
+            string preset = Arg("-preset");
+            if (preset != null)
+            {
+                if (Captura.Flags(preset) == null) { Falha($"PRESET desconhecido '{preset}' (validos: {Captura.Nomes})"); return; }
+                Debug.Log($"PRESET {preset}: {Captura.Flags(preset)}");
+            }
             if (int.TryParse(Arg("-buy"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
                 for (int pass = 0; pass < 2; pass++)   // o Buy recusa luxo antes da producao completa, e ha produtivos (Mineiro, Joalheiro 2) depois dos luxos
                     for (int i = 0; i < Math.Min(n, Upgrades.Count); i++)
                         if (Upgrades.IsLuxury(i) == (pass == 1)) _sim.Buy((Upgrade)i);
-            // -buyids 1,5,0@300 (criativos): compra estes upgrades fora da ordem do -buy (ex.: 4 bancadas e 1 fornalha sem fole), pelo indice
-            // do enum ou pelo ID estavel (A-CORE-04: -buyids fornalha2,bigorna2@300); "x@t" compra quando o relogio do jogo passa de t s, na
-            // ordem dada, cobrando o preco (TimedBuys).
-            foreach (string tok in (Arg("-buyids") ?? "").Split(','))
-            {
-                string[] p = tok.Split('@');
-                int id = int.TryParse(p[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int k) ? k : Upgrades.IndexOf(p[0].Trim());
-                if (id < 0 || id >= Upgrades.Count) continue;
-                if (p.Length == 1) _sim.Buy((Upgrade)id);
-                else if (float.TryParse(p[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float at)) _buyAt.Add((id, at));
-            }
+            // -buyids 1,5,0@300 (criativos): compra estes upgrades (indice do enum ou ID estavel, A-CORE-04) fora da ordem do -buy (ex.: 4 bancadas e 1 fornalha
+            // sem fole); "id@t" compra quando o relogio do jogo passa de t s, na ordem dada, cobrando o preco (TimedBuys).
+            _buyAt = Captura.Compras(_sim, Arg("-buyids"));
             if (long.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long g)) _sim.Gold = Math.Max(0, g);   // A-CORE-06: aceita > int (foto da HUD)
             string[] px = (Arg("-px") ?? "").Split(',');
             if (px.Length == 2 && float.TryParse(px[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x)
@@ -1088,7 +1145,8 @@ namespace FS
             // v0.5c: -boost N = N anuncios de velocidade (1 = 2x, 2 = 3x) ANTES do warmup (warmup >= 60 = foto da recarga)
             if (int.TryParse(Arg("-boost"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int nb)) for (int i = 0; i < nb; i++) _sim.StartBoost();
             float warm = ArgF("-warmup", 0f);
-            for (float t = 0f; t < warm; t += MaxStep) { _sim.Tick(MaxStep, 0f, 0f); TimedBuys(); }
+            for (float t = 0f; t < warm && !_headless; t += MaxStep) { _sim.Tick(MaxStep, 0f, 0f); TimedBuys(); }
+            if (_headless) return;   // compra id@t impossivel no warmup (Falha)
             // fotos da v0.5, depois do warmup: -hold 0,3,3,3,0,0 = carga mista do ferreiro (por Item, ate o teto de cada tipo) e
             // -stock 10,10,10 = estoque do balcao (espada, escudo, ferramenta, joia; ate o teto). A fila do warmup compra ja no 1o tick.
             string[] hold = (Arg("-hold") ?? "").Split(','), stock = (Arg("-stock") ?? "").Split(',');
@@ -1097,32 +1155,40 @@ namespace FS
             for (int i = 0; i < Math.Min(stock.Length, 4); i++)
                 if (int.TryParse(stock[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out int s)) _sim.Stock[2 + i] = Math.Max(0, Math.Min(s, _sim.CounterCap));
             // -vipnow: chama o VIP depois do warmup (fila cheia = ele espera ao lado); se ainda nao pode, tenta a cada quadro (Update).
-            // ponytail: cheat de dev, marca a 1a venda se ainda nao houve (CanSummonVip pede a 1a venda)
+            // G-UA-02: nao marca mais a 1a venda falsa (o CanSummonVip pede uma de verdade). Depois de um -warmup sem venda real e' erro
+            // (o VIP nao viria no comeco, preset vip); sem warmup ele espera a 1a venda real (FS-C-26: -bot -vipnow)
             if (Arg("-vipnow") != null)
             {
-                if (_sim.FirstSaleTime < 0f) _sim.FirstSaleTime = _sim.Time;
+                if (warm > 0f && _sim.FirstSaleTime < 0f) { Falha($"VIPNOW: o warmup de {warm:0} s nao teve venda real"); return; }
                 _vipNow = !_sim.SummonVip();
             }
         }
 
-        /// <summary>-buyids id@t: compra quando _sim.Time passa de t e cobra o preco (sem ouro bastante fica em 0).</summary>
+        /// <summary>-buyids id@t: compra quando _sim.Time passa de t e cobra o preco (Captura.Vence). G-UA-02: sem ouro ou sem
+        /// pre-requisito naquele instante e' erro e sai 1 (antes o ouro ia a 0 e o pre-requisito era ignorado).</summary>
         void TimedBuys()
         {
-            for (int i = 0; i < _buyAt.Count;)
-            {
-                if (_sim.Time < _buyAt[i].t) { i++; continue; }
-                var u = (Upgrade)_buyAt[i].u;
-                _buyAt.RemoveAt(i);
-                // ponytail: cheat de dev, o Buy nao confere pre-requisito; a ordem da lista e' responsabilidade de quem grava
-                if (_sim.Buy(u)) _sim.Gold = Math.Max(0, _sim.Gold - _sim.T.Cost(u));
-            }
+            string erro = Captura.Vence(_sim, _buyAt);
+            if (erro == null) return;
+            _buyAt.Clear();   // um erro so
+            Falha("BUYIDS " + erro);
+        }
+
+        /// <summary>G-UA-02: captura que mostraria algo impossivel (ou preset errado) loga o erro, para tudo como o autoplay e sai 1.</summary>
+        void Falha(string msg)
+        {
+            Debug.LogError(msg);
+            _headless = true;   // Update, Save e Start param
+            StopAllCoroutines();
+            Application.Quit(1);
         }
 
         static float ArgF(string name, float def) => float.TryParse(Arg(name), NumberStyles.Float, CultureInfo.InvariantCulture, out float v) ? v : def;
 
-        // build de desenvolvimento: Ads.Arg tambem le o extra "unity" do intent, entao as flags valem no aparelho
-        // (adb shell am start -n br.com.vstack.forgestreet/com.unity3d.player.UnityPlayerGameActivity -e unity "-cam 9"). Release: so linha de comando
-        static string Arg(string name) => Ads.Arg(name);
+        // build de desenvolvimento: Ads.Args tambem le o extra "unity" do intent, entao as flags valem no aparelho
+        // (adb shell am start -n br.com.vstack.forgestreet/com.unity3d.player.UnityPlayerGameActivity -e unity "-cam 9"). Release: so linha de comando.
+        // G-UA-02: o que a linha de comando nao tem vem do -preset (Captura.Arg)
+        static string Arg(string name) => Captura.Arg(Ads.Args(), name);
 
         static string Clock(float s) => $"{(int)(s / 60f)}:{(int)(s % 60f):00}";
 
@@ -1164,19 +1230,33 @@ namespace FS
         IEnumerator Record(string dir)
         {
             Directory.CreateDirectory(dir);
+            // G-UA-02 -recordhire (preset first_worker): o 1o quadro e' o da 1a contratacao ao vivo (Ev.Hired); ate t = 600 s de jogo
+            if (Arg("-recordhire") != null)
+            {
+                while (!_hired && _sim.Time < 600f) yield return null;
+                if (!_hired) { Falha("RECORD: nenhuma contratacao ate t=600 s (-recordhire)"); yield break; }
+            }
             int frames = Mathf.RoundToInt(ArgF("-recordsec", 15f) * Time.captureFramerate);
             int k = Mathf.Max(1, Mathf.RoundToInt(1920f / Screen.height));
             var eof = new WaitForEndOfFrame();
             for (int n = 0; n < frames; n++)
             {
                 yield return eof;
+                // G-UA-02 -recordfull (preset huge_queue): a fila tem de estar cheia ja no 1o quadro
+                if (n == 0 && Arg("-recordfull") != null && _sim.Queue.Count < _sim.QueueCap)
+                {
+                    Falha($"RECORD: fila {_sim.Queue.Count}/{_sim.QueueCap} no 1o quadro (-recordfull)");
+                    yield break;
+                }
                 Texture2D tex = ScreenCapture.CaptureScreenshotAsTexture(k);
                 // ponytail: JPG 95 em vez de PNG; 1080x1920 em PNG passa de 2 MB por quadro e 900 quadros pesam no disco
                 File.WriteAllBytes(Path.Combine(dir, $"f{n:00000}.jpg"), tex.EncodeToJPG(95));
-                if (n == 0) Debug.Log($"RECORD {tex.width}x{tex.height} x{k} {frames} quadros -> {dir}");
+                if (n == 0) Debug.Log($"RECORD {tex.width}x{tex.height} x{k} {frames} quadros t={_sim.Time:0.0} -> {dir}");
                 Destroy(tex);
             }
-            Debug.Log($"RECORD OK t={_sim.Time:0.0} fila={_sim.Queue.Count}/{_sim.QueueCap} upgrades={_sim.UpgradesBought} ouro={_sim.Gold}");
+            Debug.Log($"RECORD OK t={_sim.Time:0.0} fila={_sim.Queue.Count}/{_sim.QueueCap} upgrades={_sim.UpgradesBought} ouro={_sim.Gold} fornalhas={_view.Fornalhas()}");
+            string preset = Arg("-preset");
+            if (preset != null) Debug.Log($"PRESET {preset} ok");
             Application.Quit(0);
         }
 

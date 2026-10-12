@@ -6,7 +6,7 @@
 
 ## Base medida
 
-Fonte vigente: [BALANCE.md §10.7](BALANCE.md#107-passo-a--custos-aprovados-e-vitrine-com-joia-80-vigente-2026-10-07), [log depois do ajuste](../client/Builds/validation_phase2/core_after_measure.log) e [log anterior](../client/Builds/validation_phase2/core_before.log). Os logs foram produzidos pelo responsável pelo core; nenhum experimento deste documento foi executado.
+Fonte vigente: [BALANCE.md §10.7](../BALANCE.md#107-passo-a--custos-aprovados-e-vitrine-com-joia-80-vigente-2026-10-07), [log depois do ajuste](../client/Builds/validation_phase2/core_after_measure.log) e [log anterior](../client/Builds/validation_phase2/core_before.log). Os logs foram produzidos pelo responsável pelo core; nenhum experimento deste documento foi executado.
 
 | Medida do bot humano, 60 min | Vigente |
 |---|---|
@@ -22,7 +22,7 @@ Os antigos 32:20, 951 ouro/min, 276 joias e 35–53% de fome são **históricos*
 
 ## 1. Ouro sem destino — opções PROPOSTAS
 
-A direção documental é rua→distrito e certificação sem reset, conforme [GDD v1 §§4–5](archive/GDD_v1_MVP.md) (vigente: distritos e Royal Charter no [GDD v2](GDD.md) §6 e §11). Isso é planejamento, não conteúdo já produzido nem retenção validada.
+A direção documental é rua→distrito e certificação sem reset, conforme [GDD v1 §§4–5](GDD_v1_MVP.md) (vigente: distritos e Royal Charter no [GDD v2](../GDD.md) §6 e §11). Isso é planejamento, não conteúdo já produzido nem retenção validada.
 
 | Opção | Escopo e preços PROPOSTOS | Limite |
 |---|---|---|

@@ -30,20 +30,20 @@ namespace FS.Core
         Helper3,         // ajudante 3: bancadas -> balcao
         HelperSpeed,     // ajudantes 2,4 -> 3,4 m/s e carga 2 -> 4
         HammerSpeed,     // bancadas 2,0 s -> 1,3 s
-        // 2a area (docs/AREA2_JOALHERIA.md): no FIM do enum, saves antigos com 15 flags continuam validos
+        // 2a area (docs/archive/AREA2_JOALHERIA.md): no FIM do enum, saves antigos com 15 flags continuam validos
         SideCorridor,    // §3 6:30  abre a rua lateral (x 9-15)
         Jewelry,         // §3 9:30  4a linha: bancada de joias (2 lingotes, paga 60) + loja de joias
-        // 2a area, fase 2 (docs/AREA2_FASE2.md): ANEXADOS, saves de 15/17 flags continuam validos
+        // 2a area, fase 2 (docs/archive/AREA2_FASE2.md): ANEXADOS, saves de 15/17 flags continuam validos
         Jeweler,         // joalheiro (ajudante papel 3): lingote -> bancada de joias, joia -> loja de joias
         JewelSpeed,      // lupa: bancada de joias x0,6
         JewelVitrine,    // vitrine de joias: fila 3 -> 5, nobres x0,7
         WorkshopFacade, // luxo, anexado: entrada nobre, sem bonus de producao
         WorkshopFloor,  // luxo: piso de oficina
         JewelryDecor,   // luxo: adornos da joalheria
-        // fase 4 (docs/FASE4_MINERIO.md): PRODUTIVOS anexados depois dos luxos; saves de 15/17/20/23 flags continuam validos
+        // fase 4 (docs/archive/FASE4_MINERIO.md): PRODUTIVOS anexados depois dos luxos; saves de 15/17/20/23 flags continuam validos
         Miner,          // mineiro: 2o ajudante papel 0 (deposito -> fornalhas)
         Jeweler2,       // joalheiro 2: 2o ajudante papel 3
-        // FASE7 (docs/FASE7_CARGA_BALCAO.md): balcao evolutivo no MENU, +1 vaga cada, em cadeia. PRODUTIVOS anexados no fim: saves de
+        // FASE7 (docs/archive/FASE7_CARGA_BALCAO.md): balcao evolutivo no MENU, +1 vaga cada, em cadeia. PRODUTIVOS anexados no fim: saves de
         // 15/17/20/23/25 flags continuam validos
         Counter5,       // balcao 4 -> 5 vagas
         Counter6,       // 5 -> 6
@@ -74,7 +74,7 @@ namespace FS.Core
         public override string ToString() => X.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "," + Y.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
     }
 
-    /// <summary>Corpo solido no chao (docs/FASE5_FISICA_PACIENCIA.md §2): caixa alinhada aos eixos, centro e meia-medida em m.</summary>
+    /// <summary>Corpo solido no chao (docs/archive/FASE5_FISICA_PACIENCIA.md §2): caixa alinhada aos eixos, centro e meia-medida em m.</summary>
     public struct Box
     {
         public V2 Pos, Half;
@@ -102,7 +102,7 @@ namespace FS.Core
         public const float WorkshopW = 9f;                     // oficina (x 0-9): o jogador fica nela ate comprar o Corredor
         public const float WorldW = 15f, WorldH = 14f;        // metros, retrato; x 9-15 = rua lateral (2a area)
         public const float PadRadius = 0.6f;
-        // Fisica (docs/FASE5_FISICA_PACIENCIA.md §2/§2b): estacao = caixa solida; personagem = circulo; interacao so nas bocas
+        // Fisica (docs/archive/FASE5_FISICA_PACIENCIA.md §2/§2b): estacao = caixa solida; personagem = circulo; interacao so nas bocas
         public static readonly V2 StationHalf = new V2(0.65f, 0.40f);   // corpo de toda estacao (base do sprite de 1,65 m)
         public const float CharRadius = 0.25f;                  // jogador, ajudantes e bot
         public const float MouthRadius = 0.4f;                  // zona da boca: centro do personagem a ate 0,4 m do ponto da boca (encostado)
@@ -160,7 +160,7 @@ namespace FS.Core
         };
 
         /// <summary>
-        /// Baus de marco (docs/AREA2_FASE2.md §3), na ordem de exibicao. Um bau disponivel por vez em cada posicao. O 1o e'
+        /// Baus de marco (docs/archive/AREA2_FASE2.md §3), na ordem de exibicao. Um bau disponivel por vez em cada posicao. O 1o e'
         /// 15 espadas e nao 10 (desvio medido, BALANCE.md §10): com 10 o bau abre aos 1:36 e a 2a bigorna cai abaixo do piso da §3.
         /// </summary>
         // oficina: (2,8; 12,6) -> (2,2; 12,0) na FASE7, o balcao de 4 vagas (x 2,6-6,4) cobria o bau; rua: (14,2; 13,0) -> (10,2; 9,6), coordenador

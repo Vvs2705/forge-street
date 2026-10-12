@@ -125,7 +125,7 @@ dotnet test client/tools/coretests --logger "console;verbosity=detailed"
 ```
 `Bot_Primeiros10Minutos_BatemASecao3` imprime os dois relatórios (ideal e humano); `Offline_DepoisDe10Min…` imprime o cofre; `Bot_45Minutos_SegundaArea_CorredorEJoalheria` imprime os 45 min e a linha de joias (§9). No build: `ForgeStreet.exe -batchmode -nographics -autoplay 10 -logFile autoplay.log`.
 
-## 9. 2ª área: corredor lateral + joalheria (contrato `docs/AREA2_JOALHERIA.md`, medido 2026-10-07)
+## 9. 2ª área: corredor lateral + joalheria (contrato `docs/archive/AREA2_JOALHERIA.md`, medido 2026-10-07)
 
 **Vigente (decisão do coordenador, 2026-10-07):** Corredor **690**, Joalheria **1.515** (requer Corredor). Os dois ficam no fim do enum (tiers 15/16) por causa do save antigo, mas o preço sai de `Balance.SideCorridorCost`/`JewelryCost`, fora da fórmula por tier (`Upgrades.Cost`). Por isso `Sim.CheapestLockedCost` (teto do cofre offline) passou a pegar o **menor** custo entre os não comprados. Linha: joia = 2 lingotes, paga 60, bancada 2× o tempo da bigorna (10 s; 6 s com Martelo veloz), nobre a cada 14 s × fama × vitrine, fila de 3, paciência 40 s.
 
@@ -182,7 +182,7 @@ Leitura: abrir a rua cedo (240/895) quase não muda a renda: sem Ajudante 3 e Ma
 1. **Bancada de joias com fome (36% do tempo aberta):** alimentar melhor a joalheria (ex.: esteira/fornalha na rua lateral, ou ajudante dedicado). Medir com o mesmo `Bot_45Minutos…`.
 2. **Ralo de ouro depois do último upgrade (28:24):** o ouro acumula sem uso (15.006 aos 45 min). Próxima área ou upgrades da joalheria.
 
-## 10. 2ª área, fase 2: Joalheiro, Lupa, Vitrine de joias e baús de marco (contrato `docs/AREA2_FASE2.md`, medido 2026-10-07)
+## 10. 2ª área, fase 2: Joalheiro, Lupa, Vitrine de joias e baús de marco (contrato `docs/archive/AREA2_FASE2.md`, medido 2026-10-07)
 
 **Vigente (Passo A do handoff, aplicado e medido em 2026-10-07):** Joalheiro **2.200**, Lupa **5.500**, Vitrine de joias **9.000** (tiers 17–19, todos ← Joalheria, fora da fórmula como Corredor/Joalheria: `Balance.JewelerCost/JewelSpeedCost/JewelVitrineCost`). Joalheiro = ajudante papel 3 (lingote de qualquer fornalha → só a bancada de joias; vazio e joia pronta → loja de joias; Ajudantes ágeis valem para ele). Lupa: bancada de joias × 0,6 (10 s → 6 s; com Martelo veloz 6 s → 3,6 s). Vitrine de joias: fila de nobres 3 → 5, intervalo × 0,7 (soma com a Vitrine) e preço da joia **60 → 80**, na fila e na compra direta. Medição vigente em **§10.7**; §10.1/§10.2/§10.4 preservam o histórico anterior ao Passo A.
 **Baús** (`Balance.Milestones`): **15 espadas → 60** (desvio: o contrato dizia 10, ver §10.3), 50 vendas → 250, 10 joias → 600, 200 vendas → 1.200. Ouro de baú vai para `Gold` mas **não** para `GoldEarned` (não infla a taxa online nem o cofre offline).
@@ -319,11 +319,11 @@ O teste novo exercita **60/80 × fila/compra direta**, preço no evento, ouro/re
 
 Comando final: `dotnet test client/tools/coretests -nologo --logger "console;verbosity=detailed" --logger "trx;LogFileName=core_final.trx" --results-directory client/Builds/validation_phase2`.
 
-Limites calibrados em §10.6. Estado do Passo A: **núcleo testado por dotnet, 37/37**. Portão local da continuação concluído: Unity EditMode 37/37, Windows/Android sem erros, autoplay e fotos; relatório em `docs/VALIDACAO_FASE2.md`. Aparelho Android e playtest humano continuam pendentes. Bot determinístico continua uma hipótese sobre pessoas: nenhuma medição daqui comprova retenção, CPI ou legibilidade mobile.
+Limites calibrados em §10.6. Estado do Passo A: **núcleo testado por dotnet, 37/37**. Portão local da continuação concluído: Unity EditMode 37/37, Windows/Android sem erros, autoplay e fotos; relatório em `docs/archive/VALIDACAO_FASE2.md`. Aparelho Android e playtest humano continuam pendentes. Bot determinístico continua uma hipótese sobre pessoas: nenhuma medição daqui comprova retenção, CPI ou legibilidade mobile.
 
-## 11. Fase 3: luxo depois dos 20 produtivos (contrato `docs/FASE3_LUXO.md`, medido 2026-10-07)
+## 11. Fase 3: luxo depois dos 20 produtivos (contrato `docs/archive/FASE3_LUXO.md`, medido 2026-10-07)
 
-**Vigente (aprovado pelo coordenador em 2026-10-07):** Fachada nobre **11.000**, Piso de oficina **14.000**, Joalheria real **18.000** (`Balance.WorkshopFacadeCost/WorkshopFloorCost/JewelryDecorCost`), total de 43.000. Os preços do contrato original (6.000 / 10.000 / 16.000) são **históricos** (§11.4): a Fachada saía cedo demais, e um retorno no teto offline pagava dois luxos de uma vez. Esta seção é a evidência 1 do contrato. Diagnóstico e A/B de logística ficam em `docs/ESTUDO_LOGISTICA.md`.
+**Vigente (aprovado pelo coordenador em 2026-10-07):** Fachada nobre **11.000**, Piso de oficina **14.000**, Joalheria real **18.000** (`Balance.WorkshopFacadeCost/WorkshopFloorCost/JewelryDecorCost`), total de 43.000. Os preços do contrato original (6.000 / 10.000 / 16.000) são **históricos** (§11.4): a Fachada saía cedo demais, e um retorno no teto offline pagava dois luxos de uma vez. Esta seção é a evidência 1 do contrato. Diagnóstico e A/B de logística ficam em `docs/archive/ESTUDO_LOGISTICA.md`.
 
 Método: `Bot_90Minutos_Luxo` (`BalanceTests.cs`) joga o bot humano (0,7 s de reação, 85% de stick, 30 ticks/s) **duas vezes no mesmo passo**: com os pads de luxo e sem eles (`Pads.RemoveAll` dos pads 17–19 só na partida de controle). Sem RNG: a diferença entre as duas partidas é só o luxo. Retornos offline: harness em `%TEMP%\fs_ab\lux` contra o core real (só leitura). Varredura de preço numa cópia (`%TEMP%\fs_ab\ab\core`, custos de luxo `static`), que reproduz a partida real ao tick (as linhas 6.000/10.000/16.000 e 11.000/14.000/18.000 de §11.3 são iguais às medições reais).
 
@@ -435,10 +435,10 @@ Como repetir: `dotnet test client/tools/coretests --logger "console;verbosity=de
 | M3: só `CheapestLockedCost` volta a `i < ProductionCount` | **vermelho**: "entra no teto offline como menor travado", esperado 18.000, recebido 9.000 |
 | restaurado pela cópia de backup (SHA b0332cde… igual ao real) | verde **44/44** |
 
-**2º ajudante de minério:** o A/B isolado não passou nos 4 critérios. Nada foi implementado, e não há §12 de preço nem `FASE4_MINERIO.md`. Resultado e recomendação em [ESTUDO_LOGISTICA.md §5](ESTUDO_LOGISTICA.md).
+**2º ajudante de minério:** o A/B isolado não passou nos 4 critérios. Nada foi implementado, e não há §12 de preço nem `FASE4_MINERIO.md`. Resultado e recomendação em [ESTUDO_LOGISTICA.md §5](archive/ESTUDO_LOGISTICA.md).
 
 
-## 13. Fase 5, Etapa A: física, duas bocas, parede lateral e paciência por item (contrato `docs/FASE5_FISICA_PACIENCIA.md`, medido 2026-10-07)
+## 13. Fase 5, Etapa A: física, duas bocas, parede lateral e paciência por item (contrato `docs/archive/FASE5_FISICA_PACIENCIA.md`, medido 2026-10-07)
 
 **Medição da Etapa A sozinha**, numa cópia do core final sem o par da fase 4 (`%TEMP%\fs_l10\stageA2`, gerada por `make_stage_a.py`: sem Mineiro/Joalheiro 2 e com o pad do Martelo veloz em (0,5; 9,5)). O jogo vigente é A + B (§14). Origem: playtest do Vinicius no POCO F4. Ele achou a paciência curta, viu o personagem atravessar ou parar em cima das estações e pediu para abastecer sem retirar. Os números de §10.7/§11 passam a ser **históricos** (antes da física). Nenhum preço mudou nesta etapa.
 
@@ -561,7 +561,7 @@ Leitura:
   - A versão final soma o caminho quina a quina, e com isso o bot joga normalmente com Dt 1/20, 1/30, 1/45 e 1/60.
   - A prova vermelha está junto com a da Etapa B (§14.5).
 
-## 14. Fase 4 por cima da Etapa A: Mineiro + Joalheiro 2, Martelo veloz e `-buy` (contrato `docs/FASE4_MINERIO.md`, medido 2026-10-07)
+## 14. Fase 4 por cima da Etapa A: Mineiro + Joalheiro 2, Martelo veloz e `-buy` (contrato `docs/archive/FASE4_MINERIO.md`, medido 2026-10-07)
 
 **Vigente.** Mineiro (ID 23, ← Joalheiro) = 2º ajudante papel 0. Joalheiro 2 (ID 24, ← Mineiro) = 2º ajudante papel 3. Os dois são produtivos (`Luxury = false`), anexados ao fim do enum, e os pads 20–21 ficam no fim da lista. Preços em `Balance.MinerCost` / `Balance.Jeweler2Cost`. O luxo agora espera **22** produtivos.
 
@@ -701,7 +701,7 @@ precos (F / P / J)  | fachada        piso           joalheria real | volta no te
   - **Alternativa: 14.000 / 18.000 / 22.000**, com a Fachada em +8,5 min.
 - **Preço do Mineiro pela regra de retorno remedida:** ~500 (Δ +53 a +58), com o Joalheiro 2 em 2.400. A produção completa cai para **40:01**, fora da janela 42–48. O coordenador decide entre a regra de retorno e a janela.
 
-## 15. Leva 11: menu inferior de melhorias, bocas laterais e luxo 14/18/22 mil (contrato `docs/FASE6_MENU_MELHORIAS.md`, medido 2026-10-07)
+## 15. Leva 11: menu inferior de melhorias, bocas laterais e luxo 14/18/22 mil (contrato `docs/archive/FASE6_MENU_MELHORIAS.md`, medido 2026-10-07)
 
 **Vigente.** Os 9 upgrades do personagem e dos itens são comprados por toque no menu inferior (`UpgradeDef.InMenu`, `Sim.TryBuyMenu`), sem pad e sem dreno de 1 s: Fole, Fole duplo, Mochila, Botas, Vitrine, Ajudantes ágeis, Martelo veloz, Lupa e Vitrine de joias. As construções continuam pads. Fornalha, Bigorna e Joalheria passaram a ter entrada à esquerda e saída à direita. Os números de §14.4 viram **históricos**.
 
@@ -889,7 +889,7 @@ precos (F / P / J)  | Dt 1/30: fachada  piso           joalheria real  | Dt 1/60
 - **Pad do Mineiro** (0,5; 3,5) → **(2,8; 0,6)**, slot 20, no lugar das Botas (pad do menu, invisível; `Sim` ignora pad invisível na busca por posição). Motivo: a 0,62 m da linha Depósito → entrada da Fornalha, o humano pisaria nele de passagem. Bot: produção completa **43:37** (igual), Fachada +8,8 min, ouro/min 44–90 1.626; dotnet 66/66.
 - **Arte das estações** de célula 1,65 m para 1,95 m: com 1,65 a peça tinha 0,9–1,24 m de largura e o corpo sólido 1,3 m (o ferreiro batia numa borda invisível). Só view; nenhum número muda.
 
-## 17. FASE7: carga mista do ferreiro, balcão evolutivo 4 → 8 e venda só com cliente na vaga (contrato `docs/FASE7_CARGA_BALCAO.md`, medido 2026-10-08)
+## 17. FASE7: carga mista do ferreiro, balcão evolutivo 4 → 8 e venda só com cliente na vaga (contrato `docs/archive/FASE7_CARGA_BALCAO.md`, medido 2026-10-08)
 
 **Vigente.** Origem: playtest do Vinicius na v0.4.1 (POCO F4): a trava dos lingotes com a bigorna cheia, o pedido do balcão evolutivo e "vendas sem ninguém pedindo". Os números de §15/§16 viram **históricos**. Harness: `scratchpad/fs7/h` (fontes reais do core; preços do balcão mudados em runtime), `h2` (vendas por caminho, compila contra o core antigo e o novo) e `red` (mutações). Bot humano, Dt 1/30 (portão) e 1/60.
 

@@ -22,6 +22,12 @@
     <!-- A-PLAT-07: tabela dos estados do jogo (pura) -->
     <Compile Include="../../Assets/_FS/Scripts/View/Estado.cs" />
     <Compile Include="../../Assets/_FS/Scripts/View/StationView.cs" />
+    <!-- G-UA-02: presets de captura e compras do -buyids (o relogio da HUD fica atras do #if) -->
+    <Compile Include="../../Assets/_FS/Scripts/View/Captura.cs" />
+    <!-- A-AUD-23: sintese dos sons (pura); o Sfx (Unity) fica atras de #if !FS_CORETESTS -->
+    <Compile Include="../../Assets/_FS/Scripts/View/Som.cs" />
+    <!-- E-PLAT-01: regras de privacidade (faixa x aceite -> flags do LevelPlay); a tela fica atras de #if !FS_CORETESTS -->
+    <Compile Include="../../Assets/_FS/Scripts/View/Privacidade.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />

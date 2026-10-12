@@ -88,7 +88,7 @@ namespace FS.Tests
         }
 
         /// <summary>
-        /// 2a area (docs/AREA2_JOALHERIA.md): o bot humano joga 45 min e MEDE quando compra Corredor e Joalheria, quantas
+        /// 2a area (docs/archive/AREA2_JOALHERIA.md): o bot humano joga 45 min e MEDE quando compra Corredor e Joalheria, quantas
         /// joias vende e o ouro/min antes e depois. Os limites sao folgados (medido + ~30%, ver BALANCE.md §9): protegem
         /// contra regressao, nao fixam a curva.
         /// </summary>
@@ -135,7 +135,7 @@ namespace FS.Tests
         }
 
         /// <summary>
-        /// Fase 2 (docs/AREA2_FASE2.md): o bot humano joga 60 min e MEDE quando compra Joalheiro/Lupa/Vitrine de joias,
+        /// Fase 2 (docs/archive/AREA2_FASE2.md): o bot humano joga 60 min e MEDE quando compra Joalheiro/Lupa/Vitrine de joias,
         /// quando abre cada bau, joias/min e % da bancada de joias sem lingote antes e depois do Joalheiro, e ouro/min por
         /// janela de 5 min. Limites folgados (medido + 30%, BALANCE.md §10): portao de regressao, nao fixam a curva.
         /// </summary>

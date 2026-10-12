@@ -4,6 +4,9 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Adicionado
+- **Privacidade por idade (E-PLAT-01, DM §94):** tela de idade na 1ª abertura ("Menos de 13", "13 a 17", "18 ou mais", nenhum pré-marcado) e, para 18+, a escolha de anúncio personalizado (Recusar e Aceitar com o mesmo peso). O SDK de anúncio só inicia depois da resposta. Menor de 13: COPPA, sem ID de publicidade e só redes do programa Famílias; 13 a 17: nada personalizado e sem ID de publicidade (V21); 18+: personalizado só com aceite; "não vender" sempre que não há aceite. Resposta no aparelho com a versão do texto (texto novo pergunta de novo); Configurações > Privacidade revê ou revoga (vale por completo ao reabrir). Diário `consent_answer`; flag de dev `-privacidade [18]`. Acaba o consentimento fixo para todos.
+- **Presets de captura dos criativos (G-UA-02, DM §78):** `-preset start|huge_queue|first_worker|conveyor|vip|order|offline|full_district|district_unlock` expande para as flags de cada um (`View/Captura.cs`; a linha de comando vence). Flags novas: `-recordhire` (grava a partir da 1ª contratação), `-recordfull` (fila cheia no 1º quadro ou erro), `-recordorder` (mantém o cartão da encomenda no `-record`) e `-offline S` (cofre real de S s fora, 60–7.200). Tabela em `docs/CRIATIVOS.md`. **Mesmo comando, mesmos quadros:** semente fixa no `Random`, HUD no relógio do quadro, sem EventSystem durante a gravação (3 presets gravados 2×: 60/60 quadros com o mesmo SHA-256). `-buyids id@t` sem ouro ou sem pré-requisito agora é erro (sai 1) em vez de zerar o ouro; `-vipnow` não marca mais uma 1ª venda falsa.
+- **Áudio procedural em 3 grupos (A-AUD-23, DM §70/§71/§110; sem banco de sons, P11 pendente):** música, efeitos e ambiente com volume próprio (6 vozes reaproveitadas, cada uma com a sua altura — antes a martelada de uma bancada mudava a altura dos outros sons). 14 efeitos sintetizados na abertura, sem tom puro: martelada com corpo e brilho de bigorna (3 variações; timbre por bancada no compasso), fole, pedra, moedas, arpejo de compra, sininho de cliente, fanfarra do VIP, "ta-da" da encomenda, cascata do cofre e clique de UI. Ambiente de oficina (fogo + murmúrio da rua) que sobe com as estações trabalhando e a fila (~9,5 dB da oficina parada à cheia). Música de 28,8 s em ré dórico (alaúde, flauta, tambor), em laço sem emenda. Configurações: Música e Efeitos no lugar de Som (`fs_musica`/`fs_efeitos`; quem tinha `fs_som` desligado continua sem som). `SomTests`; `Som_GravaWav` grava os sons em .wav para ouvir sem o Unity.
 - **`Tuning` de instância + feature flags (A-CORE-03, DM §88/§130):** preços, custos, tempos das estações, paciência, intervalo de clientes e fama, vagas, VIP, boost, encomendas e taxa/teto relativo do offline saíram das `const` do `Balance` para o `Tuning` (por instância; `new Sim(tuning)`, `Sim.Load(texto, tuning)`, o núcleo lê `sim.T`; custo de upgrade = `Tuning.Cost`; os cartões leem o `Tuning` da partida). Geometria, IDs, receitas, efeitos de upgrade e limites de segurança continuam `const`. Travas: o teto offline de 2 h não é knob (`OfflineMaxSeconds` só encurta) e o balcão nunca passa de 8 vagas. Flags `Encomendas`, `Vip`, `VipChamado`, `Velocidade`, `Baus` e `Interstitial` (desligada, V10): desligada, o sistema não gera nada novo, o que estava em andamento termina e o save fica intacto. Com o `Tuning` padrão o `dotnet test` detalhado e o econsim ficam idênticos ao byte (`TuningTests`).
 - **Anúncios só depois da 1ª melhoria (D6/V18):** Velocidade e "Chamar VIP" escondidos e recusados até a primeira compra (`Tuning.AnunciosDepoisDaPrimeiraMelhoria`); o AdWatcher sai do Fole a 0:28 para 1:07.
 - **Costuras `IAds`, `IAnalytics` e `ISaveStorage` (A-PLAT-06, DM §129):** `Servicos.cs`; o `Game` não chama PlayerPrefs nem LevelPlay direto (o `Ads.Init` devolve `AdsLevelPlay` ou `AdsSimulado`); `Salvamento` concentra a regra de carregar/gravar (arquivo + espelho) com teste em memória (`CosturasTests`).
@@ -45,7 +48,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [0.5.1] — 2026-10-09
 ### Adicionado
-- **Carga sem bloqueio:** o ferreiro carrega todos os tipos de item ao mesmo tempo, até 3 de cada (6 com a Mochila); ajudantes continuam com um tipo só. Corrige a trava "lingotes na mão + bigornas cheias = não pega espada" (`docs/FASE7_CARGA_BALCAO.md`).
+- **Carga sem bloqueio:** o ferreiro carrega todos os tipos de item ao mesmo tempo, até 3 de cada (6 com a Mochila); ajudantes continuam com um tipo só. Corrige a trava "lingotes na mão + bigornas cheias = não pega espada" (`docs/archive/FASE7_CARGA_BALCAO.md`).
 - **Balcão evolutivo 4 → 8 vagas:** 4 evoluções no menu (150/175/200/225; a 1ª exige a Vitrine), estande sem toldo que cresce com as vagas e mostra o estoque em pé nos encaixes.
 - **Arte v0.5 (Blender, 0 crédito):** ícones de minério, lingote, espada, escudo, martelo, anel e moeda; estande modular; portão e porta de serviço vistos de lado com pilares (`docs/ASSETS.md` §7).
 - **Leitura de venda:** balão grande só no 1º da fila com anel de paciência; mini-ícones nos demais; moedas voando até o contador; quem chega com a fila cheia aparece indo embora.
@@ -87,29 +90,29 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 - **Física** (Leva 10): estações, parede e decoração sólidas (caixa 0,65 × 0,40 m); personagem círculo de 0,25 m que desliza nas quinas; bot e ajudantes contornam as estações.
 - **Duas bocas por estação de produção**: entrada só deposita, saída só recolhe; marcadas no chão com anel e seta na cor do item. Depósito e balcões com zona única.
 - **Parede direita sólida** com porta lateral (y 5,6–7,4, fechada até o Corredor) e o arco (y 11,6–13,4).
-- **Mineiro** (3 000) → **Joalheiro 2** (2 400): mais um ajudante de minério e mais um na joalheria (`docs/FASE4_MINERIO.md`).
+- **Mineiro** (3 000) → **Joalheiro 2** (2 400): mais um ajudante de minério e mais um na joalheria (`docs/archive/FASE4_MINERIO.md`).
 - **Ambientação** (Leva 11): chão de pedra, assoalho na frente do balcão, paredes de tijolo, calçamento, tochas e 8 props de cenário.
 ### Alterado
 - **Paciência dos clientes** proporcional ao tempo de produção: 30 s + 3 × produção (espada 57 s, escudo 76,5 s, ferramenta 57 s, joia 84 s). Desistências em 10 min: 27 → 1.
 - Pads do Martelo veloz (8,4; 3,4) e da Lupa (14,2; 6,8) fora das linhas de caminhada.
 - Produção completa (bot) 40:41 → 43:37; fome da joalheria 52% → 15% (`docs/BALANCE.md` §13–§15).
-- **Menu de melhorias** (Leva 12): 9 melhorias do ferreiro e das estações saem dos pads e viram cartões na barra inferior, comprados por toque; botão dourado com a contagem do que dá para comprar; joystick não começa na barra (`docs/FASE6_MENU_MELHORIAS.md`).
+- **Menu de melhorias** (Leva 12): 9 melhorias do ferreiro e das estações saem dos pads e viram cartões na barra inferior, comprados por toque; botão dourado com a contagem do que dá para comprar; joystick não começa na barra (`docs/archive/FASE6_MENU_MELHORIAS.md`).
 - Pads de construção redesenhados como canteiro de obra (anel tracejado e "+").
 - Luxo 11 000 / 14 000 / 18 000 → **14 000 / 18 000 / 22 000**.
 - Fornalha, Bigorna e Joalheria com entrada à esquerda e saída à direita, como as outras; pad da Esteira para (0,5; 11,2).
 
 ## [0.3.0] — 2026-10-07
 ### Adicionado
-- Fase 3 "luxo visual" (destino do ouro): Fachada nobre 11 000, Piso de oficina 14 000, Joalheria real 18 000 — só após os 20 upgrades produtivos, sem bônus de produção (`docs/FASE3_LUXO.md`, `docs/VALIDACAO_FASE3.md`).
+- Fase 3 "luxo visual" (destino do ouro): Fachada nobre 11 000, Piso de oficina 14 000, Joalheria real 18 000 — só após os 20 upgrades produtivos, sem bônus de produção (`docs/archive/FASE3_LUXO.md`, `docs/archive/VALIDACAO_FASE3.md`).
 - Marca produtivo/luxo por upgrade (`UpgradeDef.Luxury`).
-- Validação em aparelho real: POCO F4, 60 fps estáveis, 217 MB PSS (`docs/VALIDACAO_APARELHO.md`).
+- Validação em aparelho real: POCO F4, 60 fps estáveis, 217 MB PSS (`docs/archive/VALIDACAO_APARELHO.md`).
 ### Alterado
 - Rótulo do balcão abaixo do varal da fachada.
 
 ## [0.2.0] — 2026-10-07
 ### Adicionado
-- 2ª área: corredor lateral (690) + joalheria (1 515) com loja de joias e fila de nobres (`docs/AREA2_JOALHERIA.md`).
-- Fase 2: Joalheiro, Lupa (5 500), Vitrine de joias (9 000; joia passa de 60 para 80), baús de marco (`docs/AREA2_FASE2.md`, `docs/VALIDACAO_FASE2.md`).
+- 2ª área: corredor lateral (690) + joalheria (1 515) com loja de joias e fila de nobres (`docs/archive/AREA2_JOALHERIA.md`).
+- Fase 2: Joalheiro, Lupa (5 500), Vitrine de joias (9 000; joia passa de 60 para 80), baús de marco (`docs/archive/AREA2_FASE2.md`, `docs/archive/VALIDACAO_FASE2.md`).
 - Arte Lotes 2 e 3 (Tripo3D + Mixamo + Blender → sprites): mago, elfa, goblin, cavaleiro, nobre, bancadas, joalheria, baú, carroça, arco.
 ### Corrigido
 - Trava da fila cheia (cliente compra direto da vitrine quando a fila está cheia).

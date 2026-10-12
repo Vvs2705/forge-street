@@ -75,6 +75,8 @@ public sealed class Ads : MonoBehaviour   // fábrica: AdsLevelPlay (aparelho) o
     public const string Vip = "vip", Velocidade = "velocidade";
     public static IAds Init(Action<string, string, string> log);     // log (evento, placement, detalhe) -> IAnalytics
     public static string Arg(string name);                           // flag da linha de comando ou do intent (intent só em build de desenvolvimento)
+    public static bool Resposta(out Faixa f, out bool aceitou);      // E-PLAT-01: resposta gravada da tela de idade (false = perguntar)
+    public static void Responder(Faixa f, bool aceitou, bool gravar); // grava (fora do -testsession) e inicia o SDK com as flags (seção 6)
 }
 ```
 
@@ -92,6 +94,7 @@ public sealed class Ads : MonoBehaviour   // fábrica: AdsLevelPlay (aparelho) o
 | Qualquer build com `-fakeads` | ignorado | **simulado** |
 | Android, build de desenvolvimento | **real** | **simulado** (fallback para testar hoje) |
 | Android, build de release | **real** | `Ready` = false, `Show` → `onFail` (o botão some) |
+| Android, **sem resposta** da tela de idade, ou resposta mudada nesta sessão (seção 6) | o SDK não iniciou / não mostra | `Ready` = false em qualquer build (o botão some) |
 
 O simulado é um painel uGUI preto, com sortingOrder 1000, que bloqueia o toque. Mostra "Anúncio de teste", "Recompensa: VIP x1" e uma contagem de 5 s. Ele pausa o jogo com `Time.timeScale = 0`, como o anúncio real pausa o app, e no fim chama `onReward`.
 
@@ -101,12 +104,13 @@ O `Ads.Init` recebe o `log` do `Game`, que grava pelo mesmo `IAnalytics` dos out
 
 | evento | a | b |
 |---|---|---|
-| `ad_init` | `ok` / `falha` / `simulado` | versão do plugin / código+mensagem / motivo |
+| `ad_init` | `ok` / `falha` / `simulado` / `espera` | versão do plugin / código+mensagem / motivo / `consentimento` (SDK esperando a tela de idade) |
 | `ad_request` | placement | `real` / `simulado` |
 | `ad_shown` | placement | rede que serviu / `simulado` |
 | `ad_reward` | placement | `VIP x1 <rede>` / `... simulado` |
 | `ad_fail` | placement | `sem_anuncio`, `ocupado`, `fechou_sem_recompensa`, `exibicao <código> <msg>`… |
 | `ad_load_fail` | placement | `<código> <msg> retry Ns` |
+| `consent_answer` | faixa: `<13` / `13-17` / `18+` | personalizado: `sim` / `nao` (sai do `Game.Responder`, a cada resposta da tela) |
 
 Trecho real, de uma sessão no PC sem `-testsession` (o save e o diário do PC foram restaurados do backup depois): `client/Builds/validation_levelplay/diario_trecho.csv`.
 
@@ -121,6 +125,16 @@ cd client/Builds
 ```
 
 O `Player.log` (ou o `-logFile`) mostra `ADS ad_init|ad_request|ad_shown|ad_reward ...`. No Windows o simulado sai mesmo sem `-fakeads`.
+
+Tela de idade (E-PLAT-01). O `-testsession` não mostra a tela nem grava a resposta; o `-privacidade` força. O `-shot` exige caminho **absoluto**:
+
+```bash
+./win/ForgeStreet.exe -testsession -privacidade -shot "C:/caminho/absoluto/priv_idade.png" -shotdelay 1.5          # passo 1: as 3 faixas
+./win/ForgeStreet.exe -testsession -privacidade 18 -shot "C:/caminho/absoluto/priv_consent.png" -shotdelay 1.5     # passo 2: Recusar | Aceitar
+./win/ForgeStreet.exe -testsession -settings -shot "C:/caminho/absoluto/config_privacidade.png" -shotdelay 1.5     # botão PRIVACIDADE
+```
+
+Sem `-testsession`, a tela aparece na 1ª abertura de verdade. Para ver de novo no PC, use Configurações > PRIVACIDADE ou apague o valor `fs_privacidade` do PlayerPrefs (no registro, em `HKCU\Software\<empresa>\<produto>`).
 
 ### Editor
 
@@ -150,6 +164,8 @@ Em build de desenvolvimento, o `Ads` também:
 
 A Test Suite (`is_test_suite` antes do `Init` + `LaunchTestSuite()` no `OnInitSuccess`) **só** liga com a flag `-adtestsuite` e só em build de desenvolvimento. Nada disso vai para o release, que não tem `Debug.isDebugBuild`.
 
+Tela de idade no aparelho: instale limpo (ou **Configurações > Apps > Forge Street > Limpar dados**) e abra sem `-testsession`. Antes da resposta o logcat mostra `ADS ad_init espera consentimento` e nada do LevelPlay. Depois dela, `ADS privacidade <faixa> coppa=… gdpr=… ccpa=… aaid_optout=… familias=…` e, logo em seguida, `ADS ad_init ok`. Para forçar a tela por cima de uma resposta gravada: `-e unity "-privacidade"` (ou `"-privacidade 18"`).
+
 O que conferir no aparelho:
 
 1. o logcat mostra `ADS ad_init ok 9.5.1`;
@@ -170,29 +186,59 @@ O que conferir no aparelho:
 
 Fonte: [Integration testing (Unity Docs)](https://docs.unity.com/en-us/grow/levelplay/sdk/android/integration-testing) e [Integration helper (Unity Docs)](https://docs.unity.com/en-us/grow/levelplay/sdk/android/integration-helper). Os nomes dos menus podem variar no painel ao vivo.
 
-## 6. Privacidade (configuração conservadora; não é parecer jurídico)
+## 6. Privacidade: tela de idade + consentimento (E-PLAT-01; não é parecer jurídico)
 
-Configurado no código, **antes** do `LevelPlay.Init` (no `AdsLevelPlay`):
+Até a 0.6 o `AdsLevelPlay` fixava COPPA false, GDPR false e CCPA true para todo mundo. Agora o SDK **só inicia depois da resposta** da tela de idade, e as flags saem dessa resposta. As regras estão num lugar só, `View/Privacidade.cs` (puro, testado no `dotnet test`: `PrivacidadeTests`). A tela (`TelaPrivacidade`, no mesmo arquivo) e a gravação (`Ads.Responder`) só consomem essas regras.
 
-| Chamada | Valor | Por quê |
-|---|---|---|
-| `LevelPlayPrivacySettings.SetCOPPA` | `false` | Bate com o painel: "Not directed" (o jogo não é para menores de 13 anos). |
-| `LevelPlayPrivacySettings.SetGDPRConsent` | `false` | Ainda não existe tela de consentimento. Sem consentimento, as redes servem anúncio **não personalizado** onde o GDPR vale. |
-| `LevelPlayPrivacySettings.SetCCPA` | `true` | "Não vender/compartilhar" dados pessoais, o mais restrito. |
+### Fluxo
 
-- Não passamos `userId` no `Init`, não há segmentação (`SetSegment`) e não há ILRD encaminhado para nenhuma plataforma. Nenhum dado do jogo sai para o SDK.
-- O `play-services-ads-identifier` 18.1.0 traz a permissão `com.google.android.gms.permission.AD_ID` pelo merge de manifest. É o que a skill exige para API 33+, e o projeto usa a API mais nova instalada. Ver na seção 7 se ela aparece no APK.
-- **Efeito na receita:** `GDPRConsent=false` e `CCPA=true` valendo para **todos** os jogadores reduzem a personalização e o eCPM. É de propósito, até haver decisão.
+1. **1ª abertura** (sem resposta, ou resposta com versão de texto antiga): o `AdsLevelPlay` **não toca no LevelPlay** (nem os eventos, nem o `SetAdaptersDebug`), loga `ad_init espera consentimento`, e o `Ready` é false (os botões de anúncio somem, inclusive o simulado do dev). O jogo funciona, e a oficina fica parada enquanto a tela está aberta (o `-bot` continua jogando por baixo).
+2. **Passo 1, "Qual é a sua idade?"**: 3 botões iguais, um embaixo do outro, na ordem da idade ("Menos de 13", "13 a 17", "18 ou mais"), nenhum pré-marcado. Não tem como fechar sem responder (o voltar do Android não faz nada aqui).
+3. **"Menos de 13" e "13 a 17"** fecham a tela: nada é perguntado sobre personalização, porque a resposta é sempre não.
+4. **"18 ou mais"** vai ao passo 2, **"Anúncios personalizados?"**: Recusar e Aceitar lado a lado, com o mesmo tamanho, a mesma cor (face `HudEdge`, texto `HudFace`) e a mesma fonte. VOLTAR (ou o voltar do Android) volta para a idade.
+5. A resposta vai para o PlayerPrefs (`fs_privacidade` = `versão|faixa|aceite`, ex.: `1|3|0`) e para o `Ads.Responder`, que aplica as flags e chama o `LevelPlay.Init` na mesma sessão. O diário recebe o `consent_answer`.
+6. **Rever ou revogar:** Configurações > **PRIVACIDADE** abre a mesma tela com "Resposta atual: …" no rodapé, e CANCELAR fecha sem mudar nada.
+   - **Resposta diferente com o SDK já iniciado:** o GDPR e o CCPA são reaplicados na hora (a API aceita depois do Init). Mesmo assim, o anúncio já carregado veio com a resposta antiga, e COPPA, ID de publicidade e Famílias só valem antes do Init. Por isso, **nenhum anúncio é mostrado até o jogo ser reaberto** (`Ready` e `Loaded` = false, e o logcat diz `ADS privacidade mudou ... sem anuncio ate reabrir`).
+   - **Na próxima abertura**, tudo sai da resposta nova. **Revogar exige reabrir o jogo**, e a tela avisa isso: "A mudança vale por completo quando você abrir o jogo de novo".
+7. **Versão do texto:** `Privacidade.Versao` (hoje 1). Uma resposta gravada com outra versão não vale, e a tela pergunta de novo. O `PrivacidadeTests.Versao_TravaOTexto` trava o par (versão, hash FNV-1a do texto): se alguém mudar o texto sem subir a versão, o teste falha.
+8. **Editor, Windows e `-fakeads`:** a tela aparece igual e grava igual, mas o anúncio é o simulado, que nunca sai do aparelho. `-testsession` não mostra a tela nem grava a resposta; `-privacidade [18]` força a tela (ver seção 4).
 
-**Falta decidir (Vinicius + jurídico):**
+### O que vai ao LevelPlay (antes do `LevelPlay.Init`, nesta ordem)
 
-1. **LGPD (público principal no Brasil).** Não existe API específica de LGPD no LevelPlay. É preciso definir a base legal para a publicidade, por exemplo consentimento numa tela de primeira abertura ou legítimo interesse com opção de saída. Depois disso, ligar `SetGDPRConsent(true)` só para quem consentir. Uma CMP é opcional.
-2. **Região:** aplicar GDPR e CCPA só onde valem, em vez de para todos, o que recupera eCPM.
-3. **Google Play:**
-   - **Política de privacidade** com URL pública. É obrigatória com SDK de anúncio e com a permissão `AD_ID`.
-   - **Formulário Data safety**: declarar "Device or other IDs" (ID de publicidade), coleta pelo SDK de anúncios e compartilhamento com terceiros.
-   - Responder **"Contém anúncios = sim"**.
-4. **COPPA/Famílias:** se o público-alvo da Play incluir menores de 13 anos, a configuração acima deixa de valer. Seria preciso `SetCOPPA(true)` e o programa Famílias.
+| Faixa | Aceitou? | `SetMetaData("is_deviceid_optout","true")` | `SetMetaData("Google_Family_Self_Certified_SDKS","true")` | `LevelPlayPrivacySettings.SetCOPPA` | `SetGDPRConsent` | `SetCCPA` (do_not_sell) | Anúncio |
+|---|---|---|---|---|---|---|---|
+| sem resposta | — | — | — | — | — | — | **SDK não inicia** |
+| Menos de 13 | (não perguntado) | **sim** | **sim** | **true** | false | **true** | não personalizado, child-directed, sem AAID |
+| 13 a 17 | (não perguntado) | **sim** | não | false | false | **true** | não personalizado, sem AAID |
+| 18 ou mais | Recusar | não | não | false | false | **true** | não personalizado |
+| 18 ou mais | Aceitar | não | não | false | **true** | false | personalizado |
+
+- Regra única (`Privacidade.Flags`):
+  - personalizado só com 18+ **e** aceite;
+  - do_not_sell = não personalizado;
+  - COPPA e Famílias só para menor de 13;
+  - sem ID de publicidade (AAID) para todo menor de 18.
+
+  Um "aceite" gravado para menor nunca conta, e o `Gravar` salva 0.
+- **13 a 17 sem AAID:** é a nossa leitura do "sem perfilamento de adolescente para publicidade" do ECA Digital (Lei 15.211/2025). Sem o AAID, a rede não liga o adolescente a um perfil de anúncio. Isso custa eCPM nessa faixa. Para voltar a mandar o AAID aos 13 a 17, basta trocar `f != Faixa.Adulto` por `crianca` no `SemId` do `Privacidade.Flags` e atualizar a tabela do teste. **É decisão do Vinicius e do jurídico.**
+- **Fontes (doc oficial Unity LevelPlay, "Regulation advanced settings", SDK Android 9.4+/9.5+):**
+  - `LevelPlayPrivacySettings.SetCOPPA(true)` "antes de inicializar o SDK" (9.4.0+);
+  - `SetCCPA` (9.4.0+);
+  - `SetGDPRConsent` (9.5.0+; substitui o `SetConsent`);
+  - para apps de público misto, para crianças **ou usuários de idade desconhecida**: `setMetaData("is_deviceid_optout","true")` + `setCOPPA(true)` + `setMetaData("Google_Family_Self_Certified_SDKS","true")` antes do Init.
+
+  Link: <https://docs.unity.com/en-us/grow/levelplay/sdk/android/regulation-advanced-settings>. Assinaturas conferidas no pacote 9.5.1 (`Runtime/Api/LevelPlayPrivacySettings.cs` e `LevelPlay.SetMetaData`).
+- **Quanto à escolha do público-alvo na Play Console:** a tela funciona para qualquer escolha. Com "13+" (não direcionado a crianças), quem disser "menos de 13" recebe o tratamento COPPA em vez de ser barrado. Com público misto que inclui crianças, o caminho já é o que a doc pede para o público misto. O painel do LevelPlay continua "Not directed", e o `SetCOPPA(true)` por usuário vale por cima. Se a Play Console marcar o app como **só para crianças**, o manifesto precisa **remover** a permissão `AD_ID` (`tools:node="remove"`): não foi feito, porque depende da decisão.
+- Continua igual: sem `userId` no `Init`, sem `SetSegment` e sem ILRD encaminhado. A faixa de idade **não** vai ao SDK; vão só as flags acima.
+
+### Falta para a loja (não feito aqui: tickets G-PLAT-02 e G-PROD-04)
+
+1. **Política de privacidade com URL pública.** É obrigatória com SDK de anúncio e com a permissão `AD_ID`. Deve citar o LevelPlay e o Unity Ads, o ID de publicidade, a tela de idade e como revogar (Configurações > Privacidade), e também ficar acessível de dentro do jogo. Hoje o jogo não tem link: entra junto com a URL.
+2. **Formulário Data safety** a partir do manifesto mesclado. Declarar "Device or other IDs" (ID de publicidade), coleta e compartilhamento pelo SDK de anúncios, as permissões `ACCESS_ADSERVICES_*` e o que é opcional.
+3. **Classificação IARC** e **público-alvo e conteúdo** na Play Console. Isso decide se o app entra no programa Famílias. Se entrar: só redes autocertificadas, revisar o `AD_ID` e a declaração de anúncios.
+4. **"Contém anúncios" = sim** e **app-ads.txt** no domínio do desenvolvedor.
+5. **Base legal LGPD** registrada na política, por exemplo consentimento para personalização e legítimo interesse para o anúncio não personalizado. A revisão jurídica do texto da tela muda o `Privacidade.Versao`, o que faz a pergunta voltar para todo mundo.
+6. **Região (opcional):** hoje GDPR e CCPA saem da resposta para todos, em qualquer país. Aplicar só onde valem recuperaria eCPM, mas exige detecção de região.
 
 ## 7. Tamanho do APK (Android dev, ARM64, IL2CPP)
 
@@ -220,7 +266,7 @@ Todas entram no formulário Data safety e na revisão da Play. Para tirar alguma
 
 - **Aprovação da conta**, que depende dos 2 e-mails do Vinicius. Até lá, espere `ad_load_fail` no aparelho. O build de desenvolvimento cai no simulado, e o de release esconde o botão.
 - O **test device** é cadastrado pelo Vinicius (seção 5).
-- **Consentimento/LGPD** (seção 6).
+- **Privacidade:** a tela de idade e o consentimento estão feitos (seção 6). Faltam a política de privacidade com URL, o Data safety, o IARC e a decisão do público-alvo na Play Console (G-PLAT-02, G-PROD-04). Também falta conferir no POCO, pelo logcat, que nada do SDK roda antes da resposta: um `ContentProvider` de rede que se inicie sozinho apareceria aí.
 - O app está **"Not live yet"** no painel. Na publicação, o app precisa estar ligado à loja (package `br.com.vstack.forgestreet`). O AppId ainda é provisório e "não muda nunca" depois de publicado (veja o `Setup.cs`).
 - **Ligar os botões:** a API está pronta, mas ninguém chama o `Ads.Show` além do `-adtest`. O núcleo do VIP e da Velocidade está na `feat/v0.5-carga-balcao-arte` (93f5273), fora desta branch. O coordenador integra as duas e liga os botões.
 - **Rede única (Unity Ads):** com uma rede só, o fill e o eCPM dependem só dela. Outras redes entram pelo Network Manager depois que houver tráfego.

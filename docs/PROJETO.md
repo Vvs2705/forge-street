@@ -4,6 +4,8 @@ Atualizado: 2026-10-09 · Dono: Vinicius · Direção: [`DOCUMENTO_MESTRE_PRODUC
 
 > O `LEIA_PRIMEIRO_PRODUCAO_V1.md` cita `FORGE_STREET_AUDITORIA_COMPLETA_2026-10-09_v1_0.md`, que não foi encontrada no PC. Por decisão do Vinicius (2026-10-09), o mapeamento seguiu sem ela; o lugar dela é ocupado pelo mapa da Leva 1 (4 raias, só leitura).
 
+Histórico: contratos de fases já entregues (FASE3–7, AREA2, estudos e validações antigas) ficam em `docs/archive/`; em conflito, este arquivo e o `GDD.md` prevalecem.
+
 Estados de um item: PROPOSTO → APROVADO → IMPLEMENTADO → INTEGRADO → TESTADO → VALIDADO → LANÇADO.
 
 ## 1. Versão
@@ -24,7 +26,7 @@ Estados de um item: PROPOSTO → APROVADO → IMPLEMENTADO → INTEGRADO → TES
 - **Bot:** 2 perfis (humano e ideal); não usa VIP nem velocidade.
 - **Mutation testing:** só "prova vermelha" manual (mutações em cópias do núcleo, `BALANCE.md`); o script ficou fora do repo.
 - **View:** separada do núcleo, mas `WorldView.cs` (~1.700 linhas) e `Game.cs` (~1.080) concentram tudo. Fonte Arial (`Art.cs:378`), áudio de 11 senoides sintetizadas, sem música, ícone do app vazio, fornalha com 1 quadro só.
-- **Anúncios:** LevelPlay 9.5.1 com 2 rewarded (Chamar VIP, Velocidade); conta aguardando aprovação; build de teste usa anúncio simulado. Consentimento fixo para todos (COPPA/GDPR false, CCPA true, `Ads.cs:200-204`): bloqueia release comercial.
+- **Anúncios:** LevelPlay 9.5.1 com 2 rewarded (Chamar VIP, Velocidade); conta aguardando aprovação; build de teste usa anúncio simulado. Consentimento por idade na 1ª abertura (E-PLAT-01): o SDK só inicia depois da resposta.
 - **Save:** chave=valor em PlayerPrefs (`fs.save`), autosave a cada 5 s; migração implícita pelo parser tolerante, bem testada.
 - **Analytics:** só local (`diario.csv` + `client/tools/diario_report.py`); cobre 12 dos 31 eventos do DM §86.
 - **Arte:** sprites pré-renderizados (Tripo → Mixamo → Blender Workbench → folhas PNG); proveniência em `PROVENIENCIA.md`; saldo Tripo 20.720 créditos.
@@ -57,6 +59,8 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | V17 | Clientes nomeados (FS-3) entram como clientes marcados dentro das famílias; corações são trilha, não moeda (GDD v2 §7, §21) | padrão do time, 2026-10-12 — revisar |
 | V18 | **D6 (decidido por padrão):** Velocidade e "Chamar VIP" só depois da 1ª melhoria (knob `Tuning.AnunciosDepoisDaPrimeiraMelhoria`) | padrão do time, 2026-10-12 — revisar |
 | V19 | Pisos do §3 com anúncio: medir no econsim contando ~30 s por anúncio antes de mexer em regra (o bot sem esse tempo fica 7–12 s abaixo em 3 marcos) | padrão do time, 2026-10-12 — revisar |
+| V20 | **LiveOps (decidido por padrão, `LIVEOPS_V1.md` §7):** eventos às 13:00 UTC e diárias às 04:00 do aparelho; temporada de 35 dias com a semana 5 de folga; Pass de 30 níveis × 600 XP (F2P fecha a trilha free em ~28 dias); projeto da Masterwork no Hunt como fonte extra (a grátis permanente continua); premium só cosmético, conveniência e Gems (nunca ouro, Renome, XP ou Blueprint) e preço na Wave E; teto de 100 XP/dia de encomendas; minério raro só como skin; eventos de 6 dias | padrão do time, 2026-10-12 — revisar |
+| V21 | **Privacidade (decidido por padrão):** 13–17 anos também sem ID de publicidade (`is_deviceid_optout`), além de nada personalizado — leitura conservadora do ECA Digital; custa receita nessa faixa (uma linha em `Privacidade.Flags`) | padrão do time, 2026-10-12 — revisar |
 
 ## 5. Decisões pendentes (Vinicius)
 
@@ -128,10 +132,10 @@ Estimativa honesta do coordenador, atualizada a cada leva. 100% = o item do §16
 | Masterworks | 0 | — | B-CORE-08 |
 | Collection | 0 | — | B-CORE-08 |
 | Reputation | 0 | — | B-CORE-06 |
-| Daily / Weekly / Achievements | 0 | baús de marco (embrião) | D-CORE-01/02 |
-| Events (LiveOps) | 0 | — | D-CORE-03 + calendário |
-| Pass | 0 | — | D-CORE-04 |
-| Ads | 30 | 2 rewarded no LevelPlay; consentimento fixo; recarga do VIP decidida | consentimento (E-PLAT-01), placements por config (E-PLAT-02), interstitial com flag (E-PLAT-03) |
+| Daily / Weekly / Achievements | 0 | baús de marco (embrião) | implementar D-CORE-01/02 sobre o desenho do [`LIVEOPS_V1.md`](LIVEOPS_V1.md) §4–§5 (34 diárias, 16 semanais, login de 7 dias, 77 conquistas, ledger) |
+| Events (LiveOps) | 0 | — | implementar D-CORE-03 sobre o calendário e o `EventDef` do [`LIVEOPS_V1.md`](LIVEOPS_V1.md) §2, §5 (8 semanas + 2 reservas) |
+| Pass | 0 | — | implementar D-CORE-04 sobre o Pass S1/S2 do [`LIVEOPS_V1.md`](LIVEOPS_V1.md) §3, §5 (30 níveis, premium desligado até a Wave E) |
+| Ads | 40 | 2 rewarded no LevelPlay; recarga do VIP; anúncios depois da 1ª melhoria; consentimento por idade antes do SDK | placements por config (E-PLAT-02), interstitial com flag (E-PLAT-03), Data Safety/política (G-PLAT-02) |
 | IAP | 0 | — | E-PLAT-04/05 (sem moeda premium até a Wave E) |
 | Analytics | 25 | `IAnalytics` + taxonomia §86/§87 no diário local, rotação | provedor remoto (A-PLAT-09, decisão P8) |
 | RemoteConfig | 15 | `Tuning` de instância com knobs e flags (A-CORE-03); falta a fonte remota | A-PLAT-08 (provedor = decisão P8) |

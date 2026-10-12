@@ -6,7 +6,7 @@ Pedidos do Vinicius, jogando a v0.4.1 no POCO F4:
 3. "Aconteceram várias vendas no balcão mesmo sem ter ninguém pedindo nada, aconteceu algum erro no processo."
 4. Benchmark (A3, `docs/BENCHMARK_MERCADO.md`): o save não gravava o que estava na mão.
 
-Números: [BALANCE.md §17](BALANCE.md). Estado: **core IMPLEMENTADO e TESTADO** (dotnet 72/72, viewcheck 0 erros/0 avisos); **não compilado no Unity** (portão do coordenador na leva 2).
+Números: [BALANCE.md §17](../BALANCE.md). Estado: **core IMPLEMENTADO e TESTADO** (dotnet 72/72, viewcheck 0 erros/0 avisos); **não compilado no Unity** (portão do coordenador na leva 2).
 
 ## 1. Carga do ferreiro sem bloqueio (Etapa A)
 - `Carrier.Held[6]`: quantos de cada `Item` na mão. O **ferreiro** leva todos os tipos ao mesmo tempo, até `Player.Cap` **de cada tipo** (3; 6 com a Mochila). Os **ajudantes** continuam com um tipo por vez, só o do papel (`Sim.CanPick`).

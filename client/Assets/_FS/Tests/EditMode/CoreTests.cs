@@ -589,7 +589,7 @@ namespace FS.Tests
             Assert.AreEqual(2, c.SoldItems[(int)Item.Shield], "carga mista: a fila de escudo foi atendida");
         }
 
-        // ------------------------------------------------------------------ 2a area (docs/AREA2_JOALHERIA.md)
+        // ------------------------------------------------------------------ 2a area (docs/archive/AREA2_JOALHERIA.md)
 
         static Pad PadFor(Sim s, Upgrade u)
         {
@@ -766,7 +766,7 @@ namespace FS.Tests
             Assert.AreEqual(0, s.JewelQueue.Count, "nenhum nobre com a area fechada");
         }
 
-        // ------------------------------------------------------------------ 2a area, fase 2 (docs/AREA2_FASE2.md)
+        // ------------------------------------------------------------------ 2a area, fase 2 (docs/archive/AREA2_FASE2.md)
 
         static int[] Roles(Sim s) => s.Workers.ConvertAll(w => w.Role).ToArray();
 
@@ -1213,7 +1213,7 @@ namespace FS.Tests
                 "783 vendas: o bau de 50 aparece no 1o tick (o de 200 espera ele abrir; espadas por item contam do zero)");
         }
 
-        // ------------------------------------------------------------------ fase 5: paciencia por item, fisica e bocas (docs/FASE5_FISICA_PACIENCIA.md)
+        // ------------------------------------------------------------------ fase 5: paciencia por item, fisica e bocas (docs/archive/FASE5_FISICA_PACIENCIA.md)
 
         [Test]
         public void Paciencia_PorItem_ProporcionalAProducaoInicial()
@@ -1463,7 +1463,7 @@ namespace FS.Tests
             Assert.AreEqual(s.Save(1), Sim.Load(s.Save(1)).Save(1), "save estavel depois de sair");
         }
 
-        // ------------------------------------------------------------------ fase 4: Mineiro + Joalheiro 2 (docs/FASE4_MINERIO.md)
+        // ------------------------------------------------------------------ fase 4: Mineiro + Joalheiro 2 (docs/archive/FASE4_MINERIO.md)
 
         [Test]
         public void Requisitos_Joalheiro_Mineiro_Joalheiro2_ProdutivosAnexados()
@@ -1632,7 +1632,7 @@ namespace FS.Tests
             Assert.AreEqual(new V2(11.1f, 6.5f).ToString(), Sim.Via(new V2(9.2999f, 6.29f), new V2(11.1f, 6.5f)).ToString(), "no meio do vao: direto");
         }
 
-        // ------------------------------------------------------------------ fase 6: menu inferior de melhorias (docs/FASE6_MENU_MELHORIAS.md)
+        // ------------------------------------------------------------------ fase 6: menu inferior de melhorias (docs/archive/FASE6_MENU_MELHORIAS.md)
 
         static readonly Upgrade[] Menu =
         {
@@ -1850,7 +1850,7 @@ namespace FS.Tests
             Assert.AreEqual(0, j.FurnaceA.Out, "esteira Fornalha -> Bigorna sem ninguem nas bocas");
         }
 
-        // ------------------------------------------------------------------ FASE7: balcao evolutivo e carga no save (docs/FASE7_CARGA_BALCAO.md)
+        // ------------------------------------------------------------------ FASE7: balcao evolutivo e carga no save (docs/archive/FASE7_CARGA_BALCAO.md)
 
         static readonly Upgrade[] CounterTiers = { Upgrade.Counter5, Upgrade.Counter6, Upgrade.Counter7, Upgrade.Counter8 };
 
