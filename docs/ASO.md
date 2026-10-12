@@ -9,7 +9,7 @@
 - 29 melhorias (26 de produção + 3 de decoração); 6 ajudantes (Ajudante 1–3, Mineiro, Joalheiro 1–2); esteira; balcão de 4 a 8 vagas;
 - clientes com paciência, que vão embora; VIP que paga 3× por unidade; encomendas (1 por vez, sem prazo); 4 baús de marco com ouro fixo;
 - cofre offline: 25% da taxa, até 2 h; rewarded opcional: Velocidade 2×/3× e "Chamar VIP" (só depois da 1ª melhoria, recarga de 5 min);
-- retrato, uma mão; roda sem internet. Sem IAP. Interstitial atrás de flag desligada (V10). **Textos do jogo só em pt-BR** (a localização está em andamento noutra raia).
+- retrato, uma mão; roda sem internet. Sem IAP. Interstitial atrás de flag desligada (V10). Textos do jogo em pt-BR, en e es desde o PR #41 (`View/Loc.cs`, idioma do aparelho ou escolha nas Configurações).
 
 Limites da Play conferidos com `len()` do Python em cada bloco `text` abaixo (2026-10-12): títulos 24–29 de 30, descrições curtas 70–79 de 80, completas 1.384–1.465 de 4.000. Mudou um texto? Conte de novo.
 
@@ -148,7 +148,7 @@ A tu ritmo
 Notas:
 - **Nada de "sem anúncio forçado"** nem "só anúncio opcional" como promessa (V10, FS-5): o texto descreve o bônus por anúncio, que é opcional, e não diz que não existem outros anúncios. Muda só com a decisão P3.
 - Os selos "Contém anúncios" e (na Wave E) "Compras no app" a própria Play mostra. Não repetir no texto.
-- **en e es só vão ao ar quando o build tiver os textos em en/es.** Página em inglês para um jogo só em português engana quem instala e vira avaliação ruim. Até lá, só a página pt-BR.
+- **en e es vão ao ar junto com o build que tem os textos em en/es** (PR #41 em diante). Página em inglês para um build só em português engana quem instala e vira avaliação ruim: confira a versão do build antes de publicar a página.
 - Os nomes do jogo (cofre, encomenda, Velocidade) seguem os do build pt-BR. Na localização, alinhar en/es com os termos que a raia de localização escolher `<<CONFIRMAR>>` ("vault"/"caja fuerte", "orders"/"pedidos").
 
 ## 4. Palavras-chave de pesquisa
@@ -209,7 +209,7 @@ A legenda vai na faixa de cima (fora da HUD), curta para ler na miniatura, com a
 
 - Ordem: a 1 e a 2 vendem a transformação e a automação (as que mais aparecem na busca); a 4 é a decisão; a 8 fecha com a volta ao jogo.
 - `full_district` e `district_unlock` são **interinos** até a Wave C: mostram a oficina e a rua lateral, nunca um "distrito". A legenda não diz "distrito".
-- **en/es:** a HUD do quadro está em pt-BR ("Encomenda", "Bem-vindo de volta!"). As screenshots en/es só saem quando o build tiver os textos traduzidos, com a flag de idioma da raia de localização `<<CONFIRMAR o nome da flag>>`. Até lá não há screenshot en/es.
+- **en/es:** a HUD sai no idioma do quadro com `-lang en|es` junto do `-preset` (ex.: `-preset vip -lang es`); o `SHOT` do log grava `idioma=`.
 - A segunda sequência ("Ache o gargalo", `CRIATIVOS_BANCO_V1.md` §c) fica para o experimento de screenshots depois do de descrição curta.
 - Ícone, feature graphic e vídeo: G-UA-03 / C-ART-14, fora deste documento.
 
@@ -219,6 +219,6 @@ A legenda vai na faixa de cima (fora da HUD), curta para ler na miniatura, com a
 |---|---|---|
 | D-ASO-1 | Título principal por idioma | os da coluna "Principal" do §1; a alternativa entra no 2º experimento |
 | D-ASO-2 | Categoria | Simulação (§5) |
-| D-ASO-3 | Publicar en/es antes da localização? | Não: só com o build traduzido (§3, §7) |
+| D-ASO-3 | Publicar en/es? | Sim, com build a partir do PR #41 (localização pt-BR/en/es); fotos com `-lang` (§3, §7) |
 | D-ASO-4 | Marca "Forge Street" sem pesquisa de nome e domínio | pesquisar antes da página pública (ficha 50) |
 | D-ASO-5 | E-mail, site e URL da política na ficha | os mesmos do `PRIVACIDADE.md` (D-PRIV-3/4) |
