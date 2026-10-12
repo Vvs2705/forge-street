@@ -59,7 +59,7 @@ namespace FS
             return p == null ? null : Valor(p.Split(' '), flag);
         }
 
-        /// <summary>-buyids 1,5,0@300: compra ja os ids sem "@" (estado montado, de graca, como sempre foi) e devolve os "id@t" na ordem
+        /// <summary>-buyids 1,5,0@300 ou fornalha2,bigorna2@300: compra ja os ids sem "@" (estado montado, de graca, como sempre foi) e devolve os "id@t" na ordem
         /// dada. Token invalido ou id fora do enum e' ignorado.</summary>
         public static List<(int u, float t)> Compras(Sim s, string buyids)
         {
@@ -67,7 +67,8 @@ namespace FS
             foreach (string tok in (buyids ?? "").Split(','))
             {
                 string[] p = tok.Split('@');
-                if (!int.TryParse(p[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int id) || id < 0 || id >= Upgrades.Count) continue;
+                int id = int.TryParse(p[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int k) ? k : Upgrades.IndexOf(p[0].Trim());   // indice ou ID estavel (A-CORE-04)
+                if (id < 0 || id >= Upgrades.Count) continue;
                 if (p.Length == 1) s.Buy((Upgrade)id);
                 else if (float.TryParse(p[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float t)) at.Add((id, t));
             }

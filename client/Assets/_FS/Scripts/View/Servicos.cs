@@ -131,6 +131,7 @@ namespace FS
             if (corrupt > 0) _log.Log("save_corrupt", sim.Time, corrupt.ToString(CultureInfo.InvariantCulture), r.Status.ToString());   // Ok/Legacy = recuperado; outro = estado novo
             if (r.Status == SaveEnvelope.Status.NewerSchema) _log.Log("save_newer", sim.Time, r.Schema.ToString(CultureInfo.InvariantCulture), r.Content);
             else if (espelho && ok) _log.Log("save_prefs", sim.Time, r.Status.ToString());   // Legacy = migrou o save da 0.6
+            if (sim.UnknownIds > 0) _log.Log("save_ids_desconhecidos", sim.Time, sim.UnknownIds.ToString(CultureInfo.InvariantCulture), r.Content);   // A-CORE-04: conteudo de build mais novo
             return sim;
         }
 

@@ -8,6 +8,6 @@
   3. Unity EditMode verde e build Windows/Android quando o PR mexe em jogo;
   4. mudança de economia vem com medição do bot em `docs/BALANCE.md` (antes/depois);
   5. fotos em `client/Builds/validation_*/shots/` quando muda o visual.
-- **Saves antigos:** enum, estações e pads só se anexam no FIM (o save é por índice).
+- **Saves antigos:** melhorias vão no save por ID estável (`ups=`, schema 2; nunca renomeie um ID — o golden do `ContentValidatorTests` falha). Estações (`stN=`), baús (`ms=`) e itens ainda vão por índice: esses só se anexam no FIM.
 - **Versão:** SemVer no `PlayerSettings.bundleVersion` (`Editor/Setup.cs`); cada versão vira tag `vX.Y.Z` e Release com notas e APK.
 - **Nunca** comitar `.env`, chaves, arte-fonte crua do Tripo/Mixamo, builds ou cache do Unity (ver `.gitignore`).
