@@ -114,6 +114,86 @@ namespace FS.Tests
             StringAssert.StartsWith("v=" + Sim.Schema + "\n", new Sim().Save(1), "o payload grava o schema");
         }
 
+        // ------------------------------------------------------------------ A-CORE-04: save por ID estavel
+
+        /// <summary>Partida de 25 min do bot (ate a Joalheria: ajudantes, VIP, encomenda) com parcial em TODOS os pads: visivel, do menu e de
+        /// cadeia ja comprada.</summary>
+        static Sim Partida25()
+        {
+            var s = new Sim(); var bot = new Bot();
+            for (float t = 0f; t < 25f * 60f; t += Dt) bot.Step(s, Dt);
+            foreach (Pad p in s.Pads) p.Paid = 10 + p.Slot;
+            return s;
+        }
+
+        /// <summary>O mesmo estado no formato do schema 1 (0.1-0.7): v=1 e up=/ut=/pads= por indice do enum e do slot no lugar de ups=/upp=.</summary>
+        static string ComoSchema1(Sim s, string v2)
+        {
+            string rest = string.Join("\n", Array.FindAll(v2.Split('\n'), l => !l.StartsWith("v=") && !l.StartsWith("ups=") && !l.StartsWith("up=") && !l.StartsWith("upp=")));
+            string up = string.Concat(Array.ConvertAll(s.Bought, b => b ? "1" : "0"));
+            string ut = string.Join(",", Array.ConvertAll(s.UpgradeTime, t => t.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)));
+            string pads = string.Concat(s.Pads.ConvertAll(p => p.Paid + ","));
+            return "v=1\nup=" + up + "\nut=" + ut + "\npads=" + pads + "\n" + rest;
+        }
+
+        /// <summary>
+        /// Aceite do A-CORE-04: o save grava IDs, entao a ordem da tabela (e do enum) nao entra. "Build novo" = a tabela em outra ordem,
+        /// injetada no Load: (1) as mesmas definicoes em outras posicoes carregam identico; (2) com o enum renumerado (cada ID noutro indice,
+        /// como se alguem reordenasse o enum), cada compra e o instante dela vao para o indice novo do mesmo ID. O espelho up= (ordem
+        /// congelada do schema 1) esta no texto e nao pode ser lido: se fosse, (2) ficaria vermelho.
+        /// </summary>
+        [Test]
+        public void SavePorId_TabelaReordenada_CarregaOMesmoProgresso()
+        {
+            Sim s = Partida25();
+            string text = s.Save(1000);
+            StringAssert.StartsWith("v=2\n", text);
+            Sim a = Sim.Load(text);
+            CollectionAssert.AreEqual(s.Bought, a.Bought);
+            Assert.Greater(a.UpgradesBought, 10, "premissa: progresso de verdade");
+
+            int n = Upgrades.Count;
+            var invertida = new UpgradeDef[n];
+            for (int i = 0; i < n; i++) invertida[n - 1 - i] = Upgrades.All[i];
+            Assert.AreEqual(a.Save(1000), Sim.Load(text, null, invertida).Save(1000), "(1) mesmas definicoes, outra ordem: identico");
+
+            var renumerada = new UpgradeDef[n];
+            for (int i = 0; i < n; i++)
+            {
+                UpgradeDef d = Upgrades.All[i];
+                renumerada[n - 1 - i] = new UpgradeDef((Upgrade)(n - 1 - i), d.Id, -1, d.Name, d.Desc, d.Luxury, d.InMenu);
+            }
+            Sim b = Sim.Load(text, null, renumerada);
+            for (int j = 0; j < n; j++)
+                Assert.AreEqual((a.Bought[n - 1 - j], a.UpgradeTime[n - 1 - j]), (b.Bought[j], b.UpgradeTime[j]), renumerada[j].Id + ": a compra segue o ID, nao o indice");
+            Assert.AreEqual((a.UpgradesBought, 0), (b.UpgradesBought, b.UnknownIds));
+        }
+
+        [Test]
+        public void Migracao_V1ParaV2_MesmoEstadoNosDoisFormatos_CarregaIgual()
+        {
+            Sim s = Partida25();
+            string v2 = s.Save(1000), v1 = ComoSchema1(s, v2);
+            StringAssert.DoesNotContain("ups=", v1);
+            Assert.AreEqual(Sim.Load(v2).Save(1000), Sim.Load(v1).Save(1000), "flags, instantes e parcial de cada pad (o do menu e o da cadeia comprada voltam ao ouro)");
+            Assert.AreEqual(Sim.Load(v2).Gold, Sim.Load(v1).Gold);
+        }
+
+        [Test]
+        public void SavePorId_IdDesconhecido_FicaDeFora_ContaEDevolveOParcial()
+        {
+            var s = new Sim { Gold = 100 };
+            s.Buy(Upgrade.Anvil2);
+            string text = s.Save(5);
+            StringAssert.Contains("ups=bigorna2:0\n", text);
+            StringAssert.Contains("upp=\n", text);
+            // conteudo de um build mais novo (downgrade): um upgrade que este build nao tem, com parcial; e parcial de um upgrade so de menu
+            text = text.Replace("ups=bigorna2:0\n", "ups=forja_runica:12.5,bigorna2:0,\n").Replace("upp=\n", "upp=forja_runica:30,balcao5:20\n");
+            Sim b = Sim.Load(text);
+            Assert.AreEqual((true, 1, 2, 150L), (b.Bought[(int)Upgrade.Anvil2], b.UpgradesBought, b.UnknownIds, b.Gold), "o resto carrega; os 50 do parcial sem pad voltam ao ouro");
+            StringAssert.DoesNotContain("forja_runica", b.Save(5), "regravar descarta o desconhecido");
+        }
+
         // ------------------------------------------------------------------ SaveStore (arquivo)
 
         [Test]

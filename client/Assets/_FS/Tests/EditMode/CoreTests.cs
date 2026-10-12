@@ -312,8 +312,8 @@ namespace FS.Tests
             var ids = new HashSet<Upgrade>();
             for (int i = 0; i < Upgrades.Count; i++)
             {
-                Assert.AreEqual((Upgrade)i, Upgrades.All[i].Id, "tabela na ordem do enum (tier)");
-                Assert.IsTrue(ids.Add(Upgrades.All[i].Id));
+                Assert.AreEqual((Upgrade)i, Upgrades.All[i].Up, "tabela na ordem do enum (tier)");
+                Assert.IsTrue(ids.Add(Upgrades.All[i].Up));
                 int req = Upgrades.All[i].Requires;
                 if (req >= 0) Assert.Less(req, i, "pre-requisito e' sempre de tier menor");
             }
@@ -1044,7 +1044,7 @@ namespace FS.Tests
             foreach (Upgrade u in Luxury) Assert.IsTrue(Upgrades.IsLuxury((int)u), u + " e' luxo");
             int sim = (int)Upgrade.JewelryDecor;
             UpgradeDef real = Upgrades.All[sim];
-            Upgrades.All[sim] = new UpgradeDef(Upgrade.JewelryDecor, (int)Upgrade.Jeweler, "Produtivo anexado", "simulado");
+            Upgrades.All[sim] = new UpgradeDef(Upgrade.JewelryDecor, real.Id, (int)Upgrade.Jeweler, "Produtivo anexado", "simulado");
             try
             {
                 var s = Rich();
@@ -1662,11 +1662,11 @@ namespace FS.Tests
         public void Menu_OsNoveDoContrato_SemPadVisivel_PadsContinuamNaLista()
         {
             var menu = new List<Upgrade>(Menu); menu.AddRange(CounterTiers);
-            CollectionAssert.AreEquivalent(menu, Array.ConvertAll(Array.FindAll(Upgrades.All, d => d.InMenu), d => d.Id), "Fole, Fole duplo, Mochila, Botas, Martelo veloz, Vitrine, Ajudantes ageis, Lupa, Vitrine de joias + as 4 vagas do balcao (FASE7)");
+            CollectionAssert.AreEquivalent(menu, Array.ConvertAll(Array.FindAll(Upgrades.All, d => d.InMenu), d => d.Up), "Fole, Fole duplo, Mochila, Botas, Martelo veloz, Vitrine, Ajudantes ageis, Lupa, Vitrine de joias + as 4 vagas do balcao (FASE7)");
             foreach (Upgrade u in CounterTiers) Assert.IsNull(PadFor(new Sim(), u), u + ": nasceu no menu, sem pad");
             foreach (Upgrade u in Menu) Assert.IsFalse(Upgrades.IsLuxury((int)u), u + " e' produtivo");
             var s = Rich();
-            Assert.AreEqual((22, 14), (s.Pads.Count, PadsInWorld(s).Count), "os 8 pads do menu ficam na lista (save por slot), invisiveis");
+            Assert.AreEqual((22, 14), (s.Pads.Count, PadsInWorld(s).Count), "os 8 pads do menu ficam na lista (indice da View e da dica), invisiveis");
             foreach (Upgrade u in Menu) Assert.IsNotNull(PadFor(s, u), u + ": slot antigo preservado");
             // em toda a progressao (produtivos em ordem de tier, depois luxo), nenhum pad mostra upgrade do menu
             var order = new List<int>();
@@ -1750,7 +1750,7 @@ namespace FS.Tests
             Assert.AreEqual(55, PadFor(s, Upgrade.Conveyor).Paid, "o parcial de pad que continua no mundo fica no pad");
             foreach (Upgrade u in Menu) Assert.AreEqual(0, PadFor(s, u).Paid, u + ": pad do menu zerado");
             string again = s.Save(2);
-            StringAssert.Contains("pads=0,0,0,0,0,0,0,0,0,55,0,0,0,0,0,0,0,0,0,0,0,0,\n", again);
+            StringAssert.Contains("upp=esteira:55\n", again);
             Assert.AreEqual(again, Sim.Load(again).Save(2), "save estavel: o ouro devolvido nao se repete no proximo Load");
             Assert.IsTrue(s.TryBuyMenu(Upgrade.FurnaceSpeed1), "o ouro devolvido compra no menu");
             Sim rich = Sim.Load("gold=2147483000\npads=5000,\n");

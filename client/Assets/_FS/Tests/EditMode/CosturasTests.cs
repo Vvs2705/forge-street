@@ -116,6 +116,18 @@ namespace FS.Tests
         }
 
         [Test]
+        public void Salvamento_IdDesconhecido_CarregaORestoELoga()
+        {
+            var s = new Sim { Gold = 9 };
+            s.Buy(Upgrade.Anvil2);
+            _arq.Texto = SaveEnvelope.Wrap(s.Save(1).Replace("ups=bigorna2:0", "ups=bigorna2:0,forja_runica:3"), "0.9.0", 1);   // A-CORE-04: downgrade de conteudo
+            Sim sim = _s.Carregar();
+            Assert.AreEqual((9L, true), (sim.Gold, sim.Bought[(int)Upgrade.Anvil2]));
+            CollectionAssert.AreEqual(new[] { "save_ids_desconhecidos,1,0.9.0" }, _log.Linhas);
+            Assert.IsFalse(_s.Bloqueado, "mesmo schema: a sessao grava");
+        }
+
+        [Test]
         public void Salvamento_DiscoIlegivel_CarregaOEspelho_ENaoGrava()
         {
             _arq.Erro = new IOException(); _esp.Texto = SaveTests.Wrap(20);

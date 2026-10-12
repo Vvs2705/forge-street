@@ -1069,12 +1069,14 @@ namespace FS
                 for (int pass = 0; pass < 2; pass++)   // o Buy recusa luxo antes da producao completa, e ha produtivos (Mineiro, Joalheiro 2) depois dos luxos
                     for (int i = 0; i < Math.Min(n, Upgrades.Count); i++)
                         if (Upgrades.IsLuxury(i) == (pass == 1)) _sim.Buy((Upgrade)i);
-            // -buyids 1,5,0@300 (criativos): compra estes ids do enum Upgrade fora da ordem do -buy (ex.: 4 bancadas e 1 fornalha
-            // sem fole); "id@t" compra quando o relogio do jogo passa de t s, na ordem dada, cobrando o preco (TimedBuys).
+            // -buyids 1,5,0@300 (criativos): compra estes upgrades fora da ordem do -buy (ex.: 4 bancadas e 1 fornalha sem fole), pelo indice
+            // do enum ou pelo ID estavel (A-CORE-04: -buyids fornalha2,bigorna2@300); "x@t" compra quando o relogio do jogo passa de t s, na
+            // ordem dada, cobrando o preco (TimedBuys).
             foreach (string tok in (Arg("-buyids") ?? "").Split(','))
             {
                 string[] p = tok.Split('@');
-                if (!int.TryParse(p[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int id) || id < 0 || id >= Upgrades.Count) continue;
+                int id = int.TryParse(p[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int k) ? k : Upgrades.IndexOf(p[0].Trim());
+                if (id < 0 || id >= Upgrades.Count) continue;
                 if (p.Length == 1) _sim.Buy((Upgrade)id);
                 else if (float.TryParse(p[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float at)) _buyAt.Add((id, at));
             }

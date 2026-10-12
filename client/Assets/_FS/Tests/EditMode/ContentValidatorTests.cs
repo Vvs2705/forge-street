@@ -18,17 +18,54 @@ namespace FS.Tests
         static UpgradeDef[] Ups() => (UpgradeDef[])Upgrades.All.Clone();
 
         /// <summary>A definicao real de `id`, trocando so o que vier.</summary>
-        static UpgradeDef With(Upgrade id, int? requires = null, string name = null, string desc = null, bool? luxury = null, bool? menu = null)
+        static UpgradeDef With(Upgrade id, int? requires = null, string name = null, string desc = null, bool? luxury = null, bool? menu = null, string key = null)
         {
             UpgradeDef d = Upgrades.All[(int)id];
-            return new UpgradeDef(id, requires ?? d.Requires, name ?? d.Name, desc ?? d.Desc, luxury ?? d.Luxury, menu ?? d.InMenu);
+            return new UpgradeDef(id, key ?? d.Id, requires ?? d.Requires, name ?? d.Name, desc ?? d.Desc, luxury ?? d.Luxury, menu ?? d.InMenu);
         }
+
+        /// <summary>A-CORE-04: os IDs que o save grava, nesta ordem (os 29 primeiros = Sim.IdsV1, a ordem do enum na 0.1-0.7). Renomear ou apagar
+        /// um quebra o save de quem ja jogou: so com passo em Sim.Migrations, e entao este golden muda junto. ID novo: anexe aqui no mesmo PR.</summary>
+        static readonly string[] Golden =
+        {
+            "fole", "bigorna2", "ajudante1", "escudos", "mochila", "ajudante2", "esteira", "fole_duplo", "botas", "ferramentas", "vitrine", "fornalha2",
+            "ajudante3", "ajudantes_ageis", "martelo_veloz", "corredor", "joalheria", "joalheiro1", "lupa", "vitrine_joias", "fachada_nobre",
+            "piso_oficina", "joalheria_real", "mineiro", "joalheiro2", "balcao5", "balcao6", "balcao7", "balcao8",
+        };
 
         [Test]
         public void ConteudoAtual_SemViolacao()
         {
             List<string> v = ContentValidator.Validate();
             Assert.IsEmpty(v, string.Join("\n", v));
+        }
+
+        [Test]
+        public void Ids_Golden_NenhumIdGravadoSumiuOuMudou()
+        {
+            var atual = new List<string>(Array.ConvertAll(Upgrades.All, d => d.Id));
+            foreach (string id in Golden) Assert.IsTrue(atual.Contains(id), $"\"{id}\" sumiu da tabela: renomear/apagar ID pede passo em Sim.Migrations");
+            foreach (string id in atual) Assert.IsTrue(Array.IndexOf(Golden, id) >= 0, $"\"{id}\" e' novo: anexe no fim do Golden (e nunca mais o renomeie)");
+            Assert.AreEqual(29, Sim.IdsV1.Length, "a lista do schema 1 e' congelada");
+            for (int i = 0; i < Sim.IdsV1.Length; i++) Assert.AreEqual(Golden[i], Sim.IdsV1[i], "Sim.IdsV1 congelada: e' como o up= da 0.1-0.7 se le");
+        }
+
+        [Test]
+        public void Ids_SemIdForaDoFormatoRepetidoESumido_Acusa()
+        {
+            var a = Ups();
+            a[(int)Upgrade.Helper1] = With(Upgrade.Helper1, key: "");
+            a[(int)Upgrade.Shields] = With(Upgrade.Shields, key: "Escudos");
+            a[(int)Upgrade.Tools] = With(Upgrade.Tools, key: "ferramenta-1");
+            a[(int)Upgrade.Conveyor] = With(Upgrade.Conveyor, key: "bigorna2");
+            a[(int)Upgrade.FurnaceSpeed1] = With(Upgrade.FurnaceSpeed1, key: "fole_simples");   // "renomeado" sem migracao
+            var v = ContentValidator.Validate(upgrades: a);
+            Acusa(v, "id: Helper1 sem ID estavel");
+            Acusa(v, "id: \"Escudos\" (Shields) fora de [a-z0-9_]");
+            Acusa(v, "id: \"ferramenta-1\" (Tools) fora de [a-z0-9_]");
+            Acusa(v, "id: \"bigorna2\" repetido");
+            Acusa(v, "id: \"fole\" do schema 1 sumiu da tabela");
+            Acusa(v, "id: \"esteira\" do schema 1 sumiu da tabela");
         }
 
         [Test]
