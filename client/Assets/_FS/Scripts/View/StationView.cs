@@ -12,11 +12,26 @@ namespace FS
     /// Fornalha desenhada a partir do Sim (A-ART-06; 1o passo do DM §127, sem refatoracao geral: so a fornalha saiu da WorldView).
     /// Estado() e Calor() sao puros (sem UnityEngine; o coretests compila so eles, com FS_CORETESTS, para o StationViewTests). O
     /// desenho le o que o Sim ja expoe (In, Out, OutCap, Busy, Progress, Crafted e o BoostLeft) mais o calor, que e' da View; serve as 2 fornalhas.
+    /// A-ART-07 (DM §55): bigornas e bancadas tambem, so com o compasso do martelo. A peca (Station.Time) e' dividida em Batidas()
+    /// iguais perto de BatidaS; em cada uma a arte achata, treme, solta faiscas e toca a martelada baixinho. A ultima e' o Ev.Crafted:
+    /// golpe forte, mais faiscas, pop do item na pilha (WorldView) e "+1". Segue o Progress, entao o boost acelera o compasso junto.
     /// </summary>
     public sealed class StationView
     {
         /// <summary>s da rampa de brilho ao voltar a trabalhar (aquecendo) e s para esfriar parada: pausa curta nao refaz a rampa inteira.</summary>
         public const float AqueceS = 1f, EsfriaS = 2f;
+
+        /// <summary>s alvo entre marteladas (o ritmo da v0.6a); a peca se divide no numero inteiro de batidas mais perto disto.</summary>
+        public const float BatidaS = 0.45f;
+
+        /// <summary>Batidas por peca de `tempo` s, a ultima no fim (Ev.Crafted): espada 5 s = 11 (0,45 s), com Martelo veloz 3 s = 7 (0,43 s). Minimo 2.</summary>
+        public static int Batidas(float tempo) => System.Math.Max(2, (int)System.Math.Round(tempo / BatidaS, System.MidpointRounding.AwayFromZero));
+
+        /// <summary>
+        /// O progresso cruzou uma batida k/n (k = 1..n-1) de `antes` para `agora`. A n-esima (progresso 1) e' o Ev.Crafted e nao conta
+        /// aqui; peca nova (progresso voltou) e pronta esperando vaga (parado em 1) nao batem. Quadro longo que pula batidas = 1 so.
+        /// </summary>
+        public static bool Batida(float antes, float agora, int n) => agora > antes && System.Math.Min((int)(agora * n), n - 1) > (int)(antes * n);
 
         /// <summary>
         /// Trabalhando (Busy com Progress &lt; 1): overdrive com o boost, aquecendo ate o calor chegar a 1, senao ativa. Parada: saida cheia
@@ -49,12 +64,21 @@ namespace FS
         static readonly Color Smoke = new Color(0.55f, 0.55f, 0.58f, 0.5f), Gray = new Color(0.5f, 0.5f, 0.5f, 1f), Banked = new Color(0.82f, 0.78f, 0.78f, 1f),
             Soot = new Color(0.07f, 0.06f, 0.06f, 0.85f), BulbOff = Art.Hex(0x7A1E26);
 
+        // A-ART-07, bigorna/bancada: topo da bigorna e tampo das bancadas (medidos nos PNG na v0.6a, de onde saltam as faiscas). Batida:
+        // achata 6% e treme 2 cm em 0,12 s, 4-6 faiscas, martelada a 45% do volume. Golpe final (Ev.Crafted): 10% e 4,5 cm em 0,2 s,
+        // 9-12 faiscas maiores, "+1" sobre a pilha de saida; o som desse e' o do Game (Ev.Crafted). Timbre por bancada: escudo grave, joia fina.
+        static readonly Vector2 AnvilTop = new Vector2(-0.18f, 0.45f), BenchTop = new Vector2(0f, 0.3f), OutPile = new Vector2(1.05f, -0.2f);
+        const float HitS = 0.12f, HitAmp = 0.06f, HitShake = 0.02f, BlowS = 0.2f, BlowAmp = 0.1f, BlowShake = 0.045f, HitVol = 0.25f, SparkLife = 0.3f;
+
         readonly WorldView _w; readonly Station _s; readonly Transform _root, _lamp; readonly SpriteRenderer _base;
         readonly SpriteRenderer _glow, _mouth, _ash, _ghost, _ring, _halo, _bulb, _spillTop, _spillFloor;
         readonly Color _ghostC;
         readonly bool _baked;
         readonly int _front;
         float _calor, _puffT;
+        // bigorna/bancada: escala e posicao de repouso da arte, progresso do quadro anterior, relogio do golpe (-1 parado)
+        readonly Vector3 _rest, _restPos; readonly Vector2 _top; readonly float _pitch;
+        float _prog, _hitT = -1f; bool _blow;
         /// <summary>Estado do ultimo quadro (linha SHOT do -shot).</summary>
         public Fornalha Atual { get; private set; }
 
@@ -62,6 +86,14 @@ namespace FS
         {
             _w = w; _s = s; _root = root; _base = art; _baked = baked;
             _front = WorldView.Depth(s.Pos.Y);
+            if (s.Kind == Kind.Crafter)   // A-ART-07: so o compasso, sobre a arte que ja existe
+            {
+                _rest = art.transform.localScale; _restPos = art.transform.localPosition;
+                _top = s.OutItem == Item.Sword ? AnvilTop : BenchTop;
+                _pitch = s.OutItem == Item.Shield ? 0.8f : s.OutItem == Item.Tool ? 1.15f : s.OutItem == Item.Jewel ? 1.5f : 1f;
+                _prog = s.Busy ? s.Progress : 0f;   // save carregado no meio da peca: nao bate de saida
+                return;
+            }
             _calor = s.Busy && s.Progress < 1f ? 1f : 0f;   // save carregado trabalhando: sem rampa
             // poca de luz quente no chao (P1-6) e boca acesa por cima da arte (v0.6a)
             _glow = Art.NewSprite(root, "Luz", Art.Glow(), Art.ComAlfa(WorldView.GlowColor, 0f), WorldView.GlowOrder, new Vector2(0f, 0.2f), Vector2.one * LuzM);
@@ -94,6 +126,7 @@ namespace FS
         /// </summary>
         public void Refresh(float dt, bool boost, float pulse)
         {
+            if (_s.Kind == Kind.Crafter) { Bate(dt); return; }
             bool work = _s.Busy && _s.Progress < 1f;
             _calor = Calor(_calor, work, Mathf.Min(dt, 0.1f));   // quadro longo (carregamento) nao pula a rampa
             Fornalha e = Atual = Estado(_s, boost, _calor);
@@ -170,6 +203,47 @@ namespace FS
                 Vector3 d = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * Random.Range(0.4f, 0.7f);
                 _w.Spawn(Art.Sparkle(), WorldView.SparkA, m, m + d * 0.8f + new Vector3(0f, 0.1f, 0f), m + new Vector3(d.x * 1.2f, d.y * 0.5f - 0.3f, 0f),
                     HotSparkLife, 0.24f, 0.06f, true, 360f, WorldView.SparkB, order + 1);
+            }
+        }
+
+        /// <summary>Bigorna/bancada, um quadro: bate quando o Progress cruza uma batida e anima o golpe em curso (achata + tremidinha que morre).</summary>
+        void Bate(float dt)
+        {
+            float p = _s.Busy ? _s.Progress : 0f;
+            if (Batida(_prog, p, Batidas(_s.Time))) Golpe(false);
+            _prog = p;
+            if (_hitT < 0f) return;
+            _hitT += dt;
+            float k = Mathf.Clamp01(_hitT / (_blow ? BlowS : HitS));
+            float q = (_blow ? BlowAmp : HitAmp) * Mathf.Sin(Mathf.PI * k);
+            float sh = (_blow ? BlowShake : HitShake) * (1f - k) * Mathf.Sin(k * Mathf.PI * 6f);
+            _base.transform.localScale = new Vector3(_rest.x * (1f + q), _rest.y * (1f - q), _rest.z);
+            _base.transform.localPosition = _restPos + new Vector3(sh, 0f, 0f);
+            if (k < 1f) return;
+            _hitT = -1f;
+            _base.transform.localScale = _rest; _base.transform.localPosition = _restPos;
+        }
+
+        /// <summary>Ev.Crafted desta bancada (WorldView.Crafted): golpe final, faiscas maiores e "+1"; a pop do item e o som sao da WorldView e do Game.</summary>
+        public void Feito() => Golpe(true);
+
+        void Golpe(bool blow)
+        {
+            _hitT = 0f; _blow = blow;
+            int n = blow ? Random.Range(9, 13) : Random.Range(4, 7);
+            if (!_w.NaTela(_root)) return;   // fora da camera: so a escala (barata), sem som, faisca nem "+1"
+            if (blow) _w.Float(new V2(_s.Pos.X + OutPile.x, _s.Pos.Y + OutPile.y), "+1", Art.Ink, 32);
+            else Sfx.Play("martelo", _pitch, 0.1f, HitVol);
+            if (!_w.Ambiente(_root, n)) return;
+            int order = _front + 2;   // na frente da arte; quem passa na frente da estacao cobre
+            Vector3 o = _root.localPosition + (Vector3)_top;
+            float s0 = blow ? 0.34f : 0.26f, r = blow ? 0.95f : 0.65f;   // 0,26 m (~25 px no aparelho) e' o menor que a foto da v0.6a leu
+            for (int i = 0; i < n; i++)   // leque para cima, cada uma em arco que cai
+            {
+                float a = Random.Range(0.12f, 0.88f) * Mathf.PI;
+                Vector3 d = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * Random.Range(0.55f, 1f) * r;
+                _w.Spawn(Art.Sparkle(), WorldView.SparkA, o, o + d * 0.8f + new Vector3(0f, 0.1f, 0f), o + new Vector3(d.x * 1.2f, d.y * 0.5f - 0.25f, 0f),
+                    SparkLife, s0, 0.06f, true, 360f, WorldView.SparkB, order);
             }
         }
 #endif
