@@ -122,7 +122,7 @@ Estimativa honesta do coordenador, atualizada a cada leva. 100% = o item do §16
 
 | Item (§164) | % | Onde está | Próximo passo |
 |---|---|---|---|
-| Core polido | 50 | loop completo, Save 2.0, exploits fechados, ouro long, Steer sem impasse, validator | IDs estáveis (A-CORE-04), `Sim` em partes, Wave B |
+| Core polido | 60 | loop completo, Save 2.0 schema 2 por ID, exploits fechados, ouro long, Steer sem impasse, validator, `Tuning`/flags | `ItemDef`/`RecipeDef` (B-CORE-01), `Sim` em partes |
 | 6 distritos | 15 | Old Forge + rua lateral (1º distrito incompleto) | `DistrictDef` + Império (C-CORE-01/02) |
 | 35–45 produtos | 10 | 4 produtos vendáveis (espada, escudo, ferramenta, joia) | `ItemDef`/`RecipeDef` multi-insumo (B-CORE-01) |
 | Workers | 25 | 4 papéis de ajudante, sem nível nem especialidade | `WorkerDef` (B-CORE-04) |
@@ -140,9 +140,9 @@ Estimativa honesta do coordenador, atualizada a cada leva. 100% = o item do §16
 | IAP | 0 | — | E-PLAT-04/05 (sem moeda premium até a Wave E) |
 | Analytics | 25 | `IAnalytics` + taxonomia §86/§87 no diário local, rotação | provedor remoto (A-PLAT-09, decisão P8) |
 | RemoteConfig | 15 | `Tuning` de instância com knobs e flags (A-CORE-03); falta a fonte remota | A-PLAT-08 (provedor = decisão P8) |
-| Save | 70 | Save 2.0 (envelope, atômico, .bak, migração) | cloud save (opcional), `ISaveStorage` |
+| Save | 80 | Save 2.0 (envelope, atômico, .bak, migração) + schema 2 por ID estável | cloud save (opcional); teste de instalar por cima no emulador (AVD precisa de wipe) |
 | Release pipeline | 50 | AAB assinado por env, `verify release`, 16 KB, API 36 | chave real (aval), Unity no CI (P15), release automatizada |
-| Arte final | 20 | fornalha 6 estados, bigorna no compasso, HUD numa paleta, cartões v2, preset "forja" em prova | alvo visual 9:16 (P12), herói, elenco, distritos |
-| Áudio final | 5 | 11 tons sintetizados; vibração por importância | identidade sonora + mixer (A-AUD-23, banco de sons = aval) |
-| Store assets | 5 | banco de 37 criativos (22 prontos) | presets de captura (G-UA-02), ícone/screenshots |
-| **Média** | **~14** | | |
+| Arte final | 30 | fornalha 6 estados + overdrive legível, bigorna no compasso, esteira viva, câmera a 9 m, HUD numa paleta, cartões v2, preset "forja" em prova | herói, elenco, distritos (preset forja), fonte (P11) |
+| Áudio final | 35 | 3 grupos (música, efeitos, ambiente), 15 efeitos sintetizados, ambiente que cresce, música em laço, vibração por importância | calibragem no aparelho; banco de sons real (P11) |
+| Store assets | 15 | banco de 37 criativos, 9 presets de captura reprodutíveis | ícone/logo (C-ART-14), screenshots, vídeo |
+| **Média** | **~19** | | |
