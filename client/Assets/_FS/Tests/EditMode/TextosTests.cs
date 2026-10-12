@@ -7,6 +7,8 @@ namespace FS.Tests
     /// <summary>v0.6d (revisao de UX): toda dica da HUD cabe numa linha da pilula (Textos.DicaMax) com qualquer upgrade, item e bau.</summary>
     public class TextosTests
     {
+        static readonly Tuning T0 = new Tuning();   // cartoes com o Tuning padrao (o jogo passa o do Sim)
+
         [Test]
         public void Dicas_CabemNumaLinha()
         {
@@ -22,27 +24,27 @@ namespace FS.Tests
             Assert.AreEqual("Compre o Fole em Melhorias", Textos.Menu((int)Upgrade.FurnaceSpeed1));
         }
 
-        /// <summary>A-UI-18: todo cartao do menu tem beneficio em % que cabe em 2 linhas e o antes \u2192 depois em 1; numeros do Balance.</summary>
+        /// <summary>A-UI-18: todo cartao do menu tem beneficio em % que cabe em 2 linhas e o antes \u2192 depois em 1; numeros do Balance e do Tuning padrao.</summary>
         [Test]
         public void Cartao_BeneficioEmPorcento()
         {
-            Assert.AreEqual("Fornalha 38% mais r\u00E1pida", Textos.Beneficio((int)Upgrade.FurnaceSpeed1));   // 4 \u2192 2,5 s
-            Assert.AreEqual("Fornalha 36% mais r\u00E1pida", Textos.Beneficio((int)Upgrade.FurnaceSpeed2));
-            Assert.AreEqual("Bancadas 40% mais r\u00E1pidas", Textos.Beneficio((int)Upgrade.HammerSpeed));
-            Assert.AreEqual("Carga +100%", Textos.Beneficio((int)Upgrade.PlayerCapacity));
-            Assert.AreEqual("Velocidade +42%", Textos.Beneficio((int)Upgrade.HelperSpeed));   // 2,4 \u2192 3,4 m/s
-            Assert.AreEqual("Clientes +43%", Textos.Beneficio((int)Upgrade.CounterCapacity));
-            Assert.AreEqual("Vagas +25%", Textos.Beneficio((int)Upgrade.Counter5));
-            Assert.AreEqual("4 \u2192 2,5 s", Textos.AntesDepois((int)Upgrade.FurnaceSpeed1));
-            Assert.AreEqual("carga 2 \u2192 4", Textos.AntesDepois((int)Upgrade.HelperSpeed));
-            Assert.AreEqual("7 \u2192 8 vagas", Textos.AntesDepois((int)Upgrade.Counter8));
+            Assert.AreEqual("Fornalha 38% mais r\u00E1pida", Textos.Beneficio(T0, (int)Upgrade.FurnaceSpeed1));   // 4 \u2192 2,5 s
+            Assert.AreEqual("Fornalha 36% mais r\u00E1pida", Textos.Beneficio(T0, (int)Upgrade.FurnaceSpeed2));
+            Assert.AreEqual("Bancadas 40% mais r\u00E1pidas", Textos.Beneficio(T0, (int)Upgrade.HammerSpeed));
+            Assert.AreEqual("Carga +100%", Textos.Beneficio(T0, (int)Upgrade.PlayerCapacity));
+            Assert.AreEqual("Velocidade +42%", Textos.Beneficio(T0, (int)Upgrade.HelperSpeed));   // 2,4 \u2192 3,4 m/s
+            Assert.AreEqual("Clientes +43%", Textos.Beneficio(T0, (int)Upgrade.CounterCapacity));
+            Assert.AreEqual("Vagas +25%", Textos.Beneficio(T0, (int)Upgrade.Counter5));
+            Assert.AreEqual("4 \u2192 2,5 s", Textos.AntesDepois(T0, (int)Upgrade.FurnaceSpeed1));
+            Assert.AreEqual("carga 2 \u2192 4", Textos.AntesDepois(T0, (int)Upgrade.HelperSpeed));
+            Assert.AreEqual("7 \u2192 8 vagas", Textos.AntesDepois(T0, (int)Upgrade.Counter8));
             for (int u = 0; u < Upgrades.Count; u++)
             {
                 if (!Upgrades.All[u].InMenu) continue;
-                string b = Textos.Beneficio(u);
+                string b = Textos.Beneficio(T0, u);
                 StringAssert.Contains("%", b, Upgrades.All[u].Name);
                 Assert.LessOrEqual(b.Length, 2 * 14, b);   // 2 linhas de ~14 caracteres a 26 px no cartao de 270 px
-                Assert.LessOrEqual(Textos.AntesDepois(u).Length, 16, Upgrades.All[u].Name);
+                Assert.LessOrEqual(Textos.AntesDepois(T0, u).Length, 16, Upgrades.All[u].Name);
             }
             Assert.AreEqual("Faltam 120", Textos.Falta(120));
             Assert.AreEqual("Falta 1", Textos.Falta(1));
@@ -53,7 +55,7 @@ namespace FS.Tests
         public void Cartao_EstadosEOrdem()
         {
             var s = new Sim();
-            s.Gold = Upgrades.Cost(Upgrade.CounterCapacity);
+            s.Gold = s.T.Cost(Upgrade.CounterCapacity);
             Assert.AreEqual(Cartao.Disponivel, Textos.Estado(s, (int)Upgrade.CounterCapacity));
             Assert.AreEqual(Cartao.Disponivel, Textos.Estado(s, (int)Upgrade.FurnaceSpeed1), "mais barato que a Vitrine");
             Assert.AreEqual(Cartao.SemOuro, Textos.Estado(s, (int)Upgrade.HammerSpeed));
@@ -62,7 +64,7 @@ namespace FS.Tests
             Assert.IsTrue(s.TryBuyMenu(Upgrade.FurnaceSpeed1));
             Assert.AreEqual(Cartao.Comprado, Textos.Estado(s, (int)Upgrade.FurnaceSpeed1));
             Assert.AreEqual(Cartao.Disponivel, Textos.Estado(s, (int)Upgrade.FurnaceSpeed2), "destravou com o Fole");
-            s.Gold = Upgrades.Cost(Upgrade.FurnaceSpeed2) - 1;
+            s.Gold = s.T.Cost(Upgrade.FurnaceSpeed2) - 1;
             Assert.AreEqual(Cartao.SemOuro, Textos.Estado(s, (int)Upgrade.FurnaceSpeed2));
             Assert.Less((int)Cartao.Disponivel, (int)Cartao.SemOuro);
             Assert.Less((int)Cartao.SemOuro, (int)Cartao.Travado);
