@@ -230,6 +230,7 @@ namespace FS.Core
         public float VipChamadoRecarga = 300f;                  // P14/V11: 5 min de jogo entre um "Chamar VIP" e o proximo, contados de quando o chamado SAI (levou o pacote ou cansou)
         public float BoostSeconds = 60f, BoostMax = 3f, BoostPlayerMax = 1.3f;   // 1 anuncio = 2x por 60 s, o 2o sobe para 3x; o ferreiro no maximo 1,3x
         public float BoostCooldownSeconds = 300f;               // recarga: 5 min de jogo contados do FIM de cada boost (coordenador; sem ela, 2x renovado fechava a producao aos 26:56)
+        public bool AnunciosDepoisDaPrimeiraMelhoria = true;    // D6/V18: Velocidade e Chamar VIP so depois da 1a melhoria comprada (o boost no segundo 0 e o VIP da 1a venda furavam o §3)
 
         // FASE9 (docs/FASE9_ENCOMENDAS.md): encomenda = vender N de uma linha aberta; uma por vez, sem prazo nem falha
         public float OrderFirstDelay = 45f, OrderGap = 20f;     // s depois da 1a venda; s entre uma entregue e a proxima

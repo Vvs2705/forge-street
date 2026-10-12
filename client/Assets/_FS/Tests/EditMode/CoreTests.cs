@@ -2148,7 +2148,7 @@ namespace FS.Tests
             Assert.IsFalse(s.VipActive, "levou o pacote e foi embora");
             int Pack(double rate, bool vitrine, bool extra = false)
             {
-                var p = Sold(); p.RateEma = rate;
+                var p = Sold(); p.Buy(Upgrade.PlayerCapacity); p.RateEma = rate;   // D6: chamar exige 1 melhoria; a Mochila nao mexe no pacote
                 if (vitrine) p.Buy(Upgrade.CounterCapacity);
                 if (!extra) return NaturalVip(p).Pack;
                 p.VipIn = Tuning.Padrao.VipMax; Assert.IsTrue(p.SummonVip()); p.Tick(Dt, 0f, 0f);
@@ -2234,7 +2234,7 @@ namespace FS.Tests
         [Test]
         public void Boost_2xPor60s_2oAnuncioSobePara3x_TetoEExpira_OQueAcelera()
         {
-            var s = new Sim();
+            var s = TuningTests.Liberado();   // D6: anuncio so depois da 1a melhoria (a Mochila nao mexe no que este teste mede)
             Assert.AreEqual((1f, 0f, 0f, true), (s.BoostMul, s.BoostLeft, s.BoostCooldown, s.CanBoost));
             Assert.AreEqual((2f, Tuning.Padrao.BoostSeconds), (s.StartBoost(), s.BoostLeft), "1 anuncio: 2x por 60 s");
             Assert.IsTrue(s.CanBoost, "no 2x da para subir");
@@ -2257,7 +2257,7 @@ namespace FS.Tests
             Assert.AreEqual((0f, true), (s.BoostCooldown, s.CanBoost), "recarga zerada: libera");
             Assert.AreEqual(2f, s.StartBoost());
 
-            Sim[] Trio() { var m = new[] { new Sim(), new Sim(), new Sim() }; m[1].StartBoost(); m[2].StartBoost(); m[2].StartBoost(); return m; }   // 1x, 2x, 3x
+            Sim[] Trio() { var m = new[] { TuningTests.Liberado(), TuningTests.Liberado(), TuningTests.Liberado() }; m[1].StartBoost(); m[2].StartBoost(); m[2].StartBoost(); return m; }   // 1x, 2x, 3x
             Sim[] f = Trio();
             foreach (Sim x in f) { x.FurnaceA.In = Balance.FurnaceIn; Run(x, Tuning.Padrao.FurnaceTime0 + 0.5f); }
             Assert.AreEqual((1, 2, 3), (f[0].Crafted[(int)Item.Ingot], f[1].Crafted[(int)Item.Ingot], f[2].Crafted[(int)Item.Ingot]), "estacao: 2x e 3x");
@@ -2278,10 +2278,10 @@ namespace FS.Tests
             Assert.AreEqual((4, 9, 14), (arrivals[0], arrivals[1], arrivals[2]), "chegada de clientes: 8 s e 6 s entre eles, divididos por 2 e 3");
             Assert.AreEqual((0, 0), (c[2].ClientsLost, c[2].Queue.Count - c[2].QueueCap), "fila cheia e ninguem cansou: paciencia no tempo de jogo");
             Assert.AreEqual(Tuning.Padrao.PatienceFor(Item.Sword) - (30f - Tuning.Padrao.FirstClientAt / 3f), c[2].Queue[0].Patience, 0.15f, "o 1o esperou 27 s de jogo, nao 82 s de fabrica");
-            var v = Sold(); v.VipIn = 200f; v.StartBoost(); v.StartBoost();
+            var v = Sold(); v.Buy(Upgrade.PlayerCapacity); v.VipIn = 200f; v.StartBoost(); v.StartBoost();
             Run(v, 10f);
             Assert.AreEqual(190f, v.VipIn, 0.05f, "relogio do VIP no tempo de jogo");
-            var o = new Sim();
+            var o = TuningTests.Liberado();
             o.StartBoost();
             o.Stock[(int)Item.Sword] = 1; o.Queue.Add(new Client { Want = Item.Sword, Patience = 99f, MaxPatience = 99f });
             o.Tick(Dt, 0f, 0f);

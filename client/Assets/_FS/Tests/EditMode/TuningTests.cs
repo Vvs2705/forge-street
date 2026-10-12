@@ -28,6 +28,15 @@ namespace FS.Tests
             return n;
         }
 
+        /// <summary>D6: anuncio so depois da 1a melhoria. Os testes de VIP chamado e boost partem daqui: a Mochila (carga do ferreiro) nao mexe
+        /// no que eles medem e vai no save, entao a recusa que eles provam e' a deles (recarga, teto, flag), nunca a do D6.</summary>
+        public static Sim Liberado(Tuning t = null)
+        {
+            var s = new Sim(t);
+            s.Buy(Upgrade.PlayerCapacity);
+            return s;
+        }
+
         /// <summary>O save vai e volta com o mesmo Tuning sem perder nada (texto identico).</summary>
         static void SaveEstavel(Sim s, Tuning t)
         {
@@ -47,6 +56,23 @@ namespace FS.Tests
             var a = new Sim(); var b = new Sim(new Tuning());
             BalanceTests.Play(a, 120f); BalanceTests.Play(b, 120f);
             Assert.AreEqual(BalanceTests.Report(a), BalanceTests.Report(b), "new Sim() = new Sim(new Tuning()) ao tick");
+        }
+
+        /// <summary>D6 (V18): Velocidade e Chamar VIP so depois da 1a melhoria comprada; o boost no segundo 0 e o VIP da 1a venda furavam o §3
+        /// (AdWatcher: Fole 0:28, 2a bigorna 1:02). Vale tambem depois do save (UpgradesBought sai dos flags). Knob desligado = como antes.</summary>
+        [Test]
+        public void D6_AnunciosSoDepoisDaPrimeiraMelhoria()
+        {
+            var s = new Sim { FirstSaleTime = 1f, VipIn = 200f };   // ja vendeu e o VIP natural esta longe: so o D6 segura
+            Assert.AreEqual((false, false, 0f, false), (s.CanBoost, s.CanSummonVip, s.StartBoost(), s.SummonVip()), "antes da 1a compra: recusa os dois");
+            Assert.IsFalse(Sim.Load(s.Save(Now)).AdsUnlocked, "reabrir nao libera");
+            s.Gold = s.T.Cost(Upgrade.FurnaceSpeed1);
+            Assert.IsTrue(s.TryBuyMenu(Upgrade.FurnaceSpeed1));
+            Assert.AreEqual((true, true), (s.CanBoost, s.CanSummonVip), "comprou o Fole: libera");
+            Assert.IsTrue(Sim.Load(s.Save(Now)).AdsUnlocked, "e continua liberado ao reabrir");
+            Assert.AreEqual((2f, true), (s.StartBoost(), s.SummonVip()), "aceita os dois");
+            var livre = new Sim(new Tuning { AnunciosDepoisDaPrimeiraMelhoria = false }) { FirstSaleTime = 1f, VipIn = 200f };
+            Assert.AreEqual((true, true), (livre.CanBoost, livre.CanSummonVip), "knob desligado: como antes do D6");
         }
 
         [Test]
@@ -107,13 +133,13 @@ namespace FS.Tests
         public void Flag_Vip_Desligada_NaoSorteiaNemChama_OPendenteEntra_SaveIntacto()
         {
             var off = new Tuning { Vip = false };
-            var s = new Sim(off) { FirstSaleTime = 1f };
+            var s = Liberado(off); s.FirstSaleTime = 1f;
             float clock = s.VipIn;
             Assert.AreEqual(0, RunCount(s, 400f, Ev.VipArrived), "nenhum VIP natural");
             Assert.AreEqual((clock, 0), (s.VipIn, s.VipCount), "relogio parado");
             Assert.IsFalse(s.CanSummonVip || s.SummonVip(), "sem chamar por anuncio");
             SaveEstavel(s, off);
-            var d = new Sim { FirstSaleTime = 1f, VipIn = 200f };   // VIP chamado antes de desligar, ainda sem vaga
+            var d = Liberado(); d.FirstSaleTime = 1f; d.VipIn = 200f;   // VIP chamado antes de desligar, ainda sem vaga
             Assert.IsTrue(d.SummonVip());
             Sim p = Sim.Load(d.Save(Now), off);
             Assert.AreEqual(1, RunCount(p, 1f, Ev.VipArrived), "o pendente do save entra e leva o pacote");
@@ -123,7 +149,7 @@ namespace FS.Tests
         public void Flag_VipChamado_Desligada_SoONatural()
         {
             var off = new Tuning { VipChamado = false };
-            var s = new Sim(off) { FirstSaleTime = 1f, VipIn = 200f };
+            var s = Liberado(off); s.FirstSaleTime = 1f; s.VipIn = 200f;
             Assert.IsFalse(s.CanSummonVip || s.SummonVip(), "sem o anuncio de chamar");
             SaveEstavel(s, off);
             s.VipIn = 0.1f;
@@ -134,9 +160,9 @@ namespace FS.Tests
         public void Flag_Velocidade_Desligada_NaoLiga_OAtivoAcabaNoTempo_SaveIntacto()
         {
             var off = new Tuning { Velocidade = false };
-            var s = new Sim(off);
+            var s = Liberado(off);
             Assert.AreEqual((false, 0f, 1f), (s.CanBoost, s.StartBoost(), s.BoostMul), "sem boost");
-            var d = new Sim();
+            var d = Liberado();
             d.StartBoost();   // anuncio visto antes de desligar
             Sim b = Sim.Load(d.Save(Now), off);
             Assert.AreEqual((2f, false, 0f), (b.BoostMul, b.CanBoost, b.StartBoost()), "o ativo continua; nao sobe para 3x");

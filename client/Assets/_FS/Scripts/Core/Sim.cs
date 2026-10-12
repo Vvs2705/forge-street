@@ -264,7 +264,10 @@ namespace FS.Core
         public bool VipActive => _vipWant >= 0 || Queue.Exists(c => c.Vip);
         /// <summary>Botao "chamar o VIP" (anuncio): flags Vip e VipChamado, depois da 1a venda, sem VIP ativo, com o natural a mais de 60 s e a
         /// recarga de 5 min (P14) zerada (contra abuso).</summary>
-        public bool CanSummonVip => T.Vip && T.VipChamado && FirstSaleTime >= 0f && !VipActive && VipIn > T.VipSummonMinIn && VipCooldown <= 0f;
+        public bool CanSummonVip => T.Vip && T.VipChamado && AdsUnlocked && FirstSaleTime >= 0f && !VipActive && VipIn > T.VipSummonMinIn && VipCooldown <= 0f;
+
+        /// <summary>D6 (V18): os anuncios (Velocidade e Chamar VIP) so aparecem depois da 1a melhoria comprada (knob do Tuning).</summary>
+        public bool AdsUnlocked => !T.AnunciosDepoisDaPrimeiraMelhoria || UpgradesBought > 0;
 
         /// <summary>Anuncio "chamar o VIP": um VIP EXTRA agora (entra na proxima vaga livre), com 2x o pacote do natural (ate 20). NAO mexe no
         /// relogio natural (so o segura em 0 se ele zerar com o extra ainda na vaga). Fora de CanSummonVip recusa (false).</summary>
@@ -277,7 +280,7 @@ namespace FS.Core
 
         /// <summary>Botao "velocidade" (flag Velocidade): com boost ativo, ate chegar a 3x; sem boost, so com a recarga (5 min de jogo desde o fim
         /// do ultimo) zerada. Flag desligada nao corta o boost ja ativo: ele acaba no tempo dele.</summary>
-        public bool CanBoost => T.Velocidade && (BoostLeft > 0f ? BoostMul < T.BoostMax : BoostCooldown <= 0f);
+        public bool CanBoost => T.Velocidade && AdsUnlocked && (BoostLeft > 0f ? BoostMul < T.BoostMax : BoostCooldown <= 0f);
 
         /// <summary>Anuncio "velocidade": 2x por 60 s; outro com o boost ativo sobe para 3x e reinicia os 60 s. Fora de CanBoost recusa: nada muda e
         /// devolve 0. Senao devolve o multiplicador novo.</summary>

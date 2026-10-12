@@ -26,7 +26,7 @@ import xml.etree.ElementTree as ET
 CLIENT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 # o que o FSCore.Tests.csproj compila (caminhos relativos a client/), mais o próprio projeto
 COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Scripts/View/Textos.cs', 'Assets/_FS/Scripts/View/SaveStore.cs',
-          'Assets/_FS/Scripts/View/StationView.cs', 'tools/coretests']
+          'Assets/_FS/Scripts/View/StationView.cs', 'Assets/_FS/Scripts/View/Servicos.cs', 'Assets/_FS/Scripts/View/Estado.cs', 'tools/coretests']
 SIM, DEFS = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs'
 
 
@@ -76,6 +76,8 @@ MUTACOES = [
         'recarga do boost 5 min -> 4 min'),
     mut('vip-chamado-recarga', DEFS, 'VipChamadoRecarga = 300f;', 'VipChamadoRecarga = 240f;',
         'recarga do Chamar VIP 5 min -> 4 min (P14)'),
+    mut('anuncio-antes-da-melhoria', DEFS, 'AnunciosDepoisDaPrimeiraMelhoria = true;', 'AnunciosDepoisDaPrimeiraMelhoria = false;',
+        'Velocidade e Chamar VIP liberados antes da 1a melhoria (D6)'),
     # fila e clientes
     mut('fila-vaga-a-mais', SIM, 'if (q.Count < cap)', 'if (q.Count <= cap)',
         'fila aceita um cliente além das vagas'),
