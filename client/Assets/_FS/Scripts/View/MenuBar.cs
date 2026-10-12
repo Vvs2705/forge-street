@@ -9,7 +9,7 @@ namespace FS
     /// <summary>
     /// Menu inferior de melhorias (docs/archive/FASE6_MENU_MELHORIAS.md s3): barra fixa embaixo com o botao "Melhorias"; aberto, uma
     /// fileira de cartoes rolavel na horizontal acima dela. Toque no cartao compra na hora (Sim.TryBuyMenu) e o Ev.Bought ja
-    /// toca o som e solta o "+nome!" no Game. Cartao comprado some.
+    /// toca o som e solta o "+nome!" no Game. Cartao comprado some. DM §109: nome e textos do cartao pelo Loc (Textos).
     /// v0.5b (BENCHMARK_VISUAL P1-2): cartao creme com borda de couro e chanfro, icone renderizado grande (tools/ui_v05b_blender.py),
     /// preco num botao verde (da para comprar) ou cinza (nao da; vermelho lia como erro) e badge vermelho com o numero no botao "Melhorias".
     /// A-UI-18 (DM §65): nome, icone, beneficio em % ("Fornalha 38% mais rápida"), antes → depois ("4 → 2,5 s") e custo. Estados
@@ -55,7 +55,7 @@ namespace FS
             _bought = bought;
             _bar = Art.Node(safe, "Menu", new Vector2(0.02f, 0.005f), new Vector2(0.98f, Band));
             // A-UI-16: borda creme e face marrom como as pilulas da HUD (era o azul #2C3550); com compra pronta a face fica ouro
-            Button b = Art.NewButton(_bar, "Melhorias", 44, Art.HudEdge, new Vector2(0.18f, 0.08f), new Vector2(0.82f, 0.92f), Toggle);
+            Button b = Art.NewButton(_bar, Loc.T("menu.melhorias"), 44, Art.HudEdge, new Vector2(0.18f, 0.08f), new Vector2(0.82f, 0.92f), Toggle);
             _btn = Art.Panel(b.transform, "Face", Art.HudFace, Vector2.zero, Vector2.one);
             _btn.rectTransform.offsetMin = new Vector2(5f, 5f); _btn.rectTransform.offsetMax = new Vector2(-5f, -5f);
             _btn.raycastTarget = false;
@@ -144,7 +144,7 @@ namespace FS
             c.Toque.targetGraphic = edge;
             c.Toque.onClick.AddListener(() => { if (_sim.TryBuyMenu((Upgrade)u)) { _bought(u); _t = 0f; _sort = true; } });
             c.Name = Art.NewText(face.transform, "Nome", 30, new Vector2(0.04f, 0.85f), new Vector2(0.96f, 0.98f));
-            c.Name.text = d.Name; c.Name.fontStyle = FontStyle.Bold; c.Name.color = Brown;
+            c.Name.text = Textos.Nome(u); c.Name.fontStyle = FontStyle.Bold; c.Name.color = Brown;
             c.Name.resizeTextForBestFit = true; c.Name.resizeTextMinSize = 20; c.Name.resizeTextMaxSize = 30;
             c.Icon = Art.Node(face.transform, "Icone", new Vector2(0.18f, 0.58f), new Vector2(0.82f, 0.86f)).gameObject.AddComponent<Image>();
             c.Icon.preserveAspect = true; c.Icon.raycastTarget = false;

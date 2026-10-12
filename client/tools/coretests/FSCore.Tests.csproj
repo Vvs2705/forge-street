@@ -15,6 +15,8 @@
     <Compile Include="../../Assets/_FS/Tests/EditMode/**/*.cs" />
     <!-- v0.6d: textos da HUD (puros, sem UnityEngine) para o TextosTests -->
     <Compile Include="../../Assets/_FS/Scripts/View/Textos.cs" />
+    <!-- DM 109: tabela de textos pt-BR/en/es (pura) que o Textos, a Privacidade e o LocTests leem -->
+    <Compile Include="../../Assets/_FS/Scripts/View/Loc.cs" />
     <!-- A-PLAT-02: save em arquivo (so System.IO) para o SaveTests -->
     <Compile Include="../../Assets/_FS/Scripts/View/SaveStore.cs" />
     <!-- A-PLAT-06: costuras, Diario e Salvamento (puros) para o CosturasTests -->
