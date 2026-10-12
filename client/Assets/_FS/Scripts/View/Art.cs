@@ -456,16 +456,18 @@ namespace FS
             Tone("drop", 700, 500, 0.06f);             // item depositado
             Tone("offline", 523, 1046, 0.7f);          // cofre
             Tone("vip", 660, 1480, 0.6f, 0.05f);       // cliente VIP chegou (v0.5c)
+            // A-ART-07: a MESMA martelada no compasso da bigorna, com espera propria: as batidas nao engolem o golpe final (Ev.Crafted)
+            Clips["martelo"] = Clips["hammer"];
         }
 
         /// <summary>Toca no maximo uma vez por `minGap` segundos por nome (varias marteladas no mesmo quadro viram uma).</summary>
-        public static void Play(string name, float pitch = 1f, float minGap = 0.05f)
+        public static void Play(string name, float pitch = 1f, float minGap = 0.05f, float vol = 0.55f)
         {
             if (_src == null || !Ajustes.Som || !Clips.TryGetValue(name, out AudioClip c)) return;   // Som desligado = nada toca
             if (LastPlayed.TryGetValue(name, out float last) && Time.unscaledTime - last < minGap) return;
             LastPlayed[name] = Time.unscaledTime;
             _src.pitch = pitch;
-            _src.PlayOneShot(c, 0.55f);
+            _src.PlayOneShot(c, vol);
         }
 
         static void Tone(string name, float f0, float f1, float dur, float noise = 0f)
