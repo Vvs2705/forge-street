@@ -175,5 +175,43 @@ namespace FS
         }
 
         static string Cabe(string a, string b, string c = null) => a.Length <= DicaMax ? a : b.Length <= DicaMax || c == null ? b : c;
+
+        // ---------- metas (D-CORE-02): a frase sai do evento + filtro + alvo do MetaDef (sem texto por meta), nos 3 idiomas ----------
+
+        /// <summary>Linha do painel de metas (1 linha) e o premio embaixo dela (MetasTests confere os 3 idiomas).</summary>
+        public const int MetaMax = 32, PremioMax = 44;
+
+        /// <summary>"Venda 50 produtos", "Fabrique 100 lingotes", "Compre: Esteira", "Ganhe 1.500 em vendas". `alvo` = o da vaga (o de s de
+        /// renda ja vem em ouro, congelado quando a missao apareceu).</summary>
+        public static string Meta(MetaDef d, long alvo)
+        {
+            string n = Qtd(alvo);
+            switch (d.Evento)
+            {
+                case "product_sold":
+                    return d.Conta == Conta.Distintos ? Loc.T("meta.linhas", n) : Loc.T("meta.vende", n, d.Filtro < 0 ? Loc.P("meta.produto", alvo) : ItemNome(d.Filtro, alvo));
+                case "product_crafted": return Loc.T("meta.fabrica", n, ItemNome(d.Filtro, alvo));
+                case "upgrade_buy": return d.Filtro >= 0 ? Loc.T("meta.compra_um", Nome(d.Filtro)) : Loc.P("meta.compra", alvo, n);
+                case "currency_source": return Loc.T("meta.ganha", n);
+                case "currency_sink": return Loc.T("meta.gasta", n);
+                case "mission_complete": return Loc.P(d.Filtro == 0 ? "meta.diarias" : "meta.semanais", alvo, n);
+                default: return Loc.P("meta." + d.Evento, alvo, n);   // order_done, offline_claim, vip_served, worker_hired, chest_opened, login_claim
+            }
+        }
+
+        /// <summary>"+120 de ouro  ·  +100 XP  ·  +5 Renome" (o que existir); insignia pelo nome.</summary>
+        public static string Premio(long ouro, int xp, int renome, string insignia)
+        {
+            string s = "";
+            void Mais(string p) => s += (s.Length > 0 ? "  ·  " : "") + p;
+            if (ouro > 0) Mais(Loc.T("meta.premio.ouro", Qtd(ouro)));
+            if (xp > 0) Mais(Loc.T("meta.premio.xp", xp));
+            if (renome > 0) Mais(Loc.T("meta.premio.renome", renome));
+            if (insignia != null) Mais(Loc.T("meta.premio.insignia", Loc.T("ins." + insignia)));
+            return s;
+        }
+
+        /// <summary>Quantidade com separador de milhar do idioma ("1.500", "1,500"); de 1 milhao em diante, a escala do Ouro ("1,23 mi").</summary>
+        public static string Qtd(long v) => v >= 1000000 ? Ouro(v) : v.ToString("#,0", CultureInfo.InvariantCulture).Replace(",", Loc.T("num.mil"));
     }
 }

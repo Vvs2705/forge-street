@@ -40,7 +40,73 @@ namespace FS.Core
             e.AddRange(Marcos(milestones, world));
             e.AddRange(Bocas(world));
             e.AddRange(Pisaveis(world));
+            e.AddRange(Missoes(MetasDefs.Diarias, MetasDefs.Semanais, MetasDefs.Conquistas, MetasDefs.LoginDias, Tuning.Padrao));
             return e;
+        }
+
+        /// <summary>D-CORE-02: gatilho punitivo ou de anuncio nunca vira meta (LIVEOPS_V1 §5.2).</summary>
+        public static readonly string[] EventosProibidos = { "client_left", "bottleneck", "vip_left", "boost_start", "rewarded_offer", "rewarded_start", "rewarded_complete", "ad_reward" };
+        /// <summary>Minimos do GDD §23 #12 e teto de recompensa por tipo (ouro em s de renda, XP do Pass, Renome).</summary>
+        static readonly (TipoMeta tipo, string prefixo, int minimo, int ouro, int xp, int renome)[] Faixas =
+        {
+            (TipoMeta.Diaria, "dly_", 30, 30, 150, 5), (TipoMeta.Semanal, "wkl_", 12, 90, 400, 10), (TipoMeta.Conquista, "ach_", 60, 60, 200, 10),
+        };
+        /// <summary>Jogo ativo de referencia (LIVEOPS_V1 §1/§6): diaria fecha em 15 min; semana do F2P = 7 x 20 min. Orcamento de ouro de LiveOps: 180 s/dia.</summary>
+        public const int MinutosDiaria = 15, MinutosSemana = 7 * 20, OrcamentoDia = 180;
+
+        /// <summary>
+        /// D-CORE-02 (LIVEOPS_V1 §5.7): IDs unicos e no formato do tipo; volume minimo; evento que existe (Metas.Eventos) e nunca punitivo ou de
+        /// anuncio; filtro, alvo, Abre e conta coerentes; recompensa dentro da faixa do tipo (ouro multiplo de 5) e nunca vazia; VIP (avanca com o
+        /// anuncio "Chamar VIP") com alvo que fecha so com os VIPs naturais no tempo do tipo; pools A e B com 3+ abertas logo depois das
+        /// Ferramentas; login de 7 dias com recompensa todo dia; orcamento de ouro por dia de calendario.
+        /// </summary>
+        public static IEnumerable<string> Missoes(MetaDef[] diarias, MetaDef[] semanais, MetaDef[] conquistas, LoginDia[] login, Tuning t)
+        {
+            var ids = new HashSet<string>();
+            MetaDef[][] listas = { diarias, semanais, conquistas };
+            for (int k = 0; k < listas.Length; k++)
+            {
+                var (tipo, prefixo, minimo, ouro, xp, renome) = Faixas[k];
+                if (listas[k].Length < minimo) yield return $"meta: {listas[k].Length} do tipo {tipo}, o GDD §23 #12 pede pelo menos {minimo}";
+                foreach (MetaDef d in listas[k])
+                {
+                    string at = $"meta {d.Id}:";
+                    if (d.Tipo != tipo) yield return $"{at} tipo {d.Tipo} na lista de {tipo}";
+                    if (d.Id == null || !d.Id.StartsWith(prefixo, StringComparison.Ordinal) || !Array.TrueForAll(d.Id.ToCharArray(), c => c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_'))
+                        yield return $"{at} ID fora do formato {prefixo}[a-z0-9_]";
+                    else if (!ids.Add(d.Id)) yield return $"{at} ID repetido";
+                    if (Array.IndexOf(EventosProibidos, d.Evento) >= 0) yield return $"{at} gatilho {d.Evento} pune ou exige anuncio";
+                    else if (Array.IndexOf(Metas.Eventos, d.Evento) < 0) yield return $"{at} gatilho {d.Evento} que o Sim nao emite";
+                    int max = d.Evento == "upgrade_buy" ? Upgrades.Count - 1 : d.Evento == "mission_complete" ? 1
+                        : d.Evento == "product_sold" || d.Evento == "product_crafted" || d.Evento == "order_done" || d.Evento == "vip_served" ? Items.All.Length - 1 : -1;
+                    if (d.Filtro < (d.Evento == "mission_complete" ? 0 : -1) || d.Filtro > max) yield return $"{at} filtro {d.Filtro} invalido para {d.Evento}";
+                    if (d.Alvo <= 0) yield return $"{at} alvo {d.Alvo}";
+                    if (d.Abre != null && Upgrades.IndexOf(d.Abre) < 0) yield return $"{at} abre com \"{d.Abre}\", que nao e' upgrade";
+                    if (d.Conta == Conta.Segundos && !d.Evento.StartsWith("currency_", StringComparison.Ordinal)) yield return $"{at} alvo em segundos de renda fora de currency_*";
+                    if (d.Conta == Conta.Distintos && (tipo != TipoMeta.Conquista || d.Evento != "product_sold")) yield return $"{at} Distintos so em conquista de venda";
+                    if ((d.Pool >= 0 && d.Pool <= 2) != (tipo == TipoMeta.Diaria)) yield return $"{at} pool {d.Pool} (so diaria tem pool A/B/C)";
+                    if (d.OuroS < 0 || d.OuroS > ouro || d.OuroS % 5 != 0 || d.Xp < 0 || d.Xp > xp || d.Renome < 0 || d.Renome > renome)
+                        yield return $"{at} recompensa fora da faixa de {tipo} (ouro {d.OuroS} s <= {ouro} e x5, XP {d.Xp} <= {xp}, Renome {d.Renome} <= {renome})";
+                    if (d.OuroS == 0 && d.Xp == 0 && d.Renome == 0 && d.Insignia == null) yield return $"{at} sem recompensa";
+                    // "Chamar VIP" (anuncio) so acelera: o alvo fecha so com os naturais (1 a cada VipMax s no pior caso)
+                    int teto = (int)((tipo == TipoMeta.Diaria ? MinutosDiaria : MinutosSemana) * 60f / t.VipMax);
+                    if (d.Evento == "vip_served" && tipo != TipoMeta.Conquista && d.Alvo > teto)
+                        yield return $"{at} {d.Alvo} VIPs nao fecham sem anuncio (naturais no tempo de referencia: {teto})";
+                }
+            }
+            for (int pool = 0; pool <= 1; pool++)
+            {
+                int abertas = Array.FindAll(diarias, d => d.Pool == pool && (d.Abre == null || d.Abre == "ferramentas")).Length;
+                if (abertas < 3) yield return $"meta: pool {"AB"[pool]} com {abertas} diarias abertas logo depois das Ferramentas (precisa de 3)";
+            }
+            if (login.Length != 7) yield return $"login: {login.Length} dias no ciclo (7)";
+            foreach (LoginDia l in login)
+                if (l.OuroS < 0 || l.OuroS > 60 || l.OuroS % 5 != 0 || l.Renome < 0 || l.Renome > 5 || l.OuroS + l.Renome == 0) yield return $"login: dia com ouro {l.OuroS} s e Renome {l.Renome} fora da faixa";
+            int Mais(MetaDef[] ds) { int m = 0; foreach (MetaDef d in ds) m = Math.Max(m, d.OuroS); return m; }
+            int loginOuro = 0;
+            foreach (LoginDia l in login) loginOuro += l.OuroS;
+            double dia = Metas.NDiarias * Mais(diarias) + Metas.NSemanais * Mais(semanais) / 7.0 + loginOuro / 7.0;
+            if (dia > OrcamentoDia) yield return $"meta: ouro de LiveOps {dia:0} s por dia, acima de {OrcamentoDia} (LIVEOPS_V1 §1)";
         }
 
         public static long[] RealCosts()

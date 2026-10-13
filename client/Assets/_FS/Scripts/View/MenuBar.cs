@@ -40,22 +40,25 @@ namespace FS
 
         readonly Sim _sim;
         readonly Action<int> _bought;   // fora do Tick o Ev.Bought nao chega ao HandleEvents (o proximo Tick limpa): o Game toca som/efeito por aqui
-        readonly RectTransform _bar, _tray, _badge, _content;
+        readonly RectTransform _bar, _tray, _badge, _content, _melhorias, _metasBadge;
         readonly ScrollRect _scroll;
         readonly Image _btn;
-        readonly Text _btnText, _badgeText;
+        readonly Text _btnText, _badgeText, _metasBadgeText;
+        readonly GameObject _metas;
         readonly List<Card> _cards = new List<Card>();
         bool _open, _sort = true;
         float _t;
-        int _ready;
+        int _ready, _prontas = -1;
 
-        public MenuBar(RectTransform safe, Sim sim, Action<int> bought)
+        /// <param name="metas">D-CORE-02: toque no botao Metas (aparece com as Ferramentas, Metas.Aberto, ao lado de Melhorias).</param>
+        public MenuBar(RectTransform safe, Sim sim, Action<int> bought, Action metas)
         {
             _sim = sim;
             _bought = bought;
             _bar = Art.Node(safe, "Menu", new Vector2(0.02f, 0.005f), new Vector2(0.98f, Band));
             // A-UI-16: borda creme e face marrom como as pilulas da HUD (era o azul #2C3550); com compra pronta a face fica ouro
             Button b = Art.NewButton(_bar, Loc.T("menu.melhorias"), 44, Art.HudEdge, new Vector2(0.18f, 0.08f), new Vector2(0.82f, 0.92f), Toggle);
+            _melhorias = (RectTransform)b.transform;
             _btn = Art.Panel(b.transform, "Face", Art.HudFace, Vector2.zero, Vector2.one);
             _btn.rectTransform.offsetMin = new Vector2(5f, 5f); _btn.rectTransform.offsetMax = new Vector2(-5f, -5f);
             _btn.raycastTarget = false;
@@ -70,16 +73,20 @@ namespace FS
                 hi.sprite = ham; hi.preserveAspect = true; hi.raycastTarget = false;
             }
             // badge vermelho (44-60 px) com o numero de cartoes compraveis, no canto de cima a direita do botao
-            _badge = Art.Node(b.transform, "Badge", new Vector2(1f, 1f), new Vector2(1f, 1f));
-            _badge.sizeDelta = new Vector2(62f, 62f); _badge.anchoredPosition = new Vector2(-14f, -10f);
-            Image bd = _badge.gameObject.AddComponent<Image>();
-            bd.sprite = Art.Disc(); bd.color = Art.Bad; bd.raycastTarget = false;
-            Image ring = Art.Node(_badge, "Aro", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
-            ring.sprite = Art.Ring(); ring.color = Color.white; ring.raycastTarget = false;
-            ring.rectTransform.offsetMin = new Vector2(-3f, -3f); ring.rectTransform.offsetMax = new Vector2(3f, 3f);
-            _badgeText = Art.Outlined(Art.NewText(_badge, "N", 36, Vector2.zero, Vector2.one), 1.5f);
-            _badgeText.fontStyle = FontStyle.Bold;
-            _badge.gameObject.SetActive(false);
+            (_badge, _badgeText) = Badge(b.transform);
+            // D-CORE-02: Metas no mesmo estilo, a direita; com ele visivel o Melhorias encolhe (0,18-0,60), entre os botoes de anuncio
+            Button m = Art.NewButton(_bar, Loc.T("menu.metas"), 40, Art.HudEdge, new Vector2(0.62f, 0.08f), new Vector2(0.82f, 0.92f), metas);
+            Text ml = m.GetComponentInChildren<Text>();
+            ml.color = Art.HudEdge;
+            ml.resizeTextForBestFit = true; ml.resizeTextMinSize = 24; ml.resizeTextMaxSize = 40;
+            Image mf = Art.Panel(m.transform, "Face", Art.HudFace, Vector2.zero, Vector2.one);
+            mf.rectTransform.offsetMin = new Vector2(5f, 5f); mf.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            mf.raycastTarget = false;
+            mf.transform.SetAsFirstSibling();
+            m.targetGraphic = mf;
+            (_metasBadge, _metasBadgeText) = Badge(m.transform);
+            _metas = m.gameObject;
+            _metas.SetActive(false);
 
             _tray = Art.Panel(safe, "Fileira", Art.ComAlfa(Art.HudFace, 0.92f), new Vector2(0.02f, Band + 0.005f), new Vector2(0.98f, Band + Tray)).rectTransform;
             _scroll = _tray.gameObject.AddComponent<ScrollRect>();
@@ -99,6 +106,22 @@ namespace FS
             menu.Sort((a, c) => _sim.T.Cost(a).CompareTo(_sim.T.Cost(c)));
             for (int i = 0; i < menu.Count; i++) _cards.Add(BuildCard(_content, menu[i], i));   // Ord = posicao por preco, desempate dentro do estado
             _tray.gameObject.SetActive(false);
+        }
+
+        /// <summary>Disco vermelho com aro branco e numero, no canto de cima a direita do botao (escondido ate ter numero).</summary>
+        static (RectTransform, Text) Badge(Transform button)
+        {
+            RectTransform r = Art.Node(button, "Badge", new Vector2(1f, 1f), new Vector2(1f, 1f));
+            r.sizeDelta = new Vector2(62f, 62f); r.anchoredPosition = new Vector2(-14f, -10f);
+            Image bd = r.gameObject.AddComponent<Image>();
+            bd.sprite = Art.Disc(); bd.color = Art.Bad; bd.raycastTarget = false;
+            Image ring = Art.Node(r, "Aro", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            ring.sprite = Art.Ring(); ring.color = Color.white; ring.raycastTarget = false;
+            ring.rectTransform.offsetMin = new Vector2(-3f, -3f); ring.rectTransform.offsetMax = new Vector2(3f, 3f);
+            Text n = Art.Outlined(Art.NewText(r, "N", 36, Vector2.zero, Vector2.one), 1.5f);
+            n.fontStyle = FontStyle.Bold;
+            r.gameObject.SetActive(false);
+            return (r, n);
         }
 
         /// <summary>Topo da area tocavel do menu em px de tela (barra, ou fileira quando aberta): o joystick nao comeca abaixo.</summary>
@@ -215,10 +238,25 @@ namespace FS
         public void Refresh(float dt)
         {
             if (_ready > 0) _badge.localScale = Vector3.one * (1f + 0.08f * Mathf.Abs(Mathf.Sin(Captura.Agora * 4f)));   // gravando: relogio do quadro
+            if (_prontas > 0) _metasBadge.localScale = Vector3.one * (1f + 0.08f * Mathf.Abs(Mathf.Sin(Captura.Agora * 4f)));
             if (_open) Anima();
             _t -= dt;
             if (_t > 0f) return;
             _t = 0.25f;
+            // D-CORE-02: revelacao progressiva (GDD §19, §3.3): o botao Metas so existe depois das Ferramentas
+            bool metas = _sim.Metas.Aberto;
+            if (_metas.activeSelf != metas)
+            {
+                _metas.SetActive(metas);
+                _melhorias.anchorMax = new Vector2(metas ? 0.6f : 0.82f, 0.92f);
+            }
+            int prontas = metas ? _sim.Metas.Prontas() : 0;
+            if (prontas != _prontas)
+            {
+                _prontas = prontas;
+                _metasBadge.gameObject.SetActive(prontas > 0);
+                _metasBadgeText.text = prontas.ToString();
+            }
             int ready = 0;
             foreach (Card c in _cards)
             {

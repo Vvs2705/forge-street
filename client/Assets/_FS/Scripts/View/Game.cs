@@ -26,7 +26,8 @@ namespace FS
     /// -cam W (largura visivel em m, 6..11,4; experimento de camera mais perto) | -settings [on|off] (abre as configuracoes; on/off
     /// liga/desliga Som e Vibracao antes, gravando como o toque) | -cofre N (mostra o painel do cofre com N de ouro, sem dar o ouro) |
     /// -playtest (liga o diario num build de release; o dev ja grava) | -privacidade [18] (abre a tela de idade mesmo com resposta ou no
-    /// -testsession, onde a resposta nao e' gravada; 18 = direto no consentimento) | -lang pt|en|es (idioma da sessao sem gravar; Loc).
+    /// -testsession, onde a resposta nao e' gravada; 18 = direto no consentimento) | -lang pt|en|es (idioma da sessao sem gravar; Loc) |
+    /// -metas [semanais|conquistas] (abre o painel de metas na aba; D-CORE-02).
     /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
     /// 1a contratacao) | -recordfull (fila cheia no 1o quadro ou erro) | -recordorder (o -record mantem o cartao da encomenda) | -offline S
     /// (cofre real de S s fora, 60..7200). Captura que mostraria algo impossivel (compra id@t sem ouro ou pre-requisito, -vipnow depois de
@@ -82,6 +83,8 @@ namespace FS
         Hint _hintH; int _hintArg = -1, _hintU;   // v0.6d: a dica so e' remontada quando muda (sem string nova a cada 0,25 s)
         RectTransform _cfg;   // v0.6b: cartao de configuracoes (Som, Vibracao, versao)
         TelaPrivacidade _priv;   // E-PLAT-01: idade + consentimento (Privacidade.cs)
+        PainelMetas _metas;      // D-CORE-02: diarias, semanais, conquistas e login (PainelMetas.cs)
+        float _metasT; int _prontas;   // relogio da Agora (1 s) e quantas davam para resgatar (aviso de meta concluida)
         Action _panelAction;
         Image _coinIcon;
         sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
@@ -110,11 +113,12 @@ namespace FS
 
         /// <summary>A-PLAT-07: o estado do jogo, so derivado dos flags (Estados.De; tabela em Estado.cs). O voltar, o Save e os anuncios
         /// consultam aqui.</summary>
-        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv,
+        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv || MetasAberto,
             _order != null && _orderOut && _order.gameObject.activeSelf);
         bool Painel => _panel != null && _panel.gameObject.activeSelf;
         bool Config => _cfg != null && _cfg.gameObject.activeSelf;
         bool Priv => _priv != null && _priv.Aberta;
+        bool MetasAberto => _metas != null && _metas.Aberto;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -158,9 +162,10 @@ namespace FS
             BuildHud();
             _view = new GameObject("Mundo").AddComponent<WorldView>();
             _view.Init(_sim, _cam, _labels);
-            _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos));
+            _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos), () => _metas.Abrir());
             _cfg.SetAsLastSibling();     // configuracoes e painel modal cobrem a barra de melhorias
             _panel.SetAsLastSibling();
+            _metas = new PainelMetas(_safe, _sim, Pago);
             // E-PLAT-01: sem resposta (ou com texto novo) a tela de idade abre por cima de tudo e o SDK de anuncio espera (Ads.Responder).
             // Fotos e smoke (-testsession, -record, -autoplay) nao a veem, salvo com -privacidade [18]
             _priv = new TelaPrivacidade(_safe, Responder);
@@ -186,6 +191,10 @@ namespace FS
             Log("session_info", "idioma", Loc.Codigo);
             _started = true;   // A-PLAT-07: Loading -> Playing; o save grava daqui em diante (o resgate do cofre logo abaixo ja grava)
             Offline();
+            MetasAgora(false);   // D-CORE-01: o dia de hoje (o que ja estava pronto ao abrir nao vira aviso)
+            string metas = Arg("-metas");
+            int aba = metas == "conquistas" ? 2 : metas == "semanais" ? 1 : 0;
+            if (metas != null) _metas.Abrir(aba);
             if (int.TryParse(Arg("-cofre"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int cofre) && cofre > 0) ShowVault(cofre);   // foto do painel
             // G-UA-02 -offline S: o cofre de verdade, como na volta do jogador depois de S s fora (o -cofre N so desenha o painel com N)
             string off = Arg("-offline");
@@ -253,6 +262,7 @@ namespace FS
                 // voltar do Android (revisao da v0.6; A-PLAT-07 pelo estado): fecha o que estiver aberto, de cima para baixo; no anuncio
                 // (o simulado recebe o voltar) nada; so com nada aberto grava e sai
                 if (Priv) _priv.Voltar();   // E-PLAT-01: consentimento -> idade; revisao fecha; 1a abertura fica
+                else if (MetasAberto) _metas.Fechar();
                 else switch (Estados.AoVoltar(EstadoAtual, Painel, _menu.IsOpen))
                 {
                     case Voltar.FechaPainel: ClosePanel(); break;
@@ -263,7 +273,7 @@ namespace FS
             }
             if (_screen.x != Screen.width || _screen.y != Screen.height) Fit();
 
-            bool modal = Painel || Config || Priv;
+            bool modal = Painel || Config || Priv || MetasAberto;
             _joy.Blocked = modal;
             _joy.BottomPx = _menu.TopPx;
             _joy.Tick();
@@ -299,6 +309,9 @@ namespace FS
             FollowCamera(Time.deltaTime);
             RefreshHud();
             _menu.Refresh(Time.deltaTime);
+            _metasT -= Time.unscaledDeltaTime;
+            if (_metasT <= 0f) { _metasT = 1f; MetasAgora(true); }
+            _metas.Refresh(Time.unscaledDeltaTime);
 
             _saveT += Time.deltaTime;
             if (_saveT >= SaveEvery) { _saveT = 0f; Save(); }
@@ -440,6 +453,33 @@ namespace FS
             }
             Log("upgrade_buy", ((Upgrade)u).ToString(), price.ToString());
             Count(_sink, Upgrades.IsLuxury(u) ? "luxo" : "upgrade", price);
+        }
+
+        // ---------- metas (D-CORE-01/02) ----------
+
+        /// <summary>D-CORE-01: o nucleo recebe a hora e o fuso do aparelho (o fuso so vale na 1a abertura com metas: fica gravado). Meta que
+        /// ficou pronta desde a ultima olhada vira aviso (`avisa`) e o badge do botao Metas acompanha (MenuBar).</summary>
+        void MetasAgora(bool avisa)
+        {
+            _sim.Metas.Agora(Now(), (long)TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow).TotalSeconds);
+            int n = _sim.Metas.Prontas();
+            if (avisa && n > _prontas) Notice(Loc.T("aviso.meta_pronta"), Art.Star(), Art.Accent);
+            _prontas = n;
+        }
+
+        /// <summary>Resgate no painel (o Sim.Metas ja pagou e gravou o ID): som, aviso, diario (mission_complete / achievement_unlock /
+        /// login_claim, LIVEOPS_V1 §4.6), currency_source pela origem nova e save na hora (ouro e ID vao juntos para o disco).</summary>
+        void Pago(string tipo, string id, long gold)
+        {
+            Sfx.Play("coin", 1.3f);
+            Ajustes.Pulso(30, 150);
+            Notice(gold > 0 ? Loc.T("aviso.meta", Textos.Qtd(gold)) : Loc.T("aviso.meta_ok"), _coinIcon.sprite, _coinIcon.color);
+            if (tipo == "login") Log("login_claim", id, _sim.Metas.LoginCiclo.ToString(CultureInfo.InvariantCulture));
+            else if (tipo == "achievement") Log("achievement_unlock", id);
+            else Log("mission_complete", tipo, id);
+            if (gold > 0) Source(tipo == "login" ? "login" : tipo == "achievement" ? "conquista" : tipo == "daily" ? "diaria" : "semanal", gold);
+            _prontas = _sim.Metas.Prontas();
+            Save();
         }
 
         // s86 currency_source/currency_sink: o ouro soma por origem/destino e sai numa linha por chave a cada minuto de jogo e na pausa/saida
@@ -1132,6 +1172,7 @@ namespace FS
                 _paused = false;
                 _fpsN = 0; _fpsT = 0f;   // a janela de fps nao mede o tempo fora
                 if (_started && !_pausedByAd && _sim != null && _sim.SavedAt > 0 && Now() - _sim.SavedAt >= 60) Offline();
+                _metasT = 0f;   // D-CORE-01: voltar do segundo plano olha a virada do dia no proximo quadro
             }
         }
         void OnApplicationFocus(bool focus) { if (!focus) Save(); }
@@ -1238,7 +1279,7 @@ namespace FS
                 yield return new WaitForSecondsRealtime(delay);
             }
             else yield return new WaitForSecondsRealtime(delay);
-            Debug.Log($"SHOT t={_sim.Time:0.0} upgrades={_sim.UpgradesBought} nobres={_sim.JewelQueue.Count}/{_sim.JewelQueueCap} baus={string.Join(",", _sim.Chests.ConvertAll(c => c.State))} som={Ajustes.Som} vibra={Ajustes.Vibra} idioma={Loc.Codigo} fornalhas={_view.Fornalhas()}");   // A-ART-06: estado desenhado
+            Debug.Log($"SHOT t={_sim.Time:0.0} upgrades={_sim.UpgradesBought} nobres={_sim.JewelQueue.Count}/{_sim.JewelQueueCap} baus={string.Join(",", _sim.Chests.ConvertAll(c => c.State))} som={Ajustes.Som} vibra={Ajustes.Vibra} idioma={Loc.Codigo} fornalhas={_view.Fornalhas()} metas={_sim.Metas.Prontas()}");   // A-ART-06: estado desenhado
             ScreenCapture.CaptureScreenshot(path);
             yield return null;
             yield return null;

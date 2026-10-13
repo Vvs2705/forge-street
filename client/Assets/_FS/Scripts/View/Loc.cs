@@ -71,6 +71,7 @@ namespace FS
 
             // ---------- numeros (Textos.Ouro e Textos.N) ----------
             { "num.dec", L(",", ".", ",") },
+            { "num.mil", L(".", ",", ".") },   // separador de milhar (Textos.Qtd)
             { "num.mi", L(Nb + "mi", "M", Nb + "M") },
             { "num.bi", L(Nb + "bi", "B", Nb + "B") },
             { "num.tri", L(Nb + "tri", "T", Nb + "T") },
@@ -234,6 +235,50 @@ namespace FS
             { "aviso.compra", L("{0}!", "{0}!", "¡{0}!") },
             { "aviso.anuncio_off", L("Anúncio indisponível", "Ad unavailable", "Anuncio no disponible") },
             { "fx.velocidade", L("Velocidade {0}×!", "Speed {0}×!", "¡Velocidad {0}×!") },
+
+            { "aviso.meta_pronta", L("Meta concluída!", "Goal complete!", "¡Meta cumplida!") },
+            { "aviso.meta", L("Meta resgatada! +{0}", "Goal claimed! +{0}", "¡Meta reclamada! +{0}") },
+            { "aviso.meta_ok", L("Meta resgatada!", "Goal claimed!", "¡Meta reclamada!") },
+
+            // ---------- metas (D-CORE-02): botao, painel, login e a frase de cada meta (Textos.Meta, Textos.Premio; <= 32 / 44) ----------
+            { "menu.metas", L("Metas", "Goals", "Metas") },
+            { "metas.titulo", L("Metas", "Goals", "Metas") },
+            { "metas.diarias", L("Diárias", "Daily", "Diarias") },
+            { "metas.semanais", L("Semanais", "Weekly", "Semanales") },
+            { "metas.conquistas", L("Conquistas", "Achievements", "Logros") },
+            { "metas.resgatar", L("RESGATAR", "CLAIM", "RECLAMAR") },
+            { "metas.feito", L("FEITO", "DONE", "HECHO") },
+            { "metas.vazia", L("Nova meta amanhã", "New goal tomorrow", "Nueva meta mañana") },
+            { "metas.login.pronto", L("Presente diário: toque no de hoje!", "Daily gift: tap today's!", "Regalo diario: ¡toca el de hoy!") },
+            { "metas.login.amanha", L("Presente diário: volte amanhã", "Daily gift: come back tomorrow", "Regalo diario: vuelve mañana") },
+            { "metas.login.dia", L("Dia {0}", "Day {0}", "Día {0}") },
+            { "meta.produto", L("produto|produtos", "product|products", "producto|productos") },
+            { "meta.vende", L("Venda {0} {1}", "Sell {0} {1}", "Vende {0} {1}") },   // {0} = quantas, {1} = item ou "produtos"
+            { "meta.linhas", L("Venda os {0} produtos", "Sell all {0} products", "Vende los {0} productos") },
+            { "meta.fabrica", L("Fabrique {0} {1}", "Craft {0} {1}", "Fabrica {0} {1}") },
+            { "meta.compra_um", L("Compre: {0}", "Buy: {0}", "Compra: {0}") },
+            { "meta.compra", L("Compre {0} melhoria|Compre {0} melhorias", "Buy {0} upgrade|Buy {0} upgrades", "Compra {0} mejora|Compra {0} mejoras") },
+            { "meta.ganha", L("Ganhe {0} em vendas", "Earn {0} from sales", "Gana {0} en ventas") },
+            { "meta.gasta", L("Gaste {0} em melhorias", "Spend {0} on upgrades", "Gasta {0} en mejoras") },
+            { "meta.diarias", L("Conclua {0} diária|Conclua {0} diárias", "Complete {0} daily goal|Complete {0} daily goals",
+                "Completa {0} meta diaria|Completa {0} metas diarias") },
+            { "meta.semanais", L("Conclua {0} semanal|Conclua {0} semanais", "Complete {0} weekly goal|Complete {0} weekly goals",
+                "Completa {0} meta semanal|Completa {0} metas semanales") },
+            { "meta.order_done", L("Entregue {0} encomenda|Entregue {0} encomendas", "Deliver {0} order|Deliver {0} orders", "Entrega {0} pedido|Entrega {0} pedidos") },
+            { "meta.offline_claim", L("Abra o cofre {0} vez|Abra o cofre {0} vezes", "Open the vault {0} time|Open the vault {0} times",
+                "Abre el cofre {0} vez|Abre el cofre {0} veces") },
+            { "meta.vip_served", L("Atenda {0} VIP|Atenda {0} VIPs", "Serve {0} VIP|Serve {0} VIPs", "Atiende a {0} VIP|Atiende a {0} VIP") },
+            { "meta.worker_hired", L("Contrate {0} ajudante|Contrate {0} ajudantes", "Hire {0} helper|Hire {0} helpers", "Contrata {0} ayudante|Contrata {0} ayudantes") },
+            { "meta.chest_opened", L("Abra {0} baú|Abra {0} baús", "Open {0} chest|Open {0} chests", "Abre {0} baúl|Abre {0} baúles") },
+            { "meta.login_claim", L("Pegue o presente {0} dia|Pegue o presente {0} dias", "Claim the daily gift {0} time|Claim the daily gift {0} times",
+                "Recoge el regalo {0} día|Recoge el regalo {0} días") },
+            { "meta.premio.ouro", L("+{0} de ouro", "+{0} gold", "+{0} de oro") },
+            { "meta.premio.xp", L("+{0} XP", "+{0} XP", "+{0} XP") },
+            { "meta.premio.renome", L("+{0} Renome", "+{0} Renown", "+{0} Renombre") },
+            { "meta.premio.insignia", L("Insígnia: {0}", "Badge: {0}", "Insignia: {0}") },
+            { "ins.mao_de_ouro", L("Mão de Ouro", "Golden Hand", "Mano de Oro") },
+            { "ins.livro_caixa", L("Livro-Caixa Cheio", "Full Ledger", "Libro Mayor Lleno") },
+            { "ins.oficina_nobre", L("Oficina Nobre", "Noble Workshop", "Taller Noble") },
 
             // ---------- mundo ----------
             { "mundo.rua", L("Rua\nlateral", "Side\nstreet", "Calle\nlateral") },
