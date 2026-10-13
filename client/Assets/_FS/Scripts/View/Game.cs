@@ -32,6 +32,7 @@ namespace FS
     /// E-PLAT-02/03: -adcofre (resgate real de 1 h: painel com o "Cofre 2x") | -adencomenda (bonus e trocar no cartao da encomenda) |
     /// -adsupply (botao do Supply Drop na fornalha) | -intersticial (liga a flag Tuning.Interstitial na sessao: carrega e mostra o
     /// intersticial nos vetos do nucleo).
+    /// -renome N (forca o Renome total em N; so sobe) | -renomecard (abre o cartao do Renome; B-CORE-06).
     /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
     /// 1a contratacao) | -recordfull (fila cheia no 1o quadro ou erro) | -recordorder (o -record mantem o cartao da encomenda) | -offline S
     /// (cofre real de S s fora, 60..7200). Captura que mostraria algo impossivel (compra id@t sem ouro ou pre-requisito, -vipnow depois de
@@ -90,6 +91,7 @@ namespace FS
         TelaPrivacidade _priv;   // E-PLAT-01: idade + consentimento (Privacidade.cs)
         PainelMetas _metas;      // D-CORE-02: diarias, semanais, conquistas e login (PainelMetas.cs)
         float _metasT; int _prontas;   // relogio da Agora (1 s) e quantas davam para resgatar (aviso de meta concluida)
+        SeloRenome _renome;      // B-CORE-06: selo de nivel na HUD e cartao (SeloRenome.cs)
         Action _panelAction;
         Image _coinIcon;
         sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
@@ -119,12 +121,13 @@ namespace FS
 
         /// <summary>A-PLAT-07: o estado do jogo, so derivado dos flags (Estados.De; tabela em Estado.cs). O voltar, o Save e os anuncios
         /// consultam aqui.</summary>
-        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv || MetasAberto,
+        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv || MetasAberto || RenomeAberto,
             _order != null && _orderOut && _order.gameObject.activeSelf);
         bool Painel => _panel != null && _panel.gameObject.activeSelf;
         bool Config => _cfg != null && _cfg.gameObject.activeSelf;
         bool Priv => _priv != null && _priv.Aberta;
         bool MetasAberto => _metas != null && _metas.Aberto;
+        bool RenomeAberto => _renome != null && _renome.Aberto;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -202,6 +205,8 @@ namespace FS
             string metas = Arg("-metas");
             int aba = metas == "conquistas" ? 2 : metas == "semanais" ? 1 : 0;
             if (metas != null) _metas.Abrir(aba);
+            bool cartao = Arg("-renomecard") != null;   // foto do cartao do Renome (com -renome N)
+            if (cartao) _renome.Abrir();
             if (int.TryParse(Arg("-cofre"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int cofre) && cofre > 0) ShowVault(cofre);   // foto do painel
             // G-UA-02 -offline S: o cofre de verdade, como na volta do jogador depois de S s fora (o -cofre N so desenha o painel com N)
             string off = Arg("-offline");
@@ -277,6 +282,7 @@ namespace FS
                 // (o simulado recebe o voltar) nada; so com nada aberto grava e sai
                 if (Priv) _priv.Voltar();   // E-PLAT-01: consentimento -> idade; revisao fecha; 1a abertura fica
                 else if (MetasAberto) _metas.Fechar();
+                else if (RenomeAberto) _renome.Fechar();
                 else switch (Estados.AoVoltar(EstadoAtual, Painel, _menu.IsOpen))
                 {
                     case Voltar.FechaPainel: ClosePanel(); break;
@@ -287,7 +293,7 @@ namespace FS
             }
             if (_screen.x != Screen.width || _screen.y != Screen.height) Fit();
 
-            bool modal = Painel || Config || Priv || MetasAberto;
+            bool modal = Painel || Config || Priv || MetasAberto || RenomeAberto;
             Pointer ptr = Pointer.current;   // B-CORE-03: toque no anel do golpe ou na barra de qualidade (antes do joystick, que os ignora)
             if (!modal && ptr != null && ptr.press.wasPressedThisFrame) Toque(ptr.position.ReadValue());
             _joy.Blocked = modal;
@@ -514,6 +520,16 @@ namespace FS
             Save();
         }
 
+        /// <summary>B-CORE-06: subiu de nivel de Renome (encomenda, bau ou meta): aviso na fila, fanfarra, vibracao de evento importante
+        /// (40 ms, mais forte que a da encomenda do mesmo tick) e diario.</summary>
+        void SubiuRenome(int nivel)
+        {
+            Sfx.Play("vip", 0.9f);
+            Ajustes.Pulso(40, 230);
+            Notice(Textos.AvisoRenome(nivel), Art.Star(), Art.Gold);
+            Log("renome_level", nivel.ToString(CultureInfo.InvariantCulture), _sim.Renome.Total.ToString(CultureInfo.InvariantCulture));
+        }
+
         // s86 currency_source/currency_sink: o ouro soma por origem/destino e sai numa linha por chave a cada minuto de jogo e na pausa/saida
         // (venda por venda dobraria o diario: a joalheria vende a cada 0,4 s)
         void Source(string origem, long gold) => Count(_source, origem, gold);
@@ -599,6 +615,7 @@ namespace FS
             _gold.fontStyle = FontStyle.Bold;
             _gold.resizeTextForBestFit = true; _gold.resizeTextMinSize = 36; _gold.resizeTextMaxSize = 62;   // "1,23 mi" encolhe em vez de quebrar
             _gold.rectTransform.pivot = new Vector2(0f, 0.5f);   // o pulso cresce a partir da moeda, sem empurrar o numero
+            _renome = new SeloRenome(top, _safe, _sim, SubiuRenome);   // B-CORE-06: selo de nivel preso embaixo da pilula (nao e' saldo)
             // A-UI-16: borda creme e face marrom como a pilula de ouro (era o azul-marinho Art.Bg)
             Vector2 hintMin = new Vector2(0.385f, 0.1f), hintMax = new Vector2(Arg("-record") == null ? 0.875f : 1f, 0.9f);   // v0.6b: a engrenagem fica a direita (criativo: sem ela)
             Image hintPill = Art.Panel(top, "PilulaDica", Art.HudEdge, hintMin, hintMax);
@@ -730,6 +747,7 @@ namespace FS
             RefreshAdUi();
             float real = Mathf.Min(Captura.Passo, 0.1f);   // tempo real (o simulado zera o timeScale; gravando, o do quadro), sem o salto do 1o quadro
             RefreshOrder(real);
+            _renome.Refresh();   // antes do TickNotice: o aviso de nivel novo entra na fila neste quadro
             TickNotice(real);
             // numero rolando: persegue o valor (sobe na venda, desce na compra) em ~0,3 s em vez de pular
             long target = Math.Max(0, _sim.Gold - _pending);
@@ -1412,6 +1430,7 @@ namespace FS
             // sem fole); "id@t" compra quando o relogio do jogo passa de t s, na ordem dada, cobrando o preco (TimedBuys).
             _buyAt = Captura.Compras(_sim, Arg("-buyids"));
             if (long.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long g)) _sim.Gold = Math.Max(0, g);   // A-CORE-06: aceita > int (foto da HUD)
+            if (long.TryParse(Arg("-renome"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long rn)) _sim.Renome.Ganha(rn - _sim.Renome.Total);   // B-CORE-06: so sobe
             string[] px = (Arg("-px") ?? "").Split(',');
             if (px.Length == 2 && float.TryParse(px[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x)
                 && float.TryParse(px[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y)) _sim.Player.Pos = new V2(x, y);
@@ -1489,7 +1508,7 @@ namespace FS
                 yield return new WaitForSecondsRealtime(delay);
             }
             else yield return new WaitForSecondsRealtime(delay);
-            Debug.Log($"SHOT t={_sim.Time:0.0} upgrades={_sim.UpgradesBought} nobres={_sim.JewelQueue.Count}/{_sim.JewelQueueCap} baus={string.Join(",", _sim.Chests.ConvertAll(c => c.State))} som={Ajustes.Som} vibra={Ajustes.Vibra} idioma={Loc.Codigo} fornalhas={_view.Fornalhas()} metas={_sim.Metas.Prontas()} golpe={_sim.StrikeStation?.Name ?? "-"}");   // A-ART-06: estado desenhado; B-CORE-03: anel
+            Debug.Log($"SHOT t={_sim.Time:0.0} upgrades={_sim.UpgradesBought} nobres={_sim.JewelQueue.Count}/{_sim.JewelQueueCap} baus={string.Join(",", _sim.Chests.ConvertAll(c => c.State))} som={Ajustes.Som} vibra={Ajustes.Vibra} idioma={Loc.Codigo} fornalhas={_view.Fornalhas()} metas={_sim.Metas.Prontas()} golpe={_sim.StrikeStation?.Name ?? "-"} renome={_sim.Renome.Nivel}/{_sim.Renome.Total}");   // A-ART-06: estado desenhado; B-CORE-03: anel
             ScreenCapture.CaptureScreenshot(path);
             yield return null;
             yield return null;
