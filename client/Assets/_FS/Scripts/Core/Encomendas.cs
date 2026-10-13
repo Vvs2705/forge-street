@@ -94,6 +94,8 @@ namespace FS.Core
         public readonly Dictionary<string, int> Coracoes = new Dictionary<string, int>();
         /// <summary>Metricas do bot (fora do save, como o OrderGold): Renome que as encomendas deram e entregues por tipo nesta sessao.</summary>
         public long RenomeGanho; public readonly int[] PorTipo = new int[Enum.GetValues(typeof(OrderType)).Length];
+        /// <summary>A ultima paga (o Ev.OrderDone nao leva o tipo): o diario loga order_complete com ela. Fora do save.</summary>
+        public Encomenda UltimaEntregue;
         /// <summary>Ganchos dos sistemas que ainda nao existem (null = nenhum): Blueprint pendente da fila (B-CORE-07) e a posse dele na
         /// entrega; evento ativo (D-CORE-03) e os pontos dele.</summary>
         public Func<string, string> ProximoBlueprint;
@@ -140,7 +142,7 @@ namespace FS.Core
             long ouro = e.Premio + (prazo ? e.PremioBonus : 0);
             int rn = e.Renome + (prazo ? e.Def.BonusReputation : 0);
             _sim.Gold += ouro; _sim.OrderGold += ouro; _sim.OrderCount++;
-            _sim.Renome.Ganha(rn); RenomeGanho += rn; PorTipo[(int)e.Tipo]++;
+            _sim.Renome.Ganha(rn); RenomeGanho += rn; PorTipo[(int)e.Tipo]++; UltimaEntregue = e;
             if (e.Blueprint != null) GanhaBlueprint?.Invoke(e.Blueprint, e.Tx);
             if (e.Def.EventId != null) GanhaPontosEvento?.Invoke(e.Def.EventId, e.Def.EventPoints, e.Tx);
             if (e.Def.ClientId != null) { Coracoes.TryGetValue(e.Def.ClientId, out int c); Coracoes[e.Def.ClientId] = c + 1; }

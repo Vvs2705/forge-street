@@ -224,7 +224,7 @@ namespace FS.Core
         public int AnunciosTetoDia = 30;   // teto diario TOTAL de rewarded (dia local das metas; relogio para tras nao reabre)
         /// <summary>B-CORE-05: o "bonus da encomenda" vale pelo menos estes s da renda de agora (o Valor x premio sozinho era menos que os ~30 s
         /// de relogio do anuncio: o AdWatcherE fechava a producao depois do AdWatcher, BALANCE.md §24/§25).</summary>
-        public float EncomendaBonusMinSeg = 45f;
+        public float EncomendaBonusMinSeg = 60f;
 
         // precos e custos
         public int[] Price = { 0, 0, 10, 25, 16, 60 };          // ouro por item vendido

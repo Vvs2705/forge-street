@@ -170,6 +170,10 @@ namespace FS.Tests
         {
             Sim s = Oficina();
             Assert.AreEqual(OrderType.Common, EncTeste.Abre(new Sim { FirstSaleTime = 1f }, 5).Tipo, "1 linha: Mixed travado");
+            var cedo = new Sim { FirstSaleTime = 1f, OrderCount = 8 };   // 3 linhas (espada, escudo, joia) e 8 entregues, mas sem as Ferramentas
+            cedo.Buy(Upgrade.Shields); cedo.Buy(Upgrade.SideCorridor); cedo.Buy(Upgrade.Jewelry);
+            Assert.AreEqual(OrderType.Common, EncTeste.Abre(cedo, 5).Tipo, "antes das Ferramentas: so Common (os 10 primeiros minutos de sempre)");
+            Assert.AreEqual(OrderType.Common, EncTeste.Abre(cedo, 2).Tipo, "nem o Bulk");
             Encomenda e = EncTeste.Abre(s, 5);
             Assert.AreEqual(OrderType.Mixed, e.Tipo);
             CollectionAssert.AreEqual(new[] { Item.Tool, Item.Sword }, e.Itens, "as 2 proximas linhas a partir de 5 % 3");
@@ -420,6 +424,7 @@ namespace FS.Tests
             s.Encomendas.Abertas = 9;
             Run(s, s.T.OrderGap + 0.5f);            // Royal com projeto
             Assert.AreEqual("Mixed Rush Royal", string.Join(" ", s.Encomendas.Vagas.Select(v => v.Tipo)));
+            Assert.AreEqual(Item.Shield, s.Encomendas.Vagas[1].Itens[0], "Rush (6 % 3 = espada): a espada ja esta no Mixed, vai a proxima linha");
             s.Encomendas.Vagas[0].Feito[1] = 2; s.Encomendas.Vagas[0].Premio += 35;
             s.Encomendas.Vagas[1].Prazo = 123.5f;
             s.Encomendas.Coracoes["cli_reg_bento"] = 2;

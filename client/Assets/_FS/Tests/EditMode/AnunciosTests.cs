@@ -141,13 +141,13 @@ namespace FS.Tests
         /// <summary>B-CORE-05 (achado do AdWatcherE, BALANCE.md §24/§25): o bonus vale pelo menos EncomendaBonusMinSeg s da renda de agora (o
         /// anuncio custa ~30 s de relogio); 50% do premio quando e' mais.</summary>
         [Test]
-        public void BonusDaEncomenda_NuncaMenosQue45sDeRenda()
+        public void BonusDaEncomenda_NuncaMenosQue60sDeRenda()
         {
             Sim s = Pronto();
             s.RateEma = 10.0;
-            Assert.AreEqual(450L, s.Anuncios.Previa(Anuncio.EncomendaBonus), "45 s x 10/s > 50% de 100");
+            Assert.AreEqual(600L, s.Anuncios.Previa(Anuncio.EncomendaBonus), "60 s x 10/s > 50% de 100");
             s.Encomendas.Principal.Premio = 2000;
-            Assert.AreEqual(1000L, s.Anuncios.Previa(Anuncio.EncomendaBonus), "50% do premio, quando passa dos 45 s");
+            Assert.AreEqual(1000L, s.Anuncios.Previa(Anuncio.EncomendaBonus), "50% do premio, quando passa dos 60 s");
             Assert.AreEqual(1000L, Assiste(s, Anuncio.EncomendaBonus));
             Assert.AreEqual(3000L, s.Encomendas.Principal.Premio);
             var t = new Tuning { EncomendaBonusMinSeg = 0f };

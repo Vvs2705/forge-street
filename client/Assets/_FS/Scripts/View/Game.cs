@@ -463,11 +463,15 @@ namespace FS
                         _view.Float(e.Pos, "...", Art.Bad, 44);
                         Log("vip_left", Balance.ItemName[e.A], e.B.ToString());
                         break;
-                    // FASE9 (v0.6c): a encomenda nova entra pelo estado do Sim (RefreshOrder, vale tambem para a do save); entregue = som,
+                    // FASE9 (v0.6c): a encomenda nova entra pelo estado do Sim (CartoesEncomenda.Refresh, vale tambem para a do save); entregue = som,
                     // aviso e moedas saindo do cartao (o premio ja entrou no Gold, fora do GoldEarned, como o bau)
                     case Ev.OrderNew: Log("order_new", Balance.ItemName[e.A], e.B.ToString()); break;
                     case Ev.OrderDone:
                         Log("order_done", Balance.ItemName[e.A], e.B.ToString());
+                        // B-CORE-05 (LIVEOPS_V1 §5.8): order_complete com o tipo ("rush_prazo" no bonus). ponytail: 2 entregues no mesmo tick logam o
+                        // tipo da ultima nas duas linhas; vira campo do Ev se o relatorio precisar
+                        if (_sim.Encomendas.UltimaEntregue is Encomenda u)
+                            Log("order_complete", u.Tipo == OrderType.Rush && u.Prazo > 0f ? "rush_prazo" : u.Tipo.ToString().ToLowerInvariant(), Balance.ItemName[e.A]);
                         Source("encomenda", e.B);
                         Ajustes.Pulso(40, 200);
                         if (_cards == null) break;   // criativo: sem cartao, o ouro entra direto no numero
