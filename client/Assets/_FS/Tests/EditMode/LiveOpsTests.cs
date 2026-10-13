@@ -318,7 +318,12 @@ namespace FS.Tests
             EventDef fest = Evt("_blacksmith_festival");
             Agora(s, fest.Comeca + H);
             Assert.AreSame(fest, s.LiveOps.Evento);
-            Assert.IsTrue(s.LiveOps.Paga(fest.Missoes.First(x => x.Id == "contrata1")), "os 6 ajudantes ja contratados");
+            MissaoEvento contrata = fest.Missoes.First(x => x.Id == "contrata1");
+            Assert.IsFalse(s.LiveOps.Paga(contrata), "ainda ha Equipe a contratar e nivel a subir (B-CORE-04)");
+            s.Gold = 100000;
+            Assert.IsTrue(s.Equipe.Comprar(Enumerable.Range(0, s.Equipe.Defs.Length).First(s.Equipe.AVenda)));
+            Agora(s, fest.Comeca + 2 * H);
+            Assert.IsTrue(s.LiveOps.Paga(contrata), "contratar ou subir de nivel conta");
             Assert.IsFalse(s.LiveOps.Paga(fest.Missoes.First(x => x.Id == "golpe5")));
         }
 

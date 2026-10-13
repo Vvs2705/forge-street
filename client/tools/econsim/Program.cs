@@ -21,6 +21,8 @@ using FS.Core;
 /// a cada segundo de jogo, como a View) e de novo sem ele: a tabela mostra a renda/min depois da entrada (com x sem), pontos, missoes, XP do
 /// Passe e o ouro dos limiares; e a conta de fechamento da trilha free do Passe com as encomendas medidas. Sem --evento nada disso roda
 /// (o CSV fica identico ao de antes).
+/// B-CORE-04: --worker-seg S = Bot.WorkerSegundos (contrata/sobe nivel de worker quando custa ate S s da renda; negativo = nunca); com
+/// --tuning Workers=false o jogo e' o de antes do B-CORE-04. A 4a tabela mostra os workers; compra de worker conta na zona morta.
 /// </summary>
 static class EconSim
 {
@@ -39,6 +41,8 @@ static class EconSim
         public int Morta, MortaSeq, MortaIni, SemDestinoMin, Luxo, AdsVip, AdsBoost, AdsSupply, AdsBonus, Vips; public long PosProd, Parado, Encomendas; public double Segundos;
         // B-CORE-03: % da receita acima do preco Normal (premio de qualidade) e o que o golpe somou; niveis de estacao comprados, gasto e o 1o
         public double Quali, Golpe; public int Niveis, Golpes; public long NiveisGasto; public float Nivel1;
+        // B-CORE-04: contratados pela Equipe, niveis subidos (ajudantes e equipe), ouro gasto e a 1a compra de worker (relogio)
+        public int Contratados, NiveisWk; public long WkGasto; public float Wk1 = -1f;
         // D-CORE-03/04 (--evento): GoldEarned ao fim de cada minuto, instante de relogio da entrada no evento e o que o evento deu
         public long[] EarnedMin; public float Entrou = -1f; public int Pontos, Missoes, Ordens; public long XpPasse, OuroEvento;
     }
@@ -69,6 +73,7 @@ static class EconSim
     {
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         BotProfile[] perfis = BotProfile.All; int minutos = 60, partidas = 1; string saida = "econsim.csv", knobs = null; EventDef evento = null;
+        float? workerSeg = null;  // B-CORE-04: null = o padrao do Bot
         float anuncioSeg = 30f;   // V19: ~30 s por anuncio premiado (o LevelPlay nao mostra o tempo; medir no POCO e ajustar aqui)
         for (int i = 0; i < args.Length; i += 2)
         {
@@ -86,11 +91,12 @@ static class EconSim
                     evento = Array.Find(LiveOpsDefs.Eventos, e => e.Id == v || e.Id.EndsWith("_" + v, StringComparison.Ordinal));
                     ok = evento != null && LiveOpsDefs.Falta(evento, Items.All) == null;   // so o que roda neste build
                     break;
+                case "--worker-seg" when ok: ok = float.TryParse(v, out float ws); workerSeg = ws; break;
                 default: ok = false; break;
             }
             if (!ok || perfis.Any(p => p.Name == null))
             {
-                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--evento id]");
+                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id]");
                 return 2;
             }
         }
@@ -99,9 +105,9 @@ static class EconSim
         foreach (BotProfile p in perfis) for (int i = 0; i < partidas; i++) jobs.Add((p, 30f + 30f * i / partidas));
         var runs = new Run[jobs.Count];
         var wall = Stopwatch.StartNew();
-        Parallel.For(0, jobs.Count, k => runs[k] = Play(jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, Knobs(knobs, new Tuning()), evento));   // cada Sim e' isolado (Tuning proprio); a ordem do CSV e' a de jobs
+        Parallel.For(0, jobs.Count, k => runs[k] = Play(jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, Knobs(knobs, new Tuning()), workerSeg, evento));   // cada Sim e' isolado (Tuning proprio); a ordem do CSV e' a de jobs
         var sem = new Run[jobs.Count];   // D-CORE-03/04: a mesma partida sem o evento (base da comparacao)
-        if (evento != null) Parallel.For(0, jobs.Count, k => sem[k] = Play(jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, Knobs(knobs, new Tuning()), null));
+        if (evento != null) Parallel.For(0, jobs.Count, k => sem[k] = Play(jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, Knobs(knobs, new Tuning()), workerSeg, null));
         if (knobs != null) Console.WriteLine("tuning: " + knobs);
         File.WriteAllText(saida, Header + Environment.NewLine + string.Concat(runs.Select(r => r.Csv)));
 
@@ -130,6 +136,16 @@ static class EconSim
             Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
             float n1 = g.Where(r => r.Nivel1 >= 0f).Select(r => r.Nivel1).DefaultIfEmpty(-1f).Average();
             Console.WriteLine($"| {p.Name} | {g.Average(r => r.Quali):0.0}% | {g.Average(r => r.Golpe):0.0}% ({g.Average(r => r.Golpes):0}) | {g.Average(r => r.Niveis):0.#} ({g.Average(r => r.NiveisGasto):0}; {Clock(n1)}) |");
+        }
+        // B-CORE-04 (ECONOMIA_WAVE_B §2): workers contratados, niveis (ajudantes + equipe), ouro gasto e a 1a compra de worker
+        Console.WriteLine();
+        Console.WriteLine($"| perfil | workers contratados (de {WorkerDefs.All.Count(d => d.Contrata == null)}) | niveis subidos | gasto em workers | 1a compra de worker |");
+        Console.WriteLine("|---|---|---|---|---|");
+        foreach (BotProfile p in perfis)
+        {
+            Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            float w1 = g.Where(r => r.Wk1 >= 0f).Select(r => r.Wk1).DefaultIfEmpty(-1f).Average();
+            Console.WriteLine($"| {p.Name} | {g.Average(r => r.Contratados):0.#} | {g.Average(r => r.NiveisWk):0.#} | {g.Average(r => r.WkGasto):0} | {Clock(w1)} |");
         }
         // V19: pisos do §3 em relogio; % = partidas que compraram ANTES do piso (o BalanceTests reprova) ou nao compraram
         Console.WriteLine();
@@ -200,14 +216,15 @@ static class EconSim
                               $"{LiveOpsDefs.XpDiaF2P(ps, LiveOpsDefs.Eventos, enc, true):0} | {LiveOpsDefs.DiaFechamento(ps, LiveOpsDefs.Eventos, enc, true):0.0} |");
     }
 
-    static Run Play(BotProfile p, float hz, int minutos, float anuncioSeg, Tuning t, EventDef evento = null)
+    static Run Play(BotProfile p, float hz, int minutos, float anuncioSeg, Tuning t, float? workerSeg, EventDef evento = null)
     {
         var clock = Stopwatch.StartNew();
         var s = new Sim(t); Bot bot = Bot.From(p); float dt = 1f / hz;
+        if (workerSeg.HasValue) bot.WorkerSegundos = workerSeg.Value;
         var r = new Run { Perfil = p.Name };
         var csv = new StringBuilder();
         long earned0 = 0, goldAtProd = -1;
-        int bought0 = 0, seq = 0, ads = 0;
+        int bought0 = 0, seq = 0, ads = 0, wk = 0, wk0 = 0;   // wk: compras de worker (contratar ou nivel), que contam como compra na zona morta
         // V19: relogio = s.Time + pausa (s de anuncio, jogo parado); `rel` = instante de relogio de cada compra e da 1a venda (-1 = ainda nao)
         float pausa = 0f, venda1 = -1f;
         var rel = new float[Upgrades.Count];
@@ -222,7 +239,11 @@ static class EconSim
                 bot.Step(s, dt);
                 pausa += (bot.AdsTotal - ads) * anuncioSeg;   // o anuncio vem antes do Tick do mesmo passo
                 ads = bot.AdsTotal;
-                foreach (SimEvent e in s.Events) if (e.Kind == Ev.VipServed) r.Vips++;
+                foreach (SimEvent e in s.Events)
+                {
+                    if (e.Kind == Ev.VipServed) r.Vips++;
+                    if (e.Kind == Ev.WorkerUp || e.Kind == Ev.Hired && e.B != 0) { wk++; if (r.Wk1 < 0f) r.Wk1 = s.Time + pausa; }
+                }
                 if (venda1 < 0f && s.FirstSaleTime >= 0f) venda1 = s.FirstSaleTime + pausa;
                 if (s.UpgradesBought != before)
                     for (int i = 0; i < rel.Length; i++) if (s.Bought[i] && rel[i] < 0f) rel[i] = s.UpgradeTime[i] + pausa;
@@ -238,7 +259,7 @@ static class EconSim
             }
             r.EarnedMin[m] = s.GoldEarned;
             long gold = s.Gold, earned = s.GoldEarned;
-            int compras = s.UpgradesBought - bought0;
+            int compras = s.UpgradesBought - bought0 + wk - wk0;
             // depois da producao so ralo fica a venda: luxo (pad) ou Meta (menu, B-CORE-03); "ouro_so_luxo" = ouro com um ralo a venda
             bool prod = !s.ProductionComplete, luxo = !prod && (s.Pads.Exists(pad => pad.Current(s) >= 0) || Enumerable.Range(0, Upgrades.Count).Any(s.MenuAvailable));
             if (prod && compras == 0) { r.Morta++; if (++seq > r.MortaSeq) { r.MortaSeq = seq; r.MortaIni = m - seq; } } else seq = 0;
@@ -246,7 +267,7 @@ static class EconSim
             float tProd = Producao(s, rel);
             csv.AppendLine(string.Join(",", p.Name, hz.ToString("0.###"), m, gold, earned - earned0, compras, s.UpgradesBought, !prod && !luxo ? gold : 0, luxo ? gold : 0,
                 tProd < 0f ? "" : tProd.ToString("0.0"), s.OrderCount, s.OrderGold, r.Vips, bot.AdsVip, bot.AdsBoost));
-            earned0 = earned; bought0 = s.UpgradesBought;
+            earned0 = earned; bought0 = s.UpgradesBought; wk0 = wk;
         }
         float U(Upgrade u) => rel[(int)u];
         r.Marcos = new[] { venda1, U(Upgrade.FurnaceSpeed1), U(Upgrade.Conveyor), U(Upgrade.SideCorridor), U(Upgrade.Helper3), U(Upgrade.Jewelry), Producao(s, rel), U(Upgrade.WorkshopFacade) };
@@ -264,6 +285,8 @@ static class EconSim
         r.Quali = 100.0 * s.QualityGold / Math.Max(1, s.GoldEarned);
         r.Golpe = 100.0 * s.StrikeGold / Math.Max(1, s.GoldEarned);
         r.Golpes = s.Strikes;
+        r.Contratados = s.Equipe.Contratados(); r.WkGasto = s.Equipe.Gasto;
+        for (int k = 0; k < s.Equipe.Defs.Length; k++) r.NiveisWk += Math.Max(0, s.Equipe.Nivel(k) - 1);
         long paid = s.Pads.Sum(pad => (long)pad.Paid);   // pad de luxo pago pela metade tambem e' ouro gasto
         r.PosProd = goldAtProd < 0 ? 0 : s.Gold + luxSpent + paid - goldAtProd;
         r.Parado = s.Gold; r.AdsVip = bot.AdsVip; r.AdsBoost = bot.AdsBoost; r.AdsSupply = bot.AdsSupply; r.AdsBonus = bot.AdsBonus; r.Csv = csv.ToString();

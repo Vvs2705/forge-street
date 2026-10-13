@@ -1534,31 +1534,82 @@ Perfil novo `AdWatcherE` (o AdWatcher assistindo também Supply e bônus, guloso
 
 **Achado:** assistir tudo atrasa a produção completa em 7 min. Não é o teto diário (com `AnunciosTetoDia=99` a produção fica em 52:07). O bônus da encomenda (+50% de um prêmio de ~25–60 ouro no começo) vale menos que os 30 s de relógio do anúncio, e é o placement mais visto (13 de 30). Varredura de valores (3 partidas): Supply 180 s → 50:00; bônus +100% → 50:25; os dois → 49:23; Supply 300 s + bônus +100% → 48:29 — nenhum empata com o AdWatcher. **Decisão:** os valores ficam; o jogador vê o valor antes de assistir (chips "+N" e "DOBRAR +N"), e o Orders 2.0 (B-CORE-05) recalibra o bônus com piso em segundos de renda (meta: AdWatcherE não mais lento que o AdWatcher). Pisos do §3: 0% abaixo nos 5 perfis.
 
-## 25. D-CORE-03/04: Eventos e Pass (2026-10-13)
+## 25. B-CORE-04: WorkerDef, os papéis do Old Forge e o bot que contrata (2026-10-13)
+
+**Vigente** (`Core/Equipe.cs`, `ECONOMIA_WAVE_B.md` §2, `CONTEUDO_V1.md` §6): os 13 workers do Old Forge em dados (`WorkerDefs.All`, IDs `wk_*`). Os 6 ajudantes viram `WorkerDef` Porter (o upgrade de sempre contrata; nível 1 = o ajudante de antes, bit a bit) e sobem até o nível 5 por 250/400/640/1.025 (+6% de passo por nível, carga +1 nos níveis 3 e 5). Equipe nova, contratada em ouro no cartão do menu, depois das Ferramentas: oficiais Bruna/Tomé/Iara (1.200; exigem Bigornas/Escudos/Ferramentas II) e Joaquim (2.400; Joalheria II) com q +15 (+25 no nível 5) e +5% de velocidade (+3%/nível) na família; Celeste (balconista, 1.500; Balcão 6) com paciência +10% (+5%/nível) e atendimento 0,40 → 0,32 s no balcão principal; Baltazar (almoxarife, 2.500; Renome 1) com saídas 4 → 6 (fornalha) e 3 → 5 (bancadas) e estoque do balcão +1 por produto a cada nível acima do 1; Otávio (mestre de obras, 4.000; Renome 2) com q +10 e +5% de velocidade (+2%/nível) em toda bancada. Níveis e contratação são categoria **Meta** (V14): fora da produção completa e do teto offline. **Desvio do §2.3 (revisar):** o almoxarife ganha +1 de estoque em todo nível (o §2.3 dava +2 só nos níveis 3 e 5, e os níveis 2 e 4 não fariam nada); mesmo total no 3 (+2) e no 5 (+4).
+
+**Bot (`Bot.WorkerSegundos`, padrão 0):** o mais barato à venda, só **depois da produção completa** (antes, só o que custa até N s da renda online; 0 = nenhum), e nunca à frente de melhoria (menu ou pad) igual ou mais barata. A varredura (§25.2) mostrou que todo worker comprado antes da produção completa a atrasa mais do que devolve.
+
+### 25.1 Perfil sem os workers novos = `main` ao byte
+
+`econsim --tuning Workers=false` (flag da Equipe desligada desde o início) contra o econsim da `main` (d0d78f0, #51–#53), 5 perfis: **CSV idêntico ao byte** em 60 min × 1 partida (md5 `56884df1…`), 90 min × 4 (`becb80df…`) e 120 min × 4 (`0ec710e4…`). Com a flag ligada e o bot que nunca compra worker (`--worker-seg -1`) também (60 × 1). No `coretests`: `EquipeTests.Bot_SemOsWorkersNovos_IdenticoAoDeAntes_E_ComEles_SoDepoisDaProducao` (log minuto a minuto e save iguais em 50 min; com o bot padrão, a curva produtiva e os níveis de estação no mesmo tick). Todos os `BalanceTests` passam sem mudar os portões.
+
+### 25.2 Varredura do `WorkerSegundos` (90 min, 4 partidas, média; F2P / AdWatcherE)
+
+| bot | 1ª compra de worker | Produção completa | Fachada | receita 0–60 | receita 0–90 | renda/min 80–90 | saldo aos 60 |
+|---|---|---|---|---|---|---|---|
+| sem workers (`main`) | — | 47:04 / 50:43 | 54:01 / 57:22 | 60.294 / 52.533 | 118.954 / 111.473 | 1.943 / 1.962 | 12.719 / 5.398 |
+| **0 (vigente)** | 47:09 / 50:49 | **47:04 / 50:43** | 73:43 / 76:59 | **61.332 / 53.067** | **133.364 / 124.070** | 2.464 / 2.474 | **726 / 374** |
+| 10 s | 35:07 (F2P) | 47:59 | 73:58 | 60.600 / 52.814 | 132.514 / 123.511 | 2.436 / 2.477 | 840 / 272 |
+| 20 s | 30:10 | 50:26 | 74:33 | 59.196 / 48.197 | 131.236 / 117.676 | 2.462 / 2.430 | 837 / 563 |
+| 30 s | 15:50 | 52:38 | 75:23 | 57.430 / 46.757 | 128.971 / 116.692 | 2.445 / 2.455 | 320 / 630 |
+
+Quanto antes o bot contrata, menor a receita aos 60 e aos 90 min: os 250–1.200 de um nível ou de um oficial na zona morta empurram a Joalheria e o Joalheiro mais do que o +6%/+15 devolve. Com 0 a curva produtiva é a de antes e a receita é a maior.
+
+### 25.3 Vigente, 90 min, 4 partidas (`main` → branch)
+
+| perfil | Produção completa | Fachada | pós-produção | saldo final | min sem destino | prêmio de qualidade | workers (contratados; níveis; gasto) |
+|---|---|---|---|---|---|---|---|
+| Ideal | 47:13 = | 54:04 → 73:17 | 89.481 → 57.890 | 35.506 → 3.916 | 17,8 → 2 | 13,5% → 18,0% | 6; 48; 47.040 |
+| F2P | 47:04 = | 54:01 → 73:43 | 88.150 → 56.430 | 34.247 → 5.512 | 17,3 → 1,3 | 12,6% → 17,1% | 6; 48; 47.040 |
+| Slow | 49:26 = | 56:36 → 76:35 | 82.100 → 49.061 | 28.172 → 17.134 | 14,3 → 0 | 12,6% → 16,8% | 6; 48; 47.040 |
+| AdWatcher | 44:39 = | 51:17 → 69:33 | 98.899 → 69.715 | 44.965 → 15.781 | 21 → 6,3 | 12,5% → 17,4% | 6; 48; 47.040 |
+| AdWatcherE | 50:43 = | 57:22 → 76:59 | 81.188 → 47.664 | 27.250 → 15.725 | 13,5 → 0 | 12,5% → 16,8% | 6; 48; 47.040 |
+
+Aos 120 min (4 partidas): prêmio de qualidade F2P 12,7% → 18,6%; minutos sem destino 47,3 → 31,3 (o bot fecha os 6 contratáveis no nível 5 por volta dos 88 min; o Otávio pede Renome 2, que o bot sem metas não alcança em 2 h). Bot humano (`BalanceTests`, Dt 1/30), 90 min: 6 contratados, 47.040 gastos, renda 80–90 2.429/min, saldo aos 60 min 186, receita 133.088 × 118.605 sem workers. 60 min × 1 partida: marcos, zona morta e pisos idênticos à `main`; workers F2P 4 contratados, 37 níveis, 27.705 gastos, 1ª compra 47:07.
+
+### 25.4 Portões (ECONOMIA_WAVE_B §10)
+
+| Medida | Portão | Medido (F2P) | |
+|---|---|---|---|
+| Primeiros 10 min | iguais, tick a tick | iguais (worker só depois das Ferramentas e, no bot, da produção completa) | ok |
+| Produção completa | 41–55 min | 47:04, igual à `main` | ok |
+| Zona morta até a produção | não piora (meta ≤ 12) | 20,5 = | ok (a meta de 12 fica para Orders 2.0 e Blueprints: worker antes da produção não a reduz, §25.2) |
+| Ouro sem destino aos 60 min | ≤ 10 mil | 12.719 → **726** | **ok** (antes falhava) |
+| Prêmio de qualidade | 5–20% aos 60–90; ≤ 35% aos 120 | 17,1% (90) / 18,6% (120) | ok |
+| Pisos do §3 | 0% abaixo | 0% abaixo nos 5 perfis | ok |
+
+**Retorno (achado, revisar):** os 47.040 dos 6 contratáveis + níveis sobem a renda de 1.943 para 2.464/min (+27%, janela 80–90): ~90 min para pagar, contra ≤ 40 min do portão dos níveis de estação L4–L5. Como ralo depois da produção completa funciona (receita 0–90 +12%, saldo aos 60 de 12,7 mil para 0,7 mil), mas pelo preço o worker não compensa antes dela. Knob se a Wave B quiser worker na zona morta: metade do preço dos níveis (como a V26 fez nas estações) ou efeito maior no nível 1; nada aplicado. A Fachada vai de 54:01 para 73:43 porque os workers (todos < 14 mil) disputam o ouro com o luxo; o `BalanceTests.Bot_90Minutos_Luxo` passou a rodar com `Workers = false` (isola o luxo sobre a curva produtiva; os portões dele seguem os mesmos).
+
+### 25.5 Testes e prova vermelha
+
+`EquipeTests` (20): golden dos 13 IDs; migração (mesmo upgrade, rota e ordem; nível 1 = passo e carga de antes; do save na mesma ordem); efeito neutro sem ninguém; revelação nas Ferramentas e flag desligada; compra (cobra na hora, sem ouro e no máximo nada muda, 250/400/640/1.025); requisitos por upgrade e Renome 1/2; cada papel (passo e carga por nível, oficial só na família e +25 no nível 5, mestre de obras em toda bancada e nunca na fornalha, balconista: paciência ×1,1/×1,3 e 5 → 7 vendas em 2 s, almoxarife: saídas 6/5 e estoque por nível); save de ida e volta (pilha de 6 na fornalha volta inteira), save antigo sem `wkn=` (schema 3 e o `wk=` do schema 2), lixo no `wkn=`; metas (`worker_hired` por papel, `worker_upgrade` por nível, ralo, retroativo); validator (ID, prefixo, 3 traços, custo que não sobe ou fora do múltiplo de 5, distrito/família/upgrade que o build não tem, papel da Wave C, 2º oficial da família, upgrade que já contrata, `wk_` do Renome sem worker); textos do cartão nos 3 idiomas em todo nível; `-equipe`; bot (idêntico sem os novos; 90 min com renda maior e saldo aos 60 ≤ 10 mil). `mutantes.py`: 12 mutações novas (`wk-*`: passo no nível 1, carga, oficial fora da família, mestre de obras na fornalha, atendimento sem balconista, compra sem cobrar, Renome ignorado, revelação, save sem nível, load cortando a pilha, validator de custo, bot antes da produção), todas mortas.
+
+## 26. D-CORE-03/04: Eventos e Pass (2026-10-13)
 
 **Vigente** (`Core/LiveOpsDefs.cs`, `Core/LiveOps.cs`): os 10 `EventDef` do `LIVEOPS_V1.md` §2.4 (8 do calendário + 2 reservas), 6 dias às 13:00 UTC a partir do T0 = 2026-11-02 (padrão do time, revisar: DECISÃO "datas" do D-PROD-01), um evento por vez; trilha comum (135 s de ouro, Renome +8, 500 XP do Passe, 2 cosméticos; nos Hunts o projeto da Masterwork com fallback de 60 s); modificadores aplicados pelo `RemoteConfig.Valores` (as mesmas travas: evento nunca fura guardrail) e devolvidos no fim. Pass S1/S2: 30 níveis × 600 XP, 35 dias emendados, só a trilha free (ouro 1.170 s, Renome +44, 6 cosméticos); premium só no dado (V20). XP do Passe = `Metas.PassXp` (diárias 100, semanais 350, conquistas; retroativo 1×) + encomenda entregue 10 (teto 100 por dia local) + XP das trilhas dos eventos. Ouro de limiar e de nível fora do `GoldEarned`.
 
 Rodam neste build: **Forge Frenzy, Armorer's Challenge, Forge Frenzy-B, Blacksmith Festival e Royal Week-B**. Esperam o sistema deles (o calendário pula a semana, nunca é erro): Royal Week e os dois Hunts (`order_complete` Royal/Quality do B-CORE-05; `QualidadeEvento` não é knob; `bp_mw_primeira_lamina` do B-CORE-07), Rare Ore Rush (Bulk; `GrabTime` ainda é const do `Balance`) e Merchant Caravan (Bulk/Mixed).
 
-### 25.1 Evento desligado
+### 26.1 Evento desligado
 
-econsim padrão (5 perfis × 60 min, anúncio = 30 s): **CSV idêntico ao byte** ao da `main` (d0d78f0) e a mesma saída. O bot sem relógio não roda o LiveOps (save sem `ev.*`/`ps.*`); com evento ativo, os 10 primeiros minutos do F2P são iguais tick a tick (as Ferramentas são requisito de todo evento; `LiveOpsTests`).
+econsim padrão (5 perfis × 60 min, anúncio = 30 s): **CSV idêntico ao byte** ao da `main` (67d4f4e, com o B-CORE-04) e a mesma saída. O bot sem relógio não roda o LiveOps (save sem `ev.*`/`ps.*`); com evento ativo, os 10 primeiros minutos do F2P são iguais tick a tick (as Ferramentas são requisito de todo evento; `LiveOpsTests`).
 
-### 25.2 Evento ativo (`econsim --evento <id>`, 1 partida por perfil, comparada com a mesma partida sem o evento)
+### 26.2 Evento ativo (`econsim --evento <id>`, 1 partida por perfil, comparada com a mesma partida sem o evento)
 
 | evento | modificadores | F2P entra | renda/min do F2P depois da entrada (sem → com) | Δ F2P | Δ nos 5 perfis | pontos do F2P (missões) |
 |---|---|---|---|---|---|---|
-| Forge Frenzy | `ClientInterval` ×0,8; `PatienceBase` ×1,15 | 29:11 (10 encomendas) | 1.619 → 1.704 | +5,3% | −1,2 a +5,3% | 560 (7/8) |
-| Armorer's Challenge | `Price[escudo]` ×1,2; `ShieldTimeMul` ×0,9 | 14:26 (Renome 1) | 1.254 → 1.404 | +12,0% | +9,3 a +14,2% | 610 (6/7) |
-| Forge Frenzy-B | os do Forge Frenzy | 28:47 (Joalheria) | 1.592 → 1.648 | +3,5% | +0,5 a +3,5% | 640 (7/8) |
-| Blacksmith Festival | `FurnaceTime0..2` ×0,85; `ClientInterval` ×0,9 | 29:11 | 1.619 → 1.724 | +6,5% | +4,5 a +10,1% | 560 (6/8) |
-| Royal Week-B | `VipMin`/`VipMax` ×0,75 | 14:26 | 1.254 → 1.347 | +7,5% | −2,5 a +8,4% | 640 (7/8) |
+| Forge Frenzy | `ClientInterval` ×0,8; `PatienceBase` ×1,15 | 29:11 (10 encomendas) | 1.661 → 1.756 | +5,7% | +0,8 a +5,7% | 560 (7/8) |
+| Armorer's Challenge | `Price[escudo]` ×1,2; `ShieldTimeMul` ×0,9 | 14:26 (Renome 1) | 1.282 → 1.457 | +13,7% | +10,4 a +16,3% | 610 (6/7) |
+| Forge Frenzy-B | os do Forge Frenzy | 28:47 (Joalheria) | 1.632 → 1.683 | +3,1% | +1,8 a +4,0% | 640 (7/8) |
+| Blacksmith Festival | `FurnaceTime0..2` ×0,85; `ClientInterval` ×0,9 | 29:11 | 1.661 → 1.765 | +6,2% | +6,2 a +12,9% | 560 (6/8) |
+| Royal Week-B | `VipMin`/`VipMax` ×0,75 | 14:26 | 1.282 → 1.370 | +6,9% | −1,9 a +8,9% | 640 (7/8) |
 
-- Portão "ouro/min do F2P ≤ +15% durante o evento" (`LIVEOPS_V1.md` §6): **passa** nos 5 (o maior é o Armorer's, +12,0% no F2P e +14,2% no Ideal). Cofre aberto durante o evento paga igual (teste).
+- Portão "ouro/min do F2P ≤ +15% durante o evento" (`LIVEOPS_V1.md` §6): **passa** nos 5 (o maior é o Armorer's, +13,7% no F2P). **Revisar:** no Armorer's o Ideal (+16,3%) e o AdWatcherE (+16,0%) passam de 15% (preço do escudo ×1,2 e bancada ×0,9 somam; os workers do B-CORE-04, comprados depois da produção completa, aumentam o efeito); knob se o portão valer para todo perfil: `Price[escudo]` ×1,15. Cofre aberto durante o evento paga igual (teste).
 - **Achado:** 30 min depois da entrada o F2P já fez 560–640 dos 700 pontos das missões (só o "jogar em 3 dias" segura). Sem a encomenda Event (+20 por entrega, gancho do Orders 2.0) a trilha para em 700 de 1.000: os limiares 850 (Renome +5) e 1.000 (XP 200 + cosmético principal) ficam fora de alcance até o B-CORE-05, e o portão "trilha de evento fecha no dia 4–5" ainda não se mede. Se o Orders 2.0 confirmar o ritmo, o knob é o alvo das missões de volume (o meio de jogo vende ~34/min).
-- Ouro dos limiares numa sessão: 1.300–3.700 (são segundos de renda: com a taxa do meio de jogo, 135 s valem ~2,2 min de venda).
+- Ouro dos limiares numa sessão: 1.050–3.600 (são segundos de renda: com a taxa do meio de jogo, 135 s valem ~2,2 min de venda).
 
-### 25.3 Pass: o F2P fecha a trilha free?
+### 26.3 Pass: o F2P fecha a trilha free?
 
 Conta estática do `LIVEOPS_V1.md` §5.4 com o conteúdo real (`LiveOpsDefs.XpDiaF2P`: o menor XP das diárias e das semanais dos `MetasDefs`, encomendas no teto do dia, XP das trilhas da temporada / 35), conferida pelo validator e pelo `LiveOpsTests.Fechamento_*`:
 

@@ -187,7 +187,7 @@ namespace FS.Core
         /// <summary>exhaust = AutoComplete (LIVEOPS_V1 §5.2): compra/contratacao sem mais nada a comprar completa sozinha.</summary>
         bool Esgotada(MissaoEvento x)
         {
-            if (x.Evento == "worker_hired") return _sim.Workers.Count >= Metas.AjudantesOldForge;
+            if (x.Evento == "worker_any") return _sim.Workers.Count >= Metas.AjudantesOldForge && !_sim.Equipe.FaltaContratar && !_sim.Equipe.FaltaNivel;
             if (x.Evento != "upgrade_buy") return false;
             if (x.Filtro.Length == 0) return _sim.UpgradesBought >= Upgrades.Count;
             foreach (string f in x.Filtro) if (!_sim.Bought[Upgrades.IndexOf(f)]) return false;
@@ -207,7 +207,7 @@ namespace FS.Core
                 case Ev.Bought: Conta("upgrade_buy", Upgrades.All[a].Id); break;
                 case Ev.Offline: Conta("offline_claim", null); break;
                 case Ev.VipServed: Conta("vip_served", Item(a)); break;
-                case Ev.Hired: Conta("worker_hired", null); break;
+                case Ev.Hired: case Ev.WorkerUp: Conta("worker_any", null); break;   // B-CORE-04: contratou (upgrade ou Equipe) ou subiu nivel
                 case Ev.Graded:   // A = estacao, B = nivel (so acima de Normal)
                     string it = Item((int)_sim.Stations[a].OutItem);
                     Conta("quality_crafted", it);

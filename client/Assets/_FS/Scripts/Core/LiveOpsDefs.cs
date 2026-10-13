@@ -25,7 +25,7 @@ namespace FS.Core
     {
         public readonly string Id, Evento; public readonly string[] Filtro; public readonly long Alvo; public readonly int Pontos;
         public MissaoEvento(string id, string evento, long alvo, int pontos, params string[] filtro) { Id = id; Evento = evento; Alvo = alvo; Pontos = pontos; Filtro = filtro; }
-        public bool Auto => Evento == "upgrade_buy" || Evento == "worker_hired";
+        public bool Auto => Evento == "upgrade_buy" || Evento == "worker_any";
     }
 
     /// <summary>Modificador de evento sobre um knob do Tuning (nome exato do campo; LIVEOPS_V1 §2.3): x Valor, ou + Valor (Soma). Item = so o
@@ -91,14 +91,15 @@ namespace FS.Core
         public const double EncomendasDiaF2P = 8;
 
         /// <summary>Gatilhos que o nucleo emite hoje para missao de evento (LiveOps.On; play_day = dias distintos com o evento aberto, o "jogar em 3
-        /// dias" do LIVEOPS_V1 §2.4; quality_* pelo Ev.Graded; master_strike pelo golpe de mestre).</summary>
+        /// dias" do LIVEOPS_V1 §2.4; quality_* pelo Ev.Graded; master_strike pelo golpe de mestre; worker_any = contratou ou subiu nivel de um
+        /// worker, o "contratar ou subir de nivel" do §2.4, B-CORE-04).</summary>
         public static readonly string[] Gatilhos =
         {
-            "product_sold", "product_crafted", "order_done", "upgrade_buy", "offline_claim", "vip_served", "worker_hired",
+            "product_sold", "product_crafted", "order_done", "upgrade_buy", "offline_claim", "vip_served", "worker_any",
             "quality_crafted", "quality_superior", "master_strike", "play_day",
         };
-        /// <summary>Ganchos: gatilhos do LIVEOPS_V1 §4.6 que nascem com o sistema deles (order_complete = B-CORE-05; worker_upgrade = B-CORE-04).</summary>
-        public static readonly string[] Futuros = { "order_complete", "worker_upgrade" };
+        /// <summary>Ganchos: gatilhos do LIVEOPS_V1 §4.6 que nascem com o sistema deles (order_complete = Orders 2.0, B-CORE-05).</summary>
+        public static readonly string[] Futuros = { "order_complete" };
         /// <summary>Tipos de encomenda do Orders 2.0 (filtro do order_complete; ECONOMIA_WAVE_B §3).</summary>
         public static readonly string[] TiposEncomenda = { "common", "bulk", "quality", "mixed", "rush", "royal", "event", "blueprint" };
 
@@ -204,9 +205,9 @@ namespace FS.Core
                 Id = "ev_s2w1_blacksmith_festival", Template = Template.BlacksmithFestival, Temporada = S2, Inicio = 35, Encomendas = 10,
                 Missoes = new[]
                 {
-                    // "contratar ou subir de nivel 1 worker": o worker_upgrade (B-CORE-04) soma aqui quando existir; sem vaga, completa sozinha
+                    // "contratar ou subir de nivel 1 worker" (B-CORE-04); sem ninguem a contratar nem nivel a subir, completa sozinha
                     M("lingotes400", "product_crafted", 400, 100, "lingote"), M("vende400", "product_sold", 400, 100), M("melhoria3", "upgrade_buy", 3, 80),
-                    M("golpe5", "master_strike", 5, 80), M("contrata1", "worker_hired", 1, 80), M("enc6", "order_done", 6, 100),
+                    M("golpe5", "master_strike", 5, 80), M("contrata1", "worker_any", 1, 80), M("enc6", "order_done", 6, 100),
                     M("cofre2", "offline_claim", 2, 60), M("vip3", "vip_served", 3, 100),
                 },
                 Trilha = Trilha(Cos("cos_ev_s2w1_emblema"), "cos_ev_s2w1_guirlanda"), Encomenda = "ord_ev_blacksmith_festival", Tema = "festival",
@@ -218,7 +219,7 @@ namespace FS.Core
                 Missoes = new[]
                 {
                     M("lingotes600", "product_crafted", 600, 150, "lingote"), M("vende300", "product_sold", 300, 80), M("bulk2", "order_complete", 2, 100, "bulk"),
-                    M("melhoria2", "upgrade_buy", 2, 60), M("ferram60", "product_sold", 60, 80, "ferramenta"), M("contrata1", "worker_hired", 1, 80),
+                    M("melhoria2", "upgrade_buy", 2, 60), M("ferram60", "product_sold", 60, 80, "ferramenta"), M("contrata1", "worker_any", 1, 80),
                     M("dias3", "play_day", 3, 150),
                 },
                 Trilha = Trilha(Cos("cos_ev_s2w2_emblema"), "cos_ev_s2w2_carrinho"), Encomenda = "ord_ev_rare_ore_rush", Tema = "minerio",
@@ -449,10 +450,10 @@ namespace FS.Core
                     else if (Array.IndexOf(Gatilhos, x.Evento) < 0 && Array.IndexOf(Futuros, x.Evento) < 0) yield return $"{am} gatilho {x.Evento} desconhecido";
                     if (x.Alvo <= 0 || x.Pontos <= 0) yield return $"{am} alvo {x.Alvo} e pontos {x.Pontos}";
                     pontos += x.Pontos;
-                    bool semFiltro = x.Evento == "play_day" || x.Evento == "offline_claim" || x.Evento == "worker_hired";
+                    bool semFiltro = x.Evento == "play_day" || x.Evento == "offline_claim" || x.Evento == "worker_any";
                     if (semFiltro && x.Filtro.Length > 0) yield return $"{am} {x.Evento} nao tem filtro";
                     foreach (string f in x.Filtro)   // item que ainda nao existe (armaduras da Wave C) entra no filtro junto com o ItemDef dele
-                        if (x.Evento != "worker_upgrade" && Indice(x.Evento, f, Items.All) < 0) yield return $"{am} filtro \"{f}\" nao existe";
+                        if (Indice(x.Evento, f, Items.All) < 0) yield return $"{am} filtro \"{f}\" nao existe";
                     if (x.Evento == "order_complete" && x.Filtro.Length == 0) yield return $"{am} order_complete pede o tipo de encomenda";
                     if (x.Evento == "order_complete" && x.Filtro.Length > 0 && x.Filtro[0] != "common" && x.Filtro[0] != "event")
                         especiais[x.Filtro[0]] = (especiais.TryGetValue(x.Filtro[0], out long v) ? v : 0) + x.Alvo;
