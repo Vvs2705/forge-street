@@ -188,10 +188,28 @@ namespace FS.Core
         /// <summary>Os padroes numa copia nova a cada leitura (o Tuning e' mutavel: ninguem muda o padrao do outro).</summary>
         public static Tuning Padrao => new Tuning();
 
-        // feature flags
-        public bool Encomendas = true, Vip = true, VipChamado = true, Velocidade = true, Baus = true;
-        /// <summary>P3/V10: o intersticial so existe como flag, DESLIGADA por padrao; liga depois do A/B no Limited Release. Nada le ainda.</summary>
+        // feature flags (os de anuncio premiado sao o AdPlacementDef.Ligado de cada placement)
+        public bool Encomendas = true, Vip = true, Baus = true;
+        /// <summary>P3/V10 (E-PLAT-03): intersticial atras desta flag, DESLIGADA por padrao; liga depois do A/B no Limited Release. Desligada,
+        /// nada carrega nem mostra (Ads.Init); ligada, valem os 5 vetos do Anuncios.VetoIntersticial, com cap e cooldown abaixo.</summary>
         public bool Interstitial;
+        public float InterstitialCooldown = 180f;   // s de sessao entre dois intersticiais
+        public int InterstitialMaxSessao = 3;       // por sessao (processo)
+
+        // E-PLAT-02 (GDD §17.1): rewarded = um AdPlacementDef por placement, na ordem do enum Anuncio. Valor: VIP = pacote do chamado (x o do
+        // natural); Velocidade = s de boost (o 2o anuncio sobe a 3x); Cofre = fracao a mais do resgate (1 = dobra); bonus da encomenda = fracao a
+        // mais do premio (ouro; nao Renome nem Blueprint); Trocar = sem valor (pula 1 no rodizio); Supply = s de producao das fornalhas abertas
+        public AdPlacementDef[] Placements =
+        {
+            new AdPlacementDef { Id = "vip", Recarga = 300f, Valor = 2f },           // P14/V11: 5 min contados de quando o chamado SAI (levou o pacote ou cansou)
+            new AdPlacementDef { Id = "velocidade", Recarga = 300f, Valor = 60f },   // 5 min contados do FIM do boost (sem ela, 2x renovado fechava a producao aos 26:56)
+            new AdPlacementDef { Id = "cofre2x", Valor = 1f },                       // 1 por resgate (claimId); botao no painel "Bem-vindo de volta"
+            new AdPlacementDef { Id = "encomenda_bonus", Valor = 0.5f },             // 1 por encomenda: +50% do premio, pago na entrega
+            new AdPlacementDef { Id = "encomenda_troca", TetoDia = 5 },              // 1 por encomenda: a proxima do rodizio, mostrada antes (P5)
+            new AdPlacementDef { Id = "supply", Recarga = 600f, Valor = 60f },       // lingotes = 60 s das fornalhas, mostrados antes; 10 min de recarga
+        };
+        public AdPlacementDef Ad(Anuncio a) => Placements[(int)a];
+        public int AnunciosTetoDia = 30;   // teto diario TOTAL de rewarded (dia local das metas; relogio para tras nao reabre)
 
         // precos e custos
         public int[] Price = { 0, 0, 10, 25, 16, 60 };          // ouro por item vendido
@@ -228,11 +246,9 @@ namespace FS.Core
         public float VipShare = 0.07f;                          // o pacote vale ~7% do ouro de um intervalo medio entre VIPs (sweep de 3/5/6 fixos e 5/7/10%: BALANCE §18)
         public float VipPatienceBase = 90f, VipPatiencePerUnit = 6f;   // rodada 3: paciencia do VIP = 90 s + 6 s por unidade do pacote (3 = 108 s, 10 = 150 s, 20 = 210 s)
         public float VipSummonMinIn = 60f;                      // chamar por anuncio: so sem VIP ativo e com o proximo natural a mais de 60 s
-        public int VipSummonPackMul = 2, VipSummonPackMax = 20; // o VIP chamado e' EXTRA (nao mexe no relogio natural) e traz 2x o pacote do natural, ate 20 (coordenador)
-        public float VipChamadoRecarga = 300f;                  // P14/V11: 5 min de jogo entre um "Chamar VIP" e o proximo, contados de quando o chamado SAI (levou o pacote ou cansou)
-        public float BoostSeconds = 60f, BoostMax = 3f, BoostPlayerMax = 1.3f;   // 1 anuncio = 2x por 60 s, o 2o sobe para 3x; o ferreiro no maximo 1,3x
-        public float BoostCooldownSeconds = 300f;               // recarga: 5 min de jogo contados do FIM de cada boost (coordenador; sem ela, 2x renovado fechava a producao aos 26:56)
-        public bool AnunciosDepoisDaPrimeiraMelhoria = true;    // D6/V18: Velocidade e Chamar VIP so depois da 1a melhoria comprada (o boost no segundo 0 e o VIP da 1a venda furavam o §3)
+        public int VipSummonPackMax = 20;                       // o VIP chamado e' EXTRA (nao mexe no relogio natural) e traz Ad(Vip).Valor x o pacote do natural, ate 20 (coordenador)
+        public float BoostMax = 3f, BoostPlayerMax = 1.3f;      // Velocidade: o 2o anuncio sobe para 3x; o ferreiro no maximo 1,3x (tempo e recarga: Ad(Velocidade))
+        public bool AnunciosDepoisDaPrimeiraMelhoria = true;    // D6/V18: todo rewarded so depois da 1a melhoria comprada (o boost no segundo 0 e o VIP da 1a venda furavam o §3)
 
         // FASE9 (docs/FASE9_ENCOMENDAS.md): encomenda = vender N de uma linha aberta; uma por vez, sem prazo nem falha
         public float OrderFirstDelay = 45f, OrderGap = 20f;     // s depois da 1a venda; s entre uma entregue e a proxima

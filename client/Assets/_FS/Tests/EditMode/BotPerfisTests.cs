@@ -54,5 +54,23 @@ namespace FS.Tests
             Assert.GreaterOrEqual(adSim.UpgradesBought, f2p.UpgradesBought, "nao compra menos que o F2P");
             Assert.Greater(adSim.GoldEarned, f2p.GoldEarned, "fatura mais que o F2P");
         }
+
+        /// <summary>E-PLAT-02: o AdWatcherE assiste tambem o Supply Drop e o bonus da encomenda, tudo pelo nucleo (oferta -> recompensa), e
+        /// fica no teto diario total (o bot joga um dia so). O AdWatcher de antes nao passa pelo Anuncios (numeros iguais aos do §22.2).
+        /// Anuncio nunca e' necessario: o F2P, sem nenhum, fecha a producao.</summary>
+        [Test]
+        public void AdWatcherE_UsaOsPlacementsNovosPeloNucleo_NoTetoDiario_F2PFechaSemAnuncio()
+        {
+            Bot ad = Bot.From(BotProfile.AdWatcherE), old = Bot.From(BotProfile.AdWatcher);
+            Sim s = Play(ad, 3600f), o = Play(old, 3600f), f2p = Play(new Bot(), 3600f);
+            TestContext.WriteLine($"60 min AdWatcherE: VIP={ad.AdsVip} boost={ad.AdsBoost} supply={ad.AdsSupply} bonus={ad.AdsBonus} total={ad.AdsTotal} | producao {BalanceTests.Clock(Producao(s))} x F2P {BalanceTests.Clock(Producao(f2p))}");
+            Assert.GreaterOrEqual(ad.AdsSupply, 1, "Supply Drop");
+            Assert.GreaterOrEqual(ad.AdsBonus, 1, "bonus da encomenda");
+            Assert.AreEqual(ad.AdsTotal, s.Anuncios.HojeTotal(), "todo anuncio passou pelo nucleo");
+            Assert.LessOrEqual(ad.AdsTotal, s.T.AnunciosTetoDia, "teto diario total");
+            Assert.AreEqual(0, o.Anuncios.HojeTotal(), "o AdWatcher de antes chama o Sim direto");
+            Assert.AreEqual(0, f2p.Anuncios.HojeTotal());
+            Assert.IsTrue(f2p.ProductionComplete, "anuncio nunca necessario: o F2P fecha a producao sem nenhum");
+        }
     }
 }
