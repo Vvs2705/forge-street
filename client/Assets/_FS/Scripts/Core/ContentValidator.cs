@@ -43,6 +43,7 @@ namespace FS.Core
             e.AddRange(Qualidade(upgrades, world));
             e.AddRange(Missoes(MetasDefs.Diarias, MetasDefs.Semanais, MetasDefs.Conquistas, MetasDefs.LoginDias, Tuning.Padrao));
             e.AddRange(NiveisRenome(renome ?? RenomeDefs.Niveis));
+            e.AddRange(LiveOpsDefs.Validar(LiveOpsDefs.Eventos, LiveOpsDefs.Passes));   // D-CORE-03/04 (LIVEOPS_V1 §5.7)
             return e;
         }
 

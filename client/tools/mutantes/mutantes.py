@@ -29,11 +29,12 @@ COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Sc
           'Assets/_FS/Scripts/View/StationView.cs', 'Assets/_FS/Scripts/View/Servicos.cs', 'Assets/_FS/Scripts/View/Estado.cs',
           'Assets/_FS/Scripts/View/Captura.cs', 'Assets/_FS/Scripts/View/Som.cs', 'Assets/_FS/Scripts/View/Privacidade.cs',
           'Assets/_FS/Scripts/View/EsteiraView.cs', 'Assets/_FS/Scripts/View/Enquadramento.cs', 'Assets/_FS/Scripts/View/Loc.cs',
-          'Assets/_FS/Scripts/View/QualidadeView.cs', 'tools/coretests']
+          'Assets/_FS/Scripts/View/QualidadeView.cs', 'Assets/_FS/Scripts/View/Plataforma.cs', 'tools/coretests']
 SIM, DEFS, CV = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs', 'Assets/_FS/Scripts/Core/ContentValidator.cs'
 METAS = 'Assets/_FS/Scripts/Core/Metas.cs'
 ANUNCIOS = 'Assets/_FS/Scripts/Core/Anuncios.cs'
 RENOME = 'Assets/_FS/Scripts/Core/Renome.cs'
+LIVEOPS, LIVEOPSDEFS = 'Assets/_FS/Scripts/Core/LiveOps.cs', 'Assets/_FS/Scripts/Core/LiveOpsDefs.cs'
 
 
 def mut(id, arquivo, trecho, troca, descricao, esperado_vivo=None):
@@ -184,6 +185,33 @@ MUTACOES = [
         'meta resgatada guarda o Renome só no Metas e não credita no Renome real'),
     mut('renome-superior-nao-conta', SIM, 'Renome.OnVendaQualidade((int)l);', 'Renome.OnVendaQualidade(0);',
         'peça Superior vendida no balcão não conta para o Renome'),
+    # eventos e Passe (D-CORE-03/04)
+    mut('liveops-relogio-volta', LIVEOPS, 'if (nowUnix > Relogio) Relogio = nowUnix;', 'Relogio = nowUnix;',
+        'relógio para trás reabre o evento (o relógio gravado deixa de ser o máximo)'),
+    mut('liveops-ftue', LIVEOPS, 'public bool Requisitos(EventDef e) => M.Aberto && (', 'public bool Requisitos(EventDef e) => (',
+        'evento entra antes das Ferramentas (modificador nos primeiros 10 min, GDD §3.3)'),
+    mut('liveops-knob-nao-volta', LIVEOPS, 'foreach (KeyValuePair<FieldInfo, object> kv in _antes) kv.Key.SetValue(_sim.T, kv.Value);',
+        'foreach (KeyValuePair<FieldInfo, object> kv in _antes) { }',
+        'o modificador do evento fica no Tuning depois do fim'),
+    mut('liveops-limiar-2x', LIVEOPS, 'Credita("e:" + e.Id + ":" + m.Pontos.ToString(CultureInfo.InvariantCulture), m.Premios)',
+        'Credita("e:" + e.Id + ":" + m.Pontos.ToString(CultureInfo.InvariantCulture) + Relogio, m.Premios)',
+        'limiar do evento com ID de transação que muda: paga de novo a cada passo'),
+    mut('liveops-golpe-nao-conta', SIM, 'LiveOps.OnGolpe((int)s.OutItem);', ';',
+        'golpe de mestre não conta na missão master_strike'),
+    mut('liveops-teto-encomenda', LIVEOPS, 'long n = Math.Min(Passe.XpEncomenda, Passe.TetoEncomendaDia - XpEncHoje);', 'long n = Passe.XpEncomenda;',
+        'XP de encomenda no Passe sem o teto de 100 por dia (V20)'),
+    mut('liveops-retro-2x', LIVEOPS, '            XpVisto = M.PassXp;\n', '',
+        'o XP das metas entra no Passe de novo a cada passo (o retroativo deixa de ser 1x)'),
+    mut('liveops-fim-sem-pendentes', LIVEOPS, 'if (Passe != null) for (int n = 1; n <= Nivel; n++) Resgatar(n);', ';',
+        'fim da temporada perde o nível alcançado e não resgatado'),
+    mut('liveops-premium-pago', LIVEOPSDEFS, 'if (r.Tipo != TipoPremio.Cosmetico && r.Tipo != TipoPremio.Conveniencia && r.Tipo != TipoPremio.Gems)', 'if (false)',
+        'validator aceita ouro, Renome, XP ou Blueprint no premium (V20)'),
+    mut('liveops-sobreposicao', LIVEOPSDEFS, 'if (k > 0 && e.Inicio < evs[k - 1].Inicio + evs[k - 1].Dias)', 'if (false)',
+        'validator aceita dois eventos ao mesmo tempo'),
+    mut('liveops-knob-proibido', LIVEOPSDEFS, 'int i = Array.FindIndex(Knobs, kn => kn.Knob == m.Knob);', 'int i = 0;',
+        'validator aceita knob fora da tabela do §2.3 (offline, anúncio, custo)'),
+    mut('liveops-fechamento', LIVEOPSDEFS, 'if (dia * (p.Dias - 7) < p.XpTotal)', 'if (false)',
+        'validator aceita trilha free que o F2P não fecha'),
 ]
 
 

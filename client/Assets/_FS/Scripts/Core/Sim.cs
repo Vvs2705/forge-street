@@ -133,6 +133,8 @@ namespace FS.Core
         public readonly Anuncios Anuncios;
         /// <summary>B-CORE-06: Renome (Renome.cs), trilha que so sobe. Ganchos: o Emit credita encomenda e bau, o Sell a Superior; save na linha rn=.</summary>
         public readonly Renome Renome;
+        /// <summary>D-CORE-03/04: eventos e Masterwork Pass (LiveOps.cs). Ganchos: o Emit conta, o Strike conta o golpe; save nas linhas ev.*/ps.*.</summary>
+        public readonly LiveOps LiveOps;
         /// <summary>B-CORE-01: itens e receitas desta partida (padrao Items.All e Recipes.All; so o teste injeta outro). Handle de item = posicao
         /// em ItemDefs; os arrays por item (Stock, SoldItems, Crafted, Held) tem esse tamanho.</summary>
         public readonly ItemDef[] ItemDefs; public readonly RecipeDef[] RecipeDefs;
@@ -225,6 +227,7 @@ namespace FS.Core
             Metas = new Metas(this);
             Anuncios = new Anuncios(this);
             Renome = new Renome(this);
+            LiveOps = new LiveOps(this);
             ItemDefs = items ?? Items.All; RecipeDefs = recipes ?? Recipes.All;
             int n = ItemDefs.Length;
             Stock = new int[n]; SoldItems = new int[n]; Crafted = new int[n]; StockQ = Lotes(n);
@@ -1058,6 +1061,7 @@ namespace FS.Core
             Events.Add(new SimEvent(kind, a, b, pos));
             Metas.On(kind, a, b);   // D-CORE-02: tambem os de fora do Tick (menu, cofre)
             Renome.On(kind, a, b);  // B-CORE-06: encomenda entregue e bau aberto
+            LiveOps.On(kind, a, b); // D-CORE-03/04: missoes do evento ativo e XP de encomenda do Pass
         }
 
         /// <summary>
@@ -1218,6 +1222,7 @@ namespace FS.Core
             s.Strike = true;
             StrikeCooldown = T.GolpeRecarga;
             Strikes++;
+            LiveOps.OnGolpe((int)s.OutItem);   // D-CORE-03: master_strike das missoes de evento
             return true;
         }
 
@@ -1567,6 +1572,7 @@ namespace FS.Core
             Anuncios.Save(sb);   // E-PLAT-02: linhas ad.* (so o que nao e' o padrao)
             Renome.Save(sb);  // B-CORE-06: rn= (o Load de antes ignora chave desconhecida)
             Metas.Save(sb);   // D-CORE-01/02: linhas mt.* (nada antes da 1a Agora)
+            LiveOps.Save(sb); // D-CORE-03/04: linhas ev.*/ps.* (nada antes da 1a Agora)
             return sb.ToString();
         }
 
@@ -1730,6 +1736,7 @@ namespace FS.Core
             sim.Metas.Load(text);   // D-CORE-01/02: save sem mt.* = metas zeradas
             sim.Anuncios.Load(text);   // E-PLAT-02: save sem ad.* = nenhum anuncio visto
             sim.Renome.Load(text);  // B-CORE-06: save sem rn= = retroativo (depois das metas: soma o Renome que elas guardaram)
+            sim.LiveOps.Load(text); // D-CORE-03/04: save sem ev.*/ps.* = nenhum evento, Pass do zero (o XP das metas entra 1x na 1a temporada)
             return sim;
         }
 

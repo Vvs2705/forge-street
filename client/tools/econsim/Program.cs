@@ -17,6 +17,10 @@ using FS.Core;
 /// Uso: dotnet run -c Release --project client/tools/econsim -- --perfis Ideal,F2P,Slow,AdWatcher --minutos 60 --partidas 1 --anuncio-seg 30 --saida econsim.csv
 /// B-CORE-03: --tuning "GolpeRecarga=30;NivelEstacaoQ=25" troca knobs do Tuning (varredura sem recompilar); a 3a tabela mostra o premio de
 /// qualidade, o golpe e os niveis de estacao.
+/// D-CORE-03/04: --evento id (ou o fim do id, ex. forge_frenzy) joga cada partida com o relogio do LiveOps dentro do evento (Metas e LiveOps
+/// a cada segundo de jogo, como a View) e de novo sem ele: a tabela mostra a renda/min depois da entrada (com x sem), pontos, missoes, XP do
+/// Passe e o ouro dos limiares; e a conta de fechamento da trilha free do Passe com as encomendas medidas. Sem --evento nada disso roda
+/// (o CSV fica identico ao de antes).
 /// </summary>
 static class EconSim
 {
@@ -35,6 +39,8 @@ static class EconSim
         public int Morta, MortaSeq, MortaIni, SemDestinoMin, Luxo, AdsVip, AdsBoost, AdsSupply, AdsBonus, Vips; public long PosProd, Parado, Encomendas; public double Segundos;
         // B-CORE-03: % da receita acima do preco Normal (premio de qualidade) e o que o golpe somou; niveis de estacao comprados, gasto e o 1o
         public double Quali, Golpe; public int Niveis, Golpes; public long NiveisGasto; public float Nivel1;
+        // D-CORE-03/04 (--evento): GoldEarned ao fim de cada minuto, instante de relogio da entrada no evento e o que o evento deu
+        public long[] EarnedMin; public float Entrou = -1f; public int Pontos, Missoes, Ordens; public long XpPasse, OuroEvento;
     }
 
     /// <summary>--tuning "GolpeRecarga=30;NivelEstacaoCusto=500|1500|650|1900|500|1500|1000|3000": campos publicos do Tuning
@@ -62,7 +68,7 @@ static class EconSim
     static int Main(string[] args)
     {
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-        BotProfile[] perfis = BotProfile.All; int minutos = 60, partidas = 1; string saida = "econsim.csv", knobs = null;
+        BotProfile[] perfis = BotProfile.All; int minutos = 60, partidas = 1; string saida = "econsim.csv", knobs = null; EventDef evento = null;
         float anuncioSeg = 30f;   // V19: ~30 s por anuncio premiado (o LevelPlay nao mostra o tempo; medir no POCO e ajustar aqui)
         for (int i = 0; i < args.Length; i += 2)
         {
@@ -76,11 +82,15 @@ static class EconSim
                 case "--partidas" when ok: ok = int.TryParse(v, out partidas) && partidas > 0; break;
                 case "--anuncio-seg" when ok: ok = float.TryParse(v, out anuncioSeg) && anuncioSeg >= 0f; break;
                 case "--saida" when ok: saida = v; break;
+                case "--evento" when ok:
+                    evento = Array.Find(LiveOpsDefs.Eventos, e => e.Id == v || e.Id.EndsWith("_" + v, StringComparison.Ordinal));
+                    ok = evento != null && LiveOpsDefs.Falta(evento, Items.All) == null;   // so o que roda neste build
+                    break;
                 default: ok = false; break;
             }
             if (!ok || perfis.Any(p => p.Name == null))
             {
-                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3]");
+                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--evento id]");
                 return 2;
             }
         }
@@ -89,7 +99,9 @@ static class EconSim
         foreach (BotProfile p in perfis) for (int i = 0; i < partidas; i++) jobs.Add((p, 30f + 30f * i / partidas));
         var runs = new Run[jobs.Count];
         var wall = Stopwatch.StartNew();
-        Parallel.For(0, jobs.Count, k => runs[k] = Play(jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, Knobs(knobs, new Tuning())));   // cada Sim e' isolado (Tuning proprio); a ordem do CSV e' a de jobs
+        Parallel.For(0, jobs.Count, k => runs[k] = Play(jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, Knobs(knobs, new Tuning()), evento));   // cada Sim e' isolado (Tuning proprio); a ordem do CSV e' a de jobs
+        var sem = new Run[jobs.Count];   // D-CORE-03/04: a mesma partida sem o evento (base da comparacao)
+        if (evento != null) Parallel.For(0, jobs.Count, k => sem[k] = Play(jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, Knobs(knobs, new Tuning()), null));
         if (knobs != null) Console.WriteLine("tuning: " + knobs);
         File.WriteAllText(saida, Header + Environment.NewLine + string.Concat(runs.Select(r => r.Csv)));
 
@@ -147,10 +159,48 @@ static class EconSim
                                   $"{g.Average(r => r.AdsVip + r.AdsBoost + r.AdsSupply + r.AdsBonus):0.#} | {g.Average(r => r.Encomendas):0} |");
             }
         }
+        if (evento != null) Evento(evento, perfis, runs, sem, minutos);
         return 0;
     }
 
-    static Run Play(BotProfile p, float hz, int minutos, float anuncioSeg, Tuning t)
+    /// <summary>D-CORE-03/04: o evento (com x sem, depois da entrada) e a conta de fechamento do Passe com as encomendas do F2P medidas aqui.</summary>
+    static void Evento(EventDef e, BotProfile[] perfis, Run[] runs, Run[] sem, int minutos)
+    {
+        Console.WriteLine();
+        Console.WriteLine($"evento {e.Id} (modificadores: {string.Join(", ", e.Modificadores.Select(m => m.Knob + (m.Item != null ? "[" + m.Item + "]" : "") + (m.Soma ? " +" : " x") + m.Valor.ToString("0.###")))})");
+        Console.WriteLine("| perfil | entrou | renda/min depois da entrada: sem / com evento | diferenca | pontos (missoes) | ouro dos limiares | XP do Passe na sessao |");
+        Console.WriteLine("|---|---|---|---|---|---|---|");
+        foreach (BotProfile p in perfis)
+        {
+            var com = new List<double>(); var base0 = new List<double>(); var ent = new List<float>();
+            for (int k = 0; k < runs.Length; k++)
+            {
+                if (runs[k].Perfil != p.Name || runs[k].Entrou < 0f) continue;
+                int m0 = Math.Min(minutos - 1, (int)Math.Ceiling(runs[k].Entrou / 60f));
+                com.Add((runs[k].EarnedMin[minutos] - runs[k].EarnedMin[m0]) / (double)(minutos - m0));
+                base0.Add((sem[k].EarnedMin[minutos] - sem[k].EarnedMin[m0]) / (double)(minutos - m0));
+                ent.Add(runs[k].Entrou);
+            }
+            Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            string renda = com.Count == 0 ? "nao entrou" : $"{base0.Average():0} / {com.Average():0}";
+            string dif = com.Count == 0 ? "--" : (100.0 * (com.Average() / Math.Max(1.0, base0.Average()) - 1)).ToString("+0.0;-0.0") + "%";
+            Console.WriteLine($"| {p.Name} | {(ent.Count == 0 ? "--:--" : Clock(ent.Average()))} | {renda} | {dif} | {g.Average(r => r.Pontos):0} ({g.Average(r => r.Missoes):0.#}/{e.Missoes.Length}) | " +
+                              $"{g.Average(r => r.OuroEvento):0} | {g.Average(r => r.XpPasse):0} |");
+        }
+        // LIVEOPS_V1 §3.3: encomendas por dia de 20 min = as do F2P nesta sessao x 20 / minutos
+        Run[] f2p = runs.Where(r => r.Perfil == BotProfile.F2P.Name).ToArray();
+        if (f2p.Length == 0) return;
+        double enc = f2p.Average(r => r.Ordens) * 20.0 / minutos;
+        Console.WriteLine();
+        Console.WriteLine($"Passe (trilha free, 30 x 600 XP), F2P de referencia com {enc:0.0} encomendas por dia de 20 min (medido) ou {LiveOpsDefs.EncomendasDiaF2P:0} (portao da Wave B):");
+        Console.WriteLine("| temporada | XP/dia (desenho, 8 enc.) | fecha no dia | XP/dia (hoje: medido, so eventos prontos) | fecha no dia |");
+        Console.WriteLine("|---|---|---|---|---|");
+        foreach (PassDef ps in LiveOpsDefs.Passes)
+            Console.WriteLine($"| {ps.Id} | {LiveOpsDefs.XpDiaF2P(ps, LiveOpsDefs.Eventos, LiveOpsDefs.EncomendasDiaF2P):0} | {LiveOpsDefs.DiaFechamento(ps, LiveOpsDefs.Eventos, LiveOpsDefs.EncomendasDiaF2P):0.0} | " +
+                              $"{LiveOpsDefs.XpDiaF2P(ps, LiveOpsDefs.Eventos, enc, true):0} | {LiveOpsDefs.DiaFechamento(ps, LiveOpsDefs.Eventos, enc, true):0.0} |");
+    }
+
+    static Run Play(BotProfile p, float hz, int minutos, float anuncioSeg, Tuning t, EventDef evento = null)
     {
         var clock = Stopwatch.StartNew();
         var s = new Sim(t); Bot bot = Bot.From(p); float dt = 1f / hz;
@@ -162,6 +212,8 @@ static class EconSim
         float pausa = 0f, venda1 = -1f;
         var rel = new float[Upgrades.Count];
         for (int i = 0; i < rel.Length; i++) rel[i] = -1f;
+        r.EarnedMin = new long[minutos + 1];
+        int seg = -1;
         for (int m = 1; m <= minutos; m++)
         {
             while (s.Time + pausa < m * 60f)
@@ -175,7 +227,16 @@ static class EconSim
                 if (s.UpgradesBought != before)
                     for (int i = 0; i < rel.Length; i++) if (s.Bought[i] && rel[i] < 0f) rel[i] = s.UpgradeTime[i] + pausa;
                 if (goldAtProd < 0 && s.UpgradesBought != before && s.ProductionComplete) goldAtProd = s.Gold;
+                if (evento != null && (int)s.Time != seg)   // D-CORE-03/04: o relogio do LiveOps anda com o jogo, dentro do evento (como a View, 1x/s)
+                {
+                    seg = (int)s.Time;
+                    long agora = evento.Comeca + 3600 + seg;
+                    s.Metas.Agora(agora, 0);
+                    s.LiveOps.Agora(agora);
+                    if (r.Entrou < 0f && s.LiveOps.Evento != null) r.Entrou = s.Time + pausa;
+                }
             }
+            r.EarnedMin[m] = s.GoldEarned;
             long gold = s.Gold, earned = s.GoldEarned;
             int compras = s.UpgradesBought - bought0;
             // depois da producao so ralo fica a venda: luxo (pad) ou Meta (menu, B-CORE-03); "ouro_so_luxo" = ouro com um ralo a venda
@@ -207,6 +268,14 @@ static class EconSim
         r.PosProd = goldAtProd < 0 ? 0 : s.Gold + luxSpent + paid - goldAtProd;
         r.Parado = s.Gold; r.AdsVip = bot.AdsVip; r.AdsBoost = bot.AdsBoost; r.AdsSupply = bot.AdsSupply; r.AdsBonus = bot.AdsBonus; r.Csv = csv.ToString();
         r.Encomendas = s.OrderGold;
+        r.Ordens = s.OrderCount;
+        if (evento != null)
+        {
+            r.Pontos = s.LiveOps.PontosDe(evento);
+            r.Missoes = evento.Missoes.Count(x => s.Metas.Ledger.Contains(LiveOps.TxMissao(evento, x)));
+            r.XpPasse = s.LiveOps.Xp;
+            r.OuroEvento = s.LiveOps.Novidades.Where(n => n.Tipo == "event_complete").Sum(n => n.Ouro);
+        }
         r.Segundos = clock.Elapsed.TotalSeconds;
         return r;
     }
