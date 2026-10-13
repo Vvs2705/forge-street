@@ -21,7 +21,7 @@ namespace FS.Core
         /// <summary>Todas as regras. Sem argumentos = o conteudo real; o teste injeta uma COPIA quebrada no que quiser. `items`/`recipes` =
         /// conteudo do mundo (World); com `world` dado, valem os dele.</summary>
         public static List<string> Validate(UpgradeDef[] upgrades = null, long[] costs = null, int[] prices = null, MilestoneDef[] milestones = null, Sim world = null,
-            ItemDef[] items = null, RecipeDef[] recipes = null, RenomeDef[] renome = null)
+            ItemDef[] items = null, RecipeDef[] recipes = null, RenomeDef[] renome = null, BlueprintDef[] blueprints = null)
         {
             upgrades ??= Upgrades.All;
             costs ??= RealCosts();
@@ -43,7 +43,79 @@ namespace FS.Core
             e.AddRange(Qualidade(upgrades, world));
             e.AddRange(Missoes(MetasDefs.Diarias, MetasDefs.Semanais, MetasDefs.Conquistas, MetasDefs.LoginDias, Tuning.Padrao));
             e.AddRange(NiveisRenome(renome ?? RenomeDefs.Niveis));
+            e.AddRange(Blueprints(blueprints ?? ProjetosDefs.All, upgrades, world));
             return e;
+        }
+
+        /// <summary>
+        /// B-CORE-07 (GDD §12, ECONOMIA_WAVE_B §8.5, LIVEOPS_V1 §5.7 #5): ID bp_[a-z0-9_] unico num distrito que existe; cada fonte aponta para algo
+        /// que existe (item vendido, conquista, nivel de Renome que lista o ID, posicao unica na fila); **receita essencial nunca so paga**: essencial
+        /// tem fonte gratis permanente (fila, marco, Renome, conquista; nunca so contrato, evento, Pass ou loja); nenhum Blueprint so com fonte extra
+        /// (evento, Pass, loja); Pass premium nunca da Blueprint (V20). Alvo existe no mundo (familia com bancada de produto, item com receita, mw_);
+        /// todo UpgradeDef.Blueprint aponta para um projeto do tipo certo, e nivel de estacao IV+ sempre exige projeto.
+        /// </summary>
+        public static IEnumerable<string> Blueprints(BlueprintDef[] defs, UpgradeDef[] upgrades, Sim w)
+        {
+            var ids = new HashSet<string>();
+            var filas = new HashSet<string>();
+            bool Familia(string f) => w.Stations.Exists(s => s.Produces && s.Recipe.Family == f && w.IsProduct(s.OutItem));
+            bool Produto(string id) { int i = Items.IndexOf(id, w.ItemDefs); return i >= 0 && w.IsProduct((Item)i); }
+            foreach (BlueprintDef d in defs)
+            {
+                string at = $"blueprint {d.Id}:";
+                if (string.IsNullOrEmpty(d.Id) || !d.Id.StartsWith("bp_", StringComparison.Ordinal) || !IdOk(d.Id)) yield return $"{at} ID fora do formato bp_[a-z0-9_]";
+                else if (!ids.Add(d.Id)) yield return $"{at} ID repetido";
+                if (Array.IndexOf(ProjetosDefs.Distritos, d.District) < 0) yield return $"{at} distrito \"{d.District}\" nao existe";
+                if (d.Sources == null || d.Sources.Length == 0) { yield return $"{at} sem fonte"; continue; }
+                if (!Array.Exists(d.Sources, f => !ProjetosDefs.Extra(f.Kind))) yield return $"{at} so com fonte de evento, Pass ou loja (LIVEOPS_V1 §5.7)";
+                if (d.Essential && !Array.Exists(d.Sources, f => ProjetosDefs.Permanente(f.Kind)))
+                    yield return $"{at} essencial sem fonte gratis permanente (receita essencial nunca so paga)";
+                foreach (BlueprintSource f in d.Sources)
+                    switch (f.Kind)
+                    {
+                        case BlueprintSourceKind.Milestone:
+                            if (f.Ref != BlueprintSource.Producao && (!Produto(f.Ref) || f.N <= 0)) yield return $"{at} marco \"{f.Ref}\" x{f.N} inalcancavel";
+                            break;
+                        case BlueprintSourceKind.OrderBlueprint: case BlueprintSourceKind.OrderRoyal:
+                            if (Array.IndexOf(ProjetosDefs.Distritos, f.Ref) < 0 || f.N <= 0) yield return $"{at} fila {f.Kind} \"{f.Ref}\" #{f.N} invalida";
+                            else if (!filas.Add(f.Kind + "@" + f.Ref + "#" + f.N)) yield return $"{at} posicao #{f.N} repetida na fila {f.Kind} de {f.Ref}";
+                            break;
+                        case BlueprintSourceKind.Reputation:
+                            int lib = RenomeDefs.NivelQueLibera(d.Id);
+                            if (f.N < 1 || f.N >= RenomeDefs.Niveis.Length || lib >= 0 && lib != f.N) yield return $"{at} Renome {f.N} (a tabela do Renome libera no {lib})";
+                            break;
+                        case BlueprintSourceKind.Achievement:
+                            if (!Array.Exists(MetasDefs.Conquistas, c => c.Id == f.Ref)) yield return $"{at} conquista \"{f.Ref}\" nao existe";
+                            break;
+                        case BlueprintSourceKind.PassPremium: yield return $"{at} Pass premium nunca da Blueprint (V20)"; break;
+                        default: if (string.IsNullOrEmpty(f.Ref)) yield return $"{at} fonte {f.Kind} sem ID"; break;
+                    }
+                if (d.Targets == null || d.Targets.Length == 0) { yield return $"{at} nao libera nada"; continue; }
+                foreach (string t in d.Targets)
+                {
+                    bool ok = d.Kind switch
+                    {
+                        BlueprintKind.StationLevel => Familia(t) && Array.Exists(upgrades, u => u.Blueprint == d.Id && u.Station == t),
+                        BlueprintKind.Technique => Familia(t),
+                        BlueprintKind.Recipe => Produto(t) && Array.Exists(upgrades, u => u.Blueprint == d.Id
+                            && w.Stations.Exists(s => s.UnlockBy == (int)u.Up && s.Produces && w.ItemDefs[(int)s.OutItem].Id == t)),
+                        BlueprintKind.Masterwork => t.StartsWith("mw_", StringComparison.Ordinal) && IdOk(t),
+                        BlueprintKind.Variant => Produto(t),
+                        _ => true,   // ponytail: especializacao (Wave C) sem regra ate existir
+                    };
+                    if (!ok) yield return $"{at} {d.Kind} \"{t}\" nao existe no jogo (ou nenhum upgrade pede o projeto)";
+                }
+            }
+            foreach (UpgradeDef u in upgrades)
+            {
+                int i = u.Blueprint == null ? -1 : ProjetosDefs.IndexOf(u.Blueprint, defs);
+                if (u.Blueprint != null && i < 0) yield return $"blueprint: {u.Up} exige \"{u.Blueprint}\", que nao existe";
+                else if (i >= 0 && (u.Station != null ? defs[i].Kind != BlueprintKind.StationLevel || Array.IndexOf(defs[i].Targets, u.Station) < 0 : defs[i].Kind != BlueprintKind.Recipe))
+                    yield return $"blueprint: {u.Up} exige \"{u.Blueprint}\", que nao libera {(u.Station != null ? "nivel de " + u.Station : "receita")}";
+                int nivel = 1;
+                for (UpgradeDef r = u; r != null && r.Station != null; r = r.Requires >= 0 && r.Requires < upgrades.Length ? upgrades[r.Requires] : null) nivel++;
+                if (u.Station != null && u.Blueprint == null && nivel >= 4) yield return $"blueprint: {u.Up} (nivel IV+) sem projeto";
+            }
         }
 
         /// <summary>B-CORE-06 (GDD §23 #11): o 0 (limiar 0) e 10 niveis, na ordem, com limiar crescente; cada nivel de 1 a 10 libera algo; ID de
@@ -81,13 +153,13 @@ namespace FS.Core
             if (w.T.NivelEstacaoQ <= 0) yield return $"qualidade: {w.T.NivelEstacaoQ} pontos por nivel de estacao";
             foreach (UpgradeDef d in all)
             {
-                if (!d.Meta) continue;
-                if (!w.Stations.Exists(s => s.Produces && s.Recipe.Station == d.Station && w.IsProduct(s.OutItem)))
+                if (d.Station == null) { if (d.Meta && d.Luxury) yield return $"qualidade: {d.Up} Meta e luxo ao mesmo tempo"; continue; }   // B-CORE-07: Meta sem estacao = linha (bigorna longa)
+                if (!w.Stations.Exists(s => s.Produces && s.Recipe.Family == d.Station && w.IsProduct(s.OutItem)))
                     yield return $"qualidade: {d.Up} e' nivel de \"{d.Station}\", familia sem bancada de produto (fonte desconhecida)";
                 if (!d.InMenu || d.Luxury) yield return $"qualidade: {d.Up} (Meta) fora do menu ou marcado como luxo";
                 if (w.Stations.Exists(s => s.UnlockBy == (int)d.Up)) yield return $"qualidade: {d.Up} (Meta) abre estacao";
                 UpgradeDef r = d.Requires >= 0 && d.Requires < all.Length ? all[d.Requires] : null;
-                if (r == null || r.Meta && r.Station != d.Station) yield return $"qualidade: {d.Up} fora da cadeia de niveis de \"{d.Station}\"";
+                if (r == null || r.Station != null && r.Station != d.Station) yield return $"qualidade: {d.Up} fora da cadeia de niveis de \"{d.Station}\"";
             }
         }
 

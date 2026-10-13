@@ -3,8 +3,9 @@ using System;
 namespace FS.Core
 {
     /// <summary>Itens em ordem de cadeia: minerio -> lingote -> produto (espada, escudo, ferramenta; joia na 2a area). B-CORE-01: o item e' dado
-    /// (Items.All); o enum e' so o atalho das 6 primeiras posicoes da tabela (o handle de um item e' a posicao dele, (Item)7 vale).</summary>
-    public enum Item { Ore = 0, Ingot = 1, Sword = 2, Shield = 3, Tool = 4, Jewel = 5 }
+    /// (Items.All); o enum e' so o atalho das primeiras posicoes da tabela (o handle de um item e' a posicao dele, (Item)8 vale). B-CORE-07: a
+    /// espada longa (linha Meta da bigorna longa, desbloqueada por projeto) e' a 7a.</summary>
+    public enum Item { Ore = 0, Ingot = 1, Sword = 2, Shield = 3, Tool = 4, Jewel = 5, LongSword = 6 }
 
     public enum Kind { Deposit, Furnace, Crafter, Counter }
 
@@ -52,15 +53,18 @@ namespace FS.Core
         Counter8,       // 7 -> 8
         // B-CORE-03 (ECONOMIA_WAVE_B §1.5): niveis 2-3 de cada familia de estacao, categoria Meta (fora da producao completa e do teto
         // offline), no menu depois das Ferramentas. Os niveis 4-5 exigem projeto (bp_bigorna_mestra/bp_bancada_mestra): entram com o B-CORE-07
-        AnvilsLv2, AnvilsLv3, ShieldsLv2, ShieldsLv3, ToolsLv2, ToolsLv3, JewelsLv2, JewelsLv3
+        AnvilsLv2, AnvilsLv3, ShieldsLv2, ShieldsLv3, ToolsLv2, ToolsLv3, JewelsLv2, JewelsLv3,
+        // B-CORE-07 (ECONOMIA_WAVE_B §1.5, CONTEUDO_V1 §5.1): niveis IV-V (UpgradeDef.Blueprint = o projeto de mestre da familia), Meta, logo depois
+        // dos II-III (a faixa AnvilsLv2..JewelsLv5 e' o Tuning.NivelEstacaoCusto); e a bigorna longa (pad, Meta: linha da espada longa, com projeto)
+        AnvilsLv4, AnvilsLv5, ShieldsLv4, ShieldsLv5, ToolsLv4, ToolsLv5, JewelsLv4, JewelsLv5, LongAnvil
     }
 
     /// <summary>B-CORE-03 (GDD §9): nivel de qualidade de uma peca, sem sorteio. Normal, Fina e Superior circulam (pilha, mao, balcao) e vendem
     /// por Tuning.QualidadePct; Masterwork so pelo golpe do ferreiro numa Superior com projeto e condicoes (B-CORE-08), vai ao Hall e nunca e' vendida.</summary>
     public enum Quality { Normal, Fine, Superior, Masterwork }
 
-    /// <summary>Fontes dos pontos de qualidade de uma estacao (DM §15, Sim.QualityBreakdown). Na Wave B so o nivel da estacao existe; oficial
-    /// (B-CORE-04), tecnica (B-CORE-07), liga (Wave C) e buff (mestre de obras, evento) ficam com 0 ate existirem.</summary>
+    /// <summary>Fontes dos pontos de qualidade de uma estacao (DM §15, Sim.QualityBreakdown). Existem o nivel da estacao (B-CORE-03) e a tecnica
+    /// (Blueprint da familia, B-CORE-07); oficial (B-CORE-04), liga (Wave C) e buff (mestre de obras, evento) ficam com 0 ate existirem.</summary>
     public enum QualitySource { StationLevel, Worker, Blueprint, Material, Buff }
 
     /// <summary>Eventos de um tick, para a view (SFX, particulas, diario). A = item/upgrade/estacao, B = detalhe.
@@ -68,8 +72,9 @@ namespace FS.Core
     /// FASE8 (anexados): VipArrived = o VIP entrou numa vaga do balcao (A = item, B = unidades do pacote); VipServed = levou o pacote todo
     /// (A = item, B = ouro que pagou); VipLeft = cansou antes (A = item, B = unidades que faltaram). Cada unidade do VIP sai tambem como Sold (B = 3x o preco).
     /// FASE9 (anexados): OrderNew = encomenda nova (A = item, B = quantas vender); OrderDone = entregue (A = item, B = premio em ouro).
-    /// B-CORE-03 (anexados): Graded = peca acima de Normal na pilha (A = estacao, B = Quality); Masterwork = obra-prima foi ao Hall (A = item, B = estacao).</summary>
-    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone, Graded, Masterwork }
+    /// B-CORE-03 (anexados): Graded = peca acima de Normal na pilha (A = estacao, B = Quality); Masterwork = obra-prima foi ao Hall (A = item, B = estacao).
+    /// B-CORE-07 (anexado): Blueprint = projeto novo, 1x por ID (A = indice em Projetos.Defs, B = BlueprintSourceKind da fonte).</summary>
+    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone, Graded, Masterwork, Blueprint }
 
     /// <summary>Dica contextual da HUD (a view so traduz). Arg = indice do pad (BuyPad), do item, do bau (OpenChest) ou do upgrade (BuyMenu).
     /// BuyMenu ANEXADO no fim (FASE6): a compra mais barata pagavel agora e' um upgrade do menu inferior.</summary>
@@ -206,7 +211,7 @@ namespace FS.Core
         public bool Interstitial;
 
         // precos e custos
-        public int[] Price = { 0, 0, 10, 25, 16, 60 };          // ouro por item vendido
+        public int[] Price = { 0, 0, 10, 25, 16, 60, 40 };      // ouro por item vendido (B-CORE-07: espada longa 40 = 20 por lingote, CONTEUDO_V1 §2.1)
         public int JewelPriceUp = 80;                           // Vitrine de joias: nobres pagam mais, sem mudar as outras linhas
         public int CostBase = 50; public float CostGrowth = 1.30f; // custo(tier) = 50 * 1,30^tier, arredondado a 5 (varredura em docs/BALANCE.md)
         public int SideCorridorCost = 690, JewelryCost = 1515;  // 2a area: fora da formula (coordenador 2026-10-07, BALANCE.md §9)
@@ -220,7 +225,7 @@ namespace FS.Core
         // tempos das estacoes
         public float FurnaceTime0 = 4f, FurnaceTime1 = 2.5f, FurnaceTime2 = 1.6f;
         public float HammerTime0 = 5f, HammerTime1 = 3f;        // bigorna mais lenta que a fornalha com fole: a 2a bigorna "reduz a fila" (§3 3:30)
-        public float ShieldTimeMul = 1.5f, JewelTimeMul = 2f;
+        public float ShieldTimeMul = 1.5f, JewelTimeMul = 2f, LongSwordTimeMul = 1.5f;   // B-CORE-07: espada longa 7,5 s na bancada (CONTEUDO_V1 §3.1)
         public float JewelSpeedMul = 0.6f;                      // Lupa: tempo da bancada de joias x0,6
         public float ConveyorTime = 1f;                         // s por lingote na esteira
 
@@ -229,7 +234,7 @@ namespace FS.Core
         public int QueueCap0 = 4;                               // vagas do balcao (clientes lado a lado): 4 + 1 por evolucao (FASE7 §2), ate Balance.QueueCapMax
         public float PatienceBase = 30f, PatiencePerSecond = 3f; // paciencia(item) = base + k x producao inicial (FASE5 §1, calibrado no BALANCE.md §13)
         public float FirstClientAt = 8f;                        // o 1o cliente de espada chega cedo (§3: venda em <90 s)
-        public float[] ClientInterval = { 0, 0, 6f, 9f, 8f, 14f }; // s entre clientes, por linha, no inicio
+        public float[] ClientInterval = { 0, 0, 6f, 9f, 8f, 14f, 12f }; // s entre clientes, por linha, no inicio (produto sem intervalo aqui nao tem cliente)
         public float FamePer10Sales = 0.94f, FameFloor = 0.4f;  // "fama": a cada 10 vendas os clientes chegam 6% mais rapido, ate 2,5x
         public float VitrineClientMul = 0.7f;                   // CounterCapacity atrai mais gente
         public float JewelVitrineClientMul = 0.7f;              // Vitrine de joias: nobres x0,7 (soma com a Vitrine)
@@ -258,8 +263,12 @@ namespace FS.Core
         public int NivelEstacaoQ = 15;                          // pontos de qualidade (centesimos) por nivel de estacao acima do 1: L2 = 1 em cada 7 Fina
         public float NivelEstacaoVelocidade = 0.05f;            // +5% de velocidade da familia por nivel acima do 1
         // na ordem do enum (AnvilsLv2 .. JewelsLv3): METADE do §1.5 (500/1.500, 650/1.900, 500/1.500, 1.000/3.000). Com o §1.5 o retorno medido
-        // dos 8 niveis foi 37 min (portao: <= 20) e a producao completa do F2P passou a 50 min; com a metade, 18 min e 47 min (BALANCE.md §23)
-        public int[] NivelEstacaoCusto = { 250, 750, 325, 950, 250, 750, 500, 1500 };
+        // dos 8 niveis foi 37 min (portao: <= 20) e a producao completa do F2P passou a 50 min; com a metade, 18 min e 47 min (BALANCE.md §23).
+        // B-CORE-07 (V26): os IV-V seguem na ordem do enum (AnvilsLv4 .. JewelsLv5), tambem a METADE do §1.5 (4.000/9.000, 5.000/11.000, 4.000/9.000,
+        // 8.000/18.000)
+        public int[] NivelEstacaoCusto = { 250, 750, 325, 950, 250, 750, 500, 1500, 2000, 4500, 2500, 5500, 2000, 4500, 4000, 9000 };
+        public int BigornaLongaCusto = 6000;                    // B-CORE-07: linha Meta da espada longa (CONTEUDO_V1 §5.1)
+        public int TecnicaQ = 20;                               // B-CORE-07: pontos de qualidade do Blueprint de tecnica da familia (ECONOMIA_WAVE_B §1.2)
         public float GolpeJanela = 0.8f, GolpeRecarga = 20f;    // golpe de mestre (FS-2): anel de 0,8 s; 20 s de jogo entre um acerto e o proximo (sobe se passar de 8% da receita)
 
         // offline (raia B §5 + coordenador 2026-10-06)
@@ -315,8 +324,9 @@ namespace FS.Core
                 case Upgrade.Jeweler2: return Jeweler2Cost;
                 case Upgrade.Counter5: case Upgrade.Counter6: case Upgrade.Counter7: case Upgrade.Counter8:
                     return CounterSlotCost[tier - (int)Upgrade.Counter5];
+                case Upgrade.LongAnvil: return BigornaLongaCusto;
             }
-            if (tier >= (int)Upgrade.AnvilsLv2 && tier <= (int)Upgrade.JewelsLv3) return NivelEstacaoCusto[tier - (int)Upgrade.AnvilsLv2];
+            if (tier >= (int)Upgrade.AnvilsLv2 && tier <= (int)Upgrade.JewelsLv5) return NivelEstacaoCusto[tier - (int)Upgrade.AnvilsLv2];
             double c = Math.Min(CostBase * Math.Pow(CostGrowth, tier), Upgrades.CostMax);
             return Math.Max(5, (long)Math.Round(c / 5.0) * 5);   // x5 em long: em double, acima de 2^53 o produto perdia o multiplo de 5
         }
@@ -344,16 +354,23 @@ namespace FS.Core
         /// <summary>B-CORE-03: nivel de estacao da familia com esta receita (RecipeDef.Station; null = nao e'). Cada um comprado da +1 nivel as
         /// estacoes da familia (Sim.Recompute).</summary>
         public readonly string Station;
-        /// <summary>Categoria Meta (ECONOMIA_WAVE_B §0.7): ralo da Wave B, fora da producao completa e do teto offline, como o luxo. ponytail: hoje
-        /// so o nivel de estacao; vira campo quando os niveis de worker (B-CORE-04) entrarem.</summary>
-        public bool Meta => Station != null;
-        public UpgradeDef(Upgrade up, string id, int requires, string name, string desc, bool luxury = false, bool menu = false, string station = null)
-        { Up = up; Id = id; Requires = requires; Name = name; Desc = desc; Luxury = luxury; InMenu = menu; Station = station; }
+        /// <summary>Categoria Meta (ECONOMIA_WAVE_B §0.7): ralo da Wave B, fora da producao completa e do teto offline, como o luxo. Todo nivel de
+        /// estacao e' Meta; B-CORE-07: a bigorna longa tambem (linha nova sem mexer nos portoes da producao completa, CONTEUDO_V1 §2.1).</summary>
+        public readonly bool Meta;
+        /// <summary>B-CORE-07: ID do Blueprint que a compra exige (posse, nunca gasto; null = nenhum). Sem ele: fora do menu, pad escondido e o
+        /// Sim.Buy recusa (Sim.TemProjeto).</summary>
+        public readonly string Blueprint;
+        public UpgradeDef(Upgrade up, string id, int requires, string name, string desc, bool luxury = false, bool menu = false, string station = null,
+            bool meta = false, string blueprint = null)
+        {
+            Up = up; Id = id; Requires = requires; Name = name; Desc = desc; Luxury = luxury; InMenu = menu; Station = station;
+            Meta = meta || station != null; Blueprint = blueprint;
+        }
     }
 
     public static class Upgrades
     {
-        public const int ProductionCount = 26, Count = 37;   // ProductionCount = quantos NAO sao luxo nem Meta (os IDs nao precisam ser contiguos)
+        public const int ProductionCount = 26, Count = 46;   // ProductionCount = quantos NAO sao luxo nem Meta (os IDs nao precisam ser contiguos)
 
         /// <summary>Marca por upgrade, nao por ID: um produtivo anexado depois dos luxos continua produtivo.</summary>
         public static bool IsLuxury(int u) => All[u].Luxury;
@@ -364,7 +381,7 @@ namespace FS.Core
         public static int StationLevel(int u)
         {
             int n = 1;
-            for (int r = u; r >= 0 && All[r].Meta; r = All[r].Requires) n++;
+            for (int r = u; r >= 0 && All[r].Station != null; r = All[r].Requires) n++;
             return n;
         }
 
@@ -422,6 +439,16 @@ namespace FS.Core
             new UpgradeDef(Upgrade.ToolsLv3, "ferramentas_nivel3", (int)Upgrade.ToolsLv2, "Ferramentas III", "Mais qualidade e velocidade", menu: true, station: "ferramentas"),
             new UpgradeDef(Upgrade.JewelsLv2, "joalheria_nivel2", (int)Upgrade.Jewelry, "Joalheria II", "Mais qualidade e velocidade", menu: true, station: "joalheria"),
             new UpgradeDef(Upgrade.JewelsLv3, "joalheria_nivel3", (int)Upgrade.JewelsLv2, "Joalheria III", "Mais qualidade e velocidade", menu: true, station: "joalheria"),
+            // B-CORE-07: o IV exige o III e o projeto de mestre da familia; o V, o IV (e o mesmo projeto). A bigorna longa e' pad no lugar da estacao
+            new UpgradeDef(Upgrade.AnvilsLv4, "bigornas_nivel4", (int)Upgrade.AnvilsLv3, "Bigornas IV", "Mais qualidade e velocidade", menu: true, station: "bigorna", blueprint: "bp_bigorna_mestra"),
+            new UpgradeDef(Upgrade.AnvilsLv5, "bigornas_nivel5", (int)Upgrade.AnvilsLv4, "Bigornas V", "Mais qualidade e velocidade", menu: true, station: "bigorna", blueprint: "bp_bigorna_mestra"),
+            new UpgradeDef(Upgrade.ShieldsLv4, "escudos_nivel4", (int)Upgrade.ShieldsLv3, "Escudos IV", "Mais qualidade e velocidade", menu: true, station: "escudos", blueprint: "bp_bancada_mestra"),
+            new UpgradeDef(Upgrade.ShieldsLv5, "escudos_nivel5", (int)Upgrade.ShieldsLv4, "Escudos V", "Mais qualidade e velocidade", menu: true, station: "escudos", blueprint: "bp_bancada_mestra"),
+            new UpgradeDef(Upgrade.ToolsLv4, "ferramentas_nivel4", (int)Upgrade.ToolsLv3, "Ferramentas IV", "Mais qualidade e velocidade", menu: true, station: "ferramentas", blueprint: "bp_bancada_mestra"),
+            new UpgradeDef(Upgrade.ToolsLv5, "ferramentas_nivel5", (int)Upgrade.ToolsLv4, "Ferramentas V", "Mais qualidade e velocidade", menu: true, station: "ferramentas", blueprint: "bp_bancada_mestra"),
+            new UpgradeDef(Upgrade.JewelsLv4, "joalheria_nivel4", (int)Upgrade.JewelsLv3, "Joalheria IV", "Mais qualidade e velocidade", menu: true, station: "joalheria", blueprint: "bp_bancada_mestra"),
+            new UpgradeDef(Upgrade.JewelsLv5, "joalheria_nivel5", (int)Upgrade.JewelsLv4, "Joalheria V", "Mais qualidade e velocidade", menu: true, station: "joalheria", blueprint: "bp_bancada_mestra"),
+            new UpgradeDef(Upgrade.LongAnvil, "bigorna_longa", (int)Upgrade.HammerSpeed, "Bigorna longa", "Nova linha: 2 lingotes, paga 40", meta: true, blueprint: "bp_rec_espada_longa"),
         };
 
         /// <summary>A-CORE-06: teto da curva (1e18, cabe em long com folga para somar ouro). 50 x 1,3^tier chega nele no tier 144. O custo
@@ -444,16 +471,19 @@ namespace FS.Core
     /// B-CORE-01: receita em dados. As estacoes da familia `Station` (todas do tipo `Kind`) trocam `Inputs` (item, quantidade) por 1 `Output`
     /// em (tempo base do tipo no Tuning: fornalha FurnaceTime*, bancada HammerTime*) x TimeMul(Tuning). Os upgrades de velocidade (Fole,
     /// Martelo veloz, Lupa) agem na estacao (Sim.Recompute). ponytail: uma receita por familia; bancada que escolhe o produto (distrito 3)
-    /// pede a receita ativa na estacao.
+    /// pede a receita ativa na estacao. B-CORE-07: `Family` = familia de nivel e qualidade (UpgradeDef.Station, tecnica; oficial e Masterwork
+    /// depois), a propria `Station` quando nao dada: a bigorna longa faz a receita dela e sobe com os niveis das bigornas (CONTEUDO_V1 §2.1).
     /// </summary>
     public sealed class RecipeDef
     {
-        public readonly string Station; public readonly Kind Kind;
+        public readonly string Station, Family; public readonly Kind Kind;
         public readonly Item Output;
         public readonly (Item Item, int Qty)[] Inputs;
         public readonly Func<Tuning, float> TimeMul;
         public RecipeDef(string station, Kind kind, Item output, Func<Tuning, float> timeMul, params (Item Item, int Qty)[] inputs)
-        { Station = station; Kind = kind; Output = output; TimeMul = timeMul; Inputs = inputs; }
+            : this(station, station, kind, output, timeMul, inputs) { }
+        public RecipeDef(string station, string family, Kind kind, Item output, Func<Tuning, float> timeMul, params (Item Item, int Qty)[] inputs)
+        { Station = station; Family = family; Kind = kind; Output = output; TimeMul = timeMul; Inputs = inputs; }
     }
 
     public static class Items
@@ -467,6 +497,7 @@ namespace FS.Core
             new ItemDef("escudo", "escudo", 1, true),
             new ItemDef("ferramenta", "ferramenta", 1, true),
             new ItemDef("joia", "joia", 3, true),
+            new ItemDef("espada_longa", "espada longa", 1, true),   // B-CORE-07: linha Meta da bigorna longa (CONTEUDO_V1 §2.1)
         };
 
         /// <summary>Handle do item com este ID, ou -1 (desconhecido). `table` = o conteudo da partida (null = All).</summary>
@@ -475,7 +506,7 @@ namespace FS.Core
 
     public static class Recipes
     {
-        /// <summary>As 4 linhas da v0.x mais a fornalha (BALANCE.md): o minerio sai do deposito, sem receita.</summary>
+        /// <summary>As 4 linhas da v0.x mais a fornalha (BALANCE.md) e a espada longa (B-CORE-07): o minerio sai do deposito, sem receita.</summary>
         public static readonly RecipeDef[] All =
         {
             new RecipeDef("fornalha", Kind.Furnace, Item.Ingot, t => 1f, (Item.Ore, 1)),
@@ -483,6 +514,7 @@ namespace FS.Core
             new RecipeDef("escudos", Kind.Crafter, Item.Shield, t => t.ShieldTimeMul, (Item.Ingot, 2)),
             new RecipeDef("ferramentas", Kind.Crafter, Item.Tool, t => 1f, (Item.Ingot, 1)),
             new RecipeDef("joalheria", Kind.Crafter, Item.Jewel, t => t.JewelTimeMul, (Item.Ingot, 2)),
+            new RecipeDef("bigorna_longa", "bigorna", Kind.Crafter, Item.LongSword, t => t.LongSwordTimeMul, (Item.Ingot, 2)),   // B-CORE-07: familia das bigornas
         };
 
         /// <summary>Receita que produz `item`, ou null (minerio, ou item sem receita). `table` = o conteudo da partida (null = All).</summary>

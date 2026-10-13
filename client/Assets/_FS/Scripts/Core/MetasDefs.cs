@@ -176,8 +176,9 @@ namespace FS.Core
             C("ach_mineiro", Buy, (int)Upgrade.Miner, 1, xp: 50),
             C("ach_balcao8", Buy, (int)Upgrade.Counter8, 1, xp: 50),
             // luxo so com toda a producao (Sim.Buy): sem ela so cabem os niveis de estacao (Meta, B-CORE-03), entao ProductionCount + Meta
-            // compras = producao completa (nunca antes; quem pula um nivel fecha na 1a compra de luxo)
-            C("ach_producao_completa", Buy, -1, Upgrades.ProductionCount + Array.FindAll(Upgrades.All, u => u.Meta).Length, xp: 200, renome: 10),
+            // compras = producao completa (nunca antes; quem pula um nivel fecha na 1a compra de luxo). B-CORE-07: so os Meta sem projeto (II-III);
+            // com projeto (bigorna longa pelo marco de 300 espadas) ela pode fechar 1 compra antes
+            C("ach_producao_completa", Buy, -1, Upgrades.ProductionCount + Array.FindAll(Upgrades.All, u => u.Meta && u.Blueprint == null).Length, xp: 200, renome: 10),
             C("ach_luxo1", Buy, (int)Upgrade.WorkshopFacade, 1, xp: 50),
             C("ach_luxo3", Buy, (int)Upgrade.JewelryDecor, 1, insignia: "oficina_nobre"),
             // Economy

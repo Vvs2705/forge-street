@@ -33,6 +33,9 @@ namespace FS.Tests
             "piso_oficina", "joalheria_real", "mineiro", "joalheiro2", "balcao5", "balcao6", "balcao7", "balcao8",
             // B-CORE-03: niveis de estacao (Meta)
             "bigornas_nivel2", "bigornas_nivel3", "escudos_nivel2", "escudos_nivel3", "ferramentas_nivel2", "ferramentas_nivel3", "joalheria_nivel2", "joalheria_nivel3",
+            // B-CORE-07: niveis IV-V (com projeto) e a linha da espada longa
+            "bigornas_nivel4", "bigornas_nivel5", "escudos_nivel4", "escudos_nivel5", "ferramentas_nivel4", "ferramentas_nivel5", "joalheria_nivel4", "joalheria_nivel5",
+            "bigorna_longa",
         };
 
         [Test]
@@ -155,8 +158,8 @@ namespace FS.Tests
         /// <summary>Receitas reais trocando so a da familia `station`.</summary>
         static RecipeDef[] Rec(string station, RecipeDef r) => Array.ConvertAll(Recipes.All, x => x.Station == station ? r : x);
 
-        /// <summary>B-CORE-01: itens reais + cabo (insumo, handle 6) e machado (produto, handle 7), so no teste.</summary>
-        static readonly Item Cabo = (Item)6, Machado = (Item)7;
+        /// <summary>B-CORE-01: itens reais + cabo (insumo) e machado (produto), anexados depois dos reais, so no teste.</summary>
+        static readonly Item Cabo = (Item)Items.All.Length, Machado = (Item)(Items.All.Length + 1);
         static ItemDef[] ComMachado() => new List<ItemDef>(Items.All) { new ItemDef("cabo", "cabo", 2, false), new ItemDef("machado", "machado", 2, true) }.ToArray();
 
         [Test]
@@ -231,9 +234,10 @@ namespace FS.Tests
         [Test]
         public void Itens_Golden_IdsGravadosEOrdemDoSchema2()
         {
-            string[] golden = { "minerio", "lingote", "espada", "escudo", "ferramenta", "joia" };
+            string[] v2 = { "minerio", "lingote", "espada", "escudo", "ferramenta", "joia" };
+            string[] golden = { "minerio", "lingote", "espada", "escudo", "ferramenta", "joia", "espada_longa" };   // B-CORE-07: espada longa no fim
             CollectionAssert.AreEqual(golden, Array.ConvertAll(Items.All, d => d.Id));
-            CollectionAssert.AreEqual(golden, Sim.ItemIdsV2, "Sim.ItemIdsV2 congelada: e' como o stock=/hold= por posicao se le");
+            CollectionAssert.AreEqual(v2, Sim.ItemIdsV2, "Sim.ItemIdsV2 congelada: e' como o stock=/hold= por posicao se le");
             Assert.AreEqual(Enum.GetValues(typeof(Item)).Length, golden.Length, "o enum Item e' atalho das primeiras posicoes");
         }
 

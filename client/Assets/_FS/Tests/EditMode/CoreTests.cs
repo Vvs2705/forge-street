@@ -304,9 +304,9 @@ namespace FS.Tests
         public void Curva_DeCusto_Dos25Upgrades_22ProdutivosELuxo()
         {
             Assert.AreEqual(26, Upgrades.ProductionCount);
-            Assert.AreEqual(37, Upgrades.Count);   // 26 produtivos + 3 luxos + 8 niveis de estacao (B-CORE-03, Meta)
-            Assert.AreEqual(37, Upgrades.All.Length);
-            Assert.AreEqual(37, Enum.GetValues(typeof(Upgrade)).Length);
+            Assert.AreEqual(46, Upgrades.Count);   // 26 produtivos + 3 luxos + 8 niveis II-III (B-CORE-03) + 8 IV-V e a bigorna longa (B-CORE-07), Meta
+            Assert.AreEqual(46, Upgrades.All.Length);
+            Assert.AreEqual(46, Enum.GetValues(typeof(Upgrade)).Length);
             Assert.AreEqual((3000L, 2400L), (Tuning.Padrao.Cost(Upgrade.Miner), Tuning.Padrao.Cost(Upgrade.Jeweler2)), "fase 4: medido na Leva 10 (BALANCE.md §14)");
             Assert.AreEqual((14000L, 18000L, 22000L), (Tuning.Padrao.Cost(Upgrade.WorkshopFacade), Tuning.Padrao.Cost(Upgrade.WorkshopFloor), Tuning.Padrao.Cost(Upgrade.JewelryDecor)), "luxo: Leva 11 (BALANCE.md §15)");
             Assert.AreEqual((690L, 1515L), (Tuning.Padrao.Cost(Upgrade.SideCorridor), Tuning.Padrao.Cost(Upgrade.Jewelry)), "2a area fora da formula (coordenador 2026-10-07)");
@@ -332,8 +332,10 @@ namespace FS.Tests
                 Assert.That(ratio, Is.InRange(1.15, 1.5), $"tier {i}: {Tuning.Padrao.Cost(i - 1)} -> {Tuning.Padrao.Cost(i)}");
             }
             Assert.Greater(Tuning.Padrao.Cost(Upgrade.Jewelry), Tuning.Padrao.Cost(Upgrade.SideCorridor), "a Joalheria custa mais que o Corredor que ela exige");
-            // todo upgrade acaba a venda (pad visivel, ou o menu se for InMenu): pre-requisitos alcancaveis em ordem de tier e depois os luxos
+            // todo upgrade acaba a venda (pad visivel, ou o menu se for InMenu): pre-requisitos alcancaveis em ordem de tier e depois os luxos.
+            // B-CORE-07: com os projetos (de onde eles vem e' regra do ProjetosTests)
             var s = new Sim();
+            TodosProjetos(s);
             var order = new List<int>();
             for (int pass = 0; pass < 2; pass++)
                 for (int i = 0; i < Upgrades.Count; i++) if (Upgrades.IsLuxury(i) == (pass == 1)) order.Add(i);
@@ -1025,7 +1027,7 @@ namespace FS.Tests
             Assert.AreEqual(-1, full.Pads[19].Current(full));
             Assert.IsFalse(full.Buy(Upgrade.WorkshopFloor));
             Assert.IsFalse(full.Buy(Upgrade.JewelryDecor));
-            Assert.AreEqual((22, 10), (full.Pads.Count, full.Stations.Count), "pads anexados, estacoes preservadas");
+            Assert.AreEqual((23, 11), (full.Pads.Count, full.Stations.Count), "pads anexados, estacoes preservadas (B-CORE-07: a bigorna longa e o pad dela no fim)");
             Assert.AreEqual((6.5f, 3.2f), (full.Pads[17].Pos.X, full.Pads[17].Pos.Y));
             Assert.AreEqual((4.5f, 3.2f), (full.Pads[18].Pos.X, full.Pads[18].Pos.Y));
             Assert.AreEqual((14.2f, 5.1f), (full.Pads[19].Pos.X, full.Pads[19].Pos.Y));
@@ -1117,7 +1119,7 @@ namespace FS.Tests
         {
             const string old = Save20Flags;
             Sim s = Sim.Load(old);
-            Assert.AreEqual((19, 22, 0L, 7000L + 450), (s.UpgradesBought, s.Pads.Count, s.Pads[16].Paid, s.Gold), "os 450 da Vitrine de joias (pad 16, hoje no menu) voltam ao ouro");
+            Assert.AreEqual((19, 23, 0L, 7000L + 450), (s.UpgradesBought, s.Pads.Count, s.Pads[16].Paid, s.Gold), "os 450 da Vitrine de joias (pad 16, hoje no menu) voltam ao ouro");
             Assert.IsFalse(s.ProductionComplete);
             foreach (Upgrade u in Luxury) { Assert.IsFalse(s.Bought[(int)u]); Assert.AreEqual(0, PadFor(s, u).Paid); }
             Assert.AreEqual((2, 3, 1, 4), (s.Stock[2], s.Stock[3], s.Stock[4], s.Stock[5]));
@@ -1249,9 +1251,13 @@ namespace FS.Tests
         {
             var s = CompleteProduction();
             foreach (Upgrade u in Luxury) s.Buy(u);
+            TodosProjetos(s); s.Buy(Upgrade.LongAnvil);   // B-CORE-07: a bigorna longa tambem e' corpo
             s.Workers.Clear();
             return s;
         }
+
+        /// <summary>B-CORE-07: todos os projetos do catalogo pela 1a fonte de cada (nenhum e' pago), como o cheat das fotos.</summary>
+        internal static void TodosProjetos(Sim s) { foreach (BlueprintDef d in s.Projetos.Defs) s.Projetos.Ganha(d.Id, d.Sources[0].Kind); }
 
         /// <summary>Menor distancia de `p` a um corpo solido (0 = dentro).</summary>
         static float Inside(Sim s, V2 p)
@@ -1405,6 +1411,7 @@ namespace FS.Tests
             {
                 { s.Deposit, new V2(0, 1) }, { s.FurnaceA, new V2(-1, 0) }, { s.FurnaceB, new V2(-1, 0) }, { s.AnvilA, new V2(-1, 0) }, { s.AnvilB, new V2(-1, 0) },
                 { s.ShieldBench, new V2(-1, 0) }, { s.ToolBench, new V2(-1, 0) }, { s.Counter, new V2(0, -1) }, { s.JewelBench, new V2(-1, 0) }, { s.JewelShop, new V2(0, -1) },
+                { s.LongAnvil, new V2(-1, 0) },
             };
             foreach (Station st in s.Stations)
             {
@@ -1568,7 +1575,7 @@ namespace FS.Tests
             const string v03 = SaveV03;   // save da v0.3
             Sim s = null;
             Assert.DoesNotThrow(() => s = Sim.Load(v03));
-            Assert.AreEqual((22, 22), (s.UpgradesBought, s.Pads.Count));
+            Assert.AreEqual((22, 23), (s.UpgradesBought, s.Pads.Count));
             Assert.IsTrue(s.Bought[(int)Upgrade.WorkshopFacade] && s.Bought[(int)Upgrade.WorkshopFloor], "luxo comprado continua comprado (decoracao fica)");
             Assert.IsFalse(s.Bought[(int)Upgrade.Miner] || s.Bought[(int)Upgrade.Jeweler2]);
             Assert.IsFalse(s.ProductionComplete, "o par novo reabre a producao");
@@ -1586,9 +1593,11 @@ namespace FS.Tests
             Assert.AreEqual((10, new V2(8.4f, 3.4f).ToString()), (hammer.Slot, hammer.Pos.ToString()), "mesmo indice (save), posicao nova");
             foreach (Station st in s.Stations)
                 Assert.GreaterOrEqual(V2.Dist(hammer.Pos, st.Pos), 1.5f, $"rotulo do pad longe do rotulo de {st.Name} (era 1,0 m da Bigorna)");
-            // fora das linhas boca -> boca (por onde o jogador anda entre estacoes): a sugestao (8,4; 7,5) ficava entre as saidas de Ferramentas e Escudos
+            // fora das linhas boca -> boca (por onde o jogador anda entre estacoes): a sugestao (8,4; 7,5) ficava entre as saidas de Ferramentas e Escudos.
+            // B-CORE-07: sem a bigorna longa (o pad e' do menu desde a FASE6, invisivel; e a linha dela ate a joalheria nao e' rota: a espada
+            // longa vai ao balcao e o lingote vem das fornalhas)
             var mouths = new List<V2>();
-            foreach (Station st in s.Stations) { mouths.Add(st.InAt); mouths.Add(st.OutAt); }
+            foreach (Station st in s.Stations) if (st != s.LongAnvil) { mouths.Add(st.InAt); mouths.Add(st.OutAt); }
             for (int i = 0; i < mouths.Count; i++)
                 for (int j = i + 1; j < mouths.Count; j++)
                     Assert.Greater(SegDist(hammer.Pos, mouths[i], mouths[j]), Balance.PadRadius, $"pad na linha {mouths[i]} -> {mouths[j]}");
@@ -1665,12 +1674,13 @@ namespace FS.Tests
         [Test]
         public void Menu_OsNoveDoContrato_SemPadVisivel_PadsContinuamNaLista()
         {
-            var menu = new List<Upgrade>(Menu); menu.AddRange(CounterTiers); menu.AddRange(QualidadeTests.Niveis);
-            CollectionAssert.AreEquivalent(menu, Array.ConvertAll(Array.FindAll(Upgrades.All, d => d.InMenu), d => d.Up), "Fole, Fole duplo, Mochila, Botas, Martelo veloz, Vitrine, Ajudantes ageis, Lupa, Vitrine de joias + as 4 vagas do balcao (FASE7) + os 8 niveis de estacao (B-CORE-03)");
+            var menu = new List<Upgrade>(Menu); menu.AddRange(CounterTiers); menu.AddRange(QualidadeTests.Niveis); menu.AddRange(ProjetosTests.NiveisMestre);
+            CollectionAssert.AreEquivalent(menu, Array.ConvertAll(Array.FindAll(Upgrades.All, d => d.InMenu), d => d.Up), "Fole, Fole duplo, Mochila, Botas, Martelo veloz, Vitrine, Ajudantes ageis, Lupa, Vitrine de joias + as 4 vagas do balcao (FASE7) + os 8 niveis II-III (B-CORE-03) + os 8 IV-V (B-CORE-07)");
             foreach (Upgrade u in CounterTiers) Assert.IsNull(PadFor(new Sim(), u), u + ": nasceu no menu, sem pad");
             foreach (Upgrade u in Menu) Assert.IsFalse(Upgrades.IsLuxury((int)u), u + " e' produtivo");
             var s = Rich();
-            Assert.AreEqual((22, 14), (s.Pads.Count, PadsInWorld(s).Count), "os 8 pads do menu ficam na lista (indice da View e da dica), invisiveis");
+            TodosProjetos(s);   // B-CORE-07: com os projetos, a bigorna longa tambem segue a regra (pad de verdade, fora do menu)
+            Assert.AreEqual((23, 15), (s.Pads.Count, PadsInWorld(s).Count), "os 8 pads do menu ficam na lista (indice da View e da dica), invisiveis");
             foreach (Upgrade u in Menu) Assert.IsNotNull(PadFor(s, u), u + ": slot antigo preservado");
             // em toda a progressao (produtivos em ordem de tier, depois luxo), nenhum pad mostra upgrade do menu
             var order = new List<int>();
@@ -1954,8 +1964,8 @@ namespace FS.Tests
             // lixo: acima do teto corta no teto; ajudante so com o 1o tipo valido para o papel
             Sim g = Sim.Load(text.Replace("holds=minerio:2,lingote:6,espada:1", "holds=minerio:99,lingote:-3,espada:x,escudo:1")
                 .Replace("wks=0:minerio:2;1:;", "wks=0:minerio:9,lingote:9;1:espada:1;"));
-            CollectionAssert.AreEqual(new[] { Balance.PlayerCapUp, 0, 0, 1, 0, 0 }, g.Player.Held, "teto por tipo; negativo e texto viram 0");
-            CollectionAssert.AreEqual(new[] { Balance.WorkerCap, 0, 0, 0, 0, 0 }, g.Workers[0].Held, "ajudante de minerio: um tipo, ate o teto");
+            CollectionAssert.AreEqual(new[] { Balance.PlayerCapUp, 0, 0, 1, 0, 0, 0 }, g.Player.Held, "teto por tipo; negativo e texto viram 0");
+            CollectionAssert.AreEqual(new[] { Balance.WorkerCap, 0, 0, 0, 0, 0, 0 }, g.Workers[0].Held, "ajudante de minerio: um tipo, ate o teto");
             Assert.AreEqual(0, g.Workers[1].Count, "ajudante de lingote nao volta com espada");
             // schema 2 (0.8) com o wk= da 0.5.0, sem papel: o V2ParaV3 leva pela posicao do ajudante, como antes
             string v2 = string.Join("\n", Array.FindAll(text.Split('\n'), l => !l.StartsWith("holds=") && !l.StartsWith("wks=") && !l.StartsWith("stocks=") && !l.StartsWith("solds=")))
@@ -1974,10 +1984,10 @@ namespace FS.Tests
             Sim s = Sim.Load(SaveV08);
             Assert.AreEqual((3, 1, 0, 0), (s.Stock[2], s.Stock[3], s.Stock[4], s.Stock[5]));
             Assert.AreEqual((40, 8), (s.SoldItems[(int)Item.Sword], s.SoldItems[(int)Item.Shield]));
-            CollectionAssert.AreEqual(new[] { 2, 6, 1, 0, 0, 0 }, s.Player.Held);
-            CollectionAssert.AreEqual(new[] { 2, 0, 0, 0, 0, 0 }, s.Workers[0].Held);
-            CollectionAssert.AreEqual(new[] { 0, 2, 0, 0, 0, 0 }, s.Workers[1].Held);
-            CollectionAssert.AreEqual(new[] { 0, 0, 0, 1, 0, 0 }, s.Workers[2].Held);
+            CollectionAssert.AreEqual(new[] { 2, 6, 1, 0, 0, 0, 0 }, s.Player.Held);   // B-CORE-07: a 7a posicao e' a espada longa
+            CollectionAssert.AreEqual(new[] { 2, 0, 0, 0, 0, 0, 0 }, s.Workers[0].Held);
+            CollectionAssert.AreEqual(new[] { 0, 2, 0, 0, 0, 0, 0 }, s.Workers[1].Held);
+            CollectionAssert.AreEqual(new[] { 0, 0, 0, 1, 0, 0, 0 }, s.Workers[2].Held);
             Assert.AreEqual((6, 0), (s.UpgradesBought, s.UnknownIds));
             string text = s.Save(1000);
             StringAssert.StartsWith("v=3\n", text);
@@ -1998,7 +2008,7 @@ namespace FS.Tests
         [Test]
         public void Receita_DoisInsumos_MachadoDeCaboELingote()
         {
-            Item cabo = (Item)6, machado = (Item)7;
+            Item cabo = (Item)Items.All.Length, machado = (Item)(Items.All.Length + 1);   // anexados depois dos reais
             ItemDef[] items = new List<ItemDef>(Items.All) { new ItemDef("cabo", "cabo", 2, false), new ItemDef("machado", "machado", 2, true) }.ToArray();
             RecipeDef[] recipes = Array.ConvertAll(Recipes.All, r => r.Station == "ferramentas" ? new RecipeDef("ferramentas", Kind.Crafter, machado, t => 1f, (cabo, 1), (Item.Ingot, 2)) : r);
             var s = new Sim(null, items, recipes);
