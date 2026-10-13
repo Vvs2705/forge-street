@@ -252,6 +252,13 @@ namespace FS
             return s;
         }
 
+        /// <summary>B-CORE-06: nome do nivel de Renome (selo da HUD &lt;= RenomeMax, cartao) e o aviso ao subir (&lt;= AvisoMax; LocTests).</summary>
+        public const int RenomeMax = 20, AvisoMax = 30;
+        public static string NomeRenome(int nivel) => Loc.T("renome." + nivel);
+        public static string AvisoRenome(int nivel) => Loc.T("aviso.renome", nivel, NomeRenome(nivel));
+        /// <summary>O que o nivel libera, em frase (cartao do Renome).</summary>
+        public static string LiberaRenome(int nivel) => Loc.T("renome." + nivel + ".libera");
+
         /// <summary>Quantidade com separador de milhar do idioma ("1.500", "1,500"); de 1 milhao em diante, a escala do Ouro ("1,23 mi").</summary>
         public static string Qtd(long v) => v >= 1000000 ? Ouro(v) : v.ToString("#,0", CultureInfo.InvariantCulture).Replace(",", Loc.T("num.mil"));
     }
