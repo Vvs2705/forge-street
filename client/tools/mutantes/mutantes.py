@@ -36,6 +36,7 @@ METAS = 'Assets/_FS/Scripts/Core/Metas.cs'
 ANUNCIOS = 'Assets/_FS/Scripts/Core/Anuncios.cs'
 RENOME = 'Assets/_FS/Scripts/Core/Renome.cs'
 COMPRAS = 'Assets/_FS/Scripts/Core/Compras.cs'
+EQUIPE, BOT = 'Assets/_FS/Scripts/Core/Equipe.cs', 'Assets/_FS/Scripts/Core/Bot.cs'
 
 
 def mut(id, arquivo, trecho, troca, descricao, esperado_vivo=None):
@@ -153,7 +154,7 @@ MUTACOES = [
         'a obra-prima também entra na pilha e vai ao balcão (vendida como Superior)'),
     mut('qual-meta-na-producao', DEFS, 'IsProduction(int u) => !All[u].Luxury && !All[u].Meta;', 'IsProduction(int u) => !All[u].Luxury;',
         'nível de estação (Meta) entra na produção completa e no teto offline'),
-    mut('qual-nivel-sem-velocidade', SIM, '/ (1f + T.NivelEstacaoVelocidade * (s.Level - 1));', '/ 1f;',
+    mut('qual-nivel-sem-velocidade', SIM, '/ (1f + T.NivelEstacaoVelocidade * (s.Level - 1)) / Equipe.Ritmo(s);', '/ Equipe.Ritmo(s);',
         'nível de estação não acelera a família'),
     mut('qual-save-acumulador', SIM, 's.QAcc = Clamp0(I(parts[0], 0), 99);', 's.QAcc = 0;',
         'load perde o acumulador de qualidade (save no meio)'),
@@ -201,6 +202,30 @@ MUTACOES = [
         'Pacote do Mestre dispensa o vídeo também no VIP, no Cofre 2x e no bônus (ouro direto, fora da V20)'),
     mut('iap-remove-ads-nao-chega', COMPRAS, '_sim.Anuncios.RemoveAds = Tem(RemoveAds);', ';',
         'a posse remove_ads não chega ao veto do intersticial'),
+    # workers (B-CORE-04)
+    mut('wk-nivel1-passo', EQUIPE, '1f + WorkerDefs.PorterVel * (Nivel(w.Wk) - 1)', '1f + WorkerDefs.PorterVel * Nivel(w.Wk)',
+        'o ajudante no nível 1 já anda 6% mais rápido (o jogo deixa de ser o de antes)'),
+    mut('wk-carga-nivel', EQUIPE, 'foreach (int l in WorkerDefs.PorterCargaEm) if (n >= l) c++;', 'foreach (int l in WorkerDefs.PorterCargaEm) if (n > l) c++;',
+        'a carga extra do ajudante chega um nível depois'),
+    mut('wk-oficial-outra-familia', EQUIPE, 'Defs[k].Station == s.Recipe.Station && Nivel(k) > 0', 'Nivel(k) > 0',
+        'o oficial vale em toda bancada, não só na da família dele'),
+    mut('wk-mestre-na-fornalha', EQUIPE, 'if (m > 0 && s.Kind == Kind.Crafter) r +=', 'if (m > 0) r +=',
+        'o mestre de obras acelera também a fornalha'),
+    mut('wk-atendimento-sempre', EQUIPE, '=> NivelPapel(WorkerRole.Clerk) > 0 ? WorkerDefs.ClerkAtende : Balance.ServeTime;', '=> WorkerDefs.ClerkAtende;',
+        'o balcão atende no ritmo da balconista sem ela'),
+    mut('wk-comprar-sem-cobrar', EQUIPE, '_sim.Gold -= c; Gasto += c;', 'Gasto += c;',
+        'contratar e subir nível não cobram o ouro'),
+    mut('wk-renome-ignorado', EQUIPE, 'return RenomeDefs.NivelQueLibera(d.Id) < 0 || _sim.Renome.Libera(d.Id);', 'return true;',
+        'almoxarife e mestre de obras contratáveis sem o Renome 1/2'),
+    mut('wk-revelacao', EQUIPE, 'public bool Aberta => _sim.T.Workers && _sim.QualityRevealed;', 'public bool Aberta => _sim.T.Workers;',
+        'workers à venda antes das Ferramentas (mexe nos primeiros 10 min)'),
+    mut('wk-save-sem-nivel', EQUIPE, 'if (t.Count > 0) sb.Append("wkn=")', 'if (false) sb.Append("wkn=")',
+        'o save perde o nível e a contratação dos workers'),
+    mut('wk-load-depois-da-pilha', SIM, 'depende do almoxarife\n            sim.Recompute();', 'depende do almoxarife','o load corta a pilha de saída no teto sem o almoxarife (perde peças)'),
+    mut('wk-validator-custo-crescente', CV, 'else if (i > 0 && d.Niveis[i] <= d.Niveis[i - 1])', 'else if (false)',
+        'validator aceita nível de worker que não fica mais caro'),
+    mut('wk-bot-antes-da-producao', BOT, 'if (!s.ProductionComplete && c > s.RateEma * WorkerSegundos) return -1;', ';',
+        'o bot compra worker antes da produção completa (atrasa a curva produtiva)'),
 ]
 
 
