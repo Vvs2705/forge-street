@@ -42,7 +42,7 @@ namespace FS.Tests
             {
                 "product_sold" => Ev.Sold, "product_crafted" => Ev.Crafted, "order_done" => Ev.OrderDone, "upgrade_buy" => Ev.Bought,
                 "offline_claim" => Ev.Offline, "vip_served" => Ev.VipServed, "worker_hired" => Ev.Hired, "chest_opened" => Ev.ChestOpened,
-                "currency_source" => Ev.Sold, "currency_sink" => Ev.Bought, _ => throw new ArgumentException(d.Evento),
+                "currency_source" => Ev.Sold, "currency_sink" => Ev.Bought, "worker_upgrade" => Ev.WorkerUp, _ => throw new ArgumentException(d.Evento),
             };
             long falta = m.Alvo - m.Feito;
             bool soma = d.Evento.StartsWith("currency_", StringComparison.Ordinal);
@@ -74,14 +74,15 @@ namespace FS.Tests
             Sim a = Aberta(), b = Aberta();
             a.Metas.Agora(Em(D, 10), Fuso);
             b.Metas.Agora(Em(D, 23), Fuso);
-            // pool A = (dia x 5) mod 19 -> 3; B = (dia x 5 + 1) mod 13 -> 5; a C (vazia) cai na A em (dia x 5 + 2) mod 19 -> 5
-            CollectionAssert.AreEqual(new[] { "dly_ferram20", "dly_cofre", "dly_lingotes100" }, Ids(a));
+            // pool A = (dia x 5) mod 19 -> 3; B = (dia x 5 + 1) mod 14 -> 13 (B-CORE-04: dly_worker_nivel no fim da B); a C (vazia) cai na A em
+            // (dia x 5 + 2) mod 19 -> 5
+            CollectionAssert.AreEqual(new[] { "dly_ferram20", "dly_worker_nivel", "dly_lingotes100" }, Ids(a));
             CollectionAssert.AreEqual(Ids(a), Ids(b), "mesmo dia, mesmas diarias");
             // semana: (semana x 3 + k) mod 14 a partir de 3; joias100 travada (Joalheria) -> a seguinte
             CollectionAssert.AreEqual(new[] { "wkl_melhoria10", "wkl_vip15", "wkl_cofre5", "wkl_diarias15" }, IdsW(a));
             a.Metas.Agora(Em(D + 1, 10), Fuso);
-            // travadas puladas: melhoria3 e cofre2 (Corredor), vende150 e vende300 (Joalheria, Vitrine de joias)
-            CollectionAssert.AreEqual(new[] { "dly_forja_ferram60", "dly_gasta5min", "dly_renda5min" }, Ids(a));
+            // travadas puladas: vende150 e vende300 (Joalheria, Vitrine de joias); B = (20001 x 5 + 1) mod 14 -> 4
+            CollectionAssert.AreEqual(new[] { "dly_forja_ferram60", "dly_gasta10min", "dly_renda5min" }, Ids(a));
         }
 
         [Test]
@@ -356,6 +357,8 @@ namespace FS.Tests
             s.Metas.ResgatarLogin();
             Completa(s, s.Metas.Diaria(0));
             s.Metas.ResgatarDiaria(0);
+            s.Gold += 1000;   // B-CORE-04: o bot so sobe nivel depois da producao completa (~47 min); aqui o nivel 2 do Ajudante, como o jogador no menu
+            Assert.IsTrue(s.Equipe.Comprar(WorkerDefs.IndexOf("wk_ajudante1")), "worker_upgrade: nivel 2 do Ajudante");
             foreach (string ev in Metas.Eventos)
                 Assert.Greater(s.Metas.Cont.TryGetValue(ev, out long v) ? v : 0, 0L, ev);
             var todos = new Sim();

@@ -1534,7 +1534,58 @@ Perfil novo `AdWatcherE` (o AdWatcher assistindo também Supply e bônus, guloso
 
 **Achado:** assistir tudo atrasa a produção completa em 7 min. Não é o teto diário (com `AnunciosTetoDia=99` a produção fica em 52:07). O bônus da encomenda (+50% de um prêmio de ~25–60 ouro no começo) vale menos que os 30 s de relógio do anúncio, e é o placement mais visto (13 de 30). Varredura de valores (3 partidas): Supply 180 s → 50:00; bônus +100% → 50:25; os dois → 49:23; Supply 300 s + bônus +100% → 48:29 — nenhum empata com o AdWatcher. **Decisão:** os valores ficam; o jogador vê o valor antes de assistir (chips "+N" e "DOBRAR +N"), e o Orders 2.0 (B-CORE-05) recalibra o bônus com piso em segundos de renda (meta: AdWatcherE não mais lento que o AdWatcher). Pisos do §3: 0% abaixo nos 5 perfis.
 
-## 25. B-CORE-05: Orders 2.0 (2026-10-13)
+## 25. B-CORE-04: WorkerDef, os papéis do Old Forge e o bot que contrata (2026-10-13)
+
+**Vigente** (`Core/Equipe.cs`, `ECONOMIA_WAVE_B.md` §2, `CONTEUDO_V1.md` §6): os 13 workers do Old Forge em dados (`WorkerDefs.All`, IDs `wk_*`). Os 6 ajudantes viram `WorkerDef` Porter (o upgrade de sempre contrata; nível 1 = o ajudante de antes, bit a bit) e sobem até o nível 5 por 250/400/640/1.025 (+6% de passo por nível, carga +1 nos níveis 3 e 5). Equipe nova, contratada em ouro no cartão do menu, depois das Ferramentas: oficiais Bruna/Tomé/Iara (1.200; exigem Bigornas/Escudos/Ferramentas II) e Joaquim (2.400; Joalheria II) com q +15 (+25 no nível 5) e +5% de velocidade (+3%/nível) na família; Celeste (balconista, 1.500; Balcão 6) com paciência +10% (+5%/nível) e atendimento 0,40 → 0,32 s no balcão principal; Baltazar (almoxarife, 2.500; Renome 1) com saídas 4 → 6 (fornalha) e 3 → 5 (bancadas) e estoque do balcão +1 por produto a cada nível acima do 1; Otávio (mestre de obras, 4.000; Renome 2) com q +10 e +5% de velocidade (+2%/nível) em toda bancada. Níveis e contratação são categoria **Meta** (V14): fora da produção completa e do teto offline. **Desvio do §2.3 (revisar):** o almoxarife ganha +1 de estoque em todo nível (o §2.3 dava +2 só nos níveis 3 e 5, e os níveis 2 e 4 não fariam nada); mesmo total no 3 (+2) e no 5 (+4).
+
+**Bot (`Bot.WorkerSegundos`, padrão 0):** o mais barato à venda, só **depois da produção completa** (antes, só o que custa até N s da renda online; 0 = nenhum), e nunca à frente de melhoria (menu ou pad) igual ou mais barata. A varredura (§25.2) mostrou que todo worker comprado antes da produção completa a atrasa mais do que devolve.
+
+### 25.1 Perfil sem os workers novos = `main` ao byte
+
+`econsim --tuning Workers=false` (flag da Equipe desligada desde o início) contra o econsim da `main` (d0d78f0, #51–#53), 5 perfis: **CSV idêntico ao byte** em 60 min × 1 partida (md5 `56884df1…`), 90 min × 4 (`becb80df…`) e 120 min × 4 (`0ec710e4…`). Com a flag ligada e o bot que nunca compra worker (`--worker-seg -1`) também (60 × 1). No `coretests`: `EquipeTests.Bot_SemOsWorkersNovos_IdenticoAoDeAntes_E_ComEles_SoDepoisDaProducao` (log minuto a minuto e save iguais em 50 min; com o bot padrão, a curva produtiva e os níveis de estação no mesmo tick). Todos os `BalanceTests` passam sem mudar os portões.
+
+### 25.2 Varredura do `WorkerSegundos` (90 min, 4 partidas, média; F2P / AdWatcherE)
+
+| bot | 1ª compra de worker | Produção completa | Fachada | receita 0–60 | receita 0–90 | renda/min 80–90 | saldo aos 60 |
+|---|---|---|---|---|---|---|---|
+| sem workers (`main`) | — | 47:04 / 50:43 | 54:01 / 57:22 | 60.294 / 52.533 | 118.954 / 111.473 | 1.943 / 1.962 | 12.719 / 5.398 |
+| **0 (vigente)** | 47:09 / 50:49 | **47:04 / 50:43** | 73:43 / 76:59 | **61.332 / 53.067** | **133.364 / 124.070** | 2.464 / 2.474 | **726 / 374** |
+| 10 s | 35:07 (F2P) | 47:59 | 73:58 | 60.600 / 52.814 | 132.514 / 123.511 | 2.436 / 2.477 | 840 / 272 |
+| 20 s | 30:10 | 50:26 | 74:33 | 59.196 / 48.197 | 131.236 / 117.676 | 2.462 / 2.430 | 837 / 563 |
+| 30 s | 15:50 | 52:38 | 75:23 | 57.430 / 46.757 | 128.971 / 116.692 | 2.445 / 2.455 | 320 / 630 |
+
+Quanto antes o bot contrata, menor a receita aos 60 e aos 90 min: os 250–1.200 de um nível ou de um oficial na zona morta empurram a Joalheria e o Joalheiro mais do que o +6%/+15 devolve. Com 0 a curva produtiva é a de antes e a receita é a maior.
+
+### 25.3 Vigente, 90 min, 4 partidas (`main` → branch)
+
+| perfil | Produção completa | Fachada | pós-produção | saldo final | min sem destino | prêmio de qualidade | workers (contratados; níveis; gasto) |
+|---|---|---|---|---|---|---|---|
+| Ideal | 47:13 = | 54:04 → 73:17 | 89.481 → 57.890 | 35.506 → 3.916 | 17,8 → 2 | 13,5% → 18,0% | 6; 48; 47.040 |
+| F2P | 47:04 = | 54:01 → 73:43 | 88.150 → 56.430 | 34.247 → 5.512 | 17,3 → 1,3 | 12,6% → 17,1% | 6; 48; 47.040 |
+| Slow | 49:26 = | 56:36 → 76:35 | 82.100 → 49.061 | 28.172 → 17.134 | 14,3 → 0 | 12,6% → 16,8% | 6; 48; 47.040 |
+| AdWatcher | 44:39 = | 51:17 → 69:33 | 98.899 → 69.715 | 44.965 → 15.781 | 21 → 6,3 | 12,5% → 17,4% | 6; 48; 47.040 |
+| AdWatcherE | 50:43 = | 57:22 → 76:59 | 81.188 → 47.664 | 27.250 → 15.725 | 13,5 → 0 | 12,5% → 16,8% | 6; 48; 47.040 |
+
+Aos 120 min (4 partidas): prêmio de qualidade F2P 12,7% → 18,6%; minutos sem destino 47,3 → 31,3 (o bot fecha os 6 contratáveis no nível 5 por volta dos 88 min; o Otávio pede Renome 2, que o bot sem metas não alcança em 2 h). Bot humano (`BalanceTests`, Dt 1/30), 90 min: 6 contratados, 47.040 gastos, renda 80–90 2.429/min, saldo aos 60 min 186, receita 133.088 × 118.605 sem workers. 60 min × 1 partida: marcos, zona morta e pisos idênticos à `main`; workers F2P 4 contratados, 37 níveis, 27.705 gastos, 1ª compra 47:07.
+
+### 25.4 Portões (ECONOMIA_WAVE_B §10)
+
+| Medida | Portão | Medido (F2P) | |
+|---|---|---|---|
+| Primeiros 10 min | iguais, tick a tick | iguais (worker só depois das Ferramentas e, no bot, da produção completa) | ok |
+| Produção completa | 41–55 min | 47:04, igual à `main` | ok |
+| Zona morta até a produção | não piora (meta ≤ 12) | 20,5 = | ok (a meta de 12 fica para Orders 2.0 e Blueprints: worker antes da produção não a reduz, §25.2) |
+| Ouro sem destino aos 60 min | ≤ 10 mil | 12.719 → **726** | **ok** (antes falhava) |
+| Prêmio de qualidade | 5–20% aos 60–90; ≤ 35% aos 120 | 17,1% (90) / 18,6% (120) | ok |
+| Pisos do §3 | 0% abaixo | 0% abaixo nos 5 perfis | ok |
+
+**Retorno (achado, revisar):** os 47.040 dos 6 contratáveis + níveis sobem a renda de 1.943 para 2.464/min (+27%, janela 80–90): ~90 min para pagar, contra ≤ 40 min do portão dos níveis de estação L4–L5. Como ralo depois da produção completa funciona (receita 0–90 +12%, saldo aos 60 de 12,7 mil para 0,7 mil), mas pelo preço o worker não compensa antes dela. Knob se a Wave B quiser worker na zona morta: metade do preço dos níveis (como a V26 fez nas estações) ou efeito maior no nível 1; nada aplicado. A Fachada vai de 54:01 para 73:43 porque os workers (todos < 14 mil) disputam o ouro com o luxo; o `BalanceTests.Bot_90Minutos_Luxo` passou a rodar com `Workers = false` (isola o luxo sobre a curva produtiva; os portões dele seguem os mesmos).
+
+### 25.5 Testes e prova vermelha
+
+`EquipeTests` (20): golden dos 13 IDs; migração (mesmo upgrade, rota e ordem; nível 1 = passo e carga de antes; do save na mesma ordem); efeito neutro sem ninguém; revelação nas Ferramentas e flag desligada; compra (cobra na hora, sem ouro e no máximo nada muda, 250/400/640/1.025); requisitos por upgrade e Renome 1/2; cada papel (passo e carga por nível, oficial só na família e +25 no nível 5, mestre de obras em toda bancada e nunca na fornalha, balconista: paciência ×1,1/×1,3 e 5 → 7 vendas em 2 s, almoxarife: saídas 6/5 e estoque por nível); save de ida e volta (pilha de 6 na fornalha volta inteira), save antigo sem `wkn=` (schema 3 e o `wk=` do schema 2), lixo no `wkn=`; metas (`worker_hired` por papel, `worker_upgrade` por nível, ralo, retroativo); validator (ID, prefixo, 3 traços, custo que não sobe ou fora do múltiplo de 5, distrito/família/upgrade que o build não tem, papel da Wave C, 2º oficial da família, upgrade que já contrata, `wk_` do Renome sem worker); textos do cartão nos 3 idiomas em todo nível; `-equipe`; bot (idêntico sem os novos; 90 min com renda maior e saldo aos 60 ≤ 10 mil). `mutantes.py`: 12 mutações novas (`wk-*`: passo no nível 1, carga, oficial fora da família, mestre de obras na fornalha, atendimento sem balconista, compra sem cobrar, Renome ignorado, revelação, save sem nível, load cortando a pilha, validator de custo, bot antes da produção), todas mortas.
+
+## 26. B-CORE-05: Orders 2.0 (2026-10-13)
 
 Regra em `ECONOMIA_WAVE_B.md` §3 e GDD §10; catálogo no `CONTEUDO_V1.md` §7. **Vigente** (`Core/Encomendas.cs`, `Core/EncomendasDefs.cs`): 8 tipos em dados (`OrderDef`, IDs `ord_*`): Common (= a encomenda de antes), Bulk (2 linhas e 5 entregues), Quality (linha que já faz Fina; variante Superior no Renome 3), Rush (8 entregues; prazo de 240 s **só de bônus**: no prazo o prêmio dobra e dá +1 de Renome, fora dele paga o normal), Mixed (3 linhas; 2 produtos, 3 com 4 linhas), Royal (Renome 2, Fina; o próximo projeto da fila Royal), Blueprint (Renome 1 e projeto pendente; gancho do B-CORE-07) e Event (vaga própria enquanto o evento está ativo; só pontos; gancho do D-CORE-03). Os 5 fregueses do Old Forge (FS-3) entram na 7ª, 14ª… Common (N e item fixos, +1 coração). Rodízio do Old Forge `Common, Common, Bulk, Quality, Common, Mixed, Rush, Blueprint, Common, Royal` na posição `Abertas % 10` (abertas + entregues + trocadas), tipo travado vira Common; produto = `linhas[idx % linhas]`, pulando o que já está noutra vaga. Vagas 1 → 2 (Renome 1) → 3 (Renome 3). **Tudo o que é novo só depois das Ferramentas** (tipos, vagas extras, fregueses): até lá o jogo é o de antes, tick a tick. Prêmio em segundos da taxa online × a escala dos knobs da Common (`OrderSeconds / 150`, `OrderRewardSeconds / 10`), múltiplo de 5, fora do `GoldEarned`; Renome pelo tipo (+1 a +10). Uma peça vendida conta para uma vaga só (a mais antiga que a aceita). "Bônus da encomenda" (anúncio) = máx(50% do prêmio, **60 s de renda**) (`Tuning.EncomendaBonusMinSeg`).
 
@@ -1545,7 +1596,7 @@ Regra em `ECONOMIA_WAVE_B.md` §3 e GDD §10; catálogo no `CONTEUDO_V1.md` §7.
 4. **A variante Superior do Quality só abre com a automação fazendo Superior (q > 100);** hoje (q ≤ 30) nunca abre: o F2P não golpeia, e uma encomenda que só fecha com o golpe prenderia a vaga ("nunca pune"). Abre sozinha quando técnica/liga passarem de q 100.
 5. **Limiares 2–4 do Renome mantidos (70/180/400):** com o Orders 2.0 eles caem dentro dos portões (abaixo), então a recalibração é "não mexer". Ressalva: o bot não resgata metas (semanais +5, conquistas +5/+10, login +2/+3); o jogador real chega um pouco antes.
 
-### 25.1 econsim antes × depois, 3 partidas × 360 min (`--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 360 --partidas 3`, anúncio = 30 s)
+### 26.1 econsim antes × depois, 3 partidas × 360 min (`--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 360 --partidas 3`, anúncio = 30 s)
 
 Antes = `432e638` (a main com o #49 Renome e o E-PLAT-02); depois = este branch. Renome 1/2/3/4 = relógio em que o nível chegou (h:mm; "—" = não chegou em 6 h).
 
@@ -1564,7 +1615,7 @@ Antes = `432e638` (a main com o #49 Renome e o E-PLAT-02); depois = este branch.
 
 \* o AdWatcherE soma no prêmio o bônus que ele assiste (14–16 dos 30 anúncios do dia). Entregues por tipo em 6 h (F2P): Common 112, Bulk 25, Quality 29, Rush 21, Mixed 22, Royal 19 (Blueprint e Event esperam os ganchos). Pisos do §3: 0% abaixo nos 5 perfis, iguais ao antes. Depois da produção completa o ouro continua sem destino (pós-produção 720 mil em 6 h no F2P, era 648 mil): é a Wave C.
 
-### 25.2 8 partidas × 60 min (`--minutos 60 --partidas 8`)
+### 26.2 8 partidas × 60 min (`--minutos 60 --partidas 8`)
 
 | perfil | Produção (antes → depois) | zona morta | ouro de encomendas aos 60 min | encomendas em 60 min |
 |---|---|---|---|---|
@@ -1574,7 +1625,7 @@ Antes = `432e638` (a main com o #49 Renome e o E-PLAT-02); depois = este branch.
 | AdWatcher | 44:34 → **42:36** | 19,1 → 17,4 | 11,2% | 31,3 |
 | AdWatcherE | 50:50 → **41:11** | 24,1 → 17,4 | 32,3%* | 27,8 |
 
-### 25.3 AdWatcher × AdWatcherE (achado do §24)
+### 26.3 AdWatcher × AdWatcherE (achado do §24)
 
 8 partidas × 60 min, Orders 2.0, varrendo o piso do bônus (`--tuning "EncomendaBonusMinSeg=N"`); o AdWatcher não assiste o bônus (42:36 em todas):
 
@@ -1589,7 +1640,7 @@ Antes = `432e638` (a main com o #49 Renome e o E-PLAT-02); depois = este branch.
 
 60 s é o menor piso em que o AdWatcherE não fica mais lento que o AdWatcher (o anúncio custa 30 s de relógio e devolve 60 s de renda). Em 3 partidas × 360 min os dois empatam (43:01 × 43:00). Pisos do §3 do AdWatcherE: 0% abaixo.
 
-### 25.4 Portões (ECONOMIA_WAVE_B §10)
+### 26.4 Portões (ECONOMIA_WAVE_B §10)
 
 | Medida | Portão | Medido (F2P) | |
 |---|---|---|---|

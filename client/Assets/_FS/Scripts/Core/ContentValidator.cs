@@ -21,7 +21,7 @@ namespace FS.Core
         /// <summary>Todas as regras. Sem argumentos = o conteudo real; o teste injeta uma COPIA quebrada no que quiser. `items`/`recipes` =
         /// conteudo do mundo (World); com `world` dado, valem os dele.</summary>
         public static List<string> Validate(UpgradeDef[] upgrades = null, long[] costs = null, int[] prices = null, MilestoneDef[] milestones = null, Sim world = null,
-            ItemDef[] items = null, RecipeDef[] recipes = null, RenomeDef[] renome = null, OrderDef[] orders = null)
+            ItemDef[] items = null, RecipeDef[] recipes = null, RenomeDef[] renome = null, WorkerDef[] workers = null, OrderDef[] orders = null)
         {
             upgrades ??= Upgrades.All;
             costs ??= RealCosts();
@@ -44,7 +44,62 @@ namespace FS.Core
             e.AddRange(Missoes(MetasDefs.Diarias, MetasDefs.Semanais, MetasDefs.Conquistas, MetasDefs.LoginDias, Tuning.Padrao));
             e.AddRange(NiveisRenome(renome ?? RenomeDefs.Niveis));
             e.AddRange(OrderDefs.Validar(orders ?? OrderDefs.All, OrderDefs.Ciclos, world));   // B-CORE-05 (regras em EncomendasDefs.cs)
+            e.AddRange(Workers(workers ?? WorkerDefs.All, world, renome ?? RenomeDefs.Niveis));
             return e;
+        }
+
+        /// <summary>B-CORE-04: maior nivel de worker do build (filtro das metas worker_upgrade).</summary>
+        static int NivelWorkerMax { get { int m = 1; foreach (WorkerDef d in WorkerDefs.All) m = Math.Max(m, d.MaxNivel); return m; } }
+
+        /// <summary>Distritos que o build tem. ponytail: so o Old Forge ate os DistrictDef (C-CORE-01), que trocam esta lista pela tabela.</summary>
+        public static readonly string[] Distritos = { WorkerDefs.OldForge };
+
+        /// <summary>
+        /// B-CORE-04 (ECONOMIA_WAVE_B §8.3, §9 #8): ID unico com prefixo wk_ em [a-z0-9_], nome e skin; distrito do build; 1-2 tracos (DM §23: no
+        /// maximo 2 tracos fortes); custo de nivel positivo, multiplo de 5 e crescente nivel a nivel. Porter: contratado por um upgrade que existe
+        /// (um worker por upgrade), rota 0-3, sem preco proprio. Os outros: contratacao positiva multipla de 5; requisito = upgrade que existe;
+        /// oficial com familia que tem bancada de produto no mundo, um por familia; papel com regra no nucleo (Smelter, Courier e Manager sao da
+        /// Wave C). Todo wk_ que o Renome libera existe.
+        /// </summary>
+        public static IEnumerable<string> Workers(WorkerDef[] defs, Sim w, RenomeDef[] renome)
+        {
+            var ids = new HashSet<string>(); var oficios = new HashSet<string>(); var contrata = new HashSet<string>();
+            foreach (WorkerDef d in defs)
+            {
+                string at = $"worker {d.Id}:";
+                if (string.IsNullOrEmpty(d.Id) || !d.Id.StartsWith("wk_", StringComparison.Ordinal) || !IdOk(d.Id)) yield return $"{at} ID fora do formato wk_[a-z0-9_]";
+                else if (!ids.Add(d.Id)) yield return $"{at} ID repetido";
+                if (string.IsNullOrWhiteSpace(d.Nome) || d.Nome.Length > NameMax) yield return $"{at} nome vazio ou com mais de {NameMax} caracteres";
+                if (string.IsNullOrEmpty(d.Skin)) yield return $"{at} sem skin (folha do personagem)";
+                if (Array.IndexOf(Distritos, d.Distrito) < 0) yield return $"{at} distrito \"{d.Distrito}\" que o build nao tem";
+                if (d.Tracos == null || d.Tracos.Length < 1 || d.Tracos.Length > 2) yield return $"{at} {d.Tracos?.Length ?? 0} tracos (1 ou 2, DM §23)";
+                if (d.Niveis == null || d.Niveis.Length == 0) { yield return $"{at} sem nivel acima do 1"; continue; }
+                for (int i = 0; i < d.Niveis.Length; i++)
+                    if (d.Niveis[i] <= 0 || d.Niveis[i] % 5 != 0) yield return $"{at} nivel {i + 2} custa {d.Niveis[i]} (positivo e multiplo de 5)";
+                    else if (i > 0 && d.Niveis[i] <= d.Niveis[i - 1]) yield return $"{at} nivel {i + 2} ({d.Niveis[i]}) nao sobe do {i + 1} ({d.Niveis[i - 1]})";
+                if (d.Papel == WorkerRole.Porter)
+                {
+                    if (d.Contrata == null || Upgrades.IndexOf(d.Contrata) < 0) yield return $"{at} ajudante sem upgrade que contrata (\"{d.Contrata}\")";
+                    else if (!contrata.Add(d.Contrata)) yield return $"{at} upgrade \"{d.Contrata}\" ja contrata outro worker";
+                    if (d.Rota < 0 || d.Rota > 3) yield return $"{at} rota {d.Rota} (0 minerio, 1 lingote, 2 produto, 3 joalheiro)";
+                    if (d.Contratacao != 0 || d.Requer != null) yield return $"{at} ajudante com preco ou requisito proprio (o upgrade e' que contrata)";
+                    continue;
+                }
+                if (d.Contrata != null || d.Rota != -1) yield return $"{at} so o ajudante (Porter) e' contratado por upgrade e tem rota";
+                if (d.Contratacao <= 0 || d.Contratacao % 5 != 0) yield return $"{at} contratacao {d.Contratacao} (positiva e multipla de 5)";
+                if (d.Requer != null && Upgrades.IndexOf(d.Requer) < 0) yield return $"{at} requisito \"{d.Requer}\", que nao e' upgrade do build";
+                if (d.Papel > WorkerRole.Foreman) yield return $"{at} papel {d.Papel} ainda sem regra no nucleo (Wave C)";
+                if (d.Papel == WorkerRole.Smith)
+                {
+                    if (!w.Stations.Exists(s => s.Produces && s.Recipe.Station == d.Station && w.IsProduct(s.OutItem)))
+                        yield return $"{at} oficial da familia \"{d.Station}\", sem bancada de produto no mundo";
+                    else if (!oficios.Add(d.Station)) yield return $"{at} segundo oficial da familia \"{d.Station}\"";
+                }
+                else if (d.Station != null) yield return $"{at} familia \"{d.Station}\" fora do oficial";
+            }
+            foreach (RenomeDef r in renome)
+                foreach (string id in r.Libera)
+                    if (id.StartsWith("wk_", StringComparison.Ordinal) && !ids.Contains(id)) yield return $"renome: nivel {r.Nivel} libera \"{id}\", worker que o build nao tem";
         }
 
         /// <summary>B-CORE-06 (GDD §23 #11): o 0 (limiar 0) e 10 niveis, na ordem, com limiar crescente; cada nivel de 1 a 10 libera algo; ID de
@@ -126,8 +181,14 @@ namespace FS.Core
                     if (Array.IndexOf(EventosProibidos, d.Evento) >= 0) yield return $"{at} gatilho {d.Evento} pune ou exige anuncio";
                     else if (Array.IndexOf(Metas.Eventos, d.Evento) < 0) yield return $"{at} gatilho {d.Evento} que o Sim nao emite";
                     int max = d.Evento == "upgrade_buy" ? Upgrades.Count - 1 : d.Evento == "mission_complete" ? 1 : d.Evento == "order_complete" ? (int)OrderType.Event
-                        : d.Evento == "product_sold" || d.Evento == "product_crafted" || d.Evento == "order_done" || d.Evento == "vip_served" ? Items.All.Length - 1 : -1;
-                    if (d.Filtro < (d.Evento == "mission_complete" ? 0 : -1) || d.Filtro > max) yield return $"{at} filtro {d.Filtro} invalido para {d.Evento}";
+                        : d.Evento == "product_sold" || d.Evento == "product_crafted" || d.Evento == "order_done" || d.Evento == "vip_served" ? Items.All.Length - 1
+                        : d.Evento == "worker_hired" ? (int)WorkerRole.Manager : d.Evento == "worker_upgrade" ? NivelWorkerMax : -1;   // B-CORE-04: papel / nivel
+                    if (d.Filtro < (d.Evento == "mission_complete" ? 0 : -1) || d.Filtro > max || d.Evento == "worker_upgrade" && d.Filtro >= 0 && d.Filtro < 2)
+                        yield return $"{at} filtro {d.Filtro} invalido para {d.Evento}";
+                    // B-CORE-04: contratar/subir mais workers do que o build tem nunca fecha
+                    long workers = d.Evento == "worker_hired" ? Array.FindAll(WorkerDefs.All, x => d.Filtro < 0 || (int)x.Papel == d.Filtro).Length
+                        : d.Evento == "worker_upgrade" && d.Filtro >= 2 ? Array.FindAll(WorkerDefs.All, x => x.MaxNivel >= d.Filtro).Length : long.MaxValue;
+                    if (tipo == TipoMeta.Conquista && d.Alvo > workers) yield return $"{at} alvo {d.Alvo} acima dos {workers} workers do build";
                     if (d.Alvo <= 0) yield return $"{at} alvo {d.Alvo}";
                     if (d.Abre != null && Upgrades.IndexOf(d.Abre) < 0) yield return $"{at} abre com \"{d.Abre}\", que nao e' upgrade";
                     if (d.Conta == Conta.Segundos && !d.Evento.StartsWith("currency_", StringComparison.Ordinal)) yield return $"{at} alvo em segundos de renda fora de currency_*";

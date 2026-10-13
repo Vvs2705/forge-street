@@ -138,7 +138,7 @@ namespace FS.Tests
             Assert.AreEqual(15L, s.Anuncios.Previa(Anuncio.EncomendaBonus), "premio minimo 25: +12,5 vira 15 (multiplo de 5)");
         }
 
-        /// <summary>B-CORE-05 (achado do AdWatcherE, BALANCE.md §24/§25): o bonus vale pelo menos EncomendaBonusMinSeg s da renda de agora (o
+        /// <summary>B-CORE-05 (achado do AdWatcherE, BALANCE.md §24/§26): o bonus vale pelo menos EncomendaBonusMinSeg s da renda de agora (o
         /// anuncio custa ~30 s de relogio); 50% do premio quando e' mais.</summary>
         [Test]
         public void BonusDaEncomenda_NuncaMenosQue60sDeRenda()

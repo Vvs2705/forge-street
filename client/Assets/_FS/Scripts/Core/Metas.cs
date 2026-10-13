@@ -46,6 +46,7 @@ namespace FS.Core
             "vip_served", "chest_opened", "mission_complete", "login_claim",
             // B-CORE-05 (LIVEOPS_V1 §5.8): entrega por tipo (filtro = OrderType), Quality/Royal/Mixed e Rush no prazo (Encomendas.Entregar)
             "order_complete", "order_premium", "order_rush_prazo",
+            "worker_upgrade",   // B-CORE-04 (LIVEOPS_V1 §5.6): filtro = nivel alcancado
         };
 
         public sealed class Slot { public MetaDef Def; public long Base, Alvo; }
@@ -90,7 +91,9 @@ namespace FS.Core
                 case Ev.Bought: Soma("upgrade_buy", a, 1); Soma("currency_sink", -1, b); break;
                 case Ev.Offline: Soma("offline_claim", -1, 1); break;
                 case Ev.VipServed: Soma("vip_served", a, 1); break;
-                case Ev.Hired: Soma("worker_hired", -1, 1); break;
+                // B-CORE-04: filtro = papel (WorkerRole; 0 = o ajudante do upgrade, cujo ouro ja contou no Ev.Bought); worker_upgrade: filtro = nivel novo
+                case Ev.Hired: Soma("worker_hired", b, 1); if (b > 0) Soma("currency_sink", -1, _sim.Equipe.Preco(a, 1)); break;
+                case Ev.WorkerUp: Soma("worker_upgrade", b, 1); Soma("currency_sink", -1, _sim.Equipe.Preco(a, b)); break;
                 case Ev.ChestOpened: Soma("chest_opened", -1, 1); break;
             }
         }
@@ -200,7 +203,8 @@ namespace FS.Core
             switch (d.Evento)   // ponytail: "compre 3" com 2 a venda ainda aparece; o rodizio so pula quando nao ha mais nada
             {
                 case "upgrade_buy": case "currency_sink": return _sim.UpgradesBought < Upgrades.Count;
-                case "worker_hired": return _sim.Workers.Count < AjudantesOldForge;
+                case "worker_hired": return _sim.Workers.Count < AjudantesOldForge || _sim.Equipe.FaltaContratar;   // B-CORE-04: ou um da Equipe
+                case "worker_upgrade": return _sim.Equipe.FaltaNivel;
                 case "chest_opened": return _sim.Chests.Exists(c => c.State < 2);
                 // B-CORE-05: missao de tipo de encomenda so quando o tipo ja abre no rodizio (antes, nao fecharia na semana)
                 case "order_complete": return _sim.Encomendas.TipoAberto((OrderType)d.Filtro);
@@ -306,7 +310,19 @@ namespace FS.Core
             Max("upgrade_buy", -1, s.UpgradesBought);
             Max("currency_sink", -1, gasto);
             Max("currency_source", -1, s.GoldEarned);
-            Max("worker_hired", -1, s.Workers.Count);
+            // B-CORE-04: contratacoes por papel (os ajudantes do upgrade = papel 0) e niveis alcancados (filtro = nivel)
+            Max("worker_hired", -1, s.Workers.Count + s.Equipe.Contratados());
+            Max("worker_hired", (int)WorkerRole.Porter, s.Workers.Count);
+            for (WorkerRole p = WorkerRole.Smith; p <= WorkerRole.Manager; p++) if (s.Equipe.Contratados(p) > 0) Max("worker_hired", (int)p, s.Equipe.Contratados(p));
+            long subidos = 0;
+            for (int n = 2; n <= 10; n++)
+            {
+                int k = 0;
+                for (int w = 0; w < s.Equipe.Defs.Length; w++) if (s.Equipe.Nivel(w) >= n) k++;
+                subidos += k;
+                if (k > 0) Max("worker_upgrade", n, k);
+            }
+            Max("worker_upgrade", -1, subidos);
             Max("chest_opened", -1, s.Chests.FindAll(c => c.State == 2).Count);
         }
 
