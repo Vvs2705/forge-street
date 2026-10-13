@@ -32,6 +32,7 @@ COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Sc
           'Assets/_FS/Scripts/View/QualidadeView.cs', 'tools/coretests']
 SIM, DEFS, CV = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs', 'Assets/_FS/Scripts/Core/ContentValidator.cs'
 METAS = 'Assets/_FS/Scripts/Core/Metas.cs'
+ANUNCIOS = 'Assets/_FS/Scripts/Core/Anuncios.cs'
 RENOME = 'Assets/_FS/Scripts/Core/Renome.cs'
 EQUIPE, BOT = 'Assets/_FS/Scripts/Core/Equipe.cs', 'Assets/_FS/Scripts/Core/Bot.cs'
 
@@ -97,12 +98,25 @@ MUTACOES = [
         'VIP paga 2x o preço por unidade em vez de 3x'),
     mut('boost-multiplicador', SIM, 'BoostMul += 1f;', 'BoostMul += 2f;',
         '1o anúncio de velocidade já dá 3x (em vez de 2x)'),
-    mut('boost-recarga', DEFS, 'BoostCooldownSeconds = 300f;', 'BoostCooldownSeconds = 240f;',
+    mut('boost-recarga', DEFS, 'Id = "velocidade", Recarga = 300f', 'Id = "velocidade", Recarga = 240f',
         'recarga do boost 5 min -> 4 min'),
-    mut('vip-chamado-recarga', DEFS, 'VipChamadoRecarga = 300f;', 'VipChamadoRecarga = 240f;',
+    mut('vip-chamado-recarga', DEFS, 'Id = "vip", Recarga = 300f', 'Id = "vip", Recarga = 240f',
         'recarga do Chamar VIP 5 min -> 4 min (P14)'),
     mut('anuncio-antes-da-melhoria', DEFS, 'AnunciosDepoisDaPrimeiraMelhoria = true;', 'AnunciosDepoisDaPrimeiraMelhoria = false;',
         'Velocidade e Chamar VIP liberados antes da 1a melhoria (D6)'),
+    # anuncios por placement e intersticial (E-PLAT-02/03)
+    mut('ad-paga-2x', ANUNCIOS, 'Pago[i] = k;', ';',
+        'rewarded paga mas nao grava a chave: o mesmo ID de transacao paga de novo'),
+    mut('ad-supply-recarga', DEFS, 'Id = "supply", Recarga = 600f', 'Id = "supply", Recarga = 540f',
+        'recarga do Supply Drop 10 min -> 9 min'),
+    mut('ad-teto-dia', ANUNCIOS, 'HojeTotal() >= _sim.T.AnunciosTetoDia', 'HojeTotal() > _sim.T.AnunciosTetoDia',
+        'teto diario total de rewarded deixa passar 1 a mais'),
+    mut('ad-troca-proxima', ANUNCIOS, '_sim.OrderAt(_sim.OrderIndex + 1)', '_sim.OrderAt(_sim.OrderIndex + 2)',
+        '"Trocar encomenda" pula 2 no rodizio (entra outra que nao a mostrada)'),
+    mut('ad-inter-tutorial', ANUNCIOS, '            : !_sim.Bought[(int)Upgrade.Tools] ? "tutorial"\n', '',
+        'intersticial sem o veto do tutorial (antes das Ferramentas)'),
+    mut('ad-inter-flag', DEFS, 'public bool Interstitial;', 'public bool Interstitial = true;',
+        'intersticial ligado por padrao (P3/V10 manda desligado)'),
     # fila e clientes
     mut('fila-vaga-a-mais', SIM, 'if (q.Count < cap)', 'if (q.Count <= cap)',
         'fila aceita um cliente além das vagas'),

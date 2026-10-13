@@ -437,7 +437,7 @@ namespace FS.Tests
             Assert.IsTrue(s.Workers.TrueForAll(w => s.Equipe.Nivel(w.Wk) == 3 && w.Cap == Balance.WorkerCapUp + 1), "ajudantes no nivel 3, carga +1");
         }
 
-        // ------------------------------------------------------------------ bot e economia (BALANCE.md §24)
+        // ------------------------------------------------------------------ bot e economia (BALANCE.md §25)
 
         static (Sim s, string log) Joga(Tuning t, float minutos, float workerSeg = 0f)
         {

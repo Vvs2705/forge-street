@@ -102,7 +102,7 @@ namespace FS.Core
     /// <summary>
     /// B-CORE-04: a equipe da partida (um por Sim, como o Renome): quem foi contratado, o nivel de cada um, a compra (contratar ou subir nivel,
     /// em ouro, sem sorteio) e o efeito de cada papel, que o Sim le nos ganchos (Recompute, QualityBreakdown, Clients, Serve). Sem ninguem
-    /// contratado e todo Porter no nivel 1 cada efeito e' o neutro exato (x 1f, + 0): o Sim e o bot saem identicos ao de antes (BALANCE.md §24).
+    /// contratado e todo Porter no nivel 1 cada efeito e' o neutro exato (x 1f, + 0): o Sim e o bot saem identicos ao de antes (BALANCE.md §25).
     /// Revelacao: nada a venda antes das Ferramentas (ECONOMIA_WAVE_B §0.6) nem com a flag Tuning.Workers desligada (quem ja esta contratado
     /// continua). Save: linha wkn=id:nivel (so quem tem nivel); save sem ela = ninguem contratado e os ajudantes no nivel 1.
     /// </summary>

@@ -13,7 +13,7 @@ namespace FS
         Modal,       // painel (cofre, -adtest) ou configuracoes por cima: joystick travado, a oficina segue
         Ad,          // do pedido do anuncio ate a recompensa/falha: simulacao congelada
         Paused,      // app em segundo plano (OnApplicationPause) que nao foi o anuncio
-        Transition,  // encomenda entregue, cartao saindo (~0,35 s): o unico lugar do interstitial futuro (E-PLAT-03, flag desligada)
+        Transition,  // encomenda entregue, cartao saindo (~0,35 s): o unico lugar do intersticial (E-PLAT-03: Anuncios.VetoIntersticial, flag desligada)
     }
 
     /// <summary>O que o voltar do Android faz.</summary>

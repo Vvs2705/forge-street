@@ -234,7 +234,7 @@ namespace FS.Tests
         {
             const int M = 90;
             // B-CORE-04: sem os workers novos (flag), que tambem sao ralo depois da producao e disputam o ouro com o luxo (a Fachada vai a ~74 min
-            // com eles: BALANCE.md §24, EquipeTests). Este teste isola o luxo sobre a curva produtiva, que os workers nao mudam
+            // com eles: BALANCE.md §25, EquipeTests). Este teste isola o luxo sobre a curva produtiva, que os workers nao mudam
             var lux = new Sim(new Tuning { Workers = false }); var plain = new Sim(new Tuning { Workers = false });
             plain.Pads.RemoveAll(p => Upgrades.IsLuxury((int)p.Chain[0]));   // baseline: luxo nunca a venda
             Assert.AreEqual(lux.Pads.Count - 3, plain.Pads.Count);

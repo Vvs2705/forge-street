@@ -2286,7 +2286,7 @@ namespace FS.Tests
             Assert.AreEqual((200f, 1, true), (s.VipIn, s.VipCount, s.VipActive), "VIP extra agora; o relogio natural fica como estava");
             Assert.IsFalse(s.SummonVip(), "esperando vaga: recusa");
             s.Tick(Dt, 0f, 0f);
-            Assert.AreEqual(Tuning.Padrao.VipSummonPackMul * Tuning.Padrao.VipPackMin, Vip(s).Pack, "pacote 2x o do natural (3 -> 6)");
+            Assert.AreEqual((int)Tuning.Padrao.Ad(Anuncio.Vip).Valor * Tuning.Padrao.VipPackMin, Vip(s).Pack, "pacote 2x o do natural (3 -> 6)");
             Assert.IsFalse(s.CanSummonVip || s.SummonVip(), "VIP na fila: recusa");
             s.Stock[(int)Item.Sword] = s.CounterCap;
             Run(s, 3f);
@@ -2310,16 +2310,16 @@ namespace FS.Tests
         {
             var s = TuningTests.Liberado();   // D6: anuncio so depois da 1a melhoria (a Mochila nao mexe no que este teste mede)
             Assert.AreEqual((1f, 0f, 0f, true), (s.BoostMul, s.BoostLeft, s.BoostCooldown, s.CanBoost));
-            Assert.AreEqual((2f, Tuning.Padrao.BoostSeconds), (s.StartBoost(), s.BoostLeft), "1 anuncio: 2x por 60 s");
+            Assert.AreEqual((2f, Tuning.Padrao.Ad(Anuncio.Velocidade).Valor), (s.StartBoost(), s.BoostLeft), "1 anuncio: 2x por 60 s");
             Assert.IsTrue(s.CanBoost, "no 2x da para subir");
             Run(s, 30f);
-            Assert.AreEqual(Tuning.Padrao.BoostSeconds - 30f, s.BoostLeft, 0.05f, "corre no tempo de jogo");
-            Assert.AreEqual((3f, Tuning.Padrao.BoostSeconds), (s.StartBoost(), s.BoostLeft), "2o anuncio com o boost ativo: 3x e reinicia os 60 s");
+            Assert.AreEqual(Tuning.Padrao.Ad(Anuncio.Velocidade).Valor - 30f, s.BoostLeft, 0.05f, "corre no tempo de jogo");
+            Assert.AreEqual((3f, Tuning.Padrao.Ad(Anuncio.Velocidade).Valor), (s.StartBoost(), s.BoostLeft), "2o anuncio com o boost ativo: 3x e reinicia os 60 s");
             Assert.IsFalse(s.CanBoost, "teto 3x");
             Run(s, 1f);
             float left = s.BoostLeft;
             Assert.AreEqual((0f, 3f, left), (s.StartBoost(), s.BoostMul, s.BoostLeft), "no 3x recusa e nada muda");
-            Run(s, Tuning.Padrao.BoostSeconds - 2f);
+            Run(s, Tuning.Padrao.Ad(Anuncio.Velocidade).Valor - 2f);
             Assert.AreEqual((3f, 0f), (s.BoostMul, s.BoostCooldown), "a recarga so comeca no fim do boost");
             Run(s, 2f);
             Assert.AreEqual((1f, 0f), (s.BoostMul, s.BoostLeft), "expirou");
