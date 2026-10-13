@@ -87,9 +87,9 @@ namespace FS
         // grosso (embaixo) ao mais fino (em cima), cada um sobre o anterior com 25% de sobreposicao: a espada deitada (0,15 m) nao some
         // sob um escudo. Altura do deitado / lado, medida nos PNG da v0.5 (bbox x 1,1 / 128; arte nova = remedir). Coluna > StackMax encolhe.
         const float ItemS = 0.5f, StackMax = 1.6f;
-        static readonly Item[] PileOrder = { Item.Ore, Item.Shield, Item.Jewel, Item.Tool, Item.Ingot, Item.Sword };
-        static readonly float[] LyingH = { 0.88f, 0.57f, 0.3f, 0.95f, 0.61f, 0.95f };
-        readonly float[] _pileY = new float[Balance.PlayerCapUp * 6];
+        static readonly Item[] PileOrder = { Item.Ore, Item.Shield, Item.Jewel, Item.Tool, Item.Ingot, Item.LongSword, Item.Sword };   // B-CORE-07: a espada longa, fina como a espada
+        static readonly float[] LyingH = { 0.88f, 0.57f, 0.3f, 0.95f, 0.61f, 0.95f, 0.3f };   // por Item (B-CORE-07: espada longa ~ espada; remedir com a arte)
+        readonly float[] _pileY = new float[Balance.PlayerCapUp * Items.All.Length];
         internal const float PileS = 0.4f; const float PileStep = 0.2f;   // pilhas das estacoes (2 colunas de itens deitados)
         // Balao do pedido (BENCHMARK_VISUAL P0-2): 1o da fila com balao 1,32 x 1,12 m e icone de 0,9 m, deslocado 0,2 m para a esquerda
         // (o 1o e' a vaga mais a esquerda) para nao encostar no mini-icone do 2o; o rabicho fica sobre a cabeca. Anel = borda de 0,1 m.
@@ -387,7 +387,7 @@ namespace FS
                 case Kind.Deposit: return "deposito";
                 case Kind.Furnace: return "fornalha";
                 case Kind.Counter: return s == _sim.JewelShop ? "loja_joalheria" : null;   // balcao: estande modular (o toldo saiu na v0.5)
-                default: return s.OutItem switch { Item.Sword => "bigorna", Item.Shield => "bancada_escudos", Item.Tool => "bancada_ferramentas", Item.Jewel => "bancada_joalheria", _ => null };
+                default: return s.OutItem switch { Item.Sword or Item.LongSword => "bigorna", Item.Shield => "bancada_escudos", Item.Tool => "bancada_ferramentas", Item.Jewel => "bancada_joalheria", _ => null };
             }
         }
 
@@ -574,7 +574,7 @@ namespace FS
             if (s.Kind == Kind.Counter && !v.Stand)
             {
                 var sold = new List<Item>();   // loja de joias: so joia; balcao sem os modulos do estande: espada/escudo/ferramenta
-                for (Item it = Item.Sword; it <= Item.Jewel; it++) if (_sim.Sells(s, it)) sold.Add(it);
+                for (int k = (int)Item.Sword; k < _sim.ItemDefs.Length; k++) if (_sim.Sells(s, (Item)k)) sold.Add((Item)k);   // B-CORE-07: todo produto
                 v.StockItems = sold.ToArray();
                 v.Stock = new SpriteRenderer[sold.Count * 6];   // 6 visiveis por produto, colunas centradas na estacao
                 for (int p = 0; p < sold.Count; p++)
@@ -672,7 +672,7 @@ namespace FS
             fill = 0.72f;
             string st = (Upgrade)u switch
             {
-                Upgrade.Anvil2 => "bigorna", Upgrade.Furnace2 => "fornalha", Upgrade.Shields => "bancada_escudos", Upgrade.Tools => "bancada_ferramentas",
+                Upgrade.Anvil2 or Upgrade.LongAnvil => "bigorna", Upgrade.Furnace2 => "fornalha", Upgrade.Shields => "bancada_escudos", Upgrade.Tools => "bancada_ferramentas",
                 Upgrade.Jewelry => "bancada_joalheria", _ => null,
             };
             if (st != null) return StaticArt(st, StationCell);   // mesma celula da estacao: o 1o Frame no cache serve aos dois

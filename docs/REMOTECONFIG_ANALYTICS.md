@@ -15,7 +15,7 @@ Um JSON plano. `id` e `versao` identificam o config; o resto são chaves.
   "id": "ab_preco_espada",
   "versao": 3,
   "OfflineFactor": 0.3,
-  "Price": [0, 0, 12, 25, 16, 60],
+  "Price": [0, 0, 12, 25, 16, 60, 40],
   "Encomendas": true,
   "Placements.supply.Ligado": false,
   "Placements.vip.Recarga": 600,
@@ -25,7 +25,7 @@ Um JSON plano. `id` e `versao` identificam o config; o resto são chaves.
 
 - **Chave = nome exato de um campo público do `Tuning`** (`Core/Defs.cs`): `bool`, `int`, `long`, `float` ou array deles. Campo novo no `Tuning` já pode ser mudado pelo config, sem mexer no `RemoteConfig.cs`. Uma flag de IAP ou de Pass, quando existir, entra assim.
 - **Placements de anúncio**: `Placements.<id>.<campo>`, com `<id>` em `vip`, `velocidade`, `cofre2x`, `encomenda_bonus`, `encomenda_troca` ou `supply` e `<campo>` em `Ligado`, `Recarga`, `TetoDia` ou `Valor` (o `Id` não muda).
-- **Array**: precisa ter o mesmo tamanho do padrão (`Price` tem 6). O config só ajusta o que o build já tem e **nunca cria** item, placement, oferta, baú ou sorteio. Por isso não há como entrar item aleatório pago (V4).
+- **Array**: precisa ter o mesmo tamanho do padrão (`Price` tem 7 desde a espada longa, B-CORE-07). O config só ajusta o que o build já tem e **nunca cria** item, placement, oferta, baú ou sorteio. Por isso não há como entrar item aleatório pago (V4).
 - **Ignorado e registrado**: chave desconhecida, `id` de placement que o build não tem, tipo errado (`"0.3"` entre aspas, `1` num bool) e array de outro tamanho.
 
 ### Quando vale
