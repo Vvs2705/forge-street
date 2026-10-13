@@ -318,7 +318,7 @@ def taxonomia(r):
     reais = [S["real"] for S in ses.values() if S["real"] is not None]
     s = ["", "SESSAO E APARELHO (v0.7, DM s87; session_end = s reais em primeiro plano, vale a ultima da sessao)",
          f"  duracao real: mediana {mmss(mediana(reais))} | sessoes com session_end {len(reais)}/{len(ses)}"]
-    for campo in ("build", "os", "ram"):
+    for campo in ("build", "os", "ram", "config"):   # config = RemoteConfig da abertura (A-PLAT-08, DM s89)
         vs = sorted(((v, c) for (k, v), c in r["info"].items() if k == campo), key=lambda x: (-x[1], x[0]))
         s.append(f"  {campo}: " + (", ".join(f"{v} ({c})" for v, c in vs) or "-"))
     tot = sum(r["fps"].values())

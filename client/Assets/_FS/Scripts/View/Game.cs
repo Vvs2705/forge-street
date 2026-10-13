@@ -39,6 +39,9 @@ namespace FS
     /// (cofre real de S s fora, 60..7200). Captura que mostraria algo impossivel (compra id@t sem ouro ou pre-requisito, -vipnow depois de
     /// um warmup sem venda) loga o erro e sai 1 (Falha).
     /// Build dev: tambem pelo intent do Android (Arg).
+    /// A-PLAT-08/09 (Plataforma.cs, docs/REMOTECONFIG_ANALYTICS.md): -rcfile caminho (so build dev: aplica esse JSON de RemoteConfig no
+    /// lugar do cache; relativo = no persistentDataPath) | -analyticslog (o provedor nulo ecoa no Player.log, como "ANALYTICS {json}", o que
+    /// seria enviado: a fila so sai depois da resposta da tela de idade).
     /// v0.5c (docs/FASE8_VIP_VELOCIDADE.md s5): botoes "Chamar VIP" e "Velocidade 2x/3x" nos cantos da barra de baixo (IAds.Show ->
     /// Sim.SummonVip / Sim.StartBoost), selo do boost com cronometro, aviso "Cliente VIP!" e diario vip_* / boost_start.
     /// v0.6c (docs/FASE9_ENCOMENDAS.md s6): cartao da encomenda acima do botao VIP, aviso "Encomenda entregue!" e diario order_*.
@@ -48,6 +51,8 @@ namespace FS
     public sealed class Game : MonoBehaviour
     {
         const string SaveKey = "fs.save";
+        /// <summary>P3/V10 (A-PLAT-08): este build deixa o RemoteConfig ligar o intersticial. false ate o build do A/B no Limited Release.</summary>
+        const bool IntersticialNoBuild = false;
         const float SaveEvery = 5f, MaxStep = 1f / 30f;
         // Largura visivel (A-ART-03, P12 decidido por padrao): 9 m, a camera segue o ferreiro e puxa a fila para cima (Enquadramento).
         // Era 11,4 m = oficina inteira + margens (o -cam 11.4 volta a ela).
@@ -71,7 +76,8 @@ namespace FS
         float _speed = 1f, _saveT, _hintT, _minuteT, _adHold, _visW = VisibleWidth, _backT;
         bool _botDrive, _headless, _firstSaleLogged, _testSession, _started, _pausedByAd, _paused;
         IAds _ads;
-        IAnalytics _diario;
+        Telemetria _diario;   // A-PLAT-09: diario local + analytics remoto (so depois da tela de idade)
+        IRemoteConfig _rc; RemoteConfig.Resultado _rcr; string _rcOrigem;   // A-PLAT-08: o config desta abertura
         Salvamento _save;
         // A-PLAT-06 (taxonomia s86/s87): s em primeiro plano da sessao, quadros e s reais da janela de fps, passos do tutorial ja logados,
         // oferta de anuncio ja contada nesta aparicao do botao e ouro que entrou/saiu desde a ultima linha currency_* (por origem/destino)
@@ -147,18 +153,26 @@ namespace FS
             // A-PLAT-06: diario so no build de desenvolvimento (o build de playtest de hoje, APK dev e Windows) ou com -playtest (release
             // do PC); release no aparelho nao grava (nao tem linha de comando, e o extra do intent so vale no dev). Teste: nunca.
             string dir = Application.persistentDataPath;
-            _diario = new Diario(!_testSession && (Debug.isDebugBuild || Arg("-playtest") != null) ? Path.Combine(dir, "diario.csv") : null);
+            var diario = new Diario(!_testSession && (Debug.isDebugBuild || Arg("-playtest") != null) ? Path.Combine(dir, "diario.csv") : null);
+            // A-PLAT-08: o RemoteConfig vale antes do Sim nascer (-rcfile so no build dev; fotos e smoke sem o cache baixado). Travas no nucleo
+            _rc = new RemoteConfigHttp(new RemoteConfigLocal(dir, Debug.isDebugBuild ? Arg("-rcfile") : null, !_testSession), this);
+            var tuning = new Tuning();
+            _rcr = RemoteConfig.Aplicar(tuning, _rc.Ler(out _rcOrigem), IntersticialNoBuild);
+            // A-PLAT-09: provedor remoto = nulo ate a P8 (-analyticslog ecoa no Player.log); excecao nao tratada vira evento (5 por sessao)
+            _diario = new Telemetria(diario, new ProvedorNulo(Arg("-analyticslog") != null ? s => Debug.Log("ANALYTICS " + s) : (Action<string>)null),
+                diario.Sessao, Application.version, _rcr.Rotulo, dir, Application.dataPath);
+            Application.logMessageReceived += Excecao;
             _save = new Salvamento(new SaveStore(Path.Combine(dir, "save.txt")), new SaveEspelho(SaveKey), _diario);
             Sfx.Init(gameObject);
             // ponytail: fotos e smoke usam estado novo sem ler ou gravar o save/diario normal.
             if (!_testSession && Arg("-reset") != null) _save.Apagar();
-            _sim = _testSession ? new Sim() : _save.Carregar();
+            _sim = _testSession ? new Sim(tuning) : _save.Carregar(tuning);
             DevArgs();
             // -cam W (dev, P2-3 do BENCHMARK_VISUAL): largura visivel em m, 6..11,4 (padrao 9; 11,4 = a camera antiga, fotos de antes)
             _visW = Mathf.Clamp(ArgF("-cam", VisibleWidth), 6f, Enquadramento.OficinaInteira);
             string cfg = Arg("-settings");
             if (cfg == "on" || cfg == "off") { SetSom(cfg == "on"); SetVibra(cfg == "on"); }   // fotos e teste de persistencia
-            _ads = Ads.Init((e, a, b) => Log(e, a, b), _sim.T.Interstitial);   // pedido, mostrado, recompensa e falha do anuncio vao para o diario; intersticial so com a flag
+            _ads = _sim.T.AnunciosLigados ? Ads.Init((e, a, b) => Log(e, a, b), _sim.T.Interstitial) : new SemAnuncio();   // pedido, mostrado, recompensa e falha do anuncio vao para o diario; intersticial so com a flag; A-PLAT-08: chave mestra desligada = o SDK nem inicia
             _bot = new Bot();
             string sp = Arg("-speed");
             if (!string.IsNullOrEmpty(sp) && float.TryParse(sp, NumberStyles.Float, CultureInfo.InvariantCulture, out float v)) _speed = Mathf.Clamp(v, 0.1f, 50f);
@@ -180,6 +194,7 @@ namespace FS
             _priv = new TelaPrivacidade(_safe, Responder);
             string priv = Arg("-privacidade");
             if (priv != null || (!_testSession && !Ads.Resposta(out _, out _))) _priv.Abrir(null, priv == "18");
+            if (Ads.Resposta(out Faixa rf, out bool ra)) Liberar(rf, ra);   // A-PLAT-08/09: respondida numa abertura anterior = rede liberada ja
             if (Arg("-menu") != null) _menu.Toggle();   // foto com a fileira aberta
             if (cfg != null) _cfg.gameObject.SetActive(true);
             _joy = new Joystick(_joyCanvas.transform);
@@ -199,6 +214,9 @@ namespace FS
             Log("session_info", "os", SystemInfo.operatingSystem);
             Log("session_info", "ram", Diario.FaixaRam(SystemInfo.systemMemorySize));
             Log("session_info", "idioma", Loc.Codigo);
+            Log("session_info", "config", _rcr.Rotulo + " " + _rcOrigem);   // A-PLAT-08 (DM §89): o snapshot do config desta abertura
+            if (!_sim.T.AnunciosLigados) Log("ad_init", "desligado", "remoteconfig");
+            foreach (string w in _rcr.Avisos) Log("rc_aviso", w);   // valor preso ou ignorado pelas travas
             _started = true;   // A-PLAT-07: Loading -> Playing; o save grava daqui em diante (o resgate do cofre logo abaixo ja grava)
             Offline();
             MetasAgora(false);   // D-CORE-01: o dia de hoje (o que ja estava pronto ao abrir nao vira aviso)
@@ -1121,7 +1139,7 @@ namespace FS
                     // pago na entrega, junto com o premio: o "+N" do cartao ja sobe (CartoesEncomenda.Refresh)
                     Notice(Loc.T("aviso.bonus", n), _coinIcon.sprite, _coinIcon.color);
                     break;
-                case Anuncio.EncomendaTroca: Sfx.Play("order"); Notice(Loc.T("aviso.troca")); break;   // o cartao novo entra pelo OrderIndex
+                case Anuncio.EncomendaTroca: Sfx.Play("order"); Notice(Loc.T("aviso.troca")); break;   // o cartao novo entra no lugar da trocada (CartoesEncomenda)
                 case Anuncio.Supply:
                     Sfx.Play("furnace");
                     Sprite ingot = Art.ItemArt(Item.Ingot, true);
@@ -1280,7 +1298,25 @@ namespace FS
         {
             Ads.Responder(f, aceitou, !_testSession);
             Log("consent_answer", Privacidade.Diario(f), Privacidade.Flags(f, aceitou).Consentimento ? "sim" : "nao");
+            Liberar(f, aceitou);
         }
+
+        /// <summary>A-PLAT-08/09: a tela de idade respondida (agora ou numa abertura anterior) libera a rede, 1x por sessao: o analytics remoto
+        /// (ID de publicidade so 18+ com aceite, V21) e a busca do RemoteConfig (vale na proxima abertura). Fotos e smoke nao buscam.</summary>
+        void Liberar(Faixa f, bool aceitou)
+        {
+            if (_diario.Liberada) return;
+            _diario.Liberar(f, aceitou);
+            if (!_testSession) _rc.Buscar((e, a, b) => Log(e, a, b));
+        }
+
+        /// <summary>A-PLAT-09 (DM §90): excecao nao tratada (e Debug.LogException) -> evento "excecao" no diario e no remoto, ate 5 por sessao.</summary>
+        void Excecao(string msg, string pilha, LogType tipo)
+        {
+            if (tipo == LogType.Exception) _diario.Excecao(msg, pilha, _sim != null ? _sim.Time : 0f);
+        }
+
+        void OnDestroy() => Application.logMessageReceived -= Excecao;
 
         /// <param name="gold">&gt; 0: linha da moeda com "+gold" grande (cofre); 0: so o texto.</param>
         void ShowPanel(string title, string body, string button, Action action, long gold = 0)

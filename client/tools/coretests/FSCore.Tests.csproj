@@ -21,6 +21,8 @@
     <Compile Include="../../Assets/_FS/Scripts/View/SaveStore.cs" />
     <!-- A-PLAT-06: costuras, Diario e Salvamento (puros) para o CosturasTests -->
     <Compile Include="../../Assets/_FS/Scripts/View/Servicos.cs" />
+    <!-- A-PLAT-08/09: RemoteConfig local, Telemetria e provedor nulo (puros); o HTTP fica atras de #if !FS_CORETESTS -->
+    <Compile Include="../../Assets/_FS/Scripts/View/Plataforma.cs" />
     <!-- A-PLAT-07: tabela dos estados do jogo (pura) -->
     <Compile Include="../../Assets/_FS/Scripts/View/Estado.cs" />
     <Compile Include="../../Assets/_FS/Scripts/View/StationView.cs" />

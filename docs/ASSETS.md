@@ -238,3 +238,63 @@ O 1º comando grava, em `client/Assets/_FS/Resources/Sprites/<id>/`, os arquivos
 Integração (raias do núcleo e da View; nada disto foi feito nesta leva):
 1. O `ItemDef.iconId` (ECONOMIA_WAVE_B §8.1) é o nome da pasta. `Art.Icon(iconId, "icone"|"deitado")` já carrega qualquer pasta, e o tamanho segue a regra do `PaintItem` (escala = tamanho × 1,1).
 2. Não há versão `_em_pe` (estoque no painel do estande). O estande só existe no Old Forge e só usa espada, escudo e ferramenta. Quando o estande dos distritos 2+ existir, a versão `_em_pe` sai do mesmo construtor pelo `arte_v05_blender.em_pe`.
+
+## 11. Lote 5A — 7 workers + 4 clientes (Tripo, 2026-10-13)
+
+Gerados, rigados e exportados pelo worker da raia ARTE TRIPO (Leva 9), com o aval do Vinicius de 2026-10-13. Gasto: **715 créditos** (11 × 45 + 11 × 20; saldo 17 285 → 16 570). Ledger, tasks, imagem escolhida e SHA-256: `PROVENIENCIA.md` §9. Receita igual à dos Lotes 1–4 (imagem grátis no site, HD H3.1, 8 000 triângulos, 2K, Privado, Auto Rig Mixamo, FBX Mixamo 2K).
+
+Sprites em `client/Assets/_FS/Resources/Sprites/<id>/`, com `render_sprites.py` sem mudança (4 direções S/W/N/E, 12 fps, célula 128 px, ppu automático):
+- **workers** com os clipes do ajudante (`client/Builds/anims_sets/ajudante/`: Idle, LookingAround, Walking). O ajudante não tem clipe de carregar: a View empilha os itens na cabeça por cima do Walking (a "pose própria braços erguidos" do §5 nunca foi feita), e os workers novos seguem o mesmo contrato.
+- **clientes** com os do Lote 4 (`anims_sets/guerreira/`: Angry, Idle, LookingAround, Thankful, Walking, Waving).
+
+Conferência: `client/Builds/sprites_contact/v09_lote5.png` (A: escala do modelo; B: fila na escala do jogo com o CharScale abaixo, ao lado do ferreiro, do ajudante, da guerreira e do minerador; C: Idle S a 64 px em cor e em silhueta preta) e `<id>.png` (1º quadro de cada clipe, direção S).
+
+**CharScale** pela conta do §9: `(altura_m / 0,664) × (1,20 / alvo)`, com `altura_m` = altura do Idle S quadro 0 (alfa ≥ 128) ÷ ppu. Alvos pela ART_BIBLE §4 (ferreiro 1,20, ajudante 1,05): workers entre o ajudante e o ferreiro, o gerente na altura do ferreiro; o alvo inclui chapéu, ferramenta ou arma quando eles fazem o ponto alto da silhueta. **Proposto, NÃO aplicado na View.**
+
+| Id | Papel | Assunto (resumo) | Imagem | Altura medida (px na folha · m) | Alvo (m) | CharScale proposto |
+|---|---|---|---|---|---|---|
+| oficial | worker Oficial (Smith) | faixa verde, avental de couro, luvas grossas, tenaz comprida nas costas | #2 de 4 | 79 px · 0,651 | 1,15 (entre ajudante e ferreiro; tenaz na altura da cabeça) | **1,02** |
+| balconista | worker Balconista (Clerk) | blusa creme, colete verde, bolsa de moedas, pena atrás da orelha, livro-caixa na mão, calça e botas | #2 de 4 | 81 px · 0,715 | 1,08 | **1,20** |
+| almoxarife | worker Almoxarife (Quartermaster) | atarracado, careca, barba grisalha, argola de chaves no cinto, colete cinza, caixote nas costas | #4 de 4 | 80 px · 0,653 | 1,00 (baixo e largo; o caixote é o ponto alto) | **1,18** |
+| mestre_obras | worker Mestre de obras (Foreman) | gorro de couro, corda no ombro, malho grande nas costas, túnica laranja, cinto de ferramentas, bigode | #3 de 4 | 84 px · 0,740 | 1,15 (malho acima do ombro) | **1,16** |
+| fundidor | worker Fundidor (Smelter, Wave C) | casaco cinza grosso, viseira erguida, manoplas, tenaz nas costas, fuligem no rosto | #2 de 4 | 81 px · 0,650 | 1,15 (capacete com viseira) | **1,02** |
+| mensageiro | worker Mensageiro (Courier, Wave C) | boné azul com pena, sacola atravessada, capinha azul, pergaminho na mão | #2 de 4 | 78 px · 0,623 | 1,10 | **1,02** |
+| gerente | worker Gerente | casaca bordô com botões de latão, óculos, corrente de relógio, cabelo grisalho, livro de contas na mão | #4 de 4 | 83 px · 0,662 | 1,20 (= ferreiro: o chefe) | **1,00** |
+| campones | cliente Camponês (distrito 2+) | chapéu de palha largo, túnica marrom remendada, cinto de corda, forcado nas costas, rosto redondo | #3 de 4 | 59 px · 0,661 | 1,20 (de cima a aba larga já é a cabeça, como no mago) | **1,00** |
+| guarda_real | cliente Guarda real | elmo de abas, tabardo azul e ouro sobre malha, lança nas costas, escudo redondo no antebraço | #1 de 4 | 67 px · 0,634 | 1,30 (armadura, como a paladina) | **0,88** |
+| emissario | cliente Emissário real | boina azul com pena longa, gibão azul e ouro, capa curta com brasão bigorna + chama, pergaminho com selo vermelho | #2 de 4 | 67 px · 0,684 | 1,25 (boina + pena, um pouco acima do bardo) | **0,99** |
+| colecionador | cliente Colecionador (Renome 2) | cartola com pena, casaco roxo com dourado, lupa na corrente, anéis, bigode enrolado | #3 de 4 | 82 px · 0,664 | 1,40 (cartola, como o chapéu do pirata) | **0,86** |
+
+Para a View (`WorldView.CharScale`; worker da View decide onde cada id entra):
+```
+// Lote 5A (raia ARTE TRIPO 2026-10-13, ASSETS s11: (altura_m / 0,664) x (1,20 / alvo))
+"oficial" => 1.02f, "balconista" => 1.20f, "almoxarife" => 1.18f, "mestre_obras" => 1.16f, "fundidor" => 1.02f,
+"mensageiro" => 1.02f, "gerente" => 1.00f,
+"campones" => 1.00f, "guarda_real" => 0.88f, "emissario" => 0.99f, "colecionador" => 0.86f,
+```
+Gerente e camponês dão 1,00, igual ao padrão `_ => 1f`; ficam listados para a tabela não depender do padrão.
+
+Na fila da folha (parte B, 2× o aparelho), os 11 ficam entre 137 px (almoxarife, o baixinho largo) e 192 px (colecionador com a cartola), contra 166 do ferreiro, 146 do ajudante, 165 da guerreira e 172 do minerador. Na 1ª passada da folha o camponês (1,25), o guarda (1,45), o emissário (1,30) e o colecionador (1,40) saíam com o corpo maior que o do minerador, porque de cima a aba do chapéu, o elmo e a boina pesam mais que a altura; desceram para 1,20, 1,30 e 1,25 e o colecionador ficou em 1,40.
+
+Conferido na folha: nenhum quadro em pose T (a maior largura de quadro em S/N fica entre 0,91× e 1,62× a do Idle S; a guerreira atual chega a 1,71×), pés no pivô e cada um lê a 64 px pela silhueta (caixote, malho, viseira, chapéu de palha, elmo + lança, boina + pena, cartola). Pontos para o aparelho:
+- a pena branca do emissário, de cima, lembra uma lâmina clara na diagonal (a espada do pedido é azul, então não confunde o pedido, mas vale olhar);
+- o boné azul do mensageiro fica perto do boné azul-acinzentado do ajudante a 64 px; a pena, a capinha e a sacola separam;
+- mestre de obras, camponês e monge ficam todos em laranja/palha; a forma (malho, aba larga, careca) separa;
+- os workers novos têm só Idle, LookingAround e Walking, como o ajudante. Se a View quiser Cheering ou carregar com braços erguidos, é re-render de 0 crédito com o mesmo comando e outra pasta em `--anims`.
+
+### 11.1 Prompts exatos do Lote 5A (imagem no Tripo, Nano Banana 2, 1:1, 4 imagens grátis)
+Todos = assunto + ", " + `[S]` + ", " + `[I]` do cabeçalho deste arquivo, digitados nessa ordem. Desvios do pedido, para não travar o rig na pose T: o livro-caixa da balconista foi "debaixo do braço" → "na mão"; o escudo do guarda vai "no antebraço esquerdo". Imagem escolhida entre 4 e task em `PROVENIENCIA.md` §9.
+
+| Id | Assunto | Imagem |
+|---|---|---|
+| oficial | young journeyman blacksmith, sleeveless dark brown leather apron over a light grey shirt, thick padded leather gloves, long iron tongs strapped on the back, dark green headband, short messy brown hair, brown trousers, sturdy boots | #2 |
+| balconista | young shop counter clerk woman, light cream blouse with rolled sleeves, fitted green vest, leather coin purse on the belt, quill pen tucked behind her ear, holding a thick ledger book in one hand, brown hair in a low bun, brown trousers tucked into boots | #2 |
+| almoxarife | stocky storekeeper, short and wide body, bald head, short grey beard, big iron ring of large keys hanging on the belt, grey wool vest over a beige shirt, small wooden crate strapped on the back, brown trousers, sturdy boots | #4 |
+| mestre_obras | construction foreman, brown leather cap, coiled measuring rope over one shoulder, big wooden mallet strapped on the back, orange tunic, leather tool belt with a hammer and chisels, thick brown mustache, brown trousers, work boots | #3 |
+| fundidor | foundry smelter worker, thick heavy grey heat-resistant coat, metal welding visor flipped up on top of the head, very thick padded gauntlets, long iron tongs strapped on the back, soot smudges on the face, dark trousers, heavy boots | #2 |
+| mensageiro | young messenger boy, slim build, blue cap with a feather, brown leather satchel with the strap across the chest, short blue shoulder cape, holding a rolled parchment scroll in one hand, beige tunic, brown trousers, light boots | #2 |
+| gerente | distinguished workshop manager, knee-length burgundy frock coat with brass buttons open at the front, round spectacles, golden pocket watch chain on the vest, neatly combed grey hair, holding a thick account book in one hand, dark trousers, polished brown shoes | #4 |
+| campones | cheerful peasant farmer, wide straw hat, patched brown tunic, rope belt, pitchfork strapped on the back, round smiling face, rolled-up beige trousers, simple brown boots | #3 |
+| guarda_real | royal guard, blue and gold tabard over chainmail, round brimmed iron kettle helmet, long spear strapped on the back, small round shield strapped on the left forearm, leather belt, brown trousers, iron-capped boots | #1 |
+| emissario | royal envoy, blue velvet doublet with gold trim, blue beret with a long white feather, holding a rolled parchment with a red wax seal in one hand, short blue cape with a gold anvil-and-flame crest, white tights, brown pointed boots, neat short beard | #2 |
+| colecionador | wealthy art collector, purple velvet coat to the hips, tall black top hat with a feather, brass magnifying glass hanging on a chain, golden rings on the fingers, curled black mustache, dark trousers, buckled shoes | #3 |

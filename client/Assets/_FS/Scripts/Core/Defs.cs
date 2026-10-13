@@ -289,6 +289,10 @@ namespace FS.Core
         /// <summary>Teto de tempo do cofre que vale: o knob, nunca acima da trava do nucleo (Balance.OfflineCapSeconds = 7.200 s).</summary>
         public long OfflineCap => Math.Min(OfflineMaxSeconds, Balance.OfflineCapSeconds);
 
+        /// <summary>A-PLAT-08 (DM §130): chave mestra do RemoteConfig. false = nenhum anuncio: o Game nem inicia o SDK e o RemoteConfig.Aplicar
+        /// desliga as flags de anuncio (rewarded e intersticial). Feature nova com flag propria (IAP, Pass) ja e' chaveavel pelo nome do campo.</summary>
+        public bool AnunciosLigados = true;
+
         /// <summary>Segundos na fila antes de desistir: base + k x tempo de producao da linha no inicio (B-CORE-01: soma de quantidade x tempo
         /// inicial da receita de cada insumo + o da propria receita; hoje = fornalha inicial x lingotes + bancada inicial). Espada 9 s, escudo
         /// 15,5 s, ferramenta 9 s, joia 18 s. `recipes` = o conteudo da partida (null = Recipes.All). ponytail: um nivel de insumo (o do
