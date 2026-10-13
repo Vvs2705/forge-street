@@ -43,6 +43,7 @@ namespace FS.Core
             e.AddRange(Qualidade(upgrades, world));
             e.AddRange(Missoes(MetasDefs.Diarias, MetasDefs.Semanais, MetasDefs.Conquistas, MetasDefs.LoginDias, Tuning.Padrao));
             e.AddRange(NiveisRenome(renome ?? RenomeDefs.Niveis));
+            e.AddRange(Compras.Validar(Compras.Catalogo));   // E-PLAT-04/05
             return e;
         }
 
