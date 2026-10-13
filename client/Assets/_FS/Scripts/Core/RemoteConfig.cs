@@ -7,16 +7,17 @@ using System.Text;
 namespace FS.Core
 {
     /// <summary>
-    /// A-PLAT-08 (DM §88, §130; GDD §23 item 18): RemoteConfig no nucleo. Um JSON plano {"id": "...", "versao": N, "&lt;campo do Tuning&gt;": valor}
+    /// A-PLAT-08 (DM §88, §130; GDD §23 item 18): RemoteConfig no nucleo. Um JSON plano {"id": "...", "versao": N, "&lt;chave&gt;": valor}
     /// aplicado sobre um Tuning ANTES do Sim nascer (o Sim le o Tuning dele: config novo vale na proxima abertura). Chave = nome exato de um
-    /// campo publico do Tuning (bool, int, long, float ou array deles com o MESMO tamanho do padrao): campo novo no Tuning ja e' chaveavel sem
-    /// mexer aqui. O resto (chave desconhecida, tipo errado, array de outro tamanho) e' ignorado e registrado: o config so AJUSTA o que o build
-    /// ja tem, nunca cria item, oferta, bau ou sorteio (V4: nada aleatorio pago). Travas, todas aqui:
+    /// campo publico do Tuning (bool, int, long, float ou array deles com o MESMO tamanho do padrao) ou "Lista.id.Campo" para um elemento com
+    /// Id de um array do Tuning (Placements.vip.Recarga, Placements.supply.Ligado): campo novo ja e' chaveavel sem mexer aqui. O resto (chave
+    /// desconhecida, Id que o build nao tem, tipo errado, array de outro tamanho) e' ignorado e registrado: o config so AJUSTA o que o build ja
+    /// tem, nunca cria item, placement, oferta, bau ou sorteio (V4: nada aleatorio pago). Travas, todas aqui:
     /// - faixa generica: cada numero fica em [padrao/10, padrao x 10] do BUILD (padrao 0 fica 0: preco do minerio, Masterwork que nao vende);
-    /// - Travas (por nome de campo, somam com a generica): offline &lt;= 7.200 s (P2), fator offline &lt;= 1, recargas de anuncio &gt;= as decididas e
-    ///   tetos &lt;= os decididos (o remoto so deixa o anuncio mais RARO que o build, nunca mais frequente); SoLiga nao desliga;
+    /// - anuncio so mais RARO que o build: NuncaMenor (recargas, cooldown) nao desce do padrao; NuncaMaior (tetos e o quanto empilha) nao sobe;
+    /// - Travas absolutas: offline &lt;= 7.200 s (P2), fator offline &lt;= 1, Cofre 2x no maximo dobra (P2); SoLiga nao desliga (D6);
     /// - intersticial (P3/V10): o remoto desliga; ligado so vale com `intersticialNoBuild` (o build que entra no A/B);
-    /// - Anuncios = false (chave mestra, DM §130) desliga toda flag de anuncio.
+    /// - AnunciosLigados = false (chave mestra, DM §130) desliga todo placement e o intersticial.
     /// Valor fora da faixa e' PRESO e registrado em Resultado.Avisos. JSON que nao abre = nada muda (padroes). Valores absolutos: aplicar 2x = 1x.
     /// </summary>
     public static class RemoteConfig
@@ -24,24 +25,25 @@ namespace FS.Core
         /// <summary>Config maior que isto nem abre (o de hoje tem &lt; 2 KB).</summary>
         public const int MaxChars = 64 * 1024;
 
-        /// <summary>Faixa absoluta por campo (decisoes; intersecao com a generica). Campo que nao existe no Tuning ainda (os do
-        /// feat/anuncios-config) so passa a valer quando existir.</summary>
+        /// <summary>Faixa absoluta (decisoes; intersecao com a generica). Chave exata ou com coringa no Id ("Placements.*.Valor").</summary>
         static readonly Dictionary<string, (double Min, double Max)> Travas = new Dictionary<string, (double, double)>
         {
             ["OfflineMaxSeconds"] = (0, Balance.OfflineCapSeconds),   // P2: 2 h e' trava do nucleo; um evento so encurta
             ["OfflineFactor"] = (0, 1),                                // offline nunca rende mais que online (P2: premium mexe na taxa) - revisar
-            ["VipChamadoRecarga"] = (300, double.MaxValue),            // P14/V11: 5 min entre "Chamar VIP"
-            ["BoostCooldownSeconds"] = (300, double.MaxValue),         // GDD §17.1: 5 min contados do fim do boost
-            ["AnunciosTetoDia"] = (0, 30),                             // E-PLAT-02: teto diario total de rewarded
-            ["InterstitialCooldown"] = (180, double.MaxValue),         // E-PLAT-03: s de sessao entre dois intersticiais
-            ["InterstitialMaxSessao"] = (0, 3),                        // E-PLAT-03: por sessao
+            ["Placements.cofre2x.Valor"] = (0, 1),                     // P2: o Cofre 2x dobra o mesmo resgate uma vez, nunca mais
         };
+
+        /// <summary>Nunca abaixo do padrao do build: as recargas por placement (P14/V11: VIP e Velocidade 5 min; Supply 10 min) e o cooldown do
+        /// intersticial.</summary>
+        static readonly string[] NuncaMenor = { "Placements.*.Recarga", nameof(Tuning.InterstitialCooldown) };
+
+        /// <summary>Nunca acima do padrao do build: tetos (diario total e por placement, intersticial por sessao) e o quanto um anuncio empilha
+        /// (Velocidade ate 3x, ferreiro ate 1,3x, pacote do VIP chamado ate 20).</summary>
+        static readonly string[] NuncaMaior = { nameof(Tuning.AnunciosTetoDia), "Placements.*.TetoDia", nameof(Tuning.InterstitialMaxSessao),
+            nameof(Tuning.BoostMax), nameof(Tuning.BoostPlayerMax), nameof(Tuning.VipSummonPackMax) };
 
         /// <summary>Bools que o remoto liga mas nao desliga: D6/V18 (anuncio so depois da 1a melhoria; sem ele o boost no segundo 0 furava o §3).</summary>
         static readonly string[] SoLiga = { nameof(Tuning.AnunciosDepoisDaPrimeiraMelhoria) };
-
-        /// <summary>Flags que Anuncios = false desliga (por nome: a que nao existir no Tuning e' pulada).</summary>
-        static readonly string[] FlagsDeAnuncio = { "VipChamado", "Velocidade", nameof(Tuning.Interstitial) };
 
         /// <summary>O que a aplicacao fez: Valido = o JSON abriu; Id/Versao do config ("padrao@0" sem config); Aplicadas = chaves que valeram
         /// (mesmo presas); Avisos = "chave: motivo" de cada valor preso ou ignorado.</summary>
@@ -70,62 +72,97 @@ namespace FS.Core
             foreach (KeyValuePair<string, object> kv in o)
             {
                 if (kv.Key == "id" || kv.Key == "versao") continue;
-                FieldInfo f = typeof(Tuning).GetField(kv.Key, BindingFlags.Public | BindingFlags.Instance);
-                string aviso = f == null || f.IsInitOnly ? "chave desconhecida (ignorada)" : Um(t, padrao, f, kv.Value, intersticialNoBuild);
+                FieldInfo f = Campo(t, padrao, kv.Key, out object alvo, out object pad, out string coringa);
+                string aviso = f == null ? "chave desconhecida (ignorada)" : Um(alvo, pad, f, kv.Key, coringa, kv.Value, intersticialNoBuild);
                 if (aviso == null || aviso.StartsWith("preso", StringComparison.Ordinal)) r.Aplicadas++;
                 if (aviso != null) r.Avisos.Add(kv.Key + ": " + aviso);
             }
-            if (!t.Anuncios)
-                foreach (string n in FlagsDeAnuncio) typeof(Tuning).GetField(n, BindingFlags.Public | BindingFlags.Instance)?.SetValue(t, false);
+            if (!t.AnunciosLigados)
+            {
+                t.Interstitial = false;
+                foreach (AdPlacementDef p in t.Placements) p.Ligado = false;
+            }
             return r;
         }
 
-        /// <summary>Um campo. null = valeu como veio; "preso ..." = valeu preso na faixa; outro texto = ignorado (nada muda).</summary>
-        static string Um(Tuning t, Tuning padrao, FieldInfo f, object val, bool intersticialNoBuild)
+        /// <summary>O campo da `chave` e onde ele mora: no Tuning, ou no elemento de Id `id` do array `Lista` ("Lista.id.Campo"; o Id nao e'
+        /// chave). `coringa` = "Lista.*.Campo" (as travas valem para todo Id). null = a chave nao existe neste build.</summary>
+        static FieldInfo Campo(Tuning t, Tuning padrao, string chave, out object alvo, out object pad, out string coringa)
+        {
+            alvo = t; pad = padrao; coringa = chave;
+            string[] p = chave.Split('.');
+            if (p.Length == 1) return Publico(typeof(Tuning), chave);
+            FieldInfo lista = p.Length == 3 && p[2] != "Id" ? Publico(typeof(Tuning), p[0]) : null;
+            if (lista == null || !lista.FieldType.IsArray) return null;
+            alvo = PorId((Array)lista.GetValue(t), p[1]); pad = PorId((Array)lista.GetValue(padrao), p[1]);
+            coringa = p[0] + ".*." + p[2];
+            return alvo == null || pad == null ? null : Publico(alvo.GetType(), p[2]);
+        }
+
+        static object PorId(Array a, string id)
+        {
+            foreach (object o in a) if (o != null && Publico(o.GetType(), "Id")?.GetValue(o) is string s && s == id) return o;
+            return null;
+        }
+
+        static FieldInfo Publico(Type ty, string nome)
+        {
+            FieldInfo f = ty.GetField(nome, BindingFlags.Public | BindingFlags.Instance);
+            return f == null || f.IsInitOnly ? null : f;
+        }
+
+        /// <summary>Um campo de `alvo` (padrao do build em `pad`). null = valeu como veio; "preso ..." = valeu preso na faixa; outro texto =
+        /// ignorado (nada muda).</summary>
+        static string Um(object alvo, object pad, FieldInfo f, string chave, string coringa, object val, bool intersticialNoBuild)
         {
             Type ty = f.FieldType;
             if (ty == typeof(bool))
             {
                 if (!(val is bool b)) return "tipo (espera true/false)";
                 string preso = null;
-                if (b && f.Name == nameof(Tuning.Interstitial) && !intersticialNoBuild) { b = false; preso = "preso: true -> false (o build nao permite o intersticial)"; }
-                if (!b && Array.IndexOf(SoLiga, f.Name) >= 0) { b = true; preso = "preso: false -> true (trava)"; }
-                f.SetValue(t, b);
+                if (b && chave == nameof(Tuning.Interstitial) && !intersticialNoBuild) { b = false; preso = "preso: true -> false (o build nao permite o intersticial)"; }
+                if (!b && Array.IndexOf(SoLiga, chave) >= 0) { b = true; preso = "preso: false -> true (trava)"; }
+                f.SetValue(alvo, b);
                 return preso;
             }
             if (ty.IsArray)
             {
                 Type et = ty.GetElementType();
-                if (!Numero(et)) return "tipo nao suportado";
+                if (!Numero(et)) return "tipo nao suportado (elemento com Id: use " + chave + ".<id>.<campo>)";
                 if (!(val is List<object> l)) return "tipo (espera array)";
-                var pa = (Array)f.GetValue(padrao);
+                var pa = (Array)f.GetValue(pad);
                 if (l.Count != pa.Length) return "tamanho " + l.Count + " (o build tem " + pa.Length + "; o config nao cria nem tira entrada)";
                 Array na = Array.CreateInstance(et, pa.Length);
                 var presos = new StringBuilder();
                 for (int i = 0; i < pa.Length; i++)
                 {
                     if (!(l[i] is double di) || double.IsNaN(di) || double.IsInfinity(di)) return "tipo (espera numeros)";
-                    double c = Prende(f.Name, et, Convert.ToDouble(pa.GetValue(i), CultureInfo.InvariantCulture), di);
+                    double c = Prende(chave, coringa, et, Convert.ToDouble(pa.GetValue(i), CultureInfo.InvariantCulture), di);
                     if (c != di) presos.Append(presos.Length > 0 ? ", " : "").Append('[').Append(i).Append("] ").Append(N(di)).Append(" -> ").Append(N(c));
                     na.SetValue(Convert.ChangeType(c, et, CultureInfo.InvariantCulture), i);
                 }
-                f.SetValue(t, na);   // array novo: o Tuning nunca divide array com o JSON nem com outro Tuning
+                f.SetValue(alvo, na);   // array novo: o Tuning nunca divide array com o JSON nem com outro Tuning
                 return presos.Length > 0 ? "preso: " + presos : null;
             }
             if (!Numero(ty)) return "tipo nao suportado";
             if (!(val is double dv) || double.IsNaN(dv) || double.IsInfinity(dv)) return "tipo (espera numero)";
-            double cv = Prende(f.Name, ty, Convert.ToDouble(f.GetValue(padrao), CultureInfo.InvariantCulture), dv);
-            f.SetValue(t, Convert.ChangeType(cv, ty, CultureInfo.InvariantCulture));
+            double cv = Prende(chave, coringa, ty, Convert.ToDouble(f.GetValue(pad), CultureInfo.InvariantCulture), dv);
+            f.SetValue(alvo, Convert.ChangeType(cv, ty, CultureInfo.InvariantCulture));
             return cv != dv ? "preso: " + N(dv) + " -> " + N(cv) : null;
         }
 
         static bool Numero(Type ty) => ty == typeof(int) || ty == typeof(long) || ty == typeof(float);
 
-        /// <summary>`d` na faixa do campo: [padrao/10, padrao x 10] (padrao 0 = so 0) intersecao com a Trava; inteiro arredonda.</summary>
-        static double Prende(string campo, Type ty, double padrao, double d)
+        static bool Em(string[] lista, string chave, string coringa) => Array.IndexOf(lista, chave) >= 0 || Array.IndexOf(lista, coringa) >= 0;
+
+        /// <summary>`d` na faixa da chave: [padrao/10, padrao x 10] (padrao 0 = so 0), NuncaMenor/NuncaMaior pelo padrao e a Trava absoluta
+        /// (exata, senao a do coringa); inteiro arredonda.</summary>
+        static double Prende(string chave, string coringa, Type ty, double padrao, double d)
         {
             double lo = Math.Min(padrao / 10, padrao * 10), hi = Math.Max(padrao / 10, padrao * 10);
-            if (Travas.TryGetValue(campo, out (double Min, double Max) tr)) { lo = Math.Max(lo, tr.Min); hi = Math.Min(hi, tr.Max); }
+            if (Em(NuncaMenor, chave, coringa)) lo = Math.Max(lo, padrao);
+            if (Em(NuncaMaior, chave, coringa)) hi = Math.Min(hi, padrao);
+            if (Travas.TryGetValue(chave, out (double Min, double Max) tr) || Travas.TryGetValue(coringa, out tr)) { lo = Math.Max(lo, tr.Min); hi = Math.Min(hi, tr.Max); }
             if (ty != typeof(float)) { lo = Math.Ceiling(lo); hi = Math.Floor(hi); d = Math.Round(d, MidpointRounding.AwayFromZero); }   // 2,5 -> 3 conta como preso
             return Math.Min(hi, Math.Max(lo, d));
         }
@@ -216,7 +253,9 @@ namespace FS.Core
             if (Palavra(s, ref i, "null")) return null;
             int ini = i;
             while (i < s.Length && "+-0123456789.eE".IndexOf(s[i]) >= 0) i++;
-            if (i == ini || !double.TryParse(s.Substring(ini, i - ini), NumberStyles.Float, CultureInfo.InvariantCulture, out double d)) throw Erro();
+            // 1e999: o .NET novo le infinito e o Mono da Unity recusa; aqui os dois recusam
+            if (i == ini || !double.TryParse(s.Substring(ini, i - ini), NumberStyles.Float, CultureInfo.InvariantCulture, out double d)
+                || double.IsInfinity(d) || double.IsNaN(d)) throw Erro();
             return d;
         }
 

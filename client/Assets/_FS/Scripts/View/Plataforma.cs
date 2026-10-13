@@ -61,13 +61,15 @@ namespace FS
         }
     }
 
-    /// <summary>A-PLAT-08: anuncio desligado pelo RemoteConfig (Tuning.Anuncios = false): o SDK nem inicia, nenhum botao, todo Show falha.</summary>
+    /// <summary>A-PLAT-08: anuncio desligado pelo RemoteConfig (Tuning.AnunciosLigados = false): o SDK nem inicia, nenhum botao, todo Show falha.</summary>
     public sealed class SemAnuncio : IAds
     {
         public bool Busy => false;
         public bool Ready(string placement) => false;
         public bool Loaded(string placement) => false;
         public void Show(string placement, Action onReward, Action onFail) => onFail?.Invoke();
+        public bool InterstitialReady => false;
+        public void ShowInterstitial(Action done) => done?.Invoke();
     }
 
     /// <summary>A-PLAT-09: um evento no esquema versionado que vai ao provedor remoto. Esquema 1: v, seq (ordem na sessao: o evento antes de

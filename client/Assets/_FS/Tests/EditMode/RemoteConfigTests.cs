@@ -15,15 +15,15 @@ namespace FS.Tests
     /// </summary>
     public class RemoteConfigTests
     {
-        /// <summary>Todos os campos publicos do Tuning num texto (arrays por extenso): Tuning igual = texto igual.</summary>
-        static string Dump(Tuning t)
+        /// <summary>Todos os campos publicos do Tuning num texto (arrays e placements por extenso): Tuning igual = texto igual.</summary>
+        static string Dump(object t)
         {
             var sb = new StringBuilder();
-            foreach (FieldInfo f in typeof(Tuning).GetFields(BindingFlags.Public | BindingFlags.Instance))
+            foreach (FieldInfo f in t.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
             {
                 object v = f.GetValue(t);
                 sb.Append(f.Name).Append('=');
-                if (v is Array a) foreach (object e in a) sb.Append(Convert.ToString(e, CultureInfo.InvariantCulture)).Append(';');
+                if (v is Array a) foreach (object e in a) sb.Append(e is AdPlacementDef ? "{" + Dump(e) + "}" : Convert.ToString(e, CultureInfo.InvariantCulture)).Append(';');
                 else sb.Append(Convert.ToString(v, CultureInfo.InvariantCulture));
                 sb.Append('\n');
             }
@@ -95,7 +95,7 @@ namespace FS.Tests
         [Test]
         public void AplicarDuasVezes_MesmoTuning()
         {
-            const string json = "{\"id\": \"x\", \"versao\": 1, \"CostBase\": 60, \"OfflineMaxSeconds\": 9000, \"VipChamadoRecarga\": 10, \"Price\": [0, 0, 1000, 25, 16, 60]}";
+            const string json = "{\"id\": \"x\", \"versao\": 1, \"CostBase\": 60, \"OfflineMaxSeconds\": 9000, \"Placements.vip.Recarga\": 10, \"Price\": [0, 0, 1000, 25, 16, 60]}";
             var uma = new Tuning(); var duas = new Tuning();
             RemoteConfig.Resultado r1 = Aplica(uma, json);
             Aplica(duas, json); RemoteConfig.Resultado r2 = Aplica(duas, json);
@@ -132,19 +132,77 @@ namespace FS.Tests
         }
 
         [Test]
-        public void Trava_RecargasDeAnuncio_NuncaAbaixoDoDecidido()
+        public void Trava_RecargasDeAnuncio_NuncaAbaixoDoBuild()
         {
             var t = new Tuning();
-            RemoteConfig.Resultado r = Aplica(t, "{\"VipChamadoRecarga\": 60, \"BoostCooldownSeconds\": 0}");
-            Assert.AreEqual(300f, t.VipChamadoRecarga, "P14/V11: 5 min");
-            Assert.AreEqual(300f, t.BoostCooldownSeconds, "GDD §17.1: 5 min do fim do boost");
-            StringAssert.Contains("VipChamadoRecarga: preso: 60 -> 300", Avisos(r));
-            StringAssert.Contains("BoostCooldownSeconds: preso: 0 -> 300", Avisos(r));
+            RemoteConfig.Resultado r = Aplica(t, "{\"Placements.vip.Recarga\": 60, \"Placements.velocidade.Recarga\": 0, \"Placements.supply.Recarga\": 300, \"InterstitialCooldown\": 30}");
+            Assert.AreEqual(300f, t.Ad(Anuncio.Vip).Recarga, "P14/V11: 5 min");
+            Assert.AreEqual(300f, t.Ad(Anuncio.Velocidade).Recarga, "GDD §17.1: 5 min do fim do boost");
+            Assert.AreEqual(600f, t.Ad(Anuncio.Supply).Recarga, "GDD §17.1: 10 min");
+            Assert.AreEqual(180f, t.InterstitialCooldown);
+            string a = Avisos(r);
+            StringAssert.Contains("Placements.vip.Recarga: preso: 60 -> 300", a);
+            StringAssert.Contains("Placements.velocidade.Recarga: preso: 0 -> 300", a);
+            StringAssert.Contains("Placements.supply.Recarga: preso: 300 -> 600", a);
+            StringAssert.Contains("InterstitialCooldown: preso: 30 -> 180", a);
+            Assert.AreEqual(4, r.Aplicadas);
 
             t = new Tuning();
-            r = Aplica(t, "{\"VipChamadoRecarga\": 600}");
-            Assert.AreEqual(600f, t.VipChamadoRecarga, "mais raro vale");
+            r = Aplica(t, "{\"Placements.vip.Recarga\": 600, \"InterstitialCooldown\": 600}");
+            Assert.AreEqual(600f, t.Ad(Anuncio.Vip).Recarga, "mais raro vale");
+            Assert.AreEqual(600f, t.InterstitialCooldown);
             Assert.AreEqual(0, r.Avisos.Count, Avisos(r));
+            Assert.AreEqual(300f, new Tuning().Ad(Anuncio.Vip).Recarga, "o placement do config e' do Tuning dele: o padrao de ninguem muda");
+        }
+
+        [Test]
+        public void Trava_TetosDeAnuncio_NuncaAcimaDoBuild()
+        {
+            var t = new Tuning();
+            RemoteConfig.Resultado r = Aplica(t, "{\"AnunciosTetoDia\": 100, \"Placements.encomenda_troca.TetoDia\": 0, \"InterstitialMaxSessao\": 10, "
+                + "\"BoostMax\": 5, \"BoostPlayerMax\": 2, \"VipSummonPackMax\": 50, \"Placements.cofre2x.TetoDia\": 3}");
+            Assert.AreEqual(30, t.AnunciosTetoDia, "teto diario total");
+            Assert.AreEqual(1, t.Ad(Anuncio.EncomendaTroca).TetoDia, "0 seria sem teto proprio: o menor teto que ainda e' teto");
+            Assert.AreEqual(3, t.InterstitialMaxSessao);
+            Assert.AreEqual(3f, t.BoostMax, "o 2o anuncio sobe a 3x, nunca mais");
+            Assert.AreEqual(1.3f, t.BoostPlayerMax);
+            Assert.AreEqual(20, t.VipSummonPackMax);
+            Assert.AreEqual(0, t.Ad(Anuncio.Cofre).TetoDia, "padrao 0 (so o teto total) fica 0");
+            Assert.AreEqual(7, r.Avisos.Count, Avisos(r));
+
+            t = new Tuning();
+            r = Aplica(t, "{\"AnunciosTetoDia\": 10, \"Placements.encomenda_troca.TetoDia\": 2, \"InterstitialMaxSessao\": 1}");
+            Assert.AreEqual(10, t.AnunciosTetoDia, "menos anuncio vale");
+            Assert.AreEqual(2, t.Ad(Anuncio.EncomendaTroca).TetoDia);
+            Assert.AreEqual(1, t.InterstitialMaxSessao);
+            Assert.AreEqual(0, r.Avisos.Count, Avisos(r));
+        }
+
+        [Test]
+        public void Trava_ValorDoPlacement_NaFaixa_CofreNoMaximoDobra()
+        {
+            var t = new Tuning();
+            RemoteConfig.Resultado r = Aplica(t, "{\"Placements.cofre2x.Valor\": 3, \"Placements.velocidade.Valor\": 6000, \"Placements.encomenda_bonus.Valor\": 0.25, "
+                + "\"Placements.supply.Ligado\": false}");
+            Assert.AreEqual(1f, t.Ad(Anuncio.Cofre).Valor, "P2: dobra o mesmo resgate uma vez");
+            Assert.AreEqual(600f, t.Ad(Anuncio.Velocidade).Valor, "60 s x 10");
+            Assert.AreEqual(0.25f, t.Ad(Anuncio.EncomendaBonus).Valor);
+            Assert.IsFalse(t.Ad(Anuncio.Supply).Ligado, "um placement desliga sozinho");
+            Assert.IsTrue(t.Ad(Anuncio.Vip).Ligado);
+            StringAssert.Contains("Placements.cofre2x.Valor: preso: 3 -> 1", Avisos(r));
+            Assert.AreEqual(2, r.Avisos.Count, Avisos(r));
+            Assert.AreEqual(4, r.Aplicadas);
+        }
+
+        [Test]
+        public void Placement_IdOuCampoQueOBuildNaoTem_Ignorado()
+        {
+            var t = new Tuning();
+            RemoteConfig.Resultado r = Aplica(t, "{\"Placements.bau_pago.Ligado\": true, \"Placements.vip.Chance\": 1, \"Placements.vip.Id\": \"x\", \"Placements.vip\": 1, "
+                + "\"Price.2.Valor\": 1, \"Placements\": [], \"Placements.vip.Recarga.x\": 1}");
+            Assert.AreEqual(0, r.Aplicadas);
+            Assert.AreEqual(7, r.Avisos.Count, Avisos(r));
+            Assert.AreEqual(Dump(new Tuning()), Dump(t), "o config nao cria placement nem renomeia");
         }
 
         [Test]
@@ -179,12 +237,14 @@ namespace FS.Tests
         {
             Assert.IsTrue(TuningTests.Liberado().CanBoost, "premissa: com o padrao, depois da 1a melhoria, o boost aparece");
             var t = new Tuning();
-            Aplica(t, "{\"Anuncios\": false, \"Interstitial\": true, \"Velocidade\": true}", intersticial: true);
-            Assert.IsFalse(t.Anuncios);
+            Aplica(t, "{\"AnunciosLigados\": false, \"Interstitial\": true, \"Placements.velocidade.Ligado\": true}", intersticial: true);
+            Assert.IsFalse(t.AnunciosLigados);
             Assert.IsFalse(t.Interstitial, "a chave mestra vence a flag do mesmo JSON");
             Sim s = TuningTests.Liberado(t);
-            Assert.IsFalse(s.CanBoost, "rewarded some (se falhar depois do feat/anuncios-config: ligar os Placements na chave mestra)");
+            Assert.IsFalse(s.CanBoost, "rewarded some");
             Assert.IsFalse(s.CanSummonVip);
+            foreach (Anuncio a in Enum.GetValues(typeof(Anuncio))) Assert.IsFalse(t.Ad(a).Ligado || s.Anuncios.Pode(a), a.ToString());
+            Assert.AreEqual("flag", s.Anuncios.VetoIntersticial(true, false, 1000f), "intersticial vetado pela flag");
         }
 
         [Test]
@@ -235,16 +295,25 @@ namespace FS.Tests
             Assert.AreEqual(Dump(new Tuning()), Dump(t));
         }
 
-        /// <summary>Campo novo do Tuning e' chaveavel sem mexer no RemoteConfig, desde que seja bool, int, long, float ou array deles. Falhou =
-        /// um campo de outro tipo entrou (ex.: os AdPlacementDef do feat/anuncios-config): ensine o RemoteConfig.Aplicar a chavea-lo.</summary>
+        /// <summary>Campo novo do Tuning e' chaveavel sem mexer no RemoteConfig, desde que seja bool, int, long, float, array deles ou array de
+        /// elementos com Id cujos campos sejam desses (Placements). Falhou = entrou um campo de outro tipo: ensine o RemoteConfig.Aplicar.</summary>
         [Test]
         public void TodoCampoDoTuning_EhChaveavel()
         {
             var tipos = new HashSet<Type> { typeof(bool), typeof(int), typeof(long), typeof(float), typeof(int[]), typeof(long[]), typeof(float[]) };
             foreach (FieldInfo f in typeof(Tuning).GetFields(BindingFlags.Public | BindingFlags.Instance))
             {
-                Assert.IsTrue(tipos.Contains(f.FieldType), f.Name + " (" + f.FieldType.Name + ") nao e' chaveavel pelo RemoteConfig");
                 Assert.IsFalse(f.IsInitOnly, f.Name + " e' readonly");
+                if (tipos.Contains(f.FieldType)) continue;
+                Type et = f.FieldType.GetElementType();
+                Assert.IsTrue(et != null && et.GetField("Id")?.FieldType == typeof(string), f.Name + " (" + f.FieldType.Name + ") nao e' chaveavel pelo RemoteConfig");
+                foreach (FieldInfo e in et.GetFields(BindingFlags.Public | BindingFlags.Instance))
+                    Assert.IsTrue(e.Name == "Id" || tipos.Contains(e.FieldType), f.Name + ".<id>." + e.Name + " (" + e.FieldType.Name + ") nao e' chaveavel");
+                foreach (object o in (Array)f.GetValue(new Tuning()))
+                {
+                    string id = (string)et.GetField("Id").GetValue(o);
+                    Assert.IsFalse(string.IsNullOrEmpty(id) || id.Contains("."), f.Name + ": Id vazio ou com ponto nao vira chave");
+                }
             }
         }
 

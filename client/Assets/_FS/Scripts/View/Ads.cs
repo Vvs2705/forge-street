@@ -14,8 +14,10 @@ namespace FS
     /// AdsLevelPlay (SDK real, so' no aparelho Android/iOS e sem -fakeads) e AdsSimulado (~5 s, "Anuncio de teste", recompensa no fim:
     /// Editor, Windows e -fakeads; tambem o fallback do LevelPlay em build de desenvolvimento quando o SDK nao tem anuncio pronto).
     /// Build de release no aparelho sem anuncio pronto: Ready = false (o botao some).
-    /// Placements do jogo = uma ad unit cada no painel: "vip" e "velocidade".
-    /// Diario: ad_init, ad_request, ad_shown, ad_reward, ad_reward_late, ad_fail e ad_load_fail saem pelo `log` do Init (o Game grava).
+    /// Placements do jogo = os Id do Tuning.Placements (E-PLAT-02); no painel, ad units "vip" e "velocidade" (os novos usam a da Velocidade
+    /// ate o painel ter as deles: AdsLevelPlay.Units). Intersticial (E-PLAT-03): so com a flag Tuning.Interstitial ligada no Init.
+    /// Diario: ad_init, ad_request, ad_shown, ad_impression (receita da impressao, DM §95), ad_reward, ad_reward_late, ad_fail e ad_load_fail
+    /// saem pelo `log` do Init (o Game grava; ad_paid e ad_veto sao do Game).
     /// Este MonoBehaviour so' hospeda as corrotinas das duas implementacoes.
     /// Flags: -fakeads (sempre simulado) e -adtestsuite (abre o Test Suite do LevelPlay; so' em build de desenvolvimento).
     /// E-PLAT-01: o SDK so inicia depois da resposta da tela de idade (Privacidade.cs); sem resposta, ad_init "espera" e nenhum botao.
@@ -24,27 +26,40 @@ namespace FS
     public sealed class Ads : MonoBehaviour
     {
         public const string AppKey = "28953c84d";   // Android, app "Forge Street" no painel LevelPlay (nao e' segredo: vai no APK)
-        public const string Vip = "vip", Velocidade = "velocidade";
-        internal static readonly Dictionary<string, string> RewardName = new Dictionary<string, string> { [Vip] = "VIP", [Velocidade] = "Velocidade" };
+        public const string Vip = "vip", Velocidade = "velocidade", Intersticial = "intersticial";
+        /// <summary>E-PLAT-03: ad unit do intersticial no painel. TODO (Vinicius, no painel LevelPlay): criar "interstitial_transicao" e colar o ID
+        /// aqui; vazio = nada a carregar mesmo com a flag ligada (o build de desenvolvimento cai no simulado).</summary>
+        public const string InterstitialUnit = "";
+        /// <summary>Placements de rewarded que o jogo conhece (os Id do Tuning, E-PLAT-02).</summary>
+        internal static readonly string[] Placements = Array.ConvertAll(FS.Core.Tuning.Padrao.Placements, d => d.Id);
+        static readonly Dictionary<string, string> RewardName = new Dictionary<string, string> { [Vip] = "VIP", [Velocidade] = "Velocidade" };
+        internal static string Nome(string placement) => RewardName.TryGetValue(placement, out string n) ? n : placement;
 
         static IAds _i;
         static Action<string, string, string> _log;
 
         /// <summary>Idempotente. Chamar cedo (Game.Awake). `log`(evento, placement, detalhe) vai para o diario. No aparelho aplica a
-        /// privacidade da resposta gravada e inicia o SDK; sem resposta, espera o Responder.</summary>
-        public static IAds Init(Action<string, string, string> log)
+        /// privacidade da resposta gravada e inicia o SDK; sem resposta, espera o Responder. `intersticial` = Tuning.Interstitial: desligada
+        /// (o padrao), nenhuma implementacao carrega intersticial (o diario prova: ad_init intersticial desligado).</summary>
+        public static IAds Init(Action<string, string, string> log, bool intersticial)
         {
             if (_i != null) return _i;
             _log = log;
             Ads host = new GameObject("Ads").AddComponent<Ads>();
             DontDestroyOnLoad(host.gameObject);
             bool fake = Arg("-fakeads") != null;
+            Emit("ad_init", Intersticial, !intersticial ? "desligado" : InterstitialUnit.Length > 0 ? "ligado" : "ligado_sem_ad_unit");
 #if UNITY_ANDROID || UNITY_IOS
-            if (!Application.isEditor && !fake) return _i = new AdsLevelPlay(host);
+            if (!Application.isEditor && !fake) return _i = new AdsLevelPlay(host, intersticial);
 #endif
             Emit("ad_init", "simulado", fake ? "fakeads" : Application.platform.ToString());
-            return _i = new AdsSimulado(host);
+            return _i = new AdsSimulado(host, intersticial);
         }
+
+        /// <summary>DM §95: detalhe do ad_impression = "receita_usd precisao rede" (ILRD do LevelPlay 9.5.1, por impressao); receita ausente =
+        /// campo vazio.</summary>
+        internal static string Receita(double? usd, string precisao, string rede) =>
+            (usd.HasValue ? usd.Value.ToString("0.##########", System.Globalization.CultureInfo.InvariantCulture) : "") + " " + precisao + " " + rede;
 
         /// <summary>E-PLAT-01: a resposta gravada (PlayerPrefs) com a versao atual do texto; false = a tela pergunta.</summary>
         public static bool Resposta(out Faixa f, out bool aceitou) => Privacidade.Ler(PlayerPrefs.GetString(Privacidade.Chave, ""), out f, out aceitou);
@@ -103,13 +118,15 @@ namespace FS
     {
         const float Seconds = 5f;
         readonly MonoBehaviour _host;
+        readonly bool _intersticial;
         bool _busy;
 
-        public AdsSimulado(MonoBehaviour host) => _host = host;
+        public AdsSimulado(MonoBehaviour host, bool intersticial) { _host = host; _intersticial = intersticial; }
 
         public bool Busy => _busy;
-        public bool Loaded(string placement) => Ads.RewardName.ContainsKey(placement);
+        public bool Loaded(string placement) => Array.IndexOf(Ads.Placements, placement) >= 0;
         public bool Ready(string placement) => !_busy && Loaded(placement);
+        public bool InterstitialReady => _intersticial && !_busy;   // flag desligada: nunca
 
         public void Show(string placement, Action onReward, Action onFail)
         {
@@ -117,15 +134,24 @@ namespace FS
             string why = !Loaded(placement) ? "placement_desconhecido" : _busy ? "ocupado" : null;
             if (why != null) { Ads.Emit("ad_fail", placement, why); onFail?.Invoke(); return; }
             _busy = true;
-            _host.StartCoroutine(Play(placement, onReward));
+            _host.StartCoroutine(Play(placement, onReward, true));
         }
 
-        IEnumerator Play(string placement, Action onReward)
+        public void ShowInterstitial(Action done)
+        {
+            Ads.Emit("ad_request", Ads.Intersticial, "simulado");
+            if (!InterstitialReady) { Ads.Emit("ad_fail", Ads.Intersticial, _intersticial ? "ocupado" : "desligado"); done?.Invoke(); return; }
+            _busy = true;
+            _host.StartCoroutine(Play(Ads.Intersticial, done, false));
+        }
+
+        IEnumerator Play(string placement, Action end, bool rewarded)
         {
             float scale = Time.timeScale;
             Time.timeScale = 0f;   // como o anuncio real (o app fica em pausa por baixo)
-            GameObject ui = FakeUi(placement, out Text count);
+            GameObject ui = FakeUi(placement, rewarded, out Text count);
             Ads.Emit("ad_shown", placement, "simulado");
+            Ads.Emit("ad_impression", placement, Ads.Receita(0, "simulado", "simulado"));   // simulado nao rende nada
             for (float t = Seconds; t > 0f; t -= Time.unscaledDeltaTime)
             {
                 count.text = Mathf.CeilToInt(t).ToString();
@@ -134,11 +160,11 @@ namespace FS
             UnityEngine.Object.Destroy(ui);
             Time.timeScale = scale;
             _busy = false;
-            Ads.Emit("ad_reward", placement, Ads.RewardName[placement] + " x1 simulado");
-            onReward?.Invoke();
+            if (rewarded) Ads.Emit("ad_reward", placement, Ads.Nome(placement) + " x1 simulado");
+            end?.Invoke();
         }
 
-        static GameObject FakeUi(string placement, out Text count)
+        static GameObject FakeUi(string placement, bool rewarded, out Text count)
         {
             var go = new GameObject("AnuncioTeste", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var c = go.GetComponent<Canvas>();
@@ -155,7 +181,7 @@ namespace FS
             title.fontStyle = FontStyle.Bold;
             title.color = Art.Accent;
             Text sub = Art.NewText(root, "Recompensa", 44, new Vector2(0.05f, 0.55f), new Vector2(0.95f, 0.62f));
-            sub.text = Loc.T("adtest.premio", Loc.T("ads." + placement));   // ads.vip, ads.velocidade (o RewardName fica no diario)
+            sub.text = rewarded ? Loc.T("adtest.premio", Loc.T("ads." + placement)) : Loc.T("adtest.intersticial");   // ads.<Id do placement> (o nome do diario e' o Ads.Nome)
             count = Art.NewText(root, "Contador", 200, new Vector2(0.3f, 0.36f), new Vector2(0.7f, 0.52f));
             count.fontStyle = FontStyle.Bold;
             Text foot = Art.NewText(root, "Rodape", 32, new Vector2(0.05f, 0.24f), new Vector2(0.95f, 0.32f));
@@ -167,30 +193,41 @@ namespace FS
 
 #if UNITY_ANDROID || UNITY_IOS
     /// <summary>SDK real (LevelPlay 9.5.1). Em build de desenvolvimento sem anuncio carregado (emulador, conta sem fill), o AdsSimulado
-    /// entra no lugar; no release, nunca.</summary>
+    /// entra no lugar; no release, nunca. Um LevelPlayRewardedAd por ad unit (placements que dividem a unit dividem o anuncio carregado); o
+    /// pedido lembra o placement, que e' o que o nucleo paga. Intersticial so com a flag ligada e com ad unit (Ads.InterstitialUnit).</summary>
     sealed class AdsLevelPlay : IAds
     {
+        const string UnitVip = "7dxdva13pxaovoae", UnitVelocidade = "gple3wvhz7xm3qk7";
+        /// <summary>Placement -> ad unit. E-PLAT-02: os placements novos usam a unit da Velocidade ate o painel ter as deles. TODO (Vinicius, no
+        /// painel LevelPlay): criar rewarded_cofre2x, rewarded_encomenda e rewarded_supply e trocar aqui. O nome da recompensa do painel nao
+        /// importa: o nucleo aplica pelo placement do pedido (Anuncios.Pagar).</summary>
         static readonly Dictionary<string, string> Units = new Dictionary<string, string>
         {
-            [Ads.Vip] = "7dxdva13pxaovoae",          // rewarded_vip: recompensa "VIP" x1
-            [Ads.Velocidade] = "gple3wvhz7xm3qk7",   // rewarded_velocidade: recompensa "Velocidade" x1
+            [Ads.Vip] = UnitVip,                 // rewarded_vip: recompensa "VIP" x1
+            [Ads.Velocidade] = UnitVelocidade,   // rewarded_velocidade: recompensa "Velocidade" x1
+            ["cofre2x"] = UnitVelocidade, ["encomenda_bonus"] = UnitVelocidade, ["encomenda_troca"] = UnitVelocidade, ["supply"] = UnitVelocidade,
         };
         const float RewardGrace = 2f;
         sealed class Request { public string P; public Action Ok, Fail; public bool Done; }
 
         readonly MonoBehaviour _host;
         readonly AdsSimulado _fake;   // so' em build de desenvolvimento
-        readonly Dictionary<string, LevelPlayRewardedAd> _ads = new Dictionary<string, LevelPlayRewardedAd>();
+        readonly bool _intersticial;
+        readonly Dictionary<string, LevelPlayRewardedAd> _ads = new Dictionary<string, LevelPlayRewardedAd>();   // por ad unit
         readonly Dictionary<string, float> _retry = new Dictionary<string, float>();
+        LevelPlayInterstitialAd _inter;
+        Action _interDone;
         Request _req;
+        string _shown;   // placement do ultimo Show (o ILRD chega depois e e' por ad unit)
         float _initRetry = 10f;
         bool _testSuite, _parado;
         string _resposta;   // Privacidade.Gravar da resposta aplicada no Init; null = SDK nao iniciado (nada do LevelPlay foi tocado)
 
-        public AdsLevelPlay(MonoBehaviour host)
+        public AdsLevelPlay(MonoBehaviour host, bool intersticial)
         {
             _host = host;
-            if (Debug.isDebugBuild) _fake = new AdsSimulado(host);
+            _intersticial = intersticial;
+            if (Debug.isDebugBuild) _fake = new AdsSimulado(host, intersticial);
             if (Ads.Resposta(out Faixa f, out bool aceitou)) Iniciar(f, aceitou);
             else Ads.Emit("ad_init", "espera", "consentimento");   // a tela de idade chama o Ads.Responder
         }
@@ -232,10 +269,13 @@ namespace FS
             LevelPlay.Init(Ads.AppKey);
         }
 
-        public bool Busy => _req != null || (_fake != null && _fake.Busy);
-        public bool Loaded(string p) => !_parado && _ads.TryGetValue(p, out LevelPlayRewardedAd ad) && ad != null && ad.IsAdReady();
+        bool InterBusy => _interDone != null;
+        public bool Busy => _req != null || InterBusy || (_fake != null && _fake.Busy);
+        public bool Loaded(string p) => !_parado && Units.TryGetValue(p, out string u) && _ads.TryGetValue(u, out LevelPlayRewardedAd ad) && ad != null && ad.IsAdReady();
         // sem resposta (SDK parado) ou resposta mudada nesta sessao: botao escondido, inclusive o fallback simulado do dev
         public bool Ready(string p) => _resposta != null && !_parado && !Busy && Units.ContainsKey(p) && (Loaded(p) || _fake != null);
+        bool InterLoaded => !_parado && _inter != null && _inter.IsAdReady();
+        public bool InterstitialReady => _intersticial && _resposta != null && !_parado && !Busy && (InterLoaded || _fake != null);
 
         public void Show(string p, Action onReward, Action onFail)
         {
@@ -245,7 +285,31 @@ namespace FS
             string why = !Units.ContainsKey(p) ? "placement_desconhecido" : Busy ? "ocupado" : !real ? "sem_anuncio" : null;
             if (why != null) { Ads.Emit("ad_fail", p, why); onFail?.Invoke(); return; }
             _req = new Request { P = p, Ok = onReward, Fail = onFail };
-            _ads[p].ShowAd();
+            _shown = p;
+            _ads[Units[p]].ShowAd();
+        }
+
+        /// <summary>E-PLAT-03: so com a flag ligada (sem ela o _inter nem existe); dev sem intersticial carregado = o simulado.</summary>
+        public void ShowInterstitial(Action done)
+        {
+            bool real = _intersticial && InterLoaded;
+            if (!real && _intersticial && _fake != null && !Busy) { _fake.ShowInterstitial(done); return; }
+            Ads.Emit("ad_request", Ads.Intersticial, "real");
+            string why = !_intersticial ? "desligado" : Busy ? "ocupado" : !real ? "sem_anuncio" : null;
+            if (why != null) { Ads.Emit("ad_fail", Ads.Intersticial, why); done?.Invoke(); return; }
+            _interDone = done ?? (() => { });
+            _shown = Ads.Intersticial;
+            _inter.ShowAd();
+        }
+
+        void InterFim(string falha)
+        {
+            Action d = _interDone;
+            if (d == null) return;
+            _interDone = null;
+            if (falha != null) Ads.Emit("ad_fail", Ads.Intersticial, falha);
+            _inter?.LoadAd();
+            d();
         }
 
         void Finish(bool rewarded, string detail)
@@ -267,21 +331,31 @@ namespace FS
             Ads.Emit("ad_init", "ok", LevelPlay.PluginVersion);
             if (Debug.isDebugBuild) LevelPlay.ValidateIntegration();   // relatorio no logcat (tag IntegrationHelper)
             if (_testSuite) LevelPlay.LaunchTestSuite();
-            foreach (KeyValuePair<string, string> u in Units)
+            foreach (KeyValuePair<string, string> pu in Units)
             {
-                if (_ads.ContainsKey(u.Key)) continue;
-                string p = u.Key;
-                var ad = new LevelPlayRewardedAd(u.Value);
-                ad.OnAdLoaded += _ => _retry[p] = 30f;
-                ad.OnAdLoadFailed += e => LoadFailed(p, e);
-                ad.OnAdDisplayed += info => Ads.Emit("ad_shown", p, info?.AdNetwork);
-                ad.OnAdDisplayFailed += (info, e) => { Finish(false, $"exibicao {e?.ErrorCode} {e?.ErrorMessage}"); Load(p); };
+                string u = pu.Value, p0 = pu.Key;   // p0 = 1o placement da unit: nome no diario da carga
+                if (_ads.ContainsKey(u)) continue;
+                var ad = new LevelPlayRewardedAd(u);
+                ad.OnAdLoaded += _ => _retry[u] = 30f;
+                ad.OnAdLoadFailed += e => LoadFailed(u, p0, e);
+                ad.OnAdDisplayed += info => Ads.Emit("ad_shown", _req?.P ?? p0, info?.AdNetwork);
+                ad.OnAdImpressionDataReady += d => Ads.Emit("ad_impression", _shown ?? p0, Ads.Receita(d?.Revenue, d?.Precision, d?.AdNetwork));   // DM §95
+                ad.OnAdDisplayFailed += (info, e) => { Finish(false, $"exibicao {e?.ErrorCode} {e?.ErrorMessage}"); Load(u); };
                 ad.OnAdRewarded += (info, r) => Finish(true, $"{r?.Name} x{r?.Amount} {info?.AdNetwork}");
-                ad.OnAdClosed += _ => { Load(p); _host.StartCoroutine(ClosedWithoutReward(_req)); };
-                _ads[p] = ad;
-                _retry[p] = 30f;
-                Load(p);   // pre-carga de proposito: Ready precisa do anuncio pronto antes de o botao aparecer
+                ad.OnAdClosed += _ => { Load(u); _host.StartCoroutine(ClosedWithoutReward(_req)); };
+                _ads[u] = ad;
+                _retry[u] = 30f;
+                Load(u);   // pre-carga de proposito: Ready precisa do anuncio pronto antes de o botao aparecer
             }
+            // E-PLAT-03: flag desligada (o padrao) = nenhum LevelPlayInterstitialAd, nenhum load (o Init ja logou "ad_init intersticial desligado")
+            if (!_intersticial || Ads.InterstitialUnit.Length == 0 || _inter != null) return;
+            _inter = new LevelPlayInterstitialAd(Ads.InterstitialUnit);
+            _inter.OnAdLoadFailed += e => Ads.Emit("ad_load_fail", Ads.Intersticial, $"{e?.ErrorCode} {e?.ErrorMessage}");
+            _inter.OnAdDisplayed += info => Ads.Emit("ad_shown", Ads.Intersticial, info?.AdNetwork);
+            _inter.OnAdImpressionDataReady += d => Ads.Emit("ad_impression", Ads.Intersticial, Ads.Receita(d?.Revenue, d?.Precision, d?.AdNetwork));
+            _inter.OnAdDisplayFailed += (info, e) => InterFim($"exibicao {e?.ErrorCode} {e?.ErrorMessage}");
+            _inter.OnAdClosed += _ => InterFim(null);
+            _inter.LoadAd();
         }
 
         void OnInitFailed(LevelPlayInitError e)
@@ -297,23 +371,23 @@ namespace FS
             LevelPlay.Init(Ads.AppKey);
         }
 
-        void Load(string p)
+        void Load(string unit)
         {
-            if (_ads.TryGetValue(p, out LevelPlayRewardedAd ad) && ad != null && !ad.IsAdReady()) ad.LoadAd();
+            if (_ads.TryGetValue(unit, out LevelPlayRewardedAd ad) && ad != null && !ad.IsAdReady()) ad.LoadAd();
         }
 
-        void LoadFailed(string p, LevelPlayAdError e)
+        void LoadFailed(string unit, string p, LevelPlayAdError e)
         {
-            float wait = _retry.TryGetValue(p, out float w) ? w : 30f;
+            float wait = _retry.TryGetValue(unit, out float w) ? w : 30f;
             Ads.Emit("ad_load_fail", p, $"{e?.ErrorCode} {e?.ErrorMessage} retry {wait:0}s");
-            _retry[p] = Mathf.Min(wait * 2f, 300f);
-            _host.StartCoroutine(LoadLater(p, wait));
+            _retry[unit] = Mathf.Min(wait * 2f, 300f);
+            _host.StartCoroutine(LoadLater(unit, wait));
         }
 
-        IEnumerator LoadLater(string p, float wait)
+        IEnumerator LoadLater(string unit, float wait)
         {
             yield return new WaitForSecondsRealtime(wait);
-            Load(p);
+            Load(unit);
         }
 
         // OnAdRewarded pode chegar DEPOIS do OnAdClosed (callbacks assincronos): espera um pouco antes de chamar de falha
@@ -330,6 +404,8 @@ namespace FS
             LevelPlay.OnInitFailed -= OnInitFailed;
             foreach (LevelPlayRewardedAd ad in _ads.Values) ad?.DestroyAd();
             _ads.Clear();
+            _inter?.DestroyAd();
+            _inter = null;
         }
     }
 #endif

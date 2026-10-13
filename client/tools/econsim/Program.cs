@@ -32,7 +32,7 @@ static class EconSim
     sealed class Run
     {
         public string Perfil, Csv; public float[] Marcos, Pisos;
-        public int Morta, MortaSeq, MortaIni, SemDestinoMin, Luxo, AdsVip, AdsBoost, Vips; public long PosProd, Parado; public double Segundos;
+        public int Morta, MortaSeq, MortaIni, SemDestinoMin, Luxo, AdsVip, AdsBoost, AdsSupply, AdsBonus, Vips; public long PosProd, Parado, Encomendas; public double Segundos;
         // B-CORE-03: % da receita acima do preco Normal (premio de qualidade) e o que o golpe somou; niveis de estacao comprados, gasto e o 1o
         public double Quali, Golpe; public int Niveis, Golpes; public long NiveisGasto; public float Nivel1;
     }
@@ -133,6 +133,20 @@ static class EconSim
                 return (v.Length == 0 ? "--:--" : Clock(v.Average())) + $" ({100.0 * abaixo / g.Length:0}% abaixo)";
             })) + " |");
         }
+        // E-PLAT-02: so os perfis que assistem; o teto e' por dia (o bot joga 1 dia: Metas.Agora nunca roda)
+        BotProfile[] comAds = perfis.Where(p => p.Ads).ToArray();
+        if (comAds.Length > 0)
+        {
+            Console.WriteLine();
+            Console.WriteLine($"| perfil | anuncios VIP | Velocidade | Supply Drop | bonus da encomenda | total (teto {Knobs(knobs, new Tuning()).AnunciosTetoDia}/dia) | premio das encomendas |");
+            Console.WriteLine("|---|---|---|---|---|---|---|");
+            foreach (BotProfile p in comAds)
+            {
+                Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+                Console.WriteLine($"| {p.Name} | {g.Average(r => r.AdsVip):0.#} | {g.Average(r => r.AdsBoost):0.#} | {g.Average(r => r.AdsSupply):0.#} | {g.Average(r => r.AdsBonus):0.#} | " +
+                                  $"{g.Average(r => r.AdsVip + r.AdsBoost + r.AdsSupply + r.AdsBonus):0.#} | {g.Average(r => r.Encomendas):0} |");
+            }
+        }
         return 0;
     }
 
@@ -154,8 +168,8 @@ static class EconSim
             {
                 int before = s.UpgradesBought;
                 bot.Step(s, dt);
-                pausa += (bot.AdsVip + bot.AdsBoost - ads) * anuncioSeg;   // o anuncio vem antes do Tick do mesmo passo
-                ads = bot.AdsVip + bot.AdsBoost;
+                pausa += (bot.AdsTotal - ads) * anuncioSeg;   // o anuncio vem antes do Tick do mesmo passo
+                ads = bot.AdsTotal;
                 foreach (SimEvent e in s.Events) if (e.Kind == Ev.VipServed) r.Vips++;
                 if (venda1 < 0f && s.FirstSaleTime >= 0f) venda1 = s.FirstSaleTime + pausa;
                 if (s.UpgradesBought != before)
@@ -191,7 +205,8 @@ static class EconSim
         r.Golpes = s.Strikes;
         long paid = s.Pads.Sum(pad => (long)pad.Paid);   // pad de luxo pago pela metade tambem e' ouro gasto
         r.PosProd = goldAtProd < 0 ? 0 : s.Gold + luxSpent + paid - goldAtProd;
-        r.Parado = s.Gold; r.AdsVip = bot.AdsVip; r.AdsBoost = bot.AdsBoost; r.Csv = csv.ToString();
+        r.Parado = s.Gold; r.AdsVip = bot.AdsVip; r.AdsBoost = bot.AdsBoost; r.AdsSupply = bot.AdsSupply; r.AdsBonus = bot.AdsBonus; r.Csv = csv.ToString();
+        r.Encomendas = s.OrderGold;
         r.Segundos = clock.Elapsed.TotalSeconds;
         return r;
     }

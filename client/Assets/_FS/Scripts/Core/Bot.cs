@@ -4,18 +4,22 @@ namespace FS.Core
 {
     /// <summary>
     /// Perfil do bot (A-CORE-07, Bot 2.0) = dados, nao subclasse. F2P = o humano de sempre (`new Bot()`, o dos BalanceTests): nunca assiste
-    /// anuncio. Slow = o "lento" do BALANCE §18.3 (1,5 s de reacao, 60% de stick). AdWatcher = o humano que assiste todo anuncio liberado.
+    /// anuncio. Slow = o "lento" do BALANCE §18.3 (1,5 s de reacao, 60% de stick). AdWatcher = o humano que assiste todo anuncio liberado
+    /// (Chamar VIP e Velocidade 2x, direto no Sim, como antes). AdWatcherE (flag AdsE, E-PLAT-02) = o mesmo humano assistindo tambem o Supply
+    /// Drop e o bonus da encomenda, tudo pelo nucleo (Anuncios: ID de transacao e teto diario); Trocar e Cofre 2x ficam de fora (o bot nao
+    /// escolhe encomenda nem sai do jogo).
     /// B-CORE-03: so o Ideal (o "Perfect" do ECONOMIA_WAVE_B §1.4) da o golpe de mestre, e acerta todo golpe que aparece; os outros nunca.
     /// </summary>
     public struct BotProfile
     {
-        public string Name; public float Reaction, Stick; public bool Ads, Strike;
+        public string Name; public float Reaction, Stick; public bool Ads, AdsE, Strike;
 
         public static readonly BotProfile Ideal = new BotProfile { Name = "Ideal", Reaction = 0f, Stick = 1f, Strike = true };
         public static readonly BotProfile F2P = new BotProfile { Name = "F2P", Reaction = 0.7f, Stick = 0.85f };
         public static readonly BotProfile Slow = new BotProfile { Name = "Slow", Reaction = 1.5f, Stick = 0.6f };
         public static readonly BotProfile AdWatcher = new BotProfile { Name = "AdWatcher", Reaction = 0.7f, Stick = 0.85f, Ads = true };
-        public static readonly BotProfile[] All = { Ideal, F2P, Slow, AdWatcher };
+        public static readonly BotProfile AdWatcherE = new BotProfile { Name = "AdWatcherE", Reaction = 0.7f, Stick = 0.85f, Ads = true, AdsE = true };
+        public static readonly BotProfile[] All = { Ideal, F2P, Slow, AdWatcher, AdWatcherE };
     }
 
     /// <summary>
@@ -33,15 +37,17 @@ namespace FS.Core
         /// </summary>
         public float Reaction = BotProfile.F2P.Reaction, Stick = BotProfile.F2P.Stick;
 
-        /// <summary>Assiste anuncio (AdWatcher): chama o VIP quando pode e liga o boost 2x quando a recarga deixa. Conta os anuncios vistos.</summary>
-        public bool Ads; public int AdsVip, AdsBoost;
+        /// <summary>Assiste anuncio (AdWatcher): chama o VIP quando pode e liga o boost 2x quando a recarga deixa; com AdsE (AdWatcherE) tambem o
+        /// Supply Drop e o bonus da encomenda, pelo Anuncios. Conta os anuncios vistos.</summary>
+        public bool Ads, AdsE; public int AdsVip, AdsBoost, AdsSupply, AdsBonus;
+        public int AdsTotal => AdsVip + AdsBoost + AdsSupply + AdsBonus;
         /// <summary>B-CORE-03: acerta o golpe de mestre sempre que o Sim oferece (ferreiro parado na boca de uma bancada, recarga zerada).</summary>
         public bool Strike;
 
         V2 _target; bool _has, _menu; float _wait;
 
         public static Bot Ideal() => From(BotProfile.Ideal);
-        public static Bot From(BotProfile p) => new Bot { Reaction = p.Reaction, Stick = p.Stick, Ads = p.Ads, Strike = p.Strike };
+        public static Bot From(BotProfile p) => new Bot { Reaction = p.Reaction, Stick = p.Stick, Ads = p.Ads, AdsE = p.AdsE, Strike = p.Strike };
 
         /// <summary>
         /// Um tick do jogo com o bot no joystick. Menu inferior (FASE6): mesma politica do pad (a compra mais barata que ja da
@@ -50,9 +56,16 @@ namespace FS.Core
         /// </summary>
         public void Step(Sim s, float dt)
         {
-            if (Ads)
+            if (Ads && AdsE)   // E-PLAT-02: tudo pelo nucleo (oferta -> recompensa, como a View), com o teto diario
             {
-                if (s.SummonVip()) AdsVip++;                                  // o Sim recusa fora de CanSummonVip
+                if (Assiste(s, Anuncio.Vip)) AdsVip++;
+                if (s.BoostLeft <= 0f && Assiste(s, Anuncio.Velocidade)) AdsBoost++;
+                if (Assiste(s, Anuncio.Supply)) AdsSupply++;
+                if (Assiste(s, Anuncio.EncomendaBonus)) AdsBonus++;
+            }
+            else if (Ads)
+            {
+                if (s.SummonVip()) AdsVip++;                                 // o Sim recusa fora de CanSummonVip
                 if (s.BoostLeft <= 0f && s.StartBoost() > 0f) AdsBoost++;    // ponytail: so o 1o anuncio (2x); o 2o (3x) e' mais uma condicao
             }
             if (Strike) s.Strike(true);   // o Sim recusa fora de StrikeStation (parado na boca, recarga zerada); acerto perfeito, sem tempo de anel
@@ -70,6 +83,8 @@ namespace FS.Core
             V2 d = Toward(s, t);
             s.Tick(dt, d.X * Stick, d.Y * Stick);
         }
+
+        static bool Assiste(Sim s, Anuncio a) => s.Anuncios.Pagar(s.Anuncios.Oferta(a)) >= 0;
 
         /// <summary>Direcao do joystick (comprimento 0..1) para o alvo atual, sem handicap; zero quando chegou.</summary>
         public static V2 Decide(Sim s) => Toward(s, Target(s));
