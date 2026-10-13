@@ -29,7 +29,7 @@ COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Sc
           'Assets/_FS/Scripts/View/StationView.cs', 'Assets/_FS/Scripts/View/Servicos.cs', 'Assets/_FS/Scripts/View/Estado.cs',
           'Assets/_FS/Scripts/View/Captura.cs', 'Assets/_FS/Scripts/View/Som.cs', 'Assets/_FS/Scripts/View/Privacidade.cs',
           'Assets/_FS/Scripts/View/EsteiraView.cs', 'Assets/_FS/Scripts/View/Enquadramento.cs', 'Assets/_FS/Scripts/View/Loc.cs',
-          'tools/coretests']
+          'Assets/_FS/Scripts/View/QualidadeView.cs', 'tools/coretests']
 SIM, DEFS, CV = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs', 'Assets/_FS/Scripts/Core/ContentValidator.cs'
 
 
@@ -50,7 +50,7 @@ MUTACOES = [
         'estação ignora o multiplicador de tempo da receita (escudo e joia no tempo da espada)'),
     mut('rec-consome-so-o-1o', SIM, 'for (int k = 0; k < s.Ins.Length; k++) s.Ins[k] -= s.Recipe.Inputs[k].Qty;', 's.Ins[0] -= s.Recipe.Inputs[0].Qty;',
         'receita de 2 insumos só consome o 1o'),
-    mut('rec-nao-espera-o-2o', SIM, 'for (int k = 0; k < s.Ins.Length; k++) if (s.Ins[k] < s.Recipe.Inputs[k].Qty)', 'for (int k = 0; k < 1; k++) if (s.Ins[k] < s.Recipe.Inputs[k].Qty)',
+    mut('rec-nao-espera-o-2o', SIM, 'for (int k = 0; k < s.Ins.Length; k++) if (s.Ins[k] < s.Recipe.Inputs[k].Qty) { s.StarveSeconds', 'for (int k = 0; k < 1; k++) if (s.Ins[k] < s.Recipe.Inputs[k].Qty) { s.StarveSeconds',
         'estação começa sem o 2o insumo da receita'),
     mut('rec-paciencia-qtd', DEFS, 't += StartTime(ri) * qty;', 't += StartTime(ri);',
         'paciência conta 1 de cada insumo, não a quantidade da receita (escudo e joia esperam menos)'),
@@ -107,6 +107,40 @@ MUTACOES = [
         'cliente sem estoque na frente trava quem quer outro produto'),
     mut('fila-paciencia-lenta', SIM, 'c.Patience -= dt;', 'c.Patience -= dt * 0.5f;',
         'paciência dos clientes acaba na metade da velocidade'),
+    # qualidade (B-CORE-03)
+    mut('qual-acumulador-sem-resto', SIM, 'if (s.QAcc >= 100) { l++; s.QAcc -= 100; }', 'if (s.QAcc >= 100) { l++; s.QAcc = 0; }',
+        'acumulador zera ao passar de 100 em vez de guardar o resto (q = 15 perde Finas)'),
+    mut('qual-acumulador-limiar', SIM, 's.QAcc >= 100', 's.QAcc > 100',
+        'acumulador sobe de nível só acima de 100 (q = 25 vira 1 Fina a cada 5)'),
+    mut('qual-preco-superior', DEFS, 'QualidadePct = { 100, 150, 250, 0 };', 'QualidadePct = { 100, 150, 200, 0 };',
+        'Superior vende a 2x em vez de 2,5x'),
+    mut('qual-balcao-vende-pior', SIM, 'for (int l = Graus - 1; l > 0; l--) if (q[l] > 0) { q[l]--; return (Quality)l; }',
+        'for (int l = 1; l < Graus; l++) if (q[l] > 0) { q[l]--; return (Quality)l; }',
+        'lote entrega a Fina antes da Superior (o balcão não vende a melhor primeiro)'),
+    mut('qual-golpe-pelo-ajudante', SIM, 'Station s = StationAt(Player.Pos, out bool outZone);',
+        'Station s = StationAt(Workers.Count > 0 ? Workers[0].Pos : Player.Pos, out bool outZone);',
+        'golpe de mestre vale com o ajudante na boca da bancada (só o ferreiro pode)'),
+    mut('qual-golpe-andando', SIM, '|| Player.Moving) return null;', ') return null;',
+        'golpe de mestre com o ferreiro andando (só parado na boca)'),
+    mut('qual-golpe-antes-da-revelacao', SIM, 'if (!QualityRevealed || StrikeCooldown', 'if (StrikeCooldown',
+        'golpe de mestre antes das Ferramentas (fura os 10 primeiros minutos)'),
+    mut('qual-golpe-sem-recarga', SIM, 'StrikeCooldown = T.GolpeRecarga;', ';',
+        'golpe de mestre sem a recarga de 20 s'),
+    mut('qual-golpe-erro-acerta', SIM, 'if (s == null || !hit) return false;', 'if (s == null) return false;',
+        'errar o anel conta como acerto'),
+    mut('qual-masterwork-sem-projeto', SIM, 'if (l == (int)Quality.Superior && MasterworkPending != null && MasterworkPending(s)) return Quality.Masterwork;',
+        'if (l == (int)Quality.Superior) return Quality.Masterwork;',
+        'golpe numa Superior vira Masterwork sem projeto nem condição (B-CORE-08)'),
+    mut('qual-masterwork-no-balcao', SIM, 'if (l == Quality.Masterwork) { Masterworks++;', 'if (l == Quality.Masterwork) { Put(ref s.Out, s.OutQ, Quality.Superior); Masterworks++;',
+        'a obra-prima também entra na pilha e vai ao balcão (vendida como Superior)'),
+    mut('qual-meta-na-producao', DEFS, 'IsProduction(int u) => !All[u].Luxury && !All[u].Meta;', 'IsProduction(int u) => !All[u].Luxury;',
+        'nível de estação (Meta) entra na produção completa e no teto offline'),
+    mut('qual-nivel-sem-velocidade', SIM, '/ (1f + T.NivelEstacaoVelocidade * (s.Level - 1));', '/ 1f;',
+        'nível de estação não acelera a família'),
+    mut('qual-save-acumulador', SIM, 's.QAcc = Clamp0(I(parts[0], 0), 99);', 's.QAcc = 0;',
+        'load perde o acumulador de qualidade (save no meio)'),
+    mut('qual-validator-crescente', CV, 'if (pct[l] <= pct[l - 1]) yield return', 'if (false) yield return',
+        'validator aceita preço de qualidade que não sobe de nível a nível'),
 ]
 
 
