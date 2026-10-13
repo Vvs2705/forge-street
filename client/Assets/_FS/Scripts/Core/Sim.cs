@@ -129,6 +129,8 @@ namespace FS.Core
         public readonly Tuning T;
         /// <summary>D-CORE-01/02: metas (Metas.cs). Gancho unico: o Emit conta o evento; o save leva as linhas mt.* so depois da 1a Agora.</summary>
         public readonly Metas Metas;
+        /// <summary>B-CORE-06: Renome (Renome.cs), trilha que so sobe. Ganchos: o Emit credita encomenda e bau, o Sell a Superior; save na linha rn=.</summary>
+        public readonly Renome Renome;
         /// <summary>B-CORE-01: itens e receitas desta partida (padrao Items.All e Recipes.All; so o teste injeta outro). Handle de item = posicao
         /// em ItemDefs; os arrays por item (Stock, SoldItems, Crafted, Held) tem esse tamanho.</summary>
         public readonly ItemDef[] ItemDefs; public readonly RecipeDef[] RecipeDefs;
@@ -214,6 +216,7 @@ namespace FS.Core
         {
             T = tuning ?? new Tuning();
             Metas = new Metas(this);
+            Renome = new Renome(this);
             ItemDefs = items ?? Items.All; RecipeDefs = recipes ?? Recipes.All;
             int n = ItemDefs.Length;
             Stock = new int[n]; SoldItems = new int[n]; Crafted = new int[n]; StockQ = Lotes(n);
@@ -962,6 +965,7 @@ namespace FS.Core
         int Sell(Item want, V2 pos, int mul = 1)
         {
             Quality l = Take(ref Stock[(int)want], StockQ[(int)want]);
+            Renome.OnVendaQualidade((int)l);   // B-CORE-06: +1 a cada 10 Superiores vendidas
             int price = PriceOf(want, l) * mul;
             QualityGold += price - PriceOf(want) * mul;
             Gold += price; GoldEarned += price; Sales++; SoldItems[(int)want]++;
@@ -1044,6 +1048,7 @@ namespace FS.Core
         {
             Events.Add(new SimEvent(kind, a, b, pos));
             Metas.On(kind, a, b);   // D-CORE-02: tambem os de fora do Tick (menu, cofre)
+            Renome.On(kind, a, b);  // B-CORE-06: encomenda entregue e bau aberto
         }
 
         /// <summary>
@@ -1530,6 +1535,7 @@ namespace FS.Core
             // A-CORE-02: velocidade (multiplicador, s restantes, s de recarga), no tempo de jogo
             sb.Append("bst=").Append(BoostMul.ToString("0", ci)).Append(',').Append(BoostLeft.ToString("0.###", ci)).Append(',')
               .Append(BoostCooldown.ToString("0.###", ci)).Append('\n');
+            Renome.Save(sb);  // B-CORE-06: rn= (o Load de antes ignora chave desconhecida)
             Metas.Save(sb);   // D-CORE-01/02: linhas mt.* (nada antes da 1a Agora)
             return sb.ToString();
         }
@@ -1691,6 +1697,7 @@ namespace FS.Core
             // de novo, e o pad cujo upgrade foi para o menu (FASE6) nunca mais aparece
             foreach (Pad p in sim.Pads) if (p.Current(sim) < 0) { sim.Gold += p.Paid; p.Paid = 0; }
             sim.Metas.Load(text);   // D-CORE-01/02: save sem mt.* = metas zeradas
+            sim.Renome.Load(text);  // B-CORE-06: save sem rn= = retroativo (depois das metas: soma o Renome que elas guardaram)
             return sim;
         }
 

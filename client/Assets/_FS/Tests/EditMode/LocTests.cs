@@ -59,6 +59,7 @@ namespace FS.Tests
             foreach (Faixa f in Enum.GetValues(typeof(Faixa))) Tem("priv.faixa." + (int)f);
             foreach (string g in new[] { "m", "f", "mp", "fp" }) { Tem("art.o." + g); Tem("art.de." + g); }
             foreach (string p in new[] { "vip", "velocidade" }) Tem("ads." + p);   // Ads.Vip, Ads.Velocidade (o anuncio simulado)
+            foreach (RenomeDef d in RenomeDefs.Niveis) { Tem(d.NomeKey); if (d.Nivel > 0) Tem(d.NomeKey + ".libera"); }   // B-CORE-06: SeloRenome
             Assert.IsEmpty(faltam);
         }
 
@@ -175,6 +176,12 @@ namespace FS.Tests
                     if (req >= 0 && !oculto) Assert.LessOrEqual(Textos.Precisa(req).Length, 18, $"{i}: {Textos.Precisa(req)}");   // 1 linha de 22 px no botao
                 }
                 for (long v = 1; v > 0 && v < long.MaxValue / 7; v *= 7) Assert.LessOrEqual(Textos.Ouro(v).Length, 8, $"{i}: {Textos.Ouro(v)}");
+                foreach (RenomeDef d in RenomeDefs.Niveis)   // B-CORE-06: selo (1 linha ao lado da estrela), aviso (1 linha na faixa) e cartao (3 linhas)
+                {
+                    Assert.LessOrEqual(Textos.NomeRenome(d.Nivel).Length, Textos.RenomeMax, $"{i}: {Textos.NomeRenome(d.Nivel)}");
+                    Assert.LessOrEqual(Textos.AvisoRenome(d.Nivel).Length, Textos.AvisoMax, $"{i}: {Textos.AvisoRenome(d.Nivel)}");
+                    if (d.Nivel > 0) Assert.LessOrEqual(Loc.T("renome.libera", Textos.LiberaRenome(d.Nivel)).Length, 110, $"{i}: nivel {d.Nivel}");
+                }
                 Assert.LessOrEqual(Textos.Ouro(long.MaxValue).Length, 8, i.ToString());
             }
         }
@@ -207,17 +214,18 @@ namespace FS.Tests
                     Textos.Placa((int)Upgrade.Anvil2), Textos.Menu((int)Upgrade.PlayerCapacity), Textos.Dica(Hint.ClientWaiting, (int)Item.Sword, s),
                     Textos.Dica(Hint.OpenChest, 0, s), Textos.Venda(1, (int)Item.Shield), Textos.Venda(5, (int)Item.Shield),
                     Textos.Precisa((int)Upgrade.Counter5), Textos.Estacao(s.JewelShop.Index), Privacidade.Atual(Faixa.Adulto, true),
+                    Textos.AvisoRenome(2),
                 };
             }
             Assert.AreEqual(new[] { "Pise na placa da Bigorna 2", "Compre a Mochila", "Cliente quer espada!", "Abra o baú: 15 espadas!",
                 "Venda 1 escudo", "Venda 5 escudos", "Precisa: Balcão 5", "Loja de joias",
-                "Resposta atual: 18 ou mais, anúncios personalizados. A mudança vale por completo quando você abrir o jogo de novo." }, Em(Idioma.Pt));
+                "Resposta atual: 18 ou mais, anúncios personalizados. A mudança vale por completo quando você abrir o jogo de novo.", "Renome 2: Oficina conhecida!" }, Em(Idioma.Pt));
             Assert.AreEqual(new[] { "Step on the Anvil 2 pad", "Buy Backpack in Upgrades", "Customer wants swords!", "Open the chest: 15 swords!",
                 "Sell 1 shield", "Sell 5 shields", "Needs Counter 5", "Jewel Shop",
-                "Current answer: 18 or older, personalized ads. The change fully applies when you reopen the game." }, Em(Idioma.En));
+                "Current answer: 18 or older, personalized ads. The change fully applies when you reopen the game.", "Renown 2: Known Workshop!" }, Em(Idioma.En));
             Assert.AreEqual(new[] { "Pisa la placa del Yunque 2", "Compra la Mochila", "¡Piden espadas!", "Abre el baúl: ¡15 espadas!",
                 "Vende 1 escudo", "Vende 5 escudos", "Requiere 5 puestos", "Tienda de joyas",
-                "Respuesta actual: 18 o más, anuncios personalizados. El cambio se aplica por completo al volver a abrir el juego." }, Em(Idioma.Es));
+                "Respuesta actual: 18 o más, anuncios personalizados. El cambio se aplica por completo al volver a abrir el juego.", "¡Renombre 2: Taller conocido!" }, Em(Idioma.Es));
         }
 
         [Test]
