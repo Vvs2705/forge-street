@@ -21,7 +21,7 @@ namespace FS.Tests
         {
             if (!s.ProductionComplete) return float.MaxValue;
             float t = 0f;
-            for (int i = 0; i < Upgrades.Count; i++) if (!Upgrades.IsLuxury(i)) t = System.Math.Max(t, s.UpgradeTime[i]);
+            for (int i = 0; i < Upgrades.Count; i++) if (Upgrades.IsProduction(i)) t = System.Math.Max(t, s.UpgradeTime[i]);
             return t;
         }
 

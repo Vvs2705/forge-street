@@ -104,6 +104,32 @@ namespace FS
             return s.Gold < c ? $"{d.Name} custa {c}, ouro {s.Gold}" : null;
         }
 
+        /// <summary>
+        /// B-CORE-03 -qualidade [-golpe] (fotos): compra a producao ate as Ferramentas (revela a qualidade) e os niveis II-III das Bigornas e II
+        /// dos Escudos e das Ferramentas; poe 1 Fina e 1 Superior no topo de cada pilha de saida e na frente de cada produto do balcao (4 no
+        /// estoque), o acumulador das bancadas a 60% e o ferreiro parado na boca de entrada da Bigorna. `golpe`: entrada da Bigorna cheia e
+        /// recarga zerada, entao o anel aparece (Sim.StrikeStation).
+        /// </summary>
+        public static void Qualidade(Sim s, bool golpe)
+        {
+            for (int i = 0; i <= (int)Upgrade.Tools; i++) s.Buy((Upgrade)i);
+            foreach (Upgrade u in new[] { Upgrade.AnvilsLv2, Upgrade.AnvilsLv3, Upgrade.ShieldsLv2, Upgrade.ToolsLv2 }) s.Buy(u);
+            foreach (Station st in s.Stations)
+            {
+                if (!st.Unlocked || st.Kind != Kind.Crafter) continue;
+                st.Out = st.OutCap; st.OutQ[(int)Quality.Fine] = 1; st.OutQ[(int)Quality.Superior] = 1; st.QAcc = 60;
+            }
+            for (Item i = Item.Sword; i <= Item.Tool; i++)
+            {
+                if (!s.LineUnlocked(i)) continue;
+                s.Stock[(int)i] = Math.Min(4, s.CounterCap); s.StockQ[(int)i][(int)Quality.Fine] = 1; s.StockQ[(int)i][(int)Quality.Superior] = 1;
+            }
+            s.Player.Pos = s.AnvilA.InAt;
+            if (!golpe) return;
+            s.AnvilA.Ins[0] = s.AnvilA.InCap;
+            s.StrikeCooldown = 0f;
+        }
+
         /// <summary>-offline S: s fora para o cofre real (Sim.ApplyOffline); -1 = fora de 60 s (abaixo o jogo nao paga) ao teto de 2 h.</summary>
         public static long OfflineSegundos(string v) =>
             long.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out long s) && s >= 60 && s <= Balance.OfflineCapSeconds ? s : -1;

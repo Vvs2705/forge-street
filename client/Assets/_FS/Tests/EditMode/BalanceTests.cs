@@ -14,6 +14,7 @@ namespace FS.Tests
     public class BalanceTests
     {
         public const float Dt = 1f / 30f;
+        const int Luxos = 3;
 
         public static string Clock(float s) => s < 0f ? "--:--" : $"{(int)(s / 60f)}:{(int)(s % 60f):00}";
 
@@ -173,7 +174,7 @@ namespace FS.Tests
             float U(Upgrade u) => s.UpgradeTime[(int)u];
             float tJewelry = U(Upgrade.Jewelry), tJeweler = U(Upgrade.Jeweler), tLupa = U(Upgrade.JewelSpeed), tVitrine = U(Upgrade.JewelVitrine), end = 3600f;
             float lastBuy = 0f; bool all = true;
-            for (int i = 0; i < Upgrades.Count; i++) if (!Upgrades.IsLuxury(i)) { all &= s.UpgradeTime[i] >= 0f; lastBuy = Math.Max(lastBuy, s.UpgradeTime[i]); }
+            for (int i = 0; i < Upgrades.Count; i++) if (Upgrades.IsProduction(i)) { all &= s.UpgradeTime[i] >= 0f; lastBuy = Math.Max(lastBuy, s.UpgradeTime[i]); }
             // joias/min por fase (minutos inteiros), % da bancada de joias sem lingote antes/depois do Joalheiro
             float JewelsPerMin(float t0, float t1) { int m0 = (int)Math.Ceiling(t0 / 60f), m1 = (int)(t1 / 60f); return m1 > m0 ? (jewelsAt[m1] - jewelsAt[m0]) / (float)(m1 - m0) : -1f; }
             float before = JewelsPerMin(tJewelry, tJeweler), afterJeweler = JewelsPerMin(tJeweler, tLupa), afterAll = JewelsPerMin(Math.Max(tLupa, tVitrine), end);
@@ -248,7 +249,7 @@ namespace FS.Tests
             float tProd = 0f;
             for (int i = 0; i < Upgrades.Count; i++)
             {
-                if (Upgrades.IsLuxury(i)) continue;
+                if (!Upgrades.IsProduction(i)) continue;   // B-CORE-03: Meta comprado depois do 1o luxo muda de instante; o portao e' a curva produtiva
                 Assert.GreaterOrEqual(lux.UpgradeTime[i], 0f, "produtivo comprado: " + (Upgrade)i);
                 Assert.AreEqual(plain.UpgradeTime[i], lux.UpgradeTime[i], "luxo nao mexe na curva produtiva: " + (Upgrade)i);
                 tProd = Math.Max(tProd, lux.UpgradeTime[i]);
@@ -279,7 +280,7 @@ namespace FS.Tests
             long luxuryCost = lux.T.Cost(Upgrade.WorkshopFacade) + lux.T.Cost(Upgrade.WorkshopFloor) + lux.T.Cost(Upgrade.JewelryDecor);
             Assert.AreEqual(plain.Gold + (lux.GoldEarned - plain.GoldEarned) + (lux.OrderGold - plain.OrderGold) - luxuryCost, lux.Gold,
                 "o luxo cobra exatamente o preco, uma vez, sem devolver ouro (premio das encomendas fica fora do GoldEarned)");
-            Assert.AreEqual((Upgrades.Count, Upgrades.ProductionCount), (lux.UpgradesBought, plain.UpgradesBought));
+            Assert.AreEqual((Upgrades.Count, Upgrades.Count - Luxos), (lux.UpgradesBought, plain.UpgradesBought), "sem luxo: os produtivos e os niveis de estacao (Meta)");
             Assert.AreEqual(plain.OfflineMaxGold(), lux.OfflineMaxGold(), "luxo nao mexe no teto offline");
         }
 

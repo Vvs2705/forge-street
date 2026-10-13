@@ -304,9 +304,9 @@ namespace FS.Tests
         public void Curva_DeCusto_Dos25Upgrades_22ProdutivosELuxo()
         {
             Assert.AreEqual(26, Upgrades.ProductionCount);
-            Assert.AreEqual(29, Upgrades.Count);
-            Assert.AreEqual(29, Upgrades.All.Length);
-            Assert.AreEqual(29, Enum.GetValues(typeof(Upgrade)).Length);
+            Assert.AreEqual(37, Upgrades.Count);   // 26 produtivos + 3 luxos + 8 niveis de estacao (B-CORE-03, Meta)
+            Assert.AreEqual(37, Upgrades.All.Length);
+            Assert.AreEqual(37, Enum.GetValues(typeof(Upgrade)).Length);
             Assert.AreEqual((3000L, 2400L), (Tuning.Padrao.Cost(Upgrade.Miner), Tuning.Padrao.Cost(Upgrade.Jeweler2)), "fase 4: medido na Leva 10 (BALANCE.md §14)");
             Assert.AreEqual((14000L, 18000L, 22000L), (Tuning.Padrao.Cost(Upgrade.WorkshopFacade), Tuning.Padrao.Cost(Upgrade.WorkshopFloor), Tuning.Padrao.Cost(Upgrade.JewelryDecor)), "luxo: Leva 11 (BALANCE.md §15)");
             Assert.AreEqual((690L, 1515L), (Tuning.Padrao.Cost(Upgrade.SideCorridor), Tuning.Padrao.Cost(Upgrade.Jewelry)), "2a area fora da formula (coordenador 2026-10-07)");
@@ -998,7 +998,7 @@ namespace FS.Tests
         static Sim CompleteProduction()
         {
             var s = Rich();
-            for (int i = 0; i < Upgrades.Count; i++) if (!Upgrades.IsLuxury(i)) s.Buy((Upgrade)i);
+            for (int i = 0; i < Upgrades.Count; i++) if (Upgrades.IsProduction(i)) s.Buy((Upgrade)i);
             return s;
         }
 
@@ -1007,10 +1007,10 @@ namespace FS.Tests
         {
             for (int missing = 0; missing < Upgrades.Count; missing++)
             {
-                if (Upgrades.IsLuxury(missing)) continue;
+                if (!Upgrades.IsProduction(missing)) continue;   // luxo e Meta (B-CORE-03) nao seguram o luxo
                 var s = Rich();
                 if (missing != (int)Upgrade.JewelVitrine) s.Buy(Upgrade.JewelVitrine);
-                for (int i = 0; i < Upgrades.Count; i++) if (i != missing && !Upgrades.IsLuxury(i)) s.Buy((Upgrade)i);
+                for (int i = 0; i < Upgrades.Count; i++) if (i != missing && Upgrades.IsProduction(i)) s.Buy((Upgrade)i);
                 Assert.IsFalse(s.ProductionComplete, "falta " + (Upgrade)missing);
                 foreach (Upgrade u in Luxury)
                 {
@@ -1044,7 +1044,7 @@ namespace FS.Tests
         [Test]
         public void Marca_ProdutivoAnexadoDepoisDosLuxos_ETratadoComoProdutivo()
         {
-            Assert.AreEqual(Upgrades.ProductionCount, Array.FindAll(Upgrades.All, d => !d.Luxury).Length, "ProductionCount = quantos sem marca de luxo");
+            Assert.AreEqual(Upgrades.ProductionCount, Array.FindAll(Upgrades.All, d => !d.Luxury && !d.Meta).Length, "ProductionCount = quantos sem marca de luxo nem Meta");
             foreach (Upgrade u in Luxury) Assert.IsTrue(Upgrades.IsLuxury((int)u), u + " e' luxo");
             int sim = (int)Upgrade.JewelryDecor;
             UpgradeDef real = Upgrades.All[sim];
@@ -1054,7 +1054,7 @@ namespace FS.Tests
                 var s = Rich();
                 for (int i = 0; i <= (int)Upgrade.Jeweler; i++) s.Buy((Upgrade)i);
                 Assert.AreEqual(sim, PadFor(s, Upgrade.JewelryDecor).Current(s), "pad visivel antes da producao completa");
-                for (int i = 0; i < Upgrades.Count; i++) if (i != sim && !Upgrades.IsLuxury(i)) s.Buy((Upgrade)i);
+                for (int i = 0; i < Upgrades.Count; i++) if (i != sim && Upgrades.IsProduction(i)) s.Buy((Upgrade)i);
                 Assert.IsFalse(s.ProductionComplete, "falta o produtivo anexado");
                 Assert.AreEqual(-1, PadFor(s, Upgrade.WorkshopFacade).Current(s), "luxo espera o anexado");
                 Assert.IsFalse(s.Buy(Upgrade.WorkshopFacade));
@@ -1109,7 +1109,7 @@ namespace FS.Tests
                 Assert.IsFalse(s.Buy(u), "compra repetida e' no-op");
                 Assert.AreEqual(0, Count(s, Ev.Bought));
             }
-            Assert.AreEqual((333L, 0L, Upgrades.Count, 3), (s.Gold, s.GoldEarned, s.UpgradesBought, bought), "o preco do luxo inteiro de ralo, sem receita ou compra duplicada");
+            Assert.AreEqual((333L, 0L, Upgrades.ProductionCount + Luxury.Length, 3), (s.Gold, s.GoldEarned, s.UpgradesBought, bought), "o preco do luxo inteiro de ralo, sem receita ou compra duplicada");
         }
 
         [Test]
@@ -1665,8 +1665,8 @@ namespace FS.Tests
         [Test]
         public void Menu_OsNoveDoContrato_SemPadVisivel_PadsContinuamNaLista()
         {
-            var menu = new List<Upgrade>(Menu); menu.AddRange(CounterTiers);
-            CollectionAssert.AreEquivalent(menu, Array.ConvertAll(Array.FindAll(Upgrades.All, d => d.InMenu), d => d.Up), "Fole, Fole duplo, Mochila, Botas, Martelo veloz, Vitrine, Ajudantes ageis, Lupa, Vitrine de joias + as 4 vagas do balcao (FASE7)");
+            var menu = new List<Upgrade>(Menu); menu.AddRange(CounterTiers); menu.AddRange(QualidadeTests.Niveis);
+            CollectionAssert.AreEquivalent(menu, Array.ConvertAll(Array.FindAll(Upgrades.All, d => d.InMenu), d => d.Up), "Fole, Fole duplo, Mochila, Botas, Martelo veloz, Vitrine, Ajudantes ageis, Lupa, Vitrine de joias + as 4 vagas do balcao (FASE7) + os 8 niveis de estacao (B-CORE-03)");
             foreach (Upgrade u in CounterTiers) Assert.IsNull(PadFor(new Sim(), u), u + ": nasceu no menu, sem pad");
             foreach (Upgrade u in Menu) Assert.IsFalse(Upgrades.IsLuxury((int)u), u + " e' produtivo");
             var s = Rich();

@@ -1458,3 +1458,61 @@ Cada anúncio assistido gasta 30 s de relógio com o jogo parado (`--anuncio-seg
 | Produção completa | 34:51 | **40:57** de relógio (F2P 43:15) |
 
 18,6 anúncios por hora (9 VIP, 9 boost), ~9 min de anúncio por hora. Em relógio, os anúncios custam ~40 s antes da 2ª bigorna e devolvem 2:18 até a produção completa. **V19 fechado:** nenhuma regra de jogo muda.
+
+## 23. B-CORE-03: Quality, níveis de estação e golpe de mestre (2026-10-13)
+
+Regra em `ECONOMIA_WAVE_B.md` §1 e GDD §9. **Vigente:** preço Normal 1× / Fina 1,5× / Superior 2,5× (`Tuning.QualidadePct` = 100/150/250, inteiro e meio para cima; Masterwork 0 = não vende); +15 de qualidade (`NivelEstacaoQ`) e +5% de velocidade (`NivelEstacaoVelocidade`) por nível de estação acima do 1; golpe de mestre com janela de 0,8 s e recarga de 20 s (`GolpeJanela`/`GolpeRecarga`), só o bot Ideal golpeia. Níveis II e III das 4 famílias (L4–L5 exigem projeto: entram com o B-CORE-07), categoria Meta (fora da produção completa e do teto offline), revelados com as Ferramentas. **Desvio do §1.5:** custo = a metade (bigornas 250/750, escudos 325/950, ferramentas 250/750, joalheria 500/1.500; soma 5.275), porque com os números do §1.5 o retorno medido passou do portão.
+
+### 23.1 econsim, 60 min, 1 partida por perfil (`--perfis Ideal,F2P,Slow,AdWatcher --minutos 60`, anúncio = 30 s)
+
+| perfil | | 1ª venda | Fole | Esteira | Corredor | Ajud.3 | Joalheria | Produção | Fachada | zona morta (min; maior seq.) | pós-produção | luxo | saldo final |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Ideal | antes | 0:18 | 0:56 | 6:48 | 15:31 | 18:24 | 24:56 | 44:05 | 51:57 | 24 (5 a partir do min 39) | 28.786 | 1/3 | 14.836 |
+| | **depois** | 0:18 | 0:56 | 6:48 | 15:41 | 25:19 | 29:45 | **47:56** | 54:51 | **20** (4 a partir do min 43) | 24.952 | 1/3 | 10.999 |
+| F2P | antes | 0:22 | 1:07 | 6:58 | 13:42 | 16:51 | 22:53 | 41:31 | 49:28 | 21 (5 a partir do min 36) | 32.449 | 2/3 | 504 |
+| | **depois** | 0:22 | 1:07 | 6:58 | 14:30 | 23:14 | 28:46 | **47:02** | 53:52 | **21** (5 a partir do min 42) | 26.379 | 1/3 | 12.545 |
+| Slow | antes | 0:38 | 0:54 | 8:19 | 16:12 | 19:24 | 26:16 | 45:15 | 53:28 | 24 (5 a partir do min 40) | 25.939 | 1/3 | 11.951 |
+| | **depois** | 0:38 | 0:54 | 8:19 | 16:14 | 26:02 | 31:04 | **49:35** | 56:43 | **23** (4 a partir do min 45) | 20.912 | 1/3 | 6.919 |
+| AdWatcher | antes | 0:22 | 1:07 | 7:07 | 13:36 | 16:21 | 22:14 | 40:06 | 48:04 | 20 (5 a partir do min 35) | 37.003 | 2/3 | 5.058 |
+| | **depois** | 0:22 | 1:07 | 7:07 | 13:47 | 22:06 | 26:55 | **44:32** | 51:20 | **18** (5 a partir do min 39) | 33.919 | 2/3 | 1.958 |
+
+| perfil | prêmio de qualidade (% da receita, 60 / 120 min) | golpe de mestre (% da receita; golpes em 60 min) | níveis de estação (comprados; gasto; o 1º) |
+|---|---|---|---|
+| Ideal | 13,1% / 13,7% | 1,1% (37) | 8/8; 5.275; 11:33 |
+| F2P | 12,1% / 12,7% | 0 (não golpeia) | 8/8; 5.275; 10:52 |
+| Slow | 12,0% / 12,7% | 0 | 8/8; 5.275; 12:00 |
+| AdWatcher | 12,2% / 12,7% | 0 | 8/8; 5.275; 10:07 (relógio) |
+
+Pisos do §3 sem mudança (0% abaixo em todos os perfis). Média de 4 partidas por perfil (passos 30–52,5 ticks/s): produção completa F2P 42:35 → 47:00 (Ideal 43:32 → 47:13, Slow 44:28 → 49:26, AdWatcher 41:47 → 44:41); zona morta 22 → 20,3 (Ideal 23,5 → 20,5, Slow 22,5 → 22,3, AdWatcher 21,8 → 19,5).
+
+### 23.2 Portões (ECONOMIA_WAVE_B §10)
+
+| Medida | Portão | Medido | |
+|---|---|---|---|
+| Primeiros 10 min | iguais, tick a tick | iguais (`QualidadeTests.Revelacao_PrimeirosDezMinutos_IguaisSemQualidade`: log e save do F2P idênticos com e sem qualidade) | ok |
+| Produção completa, F2P | 41–55 min | 47:02 (4 partidas: 47:00) | ok |
+| Zona morta até a produção, F2P | não piora (meta da Wave B: ≤ 12) | 21 → 21 (4 partidas: 22 → 20,3) | ok (a meta de 12 é das Orders 2.0 e Blueprints) |
+| Prêmio de qualidade | 5–20% aos 60 min; ≤ 35% aos 120 | 12,1% / 12,7% (F2P) | ok |
+| Golpe de mestre | ≤ 8% (F2P); ≤ 12% (Perfect) | 0% (F2P não golpeia) / 1,1% (Ideal) | ok |
+| Retorno medido dos níveis II–III | ≤ 20 min de renda | 19,5 min (metade do §1.5); 39 min com o §1.5 | ok com o desvio |
+
+**Retorno (A/B, 90 min, 4 partidas, ouro/min na janela 60–90 com a produção completa nas duas):** F2P 1.686 → 1.955 (+270/min, +16%), Ideal 1.727 → 1.993 (+266/min). Os 8 níveis custam 5.275 = 19,5 min do ganho; com o §1.5 (10.550) seriam 39 min.
+
+### 23.3 Varredura que decidiu o preço (4 partidas, F2P)
+
+| Variante | Produção completa | Zona morta | Prêmio de qualidade | Retorno dos níveis |
+|---|---|---|---|---|
+| sem níveis (= main) | 42:35 | 22 | 0 | — |
+| §1.5 (500/1.500…), o bot compra o mais barato (1 partida) | 57:26 | 31 | 10,5% | 39 min |
+| §1.5 e o Meta só quando o próximo produtivo está a > 120 s de renda (regra testada e descartada) | 50:01 | 21 | 9,1% | 39 min |
+| **metade do §1.5, o mais barato (vigente)** | **47:00** | **20,3** | **12,1%** | **19,5 min** |
+
+Com o §1.5 o bot compra Bigornas II, Ferramentas II e Escudos II logo depois das Ferramentas (são as compras mais baratas) e o resto da cadeia (L3, joalheria) atrasa a Joalheria em 12 min: a produção completa passa do portão de 55 min e a zona morta cresce. A metade passa em todos; a regra "Meta só na espera" ficou de fora (o preço resolve sem regra nova).
+
+### 23.4 BalanceTests (bot humano, Dt 1/30): portões "medido + 30%" passam sem mudar
+
+Corredor 14:30, Joalheria 28:46, 10,2 joias/min, ouro/min 392 → 533 → 1.007 → 1.546 (min 40–45). Joalheiro 34:15, Lupa 41:40, Vitrine de joias 47:02 = produção completa; joias/min 6,8 → 10,2 → 15,2; bancada de joias sem lingote 13%; baús 2:50 / 6:56 / 30:48 / 14:25; encomendas 20 (5,0% da receita); VIP 6,0%. 90 min: Fachada 53:52 (+6,8), Piso 62:43, Joalheria real 73:37; ouro/min 48–90 com × sem luxo 1.947 × 1.963 (−0,8%). Níveis do F2P: Bigornas II 10:52, Ferramentas II 11:22, Escudos II 12:01, Bigornas III 15:58, Ferramentas III 17:22, Escudos III 20:58, Joalheria II 29:23, Joalheria III 30:49.
+
+### 23.5 Testes e prova vermelha
+
+`QualidadeTests` (22): q = 25 → exatamente 1 Fina a cada 4; q = 115 → toda Fina, Superior = ⌊0,15 n⌋, dois Sims iguais; `QualityBreakdown` explica 100% das peças de 40 min do bot (refaz o acumulador peça a peça); fornalha sem qualidade; preço por nível; balcão vende a melhor primeiro; VIP 3× com a qualidade; golpe (só parado na boca, revelação, recarga de 20 s, errar não pune, vale uma peça); ajudante na boca, cofre offline e bots F2P/Slow/AdWatcher nunca golpeiam; Masterwork sem projeto fica Superior; com projeto vai ao Hall, nunca à pilha, ao balcão nem ao `GoldEarned` (conservação de peças em 30 min do Ideal); níveis (custo, +15, +5%, revelação, cartão oculto); Meta fora da produção completa e do teto offline; save antigo (schemas 1–3) = tudo Normal; save/load no meio do acumulador continua igual; lote maior que o total é cortado. `ContentValidatorTests`: preço fora de ordem, Masterwork vendável, família desconhecida, nível fora da cadeia. `mutantes.py`: 15 mutações novas de qualidade (acumulador sem resto e com limiar errado, preço, balcão que vende a pior, golpe pelo ajudante/andando/antes da revelação/sem recarga/no erro, Masterwork sem projeto e no balcão, Meta na produção, nível sem velocidade, save do acumulador, validator), todas mortas.

@@ -43,6 +43,8 @@ namespace FS
         public float TopBand = 0.16f;
         public float BottomPx;   // topo da barra de melhorias (px): toque abaixo e' do menu, nao do joystick
         public bool Blocked;   // painel modal aberto
+        /// <summary>B-CORE-03: toque que comeca aqui (px) e' de outro alvo (anel do golpe, barra de qualidade), nao abre o joystick.</summary>
+        public System.Func<Vector2, bool> Ignora;
 
         readonly JoystickLogica _logic = new JoystickLogica(0.12f, 1f);
         readonly RectTransform _base, _knob;
@@ -77,7 +79,7 @@ namespace FS
             bool pressed = p.press.isPressed;
             if (!Active)
             {
-                if (!p.press.wasPressedThisFrame || pos.y > Screen.height * (1f - TopBand) || pos.y < BottomPx) return;
+                if (!p.press.wasPressedThisFrame || pos.y > Screen.height * (1f - TopBand) || pos.y < BottomPx || (Ignora != null && Ignora(pos))) return;
                 Active = true;
                 _anchor = pos;
                 _base.anchoredPosition = pos;

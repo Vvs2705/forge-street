@@ -171,7 +171,8 @@ namespace FS.Tests
                     Assert.LessOrEqual(b.Length, 2 * 14, $"{i}: {b}");   // 2 linhas do cartao
                     Assert.LessOrEqual(Textos.AntesDepois(T0, u).Length, 16, $"{i}: {Textos.AntesDepois(T0, u)}");
                     int req = Upgrades.All[u].Requires;
-                    if (req >= 0) Assert.LessOrEqual(Textos.Precisa(req).Length, 18, $"{i}: {Textos.Precisa(req)}");   // 1 linha de 22 px no botao
+                    bool oculto = req >= 0 && Upgrades.All[u].Meta && !Upgrades.All[req].Meta;   // B-CORE-03: o nivel II nunca aparece travado (Cartao.Oculto)
+                    if (req >= 0 && !oculto) Assert.LessOrEqual(Textos.Precisa(req).Length, 18, $"{i}: {Textos.Precisa(req)}");   // 1 linha de 22 px no botao
                 }
                 // E-PLAT-02: avisos (1 linha da pilula da dica) com numero grande; chip "Trocar" (~100 px) e o "Cofre 2x" (meio cartao)
                 foreach (string k in new[] { "aviso.cofre2x", "aviso.bonus", "aviso.supply" }) Assert.LessOrEqual(Loc.T(k, 99999).Length, Textos.DicaMax, $"{i}: {k}");
