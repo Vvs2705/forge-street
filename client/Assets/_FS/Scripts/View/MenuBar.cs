@@ -38,7 +38,6 @@ namespace FS
             public GameObject Go; public Apertavel Toque; public CanvasGroup Fade; public RectTransform TagBox;
             public Image Icon, Face, Edge, Coin; public Text Name, Effect, Detail, Price, Tag; public string Cost, Lock;
         }
-        static readonly Comparison<Card> PorEstado = (a, b) => ((int)a.Estado * 100 + a.Ord).CompareTo((int)b.Estado * 100 + b.Ord);
 
         readonly Sim _sim;
         readonly Action<int> _bought;   // fora do Tick o Ev.Bought nao chega ao HandleEvents (o proximo Tick limpa): o Game toca som/efeito por aqui
@@ -311,7 +310,9 @@ namespace FS
             if (_sort)
             {
                 _sort = false;
-                _cards.Sort(PorEstado);
+                // estado, depois o preco de agora (o worker sobe de preco a cada nivel e entra entre as melhorias pelo custo), depois a ordem
+                _cards.Sort((a, b) => a.Estado != b.Estado ? a.Estado.CompareTo(b.Estado)
+                    : Preco(a) != Preco(b) ? Preco(a).CompareTo(Preco(b)) : a.Ord.CompareTo(b.Ord));
                 for (int i = 0; i < _cards.Count; i++) _cards[i].Go.transform.SetSiblingIndex(i);
             }
             _ready = ready;
@@ -320,6 +321,8 @@ namespace FS
             if (_badge.gameObject.activeSelf != ready > 0) _badge.gameObject.SetActive(ready > 0);
             _badgeText.text = ready.ToString();
         }
+
+        long Preco(Card c) => c.W >= 0 ? _sim.Equipe.Custo(c.W) : _sim.T.Cost(c.U);
 
         /// <summary>Visual do estado, so quando ele muda. Comprado e oculto (nivel de estacao antes da revelacao) somem; travado esmaece e troca o
         /// preco por "Precisa: X".</summary>
