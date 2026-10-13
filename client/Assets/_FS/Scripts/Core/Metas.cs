@@ -26,7 +26,8 @@ namespace FS.Core
     /// e o ID vai no mesmo save que o ouro, entao save/load ou reabrir nao paga 2x. Relogio para tras: o dia gravado e' o MAXIMO ja visto,
     /// nada abre nem reabre. Relogio para frente: aceito ate haver hora de servidor (decisao do D-CORE-01).
     /// Ouro = s x RateEma (multiplo de 5, piso das encomendas) FORA do GoldEarned: nao infla a taxa online, o cofre nem o VIP; o bot nao resgata,
-    /// entao os numeros dele nao mudam. XP do Pass e Renome ficam guardados (PassXp, Renome) ate esses sistemas existirem (V9/P1).
+    /// entao os numeros dele nao mudam. XP do Pass fica guardado (PassXp) ate o Pass existir (V9/P1); o Renome vai para o Sim.Renome (B-CORE-06)
+    /// e o Metas.Renome fica so como "quanto veio das metas" (mt.acc: o retroativo de um save sem rn= o soma 1x).
     /// Save: linhas mt.* (Save/Load); save sem elas = metas zeradas, e a 1a Agora semeia as conquistas pelos contadores do Sim (retroativo).
     /// </summary>
     public sealed class Metas
@@ -256,6 +257,7 @@ namespace FS.Core
             long g = ouroS > 0 ? Ouro(ouroS) : 0;
             _sim.Gold += g;
             PassXp += xp; Renome += renome;
+            _sim.Renome.Ganha(renome);   // B-CORE-06: o ledger acima ja garante 1x por ID
             return g;
         }
 
