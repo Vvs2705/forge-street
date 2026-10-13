@@ -16,9 +16,8 @@ namespace FS
     public static class Textos
     {
         public const int DicaMax = 26;
-        /// <summary>ID de cada Item (ordem do enum) nas chaves item.*, dica.balcao.* e dica.pegue.*. ponytail: vira o ItemDef.Id quando o
-        /// nucleo tiver um (B-CORE-01).</summary>
-        public static readonly string[] ItemId = { "minerio", "lingote", "espada", "escudo", "ferramenta", "joia" };
+        /// <summary>ID de cada item (por handle) nas chaves item.*, dica.balcao.* e dica.pegue.*: o ItemDef.Id do nucleo (B-CORE-01).</summary>
+        public static readonly string[] ItemId = Array.ConvertAll(Items.All, d => d.Id);
         /// <summary>ID de cada estacao por Station.Index (anexado no fim, nunca muda) na chave est.*. ponytail: vira StationDef.Id.</summary>
         public static readonly string[] EstacaoId = { "deposito", "fornalha", "fornalha2", "bigorna", "bigorna2", "escudos", "ferramentas", "balcao", "joalheria", "loja_joias" };
 

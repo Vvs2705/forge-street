@@ -14,16 +14,32 @@ namespace FS.Core
     public sealed class Station
     {
         public int Index; public Kind Kind; public V2 Pos; public string Name;
-        public Item InItem, OutItem; public int Need = 1;
+        /// <summary>B-CORE-01: receita da familia da estacao (null = nao produz: deposito e balcoes). Insumos, produto e tempo saem dela.</summary>
+        public RecipeDef Recipe;
+        /// <summary>Entrada: quantos de cada insumo da receita (paralelo a Recipe.Inputs), ate InCap de cada.</summary>
+        public int[] Ins = new int[1];
+        public Item OutItem;
         public int UnlockBy = -1; public bool Unlocked = true;
-        public int In, Out, InCap, OutCap;
+        public int Out, InCap, OutCap;
+        /// <summary>Atalhos do 1o insumo (o unico em todas as receitas de hoje): a View, a dica e os testes leem a entrada por eles.</summary>
+        public Item InItem => Produces ? Recipe.Inputs[0].Item : Item.Ore;
+        public int Need => Produces ? Recipe.Inputs[0].Qty : 0;
+        public int In { get => Ins[0]; set => Ins[0] = value; }
+        /// <summary>Posicao do insumo `i` na receita, ou -1.</summary>
+        public int InIndex(Item i)
+        {
+            if (Produces) for (int k = 0; k < Ins.Length; k++) if (Recipe.Inputs[k].Item == i) return k;
+            return -1;
+        }
+        /// <summary>A entrada recebe mais um `i` agora?</summary>
+        public bool Accepts(Item i) { int k = InIndex(i); return k >= 0 && Ins[k] < InCap; }
         public float Time = 1f, Progress; public bool Busy, Blocked;
         public int Crafted;
         public float StarveSeconds, StallSeconds;   // metricas de gargalo (GDD §14 bottleneck_seconds)
         /// <summary>Bocas (FASE5 §2b): ponto onde o personagem encosta para DEPOSITAR (InAt) e para RECOLHER (OutAt), em lados
         /// opostos do corpo; deposito e balcoes tem uma zona so (InAt = OutAt). Zona = ate Balance.MouthRadius do ponto.</summary>
         public V2 InAt, OutAt;
-        public bool Produces => Kind == Kind.Furnace || Kind == Kind.Crafter;
+        public bool Produces => Recipe != null;
         /// <summary>Meia-medida do corpo: Balance.StationHalf; o balcao principal alarga com as vagas (FASE7 §2, Sim.Recompute).</summary>
         public V2 Half = Balance.StationHalf;
         public Box Body => new Box(Pos, Half);
@@ -34,7 +50,10 @@ namespace FS.Core
     public sealed class Carrier
     {
         public V2 Pos; public float Speed; public int Cap; public int Role = -1;
-        public readonly int[] Held = new int[6];   // quantos de cada Item na mao
+        public readonly int[] Held;   // quantos de cada item na mao, por handle
+        public Carrier() : this(Items.All.Length) { }
+        /// <summary>`items` = quantos itens o conteudo da partida tem (Sim.ItemDefs).</summary>
+        public Carrier(int items) { Held = new int[items]; }
         public float ActT, IdleT; public bool Moving;
         public int State;            // ajudante: 0 buscando, 1 entregando
         public int Target = -1;      // ajudante: indice da estacao alvo (-1 = parado)
@@ -102,6 +121,9 @@ namespace FS.Core
     {
         /// <summary>A-CORE-03: numeros de economia/ritmo e feature flags desta partida (RemoteConfig e eventos). Padrao = `new Tuning()`.</summary>
         public readonly Tuning T;
+        /// <summary>B-CORE-01: itens e receitas desta partida (padrao Items.All e Recipes.All; so o teste injeta outro). Handle de item = posicao
+        /// em ItemDefs; os arrays por item (Stock, SoldItems, Crafted, Held) tem esse tamanho.</summary>
+        public readonly ItemDef[] ItemDefs; public readonly RecipeDef[] RecipeDefs;
         public float Time;
         /// <summary>A-CORE-06: ouro, custos e somas em long (o save e' texto: cabe sem mudar o formato). ponytail: soma sem saturar; 9,2e18 nao
         /// se alcanca jogando (1 milhao/s por 100 anos = 3e15), so editando o save.</summary>
@@ -112,16 +134,16 @@ namespace FS.Core
         public readonly List<Pad> Pads = new List<Pad>();
         /// <summary>Corpos solidos ativos (estacoes desbloqueadas, balcoes e Balance.Obstacles comprados); refeito no Recompute.</summary>
         public readonly List<Box> Solids = new List<Box>();
-        public readonly Carrier Player = new Carrier { Pos = new V2(4.5f, 3.5f), Speed = Balance.PlayerSpeed, Cap = Balance.PlayerCap };
+        public readonly Carrier Player;
         public readonly List<Carrier> Workers = new List<Carrier>();
         public readonly List<Client> Queue = new List<Client>();        // fila do balcao principal (espada/escudo/ferramenta)
         public readonly List<Client> JewelQueue = new List<Client>();   // fila da loja de joias (2a area)
-        public readonly int[] Stock = new int[6];                        // por Item; Stock[Jewel] fica na loja de joias
+        public readonly int[] Stock;                                     // por item; Stock[Jewel] fica na loja de joias
         public readonly List<SimEvent> Events = new List<SimEvent>();
         public int CounterCap, QueueCap, JewelQueueCap;   // derivados no Recompute
         public bool HasConveyor;
         public readonly List<Chest> Chests = new List<Chest>();          // baus de marco, na ordem de Balance.Milestones
-        public readonly int[] SoldItems = new int[6];                    // vendas por Item (marcos "10 espadas", "10 joias")
+        public readonly int[] SoldItems;                                 // vendas por item (marcos "10 espadas", "10 joias")
         public float MaxX = Balance.WorkshopW - 0.3f;   // limite direito do jogador: a oficina ate o Corredor, o mapa inteiro depois
         // FASE8 (docs/FASE8_VIP_VELOCIDADE.md): cliente VIP e velocidade por anuncio
         /// <summary>s ate o proximo VIP natural (parado ate a 1a venda); VipCount = VIPs ja sorteados, naturais e chamados (semente do intervalo e do
@@ -151,7 +173,7 @@ namespace FS.Core
                 return true;
             }
         }
-        public readonly int[] Crafted = new int[6];
+        public readonly int[] Crafted;
         public double RateEma;                 // ouro/s online, media movel (base do offline)
         public long SavedAt, LastClaim;        // unix s; o claim offline e' idempotente por SavedAt, que nunca recua (Save)
         /// <summary>A-CORE-02: s que o relogio do aparelho estava atras do SavedAt, so no 1o Save de cada recuo (senao 0): a View loga clock_back
@@ -168,9 +190,14 @@ namespace FS.Core
         float _serveT, _serveJ, _convT, _padDwell;
         Pad _padUnder;
 
-        public Sim(Tuning tuning = null)
+        /// <summary>`items`/`recipes` = conteudo injetado (null = Items.All / Recipes.All); so o teste usa.</summary>
+        public Sim(Tuning tuning = null, ItemDef[] items = null, RecipeDef[] recipes = null)
         {
             T = tuning ?? new Tuning();
+            ItemDefs = items ?? Items.All; RecipeDefs = recipes ?? Recipes.All;
+            int n = ItemDefs.Length;
+            Stock = new int[n]; SoldItems = new int[n]; Crafted = new int[n];
+            Player = new Carrier(n) { Pos = new V2(4.5f, 3.5f), Speed = Balance.PlayerSpeed, Cap = Balance.PlayerCap };
             VipIn = T.VipInterval(0);
             OrderIn = T.OrderFirstDelay;
             _clientT = new[] { 0f, 0f, T.FirstClientAt, T.ClientInterval[3], T.ClientInterval[4], T.ClientInterval[5] };
@@ -178,16 +205,17 @@ namespace FS.Core
             // Bocas (FASE5 §2b): (inX, inY) = lado da ENTRADA; a SAIDA fica no lado oposto. Toda estacao que produz: entrada a
             // esquerda, saida a direita (pilhas da view InPile -1,05 / OutPile +1,05). Fornalha, Bigorna e Joalheria eram
             // embaixo/em cima por causa dos pads do Fole, do Martelo veloz e da Lupa, que foram para o menu (FASE6 §2).
+            // B-CORE-01: a ultima coluna e' a familia; a estacao faz a receita da familia dela (RecipeDefs)
             Deposit = Add(Kind.Deposit, 1.5f, 1.5f, "Depósito", 0f, 1f);             // zona unica acima (lado das fornalhas)
-            FurnaceA = Add(Kind.Furnace, 1.5f, 5.5f, "Fornalha", -1f, 0f);
-            FurnaceB = Add(Kind.Furnace, 4.5f, 5.5f, "Fornalha 2", -1f, 0f, (int)Upgrade.Furnace2);
-            AnvilA = Add(Kind.Crafter, 1.5f, 9.5f, "Bigorna", -1f, 0f, -1, Item.Sword);
-            AnvilB = Add(Kind.Crafter, 4.5f, 9.5f, "Bigorna 2", -1f, 0f, (int)Upgrade.Anvil2, Item.Sword);
-            ShieldBench = Add(Kind.Crafter, 7.5f, 9.5f, "Escudos", -1f, 0f, (int)Upgrade.Shields, Item.Shield);
-            ToolBench = Add(Kind.Crafter, 7.5f, 5.5f, "Ferramentas", -1f, 0f, (int)Upgrade.Tools, Item.Tool);
+            FurnaceA = Add(Kind.Furnace, 1.5f, 5.5f, "Fornalha", -1f, 0f, -1, "fornalha");
+            FurnaceB = Add(Kind.Furnace, 4.5f, 5.5f, "Fornalha 2", -1f, 0f, (int)Upgrade.Furnace2, "fornalha");
+            AnvilA = Add(Kind.Crafter, 1.5f, 9.5f, "Bigorna", -1f, 0f, -1, "bigorna");
+            AnvilB = Add(Kind.Crafter, 4.5f, 9.5f, "Bigorna 2", -1f, 0f, (int)Upgrade.Anvil2, "bigorna");
+            ShieldBench = Add(Kind.Crafter, 7.5f, 9.5f, "Escudos", -1f, 0f, (int)Upgrade.Shields, "escudos");
+            ToolBench = Add(Kind.Crafter, 7.5f, 5.5f, "Ferramentas", -1f, 0f, (int)Upgrade.Tools, "ferramentas");
             Counter = Add(Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f);                // zona unica embaixo (fila fica em cima)
             // 2a area: ANEXADAS ao fim (indices 8 e 9) para os indices e o save antigos nao mudarem
-            JewelBench = Add(Kind.Crafter, 12f, 6.5f, "Joalheria", -1f, 0f, (int)Upgrade.Jewelry, Item.Jewel);
+            JewelBench = Add(Kind.Crafter, 12f, 6.5f, "Joalheria", -1f, 0f, (int)Upgrade.Jewelry, "joalheria");
             JewelShop = Add(Kind.Counter, 12f, 11.5f, "Loja de joias", 0f, -1f, (int)Upgrade.Jewelry);
 
             // Pads fora das linhas de caminhada (coluna x=1,5 e diagonais ate o balcao): atravessar um pad nao pode gastar.
@@ -219,11 +247,16 @@ namespace FS.Core
             Recompute();
         }
 
-        Station Add(Kind kind, float x, float y, string name, float inX, float inY, int unlockBy = -1, Item product = Item.Sword)
+        Station Add(Kind kind, float x, float y, string name, float inX, float inY, int unlockBy = -1, string family = null)
         {
             var s = new Station { Index = Stations.Count, Kind = kind, Pos = new V2(x, y), Name = name, UnlockBy = unlockBy, Unlocked = unlockBy < 0 };
-            if (kind == Kind.Furnace) { s.InItem = Item.Ore; s.OutItem = Item.Ingot; s.InCap = Balance.FurnaceIn; s.OutCap = Balance.FurnaceOut; }
-            if (kind == Kind.Crafter) { s.InItem = Item.Ingot; s.OutItem = product; s.Need = Balance.IngotsPer[(int)product]; s.InCap = Balance.CrafterIn; s.OutCap = Balance.CrafterOut; }
+            s.Recipe = family == null ? null : Array.Find(RecipeDefs, r => r.Station == family);   // familia sem receita: nao produz (ContentValidator acusa)
+            if (s.Produces)
+            {
+                s.Ins = new int[s.Recipe.Inputs.Length]; s.OutItem = s.Recipe.Output;
+                bool furnace = kind == Kind.Furnace;   // pilhas: geometria da estacao, nao da receita
+                s.InCap = furnace ? Balance.FurnaceIn : Balance.CrafterIn; s.OutCap = furnace ? Balance.FurnaceOut : Balance.CrafterOut;
+            }
             // ponto da boca = personagem encostado no meio da face (centro a CharRadius da face)
             V2 side = new V2(inX, inY), half = Balance.StationHalf;
             V2 reach = side * (Math.Abs(inX) * half.X + Math.Abs(inY) * half.Y + Balance.CharRadius);
@@ -235,15 +268,15 @@ namespace FS.Core
 
         void Slot(float x, float y, params Upgrade[] chain) => Pads.Add(new Pad { Slot = Pads.Count, Pos = new V2(x, y), Chain = chain });
 
-        public static bool IsProduct(Item i) => i >= Item.Sword;
-        public bool LineUnlocked(Item product) => product switch
+        /// <summary>B-CORE-01: o ItemDef diz (handle fora da tabela = nao).</summary>
+        public bool IsProduct(Item i) => (uint)i < (uint)ItemDefs.Length && ItemDefs[(int)i].Product;
+        /// <summary>Linha aberta = alguma estacao aberta faz este produto (o Recompute abre a estacao pelo upgrade dela).</summary>
+        public bool LineUnlocked(Item product)
         {
-            Item.Sword => true,
-            Item.Shield => Bought[(int)Upgrade.Shields],
-            Item.Tool => Bought[(int)Upgrade.Tools],
-            Item.Jewel => Bought[(int)Upgrade.Jewelry],
-            _ => false
-        };
+            if (!IsProduct(product)) return false;
+            foreach (Station s in Stations) if (s.Unlocked && s.Produces && s.OutItem == product) return true;
+            return false;
+        }
         /// <summary>O balcao `counter` vende `i`? O principal vende espada/escudo/ferramenta; a loja de joias, so joia.</summary>
         public bool Sells(Station counter, Item i) => counter.Kind == Kind.Counter && IsProduct(i) && (counter == JewelShop) == (i == Item.Jewel);
         public Station CounterFor(Item product) => product == Item.Jewel ? JewelShop : Counter;
@@ -540,7 +573,7 @@ namespace FS.Core
         bool IsDestFor(Carrier w, Station s)
         {
             if (w.Role == 2) return Sells(s, w.Item) && Stock[(int)w.Item] < CounterCap;
-            return s.Produces && s.InItem == w.Item && s.In < s.InCap && (w.Role == 0 ? s.Kind == Kind.Furnace : s.Kind == Kind.Crafter);
+            return s.Accepts(w.Item) && (w.Role == 0 ? s.Kind == Kind.Furnace : s.Kind == Kind.Crafter);
         }
 
         Station PickSource(Carrier w)
@@ -565,8 +598,9 @@ namespace FS.Core
             Station best = null; float bestScore = float.MinValue;
             foreach (Station s in Stations)
             {
-                if (!s.Unlocked || !s.Produces || s.InItem != w.Item || (w.Role == 0 ? s.Kind != Kind.Furnace : s.Kind != Kind.Crafter)) continue;
-                int room = s.InCap - s.In;
+                int k = s.InIndex(w.Item);   // -1 = nao produz ou a receita nao usa
+                if (!s.Unlocked || k < 0 || (w.Role == 0 ? s.Kind != Kind.Furnace : s.Kind != Kind.Crafter)) continue;
+                int room = s.InCap - s.Ins[k];
                 if (room <= 0) continue;
                 float score = room * 4f + Need(s) - V2.Dist(w.Pos, s.Pos);
                 if (score > bestScore) { bestScore = score; best = s; }
@@ -644,7 +678,8 @@ namespace FS.Core
 
         /// <summary>0 nada, 1 deposita na entrada, 2 pega da saida, 3 pega minerio, 4 abastece o balcao; `item` = o que passa de mao.
         /// Boca de entrada nunca recolhe e boca de saida nunca deposita (FASE5 §2b): da para abastecer sem tirar o que ja ficou pronto.
-        /// Entrada recebe so o InItem dela, saida entrega so o OutItem, balcao recebe os produtos que vende (FASE7 §1, pilha mista).</summary>
+        /// Entrada recebe so os insumos da receita (B-CORE-01: o 1o da receita que esta na mao e cabe), saida entrega so o OutItem, balcao
+        /// recebe os produtos que vende (FASE7 §1, pilha mista).</summary>
         int Action(Carrier c, Station s, bool outZone, out Item item)
         {
             item = s.Kind == Kind.Deposit ? Item.Ore : outZone ? s.OutItem : s.InItem;
@@ -657,8 +692,10 @@ namespace FS.Core
                         if (c.Has(i) && Sells(s, i) && Stock[(int)i] < CounterCap) { item = i; return 4; }
                     return 0;
                 default:
-                    if (!outZone) return c.Has(s.InItem) && s.In < s.InCap ? 1 : 0;
-                    return s.Out > 0 && CanPick(c, s.OutItem) ? 2 : 0;
+                    if (outZone) return s.Out > 0 && CanPick(c, s.OutItem) ? 2 : 0;
+                    for (int k = 0; k < s.Ins.Length && s.Produces; k++)
+                        if (c.Has(s.Recipe.Inputs[k].Item) && s.Ins[k] < s.InCap) { item = s.Recipe.Inputs[k].Item; return 1; }
+                    return 0;
             }
         }
 
@@ -687,7 +724,7 @@ namespace FS.Core
                 c.ActT -= step;
                 switch (act)
                 {
-                    case 1: c.Held[(int)it]--; s.In++; break;
+                    case 1: c.Held[(int)it]--; s.Ins[s.InIndex(it)]++; break;
                     case 2: s.Out--; c.Held[(int)it]++; break;
                     case 3: c.Held[(int)it]++; break;
                     case 4: c.Held[(int)it]--; Stock[(int)it]++; break;
@@ -760,12 +797,11 @@ namespace FS.Core
         {
             float ft = Bought[(int)Upgrade.FurnaceSpeed2] ? T.FurnaceTime2 : Bought[(int)Upgrade.FurnaceSpeed1] ? T.FurnaceTime1 : T.FurnaceTime0;
             float ht = Bought[(int)Upgrade.HammerSpeed] ? T.HammerTime1 : T.HammerTime0;
-            float jt = T.JewelTimeMul * (Bought[(int)Upgrade.JewelSpeed] ? T.JewelSpeedMul : 1f);
             foreach (Station s in Stations)
             {
                 if (s.UnlockBy >= 0) s.Unlocked = Bought[s.UnlockBy];
-                if (s.Kind == Kind.Furnace) s.Time = ft;
-                if (s.Kind == Kind.Crafter) s.Time = ht * (s.OutItem == Item.Shield ? T.ShieldTimeMul : s.OutItem == Item.Jewel ? jt : 1f);
+                // B-CORE-01: base do tipo (fornalha: Fole; bancada: Martelo veloz) x multiplicador da receita; a Lupa so na Joalheria
+                if (s.Produces) s.Time = (s.Kind == Kind.Furnace ? ft : ht) * (s.Recipe.TimeMul(T) * (s == JewelBench && Bought[(int)Upgrade.JewelSpeed] ? T.JewelSpeedMul : 1f));
             }
             // balcao evolutivo (FASE7 §2): +1 vaga por evolucao comprada; o corpo alarga junto (antes dos Solids)
             QueueCap = T.QueueCap0;
@@ -789,7 +825,7 @@ namespace FS.Core
                 int role = HireRole[k], want = 0, have = 0;
                 for (int j = 0; j <= k; j++) if (HireRole[j] == role && Bought[(int)HireBy[j]]) want++;
                 foreach (Carrier w in Workers) if (w.Role == role) have++;
-                if (have < want) Workers.Add(new Carrier { Pos = HireSpot, Role = role });
+                if (have < want) Workers.Add(new Carrier(ItemDefs.Length) { Pos = HireSpot, Role = role });
             }
             bool fast = Bought[(int)Upgrade.HelperSpeed];
             foreach (Carrier w in Workers) { w.Speed = fast ? Balance.WorkerSpeedUp : Balance.WorkerSpeed; w.Cap = fast ? Balance.WorkerCapUp : Balance.WorkerCap; }
@@ -814,9 +850,10 @@ namespace FS.Core
                 }
             }
             if (s.Busy) return;
-            if (s.In < s.Need) { s.StarveSeconds += dt; return; }
+            for (int k = 0; k < s.Ins.Length; k++) if (s.Ins[k] < s.Recipe.Inputs[k].Qty) { s.StarveSeconds += dt; return; }   // so com a receita inteira
             if (s.Out >= s.OutCap) { Stall(s, dt); return; }
-            s.In -= s.Need; s.Busy = true; s.Progress = 0f;
+            for (int k = 0; k < s.Ins.Length; k++) s.Ins[k] -= s.Recipe.Inputs[k].Qty;
+            s.Busy = true; s.Progress = 0f;
         }
 
         void Stall(Station s, float dt)
@@ -834,9 +871,9 @@ namespace FS.Core
             while (_convT >= T.ConveyorTime)
             {
                 _convT -= T.ConveyorTime;
-                if (FurnaceA.Out <= 0 || AnvilA.In >= AnvilA.InCap) { _convT = 0f; break; }
-                FurnaceA.Out--; AnvilA.In++;
-                Emit(Ev.Deposited, (int)Item.Ingot, 9, AnvilA.Pos);   // B = 9: veio pela esteira
+                if (FurnaceA.Out <= 0 || !AnvilA.Accepts(FurnaceA.OutItem)) { _convT = 0f; break; }
+                FurnaceA.Out--; AnvilA.Ins[AnvilA.InIndex(FurnaceA.OutItem)]++;
+                Emit(Ev.Deposited, (int)FurnaceA.OutItem, 9, AnvilA.Pos);   // B = 9: veio pela esteira
             }
         }
 
@@ -866,7 +903,7 @@ namespace FS.Core
                 bool j = p == Item.Jewel;
                 List<Client> q = QueueFor(p);
                 int cap = j ? JewelQueueCap : QueueCap;
-                float patience = T.PatienceFor(p);
+                float patience = T.PatienceFor(p, RecipeDefs);
                 if (q.Count < cap)
                 {
                     q.Add(new Client { Want = p, Patience = patience, MaxPatience = patience });
@@ -1113,10 +1150,14 @@ namespace FS.Core
 
         /// <summary>A-CORE-01: versao do payload (linha v=). Subir = anexar o passo em Migrations (Migracao_TodaVersaoAnteriorTemPasso cobra).
         /// Campo novo que nao muda o significado de save antigo (hold=, vip=, ord=) nao sobe. 2 = A-CORE-04 (upgrades e parcial dos pads por ID):
-        /// upgrade novo, em qualquer lugar do enum, nao sobe mais o schema.</summary>
-        public const int Schema = 2;
-        /// <summary>Migracoes sobre o texto bruto, antes do parse: Migrations[i] leva o schema i+1 ao i+2. Schema 1 = 0.1-0.7.</summary>
-        public static readonly Func<string, string>[] Migrations = { V1ParaV2 };
+        /// upgrade novo, em qualquer lugar do enum, nao sobe mais o schema. 3 = B-CORE-01 (estoque, vendas e maos por ID de item).</summary>
+        public const int Schema = 3;
+        /// <summary>Migracoes sobre o texto bruto, antes do parse: Migrations[i] leva o schema i+1 ao i+2. Schema 1 = 0.1-0.7; 2 = 0.8.</summary>
+        public static readonly Func<string, string>[] Migrations = { V1ParaV2, V2ParaV3 };
+
+        /// <summary>B-CORE-01: itens na ordem do enum Item ate o schema 2, CONGELADA: e' como o stock=/sold=/hold=/wk= por posicao se le (e o
+        /// espelho que o save ainda grava para a 0.5). Nunca mude nem reordene; o ContentValidator.Itens cobra que sao as 6 primeiras da tabela.</summary>
+        public static readonly string[] ItemIdsV2 = { "minerio", "lingote", "espada", "escudo", "ferramenta", "joia" };
 
         /// <summary>A-CORE-04: ordem do enum na 0.1-0.7 (schema 1), CONGELADA: e' como o up= daquelas versoes se le. Nunca mude nem reordene; o
         /// ContentValidator.Ids cobra que todos continuam na tabela.</summary>
@@ -1162,9 +1203,64 @@ namespace FS.Core
             return rest.Append("ups=").Append(string.Join(",", ups)).Append("\nupp=").Append(string.Join(",", upp)).Append('\n').ToString();
         }
 
+        /// <summary>
+        /// Schema 2 -> 3 (B-CORE-01): por posicao vira id:n pela lista congelada ItemIdsV2. stock=/sold= (a partir da espada) -> stocks=/solds=,
+        /// hold= -> holds=, wk=papel:contagens;... -> wks=papel:id:n,...;... (o da 0.5.0, sem papel, vira ":id:n" e segue pela posicao do
+        /// ajudante). O valor passa cru: o Load corta lixo, negativo e teto como antes. O resto do texto passa intacto.
+        /// </summary>
+        static string V2ParaV3(string text)
+        {
+            var sb = new StringBuilder();
+            foreach (string raw in text.Split('\n'))
+            {
+                int eq = raw.IndexOf('=');
+                string key = eq > 0 ? raw.Substring(0, eq).Trim() : "", val = eq > 0 ? raw.Substring(eq + 1).Trim() : "";
+                if (key == "stock" || key == "sold") sb.Append(key).Append("s=").Append(IdTokens(val, 2));
+                else if (key == "hold") sb.Append("holds=").Append(IdTokens(val, 0));
+                else if (key == "wk")
+                    sb.Append("wks=").Append(string.Join(";", Array.ConvertAll(val.Split(';'), w =>
+                    {
+                        int c = w.IndexOf(':');
+                        return (c > 0 ? w.Substring(0, c) : "") + ":" + IdTokens(w.Substring(c + 1), 0);
+                    })));
+                else sb.Append(raw);
+                sb.Append('\n');
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>"a,b,c" por posicao a partir do item `from` da lista congelada -> "id:a,id:b,id:c".</summary>
+        static string IdTokens(string counts, int from)
+        {
+            string[] p = counts.Split(',');
+            var t = new List<string>();
+            for (int i = 0; i < p.Length && from + i < ItemIdsV2.Length; i++) t.Add(ItemIdsV2[from + i] + ":" + p[i].Trim());
+            return string.Join(",", t);
+        }
+
         /// <summary>A-CORE-04: IDs do save que este build nao conhece (conteudo de um build mais novo, depois de um downgrade): ficam de fora no
         /// Load (o parcial de pad volta ao ouro) e o Salvamento loga save_ids_desconhecidos. Nao vai no save: regravar os descarta.</summary>
         public int UnknownIds;
+
+        /// <summary>B-CORE-01: contagem por handle -> "id:n,..." (so o que nao e' zero).</summary>
+        string IdCounts(int[] a)
+        {
+            var t = new List<string>();
+            for (int i = 0; i < a.Length; i++) if (a[i] != 0) t.Add(ItemDefs[i].Id + ":" + a[i].ToString(CultureInfo.InvariantCulture));
+            return string.Join(",", t);
+        }
+
+        /// <summary>B-CORE-01: "id:n,..." -> into[handle] = n (negativo e lixo = 0); ID que o conteudo nao tem conta em UnknownIds.</summary>
+        static void ReadIdCounts(Sim sim, string[] tokens, int[] into)
+        {
+            foreach (string tok in tokens)
+            {
+                string[] kv = tok.Split(':');
+                int i = Items.IndexOf(kv[0].Trim(), sim.ItemDefs);
+                if (i >= 0) into[i] = Math.Max(0, kv.Length > 1 ? I(kv[1], 0) : 0);
+                else if (kv[0].Trim().Length > 0) sim.UnknownIds++;
+            }
+        }
 
         public string Save(long nowUnix)
         {
@@ -1198,7 +1294,18 @@ namespace FS.Core
             }
             sb.Append("upp=").Append(string.Join(",", upp)).Append('\n');
             foreach (Station s in Stations)
-                if (s.Produces) sb.Append("st").Append(s.Index).Append('=').Append(s.In).Append(',').Append(s.Out).Append(',').Append(s.Busy ? 1 : 0).Append(',').Append(s.Progress.ToString("0.###", ci)).Append(',').Append(s.Crafted).Append('\n');
+            {
+                if (!s.Produces) continue;
+                sb.Append("st").Append(s.Index).Append('=').Append(s.In).Append(',').Append(s.Out).Append(',').Append(s.Busy ? 1 : 0).Append(',').Append(s.Progress.ToString("0.###", ci)).Append(',').Append(s.Crafted);
+                for (int k = 1; k < s.Ins.Length; k++) sb.Append(',').Append(s.Ins[k]);   // B-CORE-01: do 2o insumo em diante (receita de 1 insumo: a linha de sempre)
+                sb.Append('\n');
+            }
+            // B-CORE-01 (schema 3): estoque, vendas e maos por ID de item (id:n, so o que nao e' zero). stock=, sold=, hold= e wk= ficam como
+            // espelho por posicao do enum para o downgrade a 0.5 (como o up=); o Load do schema 3 nao os le
+            sb.Append("stocks=").Append(IdCounts(Stock)).Append('\n');
+            sb.Append("solds=").Append(IdCounts(SoldItems)).Append('\n');
+            sb.Append("holds=").Append(IdCounts(Player.Held)).Append('\n');
+            if (Workers.Count > 0) sb.Append("wks=").Append(string.Join(";", Workers.ConvertAll(w => w.Role + ":" + IdCounts(w.Held)))).Append('\n');
             sb.Append("stock=").Append(Stock[2]).Append(',').Append(Stock[3]).Append(',').Append(Stock[4]).Append(',').Append(Stock[5]).Append('\n');
             sb.Append("sold=").Append(SoldItems[2]).Append(',').Append(SoldItems[3]).Append(',').Append(SoldItems[4]).Append(',').Append(SoldItems[5]).Append('\n');
             var ms = new StringBuilder();
@@ -1210,7 +1317,8 @@ namespace FS.Core
             sb.Append("m=").Append(FirstSaleTime.ToString("0.##", ci)).Append(',').Append(Sales).Append(',').Append(GoldEarned).Append(',').Append(OfflineEarned).Append(',')
               .Append(ClientsLost).Append(',').Append(ClientsTurnedAway).Append(',').Append(MaxQueue).Append(',').Append(WalkNoDecision.ToString("0.##", ci)).Append(',').Append(UpgradesBought).Append('\n');
             sb.Append("px=").Append(Player.Pos.ToString()).Append('\n');
-            // FASE7: o que esta na mao volta ao reabrir (jogador: quantos de cada Item; ajudantes "papel:contagens" separados por ';')
+            // FASE7: o que esta na mao volta ao reabrir. Espelho por posicao para a 0.5 (jogador: quantos de cada item; ajudantes "papel:contagens"
+            // separados por ';'); o schema 3 le holds=/wks= (B-CORE-01)
             sb.Append("hold=").Append(string.Join(",", Player.Held)).Append('\n');
             if (Workers.Count > 0) sb.Append("wk=").Append(string.Join(";", Workers.ConvertAll(w => w.Role + ":" + string.Join(",", w.Held)))).Append('\n');
             // FASE8: relogio do VIP, VIPs sorteados e o VIP pendente (produto, unidades que faltam). A fila nao vai no save: o VIP que ja estava
@@ -1231,10 +1339,11 @@ namespace FS.Core
         }
 
         /// <summary>Carrega o payload sobre `tuning` (null = padrao): os tetos do load (boost, VIP, encomenda) sao os do Tuning da partida.
-        /// `table` = a tabela que resolve os IDs (A-CORE-04; null = Upgrades.All): so o teste injeta outra ordem.</summary>
-        public static Sim Load(string text, Tuning tuning = null, UpgradeDef[] table = null)
+        /// `table` = a tabela que resolve os IDs (A-CORE-04; null = Upgrades.All) e `items`/`recipes` = o conteudo (B-CORE-01; null = o padrao):
+        /// so o teste injeta outro.</summary>
+        public static Sim Load(string text, Tuning tuning = null, UpgradeDef[] table = null, ItemDef[] items = null, RecipeDef[] recipes = null)
         {
-            var sim = new Sim(tuning);
+            var sim = new Sim(tuning, items, recipes);
             Tuning T = sim.T;   // os tetos abaixo
             if (string.IsNullOrEmpty(text)) return sim;
             // schema: sem v= (lixo, testes) = 1; maior que Schema (downgrade) = melhor esforco, como a 0.6 faz com o save da 0.7
@@ -1279,8 +1388,9 @@ namespace FS.Core
                             if (u < 0) sim.UnknownIds++;
                         }
                         break;
-                    case "stock": for (int i = 0; i < Math.Min(parts.Length, sim.Stock.Length - 2); i++) sim.Stock[2 + i] = Math.Max(0, I(parts[i], 0)); break;   // save antigo: 3 numeros, joia fica 0
-                    case "sold": for (int i = 0; i < Math.Min(parts.Length, sim.SoldItems.Length - 2); i++) sim.SoldItems[2 + i] = Math.Max(0, I(parts[i], 0)); break;   // save antigo sem sold=: conta do zero
+                    // B-CORE-01: por ID de item (stock=/sold=/hold=/wk= por posicao ja viraram isto no V2ParaV3; no schema 3 sao so espelho)
+                    case "stocks": ReadIdCounts(sim, parts, sim.Stock); break;       // save antigo com 3 produtos: joia fica 0
+                    case "solds": ReadIdCounts(sim, parts, sim.SoldItems); break;    // save antigo sem sold=: conta do zero
                     case "ms": for (int i = 0; i < Math.Min(parts.Length, sim.Chests.Count); i++) sim.Chests[i].State = Clamp0(I(parts[i], 0), 2); break;      // save antigo sem ms=: nenhum marco
                     case "ema": sim.RateEma = Math.Max(0.0, D(val, 0.0)); break;
                     case "saved": sim.SavedAt = L(val, 0); break;
@@ -1293,8 +1403,8 @@ namespace FS.Core
                         }
                         break;
                     case "px": if (parts.Length == 2) sim.Player.Pos = new V2(F(parts[0], 4.5f), F(parts[1], 3.5f)); break;   // clamp so' depois do Recompute (MaxX depende do Corredor)
-                    case "hold": for (int i = 0; i < Math.Min(parts.Length, sim.Player.Held.Length); i++) sim.Player.Held[i] = Math.Max(0, I(parts[i], 0)); break;   // save antigo sem hold=: maos vazias
-                    case "wk": wk = val; break;
+                    case "holds": ReadIdCounts(sim, parts, sim.Player.Held); break;   // save antigo sem hold=: maos vazias
+                    case "wks": wk = val; break;
                     case "ord":   // FASE9; save antigo sem ord=: do zero. A encomenda so volta depois do Recompute (linha aberta)
                         if (parts.Length >= 6)
                         {
@@ -1332,6 +1442,7 @@ namespace FS.Core
                             s.In = Clamp0(I(parts[0], 0), s.InCap); s.Out = Clamp0(I(parts[1], 0), s.OutCap);
                             s.Busy = I(parts[2], 0) == 1; s.Progress = Math.Max(0f, Math.Min(1f, F(parts[3], 0f)));
                             if (parts.Length >= 5) s.Crafted = Math.Max(0, I(parts[4], 0));
+                            for (int k = 1; k < s.Ins.Length && 4 + k < parts.Length; k++) s.Ins[k] = Clamp0(I(parts[4 + k], 0), s.InCap);   // B-CORE-01: 2o insumo em diante
                         }
                         break;
                 }
@@ -1340,20 +1451,22 @@ namespace FS.Core
             sim.UpgradesBought = 0;
             foreach (bool b in sim.Bought) if (b) sim.UpgradesBought++;
             sim.Recompute();
-            for (int i = 2; i < sim.Stock.Length; i++) sim.Stock[i] = Math.Min(sim.Stock[i], sim.CounterCap);   // teto so' e' conhecido depois dos upgrades
+            for (int i = 0; i < sim.Stock.Length; i++)   // teto so' e' conhecido depois dos upgrades; insumo nao fica no balcao nem conta venda
+                if (sim.IsProduct((Item)i)) sim.Stock[i] = Math.Min(sim.Stock[i], sim.CounterCap); else sim.Stock[i] = sim.SoldItems[i] = 0;
             for (int i = 0; i < sim.Player.Held.Length; i++) sim.Player.Held[i] = Math.Min(sim.Player.Held[i], sim.Player.Cap);   // teto por tipo (Mochila)
             string[] ws = wk.Split(';');
-            for (int k = 0; k < ws.Length; k++)   // ajudante: so o 1o tipo valido para o papel, ate o teto; lixo = mao vazia
+            for (int k = 0; k < ws.Length; k++)   // ajudante: so o 1o tipo valido para o papel (na ordem dos itens), ate o teto; lixo = mao vazia
             {
                 // a lista e' recriada na ordem do HireBy, nao na da compra: vai para o proximo ajudante vazio do mesmo papel.
-                // Save da 0.5.0 (sem "papel:") segue a posicao na lista
+                // Save da 0.5.0 (sem papel; o V2ParaV3 o deixa ":id:n") segue a posicao na lista
                 int colon = ws[k].IndexOf(':'), role = colon > 0 ? I(ws[k].Substring(0, colon), -9) : -9;
                 Carrier w = colon > 0 ? sim.Workers.Find(c => c.Role == role && c.Count == 0) : k < sim.Workers.Count ? sim.Workers[k] : null;
                 if (w == null) continue;
-                string[] h = ws[k].Substring(colon + 1).Split(',');
-                for (int i = 0; i < Math.Min(h.Length, w.Held.Length); i++)
+                var h = new int[w.Held.Length];
+                ReadIdCounts(sim, ws[k].Substring(colon + 1).Split(','), h);
+                for (int i = 0; i < h.Length; i++)
                 {
-                    int n = Clamp0(I(h[i], 0), w.Cap);
+                    int n = Clamp0(h[i], w.Cap);
                     if (n > 0 && w.Count == 0 && sim.CanPick(w, (Item)i)) w.Held[i] = n;
                 }
             }

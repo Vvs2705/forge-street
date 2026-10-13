@@ -2,7 +2,8 @@ using System;
 
 namespace FS.Core
 {
-    /// <summary>Itens em ordem de cadeia: minerio -> lingote -> produto (espada, escudo, ferramenta; joia na 2a area).</summary>
+    /// <summary>Itens em ordem de cadeia: minerio -> lingote -> produto (espada, escudo, ferramenta; joia na 2a area). B-CORE-01: o item e' dado
+    /// (Items.All); o enum e' so o atalho das 6 primeiras posicoes da tabela (o handle de um item e' a posicao dele, (Item)7 vale).</summary>
     public enum Item { Ore = 0, Ingot = 1, Sword = 2, Shield = 3, Tool = 4, Jewel = 5 }
 
     public enum Kind { Deposit, Furnace, Crafter, Counter }
@@ -93,7 +94,7 @@ namespace FS.Core
     }
 
     /// <summary>
-    /// Numeros FIXOS do jogo: geometria, IDs, receitas, efeitos de upgrade e limites de seguranca. Os de economia e ritmo que o RemoteConfig e
+    /// Numeros FIXOS do jogo: geometria, IDs, efeitos de upgrade e limites de seguranca (itens e receitas: Items/Recipes). Os de economia e ritmo que o RemoteConfig e
     /// os eventos ajustam estao no Tuning (A-CORE-03). Todos HIPOTESE: o Bot (BalanceTests) e' quem confirma que a §3 do GDD bate; os valores
     /// medidos estao em docs/BALANCE.md. Mudou aqui ou no Tuning, roda `dotnet test` e atualiza o BALANCE.md.
     /// </summary>
@@ -131,8 +132,8 @@ namespace FS.Core
         /// O Tuning.OfflineMaxSeconds so encurta (Tuning.OfflineCap).</summary>
         public const int OfflineCapSeconds = 7200;
         public const float RateTau = 60f;                       // s da media movel de ouro/s (taxa online)
-        public static readonly int[] IngotsPer = { 0, 0, 1, 2, 1, 2 };     // lingotes por produto (receita: vira RecipeDef no B-CORE-01)
-        public static readonly string[] ItemName = { "minério", "lingote", "espada", "escudo", "ferramenta", "joia" };
+        /// <summary>Nome de cada item do conteudo padrao, por handle: atalho da View (diario e dicas); a fonte e' Items.All.</summary>
+        public static readonly string[] ItemName = Array.ConvertAll(Items.All, d => d.Name);
 
         /// <summary>Parede direita da oficina (x 9,0-9,6, y 0-14), solida, com duas aberturas em pares y0, y1: a porta lateral na
         /// altura da joalheria (5,6-7,4) e o arco (11,6-13,4). As pontas dos segmentos sao os batentes (o arco nao tem poste solto).</summary>
@@ -176,7 +177,7 @@ namespace FS.Core
 
     /// <summary>
     /// A-CORE-03: numeros de economia e ritmo que o RemoteConfig e os eventos ajustam, por INSTANCIA (cada Sim le o dele, `Sim.T`). Os padroes
-    /// sao os de sempre (BALANCE.md): com `new Tuning()` o bot de 60 min sai identico. Geometria, IDs, receitas, efeitos de upgrade e limites de
+    /// sao os de sempre (BALANCE.md): com `new Tuning()` o bot de 60 min sai identico. Geometria, IDs, efeitos de upgrade e limites de
     /// seguranca ficam const no Balance; o teto offline de 2 h e' trava do nucleo (Balance.OfflineCapSeconds), nunca knob.
     /// Flag desligada: o sistema para de oferecer ou gerar o NOVO (encomenda, VIP, anuncio, bau); o que ja estava em andamento termina (boost
     /// ativo, VIP pendente ou na vaga, encomenda aberta, bau na tela) e o estado vai e volta no save intacto: religar continua de onde parou.
@@ -246,10 +247,25 @@ namespace FS.Core
         /// <summary>Teto de tempo do cofre que vale: o knob, nunca acima da trava do nucleo (Balance.OfflineCapSeconds = 7.200 s).</summary>
         public long OfflineCap => Math.Min(OfflineMaxSeconds, Balance.OfflineCapSeconds);
 
-        /// <summary>Segundos na fila antes de desistir: base + k x tempo de producao da linha no inicio (fornalha inicial x
-        /// lingotes + bancada inicial). Espada 9 s, escudo 15,5 s, ferramenta 9 s, joia 18 s.</summary>
-        public float PatienceFor(Item item) => PatienceBase + PatiencePerSecond *
-            (FurnaceTime0 * Balance.IngotsPer[(int)item] + HammerTime0 * (item == Item.Shield ? ShieldTimeMul : item == Item.Jewel ? JewelTimeMul : 1f));
+        /// <summary>Segundos na fila antes de desistir: base + k x tempo de producao da linha no inicio (B-CORE-01: soma de quantidade x tempo
+        /// inicial da receita de cada insumo + o da propria receita; hoje = fornalha inicial x lingotes + bancada inicial). Espada 9 s, escudo
+        /// 15,5 s, ferramenta 9 s, joia 18 s. `recipes` = o conteudo da partida (null = Recipes.All). ponytail: um nivel de insumo (o do
+        /// insumo do insumo nao entra); cadeia mais funda que lingote -> produto pede a soma recursiva.</summary>
+        public float PatienceFor(Item item, RecipeDef[] recipes = null)
+        {
+            RecipeDef r = Recipes.Making(item, recipes);
+            if (r == null) return PatienceBase;
+            float t = 0f;
+            foreach ((Item input, int qty) in r.Inputs)
+            {
+                RecipeDef ri = Recipes.Making(input, recipes);
+                if (ri != null) t += StartTime(ri) * qty;
+            }
+            return PatienceBase + PatiencePerSecond * (t + StartTime(r));
+        }
+
+        /// <summary>Tempo da receita no inicio (sem upgrade): base do tipo da estacao x multiplicador da receita.</summary>
+        float StartTime(RecipeDef r) => (r.Kind == Kind.Furnace ? FurnaceTime0 : HammerTime0) * r.TimeMul(this);
 
         /// <summary>Paciencia do VIP com `units` no pacote (natural e chamado). O cliente normal tem 57-77 s.</summary>
         public float VipPatienceFor(int units) => VipPatienceBase + VipPatiencePerUnit * units;
@@ -362,5 +378,65 @@ namespace FS.Core
         /// <summary>A-CORE-06: teto da curva (1e18, cabe em long com folga para somar ouro). 50 x 1,3^tier chega nele no tier 144. O custo
         /// de cada upgrade e' do Tuning (Tuning.Cost); o teto e' trava, nao knob.</summary>
         public const long CostMax = 1000000000000000000;
+    }
+
+    /// <summary>B-CORE-01: item em dados. O handle no codigo e' a posicao na tabela (Items.All; o enum Item e' atalho das 6 primeiras). O save
+    /// grava o Id (schema 3). Preco de quem vende: Tuning.Price[handle].</summary>
+    public sealed class ItemDef
+    {
+        /// <summary>ID estavel (mesma convencao dos upgrades, A-CORE-04): o save grava; nunca muda depois de publicado.</summary>
+        public readonly string Id, Name;
+        public readonly int Tier;      // 1-5 (GDD §7)
+        public readonly bool Product;  // vai ao balcao e tem preco; minerio e lingote (insumos) nao
+        public ItemDef(string id, string name, int tier, bool product) { Id = id; Name = name; Tier = tier; Product = product; }
+    }
+
+    /// <summary>
+    /// B-CORE-01: receita em dados. As estacoes da familia `Station` (todas do tipo `Kind`) trocam `Inputs` (item, quantidade) por 1 `Output`
+    /// em (tempo base do tipo no Tuning: fornalha FurnaceTime*, bancada HammerTime*) x TimeMul(Tuning). Os upgrades de velocidade (Fole,
+    /// Martelo veloz, Lupa) agem na estacao (Sim.Recompute). ponytail: uma receita por familia; bancada que escolhe o produto (distrito 3)
+    /// pede a receita ativa na estacao.
+    /// </summary>
+    public sealed class RecipeDef
+    {
+        public readonly string Station; public readonly Kind Kind;
+        public readonly Item Output;
+        public readonly (Item Item, int Qty)[] Inputs;
+        public readonly Func<Tuning, float> TimeMul;
+        public RecipeDef(string station, Kind kind, Item output, Func<Tuning, float> timeMul, params (Item Item, int Qty)[] inputs)
+        { Station = station; Kind = kind; Output = output; TimeMul = timeMul; Inputs = inputs; }
+    }
+
+    public static class Items
+    {
+        /// <summary>Na ordem do enum Item (ContentValidator.Itens cobra: e' tambem a ordem do espelho do save, Sim.ItemIdsV2). Item novo entra no fim.</summary>
+        public static readonly ItemDef[] All =
+        {
+            new ItemDef("minerio", "minério", 1, false),
+            new ItemDef("lingote", "lingote", 1, false),
+            new ItemDef("espada", "espada", 1, true),
+            new ItemDef("escudo", "escudo", 1, true),
+            new ItemDef("ferramenta", "ferramenta", 1, true),
+            new ItemDef("joia", "joia", 3, true),
+        };
+
+        /// <summary>Handle do item com este ID, ou -1 (desconhecido). `table` = o conteudo da partida (null = All).</summary>
+        public static int IndexOf(string id, ItemDef[] table = null) => Array.FindIndex(table ?? All, d => d.Id == id);
+    }
+
+    public static class Recipes
+    {
+        /// <summary>As 4 linhas da v0.x mais a fornalha (BALANCE.md): o minerio sai do deposito, sem receita.</summary>
+        public static readonly RecipeDef[] All =
+        {
+            new RecipeDef("fornalha", Kind.Furnace, Item.Ingot, t => 1f, (Item.Ore, 1)),
+            new RecipeDef("bigorna", Kind.Crafter, Item.Sword, t => 1f, (Item.Ingot, 1)),
+            new RecipeDef("escudos", Kind.Crafter, Item.Shield, t => t.ShieldTimeMul, (Item.Ingot, 2)),
+            new RecipeDef("ferramentas", Kind.Crafter, Item.Tool, t => 1f, (Item.Ingot, 1)),
+            new RecipeDef("joalheria", Kind.Crafter, Item.Jewel, t => t.JewelTimeMul, (Item.Ingot, 2)),
+        };
+
+        /// <summary>Receita que produz `item`, ou null (minerio, ou item sem receita). `table` = o conteudo da partida (null = All).</summary>
+        public static RecipeDef Making(Item item, RecipeDef[] table = null) => Array.Find(table ?? All, r => r.Output == item);
     }
 }
