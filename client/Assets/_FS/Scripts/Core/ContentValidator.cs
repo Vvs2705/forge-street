@@ -40,6 +40,7 @@ namespace FS.Core
             e.AddRange(Marcos(milestones, world));
             e.AddRange(Bocas(world));
             e.AddRange(Pisaveis(world));
+            e.AddRange(Qualidade(upgrades, world));
             e.AddRange(Missoes(MetasDefs.Diarias, MetasDefs.Semanais, MetasDefs.Conquistas, MetasDefs.LoginDias, Tuning.Padrao));
             e.AddRange(NiveisRenome(renome ?? RenomeDefs.Niveis));
             return e;
@@ -61,6 +62,32 @@ namespace FS.Core
                 foreach (string id in d.Libera)
                     if (string.IsNullOrEmpty(id) || !IdOk(id)) yield return $"renome: nivel {i} libera \"{id}\", fora de [a-z0-9_]";
                     else if (!ids.Add(id)) yield return $"renome: \"{id}\" liberado por mais de um nivel";
+            }
+        }
+
+        /// <summary>
+        /// B-CORE-03 (ECONOMIA_WAVE_B §1): um preco por nivel de Quality, Normal = 100%, crescente nos que vendem e 0 so na Masterwork (nao vende,
+        /// vai ao Hall); q por nivel de estacao positivo. Nivel de estacao (Meta) com fonte conhecida: a familia dele tem bancada que faz produto
+        /// no mundo; no menu, nunca luxo nem abrindo estacao, e a cadeia de niveis da mesma familia (o 2 exige um produtivo; o 3, o 2).
+        /// </summary>
+        public static IEnumerable<string> Qualidade(UpgradeDef[] all, Sim w)
+        {
+            int[] pct = w.T.QualidadePct;
+            int n = (int)Quality.Masterwork + 1;
+            if (pct == null || pct.Length != n) { yield return $"qualidade: {pct?.Length ?? 0} precos para {n} niveis"; yield break; }
+            if (pct[0] != 100) yield return $"qualidade: Normal a {pct[0]}% (tem de ser 100%)";
+            for (int l = 1; l < Sim.Graus; l++) if (pct[l] <= pct[l - 1]) yield return $"qualidade: {(Quality)l} a {pct[l]}% nao sobe de {(Quality)(l - 1)} ({pct[l - 1]}%)";
+            if (pct[n - 1] != 0) yield return $"qualidade: Masterwork a {pct[n - 1]}% (nao vende: 0)";
+            if (w.T.NivelEstacaoQ <= 0) yield return $"qualidade: {w.T.NivelEstacaoQ} pontos por nivel de estacao";
+            foreach (UpgradeDef d in all)
+            {
+                if (!d.Meta) continue;
+                if (!w.Stations.Exists(s => s.Produces && s.Recipe.Station == d.Station && w.IsProduct(s.OutItem)))
+                    yield return $"qualidade: {d.Up} e' nivel de \"{d.Station}\", familia sem bancada de produto (fonte desconhecida)";
+                if (!d.InMenu || d.Luxury) yield return $"qualidade: {d.Up} (Meta) fora do menu ou marcado como luxo";
+                if (w.Stations.Exists(s => s.UnlockBy == (int)d.Up)) yield return $"qualidade: {d.Up} (Meta) abre estacao";
+                UpgradeDef r = d.Requires >= 0 && d.Requires < all.Length ? all[d.Requires] : null;
+                if (r == null || r.Meta && r.Station != d.Station) yield return $"qualidade: {d.Up} fora da cadeia de niveis de \"{d.Station}\"";
             }
         }
 
@@ -211,7 +238,7 @@ namespace FS.Core
             {
                 UpgradeDef d = all[u];
                 if (d.Requires < -1 || d.Requires >= n || d.Requires >= 0 && !bought[d.Requires]) return false;
-                if (d.Luxury) for (int i = 0; i < n; i++) if (!all[i].Luxury && !bought[i]) return false;
+                if (d.Luxury) for (int i = 0; i < n; i++) if (!all[i].Luxury && !all[i].Meta && !bought[i]) return false;   // luxo espera so os produtivos
                 if (d.InMenu) return true;
                 foreach (Pad p in w.Pads)
                     foreach (Upgrade c in p.Chain)
@@ -243,7 +270,7 @@ namespace FS.Core
             int prod = 0;
             foreach (UpgradeDef d in all)
             {
-                if (!d.Luxury) { prod++; continue; }
+                if (!d.Luxury) { if (!d.Meta) prod++; continue; }   // Meta (B-CORE-03) nao e' produtivo nem luxo
                 if (d.InMenu) yield return $"luxo: {d.Up} no menu (luxo e' de pad, depois de toda a producao)";
                 if (d.Requires < 0) yield return $"luxo: {d.Up} sem requisito (o Sim.Buy le Bought[Requires] do luxo)";
             }

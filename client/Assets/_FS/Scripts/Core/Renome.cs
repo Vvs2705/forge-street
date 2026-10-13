@@ -8,18 +8,19 @@ namespace FS.Core
     /// <summary>
     /// B-CORE-06: Reputation ("Renome", GDD §14, V9): trilha monotonica, nunca moeda. Um total `long` que so sobe (Ganha ignora n &lt;= 0 e
     /// satura no teto) e o nivel derivado dos limiares (RenomeDefs). Nao existe gasto nem setter publico; nenhum caminho reduz (RenomeTests).
-    /// Fontes ativas hoje (ECONOMIA_WAVE_B §5.1): encomenda entregue +1 e bau aberto +5 pelo fluxo de Ev (gancho unico: Sim.Emit chama On) e
-    /// as metas (o Metas.Paga credita aqui depois do ledger dele). Ganchos prontos: OnVendaQualidade (Superior, quando a Qualidade entrar),
-    /// Credita/OnCharter (Masterwork mw:, colecao col:, contrato ctr:, Charter charter:, com ID de transacao: 1x).
+    /// Fontes ativas hoje (ECONOMIA_WAVE_B §5.1): encomenda entregue +1 e bau aberto +5 pelo fluxo de Ev (gancho unico: Sim.Emit chama On),
+    /// peca Superior vendida (+1 a cada 10; o Sim.Sell chama OnVendaQualidade) e as metas (o Metas.Paga credita aqui depois do ledger dele).
+    /// Ganchos prontos: Credita/OnCharter (Masterwork mw:, colecao col:, contrato ctr:, Charter charter:, com ID de transacao: 1x).
     /// Save: linha rn=total,superiores[,ids]. Save sem ela (0.1-0.7) = retroativo deterministico, 1x pelo ID rn:retro: encomendas entregues +
-    /// 5 x baus abertos (GDD §14) + o Renome que as metas ja tinham guardado (mt.acc; sem pagar 2x: com rn= ele nao entra de novo).
+    /// 5 x baus abertos (GDD §14) + o Renome que as metas ja tinham guardado (mt.acc; sem pagar 2x: com rn= ele nao entra de novo). As
+    /// Superiores vendidas antes do rn= nao entram: nenhum save guarda essa contagem (so o da main entre o B-CORE-03 e o B-CORE-06 as teve).
     /// Renome nao paga ouro: o Sim e o bot seguem identicos com ou sem ele.
     /// </summary>
     public sealed class Renome
     {
         public const string TxRetro = "rn:retro";
-        /// <summary>Qualidade.Superior (ECONOMIA_WAVE_B §1.1: 0 Normal, 1 Fina, 2 Superior, 3 Masterwork, que nunca e' vendida).</summary>
-        public const int Superior = 2;
+        /// <summary>A Masterwork nunca e' vendida (vai ao Hall): so a Superior chega aqui como "Superior ou melhor".</summary>
+        public const int Superior = (int)Quality.Superior;
 
         readonly Sim _sim;
         /// <summary>IDs de transacao ja creditados (fontes 1x). As de fluxo (encomenda, bau, metas) nao passam por aqui: cada uma acontece 1x no Sim.</summary>
@@ -72,7 +73,7 @@ namespace FS.Core
             else if (kind == Ev.ChestOpened) Ganha(RenomeDefs.Bau);
         }
 
-        /// <summary>Gancho da Qualidade (B-CORE-03): peca vendida no nivel `nivel`; Superior conta e cada 10 dao +1. Sem Qualidade ninguem chama.</summary>
+        /// <summary>Peca vendida no nivel `nivel` (Sim.Sell, B-CORE-03): Superior conta e cada 10 dao +1.</summary>
         public void OnVendaQualidade(int nivel)
         {
             if (nivel < Superior) return;

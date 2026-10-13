@@ -49,15 +49,27 @@ namespace FS.Core
         Counter5,       // balcao 4 -> 5 vagas
         Counter6,       // 5 -> 6
         Counter7,       // 6 -> 7
-        Counter8        // 7 -> 8
+        Counter8,       // 7 -> 8
+        // B-CORE-03 (ECONOMIA_WAVE_B §1.5): niveis 2-3 de cada familia de estacao, categoria Meta (fora da producao completa e do teto
+        // offline), no menu depois das Ferramentas. Os niveis 4-5 exigem projeto (bp_bigorna_mestra/bp_bancada_mestra): entram com o B-CORE-07
+        AnvilsLv2, AnvilsLv3, ShieldsLv2, ShieldsLv3, ToolsLv2, ToolsLv3, JewelsLv2, JewelsLv3
     }
+
+    /// <summary>B-CORE-03 (GDD §9): nivel de qualidade de uma peca, sem sorteio. Normal, Fina e Superior circulam (pilha, mao, balcao) e vendem
+    /// por Tuning.QualidadePct; Masterwork so pelo golpe do ferreiro numa Superior com projeto e condicoes (B-CORE-08), vai ao Hall e nunca e' vendida.</summary>
+    public enum Quality { Normal, Fine, Superior, Masterwork }
+
+    /// <summary>Fontes dos pontos de qualidade de uma estacao (DM §15, Sim.QualityBreakdown). Na Wave B so o nivel da estacao existe; oficial
+    /// (B-CORE-04), tecnica (B-CORE-07), liga (Wave C) e buff (mestre de obras, evento) ficam com 0 ate existirem.</summary>
+    public enum QualitySource { StationLevel, Worker, Blueprint, Material, Buff }
 
     /// <summary>Eventos de um tick, para a view (SFX, particulas, diario). A = item/upgrade/estacao, B = detalhe.
     /// Milestone: bau de marco apareceu (A = indice em Balance.Milestones, B = ouro); ChestOpened: o jogador abriu (A = indice, B = ouro).
     /// FASE8 (anexados): VipArrived = o VIP entrou numa vaga do balcao (A = item, B = unidades do pacote); VipServed = levou o pacote todo
     /// (A = item, B = ouro que pagou); VipLeft = cansou antes (A = item, B = unidades que faltaram). Cada unidade do VIP sai tambem como Sold (B = 3x o preco).
-    /// FASE9 (anexados): OrderNew = encomenda nova (A = item, B = quantas vender); OrderDone = entregue (A = item, B = premio em ouro).</summary>
-    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone }
+    /// FASE9 (anexados): OrderNew = encomenda nova (A = item, B = quantas vender); OrderDone = entregue (A = item, B = premio em ouro).
+    /// B-CORE-03 (anexados): Graded = peca acima de Normal na pilha (A = estacao, B = Quality); Masterwork = obra-prima foi ao Hall (A = item, B = estacao).</summary>
+    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone, Graded, Masterwork }
 
     /// <summary>Dica contextual da HUD (a view so traduz). Arg = indice do pad (BuyPad), do item, do bau (OpenChest) ou do upgrade (BuyMenu).
     /// BuyMenu ANEXADO no fim (FASE6): a compra mais barata pagavel agora e' um upgrade do menu inferior.</summary>
@@ -240,6 +252,16 @@ namespace FS.Core
         public float OrderSeconds = 150f, OrderRewardSeconds = 10f;     // premio ~10 s da taxa online: 4,2% da receita no bot de 60 min (BALANCE §20)
         public int OrderRewardMin = 25;
 
+        // B-CORE-03 (docs/ECONOMIA_WAVE_B.md §1): qualidade sem sorteio. Preco por nivel (Quality) em %, inteiro e meio para cima (Sim.PriceOf):
+        // escudo 25 -> 38 -> 63. Masterwork 0 = nao vende (vai ao Hall). ContentValidator.Qualidade cobra crescente e 0 so na Masterwork
+        public int[] QualidadePct = { 100, 150, 250, 0 };
+        public int NivelEstacaoQ = 15;                          // pontos de qualidade (centesimos) por nivel de estacao acima do 1: L2 = 1 em cada 7 Fina
+        public float NivelEstacaoVelocidade = 0.05f;            // +5% de velocidade da familia por nivel acima do 1
+        // na ordem do enum (AnvilsLv2 .. JewelsLv3): METADE do §1.5 (500/1.500, 650/1.900, 500/1.500, 1.000/3.000). Com o §1.5 o retorno medido
+        // dos 8 niveis foi 37 min (portao: <= 20) e a producao completa do F2P passou a 50 min; com a metade, 18 min e 47 min (BALANCE.md §23)
+        public int[] NivelEstacaoCusto = { 250, 750, 325, 950, 250, 750, 500, 1500 };
+        public float GolpeJanela = 0.8f, GolpeRecarga = 20f;    // golpe de mestre (FS-2): anel de 0,8 s; 20 s de jogo entre um acerto e o proximo (sobe se passar de 8% da receita)
+
         // offline (raia B §5 + coordenador 2026-10-06)
         public float OfflineFactor = 0.25f;                     // 25% da taxa online
         public float OfflineMaxNextUpgrades = 2f;               // e nunca mais que 2x o preco do upgrade mais barato ainda travado
@@ -294,6 +316,7 @@ namespace FS.Core
                 case Upgrade.Counter5: case Upgrade.Counter6: case Upgrade.Counter7: case Upgrade.Counter8:
                     return CounterSlotCost[tier - (int)Upgrade.Counter5];
             }
+            if (tier >= (int)Upgrade.AnvilsLv2 && tier <= (int)Upgrade.JewelsLv3) return NivelEstacaoCusto[tier - (int)Upgrade.AnvilsLv2];
             double c = Math.Min(CostBase * Math.Pow(CostGrowth, tier), Upgrades.CostMax);
             return Math.Max(5, (long)Math.Round(c / 5.0) * 5);   // x5 em long: em double, acima de 2^53 o produto perdia o multiplo de 5
         }
@@ -318,15 +341,32 @@ namespace FS.Core
         public readonly string Name, Desc;
         public readonly bool Luxury;    // luxo: so depois de TODOS os produtivos, fora de ProductionComplete e do teto offline
         public readonly bool InMenu;    // FASE6: comprado por toque no menu inferior (Sim.TryBuyMenu), nunca em pad; o pad antigo fica na lista (pad = indice da View)
-        public UpgradeDef(Upgrade up, string id, int requires, string name, string desc, bool luxury = false, bool menu = false) { Up = up; Id = id; Requires = requires; Name = name; Desc = desc; Luxury = luxury; InMenu = menu; }
+        /// <summary>B-CORE-03: nivel de estacao da familia com esta receita (RecipeDef.Station; null = nao e'). Cada um comprado da +1 nivel as
+        /// estacoes da familia (Sim.Recompute).</summary>
+        public readonly string Station;
+        /// <summary>Categoria Meta (ECONOMIA_WAVE_B §0.7): ralo da Wave B, fora da producao completa e do teto offline, como o luxo. ponytail: hoje
+        /// so o nivel de estacao; vira campo quando os niveis de worker (B-CORE-04) entrarem.</summary>
+        public bool Meta => Station != null;
+        public UpgradeDef(Upgrade up, string id, int requires, string name, string desc, bool luxury = false, bool menu = false, string station = null)
+        { Up = up; Id = id; Requires = requires; Name = name; Desc = desc; Luxury = luxury; InMenu = menu; Station = station; }
     }
 
     public static class Upgrades
     {
-        public const int ProductionCount = 26, Count = 29;   // ProductionCount = quantos NAO sao luxo (os IDs nao precisam ser contiguos)
+        public const int ProductionCount = 26, Count = 37;   // ProductionCount = quantos NAO sao luxo nem Meta (os IDs nao precisam ser contiguos)
 
         /// <summary>Marca por upgrade, nao por ID: um produtivo anexado depois dos luxos continua produtivo.</summary>
         public static bool IsLuxury(int u) => All[u].Luxury;
+        /// <summary>Produtivo = nem luxo nem Meta: o que a producao completa (Sim.ProductionComplete) e o teto offline contam.</summary>
+        public static bool IsProduction(int u) => !All[u].Luxury && !All[u].Meta;
+
+        /// <summary>B-CORE-03: nivel de estacao que o upgrade `u` da (2, 3...; 1 = nao e' nivel): 1 + os niveis da cadeia de requisitos dele.</summary>
+        public static int StationLevel(int u)
+        {
+            int n = 1;
+            for (int r = u; r >= 0 && All[r].Meta; r = All[r].Requires) n++;
+            return n;
+        }
 
         /// <summary>A-CORE-04: indice (= (int)Upgrade) do upgrade com este ID, ou -1 (desconhecido). Vai pelo `Up` da definicao, nunca pela
         /// posicao na tabela: reordenar a tabela ou o enum nao muda o que um ID significa. `table` = so o teste injeta. ponytail: busca linear em 29.</summary>
@@ -373,6 +413,15 @@ namespace FS.Core
             new UpgradeDef(Upgrade.Counter6, "balcao6", (int)Upgrade.Counter5, "Balcão 6 vagas", "Atende 6 clientes ao mesmo tempo", menu: true),
             new UpgradeDef(Upgrade.Counter7, "balcao7", (int)Upgrade.Counter6, "Balcão 7 vagas", "Atende 7 clientes ao mesmo tempo", menu: true),
             new UpgradeDef(Upgrade.Counter8, "balcao8", (int)Upgrade.Counter7, "Balcão 8 vagas", "Atende 8 clientes ao mesmo tempo", menu: true),
+            // B-CORE-03: nivel 2 abre com as Ferramentas (a joalheria com a Joalheria); o 3 exige o 2. Nome do cartao "Familia II" (<= 16 nos 3 idiomas)
+            new UpgradeDef(Upgrade.AnvilsLv2, "bigornas_nivel2", (int)Upgrade.Tools, "Bigornas II", "Mais qualidade e velocidade", menu: true, station: "bigorna"),
+            new UpgradeDef(Upgrade.AnvilsLv3, "bigornas_nivel3", (int)Upgrade.AnvilsLv2, "Bigornas III", "Mais qualidade e velocidade", menu: true, station: "bigorna"),
+            new UpgradeDef(Upgrade.ShieldsLv2, "escudos_nivel2", (int)Upgrade.Tools, "Escudos II", "Mais qualidade e velocidade", menu: true, station: "escudos"),
+            new UpgradeDef(Upgrade.ShieldsLv3, "escudos_nivel3", (int)Upgrade.ShieldsLv2, "Escudos III", "Mais qualidade e velocidade", menu: true, station: "escudos"),
+            new UpgradeDef(Upgrade.ToolsLv2, "ferramentas_nivel2", (int)Upgrade.Tools, "Ferramentas II", "Mais qualidade e velocidade", menu: true, station: "ferramentas"),
+            new UpgradeDef(Upgrade.ToolsLv3, "ferramentas_nivel3", (int)Upgrade.ToolsLv2, "Ferramentas III", "Mais qualidade e velocidade", menu: true, station: "ferramentas"),
+            new UpgradeDef(Upgrade.JewelsLv2, "joalheria_nivel2", (int)Upgrade.Jewelry, "Joalheria II", "Mais qualidade e velocidade", menu: true, station: "joalheria"),
+            new UpgradeDef(Upgrade.JewelsLv3, "joalheria_nivel3", (int)Upgrade.JewelsLv2, "Joalheria III", "Mais qualidade e velocidade", menu: true, station: "joalheria"),
         };
 
         /// <summary>A-CORE-06: teto da curva (1e18, cabe em long com folga para somar ouro). 50 x 1,3^tier chega nele no tier 144. O custo

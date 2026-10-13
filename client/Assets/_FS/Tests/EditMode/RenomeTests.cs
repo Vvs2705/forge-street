@@ -8,7 +8,7 @@ namespace FS.Tests
 {
     /// <summary>
     /// B-CORE-06 (GDD §14, §23 #11): niveis por limiar, monotonico (nenhum caminho reduz, sem API de gasto), fontes de hoje pelo fluxo do Sim
-    /// (encomenda +1, bau +5, metas sem pagar 2x), ganchos (Superior, Charter), retroativo do save antigo 1x, save/load, o bot igual com
+    /// (encomenda +1, bau +5, Superior, metas sem pagar 2x), ganchos (Charter), retroativo do save antigo 1x, save/load, o bot igual com
     /// qualquer Renome e o validator. Renome e' long: literais L e asserts separados (NUnit 3.5 do Unity: int != long em tupla).
     /// </summary>
     public class RenomeTests
@@ -119,15 +119,32 @@ namespace FS.Tests
                 "nenhum numero publico gravavel");
         }
 
-        /// <summary>Fontes de hoje pelo fluxo do Sim: encomenda entregue +1 (Common), bau aberto +5; nada mais muda o total.</summary>
+        /// <summary>Fontes de hoje pelo fluxo do Sim: encomenda entregue +1 (Common), bau aberto +5, +1 a cada 10 Superiores vendidas; nada mais
+        /// muda o total.</summary>
         [Test]
-        public void Fontes_EncomendaEBau_PeloFluxoDoSim()
+        public void Fontes_EncomendaBauESuperior_PeloFluxoDoSim()
         {
             Sim s = Bot(30);
             Assert.Greater(s.OrderCount, 0, "premissa: encomendas entregues");
             Assert.Greater(BausAbertos(s), 0L, "premissa: baus abertos");
-            Assert.AreEqual(s.OrderCount * 1L + 5L * BausAbertos(s), s.Renome.Total);
-            Assert.AreEqual(0L, s.Renome.Superiores, "sem Qualidade ninguem chama o gancho");
+            Assert.AreEqual(s.OrderCount * 1L + 5L * BausAbertos(s) + s.Renome.Superiores / RenomeDefs.SuperiorACada, s.Renome.Total);
+        }
+
+        /// <summary>A venda de verdade no balcao (Sim.Sell) conta a Superior, nao a Fina nem a Normal.</summary>
+        [Test]
+        public void Superior_VendidaNoBalcao_Conta()
+        {
+            var s = new Sim();
+            s.Stock[(int)Item.Sword] = 3; s.StockQ[(int)Item.Sword][(int)Quality.Fine] = 1; s.StockQ[(int)Item.Sword][(int)Quality.Superior] = 1;
+            int vendas = 0;
+            for (float t = 0f; t < 120f && vendas < 3; t += Dt)
+            {
+                s.Tick(Dt, 0f, 0f);
+                foreach (SimEvent e in s.Events) if (e.Kind == Ev.Sold) vendas++;
+            }
+            Assert.AreEqual(3, vendas, "premissa: as 3 vendidas");
+            Assert.AreEqual(1L, s.Renome.Superiores);
+            Assert.AreEqual(0L, s.Renome.Total, "1 Superior: ainda nao da +1");
         }
 
         /// <summary>As metas creditam no Renome real 1x por ID (o ledger delas), e o save com rn= nao soma de novo o mt.acc.</summary>
@@ -188,7 +205,8 @@ namespace FS.Tests
             Assert.AreEqual(s.Renome.Total, novo.Renome.Total, "save novo: o total do rn=, sem retroativo por cima");
             Assert.IsFalse(novo.Renome.Ledger.Contains(Renome.TxRetro));
             Sim velho = Sim.Load(SemRn(text));
-            Assert.AreEqual(s.Renome.Total, velho.Renome.Total, "o retroativo reproduz o ao vivo");
+            Assert.AreEqual(s.Renome.Total - s.Renome.Superiores / RenomeDefs.SuperiorACada, velho.Renome.Total,
+                "o retroativo reproduz o ao vivo (menos as Superiores: nenhum save antigo as conta)");
             Assert.IsTrue(velho.Renome.Ledger.Contains(Renome.TxRetro));
             Assert.AreEqual(0L, Sim.Load("").Renome.Total, "jogo novo: nada");
         }

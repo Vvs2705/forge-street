@@ -4,8 +4,9 @@ using FS.Core;
 
 namespace FS
 {
-    /// <summary>Estado do cartao de melhoria (A-UI-18); a ordem do enum e' a ordem da bandeja (compravel primeiro, travado no fim).</summary>
-    public enum Cartao { Disponivel, SemOuro, Travado, Comprado }
+    /// <summary>Estado do cartao de melhoria (A-UI-18); a ordem do enum e' a ordem da bandeja (compravel primeiro, travado no fim). Oculto (B-CORE-03):
+    /// nivel de estacao antes da revelacao (GDD §19: nao explicar sistema futuro cedo).</summary>
+    public enum Cartao { Disponivel, SemOuro, Travado, Comprado, Oculto }
 
     /// <summary>
     /// Textos curtos da HUD, sem UnityEngine (v0.6d, revisao de UX): o teste EditMode (TextosTests) le daqui e falha se alguma dica
@@ -107,7 +108,7 @@ namespace FS
         {
             int req = Upgrades.All[u].Requires;
             if (s.Bought[u]) return Cartao.Comprado;
-            if (req >= 0 && !s.Bought[req]) return Cartao.Travado;
+            if (req >= 0 && !s.Bought[req]) return Upgrades.All[u].Meta && !Upgrades.All[req].Meta ? Cartao.Oculto : Cartao.Travado;   // o nivel II espera a revelacao
             return s.Gold >= s.T.Cost(u) ? Cartao.Disponivel : Cartao.SemOuro;
         }
 
@@ -134,8 +135,43 @@ namespace FS
                 case Upgrade.Counter5: case Upgrade.Counter6: case Upgrade.Counter7: case Upgrade.Counter8:
                     int n = u - (int)Upgrade.Counter5 + t.QueueCap0 + 1;
                     return Loc.T("card.vagas", Mais(n - 1, n));
-                default: return Loc.T("up." + Upgrades.All[u].Id + ".desc");
+                default:   // B-CORE-03, GDD §19: "Qualidade +0,15 · vel. +5%"
+                    return Upgrades.All[u].Meta ? Loc.T("card.qualidade", Pontos(t.NivelEstacaoQ), Pct(t.NivelEstacaoVelocidade) + "%")
+                        : Loc.T("up." + Upgrades.All[u].Id + ".desc");
             }
+        }
+
+        /// <summary>B-CORE-03: pontos de qualidade (centesimos) como o jogo mostra: 15 -> "0,15" (decimal do idioma).</summary>
+        public static string Pontos(int q) => (q / 100).ToString(CultureInfo.InvariantCulture) + Loc.T("num.dec") + (q % 100).ToString("00", CultureInfo.InvariantCulture);
+
+        /// <summary>Nome do nivel de qualidade no idioma (Fina, Superior...).</summary>
+        public static string Qualidade(Quality l) => Loc.T("qual." + (int)l);
+
+        /// <summary>
+        /// Barra de qualidade da estacao (GDD §19): o que sai a seguir pelo acumulador. Golpe valendo = "Golpe! Proxima +1"; q = 0 = "So Normal";
+        /// fracao zero = "Sempre Fina"; senao "Fina em 7" (pecas ate o acumulador passar de 100) ou "Proxima: Fina!" na proxima.
+        /// </summary>
+        public static string Barra(Sim s, Station st)
+        {
+            if (st.Strike) return Loc.T("qual.golpe");
+            int q = s.QualityPoints(st), frac = q % 100, piso = Math.Min(q / 100, (int)Quality.Superior);
+            if (q == 0) return Loc.T("qual.so_normal");
+            if (frac == 0 || piso == (int)Quality.Superior) return Loc.T("qual.sempre", Qualidade((Quality)piso));
+            int n = (100 - st.QAcc + frac - 1) / frac;   // pecas ate acc >= 100 (arredonda para cima)
+            Quality prox = (Quality)(piso + 1);
+            return n <= 1 ? Loc.T("qual.agora", Qualidade(prox)) : Loc.T("qual.em", Qualidade(prox), n);
+        }
+
+        /// <summary>QualityBreakdown ao tocar na barra: uma linha por fonte (o nivel da estacao sempre; as outras so quando existem) e o total com
+        /// a barra. Explica 100% das pecas: a soma das linhas e' o q do acumulador.</summary>
+        public static string Detalhe(Sim s, Station st)
+        {
+            int[] b = s.QualityBreakdown(st);
+            var linhas = new System.Collections.Generic.List<string>();
+            for (int f = 0; f < b.Length; f++)
+                if (b[f] != 0 || f == (int)QualitySource.StationLevel) linhas.Add(Loc.T("qual.linha", Loc.T("qual.fonte." + f), Pontos(b[f])));
+            linhas.Add(Loc.T("qual.total", Pontos(s.QualityPoints(st)), Barra(s, st)));
+            return string.Join("\n", linhas);
         }
 
         /// <summary>Linha de baixo do cartao: antes → depois em numeros (era o MenuBar.Effect); "" quando o antes depende de outra compra (Lupa).</summary>
@@ -154,7 +190,12 @@ namespace FS
                 case Upgrade.Counter5: case Upgrade.Counter6: case Upgrade.Counter7: case Upgrade.Counter8:
                     int n = u - (int)Upgrade.Counter5 + t.QueueCap0 + 1;
                     return Loc.T("card.ad.vagas", N(n - 1), N(n));
-                default: return "";   // ponytail: Lupa = x0,6 sobre o tempo que o Martelo veloz ja mudou; o % basta
+                default:
+                    // B-CORE-03: depois da compra, so pelo nivel da estacao (as outras fontes ainda nao existem): L2 = 1 em 7, L3 = 1 em 3.
+                    // ponytail: a frase vale para q < 100; o nivel que passar de 1,00 (L4-L5 com oficial, B-CORE-04/07) pede outra
+                    if (!Upgrades.All[u].Meta) return "";   // ponytail: Lupa = x0,6 sobre o tempo que o Martelo veloz ja mudou; o % basta
+                    int q = (Upgrades.StationLevel(u) - 1) * t.NivelEstacaoQ;
+                    return Loc.T("card.ad.fina", (long)Math.Round(100.0 / q, MidpointRounding.AwayFromZero));
             }
         }
 
