@@ -192,7 +192,7 @@ namespace FS
             _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos), () => _metas.Abrir(), WorkerComprado);
             _cfg.SetAsLastSibling();     // configuracoes e painel modal cobrem a barra de melhorias
             _panel.SetAsLastSibling();
-            _metas = new PainelMetas(_safe, _sim, Pago);
+            _metas = new PainelMetas(_safe, _sim, Pago, () => _projetos.Abrir());
             _projetos = new PainelProjetos(_safe, _sim);
             // E-PLAT-01: sem resposta (ou com texto novo) a tela de idade abre por cima de tudo e o SDK de anuncio espera (Ads.Responder).
             // Fotos e smoke (-testsession, -record, -autoplay) nao a veem, salvo com -privacidade [18]
