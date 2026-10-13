@@ -30,7 +30,8 @@ COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Sc
           'Assets/_FS/Scripts/View/Captura.cs', 'Assets/_FS/Scripts/View/Som.cs', 'Assets/_FS/Scripts/View/Privacidade.cs',
           'Assets/_FS/Scripts/View/EsteiraView.cs', 'Assets/_FS/Scripts/View/Enquadramento.cs', 'Assets/_FS/Scripts/View/Loc.cs',
           'tools/coretests']
-SIM, DEFS, METAS = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs', 'Assets/_FS/Scripts/Core/Metas.cs'
+SIM, DEFS, CV = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs', 'Assets/_FS/Scripts/Core/ContentValidator.cs'
+METAS = 'Assets/_FS/Scripts/Core/Metas.cs'
 
 
 def mut(id, arquivo, trecho, troca, descricao, esperado_vivo=None):
@@ -45,6 +46,17 @@ MUTACOES = [
         'custo de upgrade cresce 1,32x por tier em vez de 1,30x'),
     mut('eco-menu-nao-cobra', SIM, 'Gold -= cost;', ';',
         'compra pelo menu aplica o upgrade sem cobrar'),
+    # receitas em dados (B-CORE-01)
+    mut('rec-tempo-sem-mult', SIM, 's.Recipe.TimeMul(T) * (s == JewelBench', '1f * (s == JewelBench',
+        'estação ignora o multiplicador de tempo da receita (escudo e joia no tempo da espada)'),
+    mut('rec-consome-so-o-1o', SIM, 'for (int k = 0; k < s.Ins.Length; k++) s.Ins[k] -= s.Recipe.Inputs[k].Qty;', 's.Ins[0] -= s.Recipe.Inputs[0].Qty;',
+        'receita de 2 insumos só consome o 1o'),
+    mut('rec-nao-espera-o-2o', SIM, 'for (int k = 0; k < s.Ins.Length; k++) if (s.Ins[k] < s.Recipe.Inputs[k].Qty)', 'for (int k = 0; k < 1; k++) if (s.Ins[k] < s.Recipe.Inputs[k].Qty)',
+        'estação começa sem o 2o insumo da receita'),
+    mut('rec-paciencia-qtd', DEFS, 't += StartTime(ri) * qty;', 't += StartTime(ri);',
+        'paciência conta 1 de cada insumo, não a quantidade da receita (escudo e joia esperam menos)'),
+    mut('rec-validator-insumo-orfao', CV, 'if (!Made(item)) yield return', 'if (false) yield return',
+        'validator aceita receita com insumo que nenhuma estação produz'),
     # offline
     mut('off-taxa', DEFS, 'OfflineFactor = 0.25f;', 'OfflineFactor = 0.3f;',
         'cofre offline paga 30% da taxa online em vez de 25%'),
@@ -74,6 +86,10 @@ MUTACOES = [
         'ID do save resolvido pela posição na tabela, não pelo upgrade (A-CORE-04: reordenar a tabela troca o progresso)'),
     mut('save-v1-ordem', SIM, '"fole", "bigorna2", "ajudante1",', '"fole", "ajudante1", "bigorna2",',
         'ordem congelada do schema 1 trocada: o up= da 0.1-0.7 migra para os upgrades errados'),
+    mut('save-v2-ordem-itens', SIM, '"minerio", "lingote", "espada", "escudo", "ferramenta", "joia" };', '"minerio", "lingote", "escudo", "espada", "ferramenta", "joia" };',
+        'ordem congelada dos itens do schema 2 trocada: stock=/hold= da 0.8 migram para os itens errados (B-CORE-01)'),
+    mut('save-maos-por-id-ignoradas', SIM, 'case "holds": ReadIdCounts(sim, parts, sim.Player.Held); break;', 'case "holds": break;',
+        'load do schema 3 perde o que está na mão do ferreiro (B-CORE-01)'),
     # VIP e boost
     mut('vip-multiplicador', SIM, 'Slot(jewel, i), T.VipPriceMul);', 'Slot(jewel, i), 2);',
         'VIP paga 2x o preço por unidade em vez de 3x'),

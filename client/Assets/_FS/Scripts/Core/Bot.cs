@@ -106,7 +106,7 @@ namespace FS.Core
             if (pick != null && BestInput(s, Item.Ingot, pick.Pos) != null) return pick.OutAt;
             if (s.CanPick(p, Item.Ore) && BestInput(s, Item.Ore, p.Pos) != null) return s.Deposit.OutAt;
             if (chest != null) return chest.Pos;
-            if (p.Count > 0) return Sim.IsProduct(p.Item) ? s.CounterFor(p.Item).InAt : p.Item == Item.Ore ? s.FurnaceA.InAt : s.AnvilA.InAt;   // tudo cheio e nada a recolher: espera onde vai caber
+            if (p.Count > 0) return s.IsProduct(p.Item) ? s.CounterFor(p.Item).InAt : p.Item == Item.Ore ? s.FurnaceA.InAt : s.AnvilA.InAt;   // tudo cheio e nada a recolher: espera onde vai caber
             // fornalhas cheias e nada pronto: espera onde o proximo lingote vai sair
             Station soon = null;
             foreach (Station st in s.Stations)
@@ -120,7 +120,8 @@ namespace FS.Core
             Station best = null; float bestScore = float.MinValue;
             foreach (Station st in s.Stations)
             {
-                if (!st.Unlocked || !st.Produces || st.InItem != item || st.In >= st.InCap) continue;
+                int k = st.InIndex(item);   // B-CORE-01: a receita usa `item` e a entrada dele cabe
+                if (!st.Unlocked || k < 0 || st.Ins[k] >= st.InCap) continue;
                 float need = 0f;
                 if (st.Kind == Kind.Crafter)
                 {
@@ -128,7 +129,7 @@ namespace FS.Core
                     need = (s.CounterCap - s.Stock[(int)st.OutItem]) * 2f;
                     if (q.Count > 0 && q[0].Want == st.OutItem && s.Stock[(int)st.OutItem] == 0) need += 12f;
                 }
-                float score = (st.InCap - st.In) * 3f + need - V2.Dist(from, st.InAt);
+                float score = (st.InCap - st.Ins[k]) * 3f + need - V2.Dist(from, st.InAt);
                 if (score > bestScore) { bestScore = score; best = st; }
             }
             return best;

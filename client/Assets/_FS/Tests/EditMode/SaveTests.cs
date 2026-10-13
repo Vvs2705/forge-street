@@ -126,10 +126,16 @@ namespace FS.Tests
             return s;
         }
 
+        /// <summary>B-CORE-01: o mesmo estado no formato do schema 2 (0.8): v=2 e estoque, vendas e maos so por posicao (stock=/sold=/hold=/wk=,
+        /// que o schema 3 ainda grava como espelho), sem as chaves por ID.</summary>
+        static string ComoSchema2(string v3) =>
+            string.Join("\n", Array.FindAll(v3.Split('\n'), l => !l.StartsWith("stocks=") && !l.StartsWith("solds=") && !l.StartsWith("holds=") && !l.StartsWith("wks=")))
+                .Replace("v=" + Sim.Schema + "\n", "v=2\n");
+
         /// <summary>O mesmo estado no formato do schema 1 (0.1-0.7): v=1 e up=/ut=/pads= por indice do enum e do slot no lugar de ups=/upp=.</summary>
-        static string ComoSchema1(Sim s, string v2)
+        static string ComoSchema1(Sim s, string v3)
         {
-            string rest = string.Join("\n", Array.FindAll(v2.Split('\n'), l => !l.StartsWith("v=") && !l.StartsWith("ups=") && !l.StartsWith("up=") && !l.StartsWith("upp=")));
+            string rest = string.Join("\n", Array.FindAll(ComoSchema2(v3).Split('\n'), l => !l.StartsWith("v=") && !l.StartsWith("ups=") && !l.StartsWith("up=") && !l.StartsWith("upp=")));
             string up = string.Concat(Array.ConvertAll(s.Bought, b => b ? "1" : "0"));
             string ut = string.Join(",", Array.ConvertAll(s.UpgradeTime, t => t.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)));
             string pads = string.Concat(s.Pads.ConvertAll(p => p.Paid + ","));
@@ -147,7 +153,7 @@ namespace FS.Tests
         {
             Sim s = Partida25();
             string text = s.Save(1000);
-            StringAssert.StartsWith("v=2\n", text);
+            StringAssert.StartsWith("v=" + Sim.Schema + "\n", text);
             Sim a = Sim.Load(text);
             CollectionAssert.AreEqual(s.Bought, a.Bought);
             Assert.Greater(a.UpgradesBought, 10, "premissa: progresso de verdade");
@@ -173,10 +179,32 @@ namespace FS.Tests
         public void Migracao_V1ParaV2_MesmoEstadoNosDoisFormatos_CarregaIgual()
         {
             Sim s = Partida25();
-            string v2 = s.Save(1000), v1 = ComoSchema1(s, v2);
+            string v3 = s.Save(1000), v1 = ComoSchema1(s, v3);
             StringAssert.DoesNotContain("ups=", v1);
-            Assert.AreEqual(Sim.Load(v2).Save(1000), Sim.Load(v1).Save(1000), "flags, instantes e parcial de cada pad (o do menu e o da cadeia comprada voltam ao ouro)");
-            Assert.AreEqual(Sim.Load(v2).Gold, Sim.Load(v1).Gold);
+            StringAssert.DoesNotContain("stocks=", v1);
+            Assert.AreEqual(Sim.Load(v3).Save(1000), Sim.Load(v1).Save(1000), "flags, instantes e parcial de cada pad (o do menu e o da cadeia comprada voltam ao ouro)");
+            Assert.AreEqual(Sim.Load(v3).Gold, Sim.Load(v1).Gold);
+        }
+
+        /// <summary>B-CORE-01: o schema 2 (estoque, vendas e maos por posicao) e o 3 (por ID) do mesmo estado carregam identicos, numa partida com
+        /// estoque, vendas e carga em todas as maos (ferreiro e ajudantes).</summary>
+        [Test]
+        public void Migracao_V2ParaV3_MesmoEstadoNosDoisFormatos_CarregaIgual()
+        {
+            Sim s = Partida25();
+            Assert.IsTrue(s.SoldItems[(int)Item.Sword] > 0 && s.SoldItems[(int)Item.Shield] > 0 && s.Workers.Count >= 3, "premissa: vendas e ajudantes de verdade");
+            s.Player.Held[(int)Item.Ore] = 1; s.Player.Held[(int)Item.Jewel] = 2; s.Stock[(int)Item.Tool] = 2;
+            Array.Clear(s.Workers[0].Held, 0, s.Workers[0].Held.Length); s.Workers[0].Held[(int)Item.Ore] = 1;   // papel 0: minerio
+            string v3 = s.Save(1000), v2 = ComoSchema2(v3);
+            StringAssert.Contains("stocks=", v3);
+            StringAssert.Contains("wks=0:minerio:1", v3);
+            StringAssert.DoesNotContain("holds=", v2);
+            Sim a = Sim.Load(v3), b = Sim.Load(v2);
+            Assert.AreEqual(a.Save(1000), b.Save(1000));
+            CollectionAssert.AreEqual(s.Stock, b.Stock);
+            CollectionAssert.AreEqual(s.SoldItems, b.SoldItems);
+            CollectionAssert.AreEqual(s.Player.Held, b.Player.Held);
+            for (int k = 0; k < a.Workers.Count; k++) CollectionAssert.AreEqual(a.Workers[k].Held, b.Workers[k].Held, "ajudante " + k);
         }
 
         [Test]

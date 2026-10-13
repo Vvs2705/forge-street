@@ -5,10 +5,10 @@ namespace FS.Core
 {
     /// <summary>
     /// A-CORE-05 (DOCUMENTO_MESTRE §108): confere o conteudo do jogo e devolve as violacoes legiveis (lista vazia = ok). Roda no
-    /// `dotnet test` (ContentValidatorTests). Cada regra e' uma funcao curta sobre os DADOS que recebe, nunca sobre a tabela direto:
-    /// quando o conteudo virar dados (B-CORE-01), troca so a fonte em Validate() e as regras ficam. O UpgradeDef ja tem ID em string (A-CORE-04).
+    /// `dotnet test` (ContentValidatorTests). Cada regra e' uma funcao curta sobre os DADOS que recebe, nunca sobre a tabela direto. O
+    /// UpgradeDef tem ID em string (A-CORE-04); itens e receitas sao dados (B-CORE-01) e entram pelo mundo (Sim com o conteudo injetado).
     /// ponytail: icone por ID, chave de analytics e localizacao nao existem no conteudo (nome e descricao sao texto pt-BR no
-    /// Defs.cs); viram regras aqui quando o UpgradeDef/ItemDef ganharem esses campos (B-CORE-01).
+    /// Defs.cs); viram regras aqui quando o UpgradeDef/ItemDef ganharem esses campos.
     /// </summary>
     public static class ContentValidator
     {
@@ -18,16 +18,19 @@ namespace FS.Core
         /// <summary>Os 15 do v0.1 seguem 50 x 1,30^tier; da 2a area em diante cada um tem preco proprio (Tuning.Cost).</summary>
         public const int FormulaTiers = (int)Upgrade.SideCorridor;
 
-        /// <summary>Todas as regras. Sem argumentos = o conteudo real; o teste injeta uma COPIA quebrada no que quiser.</summary>
-        public static List<string> Validate(UpgradeDef[] upgrades = null, long[] costs = null, int[] prices = null, MilestoneDef[] milestones = null, Sim world = null)
+        /// <summary>Todas as regras. Sem argumentos = o conteudo real; o teste injeta uma COPIA quebrada no que quiser. `items`/`recipes` =
+        /// conteudo do mundo (World); com `world` dado, valem os dele.</summary>
+        public static List<string> Validate(UpgradeDef[] upgrades = null, long[] costs = null, int[] prices = null, MilestoneDef[] milestones = null, Sim world = null,
+            ItemDef[] items = null, RecipeDef[] recipes = null)
         {
             upgrades ??= Upgrades.All;
             costs ??= RealCosts();
             prices ??= Tuning.Padrao.Price;
             milestones ??= Balance.Milestones;
-            world ??= World();
+            world ??= World(items, recipes);
             var e = new List<string>();
             e.AddRange(Ids(upgrades));
+            e.AddRange(Itens(world.ItemDefs));
             e.AddRange(Requisitos(upgrades));
             e.AddRange(Alcance(upgrades, world));
             e.AddRange(Luxo(upgrades, world));
@@ -75,7 +78,7 @@ namespace FS.Core
                     if (Array.IndexOf(EventosProibidos, d.Evento) >= 0) yield return $"{at} gatilho {d.Evento} pune ou exige anuncio";
                     else if (Array.IndexOf(Metas.Eventos, d.Evento) < 0) yield return $"{at} gatilho {d.Evento} que o Sim nao emite";
                     int max = d.Evento == "upgrade_buy" ? Upgrades.Count - 1 : d.Evento == "mission_complete" ? 1
-                        : d.Evento == "product_sold" || d.Evento == "product_crafted" || d.Evento == "order_done" || d.Evento == "vip_served" ? (int)Item.Jewel : -1;
+                        : d.Evento == "product_sold" || d.Evento == "product_crafted" || d.Evento == "order_done" || d.Evento == "vip_served" ? Items.All.Length - 1 : -1;
                     if (d.Filtro < (d.Evento == "mission_complete" ? 0 : -1) || d.Filtro > max) yield return $"{at} filtro {d.Filtro} invalido para {d.Evento}";
                     if (d.Alvo <= 0) yield return $"{at} alvo {d.Alvo}";
                     if (d.Abre != null && Upgrades.IndexOf(d.Abre) < 0) yield return $"{at} abre com \"{d.Abre}\", que nao e' upgrade";
@@ -113,10 +116,11 @@ namespace FS.Core
             return c;
         }
 
-        /// <summary>Mundo com tudo comprado: todos os corpos possiveis (estacoes abertas, decoracao do luxo, balcao de 8 vagas).</summary>
-        public static Sim World()
+        /// <summary>Mundo com tudo comprado: todos os corpos possiveis (estacoes abertas, decoracao do luxo, balcao de 8 vagas). `items`/`recipes`
+        /// = conteudo injetado (null = o padrao).</summary>
+        public static Sim World(ItemDef[] items = null, RecipeDef[] recipes = null)
         {
-            var w = new Sim();
+            var w = new Sim(null, items, recipes);
             for (int u = 0; u < Upgrades.Count; u++) w.Bought[u] = true;
             w.Recompute();
             return w;
@@ -136,11 +140,31 @@ namespace FS.Core
                 if (!seen.Add(all[i].Up)) yield return $"id: {all[i].Up} repetido";
                 string id = all[i].Id;
                 if (string.IsNullOrEmpty(id)) yield return $"id: {all[i].Up} sem ID estavel";
-                else if (!Array.TrueForAll(id.ToCharArray(), c => c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_')) yield return $"id: \"{id}\" ({all[i].Up}) fora de [a-z0-9_]";
+                else if (!IdOk(id)) yield return $"id: \"{id}\" ({all[i].Up}) fora de [a-z0-9_]";
                 else if (!ids.Add(id)) yield return $"id: \"{id}\" repetido";
             }
             foreach (string id in Sim.IdsV1)
                 if (!ids.Contains(id)) yield return $"id: \"{id}\" do schema 1 sumiu da tabela (save da 0.1-0.7 perde a compra; renomear ou apagar pede passo em Sim.Migrations)";
+        }
+
+        static bool IdOk(string id) => Array.TrueForAll(id.ToCharArray(), c => c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_');
+
+        /// <summary>B-CORE-01: ID estavel nao vazio, so [a-z0-9_], unico (o save grava, schema 3); as primeiras posicoes sao as do enum Item e
+        /// do espelho do save (Sim.ItemIdsV2, congelada); nome e tier 1-5 (GDD §7).</summary>
+        public static IEnumerable<string> Itens(ItemDef[] all)
+        {
+            var ids = new HashSet<string>();
+            for (int i = 0; i < all.Length; i++)
+            {
+                string id = all[i].Id;
+                if (string.IsNullOrEmpty(id) || !IdOk(id)) yield return $"item {i}: ID \"{id}\" vazio ou fora de [a-z0-9_]";
+                else if (!ids.Add(id)) yield return $"item: \"{id}\" repetido";
+                if (i < Sim.ItemIdsV2.Length && id != Sim.ItemIdsV2[i])
+                    yield return $"item {i}: \"{id}\" no lugar de \"{Sim.ItemIdsV2[i]}\" (o enum Item e o espelho do save sao essa posicao; renomear pede passo em Sim.Migrations)";
+                if (string.IsNullOrWhiteSpace(all[i].Name)) yield return $"item: {id} sem nome";
+                if (all[i].Tier < 1 || all[i].Tier > 5) yield return $"item: {id} com tier {all[i].Tier} (1-5)";
+            }
+            if (all.Length < Sim.ItemIdsV2.Length) yield return $"item: tabela com {all.Length}, o enum Item tem {Sim.ItemIdsV2.Length}";
         }
 
         /// <summary>Pre-requisito existe e e' de tier menor (o que ja impede ciclo na tabela em ordem).</summary>
@@ -229,23 +253,46 @@ namespace FS.Core
             }
         }
 
-        /// <summary>Cadeia de itens: o deposito faz minerio, estacao que produz troca InItem por OutItem, balcao vende produto.</summary>
+        /// <summary>
+        /// B-CORE-01, cadeia em dados (w.RecipeDefs): o deposito faz minerio; estacao que produz troca os insumos da receita da familia dela
+        /// pelo produto; balcao vende produto. Fornalha e bancada tem receita do tipo delas; toda receita tem estacao e insumo; todo insumo e'
+        /// produzido por alguem e sai do minerio sem ciclo; produto tem preco e estacao; o que e' produzido tem destino.
+        /// </summary>
         public static IEnumerable<string> Receitas(int[] price, Sim w)
         {
+            string Name(Item i) => (uint)i < (uint)w.ItemDefs.Length ? w.ItemDefs[(int)i].Id : ((int)i).ToString();
             bool Made(Item i) => w.Stations.Exists(s => s.Kind == Kind.Deposit ? i == Item.Ore : s.Produces && s.OutItem == i);
-            bool Used(Item i) => w.Stations.Exists(s => s.Produces && s.InItem == i);
+            bool Used(Item i) => w.Stations.Exists(s => s.InIndex(i) >= 0);
             bool Sold(Item i) => w.Stations.Exists(s => w.Sells(s, i));
-            foreach (Item i in Enum.GetValues(typeof(Item)))
+            for (int k = 0; k < w.ItemDefs.Length; k++)
             {
-                if (Sim.IsProduct(i) && ((int)i >= price.Length || price[(int)i] <= 0)) yield return $"receita: {i} sem preco";
-                if (Sim.IsProduct(i) && !Made(i)) yield return $"receita: {i} sem estacao que produz";
-                if (Made(i) && !Used(i) && !Sold(i)) yield return $"receita: {i} produzido sem comprador (nenhuma estacao usa, nenhum balcao vende)";
+                Item i = (Item)k;
+                if (w.IsProduct(i) && (k >= price.Length || price[k] <= 0)) yield return $"receita: {Name(i)} sem preco";
+                if (w.IsProduct(i) && !Made(i)) yield return $"receita: {Name(i)} sem estacao que produz";
+                if (Made(i) && !Used(i) && !Sold(i)) yield return $"receita: {Name(i)} produzido sem comprador (nenhuma estacao usa, nenhum balcao vende)";
             }
             foreach (Station s in w.Stations)
+                if (!s.Produces && (s.Kind == Kind.Furnace || s.Kind == Kind.Crafter)) yield return $"receita: {s.Name} sem receita (nenhuma da familia dela)";
+                else if (s.Produces && s.Recipe.Kind != s.Kind) yield return $"receita: {s.Name} ({s.Kind}) com receita de {s.Recipe.Kind}";
+            // fecho a partir do minerio: o que as estacoes fazem quando todos os insumos ja sao alcancaveis (pega o ciclo)
+            var reach = new HashSet<Item>();
+            if (Made(Item.Ore)) reach.Add(Item.Ore);
+            for (bool grew = true; grew;)
             {
-                if (!s.Produces) continue;
-                if (s.Need <= 0) yield return $"receita: {s.Name} sem insumo (Need {s.Need})";
-                if (!Made(s.InItem)) yield return $"receita: {s.Name} usa {s.InItem}, que nenhuma estacao produz";
+                grew = false;
+                foreach (Station s in w.Stations)
+                    if (s.Produces && !reach.Contains(s.OutItem) && Array.TrueForAll(s.Recipe.Inputs, x => reach.Contains(x.Item))) { reach.Add(s.OutItem); grew = true; }
+            }
+            foreach (RecipeDef r in w.RecipeDefs)
+            {
+                if (!w.Stations.Exists(s => s.Recipe == r)) yield return $"receita: {Name(r.Output)} sem estacao da familia {r.Station}";
+                if (r.Inputs.Length == 0) yield return $"receita: {Name(r.Output)} sem insumo";
+                foreach ((Item item, int qty) in r.Inputs)
+                {
+                    if (qty <= 0) yield return $"receita: {Name(r.Output)} pede {qty} de {Name(item)}";
+                    if (!Made(item)) yield return $"receita: {Name(r.Output)} usa {Name(item)}, que nenhuma estacao produz";
+                    else if (!reach.Contains(item)) yield return $"receita: {Name(r.Output)} usa {Name(item)}, que nunca sai do minerio (ciclo)";
+                }
             }
         }
 
@@ -257,7 +304,7 @@ namespace FS.Core
                 MilestoneDef m = ms[k];
                 if (m.Gold <= 0) yield return $"marco {k}: ouro {m.Gold}";
                 if (string.IsNullOrWhiteSpace(m.Label)) yield return $"marco {k}: sem rotulo";
-                bool item = m.Item == -1 || Sim.IsProduct((Item)m.Item) && w.Stations.Exists(s => s.Produces && (int)s.OutItem == m.Item);
+                bool item = m.Item == -1 || w.IsProduct((Item)m.Item) && w.Stations.Exists(s => s.Produces && (int)s.OutItem == m.Item);
                 if (m.Count <= 0 || !item) yield return $"marco {k}: condicao inalcancavel (vender {m.Count} do item {m.Item})";
             }
         }
