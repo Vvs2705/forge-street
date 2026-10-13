@@ -144,6 +144,14 @@ namespace FS.Core
             return n >= d.MaxNivel ? -1 : d.Niveis[n - 1];
         }
 
+        /// <summary>Ouro da compra que levou `k` ao nivel `nivel` (1 = contratacao; o ajudante = 0, o upgrade e' que paga); 0 fora da tabela.</summary>
+        public long Preco(int k, int nivel)
+        {
+            if (k < 0 || k >= Defs.Length) return 0;
+            WorkerDef d = Defs[k];
+            return nivel == 1 ? d.Contratacao : nivel >= 2 && nivel - 2 < d.Niveis.Length ? d.Niveis[nivel - 2] : 0;
+        }
+
         /// <summary>A venda agora, com ou sem ouro (cartao e bot): aberta, com preco e, para contratar, liberado.</summary>
         public bool AVenda(int k) => Aberta && Custo(k) >= 0 && (Contratado(k) || Liberado(k));
 

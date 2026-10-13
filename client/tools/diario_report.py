@@ -29,6 +29,8 @@ Colunas (Game.Log: sem cabecalho, virgula crua, sem aspas): utc, sessao, evento,
         | tutorial_complete a=s ate a 1a venda b=passos | rewarded_offer a=placement (b=2x|3x na velocidade), quando o botao aparece
         disponivel | currency_source a=venda|vip|bau|encomenda|cofre b=ouro e currency_sink a=upgrade|luxo b=ouro, somados por chave
         a cada minuto de jogo e na pausa/saida
+  B-CORE-04: worker_hired a=wk_* b=1 (worker da Equipe; o ajudante do upgrade segue a=indice) | worker_upgrade a=wk_* b=nivel novo
+        | currency_sink a=worker (contratacao e nivel)
   O diario so grava no build de desenvolvimento (ou com -playtest) e roda a partir de 1 MB (fica a cauda mais nova).
 """
 import glob

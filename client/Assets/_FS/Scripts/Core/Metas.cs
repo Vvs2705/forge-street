@@ -90,18 +90,10 @@ namespace FS.Core
                 case Ev.Offline: Soma("offline_claim", -1, 1); break;
                 case Ev.VipServed: Soma("vip_served", a, 1); break;
                 // B-CORE-04: filtro = papel (WorkerRole; 0 = o ajudante do upgrade, cujo ouro ja contou no Ev.Bought); worker_upgrade: filtro = nivel novo
-                case Ev.Hired: Soma("worker_hired", b, 1); if (b > 0) Soma("currency_sink", -1, Preco(a, 1)); break;
-                case Ev.WorkerUp: Soma("worker_upgrade", b, 1); Soma("currency_sink", -1, Preco(a, b)); break;
+                case Ev.Hired: Soma("worker_hired", b, 1); if (b > 0) Soma("currency_sink", -1, _sim.Equipe.Preco(a, 1)); break;
+                case Ev.WorkerUp: Soma("worker_upgrade", b, 1); Soma("currency_sink", -1, _sim.Equipe.Preco(a, b)); break;
                 case Ev.ChestOpened: Soma("chest_opened", -1, 1); break;
             }
-        }
-
-        /// <summary>Ouro da compra do worker `a` que o levou ao nivel `nivel` (1 = contratacao); 0 fora da tabela.</summary>
-        long Preco(int a, int nivel)
-        {
-            WorkerDef[] d = _sim.Equipe.Defs;
-            if (a < 0 || a >= d.Length) return 0;
-            return nivel == 1 ? d[a].Contratacao : nivel >= 2 && nivel - 2 < d[a].Niveis.Length ? d[a].Niveis[nivel - 2] : 0;
         }
 
         void Soma(string ev, int filtro, long n)

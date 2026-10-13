@@ -130,6 +130,29 @@ namespace FS
             s.StrikeCooldown = 0f;
         }
 
+        /// <summary>
+        /// B-CORE-04 -equipe (fotos): a oficina toda ate o Joalheiro 2 e os niveis II das 4 familias (o requisito dos oficiais), Balcao 6, Renome
+        /// 2, os 6 ajudantes no nivel 3 (carga +1) e os 7 da Equipe contratados, cada um no posto (WorldView.Posto). O ouro volta ao que era:
+        /// o -gold da linha de comando vem depois (cartoes de nivel disponiveis na foto com -menu).
+        /// </summary>
+        public static void Equipe(Sim s)
+        {
+            foreach (string id in new[] { "fole", "bigorna2", "ajudante1", "escudos", "mochila", "ajudante2", "esteira", "fole_duplo", "botas", "ferramentas",
+                "vitrine", "fornalha2", "ajudante3", "ajudantes_ageis", "martelo_veloz", "corredor", "joalheria", "joalheiro1", "mineiro", "joalheiro2",
+                "balcao5", "balcao6", "bigornas_nivel2", "escudos_nivel2", "ferramentas_nivel2", "joalheria_nivel2" })
+                s.Buy((Upgrade)Upgrades.IndexOf(id));
+            s.Renome.Ganha(RenomeDefs.Niveis[2].Limiar - s.Renome.Total);
+            long ouro = s.Gold;
+            for (int k = 0; k < s.Equipe.Defs.Length; k++)
+                for (int n = s.Equipe.Nivel(k); n < (s.Equipe.Defs[k].Papel == WorkerRole.Porter ? 3 : 1); n++)
+                {
+                    s.Gold = s.Equipe.Custo(k);
+                    s.Equipe.Comprar(k);
+                }
+            s.Gold = ouro;
+            s.Player.Pos = new V2(4.5f, 7.5f);   // no meio da oficina: oficiais, balconista e mestre de obras na tela
+        }
+
         /// <summary>-offline S: s fora para o cofre real (Sim.ApplyOffline); -1 = fora de 60 s (abaixo o jogo nao paga) ao teto de 2 h.</summary>
         public static long OfflineSegundos(string v) =>
             long.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out long s) && s >= 60 && s <= Balance.OfflineCapSeconds ? s : -1;

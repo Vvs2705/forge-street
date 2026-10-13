@@ -425,6 +425,18 @@ namespace FS.Tests
             finally { Loc.Atual = Idioma.Pt; }
         }
 
+        [Test]
+        public void Captura_Equipe_OsTrezeNoPosto_SemMexerNoOuro()
+        {
+            var s = new Sim();
+            s.Gold = 77;
+            Captura.Equipe(s);
+            Assert.AreEqual(77L, s.Gold, "o -gold da foto vem depois");
+            Assert.AreEqual(7, s.Equipe.Contratados(), "oficiais, balconista, almoxarife e mestre de obras");
+            Assert.AreEqual(Metas.AjudantesOldForge, s.Workers.Count);
+            Assert.IsTrue(s.Workers.TrueForAll(w => s.Equipe.Nivel(w.Wk) == 3 && w.Cap == Balance.WorkerCapUp + 1), "ajudantes no nivel 3, carga +1");
+        }
+
         // ------------------------------------------------------------------ bot e economia (BALANCE.md §24)
 
         static (Sim s, string log) Joga(Tuning t, float minutos, float workerSeg = 0f)

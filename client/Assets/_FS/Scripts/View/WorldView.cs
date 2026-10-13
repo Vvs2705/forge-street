@@ -105,12 +105,16 @@ namespace FS
         // Alturas do Tripo variam por modelo; iguala a razao da ART_BIBLE s4 (ferreiro 1,20 / ajudante 1,05 / guerreira 1,20 /
         // anao 0,95) medindo a altura em px de cada folha. Fator = altura_atual / altura_alvo, relativo ao ferreiro.
         // Mago fica em 1: de 60 graus a aba do chapeu esconde o corpo e a altura medida engana; goblin com a mochila (1,30 m) e cavaleiro com a pluma (1,55 m), como na ART_BIBLE s4.
-        static float CharScale(string n) => CharPpuMul * n switch
+        internal static float CharScale(string n) => CharPpuMul * n switch   // internal: o cartao do worker (MenuBar) usa a mesma escala da folha
         {
             "ajudante" => 1.19f, "guerreira" => 1.24f, "anao" => 1.08f, "elfa" => 1.03f, "goblin" => 1.11f, "cavaleiro" => 0.79f, "nobre" => 0.91f,
             // Lote 4 (coordenador 2026-10-08, ASSETS s9: (altura_m / 0,664) x (1,20 / alvo), reproduz os de cima +-0,01)
             "minerador" => 0.96f, "bardo" => 0.85f, "alquimista" => 0.99f, "monge" => 0.95f, "ladina" => 0.98f,
             "paladina" => 0.86f, "orc" => 0.76f, "barbaro" => 0.79f, "pirata" => 0.97f, "cacadora" => 0.93f,
+            // Lote 5A (raia ARTE TRIPO 2026-10-13, ASSETS s11: (altura_m / 0,664) x (1,20 / alvo)); os 4 clientes entram com os distritos
+            "oficial" => 1.02f, "balconista" => 1.20f, "almoxarife" => 1.18f, "mestre_obras" => 1.16f, "fundidor" => 1.02f,
+            "mensageiro" => 1.02f, "gerente" => 1.00f,
+            "campones" => 1.00f, "guarda_real" => 0.88f, "emissario" => 0.99f, "colecionador" => 0.86f,
             _ => 1f,
         };
         // m do mundo por celula de estacao. Com 1,65 a peca ocupava 0,9-1,24 m de largura e o corpo solido tem 1,3 m (FASE5): o
@@ -538,7 +542,8 @@ namespace FS
             if (s.Produces)
             {
                 v.InPile = Pile(v.Root, s.InItem, s.InCap, -1.05f);
-                v.OutPile = Pile(v.Root, s.OutItem, s.OutCap, 1.05f);
+                // B-CORE-04: a pilha de saida cresce com o almoxarife (Equipe.Saida); pre-aloca o teto
+                v.OutPile = Pile(v.Root, s.OutItem, (s.Kind == Kind.Furnace ? Balance.FurnaceOut : Balance.CrafterOut) + WorkerDefs.QmSaida, 1.05f);
                 v.PileScale = v.OutPile[0].transform.localScale;
                 // barra arredondada (capsula 9-fatias) com o icone do produto na ponta (P1-3)
                 v.BarBg = Capsule(v.Root, "BarraFundo", Art.ComAlfa(Art.Bg, 0.85f), 3, new Vector2(0f, BarY), BarW, BarH);
@@ -1086,10 +1091,11 @@ namespace FS
             RefreshRing(dt);
             while (_workers.Count < _sim.Workers.Count)
             {
-                _workers.Add(BuildCarrier(_sim.Workers[_workers.Count], Art.Worker, 0.52f, Balance.WorkerCapUp));
+                _workers.Add(BuildCarrier(_sim.Workers[_workers.Count], Art.Worker, 0.52f, Balance.WorkerCapUp + WorkerDefs.CargaMax));   // B-CORE-04: carga do nivel
                 if (Time.timeSinceLevelLoad > 1f) Poof(_sim.Workers[_workers.Count - 1].Pos, 1f);   // contratou agora (o save carrega sem poeira)
             }
             foreach (CarrierV v in _workers) RefreshCarrier(v, dt);
+            RefreshPostos(dt);
 
             RefreshClients(dt);
 
@@ -1616,6 +1622,73 @@ namespace FS
             v.Top = v.StackY - 0.03f + (y + prev * 0.5f) * fit;
             for (int i = 0; i < k; i++) v.Stack[i].transform.localPosition = new Vector3(0f, v.StackY - 0.03f + _pileY[i] * fit, 0f);
             for (; k < v.Stack.Length; k++) v.Stack[k].enabled = false;
+        }
+
+        // ------------------------------------------------------------------ workers de posto (B-CORE-04)
+
+        /// <summary>Worker da Equipe parado no posto (oficial, balconista, almoxarife, mestre de obras), com a folha da skin do WorkerDef (Lote 5A,
+        /// ASSETS s11; sem folha, disco na cor dos ajudantes com o aro do papel). Idle e, a cada PostoOlha s, um LookingAround.</summary>
+        sealed class PostoV { public int K; public Transform Root; public Body Body; public float T; }
+        readonly List<PostoV> _postos = new List<PostoV>();
+        const float PostoOlha = 6f;
+
+        /// <summary>
+        /// Onde o worker fica: o oficial atras da 1a bancada aberta da familia, a balconista na ponta direita do balcao (lado da oficina), o
+        /// almoxarife ao lado do deposito e o mestre de obras no meio da oficina. So visual: o Sim nao tem o corpo dele (ninguem esbarra).
+        /// ponytail: posto fixo por papel; conferir na foto (-equipe) e mover aqui.
+        /// </summary>
+        V2 Posto(WorkerDef d)
+        {
+            switch (d.Papel)
+            {
+                case WorkerRole.Smith:
+                    Station st = _sim.Stations.Find(x => x.Unlocked && x.Produces && x.Recipe.Station == d.Station);
+                    return st != null ? new V2(st.Pos.X, st.Pos.Y + 0.62f) : _sim.Counter.Pos;
+                case WorkerRole.Clerk: return new V2(_sim.Counter.Pos.X + _sim.Counter.Half.X - 0.35f, _sim.Counter.Pos.Y - 0.62f);
+                case WorkerRole.Quartermaster: return new V2(3.2f, 2.0f);
+                default: return new V2(6.0f, 7.5f);
+            }
+        }
+
+        void RefreshPostos(float dt)
+        {
+            Equipe e = _sim.Equipe;
+            for (int k = 0; k < e.Defs.Length; k++)
+            {
+                if (e.Defs[k].Papel == WorkerRole.Porter || e.Nivel(k) == 0 || _postos.Exists(p => p.K == k)) continue;
+                _postos.Add(BuildPosto(k));
+                if (Time.timeSinceLevelLoad > 1f) Poof(Posto(e.Defs[k]), 1f);   // contratou agora (o save carrega sem poeira)
+            }
+            foreach (PostoV p in _postos)
+            {
+                p.Root.localPosition = W(Posto(e.Defs[p.K]));   // o balcao alarga com as vagas
+                if (p.Body == null) continue;
+                p.T += dt;
+                float look = p.Body.Sheet.Length("LookingAround");
+                p.Body.Tick(look > 0f && p.T % PostoOlha > PostoOlha - look ? "LookingAround" : "Idle", dt, Vector2.zero);
+            }
+        }
+
+        PostoV BuildPosto(int k)
+        {
+            WorkerDef d = _sim.Equipe.Defs[k];
+            var p = new PostoV { K = k, Root = new GameObject("Worker " + d.Id).transform, T = k * 1.3f };   // fases diferentes: nao olham todos juntos
+            p.Root.SetParent(transform, false);
+            p.Root.localPosition = W(Posto(d));
+            if (SpriteSheet.TryGet(d.Skin, out SpriteSheet sh))
+            {
+                sh.Scale = CharScale(d.Skin);
+                Art.NewSprite(p.Root, "Sombra", Art.Disc(), new Color(0f, 0f, 0f, 0.3f), 5, Vector2.zero, new Vector2(0.5f, 0.2f));
+                p.Body = new Body { Sheet = sh, R = Art.NewSprite(p.Root, "Corpo", null, Color.white, 0, Vector2.zero, Vector2.one) };
+            }
+            else
+            {
+                int o = Depth(Posto(d).Y);
+                Art.NewSprite(p.Root, "Sombra", Art.Disc(), new Color(0f, 0f, 0f, 0.3f), 5, new Vector2(0.04f, -0.08f), Vector2.one * 0.52f);
+                Art.NewSprite(p.Root, "Corpo", Art.Disc(), Art.Worker, o, Vector2.zero, Vector2.one * 0.52f);
+                Art.NewSprite(p.Root, "Papel", Art.Ring(), Art.Accent, o + 1, Vector2.zero, Vector2.one * 0.52f);
+            }
+            return p;
         }
 
         // ------------------------------------------------------------------ juice (v0.5b): efeitos curtos, venda, seta da dica
