@@ -235,6 +235,12 @@ namespace FS
             { "aviso.compra", L("{0}!", "{0}!", "¡{0}!") },
             { "aviso.anuncio_off", L("Anúncio indisponível", "Ad unavailable", "Anuncio no disponible") },
             { "fx.velocidade", L("Velocidade {0}×!", "Speed {0}×!", "¡Velocidad {0}×!") },
+            // E-PLAT-02: avisos das recompensas novas ({0} no fim) e o "Trocar" do cartao da encomenda ({0} = quantas da proxima, com o icone dela)
+            { "aviso.cofre2x", L("Cofre dobrado! +{0}", "Vault doubled! +{0}", "¡Cofre duplicado! +{0}") },
+            { "aviso.bonus", L("Bônus na encomenda! +{0}", "Order bonus! +{0}", "¡Bono del pedido! +{0}") },
+            { "aviso.troca", L("Encomenda trocada!", "Order swapped!", "¡Pedido cambiado!") },
+            { "aviso.supply", L("Lingotes chegaram! +{0}", "Ingots delivered! +{0}", "¡Llegaron lingotes! +{0}") },
+            { "enc.troca", L("Trocar: {0}", "Swap: {0}", "Cambiar: {0}") },
 
             { "aviso.meta_pronta", L("Meta concluída!", "Goal complete!", "¡Meta cumplida!") },
             { "aviso.meta", L("Meta resgatada! +{0}", "Goal claimed! +{0}", "¡Meta reclamada! +{0}") },
@@ -290,6 +296,7 @@ namespace FS
             { "cofre.titulo", L("Bem-vindo de volta!", "Welcome back!", "¡Hola de nuevo!") },
             { "cofre.corpo", L("Seu cofre guardou isso pra você", "Your vault saved this for you", "Tu cofre guardó esto para ti") },
             { "cofre.pegar", L("PEGAR", "COLLECT", "RECOGER") },
+            { "cofre.dobrar", L("DOBRAR +{0}", "DOUBLE +{0}", "DUPLICAR +{0}") },   // E-PLAT-02: botao de anuncio do painel, com o que da ANTES de assistir
 
             // ---------- configuracoes ----------
             { "cfg.titulo", L("Configurações", "Settings", "Ajustes") },
@@ -334,6 +341,11 @@ namespace FS
             // ---------- anuncio simulado e -adtest (build de desenvolvimento) ----------
             { "ads.vip", L("VIP", "VIP", "VIP") },
             { "ads.velocidade", L("Velocidade", "Speed", "Velocidad") },
+            { "ads.cofre2x", L("Cofre 2×", "Vault 2×", "Cofre 2×") },   // E-PLAT-02: um "ads.<Id>" por placement do Tuning (LocTests)
+            { "ads.encomenda_bonus", L("Bônus da encomenda", "Order bonus", "Bono del pedido") },
+            { "ads.encomenda_troca", L("Trocar encomenda", "Swap order", "Cambiar pedido") },
+            { "ads.supply", L("Lingotes", "Ingots", "Lingotes") },
+            { "adtest.intersticial", L("Intersticial (sem recompensa)", "Interstitial (no reward)", "Intersticial (sin recompensa)") },
             { "adtest.titulo", L("Anúncio de teste", "Test ad", "Anuncio de prueba") },
             { "adtest.premio", L("Recompensa: {0} x1", "Reward: {0} x1", "Recompensa: {0} x1") },
             { "adtest.rodape", L("Simulado: nenhum anúncio real foi pedido nem exibido", "Simulated: no real ad was requested or shown",

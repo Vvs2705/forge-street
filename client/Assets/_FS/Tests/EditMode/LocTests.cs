@@ -58,7 +58,7 @@ namespace FS.Tests
             foreach (string id in Textos.EstacaoId) Tem("est." + id);
             foreach (Faixa f in Enum.GetValues(typeof(Faixa))) Tem("priv.faixa." + (int)f);
             foreach (string g in new[] { "m", "f", "mp", "fp" }) { Tem("art.o." + g); Tem("art.de." + g); }
-            foreach (string p in new[] { "vip", "velocidade" }) Tem("ads." + p);   // Ads.Vip, Ads.Velocidade (o anuncio simulado)
+            foreach (AdPlacementDef d in T0.Placements) Tem("ads." + d.Id);   // E-PLAT-02: cada placement do Tuning (o anuncio simulado)
             Assert.IsEmpty(faltam);
         }
 
@@ -173,6 +173,11 @@ namespace FS.Tests
                     int req = Upgrades.All[u].Requires;
                     if (req >= 0) Assert.LessOrEqual(Textos.Precisa(req).Length, 18, $"{i}: {Textos.Precisa(req)}");   // 1 linha de 22 px no botao
                 }
+                // E-PLAT-02: avisos (1 linha da pilula da dica) com numero grande; chip "Trocar" (~100 px) e o "Cofre 2x" (meio cartao)
+                foreach (string k in new[] { "aviso.cofre2x", "aviso.bonus", "aviso.supply" }) Assert.LessOrEqual(Loc.T(k, 99999).Length, Textos.DicaMax, $"{i}: {k}");
+                Assert.LessOrEqual(Loc.T("aviso.troca").Length, Textos.DicaMax, i.ToString());
+                Assert.LessOrEqual(Loc.T("enc.troca", 30).Length, 11, $"{i}: {Loc.T("enc.troca", 30)}");
+                Assert.LessOrEqual(Loc.T("cofre.dobrar", 99999).Length, 15, $"{i}: {Loc.T("cofre.dobrar", 99999)}");
                 for (long v = 1; v > 0 && v < long.MaxValue / 7; v *= 7) Assert.LessOrEqual(Textos.Ouro(v).Length, 8, $"{i}: {Textos.Ouro(v)}");
                 Assert.LessOrEqual(Textos.Ouro(long.MaxValue).Length, 8, i.ToString());
             }

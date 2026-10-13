@@ -20,6 +20,10 @@ namespace FS
         bool Loaded(string placement);
         /// <summary>Chama exatamente UM: onReward (assistiu ate o fim) ou onFail (sem anuncio, erro ou fechou antes). Thread principal.</summary>
         void Show(string placement, Action onReward, Action onFail);
+        /// <summary>E-PLAT-03: intersticial pronto. So existe com a flag Tuning.Interstitial ligada no Ads.Init (desligada: nada carrega).</summary>
+        bool InterstitialReady { get; }
+        /// <summary>E-PLAT-03: mostra o intersticial; `done` sempre, uma vez (mostrou e fechou, ou falhou). Thread principal.</summary>
+        void ShowInterstitial(Action done);
     }
 
     /// <summary>Evento da taxonomia (Documento Mestre s86/s87): nome, t = Sim.Time (s de jogo acumulados no save) e 2 parametros.
