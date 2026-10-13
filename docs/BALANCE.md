@@ -1533,3 +1533,18 @@ Perfil novo `AdWatcherE` (o AdWatcher assistindo também Supply e bônus, guloso
 | AdWatcherE | 8:04 | 25:42 | 31:18 | **51:36** | 58:07 | 25,7 | 17.755 | 6,7/6/4/13 (teto 30) |
 
 **Achado:** assistir tudo atrasa a produção completa em 7 min. Não é o teto diário (com `AnunciosTetoDia=99` a produção fica em 52:07). O bônus da encomenda (+50% de um prêmio de ~25–60 ouro no começo) vale menos que os 30 s de relógio do anúncio, e é o placement mais visto (13 de 30). Varredura de valores (3 partidas): Supply 180 s → 50:00; bônus +100% → 50:25; os dois → 49:23; Supply 300 s + bônus +100% → 48:29 — nenhum empata com o AdWatcher. **Decisão:** os valores ficam; o jogador vê o valor antes de assistir (chips "+N" e "DOBRAR +N"), e o Orders 2.0 (B-CORE-05) recalibra o bônus com piso em segundos de renda (meta: AdWatcherE não mais lento que o AdWatcher). Pisos do §3: 0% abaixo nos 5 perfis.
+
+## 25. E-PLAT-04/05: compras in-app (núcleo + loja falsa) e o Pacote do Mestre (2026-10-13)
+
+**Quem não compra: nada muda.** O `Sim` só ganhou o `Compras` (ledger e posse re-derivada do recibo) e as linhas `iap.*` no save, que só aparecem com compra; o bot não compra. econsim `--perfis Ideal,F2P,Slow,AdWatcher --minutos 60 --partidas 2 --anuncio-seg 30`: **CSV idêntico ao byte** ao da `main` d0d78f0 (SHA-256 `fd6d6f13…5dcb228` antes e depois); o resumo difere só na coluna s/partida (tempo de máquina).
+
+**Quem compra** (Pacote do Mestre, `docs/IAP.md` §1: Velocidade, Lingotes e Trocar sem o vídeo, com as mesmas recargas e teto): flag nova `--pacote 1` no econsim (Velocidade e Supply sem os 30 s do vídeo; VIP e bônus seguem pagando o tempo). Média de 3 partidas, anúncio = 30 s:
+
+| perfil | Esteira | Joalheria | Produção | Fachada | pisos do §3 abaixo |
+|---|---|---|---|---|---|
+| AdWatcher | 7:05 | 26:50 | 44:36 | 51:19 | 0% |
+| AdWatcher com o pacote | 6:35 | 24:50 | **41:06** | 47:19 | 0% (2a bigorna 2:09, Ajudante 2:36, Escudos 3:04) |
+| AdWatcherE | 8:04 | 31:18 | 51:36 | 58:07 | 0% |
+| AdWatcherE com o pacote | 7:04 | 27:58 | **46:36** | 53:07 | 0% |
+
+O pacote poupa o tempo dos vídeos (3,5–5 min na produção completa de 60 min) e não dá recurso que o F2P com anúncio não tenha: mesmos placements, recompensas, recarga e teto diário (30). Nenhum piso do §3 cai (o anúncio só abre depois da 1a melhoria, D6). Referência: AdWatcher com `--anuncio-seg 0` (VIP **e** Velocidade de graça, limite superior que o pacote não alcança) fecha a produção em 37:38 e fica até 8 s abaixo de 3 pisos; por isso o VIP ficou de fora do `sem_video` (revisar com a P3).
