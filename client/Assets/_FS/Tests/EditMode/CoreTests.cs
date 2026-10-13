@@ -24,6 +24,10 @@ namespace FS.Tests
         internal const string SaveV03 = "v=1\nt=4800\ngold=9000\nup=11111111111111111111110\npads=0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,750,\nstock=2,3,1,4\nsold=300,60,40,90\nms=2,2,2,2\nema=17\nsaved=900\nclaim=800\npx=12,9\n";
         // antes da Leva 11: parcial em 8 pads que viraram menu (slots 0, 6, 7, 8, 10, 11, 15, 16) e na Esteira (slot 9, continua pad)
         internal const string SaveAntesLeva11 = "v=1\nt=1500\ngold=1000\nup=0010000000000001100000000\npads=40,0,0,0,0,0,100,120,30,55,900,600,0,0,0,5000,8000,0,0,0,0,0,\npx=4.5,3.5\n";
+        // schema 2 (0.8, A-CORE-04): upgrades por ID; estoque, vendas e maos ainda por posicao do enum
+        internal const string SaveV08 = "v=2\nt=900\ngold=500\nups=bigorna2:120,ajudante1:200,escudos:300,mochila:350,ajudante2:400,ajudante3:500\n" +
+                                        "up=01111100000010000000000000000\nupp=\nst1=6,4,1,0.5,40\nst3=4,3,0,0,30\nst5=2,1,0,0,5\nstock=3,1,0,0\nsold=40,8,0,0\nms=2,0,0,0\n" +
+                                        "ema=4.5\nsaved=1000\nclaim=900\nm=19,48,600,0,3,2,4,10,6\npx=4.50,3.50\nhold=2,6,1,0,0,0\nwk=0:2,0,0,0,0,0;1:0,2,0,0,0,0;2:0,0,0,1,0,0\n";
 
         static void Run(Sim s, float seconds, float x = 0f, float y = 0f)
         {
@@ -1939,21 +1943,91 @@ namespace FS.Tests
             s.Player.Held[(int)Item.Ore] = 2; s.Player.Held[(int)Item.Ingot] = 6; s.Player.Held[(int)Item.Sword] = 1;
             s.Workers[0].Held[(int)Item.Ore] = 2; s.Workers[2].Held[(int)Item.Shield] = 1;
             string text = s.Save(10);
-            StringAssert.Contains("hold=2,6,1,0,0,0\n", text);
+            StringAssert.Contains("holds=minerio:2,lingote:6,espada:1\n", text);   // B-CORE-01: por ID de item (schema 3)
+            StringAssert.Contains("wks=0:minerio:2;1:;2:escudo:1\n", text);
+            StringAssert.Contains("hold=2,6,1,0,0,0\n", text);                     // espelho por posicao para o downgrade a 0.5
             StringAssert.Contains("wk=0:2,0,0,0,0,0;1:0,0,0,0,0,0;2:0,0,0,1,0,0\n", text);
             Sim b = Sim.Load(text);
             CollectionAssert.AreEqual(s.Player.Held, b.Player.Held, "pilha mista do ferreiro volta");
             for (int k = 0; k < 3; k++) CollectionAssert.AreEqual(s.Workers[k].Held, b.Workers[k].Held, $"ajudante {k}");
             Assert.AreEqual(text, b.Save(10), "save estavel");
             // lixo: acima do teto corta no teto; ajudante so com o 1o tipo valido para o papel
-            Sim g = Sim.Load(text.Replace("hold=2,6,1,0,0,0", "hold=99,-3,x,1").Replace("wk=0:2,0,0,0,0,0;1:0,0,0,0,0,0;", "wk=0:9,9,0,0,0,0;1:0,0,1,0,0,0;"));
+            Sim g = Sim.Load(text.Replace("holds=minerio:2,lingote:6,espada:1", "holds=minerio:99,lingote:-3,espada:x,escudo:1")
+                .Replace("wks=0:minerio:2;1:;", "wks=0:minerio:9,lingote:9;1:espada:1;"));
             CollectionAssert.AreEqual(new[] { Balance.PlayerCapUp, 0, 0, 1, 0, 0 }, g.Player.Held, "teto por tipo; negativo e texto viram 0");
             CollectionAssert.AreEqual(new[] { Balance.WorkerCap, 0, 0, 0, 0, 0 }, g.Workers[0].Held, "ajudante de minerio: um tipo, ate o teto");
             Assert.AreEqual(0, g.Workers[1].Count, "ajudante de lingote nao volta com espada");
-            Sim v050 = Sim.Load(text.Replace("wk=0:2,0,0,0,0,0;1:0,0,0,0,0,0;2:", "wk=2,0,0,0,0,0;0,0,0,0,0,0;"));
+            // schema 2 (0.8) com o wk= da 0.5.0, sem papel: o V2ParaV3 leva pela posicao do ajudante, como antes
+            string v2 = string.Join("\n", Array.FindAll(text.Split('\n'), l => !l.StartsWith("holds=") && !l.StartsWith("wks=") && !l.StartsWith("stocks=") && !l.StartsWith("solds=")))
+                .Replace("v=3\n", "v=2\n");
+            Sim v050 = Sim.Load(v2.Replace("wk=0:2,0,0,0,0,0;1:0,0,0,0,0,0;2:", "wk=2,0,0,0,0,0;0,0,0,0,0,0;"));
             for (int k = 0; k < 3; k++) CollectionAssert.AreEqual(s.Workers[k].Held, v050.Workers[k].Held, $"save da 0.5.0 (sem papel): ajudante {k} pela posicao");
+            CollectionAssert.AreEqual(s.Player.Held, v050.Player.Held, "hold= do schema 2");
             Sim old = Sim.Load("v=1\nt=600\ngold=190\nup=1111111100000000000000000\npx=4.5,3.5\n");
             Assert.IsTrue(old.Player.Count == 0 && old.Workers.TrueForAll(w => w.Count == 0), "save antigo sem hold=/wk=: maos vazias, como antes");
+        }
+
+        /// <summary>B-CORE-01: save do schema 2 (0.8: estoque, vendas e maos por posicao do enum) carrega igual pelo V2ParaV3 e regrava por ID.</summary>
+        [Test]
+        public void Save_Schema2_EstoqueVendasEMaosPorPosicao_MigraParaId()
+        {
+            Sim s = Sim.Load(SaveV08);
+            Assert.AreEqual((3, 1, 0, 0), (s.Stock[2], s.Stock[3], s.Stock[4], s.Stock[5]));
+            Assert.AreEqual((40, 8), (s.SoldItems[(int)Item.Sword], s.SoldItems[(int)Item.Shield]));
+            CollectionAssert.AreEqual(new[] { 2, 6, 1, 0, 0, 0 }, s.Player.Held);
+            CollectionAssert.AreEqual(new[] { 2, 0, 0, 0, 0, 0 }, s.Workers[0].Held);
+            CollectionAssert.AreEqual(new[] { 0, 2, 0, 0, 0, 0 }, s.Workers[1].Held);
+            CollectionAssert.AreEqual(new[] { 0, 0, 0, 1, 0, 0 }, s.Workers[2].Held);
+            Assert.AreEqual((6, 0), (s.UpgradesBought, s.UnknownIds));
+            string text = s.Save(1000);
+            StringAssert.StartsWith("v=3\n", text);
+            StringAssert.Contains("stocks=espada:3,escudo:1\n", text);
+            StringAssert.Contains("solds=espada:40,escudo:8\n", text);
+            StringAssert.Contains("holds=minerio:2,lingote:6,espada:1\n", text);
+            StringAssert.Contains("wks=0:minerio:2;1:lingote:2;2:escudo:1\n", text);
+            StringAssert.Contains("stock=3,1,0,0\n", text, "o espelho da 0.5 continua por posicao");
+            Assert.AreEqual(text, Sim.Load(text).Save(1000), "regravado por ID, estavel");
+        }
+
+        /// <summary>
+        /// B-CORE-01, aceite: produto de 2 insumos diferentes, so no teste, por injecao de conteudo. A familia ferramentas faz machado com 1 cabo
+        /// + 2 lingotes; o ferreiro deposita os dois na mesma boca (o 1o da receita primeiro), a bancada so comeca com a receita inteira e consome
+        /// cada insumo pela quantidade; sem lingote para o 2o machado ela espera. O save grava o 2o insumo e os itens novos por ID; o conteudo
+        /// padrao le o mesmo texto contando o ID que nao conhece.
+        /// </summary>
+        [Test]
+        public void Receita_DoisInsumos_MachadoDeCaboELingote()
+        {
+            Item cabo = (Item)6, machado = (Item)7;
+            ItemDef[] items = new List<ItemDef>(Items.All) { new ItemDef("cabo", "cabo", 2, false), new ItemDef("machado", "machado", 2, true) }.ToArray();
+            RecipeDef[] recipes = Array.ConvertAll(Recipes.All, r => r.Station == "ferramentas" ? new RecipeDef("ferramentas", Kind.Crafter, machado, t => 1f, (cabo, 1), (Item.Ingot, 2)) : r);
+            var s = new Sim(null, items, recipes);
+            s.Buy(Upgrade.Shields); s.Buy(Upgrade.Tools); s.Buy(Upgrade.PlayerCapacity);
+            Station b = s.ToolBench;
+            Assert.AreEqual((machado, 2), (b.OutItem, b.Ins.Length));
+            Assert.IsTrue(s.LineUnlocked(machado) && !s.LineUnlocked(Item.Tool) && s.IsProduct(machado) && !s.IsProduct(cabo), "a linha e o produto vem dos dados");
+            Hold(s, cabo, 2); s.Player.Held[(int)Item.Ingot] = 3;
+            StandAt(s, b.InAt, 1.1f);   // 5 entregas de 0,2 s
+            Assert.AreEqual((0, 0), (s.Player.Held[(int)cabo], s.Player.Held[(int)Item.Ingot]), "os dois insumos entram pela mesma boca");
+            Assert.IsTrue(b.Busy, "comecou com 1 cabo + 2 lingotes");
+            CollectionAssert.AreEqual(new[] { 1, 1 }, b.Ins, "consumiu cada insumo pela quantidade: sobrou 1 cabo e 1 lingote");
+            s.Player.Pos = new V2(4.5f, 3.5f);
+            Run(s, Tuning.Padrao.HammerTime0 + 0.2f);
+            Assert.AreEqual((1, 1), (b.Out, s.Crafted[(int)machado]));
+            Run(s, Tuning.Padrao.HammerTime0 + 0.2f);
+            Assert.AreEqual((1, false), (b.Out, b.Busy), "1 lingote nao fecha o 2o machado");
+            CollectionAssert.AreEqual(new[] { 1, 1 }, b.Ins);
+            Assert.AreEqual(69f, Tuning.Padrao.PatienceFor(machado, recipes), 1e-4f, "30 + 3 x (2 lingotes x 4 s + bancada 5 s); o cabo nao tem receita: 0");
+
+            s.Player.Held[(int)cabo] = 1;
+            string text = s.Save(1);
+            StringAssert.Contains("st6=1,1,0,0,1,1\n", text, "o 2o insumo vai no fim da linha da estacao");
+            StringAssert.Contains("holds=cabo:1\n", text);
+            Sim c = Sim.Load(text, null, null, items, recipes);
+            CollectionAssert.AreEqual(b.Ins, c.ToolBench.Ins, "os dois insumos voltam");
+            Assert.AreEqual((1, 0), (c.Player.Held[(int)cabo], c.UnknownIds));
+            Assert.AreEqual(text, c.Save(1), "save estavel");
+            Assert.AreEqual(1, Sim.Load(text).UnknownIds, "build sem o cabo: ID desconhecido conta, o resto carrega");
         }
 
         // ------------------------------------------------------------------ FASE8: VIP e velocidade por anuncio (docs/FASE8_VIP_VELOCIDADE.md)
