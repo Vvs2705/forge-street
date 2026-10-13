@@ -130,6 +130,7 @@ Trocar de build: `adb uninstall $P` (apaga o save do aparelho; o backup está em
 **G8. Vibração por importância** (A-AUD-22, DM §72)
 - **Fazer:** com Vibração ligada: (a) 2 min só vendendo espada e escudo; (b) comprar 1 melhoria; (c) comprar o que abre estação (2ª bigorna, Escudos) ou o Corredor; (d) servir um VIP; (e) entregar uma encomenda; (f) vender joias seguidas; (g) desligar Vibração em Configurações, comprar outra melhoria e reabrir o app.
 - **Medir:** na mão; prova com `adb shell dumpsys vibrator_manager > $G/vibra_<passo>.txt` depois de cada passo (lista as vibrações recentes por pacote; o formato muda por versão do Android: contar as entradas de `$P`).
+- **Antes:** desligar o "feedback de toque"/"vibração ao tocar" do Android (Configurações do sistema): o jogo tem de vibrar mesmo assim (no dumpsys: `Usage=MEDIA`, não `TOUCH`/`ignored_for_settings` — bug achado no POCO em 2026-10-12).
 - **PASS:** (a) nenhuma vibração; (b) curta (30 ms); (c) mais forte (60 ms); (d) e (e) média (40 ms); (f) fraca (20 ms), no máximo 1 a cada 1,5 s; (g) nenhuma vibração e a chave continua desligada ao reabrir.
 - **FAIL:** venda comum vibra, evento importante não vibra, vibra com a chave desligada, chave que não fica gravada.
 

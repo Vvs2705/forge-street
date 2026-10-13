@@ -449,9 +449,9 @@ namespace FS
         static int _musica = -1, _efeitos = -1, _vibra = -1, _lastAmp;   // cache: o Sfx.Play pergunta a cada som
         static float _last = -99f;
 #if UNITY_ANDROID && !UNITY_EDITOR
-        static AndroidJavaObject _vib;
-        static IntPtr _effect, _oneShot, _vibrate;   // classe VibrationEffect (ref global), createOneShot(JI) e Vibrator.vibrate(VibrationEffect)
-        static readonly jvalue[] _args1 = new jvalue[1], _args2 = new jvalue[2];   // sem alocacao por pulso
+        static AndroidJavaObject _vib, _attrs;
+        static IntPtr _effect, _oneShot, _vibrate;   // classe VibrationEffect (ref global), createOneShot(JI) e Vibrator.vibrate(VibrationEffect, AudioAttributes)
+        static readonly jvalue[] _args2 = new jvalue[2], _argsV = new jvalue[2];   // sem alocacao por pulso
         static bool _quebrou;
 #endif
 
@@ -507,14 +507,22 @@ namespace FS
                     AndroidJNI.DeleteLocalRef(cls);
                     _oneShot = AndroidJNI.GetStaticMethodID(_effect, "createOneShot", "(JI)Landroid/os/VibrationEffect;");
                     if (JavaFalhou()) return;
-                    _vibrate = AndroidJNI.GetMethodID(_vib.GetRawClass(), "vibrate", "(Landroid/os/VibrationEffect;)V");
+                    // POCO 2026-10-12: sem atributos o Android 12+ classifica o pulso curto como TOQUE e o descarta com o "feedback de toque"
+                    // do sistema desligado (dumpsys vibrator_manager: Usage=TOUCH, ignored_for_settings). USAGE_GAME (API 26) vira USAGE_MEDIA.
+                    using (var b = new AndroidJavaObject("android.media.AudioAttributes$Builder"))
+                    {
+                        b.Call<AndroidJavaObject>("setUsage", 14).Dispose();   // AudioAttributes.USAGE_GAME
+                        _attrs = b.Call<AndroidJavaObject>("build");
+                    }
+                    _vibrate = AndroidJNI.GetMethodID(_vib.GetRawClass(), "vibrate", "(Landroid/os/VibrationEffect;Landroid/media/AudioAttributes;)V");
                     if (JavaFalhou()) return;
+                    _argsV[1].l = _attrs.GetRawObject();
                 }
                 _args2[0].j = ms; _args2[1].i = Mathf.Clamp(amp, 1, 255);
                 IntPtr fx = AndroidJNI.CallStaticObjectMethod(_effect, _oneShot, _args2);
                 if (JavaFalhou()) return;
-                _args1[0].l = fx;
-                AndroidJNI.CallVoidMethod(_vib.GetRawObject(), _vibrate, _args1);
+                _argsV[0].l = fx;
+                AndroidJNI.CallVoidMethod(_vib.GetRawObject(), _vibrate, _argsV);
                 AndroidJNI.DeleteLocalRef(fx);
                 JavaFalhou();
             }
