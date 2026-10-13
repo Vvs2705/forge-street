@@ -222,6 +222,8 @@ namespace FS
                 _ => null,
             };
             if (art != null && Art.Icon(art, "icone") is Sprite s) return (s, Color.white);
+            UpgradeDef d = Upgrades.All[(int)u];
+            if (d.Meta) return ItemIcon(Array.Find(Recipes.All, r => r.Station == d.Station).Output);   // B-CORE-03: nivel de estacao = o produto da familia
             return u switch
             {
                 Upgrade.FurnaceSpeed1 or Upgrade.FurnaceSpeed2 => ItemIcon(Item.Ingot),
@@ -280,11 +282,12 @@ namespace FS
             _badgeText.text = ready.ToString();
         }
 
-        /// <summary>Visual do estado, so quando ele muda. Comprado some; travado esmaece e troca o preco por "Precisa: X".</summary>
+        /// <summary>Visual do estado, so quando ele muda. Comprado e oculto (nivel de estacao antes da revelacao) somem; travado esmaece e troca o
+        /// preco por "Precisa: X".</summary>
         static void Mostra(Card c, Cartao e)
         {
             c.Estado = e;
-            bool on = e != Cartao.Comprado;
+            bool on = e != Cartao.Comprado && e != Cartao.Oculto;
             if (c.Go.activeSelf != on) c.Go.SetActive(on);
             if (!on) return;
             bool can = e == Cartao.Disponivel, locked = e == Cartao.Travado, poor = e == Cartao.SemOuro;
@@ -313,7 +316,7 @@ namespace FS
             float k = 1f + Breath * Mathf.Abs(Mathf.Sin(Captura.Agora * Mathf.PI * 2f));
             foreach (Card c in _cards)
             {
-                if (c.Estado == Cartao.Comprado || (int)c.Estado < 0) continue;
+                if (c.Estado == Cartao.Comprado || c.Estado == Cartao.Oculto || (int)c.Estado < 0) continue;
                 bool d = c.Toque.Apertado;
                 if (d != c.Down)
                 {

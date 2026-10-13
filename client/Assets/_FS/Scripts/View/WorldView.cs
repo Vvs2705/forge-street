@@ -39,6 +39,8 @@ namespace FS
             public Vector3 PileScale; public float ItemPopT = -1f;
             public StationView Forno;   // A-ART-06: os 6 estados da fornalha (StationView)
             public StationView Bancada; // A-ART-07: martelo no compasso da bigorna/bancada (StationView)
+            // B-CORE-03: brilho de cada peca (Fina = estrela de 4 pontas prata, Superior = estrela de 5 pontas ouro), barra do acumulador e "Fina em 7"
+            public SpriteRenderer[] OutGlint, StockGlint; public SpriteRenderer QBarBg, QBarFill; public Text QLabel; public float QT;
         }
         /// <summary>Placa de obra: fundo escuro, enchimento de ouro, borda tracejada, icone do que constroi; preco (moeda + valor) e nome na HUD.</summary>
         sealed class PadV
@@ -218,6 +220,12 @@ namespace FS
         // P1-5: "MAX" vermelho em italico com contorno escuro sobre a pilha, enquanto o ferreiro insiste e 0,8 s depois
         const float MaxHold = 0.8f;
         static readonly Color MaxC = Art.Hex(0xFF2D2D);
+        // B-CORE-03 (GDD §18: Fina = brilho prata, Superior = dourado; cor + forma): estrela de 4 pontas prata de 0,2 m ou de 5 pontas ouro de
+        // 0,26 m no canto da peca, piscando. Barra do acumulador (0,07 m) logo abaixo da de progresso; "Fina em 7" logo abaixo dela (o nome da
+        // estacao desce), so perto: o toque nela (360 x 64 px, pega a barra) abre o QualityBreakdown. Anel do golpe de 170 px 1,6 m acima da
+        // bancada, so com o ferreiro parado na boca dela.
+        internal static readonly Color Silver = Art.Hex(0xDDE6F2);
+        const float GlintFine = 0.2f, GlintSup = 0.26f, QBarY = BarY - 0.14f, QBarH = 0.07f, QLabelY = BarY - 0.36f, NameQY = BarY - 0.62f, RingY = 1.6f, RingPx = 170f;
         // v0.6d (revisao de UX, px na largura 1080 = 94,7 px/m): seta da dica de ~80 px quicando 12 px a 1,5 Hz; placa creme com borda
         // verde e pulso 1,05 quando da para pagar, preco salmao quando nao da; rotulos de 30 px com contorno #2A1E14 de 3 px
         const float ArrowS = 0.95f, ArrowY = 1.5f, ArrowBob = 0.127f, SaleMerge = 0.4f;
@@ -252,7 +260,7 @@ namespace FS
         static readonly Item[] StandOrder = { Item.Sword, Item.Shield, Item.Sword, Item.Tool, Item.Shield, Item.Sword, Item.Tool, Item.Shield };
         static readonly string[] StandPieces = { "balcao_ponta_esq", "balcao_meio", "balcao_escudos", "balcao_ferramentas", "balcao_ponta_dir" };
         bool _hasStand; Transform _stand; int _standKey = -1; float _standPop = -1f;
-        readonly List<(Item It, SpriteRenderer R)> _standStock = new List<(Item, SpriteRenderer)>();
+        readonly List<(Item It, SpriteRenderer R, SpriteRenderer G)> _standStock = new List<(Item, SpriteRenderer, SpriteRenderer)>();   // G: brilho (B-CORE-03)
         readonly int[] _shown = new int[6];
         readonly List<Floater> _floaters = new List<Floater>();
         readonly List<LuxV> _lux = new List<LuxV>();
@@ -261,6 +269,7 @@ namespace FS
         Transform _arrow; bool _hintOn; V2 _hintAt;   // seta da dica (ShowHint)
         int _fxLive;                                  // efeitos vivos (TickFx), para o teto dos ambientes
         Text _max; float _maxT, _maxAge;              // "MAX" sobre a pilha do ferreiro (RefreshMax)
+        RectTransform _ring; Image _ringOut, _ringTarget; float _ringT; Station _ringAt;   // B-CORE-03: anel do golpe (RefreshRing)
         Sprite _coin, _crown;
         ClientV _vipWait;
         EsteiraView _esteira;   // B-ART-08: faixa, lingotes em transito, clac e particulas
@@ -315,6 +324,54 @@ namespace FS
             Art.NewSprite(_arrow, "Contorno", Art.Arrow(true), Edge, FxOrder - 2, Vector2.zero, Vector2.one * ArrowS);
             Art.NewSprite(_arrow, "Seta", Art.Arrow(false), Art.Accent, FxOrder - 1, Vector2.zero, Vector2.one * ArrowS);
             _arrow.gameObject.SetActive(false);
+            BuildRing();
+        }
+
+        /// <summary>
+        /// B-CORE-03: anel do golpe de mestre na HUD (rotulos), num lugar fixo acima da bancada: alvo de ouro parado, anel branco fechando sobre
+        /// ele (QualidadeView.Escala), martelo no meio e "GOLPE" embaixo. Na janela do acerto o anel fica verde e o alvo acende. O toque e' do
+        /// Game (NoAnel/AcertoAgora), por fora do joystick.
+        /// </summary>
+        void BuildRing()
+        {
+            _ring = Art.Node(_labels, "AnelGolpe", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+            _ring.sizeDelta = Vector2.one * RingPx;
+            Image fundo = Art.Node(_ring, "Fundo", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            fundo.sprite = Art.Disc(); fundo.color = Art.ComAlfa(Art.HudFace, 0.55f); fundo.raycastTarget = false;
+            _ringTarget = Art.Node(_ring, "Alvo", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            _ringTarget.sprite = Art.Ring(); _ringTarget.color = Art.Gold; _ringTarget.raycastTarget = false;
+            _ringOut = Art.Node(_ring, "Fecha", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            _ringOut.sprite = Art.Ring(); _ringOut.raycastTarget = false;
+            Image ham = Art.Node(_ring, "Martelo", new Vector2(0.22f, 0.22f), new Vector2(0.78f, 0.78f)).gameObject.AddComponent<Image>();
+            Sprite hs = Art.Icon("melhoria_martelo", "icone");
+            ham.sprite = hs != null ? hs : Art.Star(); ham.color = hs != null ? Color.white : Art.Accent; ham.preserveAspect = true; ham.raycastTarget = false;
+            Text t = Art.Outlined(Art.NewText(_ring, "Nome", 30, new Vector2(0f, -0.3f), new Vector2(1f, 0f)), 2.5f, Edge);
+            t.text = Loc.T("golpe.nome"); t.fontStyle = FontStyle.Bold; t.color = Art.Accent; t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _ring.gameObject.SetActive(false);
+        }
+
+        /// <summary>B-CORE-03: brilho por peca de uma pilha ou estoque, ao lado de cada item (desligado ate a peca ser Fina ou Superior).</summary>
+        static SpriteRenderer[] Glints(Transform root, SpriteRenderer[] items, int order)
+        {
+            var g = new SpriteRenderer[items.Length];
+            for (int i = 0; i < items.Length; i++)
+            {
+                g[i] = Art.NewSprite(root, "Brilho", Art.Sparkle(), Silver, order, (Vector2)items[i].transform.localPosition + new Vector2(0.11f, 0.07f), Vector2.one * GlintFine);
+                g[i].enabled = false;
+            }
+            return g;
+        }
+
+        /// <summary>Liga o brilho no nivel `l` (forma e cor), piscando 1 -> 1,2 -> 1 (cada peca na sua fase).</summary>
+        static void Glint(SpriteRenderer g, Quality l, int i)
+        {
+            bool on = l > Quality.Normal;
+            if (g.enabled != on) g.enabled = on;
+            if (!on) return;
+            bool sup = l == Quality.Superior;
+            g.sprite = sup ? Art.Star() : Art.Sparkle();
+            g.color = sup ? SparkA : Silver;
+            g.transform.localScale = Vector3.one * ((sup ? GlintSup : GlintFine) * (1.1f + 0.1f * Mathf.Sin(Time.time * 5f + i * 1.7f)));
         }
 
         // ------------------------------------------------------------------ construcao
@@ -488,6 +545,15 @@ namespace FS
                 v.BarFill = Capsule(v.Root, "Barra", Art.Accent, 4, new Vector2(0f, BarY), BarH - 0.05f, BarH - 0.05f);
                 v.BarIcon = Art.NewSprite(v.Root, "BarraIcone", null, Color.white, 5, new Vector2(BarW / 2f + 0.1f, BarY + 0.02f), Vector2.one);
                 Art.PaintItem(v.BarIcon, s.OutItem, true, 0.34f);
+                if (_sim.IsProduct(s.OutItem))   // B-CORE-03: brilho das pecas, barra do acumulador e "Fina em 7" (ligados na revelacao)
+                {
+                    v.OutGlint = Glints(v.Root, v.OutPile, 7);
+                    v.QBarBg = Capsule(v.Root, "QualidadeFundo", Art.ComAlfa(Art.Bg, 0.85f), 3, new Vector2(0f, QBarY), BarW, QBarH);
+                    v.QBarFill = Capsule(v.Root, "Qualidade", Silver, 4, new Vector2(0f, QBarY), QBarH, QBarH);
+                    v.QLabel = Art.Outlined(Art.FreeText(_labels, "Qualidade", 26, new Vector2(360f, 64f)), 2.5f, Edge);
+                    v.QLabel.fontStyle = FontStyle.Bold;
+                    v.QBarBg.enabled = v.QBarFill.enabled = v.QLabel.enabled = false;
+                }
             }
             if (s.Kind == Kind.Furnace)   // A-ART-06: luz, boca, fumaca e os 6 estados na StationView; aqui so o fole do upgrade (o simples apaga quando chega o duplo)
             {
@@ -515,6 +581,7 @@ namespace FS
                         Art.PaintItem(v.Stock[p * 6 + i], item, false, 0.25f);
                         v.Stock[p * 6 + i].enabled = false;
                     }
+                v.StockGlint = Glints(v.Root, v.Stock, 5);   // B-CORE-03
             }
             v.Root.gameObject.SetActive(s.Unlocked);
             return v;
@@ -1016,6 +1083,7 @@ namespace FS
             if (_sim.UpgradesBought != _bought) { _bought = _sim.UpgradesBought; Cheer(); }   // comprou upgrade
             RefreshCarrier(_player, dt);
             RefreshMax(dt);
+            RefreshRing(dt);
             while (_workers.Count < _sim.Workers.Count)
             {
                 _workers.Add(BuildCarrier(_sim.Workers[_workers.Count], Art.Worker, 0.52f, Balance.WorkerCapUp));
@@ -1211,6 +1279,7 @@ namespace FS
                 v.Label.color = Art.ComAlfa(Art.Ink, 0.95f * la);
                 // quem produz: nome embaixo da barra (em cima batia no preco da placa da Esteira, a 2 m da Bigorna); balcao: abaixo do varal
                 float labelY = s.Produces ? BarY - 0.3f : s == _sim.Counter ? 0.9f : v.Baked ? 1.35f : 0.95f;
+                if (v.QBarBg != null && _sim.QualityRevealed) labelY = NameQY;   // B-CORE-03: o "Fina em 7" fica entre a barra e o nome
                 PlaceLabel(v.Label, W(s.Pos) + new Vector3(0f, labelY, 0f), Vector2.zero);
             }
             if (s.Produces)
@@ -1232,7 +1301,10 @@ namespace FS
                     v.OutPile[i].enabled = i < s.Out;
                     v.OutPile[i].color = blocked ? Color.Lerp(Art.ItemTint(s.OutItem), Art.Bad, 0.5f * pulse) : Art.ItemTint(s.OutItem);
                     if (popping) v.OutPile[i].transform.localScale = i == pop ? v.PileScale * ps : v.PileScale;
+                    // B-CORE-03: a melhor fica no topo da pilha (e' a que sai primeiro)
+                    if (v.OutGlint != null) Glint(v.OutGlint[i], i < s.Out ? QualidadeView.Nivel(s.Out - 1 - i, s.OutQ) : Quality.Normal, i);
                 }
+                if (v.QBarBg != null) RefreshQuality(v, la, dt);
                 if (v.Forno != null) v.Forno.Refresh(dt, _sim.BoostLeft > 0f, pulse);   // A-ART-06: arte, luz, boca e efeitos da fornalha
                 else v.Bancada.Refresh(dt, false, pulse);   // A-ART-07: martelo, faiscas e som no compasso da peca
                 float p = s.Busy ? s.Progress : 0f;
@@ -1246,7 +1318,83 @@ namespace FS
             }
             if (s.Kind == Kind.Counter && v.Stock != null)
                 for (int p = 0; p < v.StockItems.Length; p++)
-                    for (int i = 0; i < 6; i++) v.Stock[p * 6 + i].enabled = i < _sim.Stock[(int)v.StockItems[p]];
+                    for (int i = 0; i < 6; i++)
+                    {
+                        int it = (int)v.StockItems[p];
+                        v.Stock[p * 6 + i].enabled = i < _sim.Stock[it];
+                        Glint(v.StockGlint[p * 6 + i], i < _sim.Stock[it] ? QualidadeView.Nivel(i, _sim.StockQ[it]) : Quality.Normal, i);   // B-CORE-03
+                    }
+        }
+
+        /// <summary>
+        /// B-CORE-03 (GDD §19), da revelacao (Ferramentas) em diante: barra do acumulador (prata enchendo ate a proxima Fina; golpe valendo =
+        /// ouro e cheia) e, perto do ferreiro, "Fina em 7" (4x/s) abaixo do nome, que o toque abre no QualityBreakdown (Game).
+        /// </summary>
+        void RefreshQuality(StationV v, float la, float dt)
+        {
+            Station s = v.S;
+            bool rev = _sim.QualityRevealed;
+            v.QBarBg.enabled = rev;
+            float f = s.Strike ? 1f : s.QAcc / 100f, fw = Mathf.Lerp(QBarH, BarW, f);
+            v.QBarFill.enabled = rev && f > 0.01f;
+            if (v.QBarFill.enabled)
+            {
+                v.QBarFill.size = new Vector2(fw / QBarH, 1f);
+                v.QBarFill.transform.localPosition = new Vector3(-BarW / 2f + fw / 2f, QBarY, 0f);
+                v.QBarFill.color = s.Strike ? SparkA : Silver;
+            }
+            v.QLabel.enabled = rev && la > 0.01f;
+            if (!v.QLabel.enabled) { v.QT = 0f; return; }
+            if ((v.QT -= dt) <= 0f) { v.QT = 0.25f; v.QLabel.text = Textos.Barra(_sim, s); }
+            v.QLabel.color = Art.ComAlfa(s.Strike ? SparkA : Silver, la);
+            PlaceLabel(v.QLabel, W(s.Pos) + new Vector3(0f, QLabelY, 0f), Vector2.zero);
+        }
+
+        /// <summary>B-CORE-03: anel do golpe acima da bancada onde o ferreiro pode golpear (Sim.StrikeStation); a volta recomeca quando ele aparece
+        /// ou muda de bancada.</summary>
+        void RefreshRing(float dt)
+        {
+            Station s = _sim.StrikeStation;
+            if (s != _ringAt) { _ringAt = s; _ringT = 0f; }
+            bool on = s != null;
+            if (_ring.gameObject.activeSelf != on) _ring.gameObject.SetActive(on);
+            if (!on) return;
+            _ringT += dt;
+            PlaceRect(_ring, W(s.Pos) + new Vector3(0f, RingY, 0f));
+            _ringOut.rectTransform.localScale = Vector3.one * QualidadeView.Escala(_ringT);
+            bool hit = AcertoAgora;
+            _ringOut.color = hit ? Art.Good : Color.white;
+            _ringTarget.color = hit ? SparkA : Art.Gold;
+        }
+
+        /// <summary>O ponto de tela (px) cai no anel do golpe visivel.</summary>
+        public bool NoAnel(Vector2 px) => _ring.gameObject.activeSelf && RectTransformUtility.RectangleContainsScreenPoint(_ring, px, null);
+
+        /// <summary>Um toque agora acertaria a janela do anel (Tuning.GolpeJanela).</summary>
+        public bool AcertoAgora => QualidadeView.Acerto(_ringT, _sim.T.GolpeJanela);
+
+        /// <summary>Estacao cuja "Fina em N" visivel contem o ponto de tela (px), ou null.</summary>
+        public Station BarraEm(Vector2 px)
+        {
+            foreach (StationV v in _stations)
+                if (v.QLabel != null && v.QLabel.enabled && RectTransformUtility.RectangleContainsScreenPoint(v.QLabel.rectTransform, px, null)) return v.S;
+            return null;
+        }
+
+        /// <summary>Ev.Graded (Game): peca Fina ou Superior saiu na pilha da estacao: "Fina!" prata ou "Superior!" ouro e 5 brilhos na pilha.</summary>
+        public void Graded(int station, Quality l)
+        {
+            Station s = _sim.Stations[station];
+            bool sup = l == Quality.Superior;
+            var at = new V2(s.Pos.X + 1.05f, s.Pos.Y - 0.2f);
+            Float(at, Loc.T("fx.qualidade", Textos.Qualidade(l)), sup ? SparkA : Silver, sup ? 40 : 34);
+            Vector3 c = W(at);
+            for (int i = 0; i < 5; i++)
+            {
+                float a = i * Mathf.PI * 0.4f + 0.3f;
+                Vector3 d = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 0.55f;
+                Spawn(sup ? Art.Star() : Art.Sparkle(), sup ? SparkA : Silver, c, c + d * 0.6f, c + d, 0.45f, sup ? 0.3f : 0.24f, 0.05f, true, 180f);
+            }
         }
 
         /// <summary>Ev.Crafted (Game): o item novo da pilha de saida da pop 0 -> 1,15 -> 1 em 0,2 s (P2-1); na bigorna/bancada, o golpe
@@ -1287,7 +1435,12 @@ namespace FS
             int n = _sim.QueueCap, key = n * 4 + (_sim.LineUnlocked(Item.Shield) ? 1 : 0) + (_sim.LineUnlocked(Item.Tool) ? 2 : 0);
             if (key != _standKey) { _standPop = _standKey < 0 ? -1f : 0f; _standKey = key; BuildStand(n); }
             System.Array.Clear(_shown, 0, _shown.Length);
-            foreach ((Item it, SpriteRenderer r) in _standStock) r.enabled = _shown[(int)it]++ < _sim.Stock[(int)it];   // enche da esquerda para a direita
+            foreach ((Item it, SpriteRenderer r, SpriteRenderer g) in _standStock)   // enche da esquerda para a direita; B-CORE-03: a melhor na frente
+            {
+                int k = _shown[(int)it]++;
+                r.enabled = k < _sim.Stock[(int)it];
+                Glint(g, r.enabled ? QualidadeView.Nivel(k, _sim.StockQ[(int)it]) : Quality.Normal, k);
+            }
             if (_standPop < 0f) return;
             _standPop += dt;
             float t = Mathf.Clamp01(_standPop / PopTime);
@@ -1312,7 +1465,12 @@ namespace FS
                 string em = StandItemArt(it);
                 Sprite item = StaticArt(em, RealCell(em));
                 for (int k = 0; k + 1 < enc.Length; k += 2)
-                    _standStock.Add((it, Art.NewSprite(_stand, "Estoque", item, Color.white, order + 1, new Vector2(x + enc[k], enc[k + 1]), Vector2.one)));
+                {
+                    var at = new Vector2(x + enc[k], enc[k + 1]);
+                    SpriteRenderer g = Art.NewSprite(_stand, "Brilho", Art.Sparkle(), Silver, order + 2, at + new Vector2(0.09f, 0.28f), Vector2.one * GlintFine);   // B-CORE-03
+                    g.enabled = false;
+                    _standStock.Add((it, Art.NewSprite(_stand, "Estoque", item, Color.white, order + 1, at, Vector2.one), g));
+                }
             }
             StandPiece("balcao_ponta_dir", x - Balance.SlotStep / 2f + Balance.CounterEnd / 2f, order);
         }

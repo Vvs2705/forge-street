@@ -173,6 +173,27 @@ namespace FS
             { "up.balcao8.nome", L("Balcão 8 vagas", "Counter 8", "Mostrador 8") },
             { "up.balcao8.curto", L("Balcão 8", "Counter 8", "8 puestos") },
             { "up.balcao8.desc", L("Atende 8 clientes ao mesmo tempo", "Serves 8 customers at once", "Atiende a 8 clientes a la vez") },
+            // B-CORE-03: niveis de estacao ("Familia II/III"); .curto = o "Precisa: X" do nivel III (o II fica oculto ate a revelacao)
+            { "up.bigornas_nivel2.nome", L("Bigornas II", "Anvils II", "Yunques II") },
+            { "up.bigornas_nivel2.curto", L("Nível II", "Level II", "Nivel II") },
+            { "up.bigornas_nivel2.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.bigornas_nivel3.nome", L("Bigornas III", "Anvils III", "Yunques III") },
+            { "up.bigornas_nivel3.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.escudos_nivel2.nome", L("Escudos II", "Shields II", "Escudos II") },
+            { "up.escudos_nivel2.curto", L("Nível II", "Level II", "Nivel II") },
+            { "up.escudos_nivel2.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.escudos_nivel3.nome", L("Escudos III", "Shields III", "Escudos III") },
+            { "up.escudos_nivel3.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.ferramentas_nivel2.nome", L("Ferramentas II", "Tools II", "Herramientas II") },
+            { "up.ferramentas_nivel2.curto", L("Nível II", "Level II", "Nivel II") },
+            { "up.ferramentas_nivel2.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.ferramentas_nivel3.nome", L("Ferramentas III", "Tools III", "Herramientas III") },
+            { "up.ferramentas_nivel3.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.joalheria_nivel2.nome", L("Joalheria II", "Jewelry II", "Joyería II") },
+            { "up.joalheria_nivel2.curto", L("Nível II", "Level II", "Nivel II") },
+            { "up.joalheria_nivel2.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.joalheria_nivel3.nome", L("Joalheria III", "Jewelry III", "Joyería III") },
+            { "up.joalheria_nivel3.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
 
             // ---------- dica da HUD (1 linha, <= Textos.DicaMax = 26 em todo idioma; LocTests) ----------
             { "dica.minerio", L("Pegue minério no depósito", "Grab ore at the deposit", "Toma mineral del depósito") },
@@ -224,6 +245,32 @@ namespace FS
             { "card.ad.vagas", L("{0} → {1} vagas", "{0} → {1} slots", "{0} → {1} puestos") },
             { "card.falta", L("Falta {0}|Faltam {0}", "Need {0}", "Falta {0}|Faltan {0}") },
             { "card.precisa", L("Precisa: {0}", "Needs {0}", "Requiere {0}") },
+            // B-CORE-03 (GDD §19): nivel de estacao. {0} = pontos por nivel ("0,15"), {1} = velocidade ("5%"); depois: 1 em N sai Fina
+            { "card.qualidade", L("Qualidade +{0} · vel. +{1}", "Quality +{0} · speed +{1}", "Calidad +{0} · vel. +{1}") },
+            { "card.ad.fina", L("1 em {0} sai Fina", "1 in {0} is Fine", "1 de {0} sale Fina") },
+
+            // ---------- qualidade (B-CORE-03): niveis, barra da estacao (QualityBreakdown ao tocar) e golpe de mestre ----------
+            { "qual.0", L("Normal", "Normal", "Normal") },
+            { "qual.1", L("Fina", "Fine", "Fina") },
+            { "qual.2", L("Superior", "Superior", "Superior") },
+            { "qual.3", L("Obra-prima", "Masterwork", "Obra maestra") },
+            { "qual.em", L("{0} em {1}", "{0} in {1}", "{0} en {1}") },   // {0} = proximo nivel, {1} = pecas
+            { "qual.agora", L("Próxima: {0}!", "Next: {0}!", "¡Próxima: {0}!") },
+            { "qual.sempre", L("Sempre {0}", "Always {0}", "Siempre {0}") },
+            { "qual.so_normal", L("Só Normal", "Normal only", "Solo Normal") },
+            { "qual.golpe", L("Golpe! Próxima +1", "Strike! Next +1", "¡Golpe! Próxima +1") },
+            { "qual.titulo", L("{0}: qualidade", "{0}: quality", "{0}: calidad") },   // {0} = estacao
+            { "qual.fonte.0", L("Nível da estação", "Station level", "Nivel de la estación") },
+            { "qual.fonte.1", L("Oficial", "Smith", "Oficial") },
+            { "qual.fonte.2", L("Técnica", "Technique", "Técnica") },
+            { "qual.fonte.3", L("Material", "Material", "Material") },
+            { "qual.fonte.4", L("Bônus", "Bonus", "Bonificación") },
+            { "qual.linha", L("{0}: +{1}", "{0}: +{1}", "{0}: +{1}") },
+            { "qual.total", L("Total +{0} · {1}", "Total +{0} · {1}", "Total +{0} · {1}") },   // {1} = a barra ("Fina em 7")
+            { "golpe.nome", L("GOLPE", "STRIKE", "GOLPE") },
+            { "golpe.quase", L("Quase!", "Almost!", "¡Casi!") },
+            { "aviso.golpe", L("Golpe de mestre!", "Master strike!", "¡Golpe maestro!") },
+            { "fx.qualidade", L("{0}!", "{0}!", "¡{0}!") },
 
             // ---------- HUD, avisos e encomenda ----------
             { "menu.melhorias", L("Melhorias", "Upgrades", "Mejoras") },

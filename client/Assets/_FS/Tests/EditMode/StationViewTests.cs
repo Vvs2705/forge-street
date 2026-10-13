@@ -68,5 +68,30 @@ namespace FS.Tests
             }
             Assert.AreEqual(2, pecas);
         }
+
+        /// <summary>B-CORE-03 (FS-2): o anel de fora passa pelo alvo uma vez por volta; o toque acerta ate Tuning.GolpeJanela/2 (0,4 s) dali.</summary>
+        [Test]
+        public void AnelDoGolpe_JanelaDe08sEmTornoDoAlvo()
+        {
+            float c = QualidadeView.NoAlvo, j = Tuning.Padrao.GolpeJanela;
+            Assert.AreEqual(1f, QualidadeView.Escala(c), 1e-4f, "no alvo o anel de fora tem a escala do alvo");
+            Assert.IsTrue(QualidadeView.Acerto(c, j));
+            Assert.IsTrue(QualidadeView.Acerto(c - j / 2f + 0.01f, j));
+            Assert.IsTrue(QualidadeView.Acerto(c + j / 2f - 0.01f, j));
+            Assert.IsFalse(QualidadeView.Acerto(c - j / 2f - 0.05f, j), "cedo demais");
+            Assert.IsFalse(QualidadeView.Acerto(0.01f, j), "logo que aparece, longe do alvo");
+            Assert.IsTrue(QualidadeView.Acerto(c + QualidadeView.Ciclo, j), "toda volta");
+            Assert.AreEqual(QualidadeView.De, QualidadeView.Escala(0f), 1e-4f, "comeca aberto");
+        }
+
+        /// <summary>B-CORE-03: o brilho segue o lote, a melhor na ponta que sai primeiro (topo da pilha, frente do balcao).</summary>
+        [Test]
+        public void Brilho_AMelhorNaPontaQueSaiPrimeiro()
+        {
+            var q = new int[Sim.Graus];
+            q[(int)Quality.Fine] = 2; q[(int)Quality.Superior] = 1;
+            CollectionAssert.AreEqual(new[] { Quality.Superior, Quality.Fine, Quality.Fine, Quality.Normal },
+                new[] { QualidadeView.Nivel(0, q), QualidadeView.Nivel(1, q), QualidadeView.Nivel(2, q), QualidadeView.Nivel(3, q) });
+        }
     }
 }

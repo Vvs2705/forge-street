@@ -171,7 +171,8 @@ namespace FS.Tests
                     Assert.LessOrEqual(b.Length, 2 * 14, $"{i}: {b}");   // 2 linhas do cartao
                     Assert.LessOrEqual(Textos.AntesDepois(T0, u).Length, 16, $"{i}: {Textos.AntesDepois(T0, u)}");
                     int req = Upgrades.All[u].Requires;
-                    if (req >= 0) Assert.LessOrEqual(Textos.Precisa(req).Length, 18, $"{i}: {Textos.Precisa(req)}");   // 1 linha de 22 px no botao
+                    bool oculto = req >= 0 && Upgrades.All[u].Meta && !Upgrades.All[req].Meta;   // B-CORE-03: o nivel II nunca aparece travado (Cartao.Oculto)
+                    if (req >= 0 && !oculto) Assert.LessOrEqual(Textos.Precisa(req).Length, 18, $"{i}: {Textos.Precisa(req)}");   // 1 linha de 22 px no botao
                 }
                 for (long v = 1; v > 0 && v < long.MaxValue / 7; v *= 7) Assert.LessOrEqual(Textos.Ouro(v).Length, 8, $"{i}: {Textos.Ouro(v)}");
                 Assert.LessOrEqual(Textos.Ouro(long.MaxValue).Length, 8, i.ToString());

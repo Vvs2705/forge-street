@@ -31,6 +31,8 @@ namespace FS.Tests
             "fole", "bigorna2", "ajudante1", "escudos", "mochila", "ajudante2", "esteira", "fole_duplo", "botas", "ferramentas", "vitrine", "fornalha2",
             "ajudante3", "ajudantes_ageis", "martelo_veloz", "corredor", "joalheria", "joalheiro1", "lupa", "vitrine_joias", "fachada_nobre",
             "piso_oficina", "joalheria_real", "mineiro", "joalheiro2", "balcao5", "balcao6", "balcao7", "balcao8",
+            // B-CORE-03: niveis de estacao (Meta)
+            "bigornas_nivel2", "bigornas_nivel3", "escudos_nivel2", "escudos_nivel3", "ferramentas_nivel2", "ferramentas_nivel3", "joalheria_nivel2", "joalheria_nivel3",
         };
 
         [Test]
@@ -265,6 +267,30 @@ namespace FS.Tests
             Acusa(v, "boca: Bigorna (-1.00,9.50) fora das paredes");
             Acusa(v, "boca: Ferramentas (6.60,5.50) na zona do pad Conveyor");
             Acusa(v, "boca: Bigorna 2 (1.80,2.15) com a zona sobreposta a de Depósito");
+        }
+
+        /// <summary>B-CORE-03: preco por nivel crescente com Normal = 100% e Masterwork = 0 (nao vende); nivel de estacao com fonte conhecida
+        /// (familia com bancada de produto), no menu, sem ser luxo, e na cadeia da propria familia.</summary>
+        [Test]
+        public void Qualidade_PrecoForaDeOrdemMasterworkVendidaEFonteDesconhecida_Acusa()
+        {
+            var w = new Sim(new Tuning { QualidadePct = new[] { 90, 250, 150, 300 }, NivelEstacaoQ = 0 });
+            var v = new List<string>(ContentValidator.Qualidade(Upgrades.All, w));
+            Acusa(v, "qualidade: Normal a 90%");
+            Acusa(v, "qualidade: Superior a 150% nao sobe de Fine (250%)");
+            Acusa(v, "qualidade: Masterwork a 300% (nao vende: 0)");
+            Acusa(v, "qualidade: 0 pontos por nivel de estacao");
+            Acusa(new List<string>(ContentValidator.Qualidade(Upgrades.All, new Sim(new Tuning { QualidadePct = new[] { 100, 150 } }))), "qualidade: 2 precos para 4 niveis");
+
+            var a = Ups();
+            UpgradeDef d = Upgrades.All[(int)Upgrade.AnvilsLv2], d3 = Upgrades.All[(int)Upgrade.ShieldsLv3], t2 = Upgrades.All[(int)Upgrade.ToolsLv2];
+            a[(int)Upgrade.AnvilsLv2] = new UpgradeDef(d.Up, d.Id, d.Requires, d.Name, d.Desc, menu: true, station: "forja_runica");   // familia que nao existe
+            a[(int)Upgrade.ShieldsLv3] = new UpgradeDef(d3.Up, d3.Id, (int)Upgrade.ToolsLv2, d3.Name, d3.Desc, menu: true, station: "escudos");   // exige o nivel de outra familia
+            a[(int)Upgrade.ToolsLv2] = new UpgradeDef(t2.Up, t2.Id, t2.Requires, t2.Name, t2.Desc, luxury: true, station: "ferramentas");   // Meta fora do menu e luxo
+            v = ContentValidator.Validate(upgrades: a);
+            Acusa(v, "qualidade: AnvilsLv2 e' nivel de \"forja_runica\", familia sem bancada de produto (fonte desconhecida)");
+            Acusa(v, "qualidade: ShieldsLv3 fora da cadeia de niveis de \"escudos\"");
+            Acusa(v, "qualidade: ToolsLv2 (Meta) fora do menu ou marcado como luxo");
         }
 
         [Test]
