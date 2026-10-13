@@ -179,12 +179,15 @@ namespace FS.Tests
             Assert.IsFalse(s.MenuAvailable((int)Upgrade.AnvilsLv5), "o V exige o IV");
             Assert.IsFalse(s.MenuAvailable((int)Upgrade.ShieldsLv4), "escudos: outro projeto (bancada mestra)");
             Assert.IsTrue(s.TryBuyMenu(Upgrade.AnvilsLv4));
-            Assert.AreEqual(1000000L - 2000L, s.Gold, "V26: metade do §1.5");
+            Assert.AreEqual(1000000L - 800L, s.Gold, "IV = 1/5 do §1.5 (BALANCE.md §24)");
             Assert.IsTrue(s.TryBuyMenu(Upgrade.AnvilsLv5));
-            Assert.AreEqual(1000000L - 6500L, s.Gold);
+            Assert.AreEqual(1000000L - 2300L, s.Gold, "V = 1/6 do §1.5");
             Assert.AreEqual((5, 5, 60), (s.AnvilA.Level, s.AnvilB.Level, s.QualityPoints(s.AnvilA)), "bigornas no nivel V: q 0,60");
             Assert.AreEqual(t3 * 1.10f / 1.20f, s.AnvilA.Time, 1e-4f, "+5% de velocidade por nivel");
-            Assert.AreEqual((3, 4500L), (s.ShieldBench.Level, s.T.Cost(Upgrade.AnvilsLv5)));
+            Assert.AreEqual((3, 1500L), (s.ShieldBench.Level, s.T.Cost(Upgrade.AnvilsLv5)));
+            long total = 0;
+            foreach (Upgrade u in NiveisMestre) { total += s.T.Cost(u); Assert.Greater(s.T.Cost(u), s.T.Cost(Upgrades.All[(int)u].Requires), u + ": mais caro que o nivel anterior"); }
+            Assert.AreEqual(12035L, total);
             Assert.IsFalse(Upgrades.IsProduction((int)Upgrade.AnvilsLv4) || Upgrades.IsProduction((int)Upgrade.LongAnvil), "Meta (V14)");
         }
 
@@ -340,6 +343,39 @@ namespace FS.Tests
             Acusa(v, "blueprint: LongAnvil exige \"bp_sumiu\", que nao existe");
             Acusa(v, "blueprint bp_rec_espada_longa: Recipe \"espada_longa\" nao existe no jogo (ou nenhum upgrade pede o projeto)");
             Assert.IsEmpty(Valida(ProjetosDefs.All), "o conteudo real passa");
+        }
+
+        /// <summary>View (Textos, puro): o cartao IV-V fica oculto sem o projeto; o painel diz o que e', o que libera e de onde vem (com o progresso
+        /// do marco), sem chave faltando nos 3 idiomas.</summary>
+        [Test]
+        public void Textos_CartaoOcultoSemProjeto_EOPainel()
+        {
+            try
+            {
+                Loc.Atual = Idioma.Pt;
+                var s = new Sim { Gold = 100000 };
+                foreach (Upgrade u in new[] { Upgrade.Shields, Upgrade.Tools, Upgrade.AnvilsLv2, Upgrade.AnvilsLv3 }) s.Buy(u);
+                Assert.AreEqual(Cartao.Oculto, Textos.Estado(s, (int)Upgrade.AnvilsLv4), "sem o projeto");
+                s.Projetos.Ganha("bp_bigorna_mestra", BlueprintSourceKind.OrderBlueprint);
+                Assert.AreEqual((Cartao.Disponivel, Cartao.Travado), (Textos.Estado(s, (int)Upgrade.AnvilsLv4), Textos.Estado(s, (int)Upgrade.AnvilsLv5)));
+                s.SoldItems[(int)Item.Sword] = 37;
+                BlueprintDef D(string id) => ProjetosDefs.All[Idx(id)];
+                Assert.AreEqual(("Obra-prima: Primeira Lâmina", "Venda 100 espadas (37/100)"), (Textos.ProjetoNome(s, D("bp_mw_primeira_lamina")), Textos.ProjetoFonte(s, D("bp_mw_primeira_lamina"))));
+                Assert.AreEqual(("Mestre: escudos, ferramentas, joias", "Encomenda real nº 1 ou Produção completa"),
+                    (Textos.ProjetoNome(s, D("bp_bancada_mestra")), Textos.ProjetoFonte(s, D("bp_bancada_mestra"))));
+                Assert.AreEqual(("Receita: espada longa", "Libera a linha de espadas longas"), (Textos.ProjetoNome(s, D("bp_rec_espada_longa")), Textos.ProjetoLibera(s, D("bp_rec_espada_longa"))));
+                Assert.AreEqual(("Técnica: ferramentas", "+0,20 de qualidade na família"), (Textos.ProjetoNome(s, D("bp_tecnica_ferramenta")), Textos.ProjetoLibera(s, D("bp_tecnica_ferramenta"))));
+                foreach (Idioma i in new[] { Idioma.Pt, Idioma.En, Idioma.Es })
+                {
+                    Loc.Atual = i;
+                    foreach (BlueprintDef d in ProjetosDefs.All)
+                    {
+                        string t = Textos.ProjetoNome(s, d) + Textos.ProjetoLibera(s, d) + Textos.ProjetoFonte(s, d);
+                        StringAssert.DoesNotContain("[", t, $"{i}: {d.Id}");
+                    }
+                }
+            }
+            finally { Loc.Atual = Idioma.Pt; }
         }
 
         /// <summary>GDD §23 #8: nenhum produtivo exige projeto (a producao completa nunca fica presa a Blueprint, pago ou nao); o bot F2P chega aos 3

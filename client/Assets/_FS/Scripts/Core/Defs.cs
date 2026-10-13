@@ -264,9 +264,9 @@ namespace FS.Core
         public float NivelEstacaoVelocidade = 0.05f;            // +5% de velocidade da familia por nivel acima do 1
         // na ordem do enum (AnvilsLv2 .. JewelsLv3): METADE do §1.5 (500/1.500, 650/1.900, 500/1.500, 1.000/3.000). Com o §1.5 o retorno medido
         // dos 8 niveis foi 37 min (portao: <= 20) e a producao completa do F2P passou a 50 min; com a metade, 18 min e 47 min (BALANCE.md §23).
-        // B-CORE-07 (V26): os IV-V seguem na ordem do enum (AnvilsLv4 .. JewelsLv5), tambem a METADE do §1.5 (4.000/9.000, 5.000/11.000, 4.000/9.000,
-        // 8.000/18.000)
-        public int[] NivelEstacaoCusto = { 250, 750, 325, 950, 250, 750, 500, 1500, 2000, 4500, 2500, 5500, 2000, 4500, 4000, 9000 };
+        // B-CORE-07: os IV-V seguem na ordem do enum (AnvilsLv4 .. JewelsLv5). Com a metade do §1.5 (V26: 34.000) o retorno medido foi 104 min
+        // (portao: <= 40); IV = 1/5 e V = 1/6 do §1.5 (12.035; o IV ainda acima do III) da 34-39 min (BALANCE.md §24, revisar)
+        public int[] NivelEstacaoCusto = { 250, 750, 325, 950, 250, 750, 500, 1500, 800, 1500, 1000, 1835, 800, 1500, 1600, 3000 };
         public int BigornaLongaCusto = 6000;                    // B-CORE-07: linha Meta da espada longa (CONTEUDO_V1 §5.1)
         public int TecnicaQ = 20;                               // B-CORE-07: pontos de qualidade do Blueprint de tecnica da familia (ECONOMIA_WAVE_B §1.2)
         public float GolpeJanela = 0.8f, GolpeRecarga = 20f;    // golpe de mestre (FS-2): anel de 0,8 s; 20 s de jogo entre um acerto e o proximo (sobe se passar de 8% da receita)

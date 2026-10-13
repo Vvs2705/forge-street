@@ -33,6 +33,7 @@ COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Sc
 SIM, DEFS, CV = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs', 'Assets/_FS/Scripts/Core/ContentValidator.cs'
 METAS = 'Assets/_FS/Scripts/Core/Metas.cs'
 RENOME = 'Assets/_FS/Scripts/Core/Renome.cs'
+PROJ, PDEFS = 'Assets/_FS/Scripts/Core/Projetos.cs', 'Assets/_FS/Scripts/Core/ProjetosDefs.cs'
 
 
 def mut(id, arquivo, trecho, troca, descricao, esperado_vivo=None):
@@ -41,7 +42,7 @@ def mut(id, arquivo, trecho, troca, descricao, esperado_vivo=None):
 
 MUTACOES = [
     # economia
-    mut('eco-preco-ferramenta', DEFS, 'Price = { 0, 0, 10, 25, 16, 60 };', 'Price = { 0, 0, 10, 25, 18, 60 };',
+    mut('eco-preco-ferramenta', DEFS, 'Price = { 0, 0, 10, 25, 16, 60, 40 };', 'Price = { 0, 0, 10, 25, 18, 60, 40 };',
         'preço de venda da ferramenta 16 -> 18'),
     mut('eco-custo-crescimento', DEFS, 'CostGrowth = 1.30f;', 'CostGrowth = 1.32f;',
         'custo de upgrade cresce 1,32x por tier em vez de 1,30x'),
@@ -170,6 +171,41 @@ MUTACOES = [
         'meta resgatada guarda o Renome só no Metas e não credita no Renome real'),
     mut('renome-superior-nao-conta', SIM, 'Renome.OnVendaQualidade((int)l);', 'Renome.OnVendaQualidade(0);',
         'peça Superior vendida no balcão não conta para o Renome'),
+    # Blueprints (B-CORE-07)
+    mut('bp-posse-duplica', PROJ, 'if (Posses.ContainsKey(Defs[i].Id)) return false;\n            if (tx != null)', 'if (tx != null)',
+        'ganhar o mesmo Blueprint de novo regrava e emite outra vez (posse vira contador)'),
+    mut('bp-tx-repete', PROJ, 'if (tx != null) foreach (Posse p in Posses.Values) if (p.Tx == tx) return false;', ';',
+        'a mesma transação (encomenda, loja) dá um 2o Blueprint'),
+    mut('bp-pago-sem-tx', PROJ, 'if (ProjetosDefs.Paga(origem) && string.IsNullOrEmpty(tx)) return false;', ';',
+        'loja/Pass premium dão Blueprint sem ID de transação'),
+    mut('bp-fonte-nao-listada', PROJ, 'if (i < 0 || !Array.Exists(Defs[i].Sources, f => f.Kind == origem)) return false;', 'if (i < 0) return false;',
+        'o gancho dá Blueprint por uma fonte que o BlueprintDef não lista (ex.: loja)'),
+    mut('bp-marco-fina-conta-tudo', PROJ, '(f.MinQ >= Quality.Fine ? Finas[it] : _sim.SoldItems[it])', '_sim.SoldItems[it]',
+        'marco "N Fina ou melhor" conta as peças Normais'),
+    mut('bp-conquista-sem-resgate', PROJ, 'return _sim.Metas.Ledger.Contains("a:" + f.Ref);', 'return true;',
+        'conquista dá o Blueprint sem ser resgatada'),
+    mut('bp-save-perde-tx', PROJ, '(string.IsNullOrEmpty(p.Tx) ? "" : ":" + p.Tx)', '""',
+        'o save perde o ID de transação da posse (a encomenda paga de novo depois do load)'),
+    mut('bp-load-ignora', PROJ, 'if (raw.StartsWith("bp=", StringComparison.Ordinal))', 'if (raw.StartsWith("bpx=", StringComparison.Ordinal))',
+        'load perde os Blueprints possuídos'),
+    mut('bp-menu-sem-projeto', SIM, '(d.Requires < 0 || Bought[d.Requires]) && TemProjeto(u);', '(d.Requires < 0 || Bought[d.Requires]);',
+        'nível IV-V à venda no menu sem o projeto de mestre'),
+    mut('bp-compra-sem-projeto', SIM, 'if (!TemProjeto((int)u)) return false;', ';',
+        'compra direta (pad/cheat) de nível IV-V e bigorna longa sem o projeto'),
+    mut('bp-pad-sem-projeto', SIM, 'if (!s.TemProjeto((int)u)) return -1;', ';',
+        'o pad da bigorna longa aparece sem o projeto da receita'),
+    mut('bp-tecnica-zero', SIM, 'b[(int)QualitySource.Blueprint] = Projetos.Tecnica(s.Recipe.Family);', 'b[(int)QualitySource.Blueprint] = 0;',
+        'Blueprint de técnica não soma qualidade'),
+    mut('bp-tecnica-pela-estacao', SIM, 'Projetos.Tecnica(s.Recipe.Family)', 'Projetos.Tecnica(s.Recipe.Station)',
+        'técnica pela estação, não pela família (a bigorna longa fica sem a das bigornas)'),
+    mut('bp-nivel-pela-estacao', SIM, 'd.Station == s.Recipe.Family && Bought[(int)d.Up]', 'd.Station == s.Recipe.Station && Bought[(int)d.Up]',
+        'nível de estação pela estação, não pela família (a bigorna longa não sobe com as bigornas)'),
+    mut('bp-validator-essencial-pago', CV, 'if (d.Essential && !Array.Exists(d.Sources, f => ProjetosDefs.Permanente(f.Kind)))', 'if (false)',
+        'validator aceita Blueprint essencial só pago (receita essencial nunca só paga)'),
+    mut('bp-permanente-contrato', PDEFS, 'k <= BlueprintSourceKind.Achievement;', 'k <= BlueprintSourceKind.Contract;',
+        'contrato segura essencial sozinho (contrato nunca bloqueia, GDD §11)'),
+    mut('bp-mestre-sem-producao', PDEFS, 'true, FilaEncomenda(3), Producao()),', 'true, FilaEncomenda(3)),',
+        'projeto de mestre das bigornas só pela fila de encomenda (inalcançável no F2P de hoje)'),
 ]
 
 
