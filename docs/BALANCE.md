@@ -1516,3 +1516,20 @@ Corredor 14:30, Joalheria 28:46, 10,2 joias/min, ouro/min 392 → 533 → 1.007 
 ### 23.5 Testes e prova vermelha
 
 `QualidadeTests` (22): q = 25 → exatamente 1 Fina a cada 4; q = 115 → toda Fina, Superior = ⌊0,15 n⌋, dois Sims iguais; `QualityBreakdown` explica 100% das peças de 40 min do bot (refaz o acumulador peça a peça); fornalha sem qualidade; preço por nível; balcão vende a melhor primeiro; VIP 3× com a qualidade; golpe (só parado na boca, revelação, recarga de 20 s, errar não pune, vale uma peça); ajudante na boca, cofre offline e bots F2P/Slow/AdWatcher nunca golpeiam; Masterwork sem projeto fica Superior; com projeto vai ao Hall, nunca à pilha, ao balcão nem ao `GoldEarned` (conservação de peças em 30 min do Ideal); níveis (custo, +15, +5%, revelação, cartão oculto); Meta fora da produção completa e do teto offline; save antigo (schemas 1–3) = tudo Normal; save/load no meio do acumulador continua igual; lote maior que o total é cortado. `ContentValidatorTests`: preço fora de ordem, Masterwork vendável, família desconhecida, nível fora da cadeia. `mutantes.py`: 15 mutações novas de qualidade (acumulador sem resto e com limiar errado, preço, balcão que vende a pior, golpe pelo ajudante/andando/antes da revelação/sem recarga/no erro, Masterwork sem projeto e no balcão, Meta na produção, nível sem velocidade, save do acumulador, validator), todas mortas.
+
+## 24. E-PLAT-02/03: rewarded por placement e intersticial atrás de flag (2026-10-13)
+
+**Vigente** (`Tuning.Placements`, `Core/Anuncios.cs`): Chamar VIP (pacote 2×, recarga 300 s contada da saída do chamado) e Velocidade (60 s de 2×, recarga 300 s do fim do boost) com os números de antes; Cofre 2× (1 por resgate); bônus da encomenda (+50% do prêmio, 1 por encomenda); trocar encomenda (a próxima do rodízio, mostrada antes, teto 5/dia); Supply Drop (60 s das fornalhas, recarga 600 s). Teto diário total `AnunciosTetoDia` = 30. Intersticial: flag `Interstitial` desligada (V10).
+
+### 24.1 econsim, 60 min, anúncio = 30 s de relógio (V19)
+
+Perfis sem os placements novos (`--perfis Ideal,F2P,Slow,AdWatcher --partidas 1`): **CSV idêntico ao byte** ao da `main` (6ea0201 + #51) — a migração do VIP/Velocidade para o `Tuning.Placements` não mudou nada.
+
+Perfil novo `AdWatcherE` (o AdWatcher assistindo também Supply e bônus, guloso, pelo núcleo), média de 3 partidas:
+
+| perfil | Esteira | Ajud.3 | Joalheria | Produção | Fachada | zona morta | pós-produção | anúncios (VIP/Vel./Supply/bônus) |
+|---|---|---|---|---|---|---|---|---|
+| AdWatcher | 7:05 | 22:15 | 26:50 | **44:36** | 51:19 | 18,3 | 34.265 | 9/9/0/0 |
+| AdWatcherE | 8:04 | 25:42 | 31:18 | **51:36** | 58:07 | 25,7 | 17.755 | 6,7/6/4/13 (teto 30) |
+
+**Achado:** assistir tudo atrasa a produção completa em 7 min. Não é o teto diário (com `AnunciosTetoDia=99` a produção fica em 52:07). O bônus da encomenda (+50% de um prêmio de ~25–60 ouro no começo) vale menos que os 30 s de relógio do anúncio, e é o placement mais visto (13 de 30). Varredura de valores (3 partidas): Supply 180 s → 50:00; bônus +100% → 50:25; os dois → 49:23; Supply 300 s + bônus +100% → 48:29 — nenhum empata com o AdWatcher. **Decisão:** os valores ficam; o jogador vê o valor antes de assistir (chips "+N" e "DOBRAR +N"), e o Orders 2.0 (B-CORE-05) recalibra o bônus com piso em segundos de renda (meta: AdWatcherE não mais lento que o AdWatcher). Pisos do §3: 0% abaixo nos 5 perfis.
