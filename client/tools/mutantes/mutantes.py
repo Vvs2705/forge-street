@@ -32,6 +32,7 @@ COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Sc
           'tools/coretests']
 SIM, DEFS, CV = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs', 'Assets/_FS/Scripts/Core/ContentValidator.cs'
 METAS = 'Assets/_FS/Scripts/Core/Metas.cs'
+RENOME = 'Assets/_FS/Scripts/Core/Renome.cs'
 
 
 def mut(id, arquivo, trecho, troca, descricao, esperado_vivo=None):
@@ -121,6 +122,18 @@ MUTACOES = [
         'ouro das metas entra no GoldEarned (infla a taxa online e o cofre)'),
     mut('meta-antes-das-ferramentas', METAS, 'if (!Aberto || !m.Pronta) return -1;', 'if (!m.Pronta) return -1;',
         'meta paga antes das Ferramentas (mexe nos primeiros 10 min, GDD §3.3)'),
+    # Renome (B-CORE-06)
+    mut('renome-ganho-negativo', RENOME, 'if (n <= 0) return;', 'if (n == 0) return;',
+        'Ganha com valor negativo desconta (o Renome deixa de ser monotônico)'),
+    mut('renome-ledger-2x', RENOME, 'if (!Ledger.Add(tx)) return false;', 'Ledger.Add(tx);',
+        'Credita paga de novo um ID de transação já creditado (Charter, Masterwork, retroativo)'),
+    mut('renome-retro-sempre', RENOME, 'if (p[i].Length > 0) Ledger.Add(p[i]);\n                return;',
+        'if (p[i].Length > 0) Ledger.Add(p[i]);\n                break;',
+        'o retroativo roda também no save novo (com rn=): soma encomendas e baús de novo'),
+    mut('renome-limiar-estrito', RENOME, 'if (Total >= RenomeDefs.Niveis[i].Limiar) return i;', 'if (Total > RenomeDefs.Niveis[i].Limiar) return i;',
+        'o nível só sobe depois de passar do limiar (20 de Renome ainda é nível 0)'),
+    mut('renome-metas-nao-credita', METAS, '_sim.Renome.Ganha(renome);', '_sim.Renome.Ganha(0);',
+        'meta resgatada guarda o Renome só no Metas e não credita no Renome real'),
 ]
 
 

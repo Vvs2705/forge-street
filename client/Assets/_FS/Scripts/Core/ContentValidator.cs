@@ -21,7 +21,7 @@ namespace FS.Core
         /// <summary>Todas as regras. Sem argumentos = o conteudo real; o teste injeta uma COPIA quebrada no que quiser. `items`/`recipes` =
         /// conteudo do mundo (World); com `world` dado, valem os dele.</summary>
         public static List<string> Validate(UpgradeDef[] upgrades = null, long[] costs = null, int[] prices = null, MilestoneDef[] milestones = null, Sim world = null,
-            ItemDef[] items = null, RecipeDef[] recipes = null)
+            ItemDef[] items = null, RecipeDef[] recipes = null, RenomeDef[] renome = null)
         {
             upgrades ??= Upgrades.All;
             costs ??= RealCosts();
@@ -41,7 +41,27 @@ namespace FS.Core
             e.AddRange(Bocas(world));
             e.AddRange(Pisaveis(world));
             e.AddRange(Missoes(MetasDefs.Diarias, MetasDefs.Semanais, MetasDefs.Conquistas, MetasDefs.LoginDias, Tuning.Padrao));
+            e.AddRange(NiveisRenome(renome ?? RenomeDefs.Niveis));
             return e;
+        }
+
+        /// <summary>B-CORE-06 (GDD §23 #11): o 0 (limiar 0) e 10 niveis, na ordem, com limiar crescente; cada nivel de 1 a 10 libera algo; ID de
+        /// desbloqueio em [a-z0-9_] e liberado por um nivel so (Renome.Libera nao fica ambiguo).</summary>
+        public static IEnumerable<string> NiveisRenome(RenomeDef[] niveis)
+        {
+            if (niveis.Length != 11) yield return $"renome: {niveis.Length} niveis na tabela (0 e mais 10)";
+            var ids = new HashSet<string>();
+            for (int i = 0; i < niveis.Length; i++)
+            {
+                RenomeDef d = niveis[i];
+                if (d.Nivel != i) yield return $"renome: nivel {d.Nivel} na posicao {i}";
+                if (i == 0 && d.Limiar != 0) yield return $"renome: o nivel 0 comeca em {d.Limiar}, nao em 0";
+                if (i > 0 && d.Limiar <= niveis[i - 1].Limiar) yield return $"renome: limiar do nivel {i} ({d.Limiar}) nao sobe do anterior ({niveis[i - 1].Limiar})";
+                if (i > 0 && d.Libera.Length == 0) yield return $"renome: nivel {i} nao libera nada";
+                foreach (string id in d.Libera)
+                    if (string.IsNullOrEmpty(id) || !IdOk(id)) yield return $"renome: nivel {i} libera \"{id}\", fora de [a-z0-9_]";
+                    else if (!ids.Add(id)) yield return $"renome: \"{id}\" liberado por mais de um nivel";
+            }
         }
 
         /// <summary>D-CORE-02: gatilho punitivo ou de anuncio nunca vira meta (LIVEOPS_V1 §5.2).</summary>
