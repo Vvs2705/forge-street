@@ -120,7 +120,8 @@ namespace FS.Tests
         /// cadeia ja comprada.</summary>
         static Sim Partida25()
         {
-            var s = new Sim(); var bot = new Bot();
+            // os schemas 1 e 2 sao de antes dos niveis de estacao (B-CORE-03): o bot joga sem eles para o estado caber nos formatos antigos
+            var s = new Sim(new Tuning { NivelEstacaoCusto = new[] { 1 << 30, 1 << 30, 1 << 30, 1 << 30, 1 << 30, 1 << 30, 1 << 30, 1 << 30 } }); var bot = new Bot();
             for (float t = 0f; t < 25f * 60f; t += Dt) bot.Step(s, Dt);
             foreach (Pad p in s.Pads) p.Paid = 10 + p.Slot;
             return s;

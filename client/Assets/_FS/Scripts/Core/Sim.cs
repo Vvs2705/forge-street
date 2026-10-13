@@ -35,6 +35,10 @@ namespace FS.Core
         public bool Accepts(Item i) { int k = InIndex(i); return k >= 0 && Ins[k] < InCap; }
         public float Time = 1f, Progress; public bool Busy, Blocked;
         public int Crafted;
+        /// <summary>B-CORE-03: nivel da familia (1 + niveis comprados; Sim.Recompute), acumulador de qualidade em centesimos (0-99), golpe de mestre
+        /// valendo para a proxima peca e quantas das `Out` sao Fina e Superior (OutQ[(int)Quality]; Normal = o resto, Sim.Fit).</summary>
+        public int Level = 1, QAcc; public bool Strike;
+        public readonly int[] OutQ = new int[Sim.Graus];
         public float StarveSeconds, StallSeconds;   // metricas de gargalo (GDD §14 bottleneck_seconds)
         /// <summary>Bocas (FASE5 §2b): ponto onde o personagem encosta para DEPOSITAR (InAt) e para RECOLHER (OutAt), em lados
         /// opostos do corpo; deposito e balcoes tem uma zona so (InAt = OutAt). Zona = ate Balance.MouthRadius do ponto.</summary>
@@ -51,9 +55,11 @@ namespace FS.Core
     {
         public V2 Pos; public float Speed; public int Cap; public int Role = -1;
         public readonly int[] Held;   // quantos de cada item na mao, por handle
+        /// <summary>B-CORE-03: quantos dos Held[item] sao Fina e Superior (HeldQ[item][(int)Quality]; Normal = o resto).</summary>
+        public readonly int[][] HeldQ;
         public Carrier() : this(Items.All.Length) { }
         /// <summary>`items` = quantos itens o conteudo da partida tem (Sim.ItemDefs).</summary>
-        public Carrier(int items) { Held = new int[items]; }
+        public Carrier(int items) { Held = new int[items]; HeldQ = Sim.Lotes(items); }
         public float ActT, IdleT; public bool Moving;
         public int State;            // ajudante: 0 buscando, 1 entregando
         public int Target = -1;      // ajudante: indice da estacao alvo (-1 = parado)
@@ -139,6 +145,8 @@ namespace FS.Core
         public readonly List<Client> Queue = new List<Client>();        // fila do balcao principal (espada/escudo/ferramenta)
         public readonly List<Client> JewelQueue = new List<Client>();   // fila da loja de joias (2a area)
         public readonly int[] Stock;                                     // por item; Stock[Jewel] fica na loja de joias
+        /// <summary>B-CORE-03: quantos dos Stock[item] sao Fina e Superior (StockQ[item][(int)Quality]; Normal = o resto). O balcao vende a melhor primeiro.</summary>
+        public readonly int[][] StockQ;
         public readonly List<SimEvent> Events = new List<SimEvent>();
         public int CounterCap, QueueCap, JewelQueueCap;   // derivados no Recompute
         public bool HasConveyor;
@@ -160,6 +168,15 @@ namespace FS.Core
         public float VipCooldown;
         int _vipWant = -1, _vipPack; bool _vipSummoned;   // VIP sorteado esperando vaga (-1 = nenhum); chamado por anuncio?
         int _vipPaid; bool _vipQuiet;  // VIP que estava na vaga ao salvar: volta com o que ja pagou e sem novo aviso de chegada
+        // B-CORE-03 (ECONOMIA_WAVE_B §1.4): golpe de mestre
+        /// <summary>s de jogo ate o ferreiro poder acertar outro golpe (Tuning.GolpeRecarga depois de cada acerto). Vai no save (golpe=).</summary>
+        public float StrikeCooldown;
+        /// <summary>B-CORE-08 liga: ha Masterwork pendente para a familia desta estacao (projeto e condicoes). null = nenhuma: o golpe numa Superior
+        /// fica Superior. Masterworks = obras-primas que sairam para o Hall (nunca pilha, balcao nem GoldEarned).</summary>
+        public Func<Station, bool> MasterworkPending;
+        public int Masterworks;
+        /// <summary>Metricas do bot (fora do save, como o OrderGold): ouro de venda acima do preco Normal, valor que o golpe somou as pecas e golpes acertados.</summary>
+        public long QualityGold, StrikeGold; public int Strikes;
 
         // metricas de playtest (GDD §14/§15)
         public float FirstSaleTime = -1f, WalkNoDecision;
@@ -169,7 +186,7 @@ namespace FS.Core
         {
             get
             {
-                for (int i = 0; i < Upgrades.Count; i++) if (!Bought[i] && !Upgrades.IsLuxury(i)) return false;
+                for (int i = 0; i < Upgrades.Count; i++) if (!Bought[i] && Upgrades.IsProduction(i)) return false;   // luxo e Meta nao contam
                 return true;
             }
         }
@@ -196,7 +213,7 @@ namespace FS.Core
             T = tuning ?? new Tuning();
             ItemDefs = items ?? Items.All; RecipeDefs = recipes ?? Recipes.All;
             int n = ItemDefs.Length;
-            Stock = new int[n]; SoldItems = new int[n]; Crafted = new int[n];
+            Stock = new int[n]; SoldItems = new int[n]; Crafted = new int[n]; StockQ = Lotes(n);
             Player = new Carrier(n) { Pos = new V2(4.5f, 3.5f), Speed = Balance.PlayerSpeed, Cap = Balance.PlayerCap };
             VipIn = T.VipInterval(0);
             OrderIn = T.OrderFirstDelay;
@@ -369,6 +386,7 @@ namespace FS.Core
             foreach (Station s in Stations) Produce(s, fast);
             Conveyor(fast);
             VipCooldown = Math.Max(0f, VipCooldown - dt);   // P14: no tempo de jogo; o Serve recarrega quando o chamado sai
+            StrikeCooldown = Math.Max(0f, StrikeCooldown - dt);   // B-CORE-03: golpe de mestre, no tempo de jogo (o boost nao encurta)
             Clients(dt);
             Milestones();
             Orders(dt);
@@ -724,10 +742,11 @@ namespace FS.Core
                 c.ActT -= step;
                 switch (act)
                 {
-                    case 1: c.Held[(int)it]--; s.Ins[s.InIndex(it)]++; break;
-                    case 2: s.Out--; c.Held[(int)it]++; break;
+                    // B-CORE-03: a peca passa de mao com o nivel dela, a melhor primeiro (insumo e minerio sao sempre Normal)
+                    case 1: Take(ref c.Held[(int)it], c.HeldQ[(int)it]); s.Ins[s.InIndex(it)]++; break;
+                    case 2: Put(ref c.Held[(int)it], c.HeldQ[(int)it], Take(ref s.Out, s.OutQ)); break;
                     case 3: c.Held[(int)it]++; break;
-                    case 4: c.Held[(int)it]--; Stock[(int)it]++; break;
+                    case 4: Put(ref Stock[(int)it], StockQ[(int)it], Take(ref c.Held[(int)it], c.HeldQ[(int)it])); break;
                 }
                 Emit(act == 2 || act == 3 ? Ev.Picked : Ev.Deposited, (int)it, c.Role, s.Pos);
                 if (Action(c, s, outZone, out it) != act) { c.ActT = 0f; break; }   // balcao: o proximo produto da mao segue no mesmo ritmo
@@ -800,8 +819,13 @@ namespace FS.Core
             foreach (Station s in Stations)
             {
                 if (s.UnlockBy >= 0) s.Unlocked = Bought[s.UnlockBy];
-                // B-CORE-01: base do tipo (fornalha: Fole; bancada: Martelo veloz) x multiplicador da receita; a Lupa so na Joalheria
-                if (s.Produces) s.Time = (s.Kind == Kind.Furnace ? ft : ht) * (s.Recipe.TimeMul(T) * (s == JewelBench && Bought[(int)Upgrade.JewelSpeed] ? T.JewelSpeedMul : 1f));
+                // B-CORE-03: nivel da familia = 1 + niveis comprados dela
+                s.Level = 1;
+                if (s.Produces) foreach (UpgradeDef d in Upgrades.All) if (d.Station == s.Recipe.Station && Bought[(int)d.Up]) s.Level++;
+                // B-CORE-01: base do tipo (fornalha: Fole; bancada: Martelo veloz) x multiplicador da receita; a Lupa so na Joalheria. B-CORE-03:
+                // cada nivel acima do 1 da +5% de velocidade (nivel 1 divide por 1: o tempo de antes, bit a bit)
+                if (s.Produces) s.Time = (s.Kind == Kind.Furnace ? ft : ht) * (s.Recipe.TimeMul(T) * (s == JewelBench && Bought[(int)Upgrade.JewelSpeed] ? T.JewelSpeedMul : 1f))
+                    / (1f + T.NivelEstacaoVelocidade * (s.Level - 1));
             }
             // balcao evolutivo (FASE7 §2): +1 vaga por evolucao comprada; o corpo alarga junto (antes dos Solids)
             QueueCap = T.QueueCap0;
@@ -843,7 +867,14 @@ namespace FS.Core
                 {
                     if (s.Out < s.OutCap)
                     {
-                        s.Out++; s.Busy = false; s.Progress = 0f; s.Blocked = false; s.Crafted++; Crafted[(int)s.OutItem]++;
+                        s.Busy = false; s.Progress = 0f; s.Blocked = false; s.Crafted++; Crafted[(int)s.OutItem]++;
+                        Quality l = Grade(s);   // B-CORE-03: acumulador e golpe
+                        if (l == Quality.Masterwork) { Masterworks++; Emit(Ev.Masterwork, (int)s.OutItem, s.Index, s.Pos); }   // vai ao Hall: nunca a pilha nem o balcao
+                        else
+                        {
+                            Put(ref s.Out, s.OutQ, l);
+                            if (l > Quality.Normal) Emit(Ev.Graded, s.Index, (int)l, s.Pos);
+                        }
                         Emit(Ev.Crafted, (int)s.OutItem, s.Index, s.Pos);
                     }
                     else Stall(s, dt);
@@ -923,10 +954,14 @@ namespace FS.Core
 
         public int PriceOf(Item item) => item == Item.Jewel && Bought[(int)Upgrade.JewelVitrine] ? T.JewelPriceUp : T.Price[(int)item];
 
+        /// <summary>Vende 1 `want` do balcao: a melhor qualidade primeiro (B-CORE-03), ao PriceOf do nivel x `mul` (VIP = 3x). Masterwork nunca
+        /// chega aqui (nao entra em lote: Grade a manda ao Hall).</summary>
         int Sell(Item want, V2 pos, int mul = 1)
         {
-            int price = PriceOf(want) * mul;
-            Stock[(int)want]--; Gold += price; GoldEarned += price; Sales++; SoldItems[(int)want]++;
+            Quality l = Take(ref Stock[(int)want], StockQ[(int)want]);
+            int price = PriceOf(want, l) * mul;
+            QualityGold += price - PriceOf(want) * mul;
+            Gold += price; GoldEarned += price; Sales++; SoldItems[(int)want]++;
             if ((int)want == OrderItem && OrderProgress < OrderTarget) OrderProgress++;
             if (FirstSaleTime < 0f) FirstSaleTime = Time;
             Emit(Ev.Sold, (int)want, price, pos);
@@ -1036,6 +1071,116 @@ namespace FS.Core
             Emit(Ev.OrderNew, OrderItem, OrderTarget, CounterFor(it).Pos);
         }
 
+        // ------------------------------------------------------------------ qualidade (B-CORE-03, docs/ECONOMIA_WAVE_B.md §1)
+
+        /// <summary>Niveis que circulam numa pilha (Normal, Fina, Superior): tamanho dos lotes OutQ/HeldQ/StockQ. A Masterwork nunca entra num.</summary>
+        public const int Graus = (int)Quality.Masterwork;
+        /// <summary>Um lote (Fina/Superior por nivel) por item.</summary>
+        public static int[][] Lotes(int items)
+        {
+            var q = new int[items][];
+            for (int i = 0; i < items; i++) q[i] = new int[Graus];
+            return q;
+        }
+
+        /// <summary>Fina e Superior de um lote nunca passam do `total` (Normal = o resto): corta de baixo para cima, a melhor fica. Vale depois
+        /// de alguem mexer so no total (load com teto, -stock, teste).</summary>
+        public static void Fit(int total, int[] q)
+        {
+            for (int l = Graus - 1; l > 0; l--) { q[l] = Clamp0(q[l], total); total -= q[l]; }
+        }
+
+        /// <summary>Tira 1 de `total` (pilha, mao ou balcao) e devolve o nivel dela: a melhor primeiro (Superior, Fina, Normal).</summary>
+        public static Quality Take(ref int total, int[] q)
+        {
+            Fit(total, q);
+            total--;
+            for (int l = Graus - 1; l > 0; l--) if (q[l] > 0) { q[l]--; return (Quality)l; }
+            return Quality.Normal;
+        }
+
+        /// <summary>Poe 1 peca de nivel `l` no lote.</summary>
+        public static void Put(ref int total, int[] q, Quality l)
+        {
+            total++;
+            if (l > Quality.Normal) q[(int)l]++;
+        }
+
+        /// <summary>Revelacao progressiva (GDD §19): qualidade, niveis de estacao e golpe de mestre so depois das Ferramentas (~11 min). Os 10
+        /// primeiros minutos ficam intocados (ECONOMIA_WAVE_B §0.6).</summary>
+        public bool QualityRevealed => Bought[(int)Upgrade.Tools];
+
+        /// <summary>Pontos de qualidade (centesimos) da estacao, por fonte (QualitySource). A soma e' o q do acumulador (QualityPoints): o que
+        /// esta aqui explica 100% das pecas. Fornalha, deposito e balcao: tudo 0 (lingote e' intermediario).</summary>
+        public int[] QualityBreakdown(Station s)
+        {
+            var b = new int[(int)QualitySource.Buff + 1];   // uma por fonte (a ultima do enum)
+            if (s.Produces && IsProduct(s.OutItem)) b[(int)QualitySource.StationLevel] = (s.Level - 1) * T.NivelEstacaoQ;
+            return b;
+        }
+
+        /// <summary>q da estacao: soma do QualityBreakdown.</summary>
+        public int QualityPoints(Station s)
+        {
+            int q = 0;
+            foreach (int p in QualityBreakdown(s)) q += p;
+            return q;
+        }
+
+        /// <summary>Preco de `item` no nivel `l`: preco base x Tuning.QualidadePct, inteiro e meio para cima (espada 10/15/25, escudo 25/38/63).
+        /// Masterwork = 0 (nao vende).</summary>
+        public int PriceOf(Item item, Quality l) => (PriceOf(item) * T.QualidadePct[(int)l] + 50) / 100;
+
+        /// <summary>
+        /// Nivel da peca que sai agora da estacao (§1.3): parte inteira de q = nivel garantido; a fracao enche o acumulador e, ao passar de 100,
+        /// esta peca sobe um nivel. A automacao para em Superior. Golpe valendo: +1 nivel; numa Superior com Masterwork pendente, Masterwork.
+        /// Sem sorteio: mesma sequencia de compras e golpes, mesma sequencia de niveis.
+        /// </summary>
+        Quality Grade(Station s)
+        {
+            if (!IsProduct(s.OutItem)) return Quality.Normal;
+            int q = QualityPoints(s), l = q / 100;
+            s.QAcc += q % 100;
+            if (s.QAcc >= 100) { l++; s.QAcc -= 100; }
+            l = Math.Min(l, (int)Quality.Superior);
+            if (!s.Strike) return (Quality)l;
+            s.Strike = false;
+            if (l == (int)Quality.Superior && MasterworkPending != null && MasterworkPending(s)) return Quality.Masterwork;
+            int up = Math.Min(l + 1, (int)Quality.Superior);
+            StrikeGold += PriceOf(s.OutItem, (Quality)up) - PriceOf(s.OutItem, (Quality)l);
+            return (Quality)up;
+        }
+
+        /// <summary>
+        /// Bancada onde o ferreiro pode dar o golpe de mestre agora, ou null: qualidade revelada, recarga zerada e o ferreiro PARADO na boca de
+        /// entrada de uma bancada aberta que tem a proxima peca (trabalhando ou com a receita inteira na entrada) e ainda sem golpe valendo. So o
+        /// ferreiro: ajudante, offline e cofre nao passam por aqui.
+        /// </summary>
+        public Station StrikeStation
+        {
+            get
+            {
+                if (!QualityRevealed || StrikeCooldown > 0f || Player.Moving) return null;
+                Station s = StationAt(Player.Pos, out bool outZone);
+                if (s == null || outZone || s.Kind != Kind.Crafter || !s.Produces || !IsProduct(s.OutItem) || s.Strike) return null;
+                if (s.Busy) return s;
+                for (int k = 0; k < s.Ins.Length; k++) if (s.Ins[k] < s.Recipe.Inputs[k].Qty) return null;
+                return s;
+            }
+        }
+
+        /// <summary>O anel do golpe (View): `hit` = o toque caiu na janela de Tuning.GolpeJanela. Acertou com StrikeStation valendo: a proxima peca
+        /// daquela bancada sobe 1 nivel e a recarga comeca. Errou ou fora de hora: nada muda (errar nao pune, sem recarga) e devolve false.</summary>
+        public bool Strike(bool hit)
+        {
+            Station s = StrikeStation;
+            if (s == null || !hit) return false;
+            s.Strike = true;
+            StrikeCooldown = T.GolpeRecarga;
+            Strikes++;
+            return true;
+        }
+
         // ------------------------------------------------------------------ consultas para view, bot e dica
 
         public long CheapestVisibleCost()
@@ -1126,13 +1271,13 @@ namespace FS.Core
         }
 
         /// <summary>Menor produtivo nao comprado e a venda (pre-requisito comprado); producao completa = o produtivo mais caro (hoje a Vitrine de joias, 9.000:
-        /// e' o "ultimo" de antes, mas nao muda quando um produtivo mais barato e' anexado ao enum). Luxo nao altera o cofre.</summary>
+        /// e' o "ultimo" de antes, mas nao muda quando um produtivo mais barato e' anexado ao enum). Luxo e Meta nao alteram o cofre.</summary>
         public long CheapestLockedCost()
         {
             long best = -1, top = 0;
             for (int i = 0; i < Upgrades.Count; i++)
             {
-                if (Upgrades.IsLuxury(i)) continue;
+                if (!Upgrades.IsProduction(i)) continue;   // luxo e Meta (B-CORE-03) nao mexem no cofre
                 long c = T.Cost(i); int req = Upgrades.All[i].Requires;
                 top = Math.Max(top, c);
                 // FASE7: so o que esta A VENDA (pre-requisito comprado). Sem isso o Balcao 5 (150, exige a Vitrine) baixava o cofre de
@@ -1150,7 +1295,8 @@ namespace FS.Core
 
         /// <summary>A-CORE-01: versao do payload (linha v=). Subir = anexar o passo em Migrations (Migracao_TodaVersaoAnteriorTemPasso cobra).
         /// Campo novo que nao muda o significado de save antigo (hold=, vip=, ord=) nao sobe. 2 = A-CORE-04 (upgrades e parcial dos pads por ID):
-        /// upgrade novo, em qualquer lugar do enum, nao sobe mais o schema. 3 = B-CORE-01 (estoque, vendas e maos por ID de item).</summary>
+        /// upgrade novo, em qualquer lugar do enum, nao sobe mais o schema. 3 = B-CORE-01 (estoque, vendas e maos por ID de item). B-CORE-03 so
+        /// anexou chaves (stocksq=, holdsq=, wksq=, qstN=, golpe=): sem elas o save e' o de sempre, tudo Normal.</summary>
         public const int Schema = 3;
         /// <summary>Migracoes sobre o texto bruto, antes do parse: Migrations[i] leva o schema i+1 ao i+2. Schema 1 = 0.1-0.7; 2 = 0.8.</summary>
         public static readonly Func<string, string>[] Migrations = { V1ParaV2, V2ParaV3 };
@@ -1262,6 +1408,33 @@ namespace FS.Core
             }
         }
 
+        /// <summary>B-CORE-03: lotes -> "id:fina:superior,..." (so os itens com Fina ou Superior), ja cortados ao total (Fit).</summary>
+        string IdQ(int[] totals, int[][] q)
+        {
+            var t = new List<string>();
+            for (int i = 0; i < q.Length; i++)
+            {
+                Fit(totals[i], q[i]);
+                bool any = false;
+                var tok = new StringBuilder(ItemDefs[i].Id);
+                for (int l = 1; l < Graus; l++) { tok.Append(':').Append(q[i][l]); any |= q[i][l] > 0; }
+                if (any) t.Add(tok.ToString());
+            }
+            return string.Join(",", t);
+        }
+
+        /// <summary>B-CORE-03: "id:fina:superior,..." -> into[handle][nivel] (negativo e lixo = 0; ID desconhecido fica de fora: o total dele ja
+        /// contou no UnknownIds). O Load corta ao total depois (Fit).</summary>
+        static void ReadIdQ(Sim sim, string[] tokens, int[][] into)
+        {
+            foreach (string tok in tokens)
+            {
+                string[] kv = tok.Split(':');
+                int i = Items.IndexOf(kv[0].Trim(), sim.ItemDefs);
+                if (i >= 0) for (int l = 1; l < Graus && l < kv.Length; l++) into[i][l] = Math.Max(0, I(kv[l], 0));
+            }
+        }
+
         public string Save(long nowUnix)
         {
             // A-CORE-02: SavedAt = maior instante ja visto. Relogio que voltou nao regrava o SavedAt para tras: adiantar -> resgatar -> voltar
@@ -1306,6 +1479,21 @@ namespace FS.Core
             sb.Append("solds=").Append(IdCounts(SoldItems)).Append('\n');
             sb.Append("holds=").Append(IdCounts(Player.Held)).Append('\n');
             if (Workers.Count > 0) sb.Append("wks=").Append(string.Join(";", Workers.ConvertAll(w => w.Role + ":" + IdCounts(w.Held)))).Append('\n');
+            // B-CORE-03: qualidade. Lote por ID de item "id:fina:superior" (so quem tem Fina ou Superior; Normal = o resto do stocks=/holds=/wks=,
+            // que seguem sendo o TOTAL: a 0.8 e a 0.5 leem tudo Normal), um lote por ajudante na ordem do wks=, acumulador/golpe/pilha de cada
+            // bancada por indice como o stN= (qstN=acc,golpe,fina,superior) e a recarga do golpe. Save sem estas chaves = tudo Normal, acumulador 0
+            sb.Append("stocksq=").Append(IdQ(Stock, StockQ)).Append('\n');
+            sb.Append("holdsq=").Append(IdQ(Player.Held, Player.HeldQ)).Append('\n');
+            if (Workers.Count > 0) sb.Append("wksq=").Append(string.Join(";", Workers.ConvertAll(w => IdQ(w.Held, w.HeldQ)))).Append('\n');
+            foreach (Station s in Stations)
+            {
+                if (!s.Produces || !IsProduct(s.OutItem)) continue;
+                Fit(s.Out, s.OutQ);
+                sb.Append("qst").Append(s.Index).Append('=').Append(s.QAcc).Append(',').Append(s.Strike ? 1 : 0);
+                for (int l = 1; l < Graus; l++) sb.Append(',').Append(s.OutQ[l]);
+                sb.Append('\n');
+            }
+            sb.Append("golpe=").Append(StrikeCooldown.ToString("0.###", ci)).Append('\n');
             sb.Append("stock=").Append(Stock[2]).Append(',').Append(Stock[3]).Append(',').Append(Stock[4]).Append(',').Append(Stock[5]).Append('\n');
             sb.Append("sold=").Append(SoldItems[2]).Append(',').Append(SoldItems[3]).Append(',').Append(SoldItems[4]).Append(',').Append(SoldItems[5]).Append('\n');
             var ms = new StringBuilder();
@@ -1351,7 +1539,7 @@ namespace FS.Core
             foreach (string raw in text.Split('\n')) if (raw.StartsWith("v=", StringComparison.Ordinal)) { v = Math.Max(1, I(raw.Substring(2), 1)); break; }
             for (; v < Schema; v++) text = Migrations[v - 1](text);
             var ci = CultureInfo.InvariantCulture;
-            string wk = "";   // carga dos ajudantes: aplicada depois do Recompute (eles nascem dos flags)
+            string wk = "", wkq = "";   // carga dos ajudantes (e a qualidade dela): aplicada depois do Recompute (eles nascem dos flags)
             int vipWant = -1, vipPack = 0, vipPaid = 0; bool vipQuiet = false, vipSummoned = false;
             int ordItem = -1, ordTarget = 0, ordProgress = 0, ordReward = 0;   // VIP pendente: so depois do Recompute (a linha do produto tem de estar aberta)
             long refund = 0;   // parcial de pad sem pad (ID desconhecido ou upgrade so de menu): volta ao ouro depois do gold=
@@ -1405,6 +1593,11 @@ namespace FS.Core
                     case "px": if (parts.Length == 2) sim.Player.Pos = new V2(F(parts[0], 4.5f), F(parts[1], 3.5f)); break;   // clamp so' depois do Recompute (MaxX depende do Corredor)
                     case "holds": ReadIdCounts(sim, parts, sim.Player.Held); break;   // save antigo sem hold=: maos vazias
                     case "wks": wk = val; break;
+                    // B-CORE-03; save antigo sem estas chaves: tudo Normal, acumuladores 0, sem golpe valendo nem recarga
+                    case "stocksq": ReadIdQ(sim, parts, sim.StockQ); break;
+                    case "holdsq": ReadIdQ(sim, parts, sim.Player.HeldQ); break;
+                    case "wksq": wkq = val; break;
+                    case "golpe": sim.StrikeCooldown = Math.Max(0f, Math.Min(T.GolpeRecarga, F(val, 0f))); break;
                     case "ord":   // FASE9; save antigo sem ord=: do zero. A encomenda so volta depois do Recompute (linha aberta)
                         if (parts.Length >= 6)
                         {
@@ -1444,6 +1637,14 @@ namespace FS.Core
                             if (parts.Length >= 5) s.Crafted = Math.Max(0, I(parts[4], 0));
                             for (int k = 1; k < s.Ins.Length && 4 + k < parts.Length; k++) s.Ins[k] = Clamp0(I(parts[4 + k], 0), s.InCap);   // B-CORE-01: 2o insumo em diante
                         }
+                        else if (key.StartsWith("qst") && parts.Length >= 2)   // B-CORE-03: acumulador, golpe valendo e Fina/Superior da pilha
+                        {
+                            int idx = I(key.Substring(3), -1);
+                            if (idx < 0 || idx >= sim.Stations.Count || !sim.Stations[idx].Produces) break;
+                            Station s = sim.Stations[idx];
+                            s.QAcc = Clamp0(I(parts[0], 0), 99); s.Strike = I(parts[1], 0) == 1;
+                            for (int l = 1; l < Graus && l + 1 < parts.Length; l++) s.OutQ[l] = Math.Max(0, I(parts[l + 1], 0));
+                        }
                         break;
                 }
             }
@@ -1454,7 +1655,9 @@ namespace FS.Core
             for (int i = 0; i < sim.Stock.Length; i++)   // teto so' e' conhecido depois dos upgrades; insumo nao fica no balcao nem conta venda
                 if (sim.IsProduct((Item)i)) sim.Stock[i] = Math.Min(sim.Stock[i], sim.CounterCap); else sim.Stock[i] = sim.SoldItems[i] = 0;
             for (int i = 0; i < sim.Player.Held.Length; i++) sim.Player.Held[i] = Math.Min(sim.Player.Held[i], sim.Player.Cap);   // teto por tipo (Mochila)
-            string[] ws = wk.Split(';');
+            for (int i = 0; i < sim.Stock.Length; i++) { Fit(sim.Stock[i], sim.StockQ[i]); Fit(sim.Player.Held[i], sim.Player.HeldQ[i]); }   // B-CORE-03: lote cabe no total
+            foreach (Station s in sim.Stations) Fit(s.Out, s.OutQ);
+            string[] ws = wk.Split(';'), wq = wkq.Split(';');
             for (int k = 0; k < ws.Length; k++)   // ajudante: so o 1o tipo valido para o papel (na ordem dos itens), ate o teto; lixo = mao vazia
             {
                 // a lista e' recriada na ordem do HireBy, nao na da compra: vai para o proximo ajudante vazio do mesmo papel.
@@ -1469,6 +1672,8 @@ namespace FS.Core
                     int n = Clamp0(h[i], w.Cap);
                     if (n > 0 && w.Count == 0 && sim.CanPick(w, (Item)i)) w.Held[i] = n;
                 }
+                if (k < wq.Length) ReadIdQ(sim, wq[k].Split(','), w.HeldQ);   // B-CORE-03: o lote do mesmo ajudante (ordem do wks=)
+                for (int i = 0; i < h.Length; i++) Fit(w.Held[i], w.HeldQ[i]);
             }
             if (vipPack > 0 && vipWant >= (int)Item.Sword && vipWant <= (int)Item.Tool && sim.LineUnlocked((Item)vipWant)) { sim._vipWant = vipWant; sim._vipPack = vipPack; sim._vipPaid = vipPaid; sim._vipQuiet = vipQuiet; sim._vipSummoned = vipSummoned; }
             if (ordItem >= (int)Item.Sword && ordItem <= (int)Item.Jewel && ordTarget > 0 && sim.LineUnlocked((Item)ordItem))
