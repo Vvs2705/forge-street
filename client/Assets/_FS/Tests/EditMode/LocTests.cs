@@ -60,6 +60,8 @@ namespace FS.Tests
             foreach (string g in new[] { "m", "f", "mp", "fp" }) { Tem("art.o." + g); Tem("art.de." + g); }
             foreach (AdPlacementDef d in T0.Placements) Tem("ads." + d.Id);   // E-PLAT-02: cada placement do Tuning (o anuncio simulado)
             foreach (RenomeDef d in RenomeDefs.Niveis) { Tem(d.NomeKey); if (d.Nivel > 0) Tem(d.NomeKey + ".libera"); }   // B-CORE-06: SeloRenome
+            foreach (ProductDef d in Compras.Catalogo) Tem("iap." + d.Id + ".nome");   // E-PLAT-04: PainelLoja (nome e uma linha por posse)
+            foreach (string id in Compras.Posses) Tem("iap.posse." + id);
             Assert.IsEmpty(faltam);
         }
 
@@ -188,6 +190,15 @@ namespace FS.Tests
                     if (d.Nivel > 0) Assert.LessOrEqual(Loc.T("renome.libera", Textos.LiberaRenome(d.Nivel)).Length, 110, $"{i}: nivel {d.Nivel}");
                 }
                 Assert.LessOrEqual(Textos.Ouro(long.MaxValue).Length, 8, i.ToString());
+                // E-PLAT-04: avisos da loja (1 linha da faixa), LOJA (1/3 da fileira das Configuracoes), COMPRADO e RESTAURAR, nome e linhas do conteudo
+                foreach (string k in new[] { "aviso.compra_ok", "aviso.compra_falhou" }) Assert.LessOrEqual(Loc.T(k).Length, Textos.DicaMax, $"{i}: {k}");
+                Assert.LessOrEqual(Loc.T("aviso.restaurado", 99).Length, Textos.DicaMax, $"{i}: aviso.restaurado");
+                foreach ((string k, int max) in new[] { ("cfg.loja", 8), ("loja.comprado", 10), ("loja.restaurar", 20) }) Assert.LessOrEqual(Loc.T(k).Length, max, $"{i}: {k}");
+                foreach (ProductDef d in Compras.Catalogo)
+                {
+                    Assert.LessOrEqual(Loc.T("iap." + d.Id + ".nome").Length, 24, $"{i}: {d.Id}");
+                    foreach (ItemCompra c in d.Conteudo) Assert.LessOrEqual(Loc.T("iap.posse." + c.Id).Length, 40, $"{i}: {c.Id}");
+                }
             }
         }
 

@@ -61,7 +61,7 @@ namespace FS.Tests
             Sim sim = _s.Carregar();
             Assert.AreEqual(0, _log.Linhas.Count, string.Join(" | ", _log.Linhas));
             sim.Gold = 77;
-            _s.Gravar(sim, 1000, "0.7.0");
+            Assert.IsTrue(_s.Gravar(sim, 1000, "0.7.0"), "E-PLAT-04: gravou (a compra pode ser confirmada)");
             Assert.AreEqual(_arq.Texto, _esp.Texto, "espelho = arquivo (downgrade le o mesmo texto)");
             Assert.AreEqual(SaveEnvelope.Status.Ok, SaveEnvelope.Unwrap(_arq.Texto).Status);
             Assert.AreEqual(77L, Gold(_arq.Texto));
@@ -110,7 +110,7 @@ namespace FS.Tests
             _arq.Texto = newer; _esp.Texto = SaveTests.Wrap(20);
             _s.Carregar();
             Assert.IsTrue(_s.Bloqueado);
-            _s.Gravar(new Sim { Gold = 5 }, 1000, "0.7.0");
+            Assert.IsFalse(_s.Gravar(new Sim { Gold = 5 }, 1000, "0.7.0"), "bloqueado: nao gravou");
             Assert.AreEqual((newer, SaveTests.Wrap(20)), (_arq.Texto, _esp.Texto), "nada gravado por cima");
             StringAssert.StartsWith("save_newer," + (Sim.Schema + 1), _log.Linhas[0]);
         }
@@ -143,7 +143,7 @@ namespace FS.Tests
         {
             _s.Carregar();
             _arq.Erro = new IOException();
-            _s.Gravar(new Sim { Gold = 33 }, 1000, "0.7.0");
+            Assert.IsFalse(_s.Gravar(new Sim { Gold = 33 }, 1000, "0.7.0"), "o arquivo falhou: a proxima abertura le o antigo, entao nao conta como gravado (E-PLAT-04)");
             Assert.AreEqual(33L, Gold(_esp.Texto));
             CollectionAssert.AreEqual(new[] { "save_error,IOException," }, _log.Linhas);
         }
