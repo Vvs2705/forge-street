@@ -42,7 +42,7 @@ namespace FS.Core
 
     /// <summary>
     /// D-CORE-02: os modelos. So entram os que tem gatilho que o Sim (ou o Metas) emite HOJE; os do LIVEOPS_V1 com evento ✗ (qualidade, golpe,
-    /// Renome, worker_upgrade, eventos, categoria de upgrade, Masterwork, Blueprint, distrito, contrato, familias distintas) entram com o
+    /// Renome, eventos (worker_upgrade entrou com o B-CORE-04; ach_workers20 espera os distritos), categoria de upgrade, Masterwork, Blueprint, distrito, contrato, familias distintas) entram com o
     /// sistema deles. Os extras sobre eventos que ja existem (marcados "novo") completam os minimos do GDD §23 #12.
     /// Renome ainda nao existe: "abre com Renome 1" usa a Joalheria (12-25 min ~ 23 min no F2P) e "Renome 2" a Vitrine de joias, ate o B-CORE-06.
     /// </summary>
@@ -52,7 +52,9 @@ namespace FS.Core
         const int A = 0, B = 1;
         const string Sold = "product_sold", Craft = "product_crafted", Ord = "order_done", Buy = "upgrade_buy", Src = "currency_source",
             Sink = "currency_sink", Cofre = "offline_claim", Vip = "vip_served", Hire = "worker_hired", Bau = "chest_opened",
-            Missao = "mission_complete", Login = "login_claim";
+            Missao = "mission_complete", Login = "login_claim", Nivel = "worker_upgrade";
+        /// <summary>B-CORE-04: os workers do Old Forge (6 ajudantes + 7 da Equipe, LIVEOPS_V1 §5.5 ach_workers13).</summary>
+        static readonly int WorkersOldForge = Array.FindAll(WorkerDefs.All, d => d.Distrito == WorkerDefs.OldForge).Length;
         const int Lingote = (int)Item.Ingot, Espada = (int)Item.Sword, Escudo = (int)Item.Shield, Ferram = (int)Item.Tool, Joia = (int)Item.Jewel;
 
         /// <summary>Diaria padrao: XP 100 + ouro 20 s (LIVEOPS_V1 §4.1).</summary>
@@ -101,6 +103,7 @@ namespace FS.Core
             D("dly_melhoria3", B, Buy, -1, 3, Corr),                   // novo
             D("dly_cofre2", B, Cofre, -1, 2, Corr),                    // novo: as 2 sessoes do F2P de referencia
             D("dly_gasta5min", B, Sink, -1, 300, Ferr, Conta.Segundos), // novo
+            D("dly_worker_nivel", B, Nivel, -1, 1, Ferr),              // B-CORE-04 (LIVEOPS_V1 §4.2 #24)
         };
 
         public static readonly MetaDef[] Semanais =
@@ -164,6 +167,11 @@ namespace FS.Core
             C("ach_ajudante1", Hire, -1, 1, ouroS: 30),
             C("ach_ajudante3", Hire, -1, 3, xp: 50),                   // novo
             C("ach_ajudantes6", Hire, -1, Metas.AjudantesOldForge, xp: 100, renome: 5),
+            // B-CORE-04 (LIVEOPS_V1 §5.5 #41-44): filtro de worker_hired = papel; de worker_upgrade = nivel alcancado (cada worker chega 1x)
+            C("ach_oficial1", Hire, (int)WorkerRole.Smith, 1, xp: 50),
+            C("ach_worker_n5", Nivel, 5, 1, xp: 100),
+            C("ach_workers13", Hire, -1, WorkersOldForge, xp: 150, renome: 10),
+            C("ach_workers13_n5", Nivel, 5, WorkersOldForge, insignia: "mestre_oficio"),
             // Automation (melhorias)
             C("ach_melhoria1", Buy, -1, 1, ouroS: 30),                 // novo
             C("ach_melhorias10", Buy, -1, 10, xp: 50),                 // novo

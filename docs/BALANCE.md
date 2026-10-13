@@ -1534,13 +1534,64 @@ Perfil novo `AdWatcherE` (o AdWatcher assistindo também Supply e bônus, guloso
 
 **Achado:** assistir tudo atrasa a produção completa em 7 min. Não é o teto diário (com `AnunciosTetoDia=99` a produção fica em 52:07). O bônus da encomenda (+50% de um prêmio de ~25–60 ouro no começo) vale menos que os 30 s de relógio do anúncio, e é o placement mais visto (13 de 30). Varredura de valores (3 partidas): Supply 180 s → 50:00; bônus +100% → 50:25; os dois → 49:23; Supply 300 s + bônus +100% → 48:29 — nenhum empata com o AdWatcher. **Decisão:** os valores ficam; o jogador vê o valor antes de assistir (chips "+N" e "DOBRAR +N"), e o Orders 2.0 (B-CORE-05) recalibra o bônus com piso em segundos de renda (meta: AdWatcherE não mais lento que o AdWatcher). Pisos do §3: 0% abaixo nos 5 perfis.
 
-## 25. Blueprints (B-CORE-07) (2026-10-13)
+## 25. B-CORE-04: WorkerDef, os papéis do Old Forge e o bot que contrata (2026-10-13)
+
+**Vigente** (`Core/Equipe.cs`, `ECONOMIA_WAVE_B.md` §2, `CONTEUDO_V1.md` §6): os 13 workers do Old Forge em dados (`WorkerDefs.All`, IDs `wk_*`). Os 6 ajudantes viram `WorkerDef` Porter (o upgrade de sempre contrata; nível 1 = o ajudante de antes, bit a bit) e sobem até o nível 5 por 250/400/640/1.025 (+6% de passo por nível, carga +1 nos níveis 3 e 5). Equipe nova, contratada em ouro no cartão do menu, depois das Ferramentas: oficiais Bruna/Tomé/Iara (1.200; exigem Bigornas/Escudos/Ferramentas II) e Joaquim (2.400; Joalheria II) com q +15 (+25 no nível 5) e +5% de velocidade (+3%/nível) na família; Celeste (balconista, 1.500; Balcão 6) com paciência +10% (+5%/nível) e atendimento 0,40 → 0,32 s no balcão principal; Baltazar (almoxarife, 2.500; Renome 1) com saídas 4 → 6 (fornalha) e 3 → 5 (bancadas) e estoque do balcão +1 por produto a cada nível acima do 1; Otávio (mestre de obras, 4.000; Renome 2) com q +10 e +5% de velocidade (+2%/nível) em toda bancada. Níveis e contratação são categoria **Meta** (V14): fora da produção completa e do teto offline. **Desvio do §2.3 (revisar):** o almoxarife ganha +1 de estoque em todo nível (o §2.3 dava +2 só nos níveis 3 e 5, e os níveis 2 e 4 não fariam nada); mesmo total no 3 (+2) e no 5 (+4).
+
+**Bot (`Bot.WorkerSegundos`, padrão 0):** o mais barato à venda, só **depois da produção completa** (antes, só o que custa até N s da renda online; 0 = nenhum), e nunca à frente de melhoria (menu ou pad) igual ou mais barata. A varredura (§25.2) mostrou que todo worker comprado antes da produção completa a atrasa mais do que devolve.
+
+### 25.1 Perfil sem os workers novos = `main` ao byte
+
+`econsim --tuning Workers=false` (flag da Equipe desligada desde o início) contra o econsim da `main` (d0d78f0, #51–#53), 5 perfis: **CSV idêntico ao byte** em 60 min × 1 partida (md5 `56884df1…`), 90 min × 4 (`becb80df…`) e 120 min × 4 (`0ec710e4…`). Com a flag ligada e o bot que nunca compra worker (`--worker-seg -1`) também (60 × 1). No `coretests`: `EquipeTests.Bot_SemOsWorkersNovos_IdenticoAoDeAntes_E_ComEles_SoDepoisDaProducao` (log minuto a minuto e save iguais em 50 min; com o bot padrão, a curva produtiva e os níveis de estação no mesmo tick). Todos os `BalanceTests` passam sem mudar os portões.
+
+### 25.2 Varredura do `WorkerSegundos` (90 min, 4 partidas, média; F2P / AdWatcherE)
+
+| bot | 1ª compra de worker | Produção completa | Fachada | receita 0–60 | receita 0–90 | renda/min 80–90 | saldo aos 60 |
+|---|---|---|---|---|---|---|---|
+| sem workers (`main`) | — | 47:04 / 50:43 | 54:01 / 57:22 | 60.294 / 52.533 | 118.954 / 111.473 | 1.943 / 1.962 | 12.719 / 5.398 |
+| **0 (vigente)** | 47:09 / 50:49 | **47:04 / 50:43** | 73:43 / 76:59 | **61.332 / 53.067** | **133.364 / 124.070** | 2.464 / 2.474 | **726 / 374** |
+| 10 s | 35:07 (F2P) | 47:59 | 73:58 | 60.600 / 52.814 | 132.514 / 123.511 | 2.436 / 2.477 | 840 / 272 |
+| 20 s | 30:10 | 50:26 | 74:33 | 59.196 / 48.197 | 131.236 / 117.676 | 2.462 / 2.430 | 837 / 563 |
+| 30 s | 15:50 | 52:38 | 75:23 | 57.430 / 46.757 | 128.971 / 116.692 | 2.445 / 2.455 | 320 / 630 |
+
+Quanto antes o bot contrata, menor a receita aos 60 e aos 90 min: os 250–1.200 de um nível ou de um oficial na zona morta empurram a Joalheria e o Joalheiro mais do que o +6%/+15 devolve. Com 0 a curva produtiva é a de antes e a receita é a maior.
+
+### 25.3 Vigente, 90 min, 4 partidas (`main` → branch)
+
+| perfil | Produção completa | Fachada | pós-produção | saldo final | min sem destino | prêmio de qualidade | workers (contratados; níveis; gasto) |
+|---|---|---|---|---|---|---|---|
+| Ideal | 47:13 = | 54:04 → 73:17 | 89.481 → 57.890 | 35.506 → 3.916 | 17,8 → 2 | 13,5% → 18,0% | 6; 48; 47.040 |
+| F2P | 47:04 = | 54:01 → 73:43 | 88.150 → 56.430 | 34.247 → 5.512 | 17,3 → 1,3 | 12,6% → 17,1% | 6; 48; 47.040 |
+| Slow | 49:26 = | 56:36 → 76:35 | 82.100 → 49.061 | 28.172 → 17.134 | 14,3 → 0 | 12,6% → 16,8% | 6; 48; 47.040 |
+| AdWatcher | 44:39 = | 51:17 → 69:33 | 98.899 → 69.715 | 44.965 → 15.781 | 21 → 6,3 | 12,5% → 17,4% | 6; 48; 47.040 |
+| AdWatcherE | 50:43 = | 57:22 → 76:59 | 81.188 → 47.664 | 27.250 → 15.725 | 13,5 → 0 | 12,5% → 16,8% | 6; 48; 47.040 |
+
+Aos 120 min (4 partidas): prêmio de qualidade F2P 12,7% → 18,6%; minutos sem destino 47,3 → 31,3 (o bot fecha os 6 contratáveis no nível 5 por volta dos 88 min; o Otávio pede Renome 2, que o bot sem metas não alcança em 2 h). Bot humano (`BalanceTests`, Dt 1/30), 90 min: 6 contratados, 47.040 gastos, renda 80–90 2.429/min, saldo aos 60 min 186, receita 133.088 × 118.605 sem workers. 60 min × 1 partida: marcos, zona morta e pisos idênticos à `main`; workers F2P 4 contratados, 37 níveis, 27.705 gastos, 1ª compra 47:07.
+
+### 25.4 Portões (ECONOMIA_WAVE_B §10)
+
+| Medida | Portão | Medido (F2P) | |
+|---|---|---|---|
+| Primeiros 10 min | iguais, tick a tick | iguais (worker só depois das Ferramentas e, no bot, da produção completa) | ok |
+| Produção completa | 41–55 min | 47:04, igual à `main` | ok |
+| Zona morta até a produção | não piora (meta ≤ 12) | 20,5 = | ok (a meta de 12 fica para Orders 2.0 e Blueprints: worker antes da produção não a reduz, §25.2) |
+| Ouro sem destino aos 60 min | ≤ 10 mil | 12.719 → **726** | **ok** (antes falhava) |
+| Prêmio de qualidade | 5–20% aos 60–90; ≤ 35% aos 120 | 17,1% (90) / 18,6% (120) | ok |
+| Pisos do §3 | 0% abaixo | 0% abaixo nos 5 perfis | ok |
+
+**Retorno (achado, revisar):** os 47.040 dos 6 contratáveis + níveis sobem a renda de 1.943 para 2.464/min (+27%, janela 80–90): ~90 min para pagar, contra ≤ 40 min do portão dos níveis de estação L4–L5. Como ralo depois da produção completa funciona (receita 0–90 +12%, saldo aos 60 de 12,7 mil para 0,7 mil), mas pelo preço o worker não compensa antes dela. Knob se a Wave B quiser worker na zona morta: metade do preço dos níveis (como a V26 fez nas estações) ou efeito maior no nível 1; nada aplicado. A Fachada vai de 54:01 para 73:43 porque os workers (todos < 14 mil) disputam o ouro com o luxo; o `BalanceTests.Bot_90Minutos_Luxo` passou a rodar com `Workers = false` (isola o luxo sobre a curva produtiva; os portões dele seguem os mesmos).
+
+### 25.5 Testes e prova vermelha
+
+`EquipeTests` (20): golden dos 13 IDs; migração (mesmo upgrade, rota e ordem; nível 1 = passo e carga de antes; do save na mesma ordem); efeito neutro sem ninguém; revelação nas Ferramentas e flag desligada; compra (cobra na hora, sem ouro e no máximo nada muda, 250/400/640/1.025); requisitos por upgrade e Renome 1/2; cada papel (passo e carga por nível, oficial só na família e +25 no nível 5, mestre de obras em toda bancada e nunca na fornalha, balconista: paciência ×1,1/×1,3 e 5 → 7 vendas em 2 s, almoxarife: saídas 6/5 e estoque por nível); save de ida e volta (pilha de 6 na fornalha volta inteira), save antigo sem `wkn=` (schema 3 e o `wk=` do schema 2), lixo no `wkn=`; metas (`worker_hired` por papel, `worker_upgrade` por nível, ralo, retroativo); validator (ID, prefixo, 3 traços, custo que não sobe ou fora do múltiplo de 5, distrito/família/upgrade que o build não tem, papel da Wave C, 2º oficial da família, upgrade que já contrata, `wk_` do Renome sem worker); textos do cartão nos 3 idiomas em todo nível; `-equipe`; bot (idêntico sem os novos; 90 min com renda maior e saldo aos 60 ≤ 10 mil). `mutantes.py`: 12 mutações novas (`wk-*`: passo no nível 1, carga, oficial fora da família, mestre de obras na fornalha, atendimento sem balconista, compra sem cobrar, Renome ignorado, revelação, save sem nível, load cortando a pilha, validator de custo, bot antes da produção), todas mortas.
+
+## 26. Blueprints (B-CORE-07) (2026-10-13)
 
 Regra em `GDD.md` §12, `ECONOMIA_WAVE_B.md` §4/§8.5 e `CONTEUDO_V1.md` §9. **Vigente:** 19 `BlueprintDef` do Old Forge (os 18 do §4 + `bp_rec_espada_longa`; 3 essenciais), posse (nunca saldo) no `Sim.Projetos`. Fontes ativas: marco de venda (com "Fina ou melhor"), produção completa, Renome e conquista resgatada; as filas de encomenda (B-CORE-05), contrato, evento, Pass e loja são ganchos. Níveis IV–V das 4 famílias (Meta, menu) exigem o projeto de mestre; a bigorna longa (pad Meta, 6.000, exige o Martelo veloz) e a espada longa (2 lingotes, 7,5 s, 40 de ouro, família das bigornas) exigem `bp_rec_espada_longa`; técnica = q +20 (`Tuning.TecnicaQ`) na família. O bot não mudou: ele compra pelo menu/pad o que o projeto libera, como qualquer melhoria.
 
 **Desvios do catálogo (decididos por padrão, revisar):** (1) `bp_bigorna_mestra` e `bp_bancada_mestra` ganham o marco "produção completa" como 2ª fonte grátis (o padrão dos `bp_mestra_*` dos distritos 2–6): sem ele os níveis IV–V esperavam as filas do B-CORE-05 e nenhum essencial era alcançável no F2P. (2) Custo dos IV–V = **1/5 do §1.5 no IV e 1/6 no V** (bigornas 800/1.500, escudos 1.000/1.835, ferramentas 800/1.500, joalheria 1.600/3.000; soma 12.035), não a metade da V26: com a metade (34.000) o retorno medido foi 104 min (portão ≤ 40). O IV continua acima do III em toda família.
 
-### 25.1 econsim, 60 min, 1 partida por perfil (anúncio = 30 s), antes (main, §23) → depois
+### 26.1 econsim, 60 min, 1 partida por perfil (anúncio = 30 s), antes (main, §23) → depois
 
 | perfil | Produção | Fachada | zona morta (min) | prêmio de qualidade | projetos aos 60 | IV–V (1º) | bigorna longa |
 |---|---|---|---|---|---|---|---|
@@ -1551,7 +1602,7 @@ Regra em `GDD.md` §12, `ECONOMIA_WAVE_B.md` §4/§8.5 e `CONTEUDO_V1.md` §9. *
 
 Pisos do §3 iguais (0% abaixo em todos os perfis; os primeiros 10 min não mudam, nada de projeto antes das Ferramentas).
 
-### 25.2 4 partidas por perfil, 120 min (passos 30–52,5 ticks/s)
+### 26.2 4 partidas por perfil, 120 min (passos 30–52,5 ticks/s)
 
 | perfil | Produção | Fachada | zona morta | ouro/min 111–120 (renda final) | saldo aos 120 | min sem destino | prêmio de qualidade 120 | espada longa (% da receita) |
 |---|---|---|---|---|---|---|---|---|
@@ -1564,7 +1615,7 @@ Projetos aos 120 min (os 4 perfis): 10 de 19 — técnica das ferramentas (150 v
 
 **Por que a produção completa atrasou 2,4 min:** o marco das 300 espadas (~40 min) abre a bigorna longa; o bot compra a de 6.000 aos ~45 min (é o pad mais barato a venda), antes da Vitrine de joias (9.000), o último produtivo. Ela fica fora da produção completa (Meta), mas o ouro gasto nela atrasa o resto; a zona morta sobe 1,3 min pelo mesmo motivo. Fica dentro do portão (41–55 min). Se incomodar: o knob é `Tuning.BigornaLongaCusto` ou pedir a Vitrine de joias como requisito do pad.
 
-### 25.3 Retorno dos níveis IV–V (A/B: IV–V a 10⁹, que o bot nunca compra, × vigente; ouro/min, 4 partidas)
+### 26.3 Retorno dos níveis IV–V (A/B: IV–V a 10⁹, que o bot nunca compra, × vigente; ouro/min, 4 partidas)
 
 | janela | F2P sem → com | ganho | retorno (12.035 / ganho) | Ideal sem → com | ganho | retorno |
 |---|---|---|---|---|---|---|
@@ -1582,13 +1633,13 @@ Projetos aos 120 min (os 4 perfis): 10 de 19 — técnica das ferramentas (150 v
 
 Abaixo de 1/5 o IV fica mais barato que o III (bigornas 665 < 750). O ralo dos IV–V é pequeno perto do luxo (54 mil): o ouro sem destino depois da produção é dos distritos (Wave C).
 
-### 25.4 Portões (ECONOMIA_WAVE_B §10)
+### 26.4 Portões (ECONOMIA_WAVE_B §10)
 
 | Medida | Portão | Medido | |
 |---|---|---|---|
 | Primeiros 10 min | iguais | iguais (pisos do §3 sem mudança; `QualidadeTests.Revelacao_PrimeirosDezMinutos_IguaisSemQualidade`) | ok |
-| Produção completa, F2P | 41–55 min | 49:55 (4 partidas: 49:28) | ok (+2,4 min, §25.2) |
-| Zona morta, F2P | não piora (meta ≤ 12 é das Orders 2.0) | 21 → 22 (4 partidas: 20,5 → 21,8) | piora 1,3 min pela bigorna longa (§25.2) |
+| Produção completa, F2P | 41–55 min | 49:55 (4 partidas: 49:28) | ok (+2,4 min, §26.2) |
+| Zona morta, F2P | não piora (meta ≤ 12 é das Orders 2.0) | 21 → 22 (4 partidas: 20,5 → 21,8) | piora 1,3 min pela bigorna longa (§26.2) |
 | Prêmio de qualidade | 5–20% aos 60; ≤ 35% aos 120 | 18,2% / 24,6% | ok |
 | Golpe de mestre | ≤ 8% F2P; ≤ 12% Perfect | 0% / 1,3% | ok |
 | Retorno L4–L5 | ≤ 40 min | 35,8–38,9 min (F2P) | ok com o desvio de preço |
@@ -1599,6 +1650,6 @@ Abaixo de 1/5 o IV fica mais barato que o III (bigornas 665 < 750). O ralo dos I
 
 **Robustez (1.000 partidas, 250 passos de tick por perfil, 90 min):** todas chegam à produção completa e à Fachada, sem impasse com o corpo novo da bigorna longa (5,0; 1,5). Produção completa média F2P 49:38 (Ideal 50:42, Slow 52:42, AdWatcher 46:50); os 10 projetos de marco/produção em todas; IV–V 8/8 a partir de 50:01 (F2P); espada longa 6,4% da receita aos 90 min.
 
-### 25.5 Testes e prova vermelha
+### 26.5 Testes e prova vermelha
 
 `ProjetosTests` (12): catálogo (19, 3 essenciais, fila #1–#7 sem buraco, nada pago); posse idempotente (o mesmo marco em dois Ticks, o gancho e a transação não duplicam; o save grava ID e origem, nunca saldo); ganchos (só fonte listada, pago só com ID de transação, a mesma transação não paga 2x); fontes (marco de venda, Fina ou melhor, produção completa, Renome 3, conquista só resgatada); filas (próximo mostrado antes, sem sorteio, o que veio por outra fonte sai da fila, esgota); desbloqueio dos IV–V (menu, compra direta e cartão) e da bigorna longa (pad, linha, venda a 40, nível pela família); técnica (+20 na família toda, 1 Fina a cada 5, determinística); save (ida e volta com origem e transação, save antigo sem `bp=` vazio e o retroativo dos marcos no 1º Tick, ID desconhecido mantido); validator (essencial só pago, essencial só de contrato, só evento, Pass premium, ID repetido/fora do formato, marco inalcançável, posição de fila repetida, Renome fora da tabela, conquista e distrito inexistentes, alvo inexistente, upgrade com projeto errado e nível IV sem projeto); bot F2P com os 3 essenciais e o nível IV aos 60 min; textos do painel nos 3 idiomas. `mutantes.py`: 17 mutações novas `bp-*` (posse que duplica, transação que repete, pago sem transação, fonte não listada, Fina que conta Normal, conquista sem resgate, save sem transação, load que perde a posse, menu/compra/pad sem projeto, técnica zerada ou pela estação, nível pela estação, validator do essencial pago, contrato como permanente, mestre sem a produção completa).

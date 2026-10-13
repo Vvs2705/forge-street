@@ -43,6 +43,10 @@ namespace FS.Core
         public int AdsTotal => AdsVip + AdsBoost + AdsSupply + AdsBonus;
         /// <summary>B-CORE-03: acerta o golpe de mestre sempre que o Sim oferece (ferreiro parado na boca de uma bancada, recarga zerada).</summary>
         public bool Strike;
+        /// <summary>B-CORE-04: contrata/sobe nivel de worker antes da producao completa so quando custa ate tantos s da renda online; depois dela,
+        /// qualquer preco (e' ralo). 0 = so depois da producao completa: na varredura (BALANCE.md §25) foi o que mais rendeu aos 60 e aos 90 min
+        /// (worker comprado antes atrasa a producao mais do que devolve). Negativo = nunca (o bot de antes do B-CORE-04).</summary>
+        public float WorkerSegundos = 0f;
 
         V2 _target; bool _has, _menu; float _wait;
 
@@ -69,19 +73,36 @@ namespace FS.Core
                 if (s.BoostLeft <= 0f && s.StartBoost() > 0f) AdsBoost++;    // ponytail: so o 1o anuncio (2x); o 2o (3x) e' mais uma condicao
             }
             if (Strike) s.Strike(true);   // o Sim recusa fora de StrikeStation (parado na boca, recarga zerada); acerto perfeito, sem tempo de anel
-            int menu = s.CheapestAffordableMenu();
-            bool buy = menu >= 0;
+            int menu = s.CheapestAffordableMenu(), wk = Worker(s, menu);
+            bool buy = menu >= 0 || wk >= 0;   // B-CORE-04: o worker se compra como o menu (para, le a tela, toca)
             V2 t = buy ? s.Player.Pos : Target(s);
             if (!_has || buy != _menu || (!buy && V2.Dist(t, _target) > 0.01f)) { _target = t; _menu = buy; _has = true; _wait = Reaction; }
             if (_wait > 0f || buy)
             {
                 _wait -= dt;
                 s.Tick(dt, 0f, 0f);
-                if (buy && _wait <= 0f) s.TryBuyMenu((Upgrade)menu);
+                if (buy && _wait <= 0f) { if (wk >= 0) s.Equipe.Comprar(wk); else s.TryBuyMenu((Upgrade)menu); }
                 return;
             }
             V2 d = Toward(s, t);
             s.Tick(dt, d.X * Stick, d.Y * Stick);
+        }
+
+        /// <summary>
+        /// B-CORE-04: worker que vale comprar agora, ou -1: o mais barato que o ouro paga (Equipe.MaisBarato), se custa ate WorkerSegundos da
+        /// renda online (depois da producao completa, qualquer preco) e nenhuma melhoria pagavel (menu `menu` ou pad) custa o mesmo ou menos.
+        /// ponytail: "vale" = barato perante a renda, sem estimar retorno; o retorno medido esta no BALANCE.md §25.
+        /// </summary>
+        int Worker(Sim s, int menu)
+        {
+            if (WorkerSegundos < 0f) return -1;
+            int k = s.Equipe.MaisBarato();
+            if (k < 0) return -1;
+            long c = s.Equipe.Custo(k);
+            if (!s.ProductionComplete && c > s.RateEma * WorkerSegundos) return -1;
+            if (menu >= 0 && s.T.Cost(menu) <= c) return -1;
+            Pad pad = s.CheapestAffordablePad();
+            return pad != null && s.T.Cost(pad.Current(s)) - pad.Paid <= c ? -1 : k;
         }
 
         static bool Assiste(Sim s, Anuncio a) => s.Anuncios.Pagar(s.Anuncios.Oferta(a)) >= 0;

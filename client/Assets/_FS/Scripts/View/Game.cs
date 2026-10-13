@@ -32,7 +32,8 @@ namespace FS
     /// E-PLAT-02/03: -adcofre (resgate real de 1 h: painel com o "Cofre 2x") | -adencomenda (bonus e trocar no cartao da encomenda) |
     /// -adsupply (botao do Supply Drop na fornalha) | -intersticial (liga a flag Tuning.Interstitial na sessao: carrega e mostra o
     /// intersticial nos vetos do nucleo).
-    /// -renome N (forca o Renome total em N; so sobe) | -renomecard (abre o cartao do Renome; B-CORE-06) | -projetos [todos] (abre o painel de
+    /// -renome N (forca o Renome total em N; so sobe) | -renomecard (abre o cartao do Renome; B-CORE-06) | -equipe (B-CORE-04: a oficina com os
+    /// 6 ajudantes no nivel 3 e os 7 da Equipe contratados no posto; Captura.Equipe; com -menu e -gold, os cartoes de nivel) | -projetos [todos] (abre o painel de
     /// projetos; "todos" da os 19 do catalogo antes do -buy/-buyids; B-CORE-07).
     /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
     /// 1a contratacao) | -recordfull (fila cheia no 1o quadro ou erro) | -recordorder (o -record mantem o cartao da encomenda) | -offline S
@@ -188,7 +189,7 @@ namespace FS
             BuildHud();
             _view = new GameObject("Mundo").AddComponent<WorldView>();
             _view.Init(_sim, _cam, _labels);
-            _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos), () => _metas.Abrir());
+            _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos), () => _metas.Abrir(), WorkerComprado);
             _cfg.SetAsLastSibling();     // configuracoes e painel modal cobrem a barra de melhorias
             _panel.SetAsLastSibling();
             _metas = new PainelMetas(_safe, _sim, Pago);
@@ -438,7 +439,10 @@ namespace FS
                         Log("client_left", Balance.ItemName[e.A], e.B == 0 ? "cansou" : "fila_cheia");
                         break;
                     case Ev.Bottleneck: Log("bottleneck", _sim.Stations[e.A].Name, "saida_cheia"); break;
-                    case Ev.Hired: Sfx.Play("hire"); Log("worker_hired", e.A.ToString()); _hired = true; break;
+                    case Ev.Hired:   // B-CORE-04: B = 0 e' o ajudante do upgrade (A = indice em Workers); senao o worker da Equipe (A = WorkerDef)
+                        if (e.B != 0) { WorkerComprado(e.A, _sim.Equipe.Preco(e.A, 1)); break; }
+                        Sfx.Play("hire"); Log("worker_hired", e.A.ToString()); _hired = true; break;
+                    case Ev.WorkerUp: WorkerComprado(e.A, _sim.Equipe.Preco(e.A, e.B)); break;   // pelo bot (-bot); o cartao avisa pelo callback do MenuBar
                     case Ev.Unlocked: Log("station_unlock", _sim.Stations[e.B].Name); break;
                     // baus de marco (docs/archive/AREA2_FASE2.md s3/s4): bateu = som de moeda agudo + o ferreiro comemora (o bau aparece
                     // pulsando no WorldView); abriu = moedas e "+ouro" como uma venda, e o bau some
@@ -523,6 +527,20 @@ namespace FS
             }
             Log("upgrade_buy", ((Upgrade)u).ToString(), price.ToString());
             Count(_sink, Upgrades.IsLuxury(u) ? "luxo" : Upgrades.All[u].Meta ? "nivel_estacao" : "upgrade", price);   // B-CORE-03: o ralo Meta a parte
+        }
+
+        /// <summary>B-CORE-04: contratou ou subiu nivel (cartao do menu ou bot): som (contratacao = o do ajudante; nivel = o da melhoria), aviso
+        /// "Bruna na equipe!" / "Bruna: nível 2!" com o retrato, diario worker_hired / worker_upgrade (LIVEOPS_V1 §5.6) e o ralo "worker".</summary>
+        void WorkerComprado(int k, long preco)
+        {
+            WorkerDef d = _sim.Equipe.Defs[k];
+            int n = _sim.Equipe.Nivel(k);
+            Sfx.Play(n <= 1 ? "hire" : "upgrade");
+            Ajustes.Pulso(30, 150);
+            (Sprite icon, Color tint) = MenuBar.Retrato(d);
+            Notice(Textos.AvisoWorker(d, n), icon, tint);
+            Log(n <= 1 ? "worker_hired" : "worker_upgrade", d.Id, n.ToString(CultureInfo.InvariantCulture));
+            Count(_sink, "worker", preco);
         }
 
         // ---------- metas (D-CORE-01/02) ----------
@@ -1481,6 +1499,7 @@ namespace FS
             // -buyids 1,5,0@300 (criativos): compra estes upgrades (indice do enum ou ID estavel, A-CORE-04) fora da ordem do -buy (ex.: 4 bancadas e 1 fornalha
             // sem fole); "id@t" compra quando o relogio do jogo passa de t s, na ordem dada, cobrando o preco (TimedBuys).
             _buyAt = Captura.Compras(_sim, Arg("-buyids"));
+            if (Arg("-equipe") != null) Captura.Equipe(_sim);   // B-CORE-04 (fotos): a oficina com os 13 workers do Old Forge; o -gold vem depois
             if (long.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long g)) _sim.Gold = Math.Max(0, g);   // A-CORE-06: aceita > int (foto da HUD)
             if (long.TryParse(Arg("-renome"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long rn)) _sim.Renome.Ganha(rn - _sim.Renome.Total);   // B-CORE-06: so sobe
             string[] px = (Arg("-px") ?? "").Split(',');

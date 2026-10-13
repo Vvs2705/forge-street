@@ -61,6 +61,8 @@ namespace FS.Core
         /// <summary>`items` = quantos itens o conteudo da partida tem (Sim.ItemDefs).</summary>
         public Carrier(int items) { Held = new int[items]; HeldQ = Sim.Lotes(items); }
         public float ActT, IdleT; public bool Moving;
+        /// <summary>B-CORE-04: indice do WorkerDef deste ajudante (Equipe: nivel, passo e carga); -1 = jogador ou ajudante de teste.</summary>
+        public int Wk = -1;
         public int State;            // ajudante: 0 buscando, 1 entregando
         public int Target = -1;      // ajudante: indice da estacao alvo (-1 = parado)
         /// <summary>s andando sem sair de Balance.StuckRadius de um ponto (sem progresso): o Sim.Steer usa para sair do impasse. Nao vai no save.</summary>
@@ -134,6 +136,9 @@ namespace FS.Core
         public readonly Anuncios Anuncios;
         /// <summary>B-CORE-06: Renome (Renome.cs), trilha que so sobe. Ganchos: o Emit credita encomenda e bau, o Sell a Superior; save na linha rn=.</summary>
         public readonly Renome Renome;
+        /// <summary>B-CORE-04: workers (Equipe.cs): contratacao, nivel e o efeito de cada papel. Ganchos: Recompute (passo, carga, tempo, pilhas,
+        /// estoque), QualityBreakdown, Clients (paciencia), Serve (atendimento); save na linha wkn=.</summary>
+        public readonly Equipe Equipe;
         /// <summary>B-CORE-07: Blueprints possuidos (Projetos.cs), posse e nunca saldo. Ganchos: o Tick checa os marcos, o Sell conta as Fina ou
         /// melhor; save nas linhas bp=/bpq=.</summary>
         public readonly Projetos Projetos;
@@ -215,8 +220,18 @@ namespace FS.Core
 
         public readonly Station Deposit, FurnaceA, FurnaceB, AnvilA, AnvilB, ShieldBench, ToolBench, Counter, JewelBench, JewelShop, LongAnvil;
         public static readonly V2 HireSpot = new V2(8.3f, 1.5f);
-        static readonly Upgrade[] HireBy = { Upgrade.Helper1, Upgrade.Helper2, Upgrade.Helper3, Upgrade.Jeweler, Upgrade.Miner, Upgrade.Jeweler2 };
-        static readonly int[] HireRole = { 0, 1, 2, 3, 0, 3 };   // Mineiro = 2o papel 0, Joalheiro 2 = 2o papel 3 (FASE4_MINERIO)
+        // B-CORE-04: os ajudantes sao os WorkerDef Porter (upgrade que contrata e rota), na ordem da tabela = a de antes: Ajudante 1-3, Joalheiro,
+        // Mineiro (2o papel 0), Joalheiro 2 (2o papel 3, FASE4_MINERIO)
+        static readonly int[] HireDef = Porters();
+        static readonly Upgrade[] HireBy = Array.ConvertAll(HireDef, k => (Upgrade)Upgrades.IndexOf(WorkerDefs.All[k].Contrata));
+        static readonly int[] HireRole = Array.ConvertAll(HireDef, k => WorkerDefs.All[k].Rota);
+
+        static int[] Porters()
+        {
+            var k = new List<int>();
+            for (int i = 0; i < WorkerDefs.All.Length; i++) if (WorkerDefs.All[i].Contrata != null) k.Add(i);
+            return k.ToArray();
+        }
 
         readonly float[] _clientT;
         float _serveT, _serveJ, _convT, _padDwell;
@@ -229,6 +244,7 @@ namespace FS.Core
             Metas = new Metas(this);
             Anuncios = new Anuncios(this);
             Renome = new Renome(this);
+            Equipe = new Equipe(this);
             ItemDefs = items ?? Items.All; RecipeDefs = recipes ?? Recipes.All;
             int n = ItemDefs.Length;
             Projetos = new Projetos(this, blueprints);
@@ -856,7 +872,8 @@ namespace FS.Core
                 // B-CORE-01: base do tipo (fornalha: Fole; bancada: Martelo veloz) x multiplicador da receita; a Lupa so na Joalheria. B-CORE-03:
                 // cada nivel acima do 1 da +5% de velocidade (nivel 1 divide por 1: o tempo de antes, bit a bit)
                 if (s.Produces) s.Time = (s.Kind == Kind.Furnace ? ft : ht) * (s.Recipe.TimeMul(T) * (s == JewelBench && Bought[(int)Upgrade.JewelSpeed] ? T.JewelSpeedMul : 1f))
-                    / (1f + T.NivelEstacaoVelocidade * (s.Level - 1));
+                    / (1f + T.NivelEstacaoVelocidade * (s.Level - 1)) / Equipe.Ritmo(s);   // B-CORE-04: oficial e mestre de obras (ninguem = / 1f)
+                if (s.Produces) s.OutCap = (s.Kind == Kind.Furnace ? Balance.FurnaceOut : Balance.CrafterOut) + Equipe.Saida(s);   // B-CORE-04: almoxarife
             }
             // balcao evolutivo (FASE7 §2): +1 vaga por evolucao comprada; o corpo alarga junto (antes dos Solids)
             QueueCap = T.QueueCap0;
@@ -870,7 +887,7 @@ namespace FS.Core
             MaxX = (Bought[(int)Upgrade.SideCorridor] ? Balance.WorldW : Balance.WorkshopW) - 0.3f;
             Player.Speed = Bought[(int)Upgrade.PlayerSpeed] ? Balance.PlayerSpeedUp : Balance.PlayerSpeed;
             Player.Cap = Bought[(int)Upgrade.PlayerCapacity] ? Balance.PlayerCapUp : Balance.PlayerCap;
-            CounterCap = Bought[(int)Upgrade.CounterCapacity] ? T.CounterCap1 : T.CounterCap0;
+            CounterCap = (Bought[(int)Upgrade.CounterCapacity] ? T.CounterCap1 : T.CounterCap0) + Equipe.Estoque;   // B-CORE-04: almoxarife
             JewelQueueCap = Bought[(int)Upgrade.JewelVitrine] ? Balance.JewelQueueCapUp : Balance.JewelQueueCap;
             HasConveyor = Bought[(int)Upgrade.Conveyor];
             // um ajudante por upgrade de contratacao (papel em HireRole); a lista so cresce, na ordem da compra (o Joalheiro nao exige o Ajudante 3)
@@ -880,10 +897,14 @@ namespace FS.Core
                 int role = HireRole[k], want = 0, have = 0;
                 for (int j = 0; j <= k; j++) if (HireRole[j] == role && Bought[(int)HireBy[j]]) want++;
                 foreach (Carrier w in Workers) if (w.Role == role) have++;
-                if (have < want) Workers.Add(new Carrier(ItemDefs.Length) { Pos = HireSpot, Role = role });
+                if (have < want) Workers.Add(new Carrier(ItemDefs.Length) { Pos = HireSpot, Role = role, Wk = HireDef[k] });
             }
             bool fast = Bought[(int)Upgrade.HelperSpeed];
-            foreach (Carrier w in Workers) { w.Speed = fast ? Balance.WorkerSpeedUp : Balance.WorkerSpeed; w.Cap = fast ? Balance.WorkerCapUp : Balance.WorkerCap; }
+            foreach (Carrier w in Workers)   // B-CORE-04: nivel do ajudante (nivel 1 = x 1f e + 0)
+            {
+                w.Speed = (fast ? Balance.WorkerSpeedUp : Balance.WorkerSpeed) * Equipe.Passo(w);
+                w.Cap = (fast ? Balance.WorkerCapUp : Balance.WorkerCap) + Equipe.Carga(w);
+            }
         }
 
         // ------------------------------------------------------------------ producao, esteira, clientes
@@ -966,7 +987,7 @@ namespace FS.Core
                 bool j = p == Item.Jewel;
                 List<Client> q = QueueFor(p);
                 int cap = j ? JewelQueueCap : QueueCap;
-                float patience = T.PatienceFor(p, RecipeDefs);
+                float patience = T.PatienceFor(p, RecipeDefs) * (j ? 1f : Equipe.Paciencia);   // B-CORE-04: balconista (so o balcao principal)
                 if (q.Count < cap)
                 {
                     q.Add(new Client { Want = p, Patience = patience, MaxPatience = patience });
@@ -1044,7 +1065,7 @@ namespace FS.Core
                 {
                     Client c = q[i];
                     if (Stock[(int)c.Want] <= 0) continue;
-                    serveT = Balance.ServeTime;
+                    serveT = jewel ? Balance.ServeTime : Equipe.Atendimento;   // B-CORE-04: balconista no balcao principal
                     if (c.Vip)   // FASE8: uma unidade por atendimento a 3x o preco; fica na vaga ate levar o pacote todo
                     {
                         c.Paid += Sell(c.Want, Slot(jewel, i), T.VipPriceMul);
@@ -1071,7 +1092,7 @@ namespace FS.Core
             }
         }
 
-        internal void Emit(Ev kind, int a, int b, V2 pos)   // internal: o Projetos emite o Ev.Blueprint
+        internal void Emit(Ev kind, int a, int b, V2 pos)   // internal: a Equipe (B-CORE-04) emite a contratacao e o nivel; o Projetos (B-CORE-07), o Ev.Blueprint
         {
             Events.Add(new SimEvent(kind, a, b, pos));
             Metas.On(kind, a, b);   // D-CORE-02: tambem os de fora do Tick (menu, cofre)
@@ -1175,6 +1196,8 @@ namespace FS.Core
             var b = new int[(int)QualitySource.Buff + 1];   // uma por fonte (a ultima do enum)
             if (!s.Produces || !IsProduct(s.OutItem)) return b;
             b[(int)QualitySource.StationLevel] = (s.Level - 1) * T.NivelEstacaoQ;
+            b[(int)QualitySource.Worker] = Equipe.QualidadeOficial(s);   // B-CORE-04: oficial da familia
+            b[(int)QualitySource.Buff] = Equipe.QualidadeMestre(s);      // B-CORE-04: mestre de obras
             b[(int)QualitySource.Blueprint] = Projetos.Tecnica(s.Recipe.Family);   // B-CORE-07: tecnica da familia (posse do projeto)
             return b;
         }
@@ -1590,6 +1613,7 @@ namespace FS.Core
               .Append(BoostCooldown.ToString("0.###", ci)).Append('\n');
             Anuncios.Save(sb);   // E-PLAT-02: linhas ad.* (so o que nao e' o padrao)
             Renome.Save(sb);  // B-CORE-06: rn= (o Load de antes ignora chave desconhecida)
+            Equipe.Save(sb);  // B-CORE-04: wkn= (so com alguem de nivel; senao o texto e' o de antes)
             Projetos.Save(sb);   // B-CORE-07: bp= e bpq= (idem)
             Metas.Save(sb);   // D-CORE-01/02: linhas mt.* (nada antes da 1a Agora)
             return sb.ToString();
@@ -1608,6 +1632,8 @@ namespace FS.Core
             int v = 1;
             foreach (string raw in text.Split('\n')) if (raw.StartsWith("v=", StringComparison.Ordinal)) { v = Math.Max(1, I(raw.Substring(2), 1)); break; }
             for (; v < Schema; v++) text = Migrations[v - 1](text);
+            sim.Equipe.Load(text);   // B-CORE-04: antes das pilhas (stN=): o teto da saida depende do almoxarife
+            sim.Recompute();
             var ci = CultureInfo.InvariantCulture;
             string wk = "", wkq = "";   // carga dos ajudantes (e a qualidade dela): aplicada depois do Recompute (eles nascem dos flags)
             int vipWant = -1, vipPack = 0, vipPaid = 0; bool vipQuiet = false, vipSummoned = false;

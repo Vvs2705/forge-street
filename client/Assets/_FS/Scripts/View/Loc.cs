@@ -406,6 +406,32 @@ namespace FS
             { "ins.mao_de_ouro", L("Mão de Ouro", "Golden Hand", "Mano de Oro") },
             { "ins.livro_caixa", L("Livro-Caixa Cheio", "Full Ledger", "Libro Mayor Lleno") },
             { "ins.oficina_nobre", L("Oficina Nobre", "Noble Workshop", "Taller Noble") },
+            { "ins.mestre_oficio", L("Mestre de Ofício", "Master of Craft", "Maestro de Oficio") },
+            // B-CORE-04: metas de worker ({0} = quantas; {1} = nivel ou papel)
+            { "meta.worker_upgrade", L("Suba {0} nível de ajudante|Suba {0} níveis de ajudante", "Do {0} helper level-up|Do {0} helper level-ups",
+                "Sube {0} nivel de ayudante|Sube {0} niveles de ayudante") },
+            { "meta.worker_nivel", L("Leve {0} ajudante ao nível {1}|Leve {0} ajudantes ao nível {1}", "Get {0} helper to level {1}|Get {0} helpers to level {1}",
+                "Lleva {0} ayudante al nivel {1}|Lleva {0} ayudantes al nivel {1}") },
+            { "meta.worker_papel", L("Contrate {0} {1}", "Hire {0} {1}", "Contrata {0} {1}") },
+
+            // ---------- workers (B-CORE-04): papel (singular|plural), cartao de contratar/subir (<= 28 / 16 / 18) e aviso (<= 30) ----------
+            // nome proprio (Bruna, Tomé...) e' igual nos 3 idiomas (CONTEUDO_V1 §0.9): vem do WorkerDef
+            { "wk.papel.0", L("carregador|carregadores", "porter|porters", "cargador|cargadores") },
+            { "wk.papel.1", L("oficial|oficiais", "smith|smiths", "oficial|oficiales") },
+            { "wk.papel.2", L("balconista|balconistas", "clerk|clerks", "dependiente|dependientes") },
+            { "wk.papel.3", L("almoxarife|almoxarifes", "quartermaster|quartermasters", "intendente|intendentes") },
+            { "wk.papel.4", L("mestre de obras|mestres de obras", "foreman|foremen", "capataz|capataces") },
+            { "wk.papel.5", L("fundidor|fundidores", "smelter|smelters", "fundidor|fundidores") },
+            { "wk.papel.6", L("mensageiro|mensageiros", "courier|couriers", "mensajero|mensajeros") },
+            { "wk.papel.7", L("gerente|gerentes", "manager|managers", "gerente|gerentes") },
+            { "card.wk.passo_carga", L("Velocidade {0} · carga +1", "Speed {0} · load +1", "Velocidad {0} · carga +1") },
+            { "card.wk.paciencia", L("Paciência {0}", "Patience {0}", "Paciencia {0}") },
+            { "card.wk.saida", L("Pilhas de saída +{0}", "Output piles +{0}", "Pilas de salida +{0}") },
+            { "card.wk.estoque", L("Estoque +{0} por produto", "Stock +{0} per product", "Stock +{0} por producto") },
+            { "card.ad.nivel", L("Nível {0} → {1}", "Level {0} → {1}", "Nivel {0} → {1}") },
+            { "card.precisa_renome", L("Precisa: Renome {0}", "Needs Renown {0}", "Req.: Renombre {0}") },
+            { "aviso.contratou", L("{0} na equipe!", "{0} joins the team!", "¡{0} en el equipo!") },
+            { "aviso.worker_nivel", L("{0}: nível {1}!", "{0}: level {1}!", "¡{0}: nivel {1}!") },
 
             // ---------- projetos (B-CORE-07): painel, o que cada Blueprint libera e de onde vem (Textos.Projeto*) ----------
             { "proj.titulo", L("Projetos", "Blueprints", "Planos") },
