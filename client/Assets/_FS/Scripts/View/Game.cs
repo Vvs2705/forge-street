@@ -35,7 +35,7 @@ namespace FS
     /// -renome N (forca o Renome total em N; so sobe) | -renomecard (abre o cartao do Renome; B-CORE-06) | -equipe (B-CORE-04: a oficina com os
     /// 6 ajudantes no nivel 3 e os 7 da Equipe contratados no posto; Captura.Equipe; com -menu e -gold, os cartoes de nivel).
     /// E-PLAT-04/05 (Loja.cs, docs/IAP.md): -lojafalsa [interrompe|duplica|recusa] (so build dev: loja falsa com o Pacote do Mestre; o botao
-    /// LOJA aparece nas Configuracoes) | -loja (abre o painel da loja; pede -lojafalsa).
+    /// LOJA aparece nas Configuracoes) | -loja (abre o painel da loja; pede -lojafalsa) | -lojacompra (compra o Pacote do Mestre na abertura).
     /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
     /// 1a contratacao) | -recordfull (fila cheia no 1o quadro ou erro) | -recordorder (o -record mantem o cartao da encomenda) | -offline S
     /// (cofre real de S s fora, 60..7200). Captura que mostraria algo impossivel (compra id@t sem ouro ou pre-requisito, -vipnow depois de
@@ -233,6 +233,7 @@ namespace FS
             Offline();
             MetasAgora(false);   // D-CORE-01: o dia de hoje (o que ja estava pronto ao abrir nao vira aviso)
             IniciarLoja();
+            if (_loja != null && Arg("-lojacompra") != null) Comprar(Compras.Catalogo[0].Id);   // foto do comprado: o fluxo inteiro na abertura
             bool foto = Arg("-loja") != null;   // foto do painel (com -lojafalsa)
             if (foto && _lojaUi != null && _sim.T.Loja) _lojaUi.Abrir();
             string metas = Arg("-metas");
