@@ -1,0 +1,129 @@
+using System;
+using System.Collections.Generic;
+
+namespace FS.Core
+{
+    /// <summary>
+    /// B-CORE-05: o catalogo de encomendas que este build carrega (CONTEUDO_V1 §7, ECONOMIA_WAVE_B §3.1): os 7 tipos fixos do Old Forge (mais a
+    /// variante Superior do Quality, que o Renome 3 libera e so abre quando a automacao ja faz Superior), as 9 de evento (vaga propria, so
+    /// pontos) e os 5 fregueses do Old Forge (FS-3: item e N fixos, +1 coracao). Os dos distritos 2-6 entram com os itens deles (o
+    /// ContentValidator recusa item, distrito ou fila que nao existem). IDs com prefixo ord_ (V22), nunca renomeados: o save grava o ID.
+    /// </summary>
+    public static class OrderDefs
+    {
+        public const string OldForge = "old_forge";
+        /// <summary>Filas de Blueprint (BlueprintDef.sources, B-CORE-07): a do tipo Blueprint e a do Royal.</summary>
+        public const string FilaEncomenda = "encomenda", FilaRoyal = "royal";
+        public static readonly string[] Filas = { FilaEncomenda, FilaRoyal };
+        /// <summary>Distritos que existem no build (DistrictDef chega no C-CORE-01).</summary>
+        public static readonly string[] Distritos = { OldForge };
+        /// <summary>Base da escala dos knobs (a Common do catalogo): alvo x Tuning.OrderSeconds / 150 e premio x Tuning.OrderRewardSeconds / 10.</summary>
+        public const float AlvoBase = 150f, PremioBase = 10f;
+        /// <summary>A cada tantas Commons do distrito, a vaga vira a encomenda pessoal do proximo freguês (CONTEUDO_V1 §7.2).</summary>
+        public const int FreguesACada = 7;
+
+        const OrderType Common = OrderType.Common, Bulk = OrderType.Bulk, Qual = OrderType.Quality, Rush = OrderType.Rush, Mixed = OrderType.Mixed,
+            Royal = OrderType.Royal, Blueprint = OrderType.Blueprint, Event = OrderType.Event;
+        const Quality Fina = Quality.Fine, Superior = Quality.Superior;
+
+        static OrderDef Evento(string id, string evento) => new OrderDef(id, Event, null, 150f, 3, 30, 0f, 0, 0, eventId: evento, eventPoints: 20);
+
+        public static readonly OrderDef[] All =
+        {
+            // Old Forge: alvo (s de renda), N min-max, premio (s; min), Renome. Desvio do catalogo (revisar): Bulk, Quality, Mixed e Royal pagam 70%
+            // dos segundos do CONTEUDO_V1 §7.2 (32/18/30/25/45 -> 22/13/21/18/32): com o catalogo o ouro de encomendas ia a 13,6% da venda aos
+            // 60 min no F2P (portao 4-12%, ECONOMIA_WAVE_B §10); com 70%, 11,3% (BALANCE.md §25). Common, Rush e Blueprint como no catalogo
+            new OrderDef("ord_common_old_forge", Common, OldForge, 150f, 3, 30, 10f, 25, 1),
+            new OrderDef("ord_bulk_old_forge", Bulk, OldForge, 400f, 8, 80, 22f, 60, 3, minLines: 2, minDelivered: 5),
+            new OrderDef("ord_quality_old_forge", Qual, OldForge, 90f, 3, 20, 13f, 40, 3, minQuality: Fina),
+            new OrderDef("ord_quality_old_forge_superior", Qual, OldForge, 90f, 3, 20, 21f, 75, 3, minQuality: Superior),
+            new OrderDef("ord_rush_old_forge", Rush, OldForge, 150f, 3, 30, 10f, 25, 1, bonusDeadline: 240f, bonusRewardSeconds: 10f, bonusReputation: 1, minDelivered: 8),
+            new OrderDef("ord_mixed_old_forge", Mixed, OldForge, 70f, 2, 15, 18f, 60, 3, products: 3, minLines: 3),
+            new OrderDef("ord_royal_old_forge", Royal, OldForge, 200f, 5, 40, 32f, 150, 10, minQuality: Fina, blueprintQueue: FilaRoyal),
+            new OrderDef("ord_blueprint_old_forge", Blueprint, OldForge, 150f, 3, 30, 5f, 25, 2, blueprintQueue: FilaEncomenda),
+            // eventos (LIVEOPS_V1 §2.2): 20 pontos por entrega, sem ouro nem Renome
+            Evento("ord_ev_royal_week", "ev_s1w1_royal_week"),
+            Evento("ord_ev_forge_frenzy", "ev_s1w2_forge_frenzy"),
+            Evento("ord_ev_armorers_challenge", "ev_s1w3_armorers_challenge"),
+            Evento("ord_ev_hunt_sunblade", "ev_s1w4_hunt_sunblade"),
+            Evento("ord_ev_blacksmith_festival", "ev_s2w1_blacksmith_festival"),
+            Evento("ord_ev_rare_ore_rush", "ev_s2w2_rare_ore_rush"),
+            Evento("ord_ev_merchant_caravan", "ev_s2w3_merchant_caravan"),
+            Evento("ord_ev_hunt_ember_crown", "ev_s2w4_hunt_ember_crown"),
+            Evento("ord_ev_arcane_week", "ev_arcane_week"),
+            // fregueses do Old Forge (o premio e o Renome do tipo; N fixo)
+            new OrderDef("ord_reg_orbo", Qual, OldForge, 0f, 5, 5, 13f, 40, 3, minQuality: Fina, item: "ferramenta", fixedN: 5, clientId: "cli_reg_orbo"),
+            new OrderDef("ord_reg_lirien", Common, OldForge, 0f, 8, 8, 10f, 25, 1, item: "joia", fixedN: 8, clientId: "cli_reg_lirien"),
+            new OrderDef("ord_reg_grunk", Bulk, OldForge, 0f, 40, 40, 22f, 60, 3, item: "espada", fixedN: 40, clientId: "cli_reg_grunk"),
+            new OrderDef("ord_reg_bento", Common, OldForge, 0f, 10, 10, 10f, 25, 1, item: "escudo", fixedN: 10, clientId: "cli_reg_bento"),
+            new OrderDef("ord_reg_ines", Qual, OldForge, 0f, 4, 4, 13f, 40, 3, minQuality: Fina, item: "joia", fixedN: 4, clientId: "cli_reg_ines"),
+        };
+
+        /// <summary>Rodizio de cada distrito (posicao = Encomendas.Abertas % 10; sem peso, sem sorteio). Event fica fora (vaga propria).</summary>
+        public static readonly (string District, OrderType[] Cycle)[] Ciclos =
+        {
+            (OldForge, new[] { Common, Common, Bulk, Qual, Common, Mixed, Rush, Blueprint, Common, Royal }),
+        };
+
+        public static OrderType[] Ciclo(string district) => Array.Find(Ciclos, c => c.District == district).Cycle;
+
+        /// <summary>A Common do distrito: o que um tipo travado vira.</summary>
+        public static OrderDef Comum(string district) => Array.Find(All, d => d.District == district && d.Type == OrderType.Common && d.ClientId == null);
+
+        /// <summary>
+        /// Regras do ContentValidator (ECONOMIA_WAVE_B §8.4): ID ord_ unico em [a-z0-9_]; distrito que existe (Event: sem distrito, com evento e
+        /// pontos, sem ouro nem Renome); N min &lt;= max (freguês: N fixo dentro); qualidade minima ate Superior (Masterwork nunca e' alvo); bonus
+        /// so com prazo (nao existe penalidade); premio positivo e multiplo de 5; Mixed com 2+ produtos e 3+ linhas; fila de Blueprint que
+        /// existe (o tipo Blueprint tem fila); item fixo que existe no jogo e e' vendido (freguês com cli_). Ciclo de distrito que existe, com
+        /// Common, sem Event e so com tipos que tem OrderDef no distrito.
+        /// </summary>
+        public static IEnumerable<string> Validar(OrderDef[] defs, (string District, OrderType[] Cycle)[] ciclos, Sim w)
+        {
+            var ids = new HashSet<string>();
+            foreach (OrderDef d in defs)
+            {
+                string at = $"encomenda {d.Id}:";
+                if (string.IsNullOrEmpty(d.Id) || !d.Id.StartsWith("ord_", StringComparison.Ordinal) || !Array.TrueForAll(d.Id.ToCharArray(), c => c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_'))
+                    yield return $"{at} ID fora do formato ord_[a-z0-9_]";
+                else if (!ids.Add(d.Id)) yield return $"{at} ID repetido";
+                if (d.Type == OrderType.Event)
+                {
+                    if (d.District != null || d.EventId == null || d.EventPoints <= 0) yield return $"{at} Event pede evento e pontos, sem distrito";
+                    if (d.RewardSeconds != 0f || d.RewardMin != 0 || d.Reputation != 0) yield return $"{at} Event da so pontos de evento (sem ouro nem Renome)";
+                }
+                else
+                {
+                    if (Array.IndexOf(Distritos, d.District) < 0) yield return $"{at} distrito \"{d.District}\" que nao existe no jogo";
+                    if (d.EventId != null) yield return $"{at} evento fora do tipo Event";
+                    if (d.RewardSeconds <= 0f || d.RewardMin <= 0 || d.RewardMin % 5 != 0) yield return $"{at} premio {d.RewardSeconds} s; {d.RewardMin} (positivo, minimo x5)";
+                }
+                if (d.TargetMin < 1 || d.TargetMin > d.TargetMax) yield return $"{at} N {d.TargetMin}-{d.TargetMax}";
+                if (d.FixedN > 0 ? d.FixedN < d.TargetMin || d.FixedN > d.TargetMax : d.TargetSeconds <= 0f) yield return $"{at} alvo sem segundos de renda nem N fixo dentro do intervalo";
+                if (d.MinQuality > Quality.Superior) yield return $"{at} qualidade minima {d.MinQuality} (Masterwork nunca e' alvo)";
+                if (d.BonusDeadline < 0f || d.BonusRewardSeconds < 0f || d.BonusReputation < 0 || d.Reputation < 0) yield return $"{at} prazo, bonus ou Renome negativo";
+                if (d.BonusDeadline <= 0f && (d.BonusRewardSeconds > 0f || d.BonusReputation > 0)) yield return $"{at} bonus sem prazo";
+                if (d.Type == OrderType.Mixed ? d.Products < 2 || d.MinLines < 3 : d.Products != 1) yield return $"{at} {d.Products} produtos (Mixed: 2+ com 3+ linhas; os outros: 1)";
+                if (d.BlueprintQueue != null && Array.IndexOf(Filas, d.BlueprintQueue) < 0) yield return $"{at} fila de Blueprint \"{d.BlueprintQueue}\" que nao existe";
+                if (d.Type == OrderType.Blueprint && d.BlueprintQueue == null) yield return $"{at} Blueprint sem fila";
+                if (d.Item != null)
+                {
+                    int i = Items.IndexOf(d.Item, w.ItemDefs);
+                    if (i < 0 || !w.IsProduct((Item)i) || !w.Stations.Exists(s => s.Produces && s.OutItem == (Item)i)) yield return $"{at} item \"{d.Item}\" que nao existe no jogo (ou nao e' vendido)";
+                    if (d.FixedN <= 0) yield return $"{at} item fixo sem N fixo";
+                }
+                if (d.ClientId != null && (d.Item == null || !d.ClientId.StartsWith("cli_", StringComparison.Ordinal))) yield return $"{at} freguês \"{d.ClientId}\" sem item fixo ou fora de cli_";
+            }
+            foreach ((string district, OrderType[] cycle) in ciclos)
+            {
+                if (Array.IndexOf(Distritos, district) < 0) yield return $"ciclo: distrito \"{district}\" que nao existe";
+                if (cycle == null || Array.IndexOf(cycle, OrderType.Common) < 0) yield return $"ciclo {district}: sem Common (o que um tipo travado vira)";
+                if (cycle == null) continue;
+                foreach (OrderType t in cycle)
+                    if (t == OrderType.Event) yield return $"ciclo {district}: Event no ciclo (tem vaga propria)";
+                    else if (!Array.Exists(defs, d => d.District == district && d.Type == t && d.ClientId == null)) yield return $"ciclo {district}: {t} sem OrderDef no distrito";
+            }
+            foreach (string district in Distritos)
+                if (!Array.Exists(ciclos, c => c.District == district)) yield return $"ciclo: distrito {district} sem ciclo";
+        }
+    }
+}

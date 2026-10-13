@@ -190,9 +190,12 @@ namespace FS.Tests
             TestContext.WriteLine(string.Format(CultureInfo.InvariantCulture, "VIP: sorteados={0} entraram={1} levaram={2} cansaram={3} ouro={4} ({5:0.0}% da receita)", s.VipCount, vipArrived, vipServed, vipLeft, vipGold, vipShare));
             // FASE9: encomendas entregues, premio (fora do GoldEarned) como % da receita de vendas, minutos por encomenda depois da 1a venda
             float orderShare = 100f * s.OrderGold / Math.Max(1, s.GoldEarned);
-            TestContext.WriteLine(string.Format(CultureInfo.InvariantCulture, "encomendas: entregues={0} premio={1} ({2:0.0}% da receita) | {3:0.0} min por encomenda | aberta: {4} {5}/{6}",
-                s.OrderCount, s.OrderGold, orderShare, (end - s.FirstSaleTime) / 60f / Math.Max(1, s.OrderCount), s.OrderItem, s.OrderProgress, s.OrderTarget));
-            Assert.That(orderShare, Is.InRange(3f, 10f), "FASE9: premio das encomendas entre 3% e 10% da receita");
+            TestContext.WriteLine(string.Format(CultureInfo.InvariantCulture, "encomendas: entregues={0} premio={1} ({2:0.0}% da receita) | {3:0.0} min por encomenda | abertas: {4} | por tipo: {5}",
+                s.OrderCount, s.OrderGold, orderShare, (end - s.FirstSaleTime) / 60f / Math.Max(1, s.OrderCount),
+                string.Join(" ", s.Encomendas.Vagas.ConvertAll(v => v.Tipo + ":" + v.Progresso + "/" + v.Total)), string.Join("/", s.Encomendas.PorTipo)));
+            // B-CORE-05: portao da Wave B (ECONOMIA_WAVE_B §10): 4-12% da receita aos 60 min e >= 25 entregues (era 3-10% com 1 vaga e 1 tipo)
+            Assert.That(orderShare, Is.InRange(4f, 12f), "Orders 2.0: premio das encomendas entre 4% e 12% da receita");
+            Assert.GreaterOrEqual(s.OrderCount, 25, "Orders 2.0: >= 25 encomendas em 60 min");
             TestContext.WriteLine(string.Format(CultureInfo.InvariantCulture,
                 "joalheiro={0} lupa={1} vitrine de joias={2} | producao completa={3} | joias/min: joalheria->joalheiro={4:0.0} joalheiro->lupa={5:0.0} depois da producao={6:0.0} | " +
                 "bancada de joias sem lingote: antes do joalheiro={7:0}% joalheiro->lupa={8:0}% joalheiro->60 min={9:0}% | joias={10} | baus abertos: {11}",

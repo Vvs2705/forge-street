@@ -8,7 +8,8 @@ namespace FS.Core
     /// <summary>
     /// B-CORE-06: Reputation ("Renome", GDD §14, V9): trilha monotonica, nunca moeda. Um total `long` que so sobe (Ganha ignora n &lt;= 0 e
     /// satura no teto) e o nivel derivado dos limiares (RenomeDefs). Nao existe gasto nem setter publico; nenhum caminho reduz (RenomeTests).
-    /// Fontes ativas hoje (ECONOMIA_WAVE_B §5.1): encomenda entregue +1 e bau aberto +5 pelo fluxo de Ev (gancho unico: Sim.Emit chama On),
+    /// Fontes ativas hoje (ECONOMIA_WAVE_B §5.1): encomenda entregue pelo tipo (+1 a +10; o Encomendas.Entregar credita, B-CORE-05), bau
+    /// aberto +5 pelo fluxo de Ev (gancho unico: Sim.Emit chama On),
     /// peca Superior vendida (+1 a cada 10; o Sim.Sell chama OnVendaQualidade) e as metas (o Metas.Paga credita aqui depois do ledger dele).
     /// Ganchos prontos: Credita/OnCharter (Masterwork mw:, colecao col:, contrato ctr:, Charter charter:, com ID de transacao: 1x).
     /// Save: linha rn=total,superiores[,ids]. Save sem ela (0.1-0.7) = retroativo deterministico, 1x pelo ID rn:retro: encomendas entregues +
@@ -69,8 +70,7 @@ namespace FS.Core
         /// <summary>Fluxo de eventos do Sim (Sim.Emit).</summary>
         public void On(Ev kind, int a, int b)
         {
-            if (kind == Ev.OrderDone) Ganha(RenomeDefs.Encomenda);
-            else if (kind == Ev.ChestOpened) Ganha(RenomeDefs.Bau);
+            if (kind == Ev.ChestOpened) Ganha(RenomeDefs.Bau);   // a encomenda credita pelo tipo no Encomendas.Entregar (B-CORE-05)
         }
 
         /// <summary>Peca vendida no nivel `nivel` (Sim.Sell, B-CORE-03): Superior conta e cada 10 dao +1.</summary>
@@ -87,7 +87,7 @@ namespace FS.Core
         void Retro()
         {
             long baus = _sim.Chests.FindAll(c => c.State == 2).Count;
-            Credita(TxRetro, _sim.OrderCount + RenomeDefs.Bau * baus + _sim.Metas.Renome);
+            Credita(TxRetro, RenomeDefs.Encomenda * _sim.OrderCount + RenomeDefs.Bau * baus + _sim.Metas.Renome);
         }
 
         public void Save(StringBuilder sb)

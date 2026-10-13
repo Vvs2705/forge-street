@@ -133,6 +133,8 @@ namespace FS.Core
         public readonly Anuncios Anuncios;
         /// <summary>B-CORE-06: Renome (Renome.cs), trilha que so sobe. Ganchos: o Emit credita encomenda e bau, o Sell a Superior; save na linha rn=.</summary>
         public readonly Renome Renome;
+        /// <summary>B-CORE-05: Orders 2.0 (Encomendas.cs): vagas, rodizio, premio. Ganchos: Tick, Sell (OnVenda), Save/Load.</summary>
+        public readonly Encomendas Encomendas;
         /// <summary>B-CORE-01: itens e receitas desta partida (padrao Items.All e Recipes.All; so o teste injeta outro). Handle de item = posicao
         /// em ItemDefs; os arrays por item (Stock, SoldItems, Crafted, Held) tem esse tamanho.</summary>
         public readonly ItemDef[] ItemDefs; public readonly RecipeDef[] RecipeDefs;
@@ -163,11 +165,8 @@ namespace FS.Core
         /// <summary>s ate o proximo VIP natural (parado ate a 1a venda); VipCount = VIPs ja sorteados, naturais e chamados (semente do intervalo e do
         /// produto). Vao no save.</summary>
         public float VipIn; public int VipCount;
-        // FASE9: encomenda ativa (OrderItem -1 = nenhuma) e relogio ate a proxima (so anda depois da 1a venda)
-        public int OrderItem = -1, OrderTarget, OrderProgress, OrderReward, OrderCount; public float OrderIn;
-        /// <summary>E-PLAT-02: encomendas puladas pelo "Trocar" (anuncio). Indice no rodizio = OrderIndex (entregues + puladas); vai no save (ord=).</summary>
-        public int OrderSkips;
-        public int OrderIndex => OrderCount + OrderSkips;
+        // FASE9: encomendas entregues (vai no save, ord=); as vagas, o rodizio e o relogio estao no Encomendas (B-CORE-05)
+        public int OrderCount;
         public long OrderGold;   // premios pagos nesta sessao (metrica do bot; fora do GoldEarned, nao vai no save)
         /// <summary>Velocidade por anuncio: multiplicador (1, 2 ou 3), s restantes e s de recarga (conta do fim do boost), no tempo de jogo. A-CORE-02:
         /// os tres vao no save (bst=): reabrir nao libera outro boost e o ativo volta com o que restou; o tempo fora nao corre nenhum (como na pausa).</summary>
@@ -225,12 +224,12 @@ namespace FS.Core
             Metas = new Metas(this);
             Anuncios = new Anuncios(this);
             Renome = new Renome(this);
+            Encomendas = new Encomendas(this);
             ItemDefs = items ?? Items.All; RecipeDefs = recipes ?? Recipes.All;
             int n = ItemDefs.Length;
             Stock = new int[n]; SoldItems = new int[n]; Crafted = new int[n]; StockQ = Lotes(n);
             Player = new Carrier(n) { Pos = new V2(4.5f, 3.5f), Speed = Balance.PlayerSpeed, Cap = Balance.PlayerCap };
             VipIn = T.VipInterval(0);
-            OrderIn = T.OrderFirstDelay;
             _clientT = new[] { 0f, 0f, T.FirstClientAt, T.ClientInterval[3], T.ClientInterval[4], T.ClientInterval[5] };
             for (int i = 0; i < Upgrades.Count; i++) UpgradeTime[i] = -1f;
             // Bocas (FASE5 §2b): (inX, inY) = lado da ENTRADA; a SAIDA fica no lado oposto. Toda estacao que produz: entrada a
@@ -404,7 +403,7 @@ namespace FS.Core
             StrikeCooldown = Math.Max(0f, StrikeCooldown - dt);   // B-CORE-03: golpe de mestre, no tempo de jogo (o boost nao encurta)
             Clients(dt);
             Milestones();
-            Orders(dt);
+            Encomendas.Tick(dt);   // B-CORE-05
             if (BoostLeft > 0f) { if ((BoostLeft -= dt) <= 0f) { BoostLeft = 0f; BoostMul = 1f; BoostCooldown = T.Ad(Anuncio.Velocidade).Recarga; } }   // recarga conta do fim
             else BoostCooldown = Math.Max(0f, BoostCooldown - dt);
 
@@ -978,7 +977,7 @@ namespace FS.Core
             int price = PriceOf(want, l) * mul;
             QualityGold += price - PriceOf(want) * mul;
             Gold += price; GoldEarned += price; Sales++; SoldItems[(int)want]++;
-            if ((int)want == OrderItem && OrderProgress < OrderTarget) OrderProgress++;
+            Encomendas.OnVenda(want, l);   // B-CORE-05: conta para a vaga mais antiga que aceita a peca
             if (FirstSaleTime < 0f) FirstSaleTime = Time;
             Emit(Ev.Sold, (int)want, price, pos);
             return price;
@@ -1053,62 +1052,11 @@ namespace FS.Core
             }
         }
 
-        void Emit(Ev kind, int a, int b, V2 pos)
+        internal void Emit(Ev kind, int a, int b, V2 pos)
         {
             Events.Add(new SimEvent(kind, a, b, pos));
             Metas.On(kind, a, b);   // D-CORE-02: tambem os de fora do Tick (menu, cofre)
             Renome.On(kind, a, b);  // B-CORE-06: encomenda entregue e bau aberto
-        }
-
-        /// <summary>
-        /// FASE9: encomenda entregue paga o premio (como o bau, FORA do GoldEarned: nao infla a taxa online nem o cofre) e a proxima vem
-        /// OrderGap s depois. A 1a (5 espadas) vem OrderFirstDelay s depois da 1a venda. ponytail: um tipo so (vender N de uma linha), sem
-        /// prazo; "comprar melhoria"/"atender VIP" se o playtest pedir. Flag Encomendas desligada: a aberta ainda entrega e paga; o relogio
-        /// da proxima para e nenhuma nova abre.
-        /// </summary>
-        void Orders(float dt)
-        {
-            if (FirstSaleTime < 0f) return;
-            if (OrderItem >= 0)
-            {
-                if (OrderProgress < OrderTarget) return;
-                Gold += OrderReward;
-                OrderGold += OrderReward;
-                Emit(Ev.OrderDone, OrderItem, OrderReward, CounterFor((Item)OrderItem).Pos);   // joia: na loja de joias
-                OrderItem = -1; OrderCount++; OrderIn = T.OrderGap;
-                return;
-            }
-            if (!T.Encomendas || (OrderIn -= dt) > 0f) return;
-            OrderIn = 0f;
-            AbreEncomenda();
-        }
-
-        /// <summary>A encomenda `idx` do rodizio com a taxa de agora: item = as linhas abertas em rodizio; N = OrderFirstTarget na 1a, depois
-        /// ~150 s da renda real dividida entre as linhas (no comeco o gargalo e' a producao, nao o cliente: pela demanda a 2a ja pedia 27
-        /// espadas), entre 3 e 30; premio ~10 s da taxa online. E-PLAT-02: a natural seguinte e a do "Trocar" (mostrada antes) saem daqui.</summary>
-        public (Item item, int target, int reward) OrderAt(int idx)
-        {
-            var lines = new List<Item>();
-            for (Item p = Item.Sword; p <= Item.Jewel; p++) if (LineUnlocked(p)) lines.Add(p);
-            Item it = lines[idx % lines.Count];
-            int target = idx == 0 ? T.OrderFirstTarget
-                : Math.Max(T.OrderMin, Math.Min(T.OrderMax, (int)Math.Round(T.OrderSeconds * RateEma / (lines.Count * PriceOf(it)))));
-            return (it, target, Math.Max(T.OrderRewardMin, 5 * (int)Math.Round(RateEma * T.OrderRewardSeconds / 5.0)));
-        }
-
-        void AbreEncomenda()
-        {
-            (Item it, int target, int reward) = OrderAt(OrderIndex);
-            OrderItem = (int)it; OrderTarget = target; OrderProgress = 0; OrderReward = reward;
-            Emit(Ev.OrderNew, OrderItem, OrderTarget, CounterFor(it).Pos);
-        }
-
-        /// <summary>E-PLAT-02 "Trocar encomenda" (so o Anuncios.Pagar chama): a ativa sai sem pagar e entra a proxima do rodizio, do zero (a que
-        /// o botao mostrou: Anuncios.ProximaEncomenda). Sem sorteio (P5).</summary>
-        internal void TrocarEncomenda()
-        {
-            OrderSkips++;
-            AbreEncomenda();
         }
 
         // ------------------------------------------------------------------ qualidade (B-CORE-03, docs/ECONOMIA_WAVE_B.md §1)
@@ -1558,9 +1506,7 @@ namespace FS.Core
               .Append(',').Append(vip != null ? 1 : 0).Append(',').Append(vip != null ? vip.Paid : 0)   // na vaga?, ja pagou
               .Append(',').Append((vip != null ? vip.Summoned : _vipWant >= 0 && _vipSummoned) ? 1 : 0).Append('\n');   // P14: chamado? (a recarga comeca quando ele sair)
             sb.Append("vipc=").Append(VipCooldown.ToString("0.###", ci)).Append('\n');   // P14: recarga do Chamar VIP
-            // FASE9: encomenda (item, alvo, progresso, premio, entregues, relogio ate a proxima)
-            sb.Append("ord=").Append(OrderItem).Append(',').Append(OrderTarget).Append(',').Append(OrderProgress).Append(',').Append(OrderReward)
-              .Append(',').Append(OrderCount).Append(',').Append(OrderIn.ToString("0.###", ci)).Append(',').Append(OrderSkips).Append('\n');   // E-PLAT-02: puladas no fim
+            Encomendas.Save(sb);   // FASE9/B-CORE-05: ord= (espelho da principal para o downgrade) e as linhas enc*
             // A-CORE-02: velocidade (multiplicador, s restantes, s de recarga), no tempo de jogo
             sb.Append("bst=").Append(BoostMul.ToString("0", ci)).Append(',').Append(BoostLeft.ToString("0.###", ci)).Append(',')
               .Append(BoostCooldown.ToString("0.###", ci)).Append('\n');
@@ -1585,7 +1531,7 @@ namespace FS.Core
             var ci = CultureInfo.InvariantCulture;
             string wk = "", wkq = "";   // carga dos ajudantes (e a qualidade dela): aplicada depois do Recompute (eles nascem dos flags)
             int vipWant = -1, vipPack = 0, vipPaid = 0; bool vipQuiet = false, vipSummoned = false;
-            int ordItem = -1, ordTarget = 0, ordProgress = 0, ordReward = 0;   // VIP pendente: so depois do Recompute (a linha do produto tem de estar aberta)
+            // VIP pendente e encomendas: so depois do Recompute (a linha do produto tem de estar aberta)
             long refund = 0;   // parcial de pad sem pad (ID desconhecido ou upgrade so de menu): volta ao ouro depois do gold=
             foreach (string raw in text.Split('\n'))
             {
@@ -1642,16 +1588,6 @@ namespace FS.Core
                     case "holdsq": ReadIdQ(sim, parts, sim.Player.HeldQ); break;
                     case "wksq": wkq = val; break;
                     case "golpe": sim.StrikeCooldown = Math.Max(0f, Math.Min(T.GolpeRecarga, F(val, 0f))); break;
-                    case "ord":   // FASE9; save antigo sem ord=: do zero. A encomenda so volta depois do Recompute (linha aberta)
-                        if (parts.Length >= 6)
-                        {
-                            ordItem = I(parts[0], -1); ordTarget = Clamp0(I(parts[1], 0), T.OrderMax);
-                            ordProgress = Clamp0(I(parts[2], 0), ordTarget); ordReward = Math.Max(0, I(parts[3], 0));
-                            sim.OrderCount = Math.Max(0, I(parts[4], 0));
-                            sim.OrderIn = Math.Max(0f, Math.Min(T.OrderFirstDelay, F(parts[5], T.OrderFirstDelay)));
-                            if (parts.Length >= 7) sim.OrderSkips = Math.Max(0, I(parts[6], 0));   // E-PLAT-02; save de antes: nenhuma pulada
-                        }
-                        break;
                     case "vip":   // FASE8; save antigo sem vip=: relogio novo (VipInterval(0)) e nenhum VIP pendente
                         if (parts.Length >= 4)
                         {
@@ -1721,8 +1657,7 @@ namespace FS.Core
                 for (int i = 0; i < h.Length; i++) Fit(w.Held[i], w.HeldQ[i]);
             }
             if (vipPack > 0 && vipWant >= (int)Item.Sword && vipWant <= (int)Item.Tool && sim.LineUnlocked((Item)vipWant)) { sim._vipWant = vipWant; sim._vipPack = vipPack; sim._vipPaid = vipPaid; sim._vipQuiet = vipQuiet; sim._vipSummoned = vipSummoned; }
-            if (ordItem >= (int)Item.Sword && ordItem <= (int)Item.Jewel && ordTarget > 0 && sim.LineUnlocked((Item)ordItem))
-            { sim.OrderItem = ordItem; sim.OrderTarget = ordTarget; sim.OrderProgress = ordProgress; sim.OrderReward = ordReward; }
+            sim.Encomendas.Load(text);   // B-CORE-05 (ord= e enc*): antes do Renome (o retroativo le o OrderCount)
             sim.Player.Pos = sim.Collide(Clamp(sim.Player.Pos, sim.MaxX));   // save antigo com o jogador dentro de um corpo: sai pela borda
             // pad escondido devolve o parcial: o save da v0.3 com produtivos novos (Mineiro, Joalheiro 2) esconde o luxo ate completar
             // de novo, e o pad cujo upgrade foi para o menu (FASE6) nunca mais aparece

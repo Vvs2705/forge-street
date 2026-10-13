@@ -44,6 +44,8 @@ namespace FS.Core
         {
             "product_sold", "product_crafted", "order_done", "upgrade_buy", "worker_hired", "offline_claim", "currency_source", "currency_sink",
             "vip_served", "chest_opened", "mission_complete", "login_claim",
+            // B-CORE-05 (LIVEOPS_V1 §5.8): entrega por tipo (filtro = OrderType), Quality/Royal/Mixed e Rush no prazo (Encomendas.Entregar)
+            "order_complete", "order_premium", "order_rush_prazo",
         };
 
         public sealed class Slot { public MetaDef Def; public long Base, Alvo; }
@@ -93,6 +95,14 @@ namespace FS.Core
             }
         }
 
+        /// <summary>B-CORE-05: encomenda entregue (o Ev.OrderDone nao leva o tipo). So conta: o Sim segue identico.</summary>
+        public void OnEncomenda(OrderType t, bool noPrazo)
+        {
+            Soma("order_complete", (int)t, 1);
+            if (t == OrderType.Quality || t == OrderType.Royal || t == OrderType.Mixed) Soma("order_premium", -1, 1);
+            if (t == OrderType.Rush && noPrazo) Soma("order_rush_prazo", -1, 1);
+        }
+
         void Soma(string ev, int filtro, long n)
         {
             Add(ev, n);
@@ -105,12 +115,14 @@ namespace FS.Core
             Cont[k] = v + n;
         }
 
-        /// <summary>Valor do contador da meta (Distintos: quantos produtos com pelo menos 1).</summary>
+        /// <summary>Valor do contador da meta (Distintos: quantos produtos com pelo menos 1; em order_complete, quantos tipos fora o Event).</summary>
         public long Valor(MetaDef d)
         {
             if (d.Conta != Conta.Distintos) { Cont.TryGetValue(d.Chave, out long v); return v; }
+            bool tipos = d.Evento == "order_complete";
             long n = 0;
-            for (int i = (int)Item.Sword; i <= (int)Item.Jewel; i++) if (Cont.TryGetValue(Chave(d.Evento, i), out long v) && v > 0) n++;
+            for (int i = tipos ? 0 : (int)Item.Sword; i <= (tipos ? (int)OrderType.Blueprint : (int)Item.Jewel); i++)
+                if (Cont.TryGetValue(Chave(d.Evento, i), out long v) && v > 0) n++;
             return n;
         }
 
@@ -190,6 +202,10 @@ namespace FS.Core
                 case "upgrade_buy": case "currency_sink": return _sim.UpgradesBought < Upgrades.Count;
                 case "worker_hired": return _sim.Workers.Count < AjudantesOldForge;
                 case "chest_opened": return _sim.Chests.Exists(c => c.State < 2);
+                // B-CORE-05: missao de tipo de encomenda so quando o tipo ja abre no rodizio (antes, nao fecharia na semana)
+                case "order_complete": return _sim.Encomendas.TipoAberto((OrderType)d.Filtro);
+                case "order_premium": return _sim.Encomendas.TipoAberto(OrderType.Quality) || _sim.Encomendas.TipoAberto(OrderType.Mixed);
+                case "order_rush_prazo": return _sim.Encomendas.TipoAberto(OrderType.Rush);
                 default: return true;
             }
         }

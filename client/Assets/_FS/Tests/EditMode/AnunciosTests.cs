@@ -27,7 +27,7 @@ namespace FS.Tests
         {
             Sim s = liberado ? TuningTests.Liberado(t) : new Sim(t);
             s.FirstSaleTime = 1f; s.VipIn = 200f;
-            s.OrderItem = (int)Item.Sword; s.OrderTarget = 5; s.OrderReward = 100;
+            EncTeste.Poe(s, Item.Sword, 5, 100);
             s.LastClaim = 777; s.LastClaimGold = 400;
             return s;
         }
@@ -57,7 +57,7 @@ namespace FS.Tests
         {
             Sim s = Pronto();
             string tx = s.Anuncios.Oferta(Anuncio.EncomendaBonus);
-            s.OrderProgress = s.OrderTarget;
+            EncTeste.Completa(s);
             s.Tick(Dt, 0f, 0f);   // entregue (o jogo para no anuncio, mas o nucleo nao confia nisso)
             Assert.AreEqual(-1L, s.Anuncios.Pagar(tx), "a encomenda do toque ja foi entregue");
             Assert.AreEqual(-1L, s.Anuncios.Pagar(null), "sem oferta");
@@ -123,19 +123,37 @@ namespace FS.Tests
             Sim s = Pronto();
             Assert.AreEqual(50L, s.Anuncios.Previa(Anuncio.EncomendaBonus), "mostra +50 antes (50% de 100)");
             Assert.AreEqual(50L, Assiste(s, Anuncio.EncomendaBonus));
-            Assert.AreEqual(150, s.OrderReward);
+            Assert.AreEqual(150L, s.Encomendas.Principal.Premio);
             Assert.IsFalse(s.Anuncios.Pode(Anuncio.EncomendaBonus), "1 por encomenda");
             Assert.IsFalse(s.Anuncios.Pode(Anuncio.EncomendaTroca), "trocar perderia o bonus ja visto");
-            Assert.AreEqual(150, Sim.Load(s.Save(Now)).OrderReward, "o premio com bonus vai no save");
+            Assert.AreEqual(150L, Sim.Load(s.Save(Now)).Encomendas.Principal.Premio, "o premio com bonus vai no save");
             long gold = s.Gold, earned = s.GoldEarned;
-            s.OrderProgress = s.OrderTarget;
+            EncTeste.Completa(s);
             s.Tick(Dt, 0f, 0f);
             Assert.AreEqual(gold + 150, s.Gold, "paga premio + bonus na entrega");
             Assert.AreEqual(earned, s.GoldEarned, "fora do GoldEarned, como o premio");
-            s.OrderIn = 0f;
+            s.Encomendas.OrderIn = 0f;
             s.Tick(Dt, 0f, 0f);
             Assert.IsTrue(s.Anuncios.Pode(Anuncio.EncomendaBonus), "a encomenda seguinte tem o dela");
             Assert.AreEqual(15L, s.Anuncios.Previa(Anuncio.EncomendaBonus), "premio minimo 25: +12,5 vira 15 (multiplo de 5)");
+        }
+
+        /// <summary>B-CORE-05 (achado do AdWatcherE, BALANCE.md §24/§25): o bonus vale pelo menos EncomendaBonusMinSeg s da renda de agora (o
+        /// anuncio custa ~30 s de relogio); 50% do premio quando e' mais.</summary>
+        [Test]
+        public void BonusDaEncomenda_NuncaMenosQue45sDeRenda()
+        {
+            Sim s = Pronto();
+            s.RateEma = 10.0;
+            Assert.AreEqual(450L, s.Anuncios.Previa(Anuncio.EncomendaBonus), "45 s x 10/s > 50% de 100");
+            s.Encomendas.Principal.Premio = 2000;
+            Assert.AreEqual(1000L, s.Anuncios.Previa(Anuncio.EncomendaBonus), "50% do premio, quando passa dos 45 s");
+            Assert.AreEqual(1000L, Assiste(s, Anuncio.EncomendaBonus));
+            Assert.AreEqual(3000L, s.Encomendas.Principal.Premio);
+            var t = new Tuning { EncomendaBonusMinSeg = 0f };
+            Sim k = Pronto(t);
+            k.RateEma = 10.0;
+            Assert.AreEqual(50L, k.Anuncios.Previa(Anuncio.EncomendaBonus), "knob zerado: so os 50%");
         }
 
         [Test]
@@ -144,28 +162,43 @@ namespace FS.Tests
             Sim s = Pronto();
             s.Buy(Upgrade.Shields); s.Buy(Upgrade.Tools);
             s.RateEma = 4.0;
-            s.OrderItem = -1; s.OrderCount = 2; s.OrderIn = 0f;
-            s.Tick(Dt, 0f, 0f);
-            Assert.AreEqual((int)Item.Tool, s.OrderItem, "a natural de indice 2: espada, escudo, FERRAMENTA");
-            (Item item, int target, int reward) prox = s.Anuncios.ProximaEncomenda();
-            Assert.AreEqual(Item.Sword, prox.item, "mostra a seguinte do rodizio");
-            s.OrderProgress = 2;
+            s.OrderCount = 2;
+            Encomenda e = EncTeste.Abre(s, 2);   // Bulk travado (2 entregues): Common
+            Assert.AreEqual(Item.Tool, e.Itens[0], "a natural de indice 2: espada, escudo, FERRAMENTA");
+            Encomenda prox = s.Anuncios.ProximaEncomenda();
+            Assert.AreEqual(Item.Sword, prox.Itens[0], "mostra a seguinte do rodizio");
+            e.Feito[0] = 2;
             Assert.AreEqual(1L, Assiste(s, Anuncio.EncomendaTroca));
-            Assert.AreEqual((int)prox.item, s.OrderItem, "entrou a mostrada");
-            Assert.AreEqual(prox.target, s.OrderTarget);
-            Assert.AreEqual(prox.reward, s.OrderReward);
-            Assert.AreEqual(0, s.OrderProgress, "do zero");
+            Encomenda nova = s.Encomendas.Principal;
+            Assert.AreEqual(prox.Itens[0], nova.Itens[0], "entrou a mostrada");
+            Assert.AreEqual(prox.Alvo[0], nova.Alvo[0]);
+            Assert.AreEqual(prox.Premio, nova.Premio);
+            Assert.AreEqual(prox.Tipo, nova.Tipo);
+            Assert.AreEqual(0, nova.Feito[0], "do zero");
+            Assert.AreEqual(1, s.Encomendas.Vagas.Count, "no lugar da trocada");
             Assert.AreEqual(2, s.OrderCount, "pulada nao conta como entregue");
-            Assert.AreEqual(1, s.OrderSkips);
-            Assert.AreEqual(1, Sim.Load(s.Save(Now)).OrderSkips, "puladas no save (ord=, 7o campo)");
+            Assert.AreEqual(1, s.Encomendas.Pulos);
+            Assert.AreEqual(1, Sim.Load(s.Save(Now)).Encomendas.Pulos, "puladas no save (ord=, 7o campo)");
             Assert.IsTrue(s.Anuncios.Pode(Anuncio.EncomendaTroca), "a nova encomenda tem a troca dela");
-            s.OrderProgress = s.OrderTarget;
+            EncTeste.Completa(s);
             s.Tick(Dt, 0f, 0f);
-            s.OrderIn = 0f;
+            s.Encomendas.OrderIn = 0f;
             s.Tick(Dt, 0f, 0f);
-            Assert.AreEqual((int)Item.Shield, s.OrderItem, "o rodizio segue da trocada: indice 4 = escudo");
+            Assert.AreEqual(Item.Shield, s.Encomendas.Principal.Itens[0], "o rodizio segue da trocada: indice 4 = escudo");
             var a = Pronto(); var b = Pronto();
-            Assert.AreEqual(a.Anuncios.ProximaEncomenda().item, b.Anuncios.ProximaEncomenda().item, "sem sorteio: o mesmo estado mostra a mesma");
+            Assert.AreEqual(a.Anuncios.ProximaEncomenda().Itens[0], b.Anuncios.ProximaEncomenda().Itens[0], "sem sorteio: o mesmo estado mostra a mesma");
+
+            // B-CORE-05: com 2 vagas a troca e' so da principal (a mais antiga), no lugar dela; a outra fica
+            Sim d = Pronto();
+            d.Buy(Upgrade.Shields); d.Buy(Upgrade.Tools);
+            d.Renome.Ganha(20);
+            EncTeste.Poe(d, Item.Shield, 8, 40);
+            Encomenda outra = d.Encomendas.Vagas[1];
+            Encomenda vem = d.Anuncios.ProximaEncomenda();
+            Assert.AreEqual(Item.Tool, vem.Itens[0], "indice 2 e' ferramenta; a espada da principal sai, o escudo esta na outra vaga");
+            Assert.AreEqual(1L, Assiste(d, Anuncio.EncomendaTroca));
+            Assert.AreEqual(Item.Tool, d.Encomendas.Vagas[0].Itens[0]);
+            Assert.AreSame(outra, d.Encomendas.Vagas[1]);
         }
 
         [Test]

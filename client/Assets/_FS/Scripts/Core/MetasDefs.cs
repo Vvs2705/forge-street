@@ -52,7 +52,7 @@ namespace FS.Core
         const int A = 0, B = 1;
         const string Sold = "product_sold", Craft = "product_crafted", Ord = "order_done", Buy = "upgrade_buy", Src = "currency_source",
             Sink = "currency_sink", Cofre = "offline_claim", Vip = "vip_served", Hire = "worker_hired", Bau = "chest_opened",
-            Missao = "mission_complete", Login = "login_claim";
+            Missao = "mission_complete", Login = "login_claim", Tipo = "order_complete", Premium = "order_premium", Rush = "order_rush_prazo";
         const int Lingote = (int)Item.Ingot, Espada = (int)Item.Sword, Escudo = (int)Item.Shield, Ferram = (int)Item.Tool, Joia = (int)Item.Jewel;
 
         /// <summary>Diaria padrao: XP 100 + ouro 20 s (LIVEOPS_V1 §4.1).</summary>
@@ -119,6 +119,10 @@ namespace FS.Core
             W("wkl_renda1h", Src, -1, 3600, Ferr, Conta.Segundos),     // novo
             W("wkl_forja_joias100", Craft, Joia, 100, Joal),           // novo
             W("wkl_gasta30min", Sink, -1, 1800, Ferr, Conta.Segundos), // novo
+            // B-CORE-05: os de tipo de encomenda (LIVEOPS_V1 §4.3 #9-11); so entram no rodizio com o tipo aberto (Metas.Livre)
+            W("wkl_enc_premium5", Premium, -1, 5, Ferr),
+            W("wkl_bulk3", Tipo, (int)OrderType.Bulk, 3, Ferr),
+            W("wkl_royal2", Tipo, (int)OrderType.Royal, 2, Ferr),
         };
 
         public static readonly MetaDef[] Conquistas =
@@ -160,6 +164,11 @@ namespace FS.Core
             C("ach_enc250", Ord, -1, 250, xp: 150, renome: 5),
             C("ach_enc500", Ord, -1, 500, xp: 150),                    // novo
             C("ach_enc1000", Ord, -1, 1000, xp: 200, insignia: "livro_caixa"),
+            // B-CORE-05 (LIVEOPS_V1 §5.5 #35-38)
+            C("ach_enc_royal1", Tipo, (int)OrderType.Royal, 1, xp: 100),
+            C("ach_enc_tipos7", Tipo, -1, 7, xp: 150, renome: 10, c: Conta.Distintos),
+            C("ach_rush_prazo10", Rush, -1, 10, xp: 100),
+            C("ach_bulk25", Tipo, (int)OrderType.Bulk, 25, xp: 100),
             // Workers
             C("ach_ajudante1", Hire, -1, 1, ouroS: 30),
             C("ach_ajudante3", Hire, -1, 3, xp: 50),                   // novo

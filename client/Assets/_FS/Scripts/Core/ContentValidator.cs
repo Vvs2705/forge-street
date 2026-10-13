@@ -21,7 +21,7 @@ namespace FS.Core
         /// <summary>Todas as regras. Sem argumentos = o conteudo real; o teste injeta uma COPIA quebrada no que quiser. `items`/`recipes` =
         /// conteudo do mundo (World); com `world` dado, valem os dele.</summary>
         public static List<string> Validate(UpgradeDef[] upgrades = null, long[] costs = null, int[] prices = null, MilestoneDef[] milestones = null, Sim world = null,
-            ItemDef[] items = null, RecipeDef[] recipes = null, RenomeDef[] renome = null)
+            ItemDef[] items = null, RecipeDef[] recipes = null, RenomeDef[] renome = null, OrderDef[] orders = null)
         {
             upgrades ??= Upgrades.All;
             costs ??= RealCosts();
@@ -43,6 +43,7 @@ namespace FS.Core
             e.AddRange(Qualidade(upgrades, world));
             e.AddRange(Missoes(MetasDefs.Diarias, MetasDefs.Semanais, MetasDefs.Conquistas, MetasDefs.LoginDias, Tuning.Padrao));
             e.AddRange(NiveisRenome(renome ?? RenomeDefs.Niveis));
+            e.AddRange(OrderDefs.Validar(orders ?? OrderDefs.All, OrderDefs.Ciclos, world));   // B-CORE-05 (regras em EncomendasDefs.cs)
             return e;
         }
 
@@ -124,13 +125,14 @@ namespace FS.Core
                     else if (!ids.Add(d.Id)) yield return $"{at} ID repetido";
                     if (Array.IndexOf(EventosProibidos, d.Evento) >= 0) yield return $"{at} gatilho {d.Evento} pune ou exige anuncio";
                     else if (Array.IndexOf(Metas.Eventos, d.Evento) < 0) yield return $"{at} gatilho {d.Evento} que o Sim nao emite";
-                    int max = d.Evento == "upgrade_buy" ? Upgrades.Count - 1 : d.Evento == "mission_complete" ? 1
+                    int max = d.Evento == "upgrade_buy" ? Upgrades.Count - 1 : d.Evento == "mission_complete" ? 1 : d.Evento == "order_complete" ? (int)OrderType.Event
                         : d.Evento == "product_sold" || d.Evento == "product_crafted" || d.Evento == "order_done" || d.Evento == "vip_served" ? Items.All.Length - 1 : -1;
                     if (d.Filtro < (d.Evento == "mission_complete" ? 0 : -1) || d.Filtro > max) yield return $"{at} filtro {d.Filtro} invalido para {d.Evento}";
                     if (d.Alvo <= 0) yield return $"{at} alvo {d.Alvo}";
                     if (d.Abre != null && Upgrades.IndexOf(d.Abre) < 0) yield return $"{at} abre com \"{d.Abre}\", que nao e' upgrade";
                     if (d.Conta == Conta.Segundos && !d.Evento.StartsWith("currency_", StringComparison.Ordinal)) yield return $"{at} alvo em segundos de renda fora de currency_*";
-                    if (d.Conta == Conta.Distintos && (tipo != TipoMeta.Conquista || d.Evento != "product_sold")) yield return $"{at} Distintos so em conquista de venda";
+                    if (d.Conta == Conta.Distintos && (tipo != TipoMeta.Conquista || d.Evento != "product_sold" && d.Evento != "order_complete"))
+                        yield return $"{at} Distintos so em conquista de venda ou de tipo de encomenda";
                     if ((d.Pool >= 0 && d.Pool <= 2) != (tipo == TipoMeta.Diaria)) yield return $"{at} pool {d.Pool} (so diaria tem pool A/B/C)";
                     if (d.OuroS < 0 || d.OuroS > ouro || d.OuroS % 5 != 0 || d.Xp < 0 || d.Xp > xp || d.Renome < 0 || d.Renome > renome)
                         yield return $"{at} recompensa fora da faixa de {tipo} (ouro {d.OuroS} s <= {ouro} e x5, XP {d.Xp} <= {xp}, Renome {d.Renome} <= {renome})";
