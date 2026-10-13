@@ -233,6 +233,8 @@ Até a 0.6 o `AdsLevelPlay` fixava COPPA false, GDPR false e CCPA true para todo
 
 ### Falta para a loja (não feito aqui: tickets G-PLAT-02 e G-PROD-04)
 
+Proposta das respostas (Data Safety, IARC, público-alvo, `ACCESS_ADSERVICES_*`, `app-ads.txt`) e decisões pendentes: [`PRIVACIDADE.md`](PRIVACIDADE.md); rascunho da política em [`politica/`](politica/).
+
 1. **Política de privacidade com URL pública.** É obrigatória com SDK de anúncio e com a permissão `AD_ID`. Deve citar o LevelPlay e o Unity Ads, o ID de publicidade, a tela de idade e como revogar (Configurações > Privacidade), e também ficar acessível de dentro do jogo. Hoje o jogo não tem link: entra junto com a URL.
 2. **Formulário Data safety** a partir do manifesto mesclado. Declarar "Device or other IDs" (ID de publicidade), coleta e compartilhamento pelo SDK de anúncios, as permissões `ACCESS_ADSERVICES_*` e o que é opcional.
 3. **Classificação IARC** e **público-alvo e conteúdo** na Play Console. Isso decide se o app entra no programa Famílias. Se entrar: só redes autocertificadas, revisar o `AD_ID` e a declaração de anúncios.

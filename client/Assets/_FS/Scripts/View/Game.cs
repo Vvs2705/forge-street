@@ -26,7 +26,7 @@ namespace FS
     /// -cam W (largura visivel em m, 6..11,4; experimento de camera mais perto) | -settings [on|off] (abre as configuracoes; on/off
     /// liga/desliga Som e Vibracao antes, gravando como o toque) | -cofre N (mostra o painel do cofre com N de ouro, sem dar o ouro) |
     /// -playtest (liga o diario num build de release; o dev ja grava) | -privacidade [18] (abre a tela de idade mesmo com resposta ou no
-    /// -testsession, onde a resposta nao e' gravada; 18 = direto no consentimento).
+    /// -testsession, onde a resposta nao e' gravada; 18 = direto no consentimento) | -lang pt|en|es (idioma da sessao sem gravar; Loc).
     /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
     /// 1a contratacao) | -recordfull (fila cheia no 1o quadro ou erro) | -recordorder (o -record mantem o cartao da encomenda) | -offline S
     /// (cofre real de S s fora, 60..7200). Captura que mostraria algo impossivel (compra id@t sem ouro ou pre-requisito, -vipnow depois de
@@ -98,7 +98,7 @@ namespace FS
         readonly System.Collections.Generic.Queue<(string text, Sprite icon, Color tint)> _notices = new System.Collections.Generic.Queue<(string, Sprite, Color)>(NoticeMax + 1);
         const int NoticeMax = 3;              // esperando; cheia, o mais velho cai
         const float NoticeTime = 1.4f;        // s por aviso (pop 0,3 s, some nos ultimos 0,4 s)
-        const string Delivered = "Encomenda entregue! +";   // o -shotorder espera este aviso
+        static string Delivered => Loc.T("aviso.entregue", "");   // o -shotorder espera este aviso (o premio vai no fim em todo idioma)
         Sprite _crown;
         bool _vipNow;
         // v0.6c: cartao da encomenda (FASE9) e o estado da animacao (_orderKey = OrderCount da encomenda na tela)
@@ -125,6 +125,8 @@ namespace FS
         void Awake()
         {
             Application.targetFrameRate = 60;
+            // DM §109: idioma antes de montar qualquer texto. -lang en|es|pt (dev, fotos) > Configuracoes > idioma do aparelho
+            Loc.Atual = Loc.Escolher(Arg("-lang"), Ajustes.Idioma, Application.systemLanguage.ToString());
             _testSession = Arg("-testsession") != null || Arg("-autoplay") != null || Arg("-record") != null;
             if (Arg("-record") != null) Time.captureFramerate = Mathf.Max(1, (int)ArgF("-recordfps", 30f));   // relogio do jogo = quadro do video
             // G-UA-02: fumaca, faiscas e poeira sorteiam no UnityEngine.Random; semente fixa = os mesmos quadros em 2 execucoes
@@ -181,6 +183,7 @@ namespace FS
             Log("session_info", "build", string.IsNullOrEmpty(Application.buildGUID) ? "editor" : Application.buildGUID);
             Log("session_info", "os", SystemInfo.operatingSystem);
             Log("session_info", "ram", Diario.FaixaRam(SystemInfo.systemMemorySize));
+            Log("session_info", "idioma", Loc.Codigo);
             _started = true;   // A-PLAT-07: Loading -> Playing; o save grava daqui em diante (o resgate do cofre logo abaixo ja grava)
             Offline();
             if (int.TryParse(Arg("-cofre"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int cofre) && cofre > 0) ShowVault(cofre);   // foto do painel
@@ -205,8 +208,8 @@ namespace FS
         IEnumerator AdTest(string p)
         {
             for (float t = 0f; !_ads.Loaded(p) && t < 15f; t += Time.unscaledDeltaTime) yield return null;
-            _ads.Show(p, () => ShowPanel("Anúncio de teste", $"Recompensa recebida: {p}", "OK", ClosePanel),
-                () => ShowPanel("Anúncio de teste", $"Sem recompensa: {p}", "OK", ClosePanel));
+            _ads.Show(p, () => ShowPanel(Loc.T("adtest.titulo"), Loc.T("adtest.recebida", p), Loc.T("ui.ok"), ClosePanel),
+                () => ShowPanel(Loc.T("adtest.titulo"), Loc.T("adtest.sem", p), Loc.T("ui.ok"), ClosePanel));
         }
 
         /// <summary>Cofre: o claim e' idempotente pelo SavedAt do save (o Core recusa id repetido ou mais antigo).</summary>
@@ -233,7 +236,7 @@ namespace FS
         }
 
         /// <summary>v0.6d: cartao creme do cofre: titulo, "+N" grande com a moeda, uma linha e PEGAR (saiu a frase dos 25% e do teto).</summary>
-        void ShowVault(long gold) => ShowPanel("Bem-vindo de volta!", "Seu cofre guardou isso pra você", "PEGAR", ClosePanel, gold);
+        void ShowVault(long gold) => ShowPanel(Loc.T("cofre.titulo"), Loc.T("cofre.corpo"), Loc.T("cofre.pegar"), ClosePanel, gold);
 
         void Update()
         {
@@ -373,7 +376,7 @@ namespace FS
                     // FASE8 (v0.5c): VIP entrou na vaga / levou o pacote (cada unidade ja saiu como Sold) / cansou
                     case Ev.VipArrived:
                         Sfx.Play("vip");
-                        Notice("Cliente VIP!", _crown, Color.white);
+                        Notice(Loc.T("aviso.vip"), _crown, Color.white);
                         _view.VipBurst(e.Pos, false);
                         Log("vip_arrived", Balance.ItemName[e.A], e.B.ToString());
                         break;
@@ -401,7 +404,7 @@ namespace FS
                         Sfx.Play("order");
                         OrderText(_sim.OrderTarget, _sim.OrderTarget);   // a ultima venda e a entrega caem no mesmo tick: mostra o 5/5
                         _orderOut = true; _orderT = 0f;
-                        Notice(Delivered + e.B, _coinIcon.sprite, _coinIcon.color);
+                        Notice(Loc.T("aviso.entregue", e.B), _coinIcon.sprite, _coinIcon.color);
                         FlyCoins(_orderCoin.rectTransform.position, e.B);
                         break;
                 }
@@ -426,13 +429,14 @@ namespace FS
             bool opens = u == (int)Upgrade.SideCorridor;
             foreach (Station s in _sim.Stations) opens |= s.UnlockBy == u;
             Ajustes.Pulso(opens ? 60 : 30, opens ? 255 : 150);
-            if (_order == null) _view.Float(pos, Upgrades.All[u].Name + "!", Art.Good, 44);
+            string name = Loc.T("aviso.compra", Textos.Nome(u));
+            if (_order == null) _view.Float(pos, name, Art.Good, 44);
             else
             {
                 Sprite icon; Color tint;
                 if (Upgrades.All[u].InMenu) (icon, tint) = MenuBar.Icon((Upgrade)u);
                 else icon = _view.PadIcon(u, out tint, out _);
-                Notice(Upgrades.All[u].Name + "!", icon, tint);
+                Notice(name, icon, tint);
             }
             Log("upgrade_buy", ((Upgrade)u).ToString(), price.ToString());
             Count(_sink, Upgrades.IsLuxury(u) ? "luxo" : "upgrade", price);
@@ -571,7 +575,7 @@ namespace FS
             _panelGold.fontStyle = FontStyle.Bold; _panelGold.color = Art.Accent; _panelGold.horizontalOverflow = HorizontalWrapMode.Overflow;
             _panelBody = Art.NewText(card.transform, "Corpo", 26, new Vector2(0.06f, 0.33f), new Vector2(0.94f, 0.46f));
             _panelBody.color = Art.ComAlfa(MenuBar.Brown, 0.8f);
-            Button ok = Art.NewButton(card.transform, "OK", 46, MenuBar.Leather, new Vector2(0.25f, 0.06f), new Vector2(0.75f, 0.26f), () => _panelAction?.Invoke());
+            Button ok = Art.NewButton(card.transform, Loc.T("ui.ok"), 46, MenuBar.Leather, new Vector2(0.25f, 0.06f), new Vector2(0.75f, 0.26f), () => _panelAction?.Invoke());
             _panelBtn = ok.GetComponentInChildren<Text>();
             _panelBtn.color = MenuBar.Cream;
             _panel.gameObject.SetActive(false);
@@ -677,7 +681,7 @@ namespace FS
         /// </summary>
         void BuildAdUi()
         {
-            _vipBtn = AdButton("ChamarVip", false, Art.Icon("coroa", "icone") ?? Art.Star(), "VIP", OnVipAd);
+            _vipBtn = AdButton("ChamarVip", false, Art.Icon("coroa", "icone") ?? Art.Star(), Loc.T("hud.vip"), OnVipAd);
             _speedBtn = AdButton("Velocidade", true, Art.FastForward(), "2×", OnSpeedAd);
             _speedBtn.Icon.color = Art.Accent;
             // selo do boost: borda de ouro, avanco rapido, "2x" grande e o cronometro. v0.6d: 24 px acima do botao de velocidade e a 32 px
@@ -801,7 +805,7 @@ namespace FS
         {
             bool vip = _sim.CanSummonVip && _ads.Ready(Ads.Vip), vipCool = _sim.T.Vip && _sim.T.VipChamado && !_sim.VipActive && _sim.VipCooldown > 0f;
             if (_vipBtn.B.gameObject.activeSelf != (vip || vipCool)) _vipBtn.B.gameObject.SetActive(vip || vipCool);
-            if (vip || vipCool) Paint(_vipBtn, vip, Color.white, vip ? "VIP" : Clock(_sim.VipCooldown));
+            if (vip || vipCool) Paint(_vipBtn, vip, Color.white, vip ? Loc.T("hud.vip") : Clock(_sim.VipCooldown));
             bool active = _sim.BoostLeft > 0f, can = _sim.CanBoost && _ads.Ready(Ads.Velocidade), cool = _sim.T.Velocidade && !active && _sim.BoostCooldown > 0f;
             // s86 rewarded_offer: uma por aparicao do botao disponivel (cinza da recarga nao e' oferta), contada quando da para tocar
             // (A-PLAT-07: Estados.Anuncia; por baixo de painel ela espera o painel fechar)
@@ -926,7 +930,7 @@ namespace FS
             {
                 if (!_sim.SummonVip()) return;   // mudou entre o toque e o fim do anuncio: nada a dar
                 Sfx.Play("upgrade");
-                Notice("VIP a caminho!", _crown, Color.white);
+                Notice(Loc.T("aviso.vip_vem"), _crown, Color.white);
             }, AdFail);
         }
 
@@ -938,7 +942,7 @@ namespace FS
                 float m = _sim.StartBoost();
                 if (m <= 0f) return;
                 Sfx.Play("upgrade", 1.2f);
-                _view.Float(_sim.Player.Pos, $"Velocidade {m:0}×!", Art.Accent, 48);
+                _view.Float(_sim.Player.Pos, Loc.T("fx.velocidade", m.ToString("0", CultureInfo.InvariantCulture)), Art.Accent, 48);
                 Log("boost_start", m.ToString("0", CultureInfo.InvariantCulture), _sim.T.BoostSeconds.ToString("0", CultureInfo.InvariantCulture));
             }, AdFail);
         }
@@ -946,14 +950,14 @@ namespace FS
         void AdFail()
         {
             Sfx.Play("leave", 1.3f);
-            Notice("Anúncio indisponível");
+            Notice(Loc.T("aviso.anuncio_off"));
         }
 
         // ---------- configuracoes: som e vibracao (v0.6b, BENCHMARK_VISUAL P2-4; a versao saiu da HUD para ca, P1-1) ----------
 
         /// <summary>
         /// Engrenagem na faixa de cima (a direita da dica, mesmo estilo da pilula de ouro) abre o cartao creme do menu: Musica, Efeitos
-        /// (A-AUD-23: eram uma chave Som so), Vibracao (so no Android; no PC aparece apagada), a versao e FECHAR. Nao e' pausa: como o
+        /// (A-AUD-23: eram uma chave Som so), Vibracao (so no Android; no PC aparece apagada), Idioma (DM §109), a versao e FECHAR. Nao e' pausa: como o
         /// painel do cofre, trava o joystick e a oficina segue trabalhando (o ferreiro para). Criativo (-record): sem engrenagem.
         /// </summary>
         void BuildSettings(RectTransform top)
@@ -973,40 +977,67 @@ namespace FS
 
             _cfg = Art.Node(_safe, "Configuracoes", Vector2.zero, Vector2.one);
             _cfg.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);   // escurece e segura os toques do resto
-            Image edge = Art.Panel(_cfg, "Cartao", MenuBar.Leather, new Vector2(0.1f, 0.3f), new Vector2(0.9f, 0.7f));   // 3 chaves: 0,34 -> 0,40 da tela
+            // DM §109: 4 linhas (o Idioma entrou): 0,40 -> 0,46 da tela, com linhas, titulo e botoes do mesmo tamanho em px
+            Image edge = Art.Panel(_cfg, "Cartao", MenuBar.Leather, new Vector2(0.1f, 0.27f), new Vector2(0.9f, 0.73f));
             Image face = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(6f, 14f); face.rectTransform.offsetMax = new Vector2(-6f, -6f);   // chanfro de couro embaixo
             face.raycastTarget = false;
-            Text title = Art.NewText(face.transform, "Titulo", 60, new Vector2(0.05f, 0.84f), new Vector2(0.95f, 0.97f));
-            title.text = "Configurações"; title.fontStyle = FontStyle.Bold; title.color = MenuBar.Brown;
-            Chave(face.transform, "Música", 0.67f, () => Ajustes.Musica, v => SetSom("musica", v), true);
-            Chave(face.transform, "Efeitos", 0.51f, () => Ajustes.Efeitos, v => SetSom("efeitos", v), true);
-            Chave(face.transform, "Vibração", 0.35f, () => Ajustes.Vibra, v => { SetVibra(v); if (v) Ajustes.Confirmar(); }, Ajustes.TemVibra);
-            Text ver = Art.NewText(face.transform, "Versao", 32, new Vector2(0.05f, 0.24f), new Vector2(0.95f, 0.32f));
-            ver.text = "Forge Street v" + Application.version; ver.color = Art.ComAlfa(MenuBar.Brown, 0.65f);
+            Text title = Art.NewText(face.transform, "Titulo", 60, new Vector2(0.05f, 0.875f), new Vector2(0.95f, 0.985f));
+            title.text = Loc.T("cfg.titulo"); title.fontStyle = FontStyle.Bold; title.color = MenuBar.Brown;
+            Chave(face.transform, "Musica", Loc.T("cfg.musica"), 0.74f, () => Ajustes.Musica, v => SetSom("musica", v), true);
+            Chave(face.transform, "Efeitos", Loc.T("cfg.efeitos"), 0.605f, () => Ajustes.Efeitos, v => SetSom("efeitos", v), true);
+            Chave(face.transform, "Vibracao", Loc.T("cfg.vibracao"), 0.47f, () => Ajustes.Vibra, v => { SetVibra(v); if (v) Ajustes.Confirmar(); }, Ajustes.TemVibra);
+            Text ver = Art.NewText(face.transform, "Versao", 32, new Vector2(0.05f, 0.235f), new Vector2(0.95f, 0.31f));
+            ver.text = Loc.T("cfg.versao", Application.version); ver.color = Art.ComAlfa(MenuBar.Brown, 0.65f);
+            IdiomaLinha(face.transform, 0.335f, ver);
             // E-PLAT-01: PRIVACIDADE reabre a tela de idade para rever ou revogar (CANCELAR fecha sem mudar)
-            Button priv = Art.NewButton(face.transform, "PRIVACIDADE", 40, MenuBar.Leather, new Vector2(0.05f, 0.05f), new Vector2(0.49f, 0.2f), () =>
+            Button priv = Art.NewButton(face.transform, Loc.T("cfg.privacidade"), 40, MenuBar.Leather, new Vector2(0.05f, 0.045f), new Vector2(0.49f, 0.175f), () =>
             {
                 _cfg.gameObject.SetActive(false);
-                _priv.Abrir(Ads.Resposta(out Faixa f, out bool a) ? Privacidade.Atual(f, a) : Privacidade.Rodape);
+                _priv.Abrir(Ads.Resposta(out Faixa f, out bool a) ? Privacidade.Atual(f, a) : Loc.T("priv.rodape"));
             });
             priv.GetComponentInChildren<Text>().color = MenuBar.Cream;
-            Button close = Art.NewButton(face.transform, "FECHAR", 40, MenuBar.Leather, new Vector2(0.51f, 0.05f), new Vector2(0.95f, 0.2f), () => _cfg.gameObject.SetActive(false));
+            Button close = Art.NewButton(face.transform, Loc.T("cfg.fechar"), 40, MenuBar.Leather, new Vector2(0.51f, 0.045f), new Vector2(0.95f, 0.175f), () => _cfg.gameObject.SetActive(false));
             close.GetComponentInChildren<Text>().color = MenuBar.Cream;
             _cfg.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// DM §109: linha "Idioma" com um botao de couro que roda Português -> English -> Español (cada um no proprio idioma) e grava em
+        /// Ajustes.Idioma. A UI e' montada uma vez por codigo, entao a troca vale ao abrir o jogo de novo: a linha da versao vira o aviso,
+        /// ja no idioma escolhido. ponytail: troca ao vivo = remontar a HUD; entra se o playtest pedir.
+        /// </summary>
+        void IdiomaLinha(Transform parent, float y, Text aviso)
+        {
+            Idioma escolha = Loc.Atual;
+            Text l = Art.NewText(parent, "Idioma", 50, new Vector2(0.07f, y), new Vector2(0.48f, y + RowH), TextAnchor.MiddleLeft);
+            l.text = Loc.T("cfg.idioma"); l.fontStyle = FontStyle.Bold; l.color = RowInk;
+            Text nome = null;
+            Button b = Art.NewButton(parent, Loc.Em(escolha, "idioma.nome"), 36, MenuBar.Leather, new Vector2(0.5f, y + 0.01f), new Vector2(0.93f, y + RowH - 0.01f), () =>
+            {
+                escolha = (Idioma)(((int)escolha + 1) % 3);
+                Ajustes.Idioma = Loc.CodigoDe(escolha);
+                nome.text = Loc.Em(escolha, "idioma.nome");
+                aviso.text = escolha == Loc.Atual ? Loc.T("cfg.versao", Application.version) : Loc.Em(escolha, "cfg.idioma.reabrir");
+                Log("settings", "idioma", Loc.CodigoDe(escolha));
+            });
+            nome = b.GetComponentInChildren<Text>();
+            nome.color = MenuBar.Cream;
         }
 
         // v0.6d (revisao de UX): LIGADO = texto #1F3B12 de 30 px no verde #5BD16B; DESLIGADO = branco no #8C7B6B; o rotulo fica #3B2A1A
         // nos dois (so a Vibracao do PC continua apagada)
         static readonly Color OnFace = Art.Hex(0x5BD16B), OnInk = Art.Hex(0x1F3B12), OffFace = Art.Hex(0x8C7B6B), OffEdge = Art.Hex(0x6B5D50), RowInk = Art.Hex(0x3B2A1A);
 
-        /// <summary>Linha "rotulo + chave" (0,14 do cartao): pilula verde (LIGADO) ou cinza (DESLIGADO) com chanfro e bolinha branca; o texto
+        const float RowH = 0.122f;   // altura de uma linha das Configuracoes, em fracao do cartao (0,056 da tela)
+
+        /// <summary>Linha "rotulo + chave" (RowH do cartao): pilula verde (LIGADO) ou cinza (DESLIGADO) com chanfro e bolinha branca; o texto
         /// diz o estado. O toque faz "click" (so se os Efeitos ficaram ligados).</summary>
-        void Chave(Transform parent, string label, float y, Func<bool> get, Action<bool> set, bool enabled)
+        void Chave(Transform parent, string id, string label, float y, Func<bool> get, Action<bool> set, bool enabled)
         {
-            Text l = Art.NewText(parent, label, 50, new Vector2(0.07f, y), new Vector2(0.48f, y + 0.14f), TextAnchor.MiddleLeft);
+            Text l = Art.NewText(parent, id, 50, new Vector2(0.07f, y), new Vector2(0.48f, y + RowH), TextAnchor.MiddleLeft);
             l.text = label; l.fontStyle = FontStyle.Bold; l.color = RowInk;
-            Image edge = Art.Panel(parent, label + " Chave", MenuBar.GreenDark, new Vector2(0.5f, y + 0.01f), new Vector2(0.93f, y + 0.13f));
+            Image edge = Art.Panel(parent, id + " Chave", MenuBar.GreenDark, new Vector2(0.5f, y + 0.01f), new Vector2(0.93f, y + RowH - 0.01f));
             Image face = Art.Panel(edge.transform, "Face", OnFace, Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(0f, 7f); face.raycastTarget = false;
             Image knob = Art.Node(face.transform, "Bolinha", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
@@ -1025,7 +1056,7 @@ namespace FS
                 knob.rectTransform.anchorMax = new Vector2(on ? 0.97f : 0.28f, 0.88f);
                 state.rectTransform.anchorMin = new Vector2(on ? 0.03f : 0.28f, 0f);
                 state.rectTransform.anchorMax = new Vector2(on ? 0.72f : 0.97f, 1f);
-                state.text = on ? "LIGADO" : "DESLIGADO";
+                state.text = Loc.T(on ? "cfg.ligado" : "cfg.desligado");
             }
             b.onClick.AddListener(() => { set(!get()); Paint(); Sfx.Play("click"); });
             Paint();
@@ -1207,7 +1238,7 @@ namespace FS
                 yield return new WaitForSecondsRealtime(delay);
             }
             else yield return new WaitForSecondsRealtime(delay);
-            Debug.Log($"SHOT t={_sim.Time:0.0} upgrades={_sim.UpgradesBought} nobres={_sim.JewelQueue.Count}/{_sim.JewelQueueCap} baus={string.Join(",", _sim.Chests.ConvertAll(c => c.State))} som={Ajustes.Som} vibra={Ajustes.Vibra} fornalhas={_view.Fornalhas()}");   // A-ART-06: estado desenhado
+            Debug.Log($"SHOT t={_sim.Time:0.0} upgrades={_sim.UpgradesBought} nobres={_sim.JewelQueue.Count}/{_sim.JewelQueueCap} baus={string.Join(",", _sim.Chests.ConvertAll(c => c.State))} som={Ajustes.Som} vibra={Ajustes.Vibra} idioma={Loc.Codigo} fornalhas={_view.Fornalhas()}");   // A-ART-06: estado desenhado
             ScreenCapture.CaptureScreenshot(path);
             yield return null;
             yield return null;

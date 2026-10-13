@@ -283,14 +283,14 @@ namespace FS
             if (SpriteSheet.TryGet("nobre", out _nobre)) _nobre.Scale = CharScale("nobre");
             BuildScenery();
             _streetLabel = Art.FreeText(_labels, "RuaLateral", 28, new Vector2(200f, 80f));
-            _streetLabel.text = "Rua\nlateral";   // 2 linhas: so 1,2 m da rua cabe na tela antes do Corredor
+            _streetLabel.text = Loc.T("mundo.rua");   // 2 linhas: so 1,2 m da rua cabe na tela antes do Corredor
             _streetLabel.color = StreetInk;       // v0.6d: 28 px #E8D9B8 (era Ink a 55%, sumia na pedra)
             _streetHalfW = _streetLabel.preferredWidth / 2f;
             Deco("carroca", CartPos, CartCell, 1.3f);
             _shopTeaser = Deco("loja_joalheria", sim.JewelShop.Pos, StationCell, 1.3f);   // mesma folha e celula da estacao
             if (_shopTeaser != null) _shopTeaser.color = Shut;
             _shopLabel = Art.FreeText(_labels, "JoalheriaFechada", 26, new Vector2(400f, 40f));
-            _shopLabel.text = "Joalheria — fechada";
+            _shopLabel.text = Loc.T("mundo.joalheria_fechada");
             _shopLabel.color = Art.ComAlfa(Art.Ink, 0.7f);
             Lux(Upgrade.WorkshopFloor, BuildTiles());
             Lux(Upgrade.WorkshopFacade, BuildFacade());
@@ -308,7 +308,7 @@ namespace FS
             Transform pack = _player.Body != null ? Prop(_player.Root, "melhoria_mochila", Upgrade.PlayerCapacity, Vector2.zero, PackS, 0) : null;
             if (pack != null) _player.Pack = pack.GetComponentInChildren<SpriteRenderer>(true);
             _max = Art.Outlined(Art.FreeText(_labels, "Max", 46, new Vector2(200f, 64f)), 3f);
-            _max.text = "MAX"; _max.fontStyle = FontStyle.BoldAndItalic; _max.color = MaxC; _max.enabled = false;
+            _max.text = Loc.T("mundo.max"); _max.fontStyle = FontStyle.BoldAndItalic; _max.color = MaxC; _max.enabled = false;
             // seta da dica: contorno escuro atras, ouro na frente, por cima de tudo menos os efeitos. v0.6d: ~80 px (era 0,5 m = 42 px),
             // contorno de 4 px #2A1E14 (Art.Arrow)
             _arrow = Group("SetaDica", new V2(0f, 0f));
@@ -472,7 +472,7 @@ namespace FS
                 Art.NewSprite(v.Root, "Icone", icon, Art.ComAlfa(ic, 0.55f), 3, new Vector2(0f, 0.08f), isc);
             }
             v.Label = Art.Outlined(Art.FreeText(_labels, s.Name, 30, new Vector2(320f, 44f)), 3f, Edge);   // v0.6d: 28 -> 30 px, contorno 3 px
-            v.Label.text = s.Name;
+            v.Label.text = Textos.Estacao(s.Index);
             v.Label.fontStyle = FontStyle.Bold;
             // bocas no chao (FASE5 s2b): deposito so entrega, balcoes so recebem, quem produz tem as duas. v0.5b: placa no chao
             if (s.Kind == Kind.Deposit) Mouth(v.Root, s.OutAt - s.Pos, false, (int)Item.Ore);
@@ -641,7 +641,7 @@ namespace FS
             if (art != null) Art.NewSprite(v.Root, "Arte", art, Color.white, Depth(c.Pos.Y), Vector2.zero, Vector2.one);
             else Art.NewSprite(v.Root, "Arte", Art.Rounded(), Art.CounterC, Depth(c.Pos.Y), new Vector2(0f, 0.2f), new Vector2(0.7f, 0.5f));
             v.Label = Art.FreeText(_labels, "Marco", 26, new Vector2(300f, 40f));
-            v.Label.text = c.Label;
+            v.Label.text = Textos.Bau(c.Index);
             v.Label.color = Art.Accent;
             v.Label.fontStyle = FontStyle.Bold;
             v.Label.enabled = false;
@@ -1112,7 +1112,7 @@ namespace FS
             v.Root.localPosition = Vector3.MoveTowards(before, VipWaitSpot(), 4f * dt);
             bool moving = v.Root.localPosition != before;
             v.Body.Tick(moving ? "Walking" : "LookingAround", dt, moving ? (Vector2)(v.Root.localPosition - before) : Vector2.down, true);
-            v.Tag.enabled = true; v.Tag.text = "VIP"; v.Tag.fontSize = 30;
+            v.Tag.enabled = true; v.Tag.text = Loc.T("hud.vip"); v.Tag.fontSize = 30;
             PlaceLabel(v.Tag, v.Root.localPosition + new Vector3(0f, v.TopY + 0.4f, 0f), Vector2.zero);
         }
 
@@ -1376,7 +1376,7 @@ namespace FS
             float la = _sim.Time < TutorialLabels ? 1f : Mathf.Clamp01((NearLabel - V2.Dist(_sim.Player.Pos, v.P.Pos)) / LabelFade);
             v.Label.enabled = la > 0.01f;
             if (!v.Label.enabled) return;
-            v.Label.text = Upgrades.All[u].Name;
+            v.Label.text = Textos.Nome(u);
             v.Label.color = affordable ? Art.ComAlfa(Art.Accent, la) : Art.ComAlfa(Art.Ink, 0.85f * la);
             PlaceLabel(v.Label, W(v.P.Pos) + new Vector3(0f, PadSize / 2f + 0.22f, 0f), Vector2.zero);
         }

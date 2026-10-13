@@ -1,9 +1,10 @@
 #!/bin/bash
 # Ponto de entrada único de verificação do Forge Street (ticket A-PLAT-04). Git Bash no Windows.
-# uso: client/tools/verify.sh quick | full | android-emulator | release | release-check <arquivo.aab|apk>
+# uso: client/tools/verify.sh quick | full | android-emulator [--migracao <apk-antigo>] | release | release-check <arquivo.aab|apk>
 #   quick             núcleo (dotnet test) + viewcheck do PC e do Android, sem abrir o Unity
 #   full              quick + Unity batchmode: EditMode, Setup.BuildWindows e o .exe com -autoplay 10
-#   android-emulator  Setup.BuildAndroidEmu + emulador + adb install + abre com '-bot -speed 4' + BACK/HOME + logcat sem exceção
+#   android-emulator  Setup.BuildAndroidEmu + emulador + adb install + abre com '-bot -speed 4' + BACK/HOME + logcat sem exceção;
+#                     --migracao: instala o APK antigo (x86_64), joga 90 s, instala o novo por cima e confere o save (schema 2, mesmas compras)
 #   release           quick + Setup.BuildAndroidRelease (AAB assinado; exige FS_KEYSTORE, FS_KEYSTORE_PASS, FS_KEY_ALIAS, FS_KEY_PASS) + release-check
 #   release-check     só confere um artefato pronto: targetSdk, versionCode, debuggable, ABI, 16 KB, assinatura e permissões
 # Regra do PC (7,7 GB): um processo pesado por vez. Nunca Unity e emulador juntos; aborta se o Unity estiver aberto neste projeto.
@@ -19,7 +20,7 @@ T0=$SECONDS
 
 ok()   { echo "OK   $* [$((SECONDS - T0)) s]"; }
 fail() { echo "FALHOU: $*" >&2; exit 1; }
-adb()  { "$ADB" "$@"; }
+adb()  { MSYS_NO_PATHCONV=1 "$ADB" "$@"; }   # sem isto o Git Bash troca /sdcard por C:/Program Files/Git/sdcard
 
 quick() {
   local sa="$CLIENT/Library/ScriptAssemblies" d log p
@@ -89,38 +90,99 @@ full() {
   dirty
 }
 
+# aspas simples DENTRO das duplas: sem elas o shell do aparelho quebra o extra (docs/VALIDACAO_V06A.md). Sem argumento = pelo ícone
+abrir() { adb shell "am start -n $PKG/com.unity3d.player.UnityPlayerGameActivity${1:+ -e unity '$1'}" > /dev/null; }
+
+# grava o logcat em $1; crash Java, crash nativo (tombstone), ANR e exceção logada pela Unity reprovam, o resto do sistema não conta
+logcat_limpo() {
+  adb logcat -d > "$1"
+  local bad; bad=$( { grep -A1 "FATAL EXCEPTION" "$1" | grep "Process: $PKG"
+                      grep -E ">>> $PKG <<<|ANR in $PKG| Unity +: .*Exception" "$1"; } | head -5)
+  [ -z "$bad" ] || fail "erro no logcat (ver $1):"$'\n'"$bad"
+}
+
+# o AVD fica no C:; com o disco cheio o emulador corrompe a partição de dados e o Android não sobe mais
+disco() {
+  local gb; gb=$(df -Pk /c | awk 'NR == 2 { print int($4 / 1048576) }')
+  [ "${gb:-0}" -ge 6 ] || fail "só ${gb:-?} GB livres no C: (mínimo 6): com o disco cheio o emulador corrompe a partição de dados do AVD"
+}
+
+# Lições do AVD fs_playstore (2026-10, ficou sem boot depois do disco cheio; recuperar em docs/ROTEIRO_TESTE_POCO.md §6):
+# - -no-snapshot: snapshot gravado com outra GPU sobe um Android quebrado; sempre boot frio
+# - boot frio leva até 10 min neste PC (7,7 GB de RAM)
+# - o /sdcard monta depois do sys.boot_completed: esperar gravar nele e mais ~25 s antes de abrir o app
+# - MSYS_NO_PATHCONV=1 em todo adb (no adb() acima) e >= 6 GB livres no C: (disco())
 android_emulator() {
+  local velho=
+  if [ "${1:-}" = --migracao ]; then   # confere antes do build, que leva minutos
+    [ -f "${2:-}" ] || fail "uso: $0 android-emulator --migracao <apk-antigo> (não achado: '${2:-}')"
+    unzip -Z1 "$2" | grep '^lib/x86_64/' > /dev/null || fail "$2 sem lib/x86_64: o APK ARM64 cai no emulador (use um ForgeStreet-emu-*.apk)"
+    velho=$(cygpath -m "$2")   # o adb.exe não entende /c/...
+  fi
   guard
+  disco
   [ -f "$EMU" ] && [ -f "$ADB" ] || fail "emulador ou adb não achados (EMULATOR=$EMU ADB=$ADB)"
   build BuildAndroidEmu build_android_emu.log Android
   local apk="$CLIENT/Builds/android/ForgeStreet-emu.apk"
   [ -f "$apk" ] || fail "APK não achado: $apk"
   dirty
+  disco   # o build também gasta disco
   # só agora o emulador (o Unity já saiu); desliga ao sair, com ou sem falha, para liberar a RAM
-  "$EMU" -avd "$AVD" -no-window -crash-report-mode never -no-metrics > "$OUT/emulator.log" 2>&1 &
+  "$EMU" -avd "$AVD" -no-window -no-snapshot -crash-report-mode never -no-metrics > "$OUT/emulator.log" 2>&1 &
   # o guard provou que não havia emulador antes, então o qemu que sobrar é este
   trap 'adb emu kill > /dev/null 2>&1 || taskkill /F /IM qemu-system-x86_64.exe > /dev/null 2>&1' EXIT
-  timeout 180 "$ADB" wait-for-device || fail "o emulador não apareceu no adb (ver $OUT/emulator.log)"
-  local i=0
+  local fim=$((SECONDS + 600)) sem="AVD sem boot ('Can't find service: package' = partição de dados corrompida): docs/ROTEIRO_TESTE_POCO.md §6"
+  timeout 600 "$ADB" wait-for-device || fail "o emulador não apareceu no adb em 10 min (ver $OUT/emulator.log)"
   until [ "$(adb shell getprop sys.boot_completed 2> /dev/null | tr -d '\r')" = 1 ]; do
-    i=$((i + 1)); [ $i -le 90 ] || fail "o emulador não terminou o boot em 180 s"; sleep 2
+    [ $SECONDS -lt $fim ] || fail "o emulador não terminou o boot em 10 min. $sem"; sleep 5
   done
+  until adb shell "touch /sdcard/.fs_verify && rm /sdcard/.fs_verify" 2> /dev/null; do
+    [ $SECONDS -lt $fim ] || fail "o /sdcard não montou em 10 min. $sem"; sleep 5
+  done
+  sleep 25
   ok "emulador $AVD ligado"
   adb install -r "$apk" > /dev/null || fail "adb install"
   adb logcat -c
-  # aspas simples DENTRO das duplas: sem elas o shell do aparelho quebra o extra (docs/VALIDACAO_V06A.md)
-  adb shell "am start -n $PKG/com.unity3d.player.UnityPlayerGameActivity -e unity '-bot -speed 4'" > /dev/null
+  abrir '-bot -speed 4'
   sleep 40
   adb shell pidof $PKG > /dev/null || fail "o jogo não está rodando 40 s depois de abrir"
   adb shell input keyevent KEYCODE_BACK; sleep 3
   adb shell input keyevent KEYCODE_HOME; sleep 3
-  adb logcat -d > "$OUT/logcat.txt"
+  logcat_limpo "$OUT/logcat.txt"
   grep -q "ADS ad_init" "$OUT/logcat.txt" || fail "sem 'ADS ad_init' no logcat: o Game não chegou ao Awake"
-  # crash Java, crash nativo (tombstone), ANR e exceção logada pela Unity; o resto do sistema não conta
-  local bad; bad=$( { grep -A1 "FATAL EXCEPTION" "$OUT/logcat.txt" | grep "Process: $PKG"
-                      grep -E ">>> $PKG <<<|ANR in $PKG| Unity +: .*Exception" "$OUT/logcat.txt"; } | head -5)
-  [ -z "$bad" ] || fail "erro no logcat (ver $OUT/logcat.txt):"$'\n'"$bad"
   ok "abriu com -bot -speed 4, BACK e HOME, logcat sem exceção"
+  [ -z "$velho" ] || migracao "$velho" "$apk"
+}
+
+# Instalar por cima (A-CORE-01/04; roteiro do PR #16): o save do APK antigo (PlayerPrefs, schema 1) abre no novo como save.txt schema 2
+# com as mesmas compras e ouro igual ou maior (o cofre pode pagar o tempo do install). O novo abre pelo ícone, sem -bot: a tela de idade
+# para a oficina e nada é comprado, mas o autosave de 5 s grava (o 1º cria o save.txt, o 2º o .bak pela troca atômica).
+# exec-out: saída sem \r, mas sem o código de saída do aparelho; arquivo que não veio aparece como valor vazio nas conferências
+migracao() {  # migracao <apk-antigo> <apk-novo>
+  local antigo="$OUT/migracao_antigo.xml" novo="$OUT/migracao_novo.txt" up n g0 g1 s; local -a ups
+  adb uninstall $PKG > /dev/null 2>&1   # sem o save que o smoke acabou de deixar
+  adb install "$1" > /dev/null || fail "adb install do APK antigo $1"
+  abrir '-bot -speed 4'; sleep 90
+  adb shell input keyevent KEYCODE_HOME; sleep 3   # a pausa grava o save
+  adb shell am force-stop $PKG
+  adb exec-out run-as $PKG cat "shared_prefs/$PKG.v2.playerprefs.xml" > "$antigo"
+  # o PlayerPrefs do Android guarda o texto com URL encoding (up%3D...%0A); o padrão aceita com e sem
+  up=$(grep -oiE '(^|%0A|&#10;|>)up(=|%3D)[01]+' "$antigo" | grep -oE '[01]+$'); n=${up//0/}; n=${#n}
+  g0=$(grep -oiE '(^|%0A|&#10;|>)gold(=|%3D)[0-9]+' "$antigo" | grep -oE '[0-9]+$')
+  [ "$n" -gt 0 ] && [ -n "$g0" ] || fail "sem compras ou ouro no save antigo (ver $antigo; o run-as exige APK de desenvolvimento)"
+  adb install -r "$2" > /dev/null || fail "adb install -r do APK novo por cima do antigo"
+  adb logcat -c
+  abrir; sleep 30
+  adb shell input keyevent KEYCODE_HOME; sleep 3
+  adb exec-out cat "/sdcard/Android/data/$PKG/files/save.txt" > "$novo"
+  s=$(sed -n 's/^schema=//p' "$novo"); g1=$(sed -n 's/^gold=//p' "$novo"); IFS=, read -ra ups <<< "$(sed -n 's/^ups=//p' "$novo")"
+  [ "${s:-0}" -ge 2 ] || fail "save.txt sem schema >= 2 depois de instalar por cima (ver $novo)"
+  [ ${#ups[@]} = "$n" ] || fail "compras: $n no save antigo, ${#ups[@]} no ups= do novo (ver $antigo e $novo)"
+  [ "${g1:-0}" -ge "$g0" ] || fail "ouro: $g0 no save antigo, ${g1:-?} no novo (ver $novo)"
+  adb exec-out ls "/sdcard/Android/data/$PKG/files" | grep -qx 'save.txt.bak' || fail "sem save.txt.bak 30 s depois de abrir (troca atômica do save)"
+  logcat_limpo "$OUT/logcat_migracao.txt"
+  grep -q "ADS ad_init ok" "$OUT/logcat_migracao.txt" && fail "o SDK de anúncio iniciou sem resposta da tela de idade (E-PLAT-01)"
+  ok "migração: schema $s, $n compras iguais, ouro $g0 -> $g1, save.txt + .bak, SDK esperando a idade"
 }
 
 # base = permissões do APK 0.6.0 (LevelPlay/Unity Ads, WorkManager, androidx). Permissão nova = revisar o Data safety antes de subir
@@ -217,9 +279,9 @@ release() {
 case "${1:-}" in
   quick) quick ;;
   full) full ;;
-  android-emulator) android_emulator ;;
+  android-emulator) android_emulator "${@:2}" ;;
   release) release ;;
   release-check) [ -n "${2:-}" ] || fail "uso: $0 release-check <arquivo.aab|apk>"; release_check "$2" ;;
-  *) sed -n '3,8p' "$0"; exit 2 ;;
+  *) sed -n '3,9p' "$0"; exit 2 ;;
 esac
 echo "verify $1: OK em $((SECONDS - T0)) s"
