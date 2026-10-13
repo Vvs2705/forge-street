@@ -20,7 +20,7 @@ namespace FS
         /// <summary>ID de cada item (por handle) nas chaves item.*, dica.balcao.* e dica.pegue.*: o ItemDef.Id do nucleo (B-CORE-01).</summary>
         public static readonly string[] ItemId = Array.ConvertAll(Items.All, d => d.Id);
         /// <summary>ID de cada estacao por Station.Index (anexado no fim, nunca muda) na chave est.*. ponytail: vira StationDef.Id.</summary>
-        public static readonly string[] EstacaoId = { "deposito", "fornalha", "fornalha2", "bigorna", "bigorna2", "escudos", "ferramentas", "balcao", "joalheria", "loja_joias" };
+        public static readonly string[] EstacaoId = { "deposito", "fornalha", "fornalha2", "bigorna", "bigorna2", "escudos", "ferramentas", "balcao", "joalheria", "loja_joias", "bigorna_longa" };
 
         public static string Dica(Hint h, int arg, Sim s)
         {
@@ -103,11 +103,13 @@ namespace FS
             return Loc.T("card.precisa", Loc.Tem(curto) ? Loc.T(curto) : Nome(u));
         }
 
-        /// <summary>A-UI-18: comprado, travado (pre-requisito do menu nao comprado), disponivel (da para pagar) ou sem ouro.</summary>
+        /// <summary>A-UI-18: comprado, travado (pre-requisito do menu nao comprado), disponivel (da para pagar) ou sem ouro. B-CORE-07: sem o projeto
+        /// que ele exige, oculto (o painel de projetos mostra de onde ele vem).</summary>
         public static Cartao Estado(Sim s, int u)
         {
             int req = Upgrades.All[u].Requires;
             if (s.Bought[u]) return Cartao.Comprado;
+            if (!s.TemProjeto(u)) return Cartao.Oculto;
             if (req >= 0 && !s.Bought[req]) return Upgrades.All[u].Meta && !Upgrades.All[req].Meta ? Cartao.Oculto : Cartao.Travado;   // o nivel II espera a revelacao
             return s.Gold >= s.T.Cost(u) ? Cartao.Disponivel : Cartao.SemOuro;
         }
@@ -136,7 +138,7 @@ namespace FS
                     int n = u - (int)Upgrade.Counter5 + t.QueueCap0 + 1;
                     return Loc.T("card.vagas", Mais(n - 1, n));
                 default:   // B-CORE-03, GDD §19: "Qualidade +0,15 · vel. +5%"
-                    return Upgrades.All[u].Meta ? Loc.T("card.qualidade", Pontos(t.NivelEstacaoQ), Pct(t.NivelEstacaoVelocidade) + "%")
+                    return Upgrades.All[u].Station != null ? Loc.T("card.qualidade", Pontos(t.NivelEstacaoQ), Pct(t.NivelEstacaoVelocidade) + "%")
                         : Loc.T("up." + Upgrades.All[u].Id + ".desc");
             }
         }
@@ -193,7 +195,7 @@ namespace FS
                 default:
                     // B-CORE-03: depois da compra, so pelo nivel da estacao (as outras fontes ainda nao existem): L2 = 1 em 7, L3 = 1 em 3.
                     // ponytail: a frase vale para q < 100; o nivel que passar de 1,00 (L4-L5 com oficial, B-CORE-04/07) pede outra
-                    if (!Upgrades.All[u].Meta) return "";   // ponytail: Lupa = x0,6 sobre o tempo que o Martelo veloz ja mudou; o % basta
+                    if (Upgrades.All[u].Station == null) return "";   // ponytail: Lupa = x0,6 sobre o tempo que o Martelo veloz ja mudou; o % basta
                     int q = (Upgrades.StationLevel(u) - 1) * t.NivelEstacaoQ;
                     return Loc.T("card.ad.fina", (long)Math.Round(100.0 / q, MidpointRounding.AwayFromZero));
             }
@@ -258,6 +260,51 @@ namespace FS
         public static string AvisoRenome(int nivel) => Loc.T("aviso.renome", nivel, NomeRenome(nivel));
         /// <summary>O que o nivel libera, em frase (cartao do Renome).</summary>
         public static string LiberaRenome(int nivel) => Loc.T("renome." + nivel + ".libera");
+
+        // ---------- projetos (B-CORE-07): nome, o que libera e de onde vem, nos 3 idiomas (o PainelProjetos so desenha) ----------
+
+        /// <summary>"Técnica: espadas", "Mestre: escudos, ferramentas, joias", "Obra-prima: Primeira Lâmina", "Receita: espada longa".</summary>
+        public static string ProjetoNome(Sim s, BlueprintDef d) => Loc.T("proj.k." + (int)d.Kind, Alvos(s, d, 1));
+
+        /// <summary>O que a posse libera: a linha, os niveis IV-V, os pontos da tecnica, o projeto da obra-prima ou o visual.</summary>
+        public static string ProjetoLibera(Sim s, BlueprintDef d) => d.Kind == BlueprintKind.Technique ? Loc.T("proj.libera.2", Pontos(s.T.TecnicaQ))
+            : d.Kind == BlueprintKind.Recipe ? Loc.T("proj.libera.0", Alvos(s, d, 2)) : Loc.T("proj.libera." + (int)d.Kind);
+
+        /// <summary>De onde vem: as fontes na ordem do BlueprintDef ("Venda 100 espadas (37/100) ou Encomenda de projeto nº 7").</summary>
+        public static string ProjetoFonte(Sim s, BlueprintDef d) => string.Join(Loc.T("proj.ou"), Array.ConvertAll(d.Sources, f => Fonte(s, f)));
+
+        static string Alvos(Sim s, BlueprintDef d, long n) => string.Join(", ", Array.ConvertAll(d.Targets, t => Alvo(s, d.Kind, t, n)));
+
+        /// <summary>Familia (nivel, tecnica) = o produto da receita base dela no plural; Masterwork pelo nome; receita e visual = o item.</summary>
+        static string Alvo(Sim s, BlueprintKind k, string t, long n)
+        {
+            if (k == BlueprintKind.Masterwork) return Loc.T("mw." + t);
+            if (k == BlueprintKind.StationLevel || k == BlueprintKind.Technique)
+            {
+                RecipeDef r = Array.Find(s.RecipeDefs, x => x.Station == t);
+                return r != null && (int)r.Output < ItemId.Length ? ItemNome((int)r.Output, 2) : t;
+            }
+            int i = Items.IndexOf(t, s.ItemDefs);
+            return i >= 0 && i < ItemId.Length ? ItemNome(i, n) : t;
+        }
+
+        static string Fonte(Sim s, BlueprintSource f)
+        {
+            switch (f.Kind)
+            {
+                case BlueprintSourceKind.Milestone:
+                    if (f.Ref == BlueprintSource.Producao) return Loc.T("proj.f.producao");
+                    int i = Items.IndexOf(f.Ref, s.ItemDefs);
+                    if (i < 0 || i >= ItemId.Length) return f.Ref;
+                    bool fina = f.MinQ >= Quality.Fine;
+                    long feito = Math.Min(f.N, fina ? s.Projetos.Finas[i] : s.SoldItems[i]);
+                    return Loc.T(fina ? "proj.f.fina" : "proj.f.0", Qtd(f.N), ItemNome(i, f.N), Qtd(feito));
+                case BlueprintSourceKind.Achievement:
+                    MetaDef m = MetasDefs.Achar(f.Ref);
+                    return Loc.T("proj.f.4", m != null ? Meta(m, m.Alvo) : f.Ref);
+                default: return Loc.T("proj.f." + (int)f.Kind, f.N);   // filas: a posicao; Renome: o nivel; o resto sem numero
+            }
+        }
 
         /// <summary>Quantidade com separador de milhar do idioma ("1.500", "1,500"); de 1 milhao em diante, a escala do Ouro ("1,23 mi").</summary>
         public static string Qtd(long v) => v >= 1000000 ? Ouro(v) : v.ToString("#,0", CultureInfo.InvariantCulture).Replace(",", Loc.T("num.mil"));

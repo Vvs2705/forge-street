@@ -223,7 +223,8 @@ namespace FS
             };
             if (art != null && Art.Icon(art, "icone") is Sprite s) return (s, Color.white);
             UpgradeDef d = Upgrades.All[(int)u];
-            if (d.Meta) return ItemIcon(Array.Find(Recipes.All, r => r.Station == d.Station).Output);   // B-CORE-03: nivel de estacao = o produto da familia
+            if (d.Station != null) return ItemIcon(Array.Find(Recipes.All, r => r.Station == d.Station).Output);   // B-CORE-03: nivel de estacao = o produto da familia
+            if (u == Upgrade.LongAnvil) return ItemIcon(Item.LongSword);   // B-CORE-07: a linha nova (aviso de compra do Game)
             return u switch
             {
                 Upgrade.FurnaceSpeed1 or Upgrade.FurnaceSpeed2 => ItemIcon(Item.Ingot),
