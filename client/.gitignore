@@ -25,6 +25,7 @@
 !/Builds/validation_v06emu/
 !/Builds/validation_emulador/
 !/Builds/validation_levelplay/
+!/Builds/validation_art_produtos/
 __pycache__/
 /UserSettings/
 /tools/coretests/bin/
