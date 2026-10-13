@@ -33,7 +33,7 @@ namespace FS
     /// -adsupply (botao do Supply Drop na fornalha) | -intersticial (liga a flag Tuning.Interstitial na sessao: carrega e mostra o
     /// intersticial nos vetos do nucleo).
     /// -renome N (forca o Renome total em N; so sobe) | -renomecard (abre o cartao do Renome; B-CORE-06) | -equipe (B-CORE-04: a oficina com os
-    /// 6 ajudantes no nivel 3 e os 7 da Equipe contratados no posto; Captura.Equipe; com -menu e -gold, os cartoes de nivel) | -projetos [todos] (abre o painel de
+    /// 6 ajudantes no nivel 3 e os 7 da Equipe contratados no posto; Captura.Equipe; com -menu e -gold, os cartoes de nivel) | -projetos [todos|dar] ("dar" = os 19 sem abrir; abre o painel de
     /// projetos; "todos" da os 19 do catalogo antes do -buy/-buyids; B-CORE-07).
     /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
     /// 1a contratacao) | -recordfull (fila cheia no 1o quadro ou erro) | -recordorder (o -record mantem o cartao da encomenda) | -offline S
@@ -228,7 +228,7 @@ namespace FS
             string metas = Arg("-metas");
             int aba = metas == "conquistas" ? 2 : metas == "semanais" ? 1 : 0;
             if (metas != null) _metas.Abrir(aba);
-            bool projetos = Arg("-projetos") != null;   // B-CORE-07 (foto; com "todos" o DevArgs ja deu os projetos)
+            bool projetos = Arg("-projetos") != null && Arg("-projetos") != "dar";   // B-CORE-07 (foto; "todos"/"dar": o DevArgs ja deu os projetos)
             if (projetos) _projetos.Abrir();
             bool cartao = Arg("-renomecard") != null;   // foto do cartao do Renome (com -renome N)
             if (cartao) _renome.Abrir();
@@ -1491,7 +1491,7 @@ namespace FS
             }
             if (Arg("-intersticial") != null) _sim.T.Interstitial = true;   // E-PLAT-03 (dev): antes do Ads.Init, que so carrega com a flag
             // B-CORE-07 (fotos): -projetos todos = todos os projetos do catalogo ANTES das compras (o -buy/-buyids alcanca os niveis IV-V e a bigorna longa)
-            if (Arg("-projetos") == "todos") foreach (BlueprintDef d in _sim.Projetos.Defs) _sim.Projetos.Ganha(d.Id, d.Sources[0].Kind);
+            if (Arg("-projetos") == "todos" || Arg("-projetos") == "dar") foreach (BlueprintDef d in _sim.Projetos.Defs) _sim.Projetos.Ganha(d.Id, d.Sources[0].Kind);
             if (int.TryParse(Arg("-buy"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
                 for (int pass = 0; pass < 2; pass++)   // o Buy recusa luxo antes da producao completa, e ha produtivos (Mineiro, Joalheiro 2) depois dos luxos
                     for (int i = 0; i < Math.Min(n, Upgrades.Count); i++)
