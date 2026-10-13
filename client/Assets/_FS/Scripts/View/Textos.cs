@@ -236,7 +236,10 @@ namespace FS
                 case "currency_source": return Loc.T("meta.ganha", n);
                 case "currency_sink": return Loc.T("meta.gasta", n);
                 case "mission_complete": return Loc.P(d.Filtro == 0 ? "meta.diarias" : "meta.semanais", alvo, n);
-                default: return Loc.P("meta." + d.Evento, alvo, n);   // order_done, offline_claim, vip_served, worker_hired, chest_opened, login_claim
+                // B-CORE-04: worker_hired com filtro = papel ("Contrate 1 oficial"); worker_upgrade com filtro = nivel ("Leve 13 ajudantes ao nivel 5")
+                case "worker_hired" when d.Filtro > 0: return Loc.T("meta.worker_papel", n, Loc.P("wk.papel." + d.Filtro, alvo));
+                case "worker_upgrade" when d.Filtro >= 2: return Loc.P("meta.worker_nivel", alvo, n, d.Filtro);
+                default: return Loc.P("meta." + d.Evento, alvo, n);   // order_done, offline_claim, vip_served, worker_hired, worker_upgrade, chest_opened, login_claim
             }
         }
 
@@ -258,6 +261,70 @@ namespace FS
         public static string AvisoRenome(int nivel) => Loc.T("aviso.renome", nivel, NomeRenome(nivel));
         /// <summary>O que o nivel libera, em frase (cartao do Renome).</summary>
         public static string LiberaRenome(int nivel) => Loc.T("renome." + nivel + ".libera");
+
+        // ---------- workers (B-CORE-04): cartao de contratar / subir nivel na fileira do menu e o aviso ----------
+
+        /// <summary>Estado do cartao do worker `k`: oculto antes da revelacao (Equipe.Aberta) e no ajudante ainda sem o upgrade; comprado = nivel
+        /// maximo (o cartao some); travado = requisito de contratacao faltando.</summary>
+        public static Cartao EstadoWorker(Sim s, int k)
+        {
+            Equipe e = s.Equipe;
+            if (!e.Aberta || e.Defs[k].Contrata != null && !e.Contratado(k)) return Cartao.Oculto;
+            long c = e.Custo(k);
+            if (c < 0) return Cartao.Comprado;
+            if (!e.Contratado(k) && !e.Liberado(k)) return Cartao.Travado;
+            return s.Gold >= c ? Cartao.Disponivel : Cartao.SemOuro;
+        }
+
+        /// <summary>Papel no singular, com maiuscula ("Oficial", "Mestre de obras").</summary>
+        public static string Papel(WorkerRole p)
+        {
+            string s = Loc.P("wk.papel." + (int)p, 1);
+            return s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
+        }
+
+        /// <summary>O que a proxima compra de `k` faz (contratar ou o proximo nivel), em % ou pontos; cabe em 2 linhas do cartao (LocTests).</summary>
+        public static string BeneficioWorker(Sim s, int k)
+        {
+            Equipe e = s.Equipe;
+            int n = e.Nivel(k) + 1;   // nivel depois da compra (1 = contratar)
+            switch (e.Defs[k].Papel)
+            {
+                case WorkerRole.Porter:
+                    string v = "+" + Pct(WorkerDefs.PorterVel) + "%";
+                    return Array.IndexOf(WorkerDefs.PorterCargaEm, n) >= 0 ? Loc.T("card.wk.passo_carga", v) : Loc.T("card.velocidade", v);
+                case WorkerRole.Smith:
+                    if (n == 1) return Loc.T("card.qualidade", Pontos(WorkerDefs.SmithQ), Pct(WorkerDefs.SmithVel) + "%");
+                    return n == 5 ? Loc.T("card.qualidade", Pontos(WorkerDefs.SmithQ5 - WorkerDefs.SmithQ), Pct(WorkerDefs.SmithVelNivel) + "%")
+                        : Loc.T("card.velocidade", "+" + Pct(WorkerDefs.SmithVelNivel) + "%");
+                case WorkerRole.Clerk: return Loc.T("card.wk.paciencia", "+" + Pct(n == 1 ? WorkerDefs.ClerkPaciencia : WorkerDefs.ClerkPacienciaNivel) + "%");
+                case WorkerRole.Quartermaster: return n == 1 ? Loc.T("card.wk.saida", WorkerDefs.QmSaida) : Loc.T("card.wk.estoque", WorkerDefs.QmEstoqueNivel);
+                default:   // mestre de obras
+                    return n == 1 ? Loc.T("card.qualidade", Pontos(WorkerDefs.ForemanQ), Pct(WorkerDefs.ForemanVel) + "%")
+                        : Loc.T("card.velocidade", "+" + Pct(WorkerDefs.ForemanVelNivel) + "%");
+            }
+        }
+
+        /// <summary>Linha de baixo do cartao: contratar = o papel (o oficial: a estacao da familia); subir = "Nivel 2 → 3".</summary>
+        public static string AntesDepoisWorker(Sim s, int k)
+        {
+            WorkerDef d = s.Equipe.Defs[k];
+            int n = s.Equipe.Nivel(k);
+            if (n > 0) return Loc.T("card.ad.nivel", n, n + 1);
+            int st = d.Papel == WorkerRole.Smith ? s.Stations.FindIndex(x => x.Produces && x.Recipe.Station == d.Station) : -1;
+            return st >= 0 ? Estacao(st) : Papel(d.Papel);
+        }
+
+        /// <summary>Cartao travado: "Precisa: Nível II" (o upgrade do requisito) ou "Precisa: Renome 2".</summary>
+        public static string PrecisaWorker(Sim s, int k)
+        {
+            WorkerDef d = s.Equipe.Defs[k];
+            int u = d.Requer == null ? -1 : Upgrades.IndexOf(d.Requer);
+            return u >= 0 && !s.Bought[u] ? Precisa(u) : Loc.T("card.precisa_renome", RenomeDefs.NivelQueLibera(d.Id));
+        }
+
+        /// <summary>Aviso da compra: "Bruna na equipe!" ou "Bruna: nível 2!" (&lt;= AvisoMax).</summary>
+        public static string AvisoWorker(WorkerDef d, int nivel) => nivel <= 1 ? Loc.T("aviso.contratou", d.Nome) : Loc.T("aviso.worker_nivel", d.Nome, nivel);
 
         /// <summary>Quantidade com separador de milhar do idioma ("1.500", "1,500"); de 1 milhao em diante, a escala do Ouro ("1,23 mi").</summary>
         public static string Qtd(long v) => v >= 1000000 ? Ouro(v) : v.ToString("#,0", CultureInfo.InvariantCulture).Replace(",", Loc.T("num.mil"));

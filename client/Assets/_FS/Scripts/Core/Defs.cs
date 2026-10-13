@@ -68,8 +68,10 @@ namespace FS.Core
     /// FASE8 (anexados): VipArrived = o VIP entrou numa vaga do balcao (A = item, B = unidades do pacote); VipServed = levou o pacote todo
     /// (A = item, B = ouro que pagou); VipLeft = cansou antes (A = item, B = unidades que faltaram). Cada unidade do VIP sai tambem como Sold (B = 3x o preco).
     /// FASE9 (anexados): OrderNew = encomenda nova (A = item, B = quantas vender); OrderDone = entregue (A = item, B = premio em ouro).
-    /// B-CORE-03 (anexados): Graded = peca acima de Normal na pilha (A = estacao, B = Quality); Masterwork = obra-prima foi ao Hall (A = item, B = estacao).</summary>
-    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone, Graded, Masterwork }
+    /// B-CORE-03 (anexados): Graded = peca acima de Normal na pilha (A = estacao, B = Quality); Masterwork = obra-prima foi ao Hall (A = item, B = estacao).
+    /// B-CORE-04: Hired = ajudante do upgrade (A = indice em Sim.Workers, B = 0) ou worker da Equipe (A = indice em WorkerDefs, B = WorkerRole,
+    /// nunca 0); WorkerUp (anexado) = subiu de nivel (A = indice em WorkerDefs, B = nivel novo).</summary>
+    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone, Graded, Masterwork, WorkerUp }
 
     /// <summary>Dica contextual da HUD (a view so traduz). Arg = indice do pad (BuyPad), do item, do bau (OpenChest) ou do upgrade (BuyMenu).
     /// BuyMenu ANEXADO no fim (FASE6): a compra mais barata pagavel agora e' um upgrade do menu inferior.</summary>
@@ -261,6 +263,10 @@ namespace FS.Core
         // dos 8 niveis foi 37 min (portao: <= 20) e a producao completa do F2P passou a 50 min; com a metade, 18 min e 47 min (BALANCE.md §23)
         public int[] NivelEstacaoCusto = { 250, 750, 325, 950, 250, 750, 500, 1500 };
         public float GolpeJanela = 0.8f, GolpeRecarga = 20f;    // golpe de mestre (FS-2): anel de 0,8 s; 20 s de jogo entre um acerto e o proximo (sobe se passar de 8% da receita)
+
+        /// <summary>B-CORE-04 (flag): contratacao e nivel de workers a venda (Equipe). Desligada, nada novo e' oferecido e quem ja foi contratado
+        /// continua; com ela desligada desde o inicio o jogo e' o de antes do B-CORE-04 (o econsim --tuning Workers=false, BALANCE.md §24).</summary>
+        public bool Workers = true;
 
         // offline (raia B §5 + coordenador 2026-10-06)
         public float OfflineFactor = 0.25f;                     // 25% da taxa online
