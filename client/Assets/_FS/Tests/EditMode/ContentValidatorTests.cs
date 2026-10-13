@@ -150,23 +150,89 @@ namespace FS.Tests
             Acusa(v, "texto: Anvil2 sem descricao");
         }
 
+        /// <summary>Receitas reais trocando so a da familia `station`.</summary>
+        static RecipeDef[] Rec(string station, RecipeDef r) => Array.ConvertAll(Recipes.All, x => x.Station == station ? r : x);
+
+        /// <summary>B-CORE-01: itens reais + cabo (insumo, handle 6) e machado (produto, handle 7), so no teste.</summary>
+        static readonly Item Cabo = (Item)6, Machado = (Item)7;
+        static ItemDef[] ComMachado() => new List<ItemDef>(Items.All) { new ItemDef("cabo", "cabo", 2, false), new ItemDef("machado", "machado", 2, true) }.ToArray();
+
         [Test]
         public void Receitas_SemPrecoSemEstacaoSemCompradorESemInsumo_Acusa()
         {
             int[] preco = (int[])Tuning.Padrao.Price.Clone();
             preco[(int)Item.Shield] = 0;
-            Sim w = ContentValidator.World();
+            Sim w = ContentValidator.World(null, Rec("bigorna", new RecipeDef("bigorna", Kind.Crafter, Item.Sword, t => 1f, (Item.Ingot, 0))));
             w.Stations.Remove(w.ToolBench);                      // ferramenta sem bancada
             w.Stations.Remove(w.JewelShop);                      // joia sem loja
             w.Stations.RemoveAll(s => s.Kind == Kind.Furnace);   // sem fornalha: minerio sem comprador, bigornas sem lingote
-            w.AnvilB.Need = 0;
             var v = ContentValidator.Validate(prices: preco, world: w);
-            Acusa(v, "receita: Shield sem preco");
-            Acusa(v, "receita: Tool sem estacao que produz");
-            Acusa(v, "receita: Jewel produzido sem comprador");
-            Acusa(v, "receita: Ore produzido sem comprador");
-            Acusa(v, "receita: Bigorna usa Ingot, que nenhuma estacao produz");
-            Acusa(v, "receita: Bigorna 2 sem insumo");
+            Acusa(v, "receita: escudo sem preco");
+            Acusa(v, "receita: ferramenta sem estacao que produz");
+            Acusa(v, "receita: ferramenta sem estacao da familia ferramentas");
+            Acusa(v, "receita: joia produzido sem comprador");
+            Acusa(v, "receita: minerio produzido sem comprador");
+            Acusa(v, "receita: espada usa lingote, que nenhuma estacao produz");
+            Acusa(v, "receita: espada pede 0 de lingote");
+        }
+
+        [Test]
+        public void Receitas_EstacaoSemReceitaOuDeOutroTipo_Acusa()
+        {
+            RecipeDef[] r = Array.FindAll(Recipes.All, x => x.Station != "joalheria");   // a Joalheria fica sem receita
+            r = Array.ConvertAll(r, x => x.Station == "escudos" ? new RecipeDef("escudos", Kind.Furnace, Item.Shield, t => 1f, (Item.Ingot, 2)) : x);
+            var v = ContentValidator.Validate(recipes: r);
+            Acusa(v, "receita: Joalheria sem receita");
+            Acusa(v, "receita: Escudos (Crafter) com receita de Furnace");
+        }
+
+        /// <summary>B-CORE-01, aceite: machado = 1 cabo + 2 lingotes (2 insumos diferentes) na familia ferramentas. Sem quem faca o cabo o
+        /// validator acusa o insumo; com a familia escudos fazendo cabo do lingote, essa regra cala; cabo feito de machado e' ciclo.</summary>
+        [Test]
+        public void Receitas_DoisInsumos_InsumoQueNinguemProduzECiclo_Acusa()
+        {
+            var machado = new RecipeDef("ferramentas", Kind.Crafter, Machado, t => 1f, (Cabo, 1), (Item.Ingot, 2));
+            int[] preco = new List<int>(Tuning.Padrao.Price) { 0, 30 }.ToArray();
+            RecipeDef[] semCabo = Rec("ferramentas", machado);
+            var v = ContentValidator.Validate(prices: preco, items: ComMachado(), recipes: semCabo);
+            Acusa(v, "receita: machado usa cabo, que nenhuma estacao produz");
+            Assert.IsFalse(v.Exists(m => m.Contains("usa lingote")), "o outro insumo tem quem faca");
+
+            RecipeDef[] comCabo = Array.ConvertAll(semCabo, x => x.Station == "escudos" ? new RecipeDef("escudos", Kind.Crafter, Cabo, t => 1f, (Item.Ingot, 1)) : x);
+            v = ContentValidator.Validate(prices: preco, items: ComMachado(), recipes: comCabo);
+            Assert.IsFalse(v.Exists(m => m.Contains("usa cabo") || m.Contains("machado")), string.Join("\n", v));
+            Acusa(v, "receita: escudo sem estacao que produz");   // a familia escudos agora faz cabo: so o escudo fica orfao
+
+            RecipeDef[] ciclo = Array.ConvertAll(semCabo, x => x.Station == "escudos" ? new RecipeDef("escudos", Kind.Crafter, Cabo, t => 1f, (Machado, 1)) : x);
+            v = ContentValidator.Validate(prices: preco, items: ComMachado(), recipes: ciclo);
+            Acusa(v, "receita: machado usa cabo, que nunca sai do minerio (ciclo)");
+            Acusa(v, "receita: cabo usa machado, que nunca sai do minerio (ciclo)");
+        }
+
+        [Test]
+        public void Itens_IdForaDoFormatoRepetidoForaDaOrdemTierESemNome_Acusa()
+        {
+            var a = (ItemDef[])Items.All.Clone();
+            a[(int)Item.Shield] = new ItemDef("Escudo", "escudo", 1, true);
+            a[(int)Item.Tool] = new ItemDef("espada", "ferramenta", 6, true);
+            a[(int)Item.Jewel] = new ItemDef("joia", " ", 3, true);
+            var v = ContentValidator.Validate(items: a);
+            Acusa(v, "item 3: ID \"Escudo\" vazio ou fora de [a-z0-9_]");
+            Acusa(v, "item: \"espada\" repetido");
+            Acusa(v, "item 4: \"espada\" no lugar de \"ferramenta\"");
+            Acusa(v, "item: espada com tier 6");
+            Acusa(v, "item: joia sem nome");
+        }
+
+        /// <summary>B-CORE-01: os IDs de item que o save grava (schema 3) e a ordem congelada do schema 2 (espelho e migracao). Mesmo contrato do
+        /// Golden dos upgrades: renomear ou apagar pede passo em Sim.Migrations; item novo entra no fim.</summary>
+        [Test]
+        public void Itens_Golden_IdsGravadosEOrdemDoSchema2()
+        {
+            string[] golden = { "minerio", "lingote", "espada", "escudo", "ferramenta", "joia" };
+            CollectionAssert.AreEqual(golden, Array.ConvertAll(Items.All, d => d.Id));
+            CollectionAssert.AreEqual(golden, Sim.ItemIdsV2, "Sim.ItemIdsV2 congelada: e' como o stock=/hold= por posicao se le");
+            Assert.AreEqual(Enum.GetValues(typeof(Item)).Length, golden.Length, "o enum Item e' atalho das primeiras posicoes");
         }
 
         [Test]
