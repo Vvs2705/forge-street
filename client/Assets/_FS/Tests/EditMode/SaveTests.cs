@@ -121,9 +121,11 @@ namespace FS.Tests
         static Sim Partida25()
         {
             // os schemas 1 e 2 sao de antes dos niveis de estacao (B-CORE-03): o bot joga sem eles para o estado caber nos formatos antigos
-            var s = new Sim(new Tuning { NivelEstacaoCusto = new[] { 1 << 30, 1 << 30, 1 << 30, 1 << 30, 1 << 30, 1 << 30, 1 << 30, 1 << 30 } }); var bot = new Bot();
+            int[] semNiveis = new int[16];   // B-CORE-07: os 16 (II-III e IV-V)
+            for (int i = 0; i < semNiveis.Length; i++) semNiveis[i] = 1 << 30;
+            var s = new Sim(new Tuning { NivelEstacaoCusto = semNiveis }); var bot = new Bot();
             for (float t = 0f; t < 25f * 60f; t += Dt) bot.Step(s, Dt);
-            foreach (Pad p in s.Pads) p.Paid = 10 + p.Slot;
+            foreach (Pad p in s.Pads) if (p.Chain[0] != Upgrade.LongAnvil) p.Paid = 10 + p.Slot;   // B-CORE-07: o pad da bigorna longa nao existe no schema 1-2 (e sem o projeto esconde)
             return s;
         }
 

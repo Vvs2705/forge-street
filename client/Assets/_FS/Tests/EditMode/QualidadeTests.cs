@@ -80,14 +80,15 @@ namespace FS.Tests
 
         /// <summary>
         /// GDD §23 item 5: o QualityBreakdown explica 100% das pecas. Numa partida do bot (niveis comprados no caminho), cada peca de produto de cada
-        /// bancada sai no nivel que a soma das fontes (q antes do passo) da num acumulador refeito aqui; so o nivel da estacao tem pontos.
+        /// bancada sai no nivel que a soma das fontes (q antes do passo) da num acumulador refeito aqui; tem pontos o nivel da estacao e (B-CORE-07)
+        /// a tecnica da familia, que o marco das 150 ferramentas da no caminho.
         /// </summary>
         [Test]
         public void QualityBreakdown_Explica100PorCentoDasPecas()
         {
             var s = new Sim(); var bot = new Bot();
             var acc = new int[s.Stations.Count]; var q = new int[s.Stations.Count];
-            int pecas = 0, acima = 0;
+            int pecas = 0, acima = 0, tecnica = 0;
             for (float t = 0f; t < 40f * 60f; t += Dt)
             {
                 foreach (Station st in s.Stations)
@@ -97,7 +98,10 @@ namespace FS.Tests
                     int soma = 0;
                     foreach (int p in b) soma += p;
                     Assert.AreEqual(q[st.Index], soma, "q = soma das fontes");
-                    for (int f = 1; f < b.Length; f++) Assert.AreEqual(0, b[f], $"fonte {(QualitySource)f} ainda nao existe");
+                    int tec = st.Produces && s.IsProduct(st.OutItem) ? s.Projetos.Tecnica(st.Recipe.Family) : 0;
+                    Assert.AreEqual(tec, b[(int)QualitySource.Blueprint], "tecnica = o projeto da familia");
+                    if (tec > 0) tecnica++;
+                    foreach (QualitySource f in new[] { QualitySource.Worker, QualitySource.Material, QualitySource.Buff }) Assert.AreEqual(0, b[(int)f], $"fonte {f} ainda nao existe");
                 }
                 bot.Step(s, Dt);
                 var graded = new Dictionary<int, Quality>();
@@ -114,9 +118,10 @@ namespace FS.Tests
                     if (esperado > Quality.Normal) acima++;
                 }
             }
-            TestContext.WriteLine($"40 min do bot: {pecas} pecas explicadas, {acima} acima de Normal");
+            TestContext.WriteLine($"40 min do bot: {pecas} pecas explicadas, {acima} acima de Normal, {tecnica} passos de bancada com tecnica");
             Assert.Greater(pecas, 500, "premissa: partida de verdade");
             Assert.Greater(acima, 30, "premissa: niveis de estacao comprados e pecas Fina");
+            Assert.Greater(tecnica, 0, "premissa: a tecnica das ferramentas (marco de 150) entrou no caminho");
         }
 
         [Test]
@@ -437,7 +442,9 @@ namespace FS.Tests
         public void Revelacao_PrimeirosDezMinutos_IguaisSemQualidade()
         {
             var com = new Sim();
-            var sem = new Sim(new Tuning { NivelEstacaoCusto = new[] { 1 << 30, 1 << 30, 1 << 30, 1 << 30, 1 << 30, 1 << 30, 1 << 30, 1 << 30 }, GolpeRecarga = 1e9f });
+            int[] semNiveis = new int[16];   // B-CORE-07: os 16 (II-III e IV-V)
+            for (int i = 0; i < semNiveis.Length; i++) semNiveis[i] = 1 << 30;
+            var sem = new Sim(new Tuning { NivelEstacaoCusto = semNiveis, GolpeRecarga = 1e9f });
             string a = BalanceTests.Play(com, 600f), b = BalanceTests.Play(sem, 600f);
             Assert.AreEqual(b, a, "minuto a minuto");
             Assert.AreEqual(sem.Save(1), com.Save(1), "estado inteiro (compras e instantes, pilhas, maos, posicoes)");

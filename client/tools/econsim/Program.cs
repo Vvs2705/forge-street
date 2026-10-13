@@ -40,9 +40,11 @@ static class EconSim
         public double Quali, Golpe; public int Niveis, Golpes; public long NiveisGasto; public float Nivel1;
         // B-CORE-04: contratados pela Equipe, niveis subidos (ajudantes e equipe), ouro gasto e a 1a compra de worker (relogio)
         public int Contratados, NiveisWk; public long WkGasto; public float Wk1 = -1f;
+        // B-CORE-07: projetos possuidos, quando chegou o de mestre das bigornas, niveis IV-V (os com projeto), bigorna longa e o que a espada longa vendeu
+        public int Projetos, Mestre; public long MestreGasto, Longas; public float BpMestre = -1f, Mestre1 = -1f, Longa = -1f; public double LongaPct;
     }
 
-    /// <summary>--tuning "GolpeRecarga=30;NivelEstacaoCusto=500|1500|650|1900|500|1500|1000|3000": campos publicos do Tuning
+    /// <summary>--tuning "GolpeRecarga=30;NivelEstacaoCusto=500|1500|650|1900|500|1500|1000|3000|...": campos publicos do Tuning (NivelEstacaoCusto: os 16, II-III e IV-V)
     /// (int, long, float, bool e listas deles com |) por cima do padrao, para varrer knob sem recompilar. Campo ou valor ruim = null.</summary>
     static Tuning Knobs(string spec, Tuning t)
     {
@@ -138,6 +140,17 @@ static class EconSim
             float w1 = g.Where(r => r.Wk1 >= 0f).Select(r => r.Wk1).DefaultIfEmpty(-1f).Average();
             Console.WriteLine($"| {p.Name} | {g.Average(r => r.Contratados):0.#} | {g.Average(r => r.NiveisWk):0.#} | {g.Average(r => r.WkGasto):0} | {Clock(w1)} |");
         }
+        // B-CORE-07: projetos (posse), niveis IV-V (os de projeto) e a linha da espada longa
+        Console.WriteLine();
+        Console.WriteLine("| perfil | projetos (posse/19; mestre das bigornas) | niveis IV-V (comprados/8; gasto; 1o) | bigorna longa (compra; espadas longas; % da receita) |");
+        Console.WriteLine("|---|---|---|---|");
+        foreach (BotProfile p in perfis)
+        {
+            Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            static float Media(IEnumerable<float> v) { float[] a = v.Where(t => t >= 0f).ToArray(); return a.Length == 0 ? -1f : a.Average(); }
+            Console.WriteLine($"| {p.Name} | {g.Average(r => r.Projetos):0.#} ({Clock(Media(g.Select(r => r.BpMestre)))}) | {g.Average(r => r.Mestre):0.#} ({g.Average(r => r.MestreGasto):0}; " +
+                              $"{Clock(Media(g.Select(r => r.Mestre1)))}) | {Clock(Media(g.Select(r => r.Longa)))}; {g.Average(r => r.Longas):0}; {g.Average(r => r.LongaPct):0.0}% |");
+        }
         // V19: pisos do §3 em relogio; % = partidas que compraram ANTES do piso (o BalanceTests reprova) ou nao compraram
         Console.WriteLine();
         Console.WriteLine($"| perfil | {string.Join(" | ", Pisos.Select(x => $"{x.Nome} (piso {Clock(x.Piso)})"))} |");
@@ -194,6 +207,8 @@ static class EconSim
                 foreach (SimEvent e in s.Events)
                 {
                     if (e.Kind == Ev.VipServed) r.Vips++;
+                    else if (e.Kind == Ev.Sold && e.A == (int)Item.LongSword) r.Longas += e.B;   // B-CORE-07: ouro da espada longa
+                    else if (e.Kind == Ev.Blueprint && s.Projetos.Defs[e.A].Id == "bp_bigorna_mestra") r.BpMestre = s.Time + pausa;
                     if (e.Kind == Ev.WorkerUp || e.Kind == Ev.Hired && e.B != 0) { wk++; if (r.Wk1 < 0f) r.Wk1 = s.Time + pausa; }
                 }
                 if (venda1 < 0f && s.FirstSaleTime >= 0f) venda1 = s.FirstSaleTime + pausa;
@@ -223,8 +238,16 @@ static class EconSim
             if (!Upgrades.IsProduction(i) && s.Bought[i] && tp >= 0f && rel[i] >= tp) luxSpent += s.T.Cost(i);
         }
         r.Nivel1 = -1f;
-        for (int i = 0; i < Upgrades.Count; i++)
-            if (Upgrades.All[i].Meta && s.Bought[i]) { r.Niveis++; r.NiveisGasto += s.T.Cost(i); r.Nivel1 = r.Nivel1 < 0f ? rel[i] : Math.Min(r.Nivel1, rel[i]); }
+        for (int i = 0; i < Upgrades.Count; i++)   // niveis II-III (sem projeto) na tabela da qualidade; IV-V (com projeto) na dos projetos
+        {
+            UpgradeDef d = Upgrades.All[i];
+            if (d.Station == null || !s.Bought[i]) continue;
+            if (d.Blueprint == null) { r.Niveis++; r.NiveisGasto += s.T.Cost(i); r.Nivel1 = r.Nivel1 < 0f ? rel[i] : Math.Min(r.Nivel1, rel[i]); }
+            else { r.Mestre++; r.MestreGasto += s.T.Cost(i); r.Mestre1 = r.Mestre1 < 0f ? rel[i] : Math.Min(r.Mestre1, rel[i]); }
+        }
+        r.Projetos = s.Projetos.Count;
+        r.Longa = rel[(int)Upgrade.LongAnvil];
+        r.LongaPct = 100.0 * r.Longas / Math.Max(1, s.GoldEarned);
         r.Quali = 100.0 * s.QualityGold / Math.Max(1, s.GoldEarned);
         r.Golpe = 100.0 * s.StrikeGold / Math.Max(1, s.GoldEarned);
         r.Golpes = s.Strikes;

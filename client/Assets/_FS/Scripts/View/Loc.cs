@@ -95,6 +95,7 @@ namespace FS
             { "item.escudo", L("escudo|escudos", "shield|shields", "escudo|escudos") },
             { "item.ferramenta", L("ferramenta|ferramentas", "tool|tools", "herramienta|herramientas") },
             { "item.joia", L("joia|joias", "jewel|jewels", "joya|joyas") },
+            { "item.espada_longa", L("espada longa|espadas longas", "longsword|longswords", "espada larga|espadas largas") },   // B-CORE-07
 
             // ---------- estacoes (rotulo no mundo; Textos.EstacaoId = Station.Index) ----------
             { "est.deposito", L("Depósito", "Deposit", "Depósito") },
@@ -107,6 +108,7 @@ namespace FS
             { "est.balcao", L("Balcão", "Counter", "Mostrador") },
             { "est.joalheria", L("Joalheria", "Jewelry", "Joyería") },
             { "est.loja_joias", L("Loja de joias", "Jewel Shop", "Tienda de joyas") },
+            { "est.bigorna_longa", L("Bigorna longa", "Long Anvil", "Yunque largo") },   // B-CORE-07
 
             // ---------- melhorias: nome (<= 16, ContentValidator.NameMax) e descricao; .curto = o "Precisa: X" do cartao travado ----------
             { "up.fole.nome", L("Fole", "Bellows", "Fuelle") },
@@ -194,6 +196,33 @@ namespace FS
             { "up.joalheria_nivel2.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
             { "up.joalheria_nivel3.nome", L("Joalheria III", "Jewelry III", "Joyería III") },
             { "up.joalheria_nivel3.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            // B-CORE-07: niveis IV-V (com o projeto de mestre; sem ele o cartao fica oculto); .curto = o "Precisa: X" do nivel seguinte
+            { "up.bigornas_nivel3.curto", L("Nível III", "Level III", "Nivel III") },
+            { "up.bigornas_nivel4.nome", L("Bigornas IV", "Anvils IV", "Yunques IV") },
+            { "up.bigornas_nivel4.curto", L("Nível IV", "Level IV", "Nivel IV") },
+            { "up.bigornas_nivel4.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.bigornas_nivel5.nome", L("Bigornas V", "Anvils V", "Yunques V") },
+            { "up.bigornas_nivel5.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.escudos_nivel3.curto", L("Nível III", "Level III", "Nivel III") },
+            { "up.escudos_nivel4.nome", L("Escudos IV", "Shields IV", "Escudos IV") },
+            { "up.escudos_nivel4.curto", L("Nível IV", "Level IV", "Nivel IV") },
+            { "up.escudos_nivel4.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.escudos_nivel5.nome", L("Escudos V", "Shields V", "Escudos V") },
+            { "up.escudos_nivel5.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.ferramentas_nivel3.curto", L("Nível III", "Level III", "Nivel III") },
+            { "up.ferramentas_nivel4.nome", L("Ferramentas IV", "Tools IV", "Herramientas IV") },
+            { "up.ferramentas_nivel4.curto", L("Nível IV", "Level IV", "Nivel IV") },
+            { "up.ferramentas_nivel4.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.ferramentas_nivel5.nome", L("Ferramentas V", "Tools V", "Herramientas V") },
+            { "up.ferramentas_nivel5.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.joalheria_nivel3.curto", L("Nível III", "Level III", "Nivel III") },
+            { "up.joalheria_nivel4.nome", L("Joalheria IV", "Jewelry IV", "Joyería IV") },
+            { "up.joalheria_nivel4.curto", L("Nível IV", "Level IV", "Nivel IV") },
+            { "up.joalheria_nivel4.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.joalheria_nivel5.nome", L("Joalheria V", "Jewelry V", "Joyería V") },
+            { "up.joalheria_nivel5.desc", L("Mais qualidade e velocidade", "More quality and speed", "Más calidad y velocidad") },
+            { "up.bigorna_longa.nome", L("Bigorna longa", "Long Anvil", "Yunque largo") },
+            { "up.bigorna_longa.desc", L("Nova linha: 2 lingotes, paga 40", "New line: 2 ingots, pays 40", "Nueva línea: 2 lingotes, paga 40") },
 
             // ---------- dica da HUD (1 linha, <= Textos.DicaMax = 26 em todo idioma; LocTests) ----------
             { "dica.minerio", L("Pegue minério no depósito", "Grab ore at the deposit", "Toma mineral del depósito") },
@@ -206,12 +235,14 @@ namespace FS
             { "dica.balcao.escudo", L("Leve os escudos ao balcão", "Put shields on the counter", "Lleva escudos al mostrador") },
             { "dica.balcao.ferramenta", L("Leve ferramentas ao balcão", "Put tools on the counter", "Herramientas al mostrador") },
             { "dica.balcao.joia", L("Leve as joias à loja", "Take jewels to the shop", "Lleva joyas a la tienda") },
+            { "dica.balcao.espada_longa", L("Espadas longas ao balcão", "Put longswords on counter", "Lleva espadas largas") },
             { "dica.pegue.minerio", L("Pegue os minérios prontos", "Grab the ore", "Toma el mineral") },
             { "dica.pegue.lingote", L("Pegue os lingotes prontos", "Grab the finished ingots", "Toma los lingotes listos") },
             { "dica.pegue.espada", L("Pegue as espadas prontas", "Grab the finished swords", "Toma las espadas listas") },
             { "dica.pegue.escudo", L("Pegue os escudos prontos", "Grab the finished shields", "Toma los escudos listos") },
             { "dica.pegue.ferramenta", L("Pegue as ferramentas", "Grab the finished tools", "Toma las herramientas") },
             { "dica.pegue.joia", L("Pegue as joias prontas", "Grab the finished jewels", "Toma las joyas listas") },
+            { "dica.pegue.espada_longa", L("Pegue as espadas longas", "Grab the longswords", "Toma las espadas largas") },
             { "dica.cliente", L("Cliente quer {0}!", "Customer wants {1}!", "¡Piden {1}!") },   // {0} = item no singular, {1} = no plural
             { "dica.bau", L("Abra o baú: {0}", "Open the chest: {0}", "Abre el baúl: {0}") },   // {0} = rotulo do bau
             // placa no chao: {0} = nome, {1} = "de + artigo" (art.de.*); a 1a que cabe em 26 vence (Textos.Cabe)
@@ -405,6 +436,49 @@ namespace FS
             { "card.precisa_renome", L("Precisa: Renome {0}", "Needs Renown {0}", "Req.: Renombre {0}") },
             { "aviso.contratou", L("{0} na equipe!", "{0} joins the team!", "¡{0} en el equipo!") },
             { "aviso.worker_nivel", L("{0}: nível {1}!", "{0}: level {1}!", "¡{0}: nivel {1}!") },
+
+            // ---------- projetos (B-CORE-07): painel, o que cada Blueprint libera e de onde vem (Textos.Projeto*) ----------
+            { "proj.titulo", L("Projetos", "Blueprints", "Planos") },
+            { "proj.conta", L("{0} de {1}", "{0} of {1}", "{0} de {1}") },
+            { "proj.tem", L("TEM", "OWNED", "TIENES") },
+            { "proj.falta", L("BLOQUEADO", "LOCKED", "BLOQUEADO") },
+            { "proj.ou", L(" ou ", " or ", " o ") },
+            { "proj.k.0", L("Receita: {0}", "Recipe: {0}", "Receta: {0}") },   // BlueprintKind
+            { "proj.k.1", L("Mestre: {0}", "Master: {0}", "Maestro: {0}") },
+            { "proj.k.2", L("Técnica: {0}", "Technique: {0}", "Técnica: {0}") },
+            { "proj.k.3", L("Obra-prima: {0}", "Masterwork: {0}", "Obra maestra: {0}") },
+            { "proj.k.4", L("Visual: {0}", "Look: {0}", "Estilo: {0}") },
+            { "proj.k.5", L("Especialidade: {0}", "Specialty: {0}", "Especialidad: {0}") },
+            { "proj.libera.0", L("Libera a linha de {0}", "Unlocks the {0} line", "Abre la línea de {0}") },
+            { "proj.libera.1", L("Libera os níveis IV e V", "Unlocks levels IV and V", "Abre los niveles IV y V") },
+            { "proj.libera.2", L("+{0} de qualidade na família", "+{0} quality for the family", "+{0} de calidad en la familia") },
+            { "proj.libera.3", L("Projeto da obra-prima do Hall", "Masterwork plan for the Hall", "Plano de obra maestra del Salón") },
+            { "proj.libera.4", L("Novo visual (cosmético)", "New look (cosmetic)", "Nuevo estilo (cosmético)") },
+            { "proj.libera.5", L("Especialização", "Specialization", "Especialización") },
+            { "proj.f.0", L("Venda {0} {1} ({2}/{0})", "Sell {0} {1} ({2}/{0})", "Vende {0} {1} ({2}/{0})") },   // BlueprintSourceKind; {1} = item no plural
+            { "proj.f.fina", L("Venda {0} {1} Fina+ ({2}/{0})", "Sell {0} Fine+ {1} ({2}/{0})", "Vende {0} {1} Fina+ ({2}/{0})") },
+            { "proj.f.producao", L("Produção completa", "Full production", "Producción completa") },
+            { "proj.f.1", L("Encomenda de projeto nº {0}", "Blueprint order #{0}", "Pedido de plano n.º {0}") },
+            { "proj.f.2", L("Encomenda real nº {0}", "Royal order #{0}", "Pedido real n.º {0}") },
+            { "proj.f.3", L("Renome {0}", "Renown {0}", "Renombre {0}") },
+            { "proj.f.4", L("Conquista: {0}", "Achievement: {0}", "Logro: {0}") },
+            { "proj.f.5", L("Contrato real", "Royal contract", "Contrato real") },
+            { "proj.f.6", L("Evento", "Event", "Evento") },
+            { "proj.f.7", L("Passe", "Pass", "Pase") },
+            { "proj.f.8", L("Passe premium", "Premium pass", "Pase prémium") },
+            { "proj.f.9", L("Loja", "Shop", "Tienda") },
+            { "aviso.projeto", L("Projeto novo!", "New blueprint!", "¡Plano nuevo!") },
+            // as 10 obras-primas do Old Forge (CONTEUDO_V1 §10.1; o B-CORE-08 usa o mesmo nome)
+            { "mw.mw_primeira_lamina", L("Primeira Lâmina", "First Blade", "Primera Hoja") },
+            { "mw.mw_gume_brasa", L("Gume de Brasa", "Ember Edge", "Filo de Brasa") },
+            { "mw.mw_sunblade", L("Lâmina Solar do Rei", "King's Sunblade", "Hoja Solar Real") },
+            { "mw.mw_primeira_guarda", L("Escudo da Primeira Guarda", "First Guard", "Primera Guardia") },
+            { "mw.mw_broquel", L("Broquel de Carvalho e Ferro", "Oak Buckler", "Broquel de Roble") },
+            { "mw.mw_escudo_brasao", L("Escudo do Brasão", "Crest Shield", "Escudo Blasón") },
+            { "mw.mw_martelo_fundador", L("Martelo do Fundador", "Founder's Hammer", "Mazo Fundador") },
+            { "mw.mw_tenaz_eterna", L("Tenaz Eterna", "Eternal Tongs", "Tenaza Eterna") },
+            { "mw.mw_ember_crown", L("Coroa de Brasa", "Ember Crown", "Corona de Brasa") },
+            { "mw.mw_anel_mercador", L("Anel do Mercador", "Merchant's Ring", "Anillo Mercader") },
 
             // ---------- mundo ----------
             { "mundo.rua", L("Rua\nlateral", "Side\nstreet", "Calle\nlateral") },
