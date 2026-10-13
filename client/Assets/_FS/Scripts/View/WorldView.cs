@@ -1627,7 +1627,7 @@ namespace FS
         // ------------------------------------------------------------------ workers de posto (B-CORE-04)
 
         /// <summary>Worker da Equipe parado no posto (oficial, balconista, almoxarife, mestre de obras), com a folha da skin do WorkerDef (Lote 5A,
-        /// ASSETS s11; sem folha, disco na cor dos ajudantes com o aro do papel). Idle e, a cada PostoOlha s, um LookingAround.</summary>
+        /// ASSETS s11; sem folha, disco na cor dos ajudantes com o aro do papel). PostoOlha s de Idle e um LookingAround inteiro, em ciclo.</summary>
         sealed class PostoV { public int K; public Transform Root; public Body Body; public float T; }
         readonly List<PostoV> _postos = new List<PostoV>();
         const float PostoOlha = 6f;
@@ -1664,8 +1664,8 @@ namespace FS
                 p.Root.localPosition = W(Posto(e.Defs[p.K]));   // o balcao alarga com as vagas
                 if (p.Body == null) continue;
                 p.T += dt;
-                float look = p.Body.Sheet.Length("LookingAround");
-                p.Body.Tick(look > 0f && p.T % PostoOlha > PostoOlha - look ? "LookingAround" : "Idle", dt, Vector2.zero);
+                float look = p.Body.Sheet.Length("LookingAround");   // ~6,3 s no Lote 5A: PostoOlha de Idle e o LookingAround inteiro, em ciclo
+                p.Body.Tick(look > 0f && p.T % (PostoOlha + look) >= PostoOlha ? "LookingAround" : "Idle", dt, Vector2.zero);
             }
         }
 
