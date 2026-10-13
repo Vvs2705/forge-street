@@ -249,7 +249,7 @@ Sprites em `client/Assets/_FS/Resources/Sprites/<id>/`, com `render_sprites.py` 
 
 Conferência: `client/Builds/sprites_contact/v09_lote5.png` (A: escala do modelo; B: fila na escala do jogo com o CharScale abaixo, ao lado do ferreiro, do ajudante, da guerreira e do minerador; C: Idle S a 64 px em cor e em silhueta preta) e `<id>.png` (1º quadro de cada clipe, direção S).
 
-**CharScale** pela conta do §9: `(altura_m / 0,664) × (1,20 / alvo)`, com `altura_m` = altura do Idle S quadro 0 (alfa ≥ 128) ÷ ppu. Alvos pela ART_BIBLE §4 (ferreiro 1,20, ajudante 1,05): workers entre o ajudante e o ferreiro, o gerente na altura do ferreiro; o alvo inclui chapéu, ferramenta ou arma quando eles fazem o ponto alto da silhueta. **Proposto, NÃO aplicado na View.**
+**CharScale** pela conta do §9: `(altura_m / 0,664) × (1,20 / alvo)`, com `altura_m` = altura do Idle S quadro 0 (alfa ≥ 128) ÷ ppu. Alvos pela ART_BIBLE §4 (ferreiro 1,20, ajudante 1,05): workers entre o ajudante e o ferreiro, o gerente na altura do ferreiro; o alvo inclui chapéu, ferramenta ou arma quando eles fazem o ponto alto da silhueta. **Aplicado na View pelo B-CORE-04** (`WorldView.CharScale`, os 11): oficial (Bruna, Tomé, Iara, Joaquim), balconista (Celeste), almoxarife (Baltazar) e mestre_obras (Otávio) aparecem no posto quando contratados e no retrato do cartão; fundidor, mensageiro, gerente e os 4 clientes esperam os distritos.
 
 | Id | Papel | Assunto (resumo) | Imagem | Altura medida (px na folha · m) | Alvo (m) | CharScale proposto |
 |---|---|---|---|---|---|---|

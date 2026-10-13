@@ -17,6 +17,8 @@ namespace FS
     /// HUD; travado = esmaecido, sem moeda, "Precisa: X"; apertado = cartao encolhe e o botao afunda. Ordem: disponivel, sem ouro,
     /// travado (VALIDACAO_V05 #3), por preco dentro do grupo; reordena so ao abrir e depois de uma compra (aberta, nada pula
     /// embaixo do dedo so porque entrou ouro).
+    /// B-CORE-04: cartao de worker na mesma fileira (W >= 0): retrato da folha do Lote 5A, nome proprio, o que a proxima compra faz (contratar ou
+    /// subir nivel) e o preco; travado = "Precisa: Nível II" ou "Precisa: Renome 2"; ajudante sem o upgrade e nivel maximo nao aparecem.
     /// </summary>
     public sealed class MenuBar
     {
@@ -32,14 +34,14 @@ namespace FS
 
         sealed class Card
         {
-            public int U, Ord; public Cartao Estado = (Cartao)(-1); public long Falta = -1; public bool Down;
+            public int U, Ord, W = -1, Nivel = -1; public Cartao Estado = (Cartao)(-1); public long Falta = -1; public bool Down;   // W: WorkerDef (B-CORE-04)
             public GameObject Go; public Apertavel Toque; public CanvasGroup Fade; public RectTransform TagBox;
             public Image Icon, Face, Edge, Coin; public Text Name, Effect, Detail, Price, Tag; public string Cost, Lock;
         }
-        static readonly Comparison<Card> PorEstado = (a, b) => ((int)a.Estado * 100 + a.Ord).CompareTo((int)b.Estado * 100 + b.Ord);
 
         readonly Sim _sim;
         readonly Action<int> _bought;   // fora do Tick o Ev.Bought nao chega ao HandleEvents (o proximo Tick limpa): o Game toca som/efeito por aqui
+        readonly Action<int, long> _worker;   // B-CORE-04: o mesmo para o worker (indice, preco pago)
         readonly RectTransform _bar, _tray, _badge, _content, _melhorias, _metasBadge;
         readonly ScrollRect _scroll;
         readonly Image _btn;
@@ -51,10 +53,12 @@ namespace FS
         int _ready, _prontas = -1;
 
         /// <param name="metas">D-CORE-02: toque no botao Metas (aparece com as Ferramentas, Metas.Aberto, ao lado de Melhorias).</param>
-        public MenuBar(RectTransform safe, Sim sim, Action<int> bought, Action metas)
+        /// <param name="worker">B-CORE-04: contratou ou subiu nivel pelo cartao (indice do WorkerDef, preco pago).</param>
+        public MenuBar(RectTransform safe, Sim sim, Action<int> bought, Action metas, Action<int, long> worker)
         {
             _sim = sim;
             _bought = bought;
+            _worker = worker;
             _bar = Art.Node(safe, "Menu", new Vector2(0.02f, 0.005f), new Vector2(0.98f, Band));
             // A-UI-16: borda creme e face marrom como as pilulas da HUD (era o azul #2C3550); com compra pronta a face fica ouro
             Button b = Art.NewButton(_bar, Loc.T("menu.melhorias"), 44, Art.HudEdge, new Vector2(0.18f, 0.08f), new Vector2(0.82f, 0.92f), Toggle);
@@ -105,6 +109,7 @@ namespace FS
             for (int u = 0; u < Upgrades.Count; u++) if (Upgrades.All[u].InMenu) menu.Add(u);
             menu.Sort((a, c) => _sim.T.Cost(a).CompareTo(_sim.T.Cost(c)));
             for (int i = 0; i < menu.Count; i++) _cards.Add(BuildCard(_content, menu[i], i));   // Ord = posicao por preco, desempate dentro do estado
+            for (int k = 0; k < sim.Equipe.Defs.Length; k++) _cards.Add(BuildCard(_content, -1, menu.Count + k, k));   // B-CORE-04: depois das melhorias
             _tray.gameObject.SetActive(false);
         }
 
@@ -152,11 +157,11 @@ namespace FS
         /// Cartao: borda de couro (o chanfro e' a base 8 px mais grossa), face creme e, de cima para baixo, nome, icone, beneficio em %
         /// (2 linhas), antes → depois (ou "Faltam N" sem ouro) e botao de preco.
         /// </summary>
-        Card BuildCard(RectTransform parent, int u, int ord)
+        Card BuildCard(RectTransform parent, int u, int ord, int w = -1)
         {
-            UpgradeDef d = Upgrades.All[u];
-            var c = new Card { U = u, Ord = ord, Cost = Textos.Ouro(_sim.T.Cost(u)) };
-            Image edge = Art.Panel(parent, d.Name, Leather, Vector2.zero, Vector2.one);
+            UpgradeDef d = w < 0 ? Upgrades.All[u] : null;
+            var c = new Card { U = u, W = w, Ord = ord, Cost = w < 0 ? Textos.Ouro(_sim.T.Cost(u)) : "" };
+            Image edge = Art.Panel(parent, w < 0 ? d.Name : _sim.Equipe.Defs[w].Id, Leather, Vector2.zero, Vector2.one);
             c.Go = edge.gameObject;
             c.Go.AddComponent<LayoutElement>().preferredWidth = CardW;
             c.Fade = c.Go.AddComponent<CanvasGroup>();
@@ -165,21 +170,24 @@ namespace FS
             face.raycastTarget = false;
             c.Toque = c.Go.AddComponent<Apertavel>();
             c.Toque.targetGraphic = edge;
-            c.Toque.onClick.AddListener(() => { if (_sim.TryBuyMenu((Upgrade)u)) { _bought(u); _t = 0f; _sort = true; } });
+            c.Toque.onClick.AddListener(() =>
+            {
+                long preco = w >= 0 ? _sim.Equipe.Custo(w) : 0;
+                if (!(w >= 0 ? _sim.Equipe.Comprar(w) : _sim.TryBuyMenu((Upgrade)u))) return;
+                if (w >= 0) _worker(w, preco); else _bought(u);
+                _t = 0f; _sort = true;
+            });
             c.Name = Art.NewText(face.transform, "Nome", 30, new Vector2(0.04f, 0.85f), new Vector2(0.96f, 0.98f));
-            c.Name.text = Textos.Nome(u); c.Name.fontStyle = FontStyle.Bold; c.Name.color = Brown;
+            c.Name.fontStyle = FontStyle.Bold; c.Name.color = Brown;
             c.Name.resizeTextForBestFit = true; c.Name.resizeTextMinSize = 20; c.Name.resizeTextMaxSize = 30;
             c.Icon = Art.Node(face.transform, "Icone", new Vector2(0.18f, 0.58f), new Vector2(0.82f, 0.86f)).gameObject.AddComponent<Image>();
             c.Icon.preserveAspect = true; c.Icon.raycastTarget = false;
-            (c.Icon.sprite, c.Icon.color) = Icon((Upgrade)u);
             c.Effect = Art.NewText(face.transform, "Beneficio", 30, new Vector2(0.03f, 0.37f), new Vector2(0.97f, 0.58f));
             c.Effect.fontStyle = FontStyle.Bold; c.Effect.color = Brown;
             c.Effect.resizeTextForBestFit = true; c.Effect.resizeTextMinSize = 18; c.Effect.resizeTextMaxSize = 30;
-            c.Effect.text = Textos.Beneficio(_sim.T, u);
             c.Detail = Art.NewText(face.transform, "AntesDepois", 24, new Vector2(0.03f, 0.26f), new Vector2(0.97f, 0.37f));
             c.Detail.supportRichText = true; c.Detail.color = Leather;
             c.Detail.resizeTextForBestFit = true; c.Detail.resizeTextMinSize = 16; c.Detail.resizeTextMaxSize = 24;
-            c.Detail.text = Textos.AntesDepois(_sim.T, u).Replace("→", Arrow);
             // "Faltam N" (so sem ouro) no lugar do antes → depois: pilula da HUD (borda creme, face marrom), texto e' o sinal, nao a cor
             Image tag = Art.Panel(face.transform, "Falta", Art.HudEdge, new Vector2(0.1f, 0.265f), new Vector2(0.9f, 0.365f));
             tag.raycastTarget = false;
@@ -205,8 +213,37 @@ namespace FS
             c.Price.resizeTextForBestFit = true; c.Price.resizeTextMinSize = 16; c.Price.resizeTextMaxSize = 36;
             // best-fit so encolhe com Truncate (o NewText vem com Overflow); o texto do travado tem tamanho fixo (Mostra)
             c.Name.verticalOverflow = c.Effect.verticalOverflow = c.Detail.verticalOverflow = c.Tag.verticalOverflow = c.Price.verticalOverflow = VerticalWrapMode.Truncate;
+            if (w >= 0) { Worker(c); return c; }
+            c.Name.text = Textos.Nome(u);
+            (c.Icon.sprite, c.Icon.color) = Icon((Upgrade)u);
+            c.Effect.text = Textos.Beneficio(_sim.T, u);
+            c.Detail.text = Textos.AntesDepois(_sim.T, u).Replace("→", Arrow);
             if (d.Requires >= 0) c.Lock = Textos.Precisa(d.Requires);   // v0.6d: "Precisa: Balcão 5" (era "requer Balcão 5 vagas" em 2 linhas)
             return c;
+        }
+
+        /// <summary>B-CORE-04: textos do cartao do worker no nivel atual (refeitos quando ele sobe): nome proprio, retrato, o que a proxima
+        /// compra faz, nivel antes → depois (ou o papel), preco e o requisito.</summary>
+        void Worker(Card c)
+        {
+            WorkerDef d = _sim.Equipe.Defs[c.W];
+            c.Nivel = _sim.Equipe.Nivel(c.W);
+            c.Name.text = d.Nome;
+            (c.Icon.sprite, c.Icon.color) = Retrato(d);
+            c.Effect.text = Textos.BeneficioWorker(_sim, c.W);
+            c.Detail.text = Textos.AntesDepoisWorker(_sim, c.W).Replace("→", Arrow);
+            long custo = _sim.Equipe.Custo(c.W);
+            c.Cost = custo >= 0 ? Textos.Ouro(custo) : "";
+            c.Lock = Textos.PrecisaWorker(_sim, c.W);
+        }
+
+        /// <summary>Retrato do worker: 1o quadro do Idle de frente, na folha da skin com a escala do corpo no mundo (o quadro fica no cache da
+        /// folha); sem folha, o disco dos ajudantes. O aviso da compra (Game) usa o mesmo.</summary>
+        public static (Sprite, Color) Retrato(WorkerDef d)
+        {
+            if (!SpriteSheet.TryGet(d.Skin, out SpriteSheet sh)) return (Art.Disc(), Art.Worker);
+            sh.Scale = WorldView.CharScale(d.Skin);
+            return (sh.Frame("Idle", 0, 0f), Color.white);
         }
 
         /// <summary>Icone renderizado da melhoria (tools/ui_v05b_blender.py); sem a folha, a forma/cor procedural de antes.</summary>
@@ -262,17 +299,20 @@ namespace FS
             int ready = 0;
             foreach (Card c in _cards)
             {
-                Cartao e = Textos.Estado(_sim, c.U);
+                if (c.W >= 0 && _sim.Equipe.Nivel(c.W) != c.Nivel) { Worker(c); c.Estado = (Cartao)(-1); }   // B-CORE-04: subiu de nivel (aqui ou no bot)
+                Cartao e = c.W >= 0 ? Textos.EstadoWorker(_sim, c.W) : Textos.Estado(_sim, c.U);
                 if (e == Cartao.Disponivel) ready++;
                 if (e != c.Estado) Mostra(c, e);
                 if (e != Cartao.SemOuro) continue;
-                long f = _sim.T.Cost(c.U) - _sim.Gold;
+                long f = (c.W >= 0 ? _sim.Equipe.Custo(c.W) : _sim.T.Cost(c.U)) - _sim.Gold;
                 if (f != c.Falta) { c.Falta = f; c.Tag.text = Textos.Falta(f); }
             }
             if (_sort)
             {
                 _sort = false;
-                _cards.Sort(PorEstado);
+                // estado, depois o preco de agora (o worker sobe de preco a cada nivel e entra entre as melhorias pelo custo), depois a ordem
+                _cards.Sort((a, b) => a.Estado != b.Estado ? a.Estado.CompareTo(b.Estado)
+                    : Preco(a) != Preco(b) ? Preco(a).CompareTo(Preco(b)) : a.Ord.CompareTo(b.Ord));
                 for (int i = 0; i < _cards.Count; i++) _cards[i].Go.transform.SetSiblingIndex(i);
             }
             _ready = ready;
@@ -281,6 +321,8 @@ namespace FS
             if (_badge.gameObject.activeSelf != ready > 0) _badge.gameObject.SetActive(ready > 0);
             _badgeText.text = ready.ToString();
         }
+
+        long Preco(Card c) => c.W >= 0 ? _sim.Equipe.Custo(c.W) : _sim.T.Cost(c.U);
 
         /// <summary>Visual do estado, so quando ele muda. Comprado e oculto (nivel de estacao antes da revelacao) somem; travado esmaece e troca o
         /// preco por "Precisa: X".</summary>
