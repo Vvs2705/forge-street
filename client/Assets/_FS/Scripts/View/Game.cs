@@ -26,7 +26,9 @@ namespace FS
     /// -cam W (largura visivel em m, 6..11,4; experimento de camera mais perto) | -settings [on|off] (abre as configuracoes; on/off
     /// liga/desliga Som e Vibracao antes, gravando como o toque) | -cofre N (mostra o painel do cofre com N de ouro, sem dar o ouro) |
     /// -playtest (liga o diario num build de release; o dev ja grava) | -privacidade [18] (abre a tela de idade mesmo com resposta ou no
-    /// -testsession, onde a resposta nao e' gravada; 18 = direto no consentimento) | -lang pt|en|es (idioma da sessao sem gravar; Loc).
+    /// -testsession, onde a resposta nao e' gravada; 18 = direto no consentimento) | -lang pt|en|es (idioma da sessao sem gravar; Loc) |
+    /// -qualidade (B-CORE-03: niveis de estacao, pecas Fina/Superior nas pilhas e no balcao, ferreiro na Bigorna; Captura.Qualidade) |
+    /// -golpe (o mesmo com o anel do golpe de mestre na tela).
     /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
     /// 1a contratacao) | -recordfull (fila cheia no 1o quadro ou erro) | -recordorder (o -record mantem o cartao da encomenda) | -offline S
     /// (cofre real de S s fora, 60..7200). Captura que mostraria algo impossivel (compra id@t sem ouro ou pre-requisito, -vipnow depois de
@@ -170,6 +172,7 @@ namespace FS
             if (cfg != null) _cfg.gameObject.SetActive(true);
             _joy = new Joystick(_joyCanvas.transform);
             _joy.TopBand = HudBand;
+            _joy.Ignora = p => _view.NoAnel(p) || _view.BarraEm(p) != null;   // B-CORE-03: o toque no anel do golpe e na barra de qualidade e' deles
             Fit();
             FollowCamera(100f);
         }
@@ -264,6 +267,8 @@ namespace FS
             if (_screen.x != Screen.width || _screen.y != Screen.height) Fit();
 
             bool modal = Painel || Config || Priv;
+            Pointer ptr = Pointer.current;   // B-CORE-03: toque no anel do golpe ou na barra de qualidade (antes do joystick, que os ignora)
+            if (!modal && ptr != null && ptr.press.wasPressedThisFrame) Toque(ptr.position.ReadValue());
             _joy.Blocked = modal;
             _joy.BottomPx = _menu.TopPx;
             _joy.Tick();
@@ -341,13 +346,27 @@ namespace FS
                     case Ev.Sold:
                         Sfx.Play("coin", 1f + 0.05f * (_sim.Sales % 5), 0.1f);
                         // A-AUD-22: venda comum nao vibra; so a grande, no maximo 1 a cada 1,5 s (a loja de joias atende a cada 0,4 s).
-                        // A unidade do VIP (preco x3) fica de fora: o pacote vibra uma vez no VipServed
-                        if (e.B >= BigSale && e.B <= _sim.PriceOf((Item)e.A)) Ajustes.Pulso(20, 90, 1.5f);
+                        // A unidade do VIP (preco x3) fica de fora: o pacote vibra uma vez no VipServed. B-CORE-03: VIP = acima do preco da
+                        // Superior (2,5x < 3x do VIP Normal)
+                        bool vipSale = e.B > _sim.PriceOf((Item)e.A, Quality.Superior);
+                        if (e.B >= BigSale && !vipSale) Ajustes.Pulso(20, 90, 1.5f);
                         _view.SaleFloat(new V2(e.Pos.X, e.Pos.Y - 0.9f), e.B);   // v0.5: pela frente do estande; v0.6d: vendas a < 0,4 s somam num "+N" so
                         _view.Sold(e.Pos, e.A == (int)Item.Jewel);   // v0.5b: balao estoura com coracao e brilhos
                         FlyCoins(e.Pos, e.B);
                         Log("product_sold", Balance.ItemName[e.A], e.B.ToString());
-                        Source(e.B > _sim.PriceOf((Item)e.A) ? "vip" : "venda", e.B);   // a unidade do VIP sai a preco x3
+                        Source(vipSale ? "vip" : "venda", e.B);   // a unidade do VIP sai a preco x3
+                        break;
+                    // B-CORE-03: peca Fina/Superior na pilha (moeda aguda, "Fina!" e brilhos); obra-prima ao Hall (B-CORE-08)
+                    case Ev.Graded:
+                        Sfx.Play("coin", e.B == (int)Quality.Superior ? 1.6f : 1.35f, 0.15f);
+                        _view.Graded(e.A, (Quality)e.B);
+                        Log("product_graded", _sim.Stations[e.A].Name, ((Quality)e.B).ToString());
+                        break;
+                    case Ev.Masterwork:
+                        Sfx.Play("order");
+                        Ajustes.Pulso(60, 255);
+                        Notice(Loc.T("fx.qualidade", Textos.Qualidade(Quality.Masterwork)), _crown, Color.white);
+                        Log("masterwork", Balance.ItemName[e.A], _sim.Stations[e.B].Name);
                         break;
                     case Ev.Bought: Bought(e.A, e.B, e.Pos); break;
                     case Ev.ClientArrived: Sfx.Play("client", 1f, 0.2f); break;
@@ -439,7 +458,7 @@ namespace FS
                 Notice(name, icon, tint);
             }
             Log("upgrade_buy", ((Upgrade)u).ToString(), price.ToString());
-            Count(_sink, Upgrades.IsLuxury(u) ? "luxo" : "upgrade", price);
+            Count(_sink, Upgrades.IsLuxury(u) ? "luxo" : Upgrades.All[u].Meta ? "nivel_estacao" : "upgrade", price);   // B-CORE-03: o ralo Meta a parte
         }
 
         // s86 currency_source/currency_sink: o ouro soma por origem/destino e sai numa linha por chave a cada minuto de jogo e na pausa/saida
@@ -922,6 +941,39 @@ namespace FS
             _orderFill.rectTransform.anchorMax = new Vector2(target > 0 ? Mathf.Clamp01(done / (float)target) : 0f, 1f);
         }
 
+        /// <summary>
+        /// B-CORE-03: toque no anel do golpe de mestre = acertou ou errou a janela (WorldView.AcertoAgora); o Sim decide o resto (so o ferreiro
+        /// parado na boca, recarga). Acerto: martelada, vibracao e aviso; erro: "Quase!" e nada mais (errar nao pune). Toque no "Fina em 7" de
+        /// uma bancada: o QualityBreakdown dela no painel.
+        /// </summary>
+        void Toque(Vector2 px)
+        {
+            if (_view.NoAnel(px))
+            {
+                Station at = _sim.StrikeStation;
+                bool hit = _view.AcertoAgora;
+                if (_sim.Strike(hit))
+                {
+                    Sfx.Play("hammer", 1.25f);
+                    Ajustes.Pulso(40, 200);
+                    (Sprite icon, Color tint) = MenuBar.Icon(Upgrade.HammerSpeed);
+                    Notice(Loc.T("aviso.golpe"), icon, tint);
+                }
+                else
+                {
+                    Sfx.Play("click", 0.8f);
+                    _view.Float(_sim.Player.Pos, Loc.T("golpe.quase"), Art.Ink, 36);
+                }
+                Log("golpe", at != null ? at.Name : "", hit ? "1" : "0");
+                return;
+            }
+            Station st = _view.BarraEm(px);
+            if (st == null) return;
+            Sfx.Play("click");
+            ShowPanel(Loc.T("qual.titulo", Textos.Estacao(st.Index)), Textos.Detalhe(_sim, st), Loc.T("ui.ok"), ClosePanel);
+            Log("quality_breakdown", st.Name, _sim.QualityPoints(st).ToString(CultureInfo.InvariantCulture));
+        }
+
         // A-PLAT-07: o toque so pede anuncio jogando (Estados.Anuncia); o -adtest (dev) chama o IAds direto
         void OnVipAd()
         {
@@ -1179,6 +1231,8 @@ namespace FS
                 if (int.TryParse(hold[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out int h)) _sim.Player.Held[i] = Math.Max(0, Math.Min(h, _sim.Player.Cap));
             for (int i = 0; i < Math.Min(stock.Length, 4); i++)
                 if (int.TryParse(stock[i], NumberStyles.Integer, CultureInfo.InvariantCulture, out int s)) _sim.Stock[2 + i] = Math.Max(0, Math.Min(s, _sim.CounterCap));
+            // B-CORE-03 (fotos): -qualidade = barra e pecas Fina/Superior nas pilhas e no balcao; -golpe = tambem o anel na Bigorna
+            if (Arg("-qualidade") != null || Arg("-golpe") != null) Captura.Qualidade(_sim, Arg("-golpe") != null);
             // -vipnow: chama o VIP depois do warmup (fila cheia = ele espera ao lado); se ainda nao pode, tenta a cada quadro (Update).
             // G-UA-02: nao marca mais a 1a venda falsa (o CanSummonVip pede uma de verdade). Depois de um -warmup sem venda real e' erro
             // (o VIP nao viria no comeco, preset vip); sem warmup ele espera a 1a venda real (FS-C-26: -bot -vipnow)
@@ -1238,7 +1292,7 @@ namespace FS
                 yield return new WaitForSecondsRealtime(delay);
             }
             else yield return new WaitForSecondsRealtime(delay);
-            Debug.Log($"SHOT t={_sim.Time:0.0} upgrades={_sim.UpgradesBought} nobres={_sim.JewelQueue.Count}/{_sim.JewelQueueCap} baus={string.Join(",", _sim.Chests.ConvertAll(c => c.State))} som={Ajustes.Som} vibra={Ajustes.Vibra} idioma={Loc.Codigo} fornalhas={_view.Fornalhas()}");   // A-ART-06: estado desenhado
+            Debug.Log($"SHOT t={_sim.Time:0.0} upgrades={_sim.UpgradesBought} nobres={_sim.JewelQueue.Count}/{_sim.JewelQueueCap} baus={string.Join(",", _sim.Chests.ConvertAll(c => c.State))} som={Ajustes.Som} vibra={Ajustes.Vibra} idioma={Loc.Codigo} fornalhas={_view.Fornalhas()} golpe={_sim.StrikeStation?.Name ?? "-"}");   // A-ART-06: estado desenhado; B-CORE-03: anel
             ScreenCapture.CaptureScreenshot(path);
             yield return null;
             yield return null;

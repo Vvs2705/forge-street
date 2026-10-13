@@ -136,5 +136,24 @@ namespace FS.Tests
         }
 
         static float F(string v) => string.IsNullOrEmpty(v) ? 0f : float.Parse(v, CultureInfo.InvariantCulture);
+
+        /// <summary>B-CORE-03 -qualidade e -golpe (fotos) montam o que prometem: qualidade revelada, Fina e Superior nas pilhas e no balcao, o
+        /// ferreiro na Bigorna; com -golpe o anel aparece (Sim.StrikeStation).</summary>
+        [Test]
+        public void Qualidade_EGolpe_MontamAFoto()
+        {
+            var s = new Sim();
+            Captura.Qualidade(s, false);
+            s.Tick(Step, 0f, 0f);
+            Assert.IsTrue(s.QualityRevealed);
+            Assert.AreEqual(3, s.AnvilA.Level);
+            Assert.AreEqual(1, s.AnvilA.OutQ[(int)Quality.Superior]);
+            Assert.AreEqual(1, s.StockQ[(int)Item.Shield][(int)Quality.Fine]);
+            Assert.IsNull(s.StrikeStation, "-qualidade: sem anel (a Bigorna nao tem peca)");
+            var g = new Sim();
+            Captura.Qualidade(g, true);
+            g.Tick(Step, 0f, 0f);
+            Assert.AreSame(g.AnvilA, g.StrikeStation, "-golpe: o anel aparece na Bigorna");
+        }
     }
 }
