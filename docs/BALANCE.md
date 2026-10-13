@@ -1533,3 +1533,75 @@ Perfil novo `AdWatcherE` (o AdWatcher assistindo também Supply e bônus, guloso
 | AdWatcherE | 8:04 | 25:42 | 31:18 | **51:36** | 58:07 | 25,7 | 17.755 | 6,7/6/4/13 (teto 30) |
 
 **Achado:** assistir tudo atrasa a produção completa em 7 min. Não é o teto diário (com `AnunciosTetoDia=99` a produção fica em 52:07). O bônus da encomenda (+50% de um prêmio de ~25–60 ouro no começo) vale menos que os 30 s de relógio do anúncio, e é o placement mais visto (13 de 30). Varredura de valores (3 partidas): Supply 180 s → 50:00; bônus +100% → 50:25; os dois → 49:23; Supply 300 s + bônus +100% → 48:29 — nenhum empata com o AdWatcher. **Decisão:** os valores ficam; o jogador vê o valor antes de assistir (chips "+N" e "DOBRAR +N"), e o Orders 2.0 (B-CORE-05) recalibra o bônus com piso em segundos de renda (meta: AdWatcherE não mais lento que o AdWatcher). Pisos do §3: 0% abaixo nos 5 perfis.
+
+## 25. B-CORE-05: Orders 2.0 (2026-10-13)
+
+Regra em `ECONOMIA_WAVE_B.md` §3 e GDD §10; catálogo no `CONTEUDO_V1.md` §7. **Vigente** (`Core/Encomendas.cs`, `Core/EncomendasDefs.cs`): 8 tipos em dados (`OrderDef`, IDs `ord_*`): Common (= a encomenda de antes), Bulk (2 linhas e 5 entregues), Quality (linha que já faz Fina; variante Superior no Renome 3), Rush (8 entregues; prazo de 240 s **só de bônus**: no prazo o prêmio dobra e dá +1 de Renome, fora dele paga o normal), Mixed (3 linhas; 2 produtos, 3 com 4 linhas), Royal (Renome 2, Fina; o próximo projeto da fila Royal), Blueprint (Renome 1 e projeto pendente; gancho do B-CORE-07) e Event (vaga própria enquanto o evento está ativo; só pontos; gancho do D-CORE-03). Os 5 fregueses do Old Forge (FS-3) entram na 7ª, 14ª… Common (N e item fixos, +1 coração). Rodízio do Old Forge `Common, Common, Bulk, Quality, Common, Mixed, Rush, Blueprint, Common, Royal` na posição `Abertas % 10` (abertas + entregues + trocadas), tipo travado vira Common; produto = `linhas[idx % linhas]`, pulando o que já está noutra vaga. Vagas 1 → 2 (Renome 1) → 3 (Renome 3). **Tudo o que é novo só depois das Ferramentas** (tipos, vagas extras, fregueses): até lá o jogo é o de antes, tick a tick. Prêmio em segundos da taxa online × a escala dos knobs da Common (`OrderSeconds / 150`, `OrderRewardSeconds / 10`), múltiplo de 5, fora do `GoldEarned`; Renome pelo tipo (+1 a +10). Uma peça vendida conta para uma vaga só (a mais antiga que a aceita). "Bônus da encomenda" (anúncio) = máx(50% do prêmio, **60 s de renda**) (`Tuning.EncomendaBonusMinSeg`).
+
+**Decisões e desvios (revisar):**
+1. **Rush com penalidade? Não:** só bônus (recomendação do ticket); o validator recusa bônus sem prazo e não existe campo de penalidade.
+2. **Prêmio de Bulk, Quality, Mixed e Royal = 70% dos segundos do catálogo** (32/18/30/25/45 → 22/13/21/18/32; mínimos iguais; os fregueses Quality/Bulk acompanham). Com o catálogo, o ouro de encomendas foi a 13,6% da venda aos 60 min no F2P (portão 4–12%); com 80%, 11,9% no F2P e 12,6% no Ideal; com 70%, 11,3% (4 partidas). Common, Rush e Blueprint ficam como o catálogo (a Common não pode mudar: é a dos 10 primeiros minutos).
+3. **N de Quality e Royal × fração que a automação já faz no nível mínimo** (q / 100; Fina com Bigornas II = 0,15): o "alvo em s de renda" conta só as peças que servem. Sem isso a 1ª Quality pedia 12 Finas (~80 espadas, ~10 min com a vaga presa); com isso, o mínimo de 3.
+4. **A variante Superior do Quality só abre com a automação fazendo Superior (q > 100);** hoje (q ≤ 30) nunca abre: o F2P não golpeia, e uma encomenda que só fecha com o golpe prenderia a vaga ("nunca pune"). Abre sozinha quando técnica/liga passarem de q 100.
+5. **Limiares 2–4 do Renome mantidos (70/180/400):** com o Orders 2.0 eles caem dentro dos portões (abaixo), então a recalibração é "não mexer". Ressalva: o bot não resgata metas (semanais +5, conquistas +5/+10, login +2/+3); o jogador real chega um pouco antes.
+
+### 25.1 econsim antes × depois, 3 partidas × 360 min (`--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 360 --partidas 3`, anúncio = 30 s)
+
+Antes = `432e638` (a main com o #49 Renome e o E-PLAT-02); depois = este branch. Renome 1/2/3/4 = relógio em que o nível chegou (h:mm; "—" = não chegou em 6 h).
+
+| perfil | | Produção | zona morta | Renome 1 | Renome 2 | Renome 3 | Renome 4 | Renome em 6 h | encomendas 60 min / 6 h | ouro de encomendas (% da venda, 60 min / 6 h) | renda/min 0–60 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Ideal | antes | 48:12 | 21,7 | 0:15 | 2:24 | — | — | 146 | 19,3 / 116 | 4,8% / 5,3% | 977 |
+| | **depois** | **46:34** | 20 | 0:15 | **0:59** | **2:15** | **4:15** | 613 | 30,7 / 231 | 10,9% / 16,6% | 1.005 |
+| F2P | antes | 46:48 | 21,3 | 0:14 | 2:36 | — | — | 132 | 21 / 112 | 5,0% / 5,0% | 1.015 |
+| | **depois** | **46:37** | 21 | 0:14 | **1:00** | **2:20** | **4:20** | 589 | 31 / 229 | 10,9% / 16,2% | 998 |
+| Slow | antes | 49:37 | 22,7 | 0:15 | 2:39 | — | — | 131 | 20,3 / 111 | 4,8% / 5,0% | 915 |
+| | **depois** | **47:50** | 20,7 | 0:15 | **0:57** | **2:09** | **4:05** | 619 | 32,7 / 238 | 11,4% / 17,1% | 945 |
+| AdWatcher | antes | 44:36 | 18,3 | 0:14 | 2:35 | — | — | 136 | 19,3 / 116 | 5,0% / 5,3% | 1.125 |
+| | **depois** | **43:00** | 17,3 | 0:13 | **0:59** | **2:21** | **4:27** | 568 | 30,7 / 219 | 10,9% / 15,5% | 1.151 |
+| AdWatcherE | antes | 51:36 | 25,7 | 0:19 | 2:49 | — | — | 130 | 16 / 110 | 6,6% / 5,3% | 851 |
+| | **depois** | **43:01** | 19,3 | 0:16 | **1:06** | **2:31** | **4:36** | 549 | 25,3 / 212 | 27,5%* / 16,9% | 1.008 |
+
+\* o AdWatcherE soma no prêmio o bônus que ele assiste (14–16 dos 30 anúncios do dia). Entregues por tipo em 6 h (F2P): Common 112, Bulk 25, Quality 29, Rush 21, Mixed 22, Royal 19 (Blueprint e Event esperam os ganchos). Pisos do §3: 0% abaixo nos 5 perfis, iguais ao antes. Depois da produção completa o ouro continua sem destino (pós-produção 720 mil em 6 h no F2P, era 648 mil): é a Wave C.
+
+### 25.2 8 partidas × 60 min (`--minutos 60 --partidas 8`)
+
+| perfil | Produção (antes → depois) | zona morta | ouro de encomendas aos 60 min | encomendas em 60 min |
+|---|---|---|---|---|
+| Ideal | 47:51 → **46:20** | 21,4 → 19,5 | 11,0% | 31,1 |
+| F2P | 47:26 → **45:09** | 21 → 19 | 11,4% | 32,4 |
+| Slow | 49:48 → **48:05** | 22,6 → 20,9 | 11,0% | 31,6 |
+| AdWatcher | 44:34 → **42:36** | 19,1 → 17,4 | 11,2% | 31,3 |
+| AdWatcherE | 50:50 → **41:11** | 24,1 → 17,4 | 32,3%* | 27,8 |
+
+### 25.3 AdWatcher × AdWatcherE (achado do §24)
+
+8 partidas × 60 min, Orders 2.0, varrendo o piso do bônus (`--tuning "EncomendaBonusMinSeg=N"`); o AdWatcher não assiste o bônus (42:36 em todas):
+
+| piso do bônus | AdWatcherE, produção | diferença para o AdWatcher |
+|---|---|---|
+| antes (Orders 1, só 50% do prêmio) | 50:50 | +6:16 (mais lento) |
+| 0 s (Orders 2.0, só 50% do prêmio) | 49:12 | +6:36 |
+| 45 s | 43:18 | +0:42 |
+| **60 s (vigente)** | **41:11** | **−1:25** |
+| 75 s | 39:21 | −3:15 |
+| 90 s | 37:49 | −4:47 |
+
+60 s é o menor piso em que o AdWatcherE não fica mais lento que o AdWatcher (o anúncio custa 30 s de relógio e devolve 60 s de renda). Em 3 partidas × 360 min os dois empatam (43:01 × 43:00). Pisos do §3 do AdWatcherE: 0% abaixo.
+
+### 25.4 Portões (ECONOMIA_WAVE_B §10)
+
+| Medida | Portão | Medido (F2P) | |
+|---|---|---|---|
+| Primeiros 10 min | iguais, tick a tick | iguais até as Ferramentas (10:30): golden `EncomendasTests.PrimeirosDezMinutos_IguaisAosDeAntes_GoldenDoMain`, gerado pelo código de antes (mesmos eventos de encomenda e compra no mesmo tick, mesmo ouro, vendas, posição e Renome) | ok |
+| Produção completa | 41–55 min | 45:09 (8 partidas; antes 47:26) | ok |
+| Zona morta até a produção | ≤ 12 min (meta) | 21 → 19 | melhora; a meta é dos Blueprints e da Wave C |
+| Ouro de Orders | 4–12% da receita aos 60 min | 11,4% (Ideal 11,0%, Slow 11,0%) | ok com o desvio 2 |
+| Encomendas entregues em 60 min | ≥ 25 | 32,4 (antes 21) | ok |
+| Renome 1 / 2 | 12–25 min / 40–75 min | 0:14 / 0:55–1:00 (antes 2:36 h) | ok |
+| Renome 3 / 4 | 1,5–3 h / 3–6 h | 2:20 / 4:20 (antes: não chegavam em 6 h) | ok |
+| AdWatcher × F2P | ≥ 0,75 × F2P | 42:36 × 45:09 | ok |
+| AdWatcherE × AdWatcher | não mais lento (§24) | 41:11 × 42:36 | ok |
+| Pisos do §3 | 0% abaixo | 0% abaixo nos 5 perfis | ok |
+
+`BalanceTests.Bot_60Minutos_Fase2` passou a cobrar o portão da Wave B (4–12% e ≥ 25 entregues; era 3–10% com 1 vaga e 1 tipo).

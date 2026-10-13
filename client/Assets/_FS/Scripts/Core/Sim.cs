@@ -131,7 +131,7 @@ namespace FS.Core
         public readonly Metas Metas;
         /// <summary>E-PLAT-02/03: rewarded por placement (ID de transacao, recarga, teto diario) e o veto do intersticial (Anuncios.cs).</summary>
         public readonly Anuncios Anuncios;
-        /// <summary>B-CORE-06: Renome (Renome.cs), trilha que so sobe. Ganchos: o Emit credita encomenda e bau, o Sell a Superior; save na linha rn=.</summary>
+        /// <summary>B-CORE-06: Renome (Renome.cs), trilha que so sobe. Ganchos: o Emit credita o bau, o Sell a Superior (a encomenda: Encomendas.Entregar, pelo tipo); save na linha rn=.</summary>
         public readonly Renome Renome;
         /// <summary>B-CORE-05: Orders 2.0 (Encomendas.cs): vagas, rodizio, premio. Ganchos: Tick, Sell (OnVenda), Save/Load.</summary>
         public readonly Encomendas Encomendas;
@@ -1056,7 +1056,7 @@ namespace FS.Core
         {
             Events.Add(new SimEvent(kind, a, b, pos));
             Metas.On(kind, a, b);   // D-CORE-02: tambem os de fora do Tick (menu, cofre)
-            Renome.On(kind, a, b);  // B-CORE-06: encomenda entregue e bau aberto
+            Renome.On(kind, a, b);  // B-CORE-06: bau aberto (a encomenda credita pelo tipo no Encomendas.Entregar)
         }
 
         // ------------------------------------------------------------------ qualidade (B-CORE-03, docs/ECONOMIA_WAVE_B.md §1)
