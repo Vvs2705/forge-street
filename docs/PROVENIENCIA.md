@@ -240,3 +240,56 @@ mv client/Assets/_FS/Resources/Sprites/<cliente>/contact.png client/Builds/sprit
 | cacadora | `tripo_convert_f9f8969a-f957-43fc-801b-b6cf6fe1e175.fbx` | 11 579 248 | `871e5036c408287934496b99d7317091fd5684fd4f687c3fd26360668044eeef` | ppu 123.04 · 38.7 px · 6 PNG, 6 731 609 B |
 
 Saída por cliente: `meta.json` + Angry/Idle/LookingAround/Thankful (32 quadros, 4096×512), Walking (16, 2048×512), Waving (6, 768×512). Total dos 60 PNG: 69 493 818 B. Os SHA dos PNG não foram registrados (o AA do Workbench varia alguns níveis entre renders, §6). Conferência: `client/Builds/sprites_contact/v05_clientes_lote4.png` (2694×3215, 1 930 713 B, SHA-256 `332409aa1ad3d0466be6dae3ab5aa4719a05f806b62ba4fa68db4a250c9661fb`) e `<cliente>.png` (1º quadro de cada clipe, direção S). CharScale proposto: `ASSETS.md` §9.
+
+## 8. Leva 9 — ícones dos produtos dos distritos 2–6 (2026-10-13, Blender por primitivas — 0 crédito)
+- **Ferramenta:** Blender 5.2.1 LTS headless, `client/tools/itens_blender.py` (48 833 B, SHA-256 `d0a8f383aed713b2dc90b4a2c147432d393e99f833148b52333f24d4c883cbdc`, fim de linha LF). O script importa sem alterar `arte_v05_blender.py` (`Peca`, `vista_item`, `meta`, tons e primitivas), `ui_v05b_blender.py` (`Sub`) e `props_blender.py`. A pipeline é a do `item_espada`: Workbench FLAT, render a 512 px reduzido 4×, contorno `#1E1612` de 3 px e sombra de 4 px a 35%. A folha de QA sai de `client/tools/folha_produtos.py` (Python 3.14 + Pillow 12.2, 4 159 B, SHA-256 `60432e0ea66c4cff4d426ca5a9f8fb6f38922a0ffff62afec3115d4a4f34c9eb`).
+- **Entrada:** nenhuma. Sem rede, sem IA generativa, sem Tripo, sem Mixamo e sem asset de terceiros. Os modelos são primitivas e bmesh escritos no script, com os matizes da ART_BIBLE §2–3.1. **Créditos: 0**; o saldo do Tripo não foi tocado.
+- **Licença:** própria do estúdio. Autoria: worker da raia ARTE da Leva 9 do ORQUESTRADOR (personas 06 ai-art-director e 31 ai-prop-weapon-artist), a pedido do Vinicius (meta GDD ≥ 90%). Data: 2026-10-13.
+- **Comando** (raiz do projeto, Unity fechado): `blender.exe -b --factory-startup --python-exit-code 1 --python client/tools/itens_blender.py`. Gera 41 itens e 82 PNG em 17,1 s de render (19,1 s de parede, ~16 s de CPU, pico de 529 MB de RAM, 1 processo). Depois: `python client/tools/folha_produtos.py`.
+- **Saída:** `client/Assets/_FS/Resources/Sprites/<id>/` com `icone.png` e `deitado.png` (128×128 RGBA, ppu 128, pivô no centro) e `meta.json` com `"fonte": "tools/itens_blender.py (procedural, 0 credito)"`. Os `.meta` do Unity (pasta, 2 PNG, `meta.json`) são cópias dos do `item_joia`, com o mesmo import (sem mipmap, ASTC 6×6 no Android, DXT5 no PC) e um GUID novo por arquivo. O script só cria `.meta` que falta: rodar de novo não troca GUID, o que foi conferido re-renderizando `item_grevas`.
+- **Reprodutibilidade:** num 2º render completo, 81 dos 82 PNG saíram idênticos bit a bit. `item_cristal/deitado.png` variou 1/255 (ruído de antisserrilhado do Workbench, como na §6). Os SHA abaixo são dos arquivos entregues.
+- **Conferência:** `client/Builds/validation_art_produtos/folha.png` (1760×3194, 1 662 663 B, SHA-256 `e74e6fb76cd8ae144738c005569dbde64e1f5596930176745dd9f92ae2baaeea`). Reprovados na 1ª e na 2ª folha e corrigidos: liga celeste (lia como placa de "proibido"), panóplia (as espadas sumiam atrás do escudo), espada de gala e lâmina estelar (tinham a mesma silhueta da espada), cajado e alabarda (pareciam a lança), grevas (pareciam as manoplas), minério rúnico (um caixote) e o brilho da placa. Matizes por família: ART_BIBLE §3.1.
+
+| Item (`Resources/Sprites/`) | `icone.png` (bytes, SHA-256) | `deitado.png` (bytes, SHA-256) |
+|---|---|---|
+| `item_espada_longa` | 7 850 B `ca4a7ac31e9e1b5f4f7e9646f2208179ada9646e68014c32ee2f3da0c7d73dbd` | 4 090 B `b38217e1b478c59680b769589b2ef9564ed2f326d52b8e6751fbdb8fc3e66842` |
+| `item_elmo` | 13 692 B `bbbf0ec33e60997bad71cdabbf47615fc05094f808b15190bb0d4ce0b4c037ac` | 14 061 B `9a84857982776279c7048ada114ca4d243227053285939178b941f71534adf4f` |
+| `item_peitoral` | 13 192 B `296089d3e0515b57b451c3ca0e3e117d230fd900d6cc776f64218e7d80166e1f` | 11 744 B `97639f475f614f5e2aa4da06b1b47a9b23cc9662747a45cb4c6ff60af05ce6bd` |
+| `item_grevas` | 16 867 B `8acea589e8dbd68f20545950dccdaee73c83c56a00f0cf1398c7bd61b3ecacaa` | 17 270 B `135e0e97b69c6bf7ff9a2130371dcba0077e53f75f0947c350715de823dc6517` |
+| `item_manoplas` | 19 834 B `142dd78a4d5a984e8aee4db4e0d7f6155fa60ad044ea834a1ef51c0d595368a1` | 17 431 B `be315139fadbce761f678531764a1a63394ea4c2363a81bea93538662ca50d05` |
+| `item_lanca` | 5 908 B `cefc5fedf8593a06bcedd2680712244484869f9ca6a1b348be548104c63be2a5` | 3 109 B `15fdd112fb915a75762c10dbf37e1eb5fbaa7151db971f347b1ff11499c7edbe` |
+| `item_machado_guerra` | 10 950 B `eea645e0b9a71985680db8036042d8ae2032b0162980512bb17dce1797b28725` | 8 405 B `ebd559589fab345b64806ad5993a11d12f09d55b8d6554fabb01c94ba4c25c79` |
+| `item_maca` | 10 027 B `fbb33d9632cead45f4fef93f4bdb9ceb09f8526a141190c43f9eeb6efc0fc731` | 6 633 B `bb5686c25ae13b4cca697dc322fa8acd463c9794315e8a2de40514c57bb416e3` |
+| `item_colar` | 12 079 B `a3360bee2fe5c5e4d910c397cc95a86a7e8967a7c123cae3774116531000f7c8` | 12 411 B `c8c375d05990bdf556c331b94d1714615ba2495d7caaf144e1b82502dc5320d6` |
+| `item_broche` | 15 522 B `6545c7a43b6cbbe9dc77136906e9b30d846fdb8b2d1b79ee049cc062ddfabc87` | 14 433 B `da3afe83f07e35c72bd7ddcf6c0f26ee68c8ebf3d125035fa4afeb76e0f6eed3` |
+| `item_cinzel` | 10 804 B `b4214fad27453dd27ed5f1ee66e34a921cf73c5ffa765d8ff93c9564770d90a4` | 5 064 B `e93b65808f8b3ea7985e699343ba91d9421ae4b741cb1f9d5937febb47a04c32` |
+| `item_castical` | 11 290 B `06e5259a8f5a3f9111a4df3115d915c73339ee6251309be55b95bc10d9254d9e` | 15 334 B `5b60d0d01cc2cf95c30c4033bc8c5dabe6ac54da4d711792c0285333cb864ec9` |
+| `item_caixa_joias` | 15 901 B `bc96151e3fa6bbd8734255e8ce77495427715399c4555f718c39e2b972ae3bbd` | 11 134 B `c0c0b5ad4a9bae8adac18ecf4de845cb2a5f4f534a5cbeb982cd553086996d16` |
+| `item_calice` | 12 918 B `a87da33001644b551d37dbadeb3900ad4d8f63d4778413d691cfd0fa4368deb1` | 13 352 B `0af57012425f740fc870ed0cab4c0a81436148e10c2cf34558a4750d77f20cf5` |
+| `item_fivela` | 12 861 B `b2d62cb21dda9bd11e34f8406b147b1d406b05e7eee5a58af8652bbf7fdf063f` | 6 656 B `71e0b6f617c089f49d37f46483760538426b0dffd4e8b52c744febd6cb8dd70c` |
+| `item_kit_guarda` | 11 426 B `91324b1138dc0612ffd79be81ea51f86bc3b7ba828184268b0306339ec83b404` | 12 359 B `e97329cf7a89d49b83156b2bf9063f9d68c9976b7c94840b82c38e20eb7b0a6a` |
+| `item_kit_batedor` | 12 246 B `756893e1758a0b38c02aa51a18fff0025121b5a740768ff5b8e398d75194eafa` | 13 852 B `ef1aaa27fd87b0fafba028f411b018114b10cece61386562f33b946e750ffcef` |
+| `item_alabarda_cerimonial` | 11 411 B `3639017eadd6b8a457ee79de78436669e3ff7c5bb248703de94e4f8da857e862` | 6 154 B `fded1883f21ffd34910f719f39e04522b35f019491a055e27c690297ead79ea7` |
+| `item_espada_gala` | 15 033 B `7600a8447c14df32775f77834bf74f08aa34dee3cae97b907f922119e0240548` | 15 682 B `b5cbd3fbf249b3ba6f34f6c1a85e843a939e97a7f56edf5c7abcd944af676dc3` |
+| `item_armadura_gala` | 19 678 B `fcc057780b1d009ef920409cf200c219f81b1bb911662f41566a42044db4d63d` | 19 048 B `a4d9a1ee3c05b4a9c3a822efc620f08ffefa9c9bbe024bee9390e1155faaa4f7` |
+| `item_insignia_real` | 11 127 B `bfdc991dedbead14c8fa4b8fbb8ba7a5e5c4b9fb42a2dfb357550f1894c29e2f` | 11 239 B `e05cf9b597d8a75398978227c699d8f0e12943792f0bed142134e56640594f9e` |
+| `item_lamina_runica` | 10 617 B `c60730de347a6944afe901d1260bdcd82e7ee5d3e7ce97f34d15e435ff7345ea` | 6 581 B `ce7adeba114ee20703ab814c1bffcc2096743ceea688f560a105bcb8c5d38d1c` |
+| `item_escudo_runico` | 14 464 B `53f2d4657d7ece6d78bab6c5fb404b8541c6d7d95f9b038b5e1f296e568579fc` | 15 762 B `25402461aea01926ff0e7eabb39374be0da7fc9bba30267eb3ed1483b4e28b8b` |
+| `item_amuleto_arcano` | 10 217 B `3df661dea55f1e37b80858eccfe88e6e1c69c99b4c113130d1ef3d6386948ec6` | 9 735 B `514bcbad9783a7a7bc8aff05b0157899723b08d04affbaae41c0eadf6e67e899` |
+| `item_cajado_liga` | 7 058 B `479b6daf7c0ea0c5feff4ec04db335b338c6c253bb59d0e9ae56dc150fc74a77` | 5 128 B `220e3050b31b2b788b90a83f873477bd078889d6af6b5f9f1890553c6692f903` |
+| `item_anel_cristal` | 10 008 B `0040366873abd17d5c6d171457fbb756c7c030eb0bfc0fda374b8bd29e84056f` | 8 381 B `eccab50dfd5248bb2870d5925e3d6ac308765fad4a8af8034a2afa95d65a48ea` |
+| `item_lanterna_arcana` | 10 358 B `c7f5eff7fb5c923a055aa6ac0e07d7d2ba6298adcf3472f8922dcf3806ab9bd4` | 9 557 B `758733727c5f2204f019892c05e050f5daa82eccd860a9d16f9d2df16d8c9275` |
+| `item_liga_celeste` | 15 539 B `8806b829bea13223678e3d43a6dc896767687c94295c6c183eea442068329e2a` | 13 063 B `3e64d6c4e40efaf503fbdf50943b1d167ec9838ef2a7e7fe94a467cab68b0867` |
+| `item_panoplia_campeao` | 15 967 B `a20f4e173913e55a893e10459e2b795d794ab921424b625ccda55fd389c3b7c4` | 17 324 B `6ccf29c9b28e89b2c2c7288b31123a517fe36f325959ad573cf3d9fa80a508d3` |
+| `item_lamina_estelar` | 7 299 B `a6e84cd0e48e281aeced18bf01b83546d1657d927941e2b4d9682635d5c72cfa` | 6 560 B `5c8c13d5222c2bf04629f7918bc7709c14345042ccae2289b9a407aad9758ed8` |
+| `item_coroa_reino` | 14 997 B `7b0fc6e8a2c3c66afb9e5695824092e6d4b5753771cb9a7e5ff5c2d240cb089c` | 19 982 B `230dd22887a5c7aa6fae8744637a210e8270c0239e62e427f5d058e2d7d49e23` |
+| `item_estatua_bronze` | 10 157 B `dd478a4ca84eea69e3e755b3d638767e6bdd93432b31ffc5dc5612eae2fea86e` | 11 634 B `8b711a5b75f00c7bfd680e85040866e3ca11fbc48c13c2e77fd2444ed8192156` |
+| `item_sino_catedral` | 14 414 B `ee93b18ee8d309166b84b30c3c63bbb0ea848e22508f3122478c5f5740d53c0d` | 14 319 B `fbf7bcb51aeff805e4fd6708189cf79af2963c3e44aa0b0ec349963f75467741` |
+| `item_relicario_real` | 17 162 B `d9afa71fe067c85f911d951085f196e6020926c6c5c7821f578a98c6abe058aa` | 11 569 B `b62589f1098517f1676f417cd198ebcd4c37d28e2864999ca7f274c5bd32838a` |
+| `item_couro` | 15 724 B `8284089199b2c7e1551d2cddc030c734c181e72c9e823d13124ea6d3b7826d9b` | 16 201 B `86775b3327c5baccc66382286273b35550b8223eefe8bbcc19458b93220cc6b6` |
+| `item_placa` | 14 985 B `babdf264dff20aba7aab7a1d7525bd52dbbb243312db3169bc35d7bd67733ec2` | 13 226 B `676bfe55f3023cdb77db9f8e3b697b7c619c17215151d76dc61b50d3cefdc60d` |
+| `item_rebite` | 13 202 B `2e42600e72b7e1093c912598e1962bd647628f0f276023b6f9a834d945fc6ba2` | 15 010 B `0fbd3180af57ce48b29a06fd531d86a73695c60eb620e1e39b9b7e23c6352f89` |
+| `item_gema` | 12 682 B `6a141edb276881f62797f2d0fc0878a1257d83f056ba308ff4ac149e25f40f21` | 13 059 B `4c86e99b32630e4fa60b76f10f9311c9aca3097f0474b61c7063462243c3ecea` |
+| `item_liga` | 10 938 B `ffedb5068bc4c9832eb198f813bbf2dc19ba289abc00f8636b4b21b0110376a3` | 10 940 B `bae83a3911a53aab9d109dde294c14348426a5ea8b0abf395dfeb57214feec9f` |
+| `item_minerio_runico` | 13 521 B `11396a779a0f51b1298f2d1cf1b2f67ff3b45493db77b3b8e9b6ae554a4c82b4` | 15 466 B `f182d3848c2ef7624bfe2421623d740a066017cda7f30dc2dcae66a99c3a37fe` |
+| `item_cristal` | 12 868 B `522654fca8733bda1ca606ab7e515e1ac66ce70f631f6d446777486a02e64b63` | 14 800 B `605fd5a6ab28e7767e0a257d3c50b56486a74d24819520769726f36324926596` |
