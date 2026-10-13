@@ -1533,3 +1533,40 @@ Perfil novo `AdWatcherE` (o AdWatcher assistindo também Supply e bônus, guloso
 | AdWatcherE | 8:04 | 25:42 | 31:18 | **51:36** | 58:07 | 25,7 | 17.755 | 6,7/6/4/13 (teto 30) |
 
 **Achado:** assistir tudo atrasa a produção completa em 7 min. Não é o teto diário (com `AnunciosTetoDia=99` a produção fica em 52:07). O bônus da encomenda (+50% de um prêmio de ~25–60 ouro no começo) vale menos que os 30 s de relógio do anúncio, e é o placement mais visto (13 de 30). Varredura de valores (3 partidas): Supply 180 s → 50:00; bônus +100% → 50:25; os dois → 49:23; Supply 300 s + bônus +100% → 48:29 — nenhum empata com o AdWatcher. **Decisão:** os valores ficam; o jogador vê o valor antes de assistir (chips "+N" e "DOBRAR +N"), e o Orders 2.0 (B-CORE-05) recalibra o bônus com piso em segundos de renda (meta: AdWatcherE não mais lento que o AdWatcher). Pisos do §3: 0% abaixo nos 5 perfis.
+
+## 25. D-CORE-03/04: Eventos e Pass (2026-10-13)
+
+**Vigente** (`Core/LiveOpsDefs.cs`, `Core/LiveOps.cs`): os 10 `EventDef` do `LIVEOPS_V1.md` §2.4 (8 do calendário + 2 reservas), 6 dias às 13:00 UTC a partir do T0 = 2026-11-02 (padrão do time, revisar: DECISÃO "datas" do D-PROD-01), um evento por vez; trilha comum (135 s de ouro, Renome +8, 500 XP do Passe, 2 cosméticos; nos Hunts o projeto da Masterwork com fallback de 60 s); modificadores aplicados pelo `RemoteConfig.Valores` (as mesmas travas: evento nunca fura guardrail) e devolvidos no fim. Pass S1/S2: 30 níveis × 600 XP, 35 dias emendados, só a trilha free (ouro 1.170 s, Renome +44, 6 cosméticos); premium só no dado (V20). XP do Passe = `Metas.PassXp` (diárias 100, semanais 350, conquistas; retroativo 1×) + encomenda entregue 10 (teto 100 por dia local) + XP das trilhas dos eventos. Ouro de limiar e de nível fora do `GoldEarned`.
+
+Rodam neste build: **Forge Frenzy, Armorer's Challenge, Forge Frenzy-B, Blacksmith Festival e Royal Week-B**. Esperam o sistema deles (o calendário pula a semana, nunca é erro): Royal Week e os dois Hunts (`order_complete` Royal/Quality do B-CORE-05; `QualidadeEvento` não é knob; `bp_mw_primeira_lamina` do B-CORE-07), Rare Ore Rush (Bulk; `GrabTime` ainda é const do `Balance`) e Merchant Caravan (Bulk/Mixed).
+
+### 25.1 Evento desligado
+
+econsim padrão (5 perfis × 60 min, anúncio = 30 s): **CSV idêntico ao byte** ao da `main` (d0d78f0) e a mesma saída. O bot sem relógio não roda o LiveOps (save sem `ev.*`/`ps.*`); com evento ativo, os 10 primeiros minutos do F2P são iguais tick a tick (as Ferramentas são requisito de todo evento; `LiveOpsTests`).
+
+### 25.2 Evento ativo (`econsim --evento <id>`, 1 partida por perfil, comparada com a mesma partida sem o evento)
+
+| evento | modificadores | F2P entra | renda/min do F2P depois da entrada (sem → com) | Δ F2P | Δ nos 5 perfis | pontos do F2P (missões) |
+|---|---|---|---|---|---|---|
+| Forge Frenzy | `ClientInterval` ×0,8; `PatienceBase` ×1,15 | 29:11 (10 encomendas) | 1.619 → 1.704 | +5,3% | −1,2 a +5,3% | 560 (7/8) |
+| Armorer's Challenge | `Price[escudo]` ×1,2; `ShieldTimeMul` ×0,9 | 14:26 (Renome 1) | 1.254 → 1.404 | +12,0% | +9,3 a +14,2% | 610 (6/7) |
+| Forge Frenzy-B | os do Forge Frenzy | 28:47 (Joalheria) | 1.592 → 1.648 | +3,5% | +0,5 a +3,5% | 640 (7/8) |
+| Blacksmith Festival | `FurnaceTime0..2` ×0,85; `ClientInterval` ×0,9 | 29:11 | 1.619 → 1.724 | +6,5% | +4,5 a +10,1% | 560 (6/8) |
+| Royal Week-B | `VipMin`/`VipMax` ×0,75 | 14:26 | 1.254 → 1.347 | +7,5% | −2,5 a +8,4% | 640 (7/8) |
+
+- Portão "ouro/min do F2P ≤ +15% durante o evento" (`LIVEOPS_V1.md` §6): **passa** nos 5 (o maior é o Armorer's, +12,0% no F2P e +14,2% no Ideal). Cofre aberto durante o evento paga igual (teste).
+- **Achado:** 30 min depois da entrada o F2P já fez 560–640 dos 700 pontos das missões (só o "jogar em 3 dias" segura). Sem a encomenda Event (+20 por entrega, gancho do Orders 2.0) a trilha para em 700 de 1.000: os limiares 850 (Renome +5) e 1.000 (XP 200 + cosmético principal) ficam fora de alcance até o B-CORE-05, e o portão "trilha de evento fecha no dia 4–5" ainda não se mede. Se o Orders 2.0 confirmar o ritmo, o knob é o alvo das missões de volume (o meio de jogo vende ~34/min).
+- Ouro dos limiares numa sessão: 1.300–3.700 (são segundos de renda: com a taxa do meio de jogo, 135 s valem ~2,2 min de venda).
+
+### 25.3 Pass: o F2P fecha a trilha free?
+
+Conta estática do `LIVEOPS_V1.md` §5.4 com o conteúdo real (`LiveOpsDefs.XpDiaF2P`: o menor XP das diárias e das semanais dos `MetasDefs`, encomendas no teto do dia, XP das trilhas da temporada / 35), conferida pelo validator e pelo `LiveOpsTests.Fechamento_*`:
+
+| temporada | desenho (8 encomendas/dia, os 5 eventos) | hoje (encomendas medidas no econsim: 6,0–7,0 por dia de 20 min; só os eventos que rodam) |
+|---|---|---|
+| S1 Royal Commission | 651 XP/dia → **dia 27,6** | 603–613 XP/dia → dia 29,4–29,9 |
+| S2 Ember Festival | 651 XP/dia → **dia 27,6** | 589–599 XP/dia → dia 30,1–30,6 |
+
+- Portão "fecha entre o dia 26 e o 30": o desenho passa nas duas; hoje a S1 passa e a **S2 passa do 30** porque só 2 dos 5 eventos dela rodam (volta ao 27,6 quando o Orders 2.0 liberar Rare Ore Rush, Merchant Caravan e Ember Crown). Knob se preciso: `PassDef.XpNivel`.
+- Numa sessão de 60 min com evento, o Passe ganha 250 XP (100 de encomendas, no teto, + 150 da trilha do evento).
+- Orçamento de ouro de LiveOps por dia (validator): metas 115,7 s + Pass 33,4 s + o evento mais caro 27,9 s (Hunt com o fallback do projeto) = **177 s ≤ 180** (14,7% dos 1.200 s de venda de um dia de 20 min; portão ≤ 15%).
