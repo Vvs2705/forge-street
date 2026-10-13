@@ -195,7 +195,7 @@ namespace FS.Tests
         public void Modificadores_PeloRemoteConfig_VoltamNoFim_SobreOConfigRemoto()
         {
             Tuning t = new Tuning();
-            RemoteConfig.Aplicar(t, "{\"id\":\"ab\",\"versao\":1,\"Price\":[0,0,10,30,16,60]}", false);
+            RemoteConfig.Aplicar(t, "{\"id\":\"ab\",\"versao\":1,\"Price\":[0,0,10,30,16,60,40]}", false);
             var s = new Sim(t);
             s.Buy(Upgrade.Shields); s.Buy(Upgrade.Tools);
             s.Renome.Ganha(20);
@@ -309,6 +309,7 @@ namespace FS.Tests
         public void CompraEContratacao_SemNadaAComprar_CompletamSozinhas()
         {
             var s = new Sim();
+            foreach (BlueprintDef d in s.Projetos.Defs) s.Projetos.Ganha(d.Id, d.Sources[0].Kind);   // B-CORE-07: niveis IV-V e bigorna longa
             for (int pass = 0; pass < 2; pass++)   // o luxo so depois da producao completa
                 for (int u = 0; u < Upgrades.Count; u++) if (Upgrades.IsLuxury(u) == (pass == 1)) s.Buy((Upgrade)u);
             Assert.AreEqual(Upgrades.Count, s.UpgradesBought);

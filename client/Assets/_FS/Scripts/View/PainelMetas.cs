@@ -41,7 +41,7 @@ namespace FS
 
         public bool Aberto => _root.gameObject.activeSelf;
 
-        public PainelMetas(RectTransform safe, Sim sim, Action<string, string, long> pago)
+        public PainelMetas(RectTransform safe, Sim sim, Action<string, string, long> pago, Action projetos)
         {
             _sim = sim; _pago = pago;
             _root = Art.Node(safe, "Metas", Vector2.zero, Vector2.one);
@@ -92,8 +92,8 @@ namespace FS
             for (int k = 0; k < 3; k++)
             {
                 int aba = k;
-                float x0 = 0.03f + 0.32f * k;
-                Button b = Art.NewButton(f, Loc.T(nomes[k]), 34, MenuBar.Leather, new Vector2(x0, 0.69f), new Vector2(x0 + 0.3f, 0.76f), () => Aba(aba));
+                float x0 = 0.03f + 0.24f * k;
+                Button b = Art.NewButton(f, Loc.T(nomes[k]), 34, MenuBar.Leather, new Vector2(x0, 0.69f), new Vector2(x0 + 0.22f, 0.76f), () => Aba(aba));
                 _abas[k] = b.GetComponent<Image>();
                 _abasTxt[k] = b.GetComponentInChildren<Text>();
                 _abasTxt[k].resizeTextForBestFit = true; _abasTxt[k].resizeTextMinSize = 20; _abasTxt[k].resizeTextMaxSize = 34;
@@ -101,6 +101,11 @@ namespace FS
                 _pontos[k].rectTransform.sizeDelta = new Vector2(30f, 30f); _pontos[k].rectTransform.anchoredPosition = new Vector2(-6f, -6f);
                 _pontos[k].sprite = Art.Disc(); _pontos[k].color = Art.Bad; _pontos[k].raycastTarget = false;
             }
+
+            // B-CORE-07: a 4a aba abre o painel de Projetos (Blueprints vem de marcos e conquistas, como as metas)
+            Button pj = Art.NewButton(f, Loc.T("proj.titulo"), 34, MenuBar.Gray, new Vector2(0.75f, 0.69f), new Vector2(0.97f, 0.76f), () => { Fechar(); projetos(); });
+            Text pjTxt = pj.GetComponentInChildren<Text>();
+            pjTxt.color = Tinta; pjTxt.resizeTextForBestFit = true; pjTxt.resizeTextMinSize = 20; pjTxt.resizeTextMaxSize = 34;
 
             RectTransform box = Art.Node(f, "Lista", new Vector2(0.03f, 0.12f), new Vector2(0.97f, 0.68f));
             _scroll = box.gameObject.AddComponent<ScrollRect>();

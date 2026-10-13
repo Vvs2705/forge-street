@@ -1585,17 +1585,91 @@ Aos 120 min (4 partidas): prêmio de qualidade F2P 12,7% → 18,6%; minutos sem 
 
 `EquipeTests` (20): golden dos 13 IDs; migração (mesmo upgrade, rota e ordem; nível 1 = passo e carga de antes; do save na mesma ordem); efeito neutro sem ninguém; revelação nas Ferramentas e flag desligada; compra (cobra na hora, sem ouro e no máximo nada muda, 250/400/640/1.025); requisitos por upgrade e Renome 1/2; cada papel (passo e carga por nível, oficial só na família e +25 no nível 5, mestre de obras em toda bancada e nunca na fornalha, balconista: paciência ×1,1/×1,3 e 5 → 7 vendas em 2 s, almoxarife: saídas 6/5 e estoque por nível); save de ida e volta (pilha de 6 na fornalha volta inteira), save antigo sem `wkn=` (schema 3 e o `wk=` do schema 2), lixo no `wkn=`; metas (`worker_hired` por papel, `worker_upgrade` por nível, ralo, retroativo); validator (ID, prefixo, 3 traços, custo que não sobe ou fora do múltiplo de 5, distrito/família/upgrade que o build não tem, papel da Wave C, 2º oficial da família, upgrade que já contrata, `wk_` do Renome sem worker); textos do cartão nos 3 idiomas em todo nível; `-equipe`; bot (idêntico sem os novos; 90 min com renda maior e saldo aos 60 ≤ 10 mil). `mutantes.py`: 12 mutações novas (`wk-*`: passo no nível 1, carga, oficial fora da família, mestre de obras na fornalha, atendimento sem balconista, compra sem cobrar, Renome ignorado, revelação, save sem nível, load cortando a pilha, validator de custo, bot antes da produção), todas mortas.
 
-## 26. D-CORE-03/04: Eventos e Pass (2026-10-13)
+## 26. Blueprints (B-CORE-07) (2026-10-13)
+
+Regra em `GDD.md` §12, `ECONOMIA_WAVE_B.md` §4/§8.5 e `CONTEUDO_V1.md` §9. **Vigente:** 19 `BlueprintDef` do Old Forge (os 18 do §4 + `bp_rec_espada_longa`; 3 essenciais), posse (nunca saldo) no `Sim.Projetos`. Fontes ativas: marco de venda (com "Fina ou melhor"), produção completa, Renome e conquista resgatada; as filas de encomenda (B-CORE-05), contrato, evento, Pass e loja são ganchos. Níveis IV–V das 4 famílias (Meta, menu) exigem o projeto de mestre; a bigorna longa (pad Meta, 6.000, exige o Martelo veloz) e a espada longa (2 lingotes, 7,5 s, 40 de ouro, família das bigornas) exigem `bp_rec_espada_longa`; técnica = q +20 (`Tuning.TecnicaQ`) na família. O bot não mudou: ele compra pelo menu/pad o que o projeto libera, como qualquer melhoria.
+
+**Desvios do catálogo (decididos por padrão, revisar):** (1) `bp_bigorna_mestra` e `bp_bancada_mestra` ganham o marco "produção completa" como 2ª fonte grátis (o padrão dos `bp_mestra_*` dos distritos 2–6): sem ele os níveis IV–V esperavam as filas do B-CORE-05 e nenhum essencial era alcançável no F2P. (2) Custo dos IV–V = **1/5 do §1.5 no IV e 1/6 no V** (bigornas 800/1.500, escudos 1.000/1.835, ferramentas 800/1.500, joalheria 1.600/3.000; soma 12.035), não a metade da V26: com a metade (34.000) o retorno medido foi 104 min (portão ≤ 40). O IV continua acima do III em toda família.
+
+"Antes" = a `main` com os workers (67d4f4e, #54: o bot contrata e sobe worker só depois da produção completa); "depois" = este branch sobre ela.
+
+### 26.1 econsim, 60 min, 1 partida por perfil (anúncio = 30 s), antes → depois
+
+| perfil | Produção | zona morta (min) | prêmio de qualidade | projetos aos 60 | IV–V aos 60 (1º) | bigorna longa | worker (1ª compra; gasto aos 60) |
+|---|---|---|---|---|---|---|---|
+| Ideal | 47:56 → **50:28** | 20 → 22 | 13,4% → 16,9% | 10/19 | 3/8 (54:24) | 45:35 | 48:07 → 50:30; 25.830 → 19.390 |
+| F2P | 47:02 → **49:55** | 21 → 22 | 12,4% → 16,3% | 9/19 | 3/8 (53:48) | 45:05 | 47:07 → 50:04; 27.705 → 19.390 |
+| Slow | 49:35 → **52:29** | 23 → 25 | 12,1% → 15,9% | 9/19 | 3/8 (56:30) | 47:27 | 49:47 → 52:37; 21.370 → 13.890 |
+| AdWatcher | 44:32 → **46:38** | 18 → 19 | 13,0% → 16,8% | 9/19 | 5/8 (50:34) | 42:29 | 44:35 → 46:47; 36.295 → 25.830 |
+
+Pisos do §3 iguais (0% abaixo em todos os perfis; os primeiros 10 min não mudam, nada de projeto antes das Ferramentas). Depois da produção completa os níveis IV–V e os workers disputam o mesmo ouro (o bot compra o mais barato).
+
+### 26.2 4 partidas por perfil, 120 min (passos 30–52,5 ticks/s)
+
+| perfil | Produção | Fachada | zona morta | ouro/min 111–120 (renda final) | saldo aos 120 | min sem destino | prêmio de qualidade 120 | espada longa (% da receita) |
+|---|---|---|---|---|---|---|---|---|
+| Ideal | 47:13 → 49:59 | 73:17 → 77:20 | 20,5 → 22,5 | 2.509 → **3.083** | 83.523 → 97.512 | 32 → 30,5 | 19,7% → 29,3% | 6,9% |
+| F2P | 47:04 → **49:28** | 73:43 → 77:36 | 20,5 → 21,8 | 2.448 → **2.959** (+21%) | 81.130 → 94.161 | 31,3 → 30,3 | 18,6% → 28,4% | 6,4% |
+| Slow | 49:26 → 52:10 | 76:35 → 80:43 | 22,3 → 24,3 | 2.440 → 3.018 | 73.371 → 85.557 | 28,8 → 27,8 | 18,5% → 28,2% | 7,0% |
+| AdWatcher | 44:39 → 46:53 | 69:33 → 73:48 | 19,5 → 20,8 | 2.493 → 3.094 | 96.709 → 113.182 | 36,3 → 34,3 | 18,8% → 28,7% | 7,3% |
+
+Os 6 workers e os 48 níveis (47.040) entram nos dois; os IV–V 8/8 (12.035) no "depois", a partir de 53:30 (F2P).
+
+Projetos aos 120 min (os 4 perfis): 10 de 19 — técnica das ferramentas (150 vendidas) e das joias (50), os dois de mestre (produção completa), receita da espada longa (300 espadas), o visual da espada (500), e os projetos das Masterworks com marco (Primeira Lâmina, Broquel, Martelo do Fundador, Anel do Mercador). Os 9 que faltam só têm fila de encomenda/Royal (B-CORE-05), Renome 3 (o F2P chega lá em 1,5–3 h) ou evento. Nenhum veio de fonte paga.
+
+**Por que a produção completa atrasou 2,4 min:** o marco das 300 espadas (~40 min) abre a bigorna longa; o bot compra a de 6.000 aos ~45 min (é o pad mais barato a venda), antes da Vitrine de joias (9.000), o último produtivo. Ela fica fora da produção completa (Meta), mas o ouro gasto nela atrasa o resto; a zona morta sobe 1,3 min pelo mesmo motivo. Fica dentro do portão (41–55 min). Se incomodar: o knob é `Tuning.BigornaLongaCusto` ou pedir a Vitrine de joias como requisito do pad.
+
+### 26.3 Retorno dos níveis IV–V (A/B: IV–V a 10⁹, que o bot nunca compra, × vigente; ouro/min, 4 partidas)
+
+| janela | F2P sem → com | ganho | retorno (12.035 / ganho) | Ideal sem → com | ganho | retorno |
+|---|---|---|---|---|---|---|
+| min 91–120 (com os workers, vigente) | 2.684 → 3.030 | +346/min | **34,8 min** | 2.720 → 3.093 | +373/min | 32,3 min |
+| min 91–120 (`main` antes do #54, sem workers) | 2.130 → 2.439 | +309/min | 38,9 min | 2.167 → 2.511 | +344/min | 35,0 min |
+
+Com os workers a janela 61–90 ainda pega os IV–V sendo comprados (o 1º aos 53:30, o último perto dos 70 min), então o retorno se lê na 91–120.
+
+**Varredura que decidiu o preço** (medida antes do #54, sem workers; F2P, janela 91–120; o ganho dos IV–V fica em ~310–335/min qualquer que seja o preço: só o retorno muda):
+
+| IV–V | soma | retorno | Fachada F2P | saldo aos 120 |
+|---|---|---|---|---|
+| metade do §1.5 (V26) | 34.000 | 104 min | 69:26 | 89.840 |
+| 1/4 do §1.5 | 17.000 | 53 min | 62:05 | 108.129 |
+| 1/5 do §1.5 | 13.600 | 41 min (no limite) | 60:40 | 112.509 |
+| **1/5 no IV, 1/6 no V (vigente)** | **12.035** | **36–39 min** | 60:13 | 113.042 |
+
+Abaixo de 1/5 o IV fica mais barato que o III (bigornas 665 < 750). O ralo dos IV–V é pequeno perto do luxo (54 mil): o ouro sem destino depois da produção é dos distritos (Wave C).
+
+### 26.4 Portões (ECONOMIA_WAVE_B §10)
+
+| Medida | Portão | Medido | |
+|---|---|---|---|
+| Primeiros 10 min | iguais | iguais (pisos do §3 sem mudança; `QualidadeTests.Revelacao_PrimeirosDezMinutos_IguaisSemQualidade`) | ok |
+| Produção completa, F2P | 41–55 min | 49:55 (4 partidas: 49:28) | ok (+2,4 min, §26.2) |
+| Zona morta, F2P | não piora (meta ≤ 12 é das Orders 2.0) | 21 → 22 (4 partidas: 20,5 → 21,8) | piora 1,3 min pela bigorna longa (§26.2) |
+| Prêmio de qualidade | 5–20% aos 60; ≤ 35% aos 120 | 16,3% / 28,4% | ok |
+| Golpe de mestre | ≤ 8% F2P; ≤ 12% Perfect | 0% / 1,1% | ok |
+| Retorno L4–L5 | ≤ 40 min | 34,8 min (F2P; Ideal 32,3) | ok com o desvio de preço |
+| AdWatcher, produção completa | ≥ 0,75 × F2P | 46:38 × 49:55 | ok |
+| Produção completa nunca presa a Blueprint | nenhum produtivo exige projeto; essenciais grátis no F2P | `ProjetosTests.Bot_F2P_ChegaAosEssenciais_EUsaOsProjetos` (os 3 aos 60 min, nada pago) | ok |
+
+`BalanceTests` (bot humano, Dt 1/30, portões "medido + 30%") passam sem mudar nenhum número.
+
+**Robustez (1.000 partidas, 250 passos de tick por perfil, 90 min, com os workers):** todas chegam à produção completa e à Fachada, sem impasse com o corpo novo da bigorna longa (5,0; 1,5). Produção completa média F2P 49:38 (Ideal 50:42, Slow 52:42, AdWatcher 46:50); os 10 projetos de marco/produção em todas; IV–V 8/8 a partir de 53:34 (F2P); espada longa 6,8% da receita aos 90 min.
+
+### 26.5 Testes e prova vermelha
+
+`ProjetosTests` (12): catálogo (19, 3 essenciais, fila #1–#7 sem buraco, nada pago); posse idempotente (o mesmo marco em dois Ticks, o gancho e a transação não duplicam; o save grava ID e origem, nunca saldo); ganchos (só fonte listada, pago só com ID de transação, a mesma transação não paga 2x); fontes (marco de venda, Fina ou melhor, produção completa, Renome 3, conquista só resgatada); filas (próximo mostrado antes, sem sorteio, o que veio por outra fonte sai da fila, esgota); desbloqueio dos IV–V (menu, compra direta e cartão) e da bigorna longa (pad, linha, venda a 40, nível pela família); técnica (+20 na família toda, 1 Fina a cada 5, determinística); save (ida e volta com origem e transação, save antigo sem `bp=` vazio e o retroativo dos marcos no 1º Tick, ID desconhecido mantido); validator (essencial só pago, essencial só de contrato, só evento, Pass premium, ID repetido/fora do formato, marco inalcançável, posição de fila repetida, Renome fora da tabela, conquista e distrito inexistentes, alvo inexistente, upgrade com projeto errado e nível IV sem projeto); bot F2P com os 3 essenciais e o nível IV aos 60 min; textos do painel nos 3 idiomas. `mutantes.py`: 17 mutações novas `bp-*` (posse que duplica, transação que repete, pago sem transação, fonte não listada, Fina que conta Normal, conquista sem resgate, save sem transação, load que perde a posse, menu/compra/pad sem projeto, técnica zerada ou pela estação, nível pela estação, validator do essencial pago, contrato como permanente, mestre sem a produção completa) e a `eco-preco-ferramenta` atualizada para o preço de 7 itens: 18 mortas, 0 vivas.
+## 27. D-CORE-03/04: Eventos e Pass (2026-10-13)
 
 **Vigente** (`Core/LiveOpsDefs.cs`, `Core/LiveOps.cs`): os 10 `EventDef` do `LIVEOPS_V1.md` §2.4 (8 do calendário + 2 reservas), 6 dias às 13:00 UTC a partir do T0 = 2026-11-02 (padrão do time, revisar: DECISÃO "datas" do D-PROD-01), um evento por vez; trilha comum (135 s de ouro, Renome +8, 500 XP do Passe, 2 cosméticos; nos Hunts o projeto da Masterwork com fallback de 60 s); modificadores aplicados pelo `RemoteConfig.Valores` (as mesmas travas: evento nunca fura guardrail) e devolvidos no fim. Pass S1/S2: 30 níveis × 600 XP, 35 dias emendados, só a trilha free (ouro 1.170 s, Renome +44, 6 cosméticos); premium só no dado (V20). XP do Passe = `Metas.PassXp` (diárias 100, semanais 350, conquistas; retroativo 1×) + encomenda entregue 10 (teto 100 por dia local) + XP das trilhas dos eventos. Ouro de limiar e de nível fora do `GoldEarned`.
 
 Rodam neste build: **Forge Frenzy, Armorer's Challenge, Forge Frenzy-B, Blacksmith Festival e Royal Week-B**. Esperam o sistema deles (o calendário pula a semana, nunca é erro): Royal Week e os dois Hunts (`order_complete` Royal/Quality do B-CORE-05; `QualidadeEvento` não é knob; `bp_mw_primeira_lamina` do B-CORE-07), Rare Ore Rush (Bulk; `GrabTime` ainda é const do `Balance`) e Merchant Caravan (Bulk/Mixed).
 
-### 26.1 Evento desligado
+### 27.1 Evento desligado
 
 econsim padrão (5 perfis × 60 min, anúncio = 30 s): **CSV idêntico ao byte** ao da `main` (67d4f4e, com o B-CORE-04) e a mesma saída. O bot sem relógio não roda o LiveOps (save sem `ev.*`/`ps.*`); com evento ativo, os 10 primeiros minutos do F2P são iguais tick a tick (as Ferramentas são requisito de todo evento; `LiveOpsTests`).
 
-### 26.2 Evento ativo (`econsim --evento <id>`, 1 partida por perfil, comparada com a mesma partida sem o evento)
+### 27.2 Evento ativo (`econsim --evento <id>`, 1 partida por perfil, comparada com a mesma partida sem o evento)
 
 | evento | modificadores | F2P entra | renda/min do F2P depois da entrada (sem → com) | Δ F2P | Δ nos 5 perfis | pontos do F2P (missões) |
 |---|---|---|---|---|---|---|
@@ -1609,7 +1683,7 @@ econsim padrão (5 perfis × 60 min, anúncio = 30 s): **CSV idêntico ao byte**
 - **Achado:** 30 min depois da entrada o F2P já fez 560–640 dos 700 pontos das missões (só o "jogar em 3 dias" segura). Sem a encomenda Event (+20 por entrega, gancho do Orders 2.0) a trilha para em 700 de 1.000: os limiares 850 (Renome +5) e 1.000 (XP 200 + cosmético principal) ficam fora de alcance até o B-CORE-05, e o portão "trilha de evento fecha no dia 4–5" ainda não se mede. Se o Orders 2.0 confirmar o ritmo, o knob é o alvo das missões de volume (o meio de jogo vende ~34/min).
 - Ouro dos limiares numa sessão: 1.050–3.600 (são segundos de renda: com a taxa do meio de jogo, 135 s valem ~2,2 min de venda).
 
-### 26.3 Pass: o F2P fecha a trilha free?
+### 27.3 Pass: o F2P fecha a trilha free?
 
 Conta estática do `LIVEOPS_V1.md` §5.4 com o conteúdo real (`LiveOpsDefs.XpDiaF2P`: o menor XP das diárias e das semanais dos `MetasDefs`, encomendas no teto do dia, XP das trilhas da temporada / 35), conferida pelo validator e pelo `LiveOpsTests.Fechamento_*`:
 
@@ -1622,6 +1696,6 @@ Conta estática do `LIVEOPS_V1.md` §5.4 com o conteúdo real (`LiveOpsDefs.XpDi
 - Numa sessão de 60 min com evento, o Passe ganha 250 XP (100 de encomendas, no teto, + 150 da trilha do evento).
 - Orçamento de ouro de LiveOps por dia (validator): metas 115,7 s + Pass 33,4 s + o evento mais caro 27,9 s (Hunt com o fallback do projeto) = **177 s ≤ 180** (14,7% dos 1.200 s de venda de um dia de 20 min; portão ≤ 15%).
 
-### 26.4 Testes e prova vermelha
+### 27.4 Testes e prova vermelha
 
 `LiveOpsTests` (20): calendário às 13:00 UTC e temporadas emendadas; os 10 eventos com os 9 campos, missões somando 700 e as reservas prontas; **evento novo só com dados** (um `EventDef` injetado na folga do dia 6 passa no validator, entra, aplica o knob, paga os limiares e devolve o knob); requisito (Ferramentas, Renome, encomendas) e os 10 primeiros minutos do bot iguais tick a tick com um evento forte ativo; modificadores pelo RemoteConfig sobre o config remoto e de volta no fim; evento com knob proibido preso pelas travas (offline ≤ 7.200 s) e recusado pelo validator; cofre igual; missão e limiar 1× com save/load, matar antes de gravar e reset do evento; relógio para trás; compra/contratação que completa sozinha (`worker_any` com o B-CORE-04); qualidade e golpe de mestre de verdade; Pass (retroativo 1×, espera até a temporada, teto de 100 XP/dia, RESGATAR 1×, nível 30, premium nunca paga, fim de temporada paga o alcançado); save do bot sem `ev.*`/`ps.*`; fechamento 26–30; 29 defeitos injetados no validator; textos nos 3 idiomas. `mutantes.py`: 12 mutações novas (`liveops-*`), todas mortas; o trecho do `qual-nivel-sem-velocidade` foi atualizado para o `Equipe.Ritmo` do #54 (estava desatualizado na `main`) e segue morto.
