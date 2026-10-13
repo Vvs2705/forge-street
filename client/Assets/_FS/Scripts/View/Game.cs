@@ -29,6 +29,9 @@ namespace FS
     /// -testsession, onde a resposta nao e' gravada; 18 = direto no consentimento) | -lang pt|en|es (idioma da sessao sem gravar; Loc) |
     /// -metas [semanais|conquistas] (abre o painel de metas na aba; D-CORE-02) | -qualidade (B-CORE-03: niveis de estacao, pecas
     /// Fina/Superior nas pilhas e no balcao, ferreiro na Bigorna; Captura.Qualidade) | -golpe (o mesmo com o anel do golpe de mestre na tela) |
+    /// E-PLAT-02/03: -adcofre (resgate real de 1 h: painel com o "Cofre 2x") | -adencomenda (bonus e trocar no cartao da encomenda) |
+    /// -adsupply (botao do Supply Drop na fornalha) | -intersticial (liga a flag Tuning.Interstitial na sessao: carrega e mostra o
+    /// intersticial nos vetos do nucleo).
     /// -renome N (forca o Renome total em N; so sobe) | -renomecard (abre o cartao do Renome; B-CORE-06) | -projetos [todos] (abre o painel de
     /// projetos; "todos" da os 19 do catalogo antes do -buy/-buyids; B-CORE-07).
     /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
@@ -36,6 +39,9 @@ namespace FS
     /// (cofre real de S s fora, 60..7200). Captura que mostraria algo impossivel (compra id@t sem ouro ou pre-requisito, -vipnow depois de
     /// um warmup sem venda) loga o erro e sai 1 (Falha).
     /// Build dev: tambem pelo intent do Android (Arg).
+    /// A-PLAT-08/09 (Plataforma.cs, docs/REMOTECONFIG_ANALYTICS.md): -rcfile caminho (so build dev: aplica esse JSON de RemoteConfig no
+    /// lugar do cache; relativo = no persistentDataPath) | -analyticslog (o provedor nulo ecoa no Player.log, como "ANALYTICS {json}", o que
+    /// seria enviado: a fila so sai depois da resposta da tela de idade).
     /// v0.5c (docs/FASE8_VIP_VELOCIDADE.md s5): botoes "Chamar VIP" e "Velocidade 2x/3x" nos cantos da barra de baixo (IAds.Show ->
     /// Sim.SummonVip / Sim.StartBoost), selo do boost com cronometro, aviso "Cliente VIP!" e diario vip_* / boost_start.
     /// v0.6c (docs/FASE9_ENCOMENDAS.md s6): cartao da encomenda acima do botao VIP, aviso "Encomenda entregue!" e diario order_*.
@@ -45,6 +51,8 @@ namespace FS
     public sealed class Game : MonoBehaviour
     {
         const string SaveKey = "fs.save";
+        /// <summary>P3/V10 (A-PLAT-08): este build deixa o RemoteConfig ligar o intersticial. false ate o build do A/B no Limited Release.</summary>
+        const bool IntersticialNoBuild = false;
         const float SaveEvery = 5f, MaxStep = 1f / 30f;
         // Largura visivel (A-ART-03, P12 decidido por padrao): 9 m, a camera segue o ferreiro e puxa a fila para cima (Enquadramento).
         // Era 11,4 m = oficina inteira + margens (o -cam 11.4 volta a ela).
@@ -68,11 +76,13 @@ namespace FS
         float _speed = 1f, _saveT, _hintT, _minuteT, _adHold, _visW = VisibleWidth, _backT;
         bool _botDrive, _headless, _firstSaleLogged, _testSession, _started, _pausedByAd, _paused;
         IAds _ads;
-        IAnalytics _diario;
+        Telemetria _diario;   // A-PLAT-09: diario local + analytics remoto (so depois da tela de idade)
+        IRemoteConfig _rc; RemoteConfig.Resultado _rcr; string _rcOrigem;   // A-PLAT-08: o config desta abertura
         Salvamento _save;
         // A-PLAT-06 (taxonomia s86/s87): s em primeiro plano da sessao, quadros e s reais da janela de fps, passos do tutorial ja logados,
         // oferta de anuncio ja contada nesta aparicao do botao e ouro que entrou/saiu desde a ultima linha currency_* (por origem/destino)
-        float _sessionT, _fpsT; int _fpsN, _tutorial; bool _vipOffer, _speedOffer;
+        float _sessionT, _fpsT, _compraT = -10f; int _fpsN, _tutorial;
+        readonly bool[] _ofertado = new bool[Anuncios.N];   // rewarded_offer ja contado nesta aparicao do botao, por placement
         readonly System.Collections.Generic.Dictionary<string, long> _source = new System.Collections.Generic.Dictionary<string, long>(),
             _sink = new System.Collections.Generic.Dictionary<string, long>();
         Vector2Int _screen;
@@ -98,7 +108,8 @@ namespace FS
         // v0.5c: botoes de anuncio, selo do boost e avisos curtos (VIP chegou / anuncio indisponivel)
         sealed class AdBtn { public Button B; public Image Face, Icon; public GameObject Video; public Text Label; }
         sealed class Banner { public RectTransform R; public CanvasGroup G; public Text T; public Image I; public float Age; }
-        AdBtn _vipBtn, _speedBtn;
+        AdBtn _vipBtn, _speedBtn, _supplyBtn, _bonusChip, _trocaChip;   // E-PLAT-02: Supply na fornalha; bonus e trocar sobre o cartao da encomenda
+        Button _panelAd; Text _panelAdText; RectTransform _panelOk;      // E-PLAT-02: "Cofre 2x" no painel do cofre, ao lado do PEGAR
         RectTransform _boostSeal; Text _boostMul, _boostTime;
         // A-UI-19: um aviso so (VIP, encomenda, compra, anuncio), em fila, no lugar da pilula da dica: a faixa da HUD que a camera
         // reserva, entao nunca cobre estacao, fila nem balao (o balao do 1o da fila fica 24 px abaixo dela)
@@ -109,7 +120,7 @@ namespace FS
         static string Delivered => Loc.T("aviso.entregue", "");   // o -shotorder espera este aviso (o premio vai no fim em todo idioma)
         Sprite _crown;
         bool _vipNow;
-        // v0.6c: cartao da encomenda (FASE9) e o estado da animacao (_orderKey = OrderCount da encomenda na tela)
+        // v0.6c: cartao da encomenda (FASE9) e o estado da animacao (_orderKey = OrderIndex da encomenda na tela: entregues + trocadas)
         RectTransform _order; CanvasGroup _orderG; Image _orderIcon, _orderFill, _orderCoin; Text _orderText, _orderPrize, _orderBar;
         int _orderKey = -1, _orderSeen = -1; float _orderT, _orderPunch; bool _orderOut;
         static readonly Color AdFace = Art.HudFace, AdOff = MenuBar.GrayDark;   // A-UI-16: era roxo #3B2650 / #5A5560; a borda de ouro e o ▶ marcam o anuncio
@@ -145,18 +156,26 @@ namespace FS
             // A-PLAT-06: diario so no build de desenvolvimento (o build de playtest de hoje, APK dev e Windows) ou com -playtest (release
             // do PC); release no aparelho nao grava (nao tem linha de comando, e o extra do intent so vale no dev). Teste: nunca.
             string dir = Application.persistentDataPath;
-            _diario = new Diario(!_testSession && (Debug.isDebugBuild || Arg("-playtest") != null) ? Path.Combine(dir, "diario.csv") : null);
+            var diario = new Diario(!_testSession && (Debug.isDebugBuild || Arg("-playtest") != null) ? Path.Combine(dir, "diario.csv") : null);
+            // A-PLAT-08: o RemoteConfig vale antes do Sim nascer (-rcfile so no build dev; fotos e smoke sem o cache baixado). Travas no nucleo
+            _rc = new RemoteConfigHttp(new RemoteConfigLocal(dir, Debug.isDebugBuild ? Arg("-rcfile") : null, !_testSession), this);
+            var tuning = new Tuning();
+            _rcr = RemoteConfig.Aplicar(tuning, _rc.Ler(out _rcOrigem), IntersticialNoBuild);
+            // A-PLAT-09: provedor remoto = nulo ate a P8 (-analyticslog ecoa no Player.log); excecao nao tratada vira evento (5 por sessao)
+            _diario = new Telemetria(diario, new ProvedorNulo(Arg("-analyticslog") != null ? s => Debug.Log("ANALYTICS " + s) : (Action<string>)null),
+                diario.Sessao, Application.version, _rcr.Rotulo, dir, Application.dataPath);
+            Application.logMessageReceived += Excecao;
             _save = new Salvamento(new SaveStore(Path.Combine(dir, "save.txt")), new SaveEspelho(SaveKey), _diario);
             Sfx.Init(gameObject);
             // ponytail: fotos e smoke usam estado novo sem ler ou gravar o save/diario normal.
             if (!_testSession && Arg("-reset") != null) _save.Apagar();
-            _sim = _testSession ? new Sim() : _save.Carregar();
+            _sim = _testSession ? new Sim(tuning) : _save.Carregar(tuning);
             DevArgs();
             // -cam W (dev, P2-3 do BENCHMARK_VISUAL): largura visivel em m, 6..11,4 (padrao 9; 11,4 = a camera antiga, fotos de antes)
             _visW = Mathf.Clamp(ArgF("-cam", VisibleWidth), 6f, Enquadramento.OficinaInteira);
             string cfg = Arg("-settings");
             if (cfg == "on" || cfg == "off") { SetSom(cfg == "on"); SetVibra(cfg == "on"); }   // fotos e teste de persistencia
-            _ads = Ads.Init((e, a, b) => Log(e, a, b));   // pedido, mostrado, recompensa e falha do anuncio vao para o diario
+            _ads = _sim.T.AnunciosLigados ? Ads.Init((e, a, b) => Log(e, a, b), _sim.T.Interstitial) : new SemAnuncio();   // pedido, mostrado, recompensa e falha do anuncio vao para o diario; intersticial so com a flag; A-PLAT-08: chave mestra desligada = o SDK nem inicia
             _bot = new Bot();
             string sp = Arg("-speed");
             if (!string.IsNullOrEmpty(sp) && float.TryParse(sp, NumberStyles.Float, CultureInfo.InvariantCulture, out float v)) _speed = Mathf.Clamp(v, 0.1f, 50f);
@@ -179,6 +198,7 @@ namespace FS
             _priv = new TelaPrivacidade(_safe, Responder);
             string priv = Arg("-privacidade");
             if (priv != null || (!_testSession && !Ads.Resposta(out _, out _))) _priv.Abrir(null, priv == "18");
+            if (Ads.Resposta(out Faixa rf, out bool ra)) Liberar(rf, ra);   // A-PLAT-08/09: respondida numa abertura anterior = rede liberada ja
             if (Arg("-menu") != null) _menu.Toggle();   // foto com a fileira aberta
             if (cfg != null) _cfg.gameObject.SetActive(true);
             _joy = new Joystick(_joyCanvas.transform);
@@ -198,6 +218,9 @@ namespace FS
             Log("session_info", "os", SystemInfo.operatingSystem);
             Log("session_info", "ram", Diario.FaixaRam(SystemInfo.systemMemorySize));
             Log("session_info", "idioma", Loc.Codigo);
+            Log("session_info", "config", _rcr.Rotulo + " " + _rcOrigem);   // A-PLAT-08 (DM §89): o snapshot do config desta abertura
+            if (!_sim.T.AnunciosLigados) Log("ad_init", "desligado", "remoteconfig");
+            foreach (string w in _rcr.Avisos) Log("rc_aviso", w);   // valor preso ou ignorado pelas travas
             _started = true;   // A-PLAT-07: Loading -> Playing; o save grava daqui em diante (o resgate do cofre logo abaixo ja grava)
             Offline();
             MetasAgora(false);   // D-CORE-01: o dia de hoje (o que ja estava pronto ao abrir nao vira aviso)
@@ -217,6 +240,13 @@ namespace FS
                 if (fora < 0) { Falha($"OFFLINE: '{off}' fora de 60..{Balance.OfflineCapSeconds} s"); return; }
                 if (PagaCofre(fora, _sim.LastClaim + 1) <= 0) { Falha("OFFLINE: cofre vazio (o warmup nao teve vendas)"); return; }
             }
+            // E-PLAT-02, fotos (G-UA-02: impossivel = Falha): -adcofre paga um resgate real de 1 h (painel com o 2x); -adencomenda espera ate 60 s
+            // de jogo pela encomenda (o warmup pode parar no intervalo entre duas); -adsupply so confere. Pedem a 1a melhoria (D6) e, o cofre e a
+            // encomenda, vendas no warmup (ex.: -buy 13 -warmup 240)
+            if (Arg("-adcofre") != null && PagaCofre(3600, _sim.LastClaim + 1) <= 0) { Falha("ADCOFRE: cofre vazio (o warmup nao teve vendas)"); return; }
+            if (Arg("-adencomenda") != null) for (float t = 0f; t < 60f && _sim.OrderItem < 0; t += MaxStep) _sim.Tick(MaxStep, 0f, 0f);
+            foreach ((string flag, Anuncio a) in new[] { ("-adcofre", Anuncio.Cofre), ("-adencomenda", Anuncio.EncomendaBonus), ("-adsupply", Anuncio.Supply) })
+                if (Arg(flag) != null && !_sim.Anuncios.Pode(a)) { Falha($"AD: {flag} sem o placement {a} (D6 pede -buy 1; encomenda e cofre, vendas no -warmup)"); return; }
             _botDrive = Arg("-bot") != null;
             string shot = Arg("-shot");
             if (!string.IsNullOrEmpty(shot)) StartCoroutine(Shot(shot));
@@ -457,6 +487,7 @@ namespace FS
                         _orderOut = true; _orderT = 0f;
                         Notice(Loc.T("aviso.entregue", e.B), _coinIcon.sprite, _coinIcon.color);
                         FlyCoins(_orderCoin.rectTransform.position, e.B);
+                        TentaIntersticial();   // E-PLAT-03: o cartao saindo = estado Transition
                         break;
                 }
             }
@@ -475,6 +506,7 @@ namespace FS
         /// </summary>
         void Bought(int u, long price, V2 pos)
         {
+            _compraT = Time.unscaledTime;   // E-PLAT-03: compra agora = acao (veto do intersticial)
             Sfx.Play("upgrade");
             // A-AUD-22: compra = pulso medio; compra que abre estacao (o Ev.Unlocked do mesmo tick) ou a rua lateral = o mais forte
             bool opens = u == (int)Upgrade.SideCorridor;
@@ -667,6 +699,13 @@ namespace FS
             Button ok = Art.NewButton(card.transform, Loc.T("ui.ok"), 46, MenuBar.Leather, new Vector2(0.25f, 0.06f), new Vector2(0.75f, 0.26f), () => _panelAction?.Invoke());
             _panelBtn = ok.GetComponentInChildren<Text>();
             _panelBtn.color = MenuBar.Cream;
+            _panelOk = (RectTransform)ok.transform;
+            // E-PLAT-02: "Cofre 2x" a direita do PEGAR (face de ouro e selo de video, como os outros anuncios); RefreshAdUi mostra quando da
+            _panelAd = Art.NewButton(card.transform, "", 40, Art.Gold, new Vector2(0.52f, 0.06f), new Vector2(0.95f, 0.26f), () => Assistir(Anuncio.Cofre));
+            _panelAdText = _panelAd.GetComponentInChildren<Text>();
+            _panelAdText.fontStyle = FontStyle.Bold;
+            VideoBadge(_panelAd.transform, Vector2.one, new Vector2(-8f, -8f));
+            _panelAd.gameObject.SetActive(false);
             _panel.gameObject.SetActive(false);
             BuildAdUi();
             BuildOrderUi();
@@ -771,9 +810,17 @@ namespace FS
         /// </summary>
         void BuildAdUi()
         {
-            _vipBtn = AdButton("ChamarVip", false, Art.Icon("coroa", "icone") ?? Art.Star(), Loc.T("hud.vip"), OnVipAd);
-            _speedBtn = AdButton("Velocidade", true, Art.FastForward(), "2×", OnSpeedAd);
+            _vipBtn = AdButton("ChamarVip", false, Art.Icon("coroa", "icone") ?? Art.Star(), Loc.T("hud.vip"), () => Assistir(Anuncio.Vip));
+            _speedBtn = AdButton("Velocidade", true, Art.FastForward(), "2×", () => Assistir(Anuncio.Velocidade));
             _speedBtn.Icon.color = Art.Accent;
+            // E-PLAT-02 (GDD §19: sem poluir a HUD): Supply Drop preso acima da Fornalha (no mundo, por baixo dos paineis), com os lingotes
+            // ANTES de assistir e a recarga de 10 min no lugar; bonus e trocar em chips logo acima do cartao da encomenda (a largura dele)
+            _supplyBtn = AdButton(_labels, "SupplyDrop", Art.ItemArt(Item.Ingot, true) ?? Art.ItemSprite(Item.Ingot), "", () => Assistir(Anuncio.Supply));
+            RectTransform sr = (RectTransform)_supplyBtn.B.transform;
+            sr.anchorMin = sr.anchorMax = new Vector2(0.5f, 0.5f); sr.pivot = new Vector2(0.5f, 0f); sr.sizeDelta = new Vector2(AdW, 112f);
+            _bonusChip = Chip("BonusEncomenda", 0f, () => Assistir(Anuncio.EncomendaBonus));
+            _bonusChip.Icon.sprite = _coinIcon.sprite; _bonusChip.Icon.color = _coinIcon.color;
+            _trocaChip = Chip("TrocarEncomenda", ChipW + 10f, () => Assistir(Anuncio.EncomendaTroca));
             // selo do boost: borda de ouro, avanco rapido, "2x" grande e o cronometro. v0.6d: 24 px acima do botao de velocidade e a 32 px
             // da borda, espelho do cartao da encomenda
             Image seal = Art.Panel(_safe, "SeloBoost", Art.Gold, new Vector2(1f, AdTop), new Vector2(1f, AdTop));
@@ -797,11 +844,20 @@ namespace FS
         /// v0.6d: 140 px de largura a 32 px da borda (esquerda ou `right`) da area segura (era 14,5% da tela a 2%, ~22 px).</summary>
         AdBtn AdButton(string name, bool right, Sprite icon, string label, Action onClick)
         {
-            var a = new AdBtn();
+            AdBtn a = AdButton(_safe, name, icon, label, onClick);
             float ax = right ? 1f : 0f;
-            Image edge = Art.Panel(_safe, name, Art.Gold, new Vector2(ax, 0.026f), new Vector2(ax, AdTop));
-            edge.rectTransform.offsetMin = new Vector2(right ? -Edge - AdW : Edge, 0f);
-            edge.rectTransform.offsetMax = new Vector2(right ? -Edge : Edge + AdW, 0f);
+            RectTransform r = (RectTransform)a.B.transform;
+            r.anchorMin = new Vector2(ax, 0.026f); r.anchorMax = new Vector2(ax, AdTop);
+            r.offsetMin = new Vector2(right ? -Edge - AdW : Edge, 0f);
+            r.offsetMax = new Vector2(right ? -Edge : Edge + AdW, 0f);
+            return a;
+        }
+
+        /// <summary>O mesmo botao em `parent`, sem posicao (o chamador ancora).</summary>
+        AdBtn AdButton(RectTransform parent, string name, Sprite icon, string label, Action onClick)
+        {
+            var a = new AdBtn();
+            Image edge = Art.Panel(parent, name, Art.Gold, Vector2.zero, Vector2.zero);
             a.B = edge.gameObject.AddComponent<Button>();
             a.B.targetGraphic = edge;
             a.B.onClick.AddListener(() => onClick());
@@ -812,15 +868,46 @@ namespace FS
             a.Icon.sprite = icon; a.Icon.preserveAspect = true; a.Icon.raycastTarget = false;
             a.Label = Art.Outlined(Art.NewText(edge.transform, "Legenda", 32, new Vector2(0f, 0.03f), new Vector2(1f, 0.4f)), 2f);
             a.Label.fontStyle = FontStyle.Bold; a.Label.text = label;
-            // selo de video: retangulo branco 44 x 32 com "play" escuro, 8 px para dentro do canto de cima a direita (v0.6d: saia pela borda)
-            RectTransform v = Art.Node(edge.transform, "Video", new Vector2(1f, 1f), new Vector2(1f, 1f));
-            v.pivot = new Vector2(1f, 1f); v.sizeDelta = new Vector2(44f, 32f); v.anchoredPosition = new Vector2(-8f, -8f);
+            a.Video = VideoBadge(edge.transform, Vector2.one, new Vector2(-8f, -8f));   // v0.6d: 8 px para dentro do canto de cima a direita (saia pela borda)
+            edge.gameObject.SetActive(false);
+            return a;
+        }
+
+        /// <summary>Selo de video: retangulo branco 44 x 32 com "play" escuro, preso no ponto `at` (ancora e pivo) do pai, deslocado `px`.</summary>
+        static GameObject VideoBadge(Transform parent, Vector2 at, Vector2 px)
+        {
+            RectTransform v = Art.Node(parent, "Video", at, at);
+            v.pivot = at; v.sizeDelta = new Vector2(44f, 32f); v.anchoredPosition = px;
             Image vb = v.gameObject.AddComponent<Image>(); vb.sprite = Art.Box(); vb.type = Image.Type.Sliced; vb.pixelsPerUnitMultiplier = 2f;
             vb.color = Color.white; vb.raycastTarget = false;
             Image play = Art.Node(v, "Play", new Vector2(0.3f, 0.2f), new Vector2(0.7f, 0.8f)).gameObject.AddComponent<Image>();
             play.sprite = Art.Triangle(); play.color = Art.HudFace; play.raycastTarget = false;   // "play" escuro e neutro (sem cor de marca)
             play.rectTransform.localEulerAngles = new Vector3(0f, 0f, -90f);
-            a.Video = v.gameObject;
+            return v.gameObject;
+        }
+
+        const float ChipW = 205f, ChipH = 64f, OrderH = 104f, SupplyY = 1.3f;   // chips: 2 x 205 + 10 = a largura do cartao (420); Supply: m acima da Fornalha
+
+        /// <summary>E-PLAT-02: chip de anuncio logo acima do cartao da encomenda (borda de ouro e selo de video, como os botoes de anuncio): selo
+        /// a esquerda, texto e icone a direita. Fora do cartao porque o CanvasGroup dele nao recebe toque.</summary>
+        AdBtn Chip(string name, float x, Action onClick)
+        {
+            var a = new AdBtn();
+            Image edge = Art.Panel(_safe, name, Art.Gold, new Vector2(0f, AdTop), new Vector2(0f, AdTop));
+            RectTransform r = edge.rectTransform;
+            r.pivot = Vector2.zero; r.sizeDelta = new Vector2(ChipW, ChipH); r.anchoredPosition = new Vector2(Edge + x, 24f + OrderH + 8f);
+            a.B = edge.gameObject.AddComponent<Button>();
+            a.B.targetGraphic = edge;
+            a.B.onClick.AddListener(() => onClick());
+            a.Face = Art.Panel(edge.transform, "Face", AdFace, Vector2.zero, Vector2.one);
+            a.Face.rectTransform.offsetMin = new Vector2(5f, 5f); a.Face.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            a.Face.raycastTarget = false;
+            a.Video = VideoBadge(edge.transform, new Vector2(0f, 0.5f), new Vector2(10f, 0f));
+            a.Label = Art.Outlined(Art.NewText(edge.transform, "Legenda", 30, new Vector2(0.28f, 0.05f), new Vector2(0.78f, 0.95f)), 2f);
+            a.Label.fontStyle = FontStyle.Bold;
+            a.Label.resizeTextForBestFit = true; a.Label.resizeTextMinSize = 18; a.Label.resizeTextMaxSize = 30;
+            a.Icon = Art.Node(edge.transform, "Icone", new Vector2(0.79f, 0.12f), new Vector2(0.97f, 0.88f)).gameObject.AddComponent<Image>();
+            a.Icon.preserveAspect = true; a.Icon.raycastTarget = false;
             edge.gameObject.SetActive(false);
             return a;
         }
@@ -890,20 +977,54 @@ namespace FS
         /// (sem boost e com recarga) fica cinza com o tempo; no 3x some (o selo diz tudo). Flag desligada (Tuning) esconde o botao; antes da 1a
         /// melhoria (D6) os dois Can* recusam e nao ha recarga, entao os dois ficam escondidos (e sem rewarded_offer).
         /// Selo do boost com o multiplicador e o cronometro, pulsando.
+        /// E-PLAT-02: todo botao so com Anuncios.Pode (D6, flag, teto diario, recarga, 1 por encomenda/resgate) e o IAds pronto, mostrando o que
+        /// da ANTES de assistir: Supply (lingotes; recarga de 10 min em cinza), bonus (+ouro) e trocar (a proxima encomenda, icone e quantas) em
+        /// chips sobre o cartao, e o "Cofre 2x" no painel do cofre (quando o anuncio carregar, mesmo depois de o painel abrir).
         /// </summary>
         void RefreshAdUi()
         {
-            bool vip = _sim.CanSummonVip && _ads.Ready(Ads.Vip), vipCool = _sim.T.Vip && _sim.T.VipChamado && !_sim.VipActive && _sim.VipCooldown > 0f;
+            bool vip = Pode(Anuncio.Vip), vipCool = _sim.T.Vip && _sim.T.Ad(Anuncio.Vip).Ligado && !_sim.VipActive && _sim.VipCooldown > 0f;
             if (_vipBtn.B.gameObject.activeSelf != (vip || vipCool)) _vipBtn.B.gameObject.SetActive(vip || vipCool);
             if (vip || vipCool) Paint(_vipBtn, vip, Color.white, vip ? Loc.T("hud.vip") : Clock(_sim.VipCooldown));
-            bool active = _sim.BoostLeft > 0f, can = _sim.CanBoost && _ads.Ready(Ads.Velocidade), cool = _sim.T.Velocidade && !active && _sim.BoostCooldown > 0f;
+            bool active = _sim.BoostLeft > 0f, can = Pode(Anuncio.Velocidade), cool = _sim.T.Ad(Anuncio.Velocidade).Ligado && !active && _sim.BoostCooldown > 0f;
             // s86 rewarded_offer: uma por aparicao do botao disponivel (cinza da recarga nao e' oferta), contada quando da para tocar
             // (A-PLAT-07: Estados.Anuncia; por baixo de painel ela espera o painel fechar)
             bool on = Estados.Anuncia(EstadoAtual);
-            if (!vip) _vipOffer = false;
-            else if (on && !_vipOffer) { _vipOffer = true; Log("rewarded_offer", Ads.Vip); }
-            if (!can) _speedOffer = false;
-            else if (on && !_speedOffer) { _speedOffer = true; Log("rewarded_offer", Ads.Velocidade, active ? "3x" : "2x"); }
+            Ofertou(Anuncio.Vip, vip, on);
+            Ofertou(Anuncio.Velocidade, can, on, active ? "3x" : "2x");
+            bool sup = Pode(Anuncio.Supply), supCool = _sim.T.Ad(Anuncio.Supply).Ligado && _sim.AdsUnlocked && _sim.Anuncios.Recarga[(int)Anuncio.Supply] > 0f;
+            if (_supplyBtn.B.gameObject.activeSelf != (sup || supCool)) _supplyBtn.B.gameObject.SetActive(sup || supCool);
+            if (sup || supCool)
+            {
+                Paint(_supplyBtn, sup, Color.white, sup ? "+" + _sim.Anuncios.Previa(Anuncio.Supply) : Clock(_sim.Anuncios.Recarga[(int)Anuncio.Supply]));
+                Vector3 sp = _cam.WorldToScreenPoint(new Vector3(_sim.FurnaceA.Pos.X, _sim.FurnaceA.Pos.Y + SupplyY, 0f));
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(_labels, sp, null, out Vector2 local);
+                ((RectTransform)_supplyBtn.B.transform).anchoredPosition = local;
+            }
+            Ofertou(Anuncio.Supply, sup, on);
+            bool card = _order != null && _order.gameObject.activeSelf && !_orderOut;
+            bool bonus = card && Pode(Anuncio.EncomendaBonus), troca = card && Pode(Anuncio.EncomendaTroca);
+            if (_bonusChip.B.gameObject.activeSelf != bonus) _bonusChip.B.gameObject.SetActive(bonus);
+            if (bonus) _bonusChip.Label.text = "+" + _sim.Anuncios.Previa(Anuncio.EncomendaBonus);
+            if (_trocaChip.B.gameObject.activeSelf != troca) _trocaChip.B.gameObject.SetActive(troca);
+            if (troca)
+            {
+                (Item it, int target, _) = _sim.Anuncios.ProximaEncomenda();   // a que entra, mostrada antes (P5)
+                _trocaChip.Label.text = Loc.T("enc.troca", target);
+                Sprite s = Art.ItemArt(it, true);
+                _trocaChip.Icon.sprite = s != null ? s : Art.ItemSprite(it);
+                _trocaChip.Icon.color = s != null ? Color.white : Art.ItemColor[(int)it];
+            }
+            Ofertou(Anuncio.EncomendaBonus, bonus, on);
+            Ofertou(Anuncio.EncomendaTroca, troca, on);
+            bool cofre = Painel && _panelRow.gameObject.activeSelf && Pode(Anuncio.Cofre);   // so o painel do cofre tem a linha do ouro
+            if (_panelAd.gameObject.activeSelf != cofre)
+            {
+                _panelAd.gameObject.SetActive(cofre);
+                _panelOk.anchorMin = new Vector2(cofre ? 0.05f : 0.25f, 0.06f); _panelOk.anchorMax = new Vector2(cofre ? 0.48f : 0.75f, 0.26f);
+                if (cofre) _panelAdText.text = Loc.T("cofre.dobrar", _sim.Anuncios.Previa(Anuncio.Cofre));
+            }
+            Ofertou(Anuncio.Cofre, cofre, cofre);
             bool show = can || cool;
             if (_speedBtn.B.gameObject.activeSelf != show) _speedBtn.B.gameObject.SetActive(show);
             if (show) Paint(_speedBtn, can, Art.Accent, can ? (active ? "→3×" : "2×") : Clock(_sim.BoostCooldown));   // v0.6d: com boost, o PROXIMO nivel ("3×" lia como o atual)
@@ -977,9 +1098,9 @@ namespace FS
             if (_order == null) return;
             _orderT += dt; _orderPunch = Mathf.Max(0f, _orderPunch - dt);
             int it = _sim.OrderItem;
-            if (it >= 0 && _orderKey != _sim.OrderCount)
+            if (it >= 0 && _orderKey != _sim.OrderIndex)   // E-PLAT-02: a trocada tambem entra pulando
             {
-                _orderKey = _sim.OrderCount; _orderOut = false; _orderT = 0f; _orderSeen = -1;
+                _orderKey = _sim.OrderIndex; _orderOut = false; _orderT = 0f; _orderSeen = -1;
                 Sprite s = Art.ItemArt((Item)it, true);
                 _orderIcon.sprite = s != null ? s : Art.ItemSprite((Item)it);
                 _orderIcon.color = s != null ? Color.white : Art.ItemColor[it];
@@ -1045,29 +1166,82 @@ namespace FS
             Log("quality_breakdown", st.Name, _sim.QualityPoints(st).ToString(CultureInfo.InvariantCulture));
         }
 
-        // A-PLAT-07: o toque so pede anuncio jogando (Estados.Anuncia); o -adtest (dev) chama o IAds direto
-        void OnVipAd()
+        /// <summary>Botao do placement disponivel: o nucleo deixa (Anuncios.Pode) e o IAds tem anuncio.</summary>
+        bool Pode(Anuncio a) => _sim.Anuncios.Pode(a) && _ads.Ready(_sim.T.Ad(a).Id);
+
+        /// <summary>s86 rewarded_offer: uma por aparicao do botao disponivel (cinza da recarga nao e' oferta), contada quando da para tocar.</summary>
+        void Ofertou(Anuncio a, bool pode, bool tocavel, string b = "")
         {
-            if (!Estados.Anuncia(EstadoAtual)) return;
-            _ads.Show(Ads.Vip, () =>
+            if (!pode) _ofertado[(int)a] = false;
+            else if (tocavel && !_ofertado[(int)a]) { _ofertado[(int)a] = true; Log("rewarded_offer", _sim.T.Ad(a).Id, b); }
+        }
+
+        /// <summary>
+        /// E-PLAT-02: toque num botao de rewarded. A oferta (ID de transacao) sai do nucleo no toque e so o onReward a paga (Anuncios.Pagar, 1x);
+        /// oferta que mudou entre o toque e o fim do anuncio, ou ja paga, nao da nada (ad_paid com -1). A-PLAT-07: so jogando (Estados.Anuncia);
+        /// o "Cofre 2x", do proprio painel do cofre. O -adtest (dev) chama o IAds direto.
+        /// </summary>
+        void Assistir(Anuncio a)
+        {
+            if (!Estados.Anuncia(EstadoAtual) && !(a == Anuncio.Cofre && EstadoAtual == Estado.Modal && Painel)) return;
+            string tx = _sim.Anuncios.Oferta(a), p = _sim.T.Ad(a).Id;
+            if (tx == null) return;
+            _ads.Show(p, () =>
             {
-                if (!_sim.SummonVip()) return;   // mudou entre o toque e o fim do anuncio: nada a dar
-                Sfx.Play("upgrade");
-                Notice(Loc.T("aviso.vip_vem"), _crown, Color.white);
+                long v = _sim.Anuncios.Pagar(tx);
+                Log("ad_paid", p, tx + " " + v.ToString(CultureInfo.InvariantCulture));
+                if (v < 0) return;
+                Pago(a, v);
+                Save();   // a chave paga, a recarga e o ouro vao juntos para o disco
             }, AdFail);
         }
 
-        void OnSpeedAd()
+        /// <summary>O que a tela faz depois que o nucleo aplicou a recompensa `v` (Anuncios.Previa do toque).</summary>
+        void Pago(Anuncio a, long v)
         {
-            if (!Estados.Anuncia(EstadoAtual)) return;
-            _ads.Show(Ads.Velocidade, () =>
+            string n = v.ToString(CultureInfo.InvariantCulture);
+            switch (a)
             {
-                float m = _sim.StartBoost();
-                if (m <= 0f) return;
-                Sfx.Play("upgrade", 1.2f);
-                _view.Float(_sim.Player.Pos, Loc.T("fx.velocidade", m.ToString("0", CultureInfo.InvariantCulture)), Art.Accent, 48);
-                Log("boost_start", m.ToString("0", CultureInfo.InvariantCulture), _sim.T.BoostSeconds.ToString("0", CultureInfo.InvariantCulture));
-            }, AdFail);
+                case Anuncio.Vip: Sfx.Play("upgrade"); Notice(Loc.T("aviso.vip_vem"), _crown, Color.white); break;
+                case Anuncio.Velocidade:
+                    Sfx.Play("upgrade", 1.2f);
+                    _view.Float(_sim.Player.Pos, Loc.T("fx.velocidade", n), Art.Accent, 48);
+                    Log("boost_start", n, _sim.T.Ad(a).Valor.ToString("0", CultureInfo.InvariantCulture));
+                    break;
+                case Anuncio.Cofre:
+                    Sfx.Play("offline", 1.15f);
+                    Source("anuncio", v);
+                    Notice(Loc.T("aviso.cofre2x", n), _coinIcon.sprite, _coinIcon.color);
+                    ShowVault(_sim.LastClaimGold + v);   // o painel mostra o total; o 2x some (1 por resgate)
+                    break;
+                case Anuncio.EncomendaBonus:
+                    Sfx.Play("coin", 1.3f);
+                    if (_orderPrize != null) _orderPrize.text = "+" + _sim.OrderReward;   // pago na entrega, junto com o premio
+                    Notice(Loc.T("aviso.bonus", n), _coinIcon.sprite, _coinIcon.color);
+                    break;
+                case Anuncio.EncomendaTroca: Sfx.Play("order"); Notice(Loc.T("aviso.troca")); break;   // o cartao novo entra pelo OrderIndex
+                case Anuncio.Supply:
+                    Sfx.Play("furnace");
+                    Sprite ingot = Art.ItemArt(Item.Ingot, true);
+                    Notice(Loc.T("aviso.supply", n), ingot != null ? ingot : Art.ItemSprite(Item.Ingot), ingot != null ? Color.white : Art.ItemColor[(int)Item.Ingot]);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// E-PLAT-03: intersticial so no estado Transition (hoje: a encomenda entregue saindo; troca de distrito e volta ao mapa entram na Wave C)
+        /// e so sem veto do nucleo (Anuncios.VetoIntersticial: flag DESLIGADA por padrao, remove_ads, tutorial, acao, cooldown, cap). Acao =
+        /// toque no joystick, bandeja de compra aberta ou compra ha menos de 2 s (golpe de mestre: quando a FS-2 entrar). Veto vai ao diario
+        /// (ad_veto), menos o "flag": desligado, nada carrega nem aparece.
+        /// </summary>
+        void TentaIntersticial()
+        {
+            bool acao = _joy.Active || _menu.IsOpen || Time.unscaledTime - _compraT < 2f;
+            string veto = _sim.Anuncios.VetoIntersticial(EstadoAtual == Estado.Transition, acao, _sessionT);
+            if (veto == null && !_ads.InterstitialReady) veto = "sem_anuncio";
+            if (veto != null) { if (veto != "flag") Log("ad_veto", Ads.Intersticial, veto); return; }
+            _sim.Anuncios.IntersticialMostrado(_sessionT);
+            _ads.ShowInterstitial(null);
         }
 
         void AdFail()
@@ -1204,7 +1378,25 @@ namespace FS
         {
             Ads.Responder(f, aceitou, !_testSession);
             Log("consent_answer", Privacidade.Diario(f), Privacidade.Flags(f, aceitou).Consentimento ? "sim" : "nao");
+            Liberar(f, aceitou);
         }
+
+        /// <summary>A-PLAT-08/09: a tela de idade respondida (agora ou numa abertura anterior) libera a rede, 1x por sessao: o analytics remoto
+        /// (ID de publicidade so 18+ com aceite, V21) e a busca do RemoteConfig (vale na proxima abertura). Fotos e smoke nao buscam.</summary>
+        void Liberar(Faixa f, bool aceitou)
+        {
+            if (_diario.Liberada) return;
+            _diario.Liberar(f, aceitou);
+            if (!_testSession) _rc.Buscar((e, a, b) => Log(e, a, b));
+        }
+
+        /// <summary>A-PLAT-09 (DM §90): excecao nao tratada (e Debug.LogException) -> evento "excecao" no diario e no remoto, ate 5 por sessao.</summary>
+        void Excecao(string msg, string pilha, LogType tipo)
+        {
+            if (tipo == LogType.Exception) _diario.Excecao(msg, pilha, _sim != null ? _sim.Time : 0f);
+        }
+
+        void OnDestroy() => Application.logMessageReceived -= Excecao;
 
         /// <param name="gold">&gt; 0: linha da moeda com "+gold" grande (cofre); 0: so o texto.</param>
         void ShowPanel(string title, string body, string button, Action action, long gold = 0)
@@ -1279,6 +1471,7 @@ namespace FS
                 if (Captura.Flags(preset) == null) { Falha($"PRESET desconhecido '{preset}' (validos: {Captura.Nomes})"); return; }
                 Debug.Log($"PRESET {preset}: {Captura.Flags(preset)}");
             }
+            if (Arg("-intersticial") != null) _sim.T.Interstitial = true;   // E-PLAT-03 (dev): antes do Ads.Init, que so carrega com a flag
             // B-CORE-07 (fotos): -projetos todos = todos os projetos do catalogo ANTES das compras (o -buy/-buyids alcanca os niveis IV-V e a bigorna longa)
             if (Arg("-projetos") == "todos") foreach (BlueprintDef d in _sim.Projetos.Defs) _sim.Projetos.Ganha(d.Id, d.Sources[0].Kind);
             if (int.TryParse(Arg("-buy"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))

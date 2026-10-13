@@ -179,7 +179,7 @@ namespace FS.Tests
             Assert.IsFalse(s.MenuAvailable((int)Upgrade.AnvilsLv5), "o V exige o IV");
             Assert.IsFalse(s.MenuAvailable((int)Upgrade.ShieldsLv4), "escudos: outro projeto (bancada mestra)");
             Assert.IsTrue(s.TryBuyMenu(Upgrade.AnvilsLv4));
-            Assert.AreEqual(1000000L - 800L, s.Gold, "IV = 1/5 do §1.5 (BALANCE.md §24)");
+            Assert.AreEqual(1000000L - 800L, s.Gold, "IV = 1/5 do §1.5 (BALANCE.md §25)");
             Assert.IsTrue(s.TryBuyMenu(Upgrade.AnvilsLv5));
             Assert.AreEqual(1000000L - 2300L, s.Gold, "V = 1/6 do §1.5");
             Assert.AreEqual((5, 5, 60), (s.AnvilA.Level, s.AnvilB.Level, s.QualityPoints(s.AnvilA)), "bigornas no nivel V: q 0,60");

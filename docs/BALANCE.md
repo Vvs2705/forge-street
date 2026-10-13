@@ -1517,13 +1517,30 @@ Corredor 14:30, Joalheria 28:46, 10,2 joias/min, ouro/min 392 → 533 → 1.007 
 
 `QualidadeTests` (22): q = 25 → exatamente 1 Fina a cada 4; q = 115 → toda Fina, Superior = ⌊0,15 n⌋, dois Sims iguais; `QualityBreakdown` explica 100% das peças de 40 min do bot (refaz o acumulador peça a peça); fornalha sem qualidade; preço por nível; balcão vende a melhor primeiro; VIP 3× com a qualidade; golpe (só parado na boca, revelação, recarga de 20 s, errar não pune, vale uma peça); ajudante na boca, cofre offline e bots F2P/Slow/AdWatcher nunca golpeiam; Masterwork sem projeto fica Superior; com projeto vai ao Hall, nunca à pilha, ao balcão nem ao `GoldEarned` (conservação de peças em 30 min do Ideal); níveis (custo, +15, +5%, revelação, cartão oculto); Meta fora da produção completa e do teto offline; save antigo (schemas 1–3) = tudo Normal; save/load no meio do acumulador continua igual; lote maior que o total é cortado. `ContentValidatorTests`: preço fora de ordem, Masterwork vendável, família desconhecida, nível fora da cadeia. `mutantes.py`: 15 mutações novas de qualidade (acumulador sem resto e com limiar errado, preço, balcão que vende a pior, golpe pelo ajudante/andando/antes da revelação/sem recarga/no erro, Masterwork sem projeto e no balcão, Meta na produção, nível sem velocidade, save do acumulador, validator), todas mortas.
 
-## 24. Blueprints (B-CORE-07) (2026-10-13)
+## 24. E-PLAT-02/03: rewarded por placement e intersticial atrás de flag (2026-10-13)
+
+**Vigente** (`Tuning.Placements`, `Core/Anuncios.cs`): Chamar VIP (pacote 2×, recarga 300 s contada da saída do chamado) e Velocidade (60 s de 2×, recarga 300 s do fim do boost) com os números de antes; Cofre 2× (1 por resgate); bônus da encomenda (+50% do prêmio, 1 por encomenda); trocar encomenda (a próxima do rodízio, mostrada antes, teto 5/dia); Supply Drop (60 s das fornalhas, recarga 600 s). Teto diário total `AnunciosTetoDia` = 30. Intersticial: flag `Interstitial` desligada (V10).
+
+### 24.1 econsim, 60 min, anúncio = 30 s de relógio (V19)
+
+Perfis sem os placements novos (`--perfis Ideal,F2P,Slow,AdWatcher --partidas 1`): **CSV idêntico ao byte** ao da `main` (6ea0201 + #51) — a migração do VIP/Velocidade para o `Tuning.Placements` não mudou nada.
+
+Perfil novo `AdWatcherE` (o AdWatcher assistindo também Supply e bônus, guloso, pelo núcleo), média de 3 partidas:
+
+| perfil | Esteira | Ajud.3 | Joalheria | Produção | Fachada | zona morta | pós-produção | anúncios (VIP/Vel./Supply/bônus) |
+|---|---|---|---|---|---|---|---|---|
+| AdWatcher | 7:05 | 22:15 | 26:50 | **44:36** | 51:19 | 18,3 | 34.265 | 9/9/0/0 |
+| AdWatcherE | 8:04 | 25:42 | 31:18 | **51:36** | 58:07 | 25,7 | 17.755 | 6,7/6/4/13 (teto 30) |
+
+**Achado:** assistir tudo atrasa a produção completa em 7 min. Não é o teto diário (com `AnunciosTetoDia=99` a produção fica em 52:07). O bônus da encomenda (+50% de um prêmio de ~25–60 ouro no começo) vale menos que os 30 s de relógio do anúncio, e é o placement mais visto (13 de 30). Varredura de valores (3 partidas): Supply 180 s → 50:00; bônus +100% → 50:25; os dois → 49:23; Supply 300 s + bônus +100% → 48:29 — nenhum empata com o AdWatcher. **Decisão:** os valores ficam; o jogador vê o valor antes de assistir (chips "+N" e "DOBRAR +N"), e o Orders 2.0 (B-CORE-05) recalibra o bônus com piso em segundos de renda (meta: AdWatcherE não mais lento que o AdWatcher). Pisos do §3: 0% abaixo nos 5 perfis.
+
+## 25. Blueprints (B-CORE-07) (2026-10-13)
 
 Regra em `GDD.md` §12, `ECONOMIA_WAVE_B.md` §4/§8.5 e `CONTEUDO_V1.md` §9. **Vigente:** 19 `BlueprintDef` do Old Forge (os 18 do §4 + `bp_rec_espada_longa`; 3 essenciais), posse (nunca saldo) no `Sim.Projetos`. Fontes ativas: marco de venda (com "Fina ou melhor"), produção completa, Renome e conquista resgatada; as filas de encomenda (B-CORE-05), contrato, evento, Pass e loja são ganchos. Níveis IV–V das 4 famílias (Meta, menu) exigem o projeto de mestre; a bigorna longa (pad Meta, 6.000, exige o Martelo veloz) e a espada longa (2 lingotes, 7,5 s, 40 de ouro, família das bigornas) exigem `bp_rec_espada_longa`; técnica = q +20 (`Tuning.TecnicaQ`) na família. O bot não mudou: ele compra pelo menu/pad o que o projeto libera, como qualquer melhoria.
 
 **Desvios do catálogo (decididos por padrão, revisar):** (1) `bp_bigorna_mestra` e `bp_bancada_mestra` ganham o marco "produção completa" como 2ª fonte grátis (o padrão dos `bp_mestra_*` dos distritos 2–6): sem ele os níveis IV–V esperavam as filas do B-CORE-05 e nenhum essencial era alcançável no F2P. (2) Custo dos IV–V = **1/5 do §1.5 no IV e 1/6 no V** (bigornas 800/1.500, escudos 1.000/1.835, ferramentas 800/1.500, joalheria 1.600/3.000; soma 12.035), não a metade da V26: com a metade (34.000) o retorno medido foi 104 min (portão ≤ 40). O IV continua acima do III em toda família.
 
-### 24.1 econsim, 60 min, 1 partida por perfil (anúncio = 30 s), antes (main, §23) → depois
+### 25.1 econsim, 60 min, 1 partida por perfil (anúncio = 30 s), antes (main, §23) → depois
 
 | perfil | Produção | Fachada | zona morta (min) | prêmio de qualidade | projetos aos 60 | IV–V (1º) | bigorna longa |
 |---|---|---|---|---|---|---|---|
@@ -1534,7 +1551,7 @@ Regra em `GDD.md` §12, `ECONOMIA_WAVE_B.md` §4/§8.5 e `CONTEUDO_V1.md` §9. *
 
 Pisos do §3 iguais (0% abaixo em todos os perfis; os primeiros 10 min não mudam, nada de projeto antes das Ferramentas).
 
-### 24.2 4 partidas por perfil, 120 min (passos 30–52,5 ticks/s)
+### 25.2 4 partidas por perfil, 120 min (passos 30–52,5 ticks/s)
 
 | perfil | Produção | Fachada | zona morta | ouro/min 111–120 (renda final) | saldo aos 120 | min sem destino | prêmio de qualidade 120 | espada longa (% da receita) |
 |---|---|---|---|---|---|---|---|---|
@@ -1547,7 +1564,7 @@ Projetos aos 120 min (os 4 perfis): 10 de 19 — técnica das ferramentas (150 v
 
 **Por que a produção completa atrasou 2,4 min:** o marco das 300 espadas (~40 min) abre a bigorna longa; o bot compra a de 6.000 aos ~45 min (é o pad mais barato a venda), antes da Vitrine de joias (9.000), o último produtivo. Ela fica fora da produção completa (Meta), mas o ouro gasto nela atrasa o resto; a zona morta sobe 1,3 min pelo mesmo motivo. Fica dentro do portão (41–55 min). Se incomodar: o knob é `Tuning.BigornaLongaCusto` ou pedir a Vitrine de joias como requisito do pad.
 
-### 24.3 Retorno dos níveis IV–V (A/B: IV–V a 10⁹, que o bot nunca compra, × vigente; ouro/min, 4 partidas)
+### 25.3 Retorno dos níveis IV–V (A/B: IV–V a 10⁹, que o bot nunca compra, × vigente; ouro/min, 4 partidas)
 
 | janela | F2P sem → com | ganho | retorno (12.035 / ganho) | Ideal sem → com | ganho | retorno |
 |---|---|---|---|---|---|---|
@@ -1565,13 +1582,13 @@ Projetos aos 120 min (os 4 perfis): 10 de 19 — técnica das ferramentas (150 v
 
 Abaixo de 1/5 o IV fica mais barato que o III (bigornas 665 < 750). O ralo dos IV–V é pequeno perto do luxo (54 mil): o ouro sem destino depois da produção é dos distritos (Wave C).
 
-### 24.4 Portões (ECONOMIA_WAVE_B §10)
+### 25.4 Portões (ECONOMIA_WAVE_B §10)
 
 | Medida | Portão | Medido | |
 |---|---|---|---|
 | Primeiros 10 min | iguais | iguais (pisos do §3 sem mudança; `QualidadeTests.Revelacao_PrimeirosDezMinutos_IguaisSemQualidade`) | ok |
-| Produção completa, F2P | 41–55 min | 49:55 (4 partidas: 49:28) | ok (+2,4 min, §24.2) |
-| Zona morta, F2P | não piora (meta ≤ 12 é das Orders 2.0) | 21 → 22 (4 partidas: 20,5 → 21,8) | piora 1,3 min pela bigorna longa (§24.2) |
+| Produção completa, F2P | 41–55 min | 49:55 (4 partidas: 49:28) | ok (+2,4 min, §25.2) |
+| Zona morta, F2P | não piora (meta ≤ 12 é das Orders 2.0) | 21 → 22 (4 partidas: 20,5 → 21,8) | piora 1,3 min pela bigorna longa (§25.2) |
 | Prêmio de qualidade | 5–20% aos 60; ≤ 35% aos 120 | 18,2% / 24,6% | ok |
 | Golpe de mestre | ≤ 8% F2P; ≤ 12% Perfect | 0% / 1,3% | ok |
 | Retorno L4–L5 | ≤ 40 min | 35,8–38,9 min (F2P) | ok com o desvio de preço |
@@ -1582,6 +1599,6 @@ Abaixo de 1/5 o IV fica mais barato que o III (bigornas 665 < 750). O ralo dos I
 
 **Robustez (1.000 partidas, 250 passos de tick por perfil, 90 min):** todas chegam à produção completa e à Fachada, sem impasse com o corpo novo da bigorna longa (5,0; 1,5). Produção completa média F2P 49:38 (Ideal 50:42, Slow 52:42, AdWatcher 46:50); os 10 projetos de marco/produção em todas; IV–V 8/8 a partir de 50:01 (F2P); espada longa 6,4% da receita aos 90 min.
 
-### 24.5 Testes e prova vermelha
+### 25.5 Testes e prova vermelha
 
 `ProjetosTests` (12): catálogo (19, 3 essenciais, fila #1–#7 sem buraco, nada pago); posse idempotente (o mesmo marco em dois Ticks, o gancho e a transação não duplicam; o save grava ID e origem, nunca saldo); ganchos (só fonte listada, pago só com ID de transação, a mesma transação não paga 2x); fontes (marco de venda, Fina ou melhor, produção completa, Renome 3, conquista só resgatada); filas (próximo mostrado antes, sem sorteio, o que veio por outra fonte sai da fila, esgota); desbloqueio dos IV–V (menu, compra direta e cartão) e da bigorna longa (pad, linha, venda a 40, nível pela família); técnica (+20 na família toda, 1 Fina a cada 5, determinística); save (ida e volta com origem e transação, save antigo sem `bp=` vazio e o retroativo dos marcos no 1º Tick, ID desconhecido mantido); validator (essencial só pago, essencial só de contrato, só evento, Pass premium, ID repetido/fora do formato, marco inalcançável, posição de fila repetida, Renome fora da tabela, conquista e distrito inexistentes, alvo inexistente, upgrade com projeto errado e nível IV sem projeto); bot F2P com os 3 essenciais e o nível IV aos 60 min; textos do painel nos 3 idiomas. `mutantes.py`: 17 mutações novas `bp-*` (posse que duplica, transação que repete, pago sem transação, fonte não listada, Fina que conta Normal, conquista sem resgate, save sem transação, load que perde a posse, menu/compra/pad sem projeto, técnica zerada ou pela estação, nível pela estação, validator do essencial pago, contrato como permanente, mestre sem a produção completa).

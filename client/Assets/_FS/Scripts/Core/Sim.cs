@@ -130,6 +130,8 @@ namespace FS.Core
         public readonly Tuning T;
         /// <summary>D-CORE-01/02: metas (Metas.cs). Gancho unico: o Emit conta o evento; o save leva as linhas mt.* so depois da 1a Agora.</summary>
         public readonly Metas Metas;
+        /// <summary>E-PLAT-02/03: rewarded por placement (ID de transacao, recarga, teto diario) e o veto do intersticial (Anuncios.cs).</summary>
+        public readonly Anuncios Anuncios;
         /// <summary>B-CORE-06: Renome (Renome.cs), trilha que so sobe. Ganchos: o Emit credita encomenda e bau, o Sell a Superior; save na linha rn=.</summary>
         public readonly Renome Renome;
         /// <summary>B-CORE-07: Blueprints possuidos (Projetos.cs), posse e nunca saldo. Ganchos: o Tick checa os marcos, o Sell conta as Fina ou
@@ -167,6 +169,9 @@ namespace FS.Core
         public float VipIn; public int VipCount;
         // FASE9: encomenda ativa (OrderItem -1 = nenhuma) e relogio ate a proxima (so anda depois da 1a venda)
         public int OrderItem = -1, OrderTarget, OrderProgress, OrderReward, OrderCount; public float OrderIn;
+        /// <summary>E-PLAT-02: encomendas puladas pelo "Trocar" (anuncio). Indice no rodizio = OrderIndex (entregues + puladas); vai no save (ord=).</summary>
+        public int OrderSkips;
+        public int OrderIndex => OrderCount + OrderSkips;
         public long OrderGold;   // premios pagos nesta sessao (metrica do bot; fora do GoldEarned, nao vai no save)
         /// <summary>Velocidade por anuncio: multiplicador (1, 2 ou 3), s restantes e s de recarga (conta do fim do boost), no tempo de jogo. A-CORE-02:
         /// os tres vao no save (bst=): reabrir nao libera outro boost e o ativo volta com o que restou; o tempo fora nao corre nenhum (como na pausa).</summary>
@@ -201,6 +206,8 @@ namespace FS.Core
         public readonly int[] Crafted;
         public double RateEma;                 // ouro/s online, media movel (base do offline)
         public long SavedAt, LastClaim;        // unix s; o claim offline e' idempotente por SavedAt, que nunca recua (Save)
+        /// <summary>Ouro do ultimo resgate do cofre nesta sessao (0 = nenhum): o "Cofre 2x" dobra este (Anuncios). Nao vai no save.</summary>
+        public long LastClaimGold;
         /// <summary>A-CORE-02: s que o relogio do aparelho estava atras do SavedAt, so no 1o Save de cada recuo (senao 0): a View loga clock_back
         /// uma vez, nao a cada autosave.</summary>
         public long ClockWentBack;
@@ -220,6 +227,7 @@ namespace FS.Core
         {
             T = tuning ?? new Tuning();
             Metas = new Metas(this);
+            Anuncios = new Anuncios(this);
             Renome = new Renome(this);
             ItemDefs = items ?? Items.All; RecipeDefs = recipes ?? Recipes.All;
             int n = ItemDefs.Length;
@@ -332,11 +340,11 @@ namespace FS.Core
             * (product == Item.Jewel && Bought[(int)Upgrade.JewelVitrine] ? T.JewelVitrineClientMul : 1f);
         /// <summary>Ha um VIP esperando vaga ou numa vaga do balcao.</summary>
         public bool VipActive => _vipWant >= 0 || Queue.Exists(c => c.Vip);
-        /// <summary>Botao "chamar o VIP" (anuncio): flags Vip e VipChamado, depois da 1a venda, sem VIP ativo, com o natural a mais de 60 s e a
+        /// <summary>Botao "chamar o VIP" (anuncio): flag Vip e Ad(Vip).Ligado, depois da 1a venda, sem VIP ativo, com o natural a mais de 60 s e a
         /// recarga de 5 min (P14) zerada (contra abuso).</summary>
-        public bool CanSummonVip => T.Vip && T.VipChamado && AdsUnlocked && FirstSaleTime >= 0f && !VipActive && VipIn > T.VipSummonMinIn && VipCooldown <= 0f;
+        public bool CanSummonVip => T.Vip && T.Ad(Anuncio.Vip).Ligado && AdsUnlocked && FirstSaleTime >= 0f && !VipActive && VipIn > T.VipSummonMinIn && VipCooldown <= 0f;
 
-        /// <summary>D6 (V18): os anuncios (Velocidade e Chamar VIP) so aparecem depois da 1a melhoria comprada (knob do Tuning).</summary>
+        /// <summary>D6 (V18): os anuncios (todo placement de rewarded) so aparecem depois da 1a melhoria comprada (knob do Tuning).</summary>
         public bool AdsUnlocked => !T.AnunciosDepoisDaPrimeiraMelhoria || UpgradesBought > 0;
 
         /// <summary>Anuncio "chamar o VIP": um VIP EXTRA agora (entra na proxima vaga livre), com 2x o pacote do natural (ate 20). NAO mexe no
@@ -348,9 +356,9 @@ namespace FS.Core
             return true;
         }
 
-        /// <summary>Botao "velocidade" (flag Velocidade): com boost ativo, ate chegar a 3x; sem boost, so com a recarga (5 min de jogo desde o fim
+        /// <summary>Botao "velocidade" (Ad(Velocidade).Ligado): com boost ativo, ate chegar a 3x; sem boost, so com a recarga (5 min de jogo desde o fim
         /// do ultimo) zerada. Flag desligada nao corta o boost ja ativo: ele acaba no tempo dele.</summary>
-        public bool CanBoost => T.Velocidade && AdsUnlocked && (BoostLeft > 0f ? BoostMul < T.BoostMax : BoostCooldown <= 0f);
+        public bool CanBoost => T.Ad(Anuncio.Velocidade).Ligado && AdsUnlocked && (BoostLeft > 0f ? BoostMul < T.BoostMax : BoostCooldown <= 0f);
 
         /// <summary>Anuncio "velocidade": 2x por 60 s; outro com o boost ativo sobe para 3x e reinicia os 60 s. Fora de CanBoost recusa: nada muda e
         /// devolve 0. Senao devolve o multiplicador novo.</summary>
@@ -358,7 +366,7 @@ namespace FS.Core
         {
             if (!CanBoost) return 0f;
             BoostMul += 1f;   // CanBoost segura o teto de 3x
-            BoostLeft = T.BoostSeconds;
+            BoostLeft = T.Ad(Anuncio.Velocidade).Valor;
             return BoostMul;
         }
 
@@ -376,7 +384,7 @@ namespace FS.Core
             _vipWant = (int)lines[VipCount % lines.Count];
             double raw = T.VipShare * (T.VipMin + T.VipMax) / 2.0 * RateEma / (T.VipPriceMul * PriceOf((Item)_vipWant));
             int pack = Math.Max(T.VipPackMin, Math.Min(CounterCap, (int)Math.Round(raw)));
-            _vipPack = extra ? Math.Min(T.VipSummonPackMax, T.VipSummonPackMul * pack) : pack;   // padrao: 2 x 10 = 20, o teto so corta prateleira de Tuning maior
+            _vipPack = extra ? Math.Min(T.VipSummonPackMax, (int)T.Ad(Anuncio.Vip).Valor * pack) : pack;   // padrao: 2 x 10 = 20, o teto so corta prateleira de Tuning maior
             _vipSummoned = extra;
             VipCount++;
             if (!extra) VipIn = T.VipInterval(VipCount);
@@ -405,13 +413,14 @@ namespace FS.Core
             foreach (Carrier w in Workers) Interact(w, fast);
             foreach (Station s in Stations) Produce(s, fast);
             Conveyor(fast);
+            Anuncios.Tick(dt);   // E-PLAT-02: recargas e o Supply Drop entrando nas fornalhas
             VipCooldown = Math.Max(0f, VipCooldown - dt);   // P14: no tempo de jogo; o Serve recarrega quando o chamado sai
             StrikeCooldown = Math.Max(0f, StrikeCooldown - dt);   // B-CORE-03: golpe de mestre, no tempo de jogo (o boost nao encurta)
             Clients(dt);
             Milestones();
             Projetos.Checa();   // B-CORE-07: marcos, Renome e conquista viram projeto (Ev.Blueprint)
             Orders(dt);
-            if (BoostLeft > 0f) { if ((BoostLeft -= dt) <= 0f) { BoostLeft = 0f; BoostMul = 1f; BoostCooldown = T.BoostCooldownSeconds; } }   // recarga conta do fim
+            if (BoostLeft > 0f) { if ((BoostLeft -= dt) <= 0f) { BoostLeft = 0f; BoostMul = 1f; BoostCooldown = T.Ad(Anuncio.Velocidade).Recarga; } }   // recarga conta do fim
             else BoostCooldown = Math.Max(0f, BoostCooldown - dt);
 
             long cheapest = CheapestVisibleCost();
@@ -1041,7 +1050,7 @@ namespace FS.Core
                         c.Paid += Sell(c.Want, Slot(jewel, i), T.VipPriceMul);
                         if (--c.Pack > 0) break;
                         q.RemoveAt(i);
-                        if (c.Summoned) VipCooldown = T.VipChamadoRecarga;   // P14: a recarga conta de quando o chamado sai
+                        if (c.Summoned) VipCooldown = T.Ad(Anuncio.Vip).Recarga;   // P14: a recarga conta de quando o chamado sai
                         Emit(Ev.VipServed, (int)c.Want, c.Paid, Slot(jewel, i));
                         break;
                     }
@@ -1057,7 +1066,7 @@ namespace FS.Core
                 if (c.Patience > 0f) continue;
                 if (c.Vip) Emit(Ev.VipLeft, (int)c.Want, c.Pack, Slot(jewel, i));   // FASE8: o VIP fica fora do ClientsLost (metrica dos clientes normais)
                 else { Emit(Ev.ClientLeft, (int)c.Want, 0, Slot(jewel, i)); ClientsLost++; }
-                if (c.Summoned) VipCooldown = T.VipChamadoRecarga;   // P14: cansou tambem conta (sem isso, deixar ir embora furava a recarga)
+                if (c.Summoned) VipCooldown = T.Ad(Anuncio.Vip).Recarga;   // P14: cansou tambem conta (sem isso, deixar ir embora furava a recarga)
                 q.RemoveAt(i);
             }
         }
@@ -1088,17 +1097,36 @@ namespace FS.Core
                 return;
             }
             if (!T.Encomendas || (OrderIn -= dt) > 0f) return;
+            OrderIn = 0f;
+            AbreEncomenda();
+        }
+
+        /// <summary>A encomenda `idx` do rodizio com a taxa de agora: item = as linhas abertas em rodizio; N = OrderFirstTarget na 1a, depois
+        /// ~150 s da renda real dividida entre as linhas (no comeco o gargalo e' a producao, nao o cliente: pela demanda a 2a ja pedia 27
+        /// espadas), entre 3 e 30; premio ~10 s da taxa online. E-PLAT-02: a natural seguinte e a do "Trocar" (mostrada antes) saem daqui.</summary>
+        public (Item item, int target, int reward) OrderAt(int idx)
+        {
             var lines = new List<Item>();
             for (Item p = Item.Sword; p <= Item.Jewel; p++) if (LineUnlocked(p)) lines.Add(p);
-            Item it = lines[OrderCount % lines.Count];
-            OrderItem = (int)it;
-            OrderTarget = OrderCount == 0 ? T.OrderFirstTarget
+            Item it = lines[idx % lines.Count];
+            int target = idx == 0 ? T.OrderFirstTarget
                 : Math.Max(T.OrderMin, Math.Min(T.OrderMax, (int)Math.Round(T.OrderSeconds * RateEma / (lines.Count * PriceOf(it)))));
-            // ~150 s da renda real dividida entre as linhas (no comeco o gargalo e' a producao, nao o cliente: pela demanda a 2a ja pedia 27 espadas)
-            OrderProgress = 0;
-            OrderReward = Math.Max(T.OrderRewardMin, 5 * (int)Math.Round(RateEma * T.OrderRewardSeconds / 5.0));
-            OrderIn = 0f;
+            return (it, target, Math.Max(T.OrderRewardMin, 5 * (int)Math.Round(RateEma * T.OrderRewardSeconds / 5.0)));
+        }
+
+        void AbreEncomenda()
+        {
+            (Item it, int target, int reward) = OrderAt(OrderIndex);
+            OrderItem = (int)it; OrderTarget = target; OrderProgress = 0; OrderReward = reward;
             Emit(Ev.OrderNew, OrderItem, OrderTarget, CounterFor(it).Pos);
+        }
+
+        /// <summary>E-PLAT-02 "Trocar encomenda" (so o Anuncios.Pagar chama): a ativa sai sem pagar e entra a proxima do rodizio, do zero (a que
+        /// o botao mostrou: Anuncios.ProximaEncomenda). Sem sorteio (P5).</summary>
+        internal void TrocarEncomenda()
+        {
+            OrderSkips++;
+            AbreEncomenda();
         }
 
         // ------------------------------------------------------------------ qualidade (B-CORE-03, docs/ECONOMIA_WAVE_B.md §1)
@@ -1295,6 +1323,7 @@ namespace FS.Core
             LastClaim = claimId;
             long capped = Math.Min(elapsedSeconds, T.OfflineCap);   // A-CORE-03: o Tuning so encurta; 2 h e' trava (Balance.OfflineCapSeconds)
             long gold = (long)Math.Min(Math.Floor(RateEma * T.OfflineFactor * capped), OfflineMaxGold());
+            LastClaimGold = Math.Max(0, gold);   // E-PLAT-02: o "Cofre 2x" dobra este resgate (1x por claimId)
             if (gold <= 0) return 0;
             Gold += gold;
             OfflineEarned += gold;
@@ -1555,10 +1584,11 @@ namespace FS.Core
             sb.Append("vipc=").Append(VipCooldown.ToString("0.###", ci)).Append('\n');   // P14: recarga do Chamar VIP
             // FASE9: encomenda (item, alvo, progresso, premio, entregues, relogio ate a proxima)
             sb.Append("ord=").Append(OrderItem).Append(',').Append(OrderTarget).Append(',').Append(OrderProgress).Append(',').Append(OrderReward)
-              .Append(',').Append(OrderCount).Append(',').Append(OrderIn.ToString("0.###", ci)).Append('\n');
+              .Append(',').Append(OrderCount).Append(',').Append(OrderIn.ToString("0.###", ci)).Append(',').Append(OrderSkips).Append('\n');   // E-PLAT-02: puladas no fim
             // A-CORE-02: velocidade (multiplicador, s restantes, s de recarga), no tempo de jogo
             sb.Append("bst=").Append(BoostMul.ToString("0", ci)).Append(',').Append(BoostLeft.ToString("0.###", ci)).Append(',')
               .Append(BoostCooldown.ToString("0.###", ci)).Append('\n');
+            Anuncios.Save(sb);   // E-PLAT-02: linhas ad.* (so o que nao e' o padrao)
             Renome.Save(sb);  // B-CORE-06: rn= (o Load de antes ignora chave desconhecida)
             Projetos.Save(sb);   // B-CORE-07: bp= e bpq= (idem)
             Metas.Save(sb);   // D-CORE-01/02: linhas mt.* (nada antes da 1a Agora)
@@ -1645,6 +1675,7 @@ namespace FS.Core
                             ordProgress = Clamp0(I(parts[2], 0), ordTarget); ordReward = Math.Max(0, I(parts[3], 0));
                             sim.OrderCount = Math.Max(0, I(parts[4], 0));
                             sim.OrderIn = Math.Max(0f, Math.Min(T.OrderFirstDelay, F(parts[5], T.OrderFirstDelay)));
+                            if (parts.Length >= 7) sim.OrderSkips = Math.Max(0, I(parts[6], 0));   // E-PLAT-02; save de antes: nenhuma pulada
                         }
                         break;
                     case "vip":   // FASE8; save antigo sem vip=: relogio novo (VipInterval(0)) e nenhum VIP pendente
@@ -1657,13 +1688,13 @@ namespace FS.Core
                             if (parts.Length >= 7) vipSummoned = I(parts[6], 0) == 1;   // P14; save de antes: natural (nao recarrega ao sair)
                         }
                         break;
-                    case "vipc": sim.VipCooldown = Math.Max(0f, Math.Min(T.VipChamadoRecarga, F(val, 0f))); break;   // P14; save antigo sem vipc=: sem recarga
+                    case "vipc": sim.VipCooldown = Math.Max(0f, Math.Min(T.Ad(Anuncio.Vip).Recarga, F(val, 0f))); break;   // P14; save antigo sem vipc=: sem recarga
                     case "bst":   // A-CORE-02; save antigo sem bst=: sem boost e sem recarga (como antes). Sem tempo = sem boost; ativo = 2x ou 3x
                         if (parts.Length >= 3)
                         {
-                            sim.BoostLeft = Math.Max(0f, Math.Min(T.BoostSeconds, F(parts[1], 0f)));
+                            sim.BoostLeft = Math.Max(0f, Math.Min(T.Ad(Anuncio.Velocidade).Valor, F(parts[1], 0f)));
                             sim.BoostMul = sim.BoostLeft > 0f ? Math.Max(2f, Math.Min(T.BoostMax, (float)Math.Round(F(parts[0], 2f)))) : 1f;
-                            sim.BoostCooldown = Math.Max(0f, Math.Min(T.BoostCooldownSeconds, F(parts[2], 0f)));
+                            sim.BoostCooldown = Math.Max(0f, Math.Min(T.Ad(Anuncio.Velocidade).Recarga, F(parts[2], 0f)));
                         }
                         break;
                     default:
@@ -1724,6 +1755,7 @@ namespace FS.Core
             // de novo, e o pad cujo upgrade foi para o menu (FASE6) nunca mais aparece
             foreach (Pad p in sim.Pads) if (p.Current(sim) < 0) { sim.Gold += p.Paid; p.Paid = 0; }
             sim.Metas.Load(text);   // D-CORE-01/02: save sem mt.* = metas zeradas
+            sim.Anuncios.Load(text);   // E-PLAT-02: save sem ad.* = nenhum anuncio visto
             sim.Renome.Load(text);  // B-CORE-06: save sem rn= = retroativo (depois das metas: soma o Renome que elas guardaram)
             return sim;
         }

@@ -293,3 +293,146 @@ Saída por cliente: `meta.json` + Angry/Idle/LookingAround/Thankful (32 quadros,
 | `item_liga` | 10 938 B `ffedb5068bc4c9832eb198f813bbf2dc19ba289abc00f8636b4b21b0110376a3` | 10 940 B `bae83a3911a53aab9d109dde294c14348426a5ea8b0abf395dfeb57214feec9f` |
 | `item_minerio_runico` | 13 521 B `11396a779a0f51b1298f2d1cf1b2f67ff3b45493db77b3b8e9b6ae554a4c82b4` | 15 466 B `f182d3848c2ef7624bfe2421623d740a066017cda7f30dc2dcae66a99c3a37fe` |
 | `item_cristal` | 12 868 B `522654fca8733bda1ca606ab7e515e1ac66ce70f631f6d446777486a02e64b63` | 14 800 B `605fd5a6ab28e7767e0a257d3c50b56486a74d24819520769726f36324926596` |
+
+## 9. Lote 5A — 7 workers + 4 clientes (Leva 9, raia ARTE TRIPO, 2026-10-13)
+- **Aval:** Vinicius, 2026-10-13, neste ciclo do ORQUESTRADOR ("criar o que for preciso", "tudo está autorizado"). Orçamento 800 créditos (11 × 65 = 715 + folga). Saldo visto pelo coordenador às ~05:30 do relógio dele: 17 285. Teto: saldo final ≥ **16 485**.
+- **Operador:** worker da raia ARTE TRIPO (persona 06 ai-art-director) pelo Chrome do Vinicius (Claude in Chrome, aba própria, fechada no fim), sessão já logada; nenhuma senha digitada. Horas abaixo = relógio deste PC.
+- **Receita (conferida no painel antes da 1ª geração e o preço "Gerar 45" / "Auto Rig 20" conferido em cada clique):** imagem no gerador do site (Nano Banana 2, 1:1, 4 imagens, grátis: contador "Free 548/1000") → Modelo HD **H3.1 - Máx. qualidade**, qualidade de malha Ultra, "Completar com IA" desligado, textura ligada **2K** (não 4K/8K), remover iluminação, PBR, triângulos, 8 000 polígonos, Gerar em Partes e Textura 8K desligados, **Privacidade = Privado** → Auto Rig humanoide, predefinição de esqueleto **Mixamo** → Exportar FBX, predefinição **Mixamo**, textura 2k, esqueleto ligado (0 crédito). Uma página nova por peça (o "Gerar 3D" de cada imagem abre o painel de modelo limpo).
+- **Prompts:** assunto + `[S]` + `[I]` do cabeçalho do `ASSETS.md`, separados por vírgula; texto exato do assunto em `ASSETS.md` §11.1.
+
+| Data/hora | Evento | Saldo visto no site | Gasto | Obs |
+|---|---|---|---|---|
+| 2026-10-13 02:56 | Abertura do gerador; painel conferido (HD, H3.1, 2K, 8 000, triângulos, Ultra, Privado, "Gerar 45") | **17 285** | 0 | igual ao visto pelo coordenador |
+| 02:56–02:59 | 11 lotes de 4 imagens (Nano Banana 2, 1:1), um por personagem | 17 285 | 0 (grátis) | escolhas no registro abaixo |
+| 03:02 | Oficial: imagem #2; Modelo HD | **17 240** | 45 | task `51f6881e-202d-4d73-86d6-962e7f120a0b` |
+| 03:03 | Balconista: imagem #2; Modelo HD | **17 195** | 45 | task `019365ae-1ad8-4372-9927-6e81f982a2a0` |
+| 03:04 | Almoxarife: imagem #4; Modelo HD | **17 150** | 45 | task `5b05e23a-b609-4fb5-96f7-7df574e6647b` |
+| 03:04 | Mestre de obras: imagem #3; Modelo HD | **17 105** | 45 | task `d4b9599d-31b2-483b-aac1-45d49156a022` |
+| 03:05 | Fundidor: imagem #2; Modelo HD | **17 060** | 45 | task `a3979882-e9c8-4d9e-aa52-f6de2210f6de` |
+| 03:06 | Mensageiro: imagem #2; Modelo HD | **17 015** | 45 | task `cec47b2d-584b-483c-876c-209cce428a1d` |
+| 03:06 | Gerente: imagem #4; Modelo HD | **16 970** | 45 | task `75eb6a69-ace7-488b-b06b-81de8521d0a7` |
+| 03:07 | Camponês: imagem #3; Modelo HD | **16 925** | 45 | task `63c70b4b-b016-43c3-9cc9-2beed7f53d18` |
+| 03:08 | Guarda real: imagem #1; Modelo HD | **16 880** | 45 | task `b0710f62-656b-422d-9400-d313a32466b1` |
+| 03:09 | Emissário: imagem #2; Modelo HD | **16 835** | 45 | task `27e8d107-fd07-4cff-b1b4-04a6c0dbd586` |
+| 03:09 | Colecionador: imagem #3; Modelo HD — **11 modelos, 495 créditos** | **16 790** | 45 | task `1416e02d-f683-4f05-8100-66521774e0c7` |
+| 03:10 | Oficial: Auto Rig humanoide Mixamo (URL `workspace/rigging/<task>`) | **16 770** | 20 | |
+| 03:11 | Balconista: Auto Rig Mixamo | **16 750** | 20 | |
+| 03:11 | Almoxarife: Auto Rig Mixamo | **16 730** | 20 | |
+| 03:12 | Mestre de obras: Auto Rig Mixamo (1º clique caiu fora do botão depois que a janela do Chrome encolheu; não disparou nem cobrou) | **16 710** | 20 | |
+| 03:13 | Fundidor: Auto Rig Mixamo (imagem em pose A leve; o rig aceitou) | **16 690** | 20 | |
+| 03:13 | Mensageiro: Auto Rig Mixamo | **16 670** | 20 | |
+| 03:14 | Gerente: Auto Rig Mixamo | **16 650** | 20 | |
+| 03:14 | Camponês: Auto Rig Mixamo | **16 630** | 20 | |
+| 03:15 | Guarda real: Auto Rig Mixamo | **16 610** | 20 | |
+| 03:15 | Emissário: Auto Rig Mixamo | **16 590** | 20 | |
+| 03:15 | Colecionador: Auto Rig Mixamo — **11 rigs, 220 créditos** | **16 570** | 20 | |
+| 03:16–03:27 | Exportar FBX (Mixamo, 2k, esqueleto) dos 11 → `Downloads/<id>_mixamo.zip` → movidos para `arte/tripo/<id>/` | **16 570** | 0 | aba fechada às 03:28 |
+| 03:28 | **Lote 5A fechado na geração: 11 modelos + 11 rigs = 715 créditos** (17 285 → 16 570; teto 16 485 respeitado, sobra 85 do orçamento) | **16 570** | **715** | |
+
+### Registro por asset (licença tripo_pago, visibilidade privada, plano pago; termos como no §2)
+Imagem de origem = `tripo-data.rg1.data.tripo3d.com/generate-image/20261013/<lote>/image_<n>.png` (URL assinada; registrado só o caminho). Faces = contagem exibida no visualizador do Tripo.
+
+| asset | papel | imagem escolhida (lote/arquivo) e por quê | task | faces | créditos | zip (bytes · SHA-256) | fbx (bytes · SHA-256) |
+|---|---|---|---|---|---|---|---|
+| oficial | worker Oficial (Smith) | `236131c9-94f9-48e2-ba12-e29d007a739a/image_1.png` (#2 de 4): braços na horizontal, faixa verde com pontas, tenaz atrás do corpo; #1/#3 braços em A, #4 avental escuro igual ao do ferreiro | `51f6881e-202d-4d73-86d6-962e7f120a0b` | 7 772 | 65 | `arte/tripo/oficial/oficial_mixamo.zip` 22 418 427 · `9e6543baa2f62134af311f6d92531799b9c4fdb24e7c1be7b2068fdda0686daf` | `tripo_convert_c43966ac-bef7-46bc-8d99-7cf4f86acc0e.fbx` 11 558 160 · `318bcdd5e1ae26582d5684647f094a29ee09e57d08e4e1c65e0841fcb715aba5` |
+| balconista | worker Balconista (Clerk) | `e6308455-a4d6-4db1-a3be-00751d414811/image_1.png` (#2 de 4): pose T frontal, livro na mão estendida, bolsa de moedas, pena, calça e botas; #3 abraça o livro (braços fechados), #4 de 3/4 | `019365ae-1ad8-4372-9927-6e81f982a2a0` | 7 450 | 65 | `arte/tripo/balconista/balconista_mixamo.zip` 23 771 987 · `6c85f26d55811ec855d27e9fb2b77f929818da1333de3b7c81256ae9ce55b181` | `tripo_convert_a15da9fe-7596-42a5-a325-83d9ff4cb2fb.fbx` 12 213 360 · `9dfc002c377b58e65dd598927c91c654e51df3c95f2a45f4fdf8082b199261df` |
+| almoxarife | worker Almoxarife (Quartermaster) | `ea6bfd02-44fa-426b-b21d-b1e16a974a61/image_3.png` (#4 de 4): o mais atarracado, caixote aparece atrás do ombro, argola de chaves grande; #1 braços em A, #3 caixote quase invisível | `5b05e23a-b609-4fb5-96f7-7df574e6647b` | 7 431 | 65 | `arte/tripo/almoxarife/almoxarife_mixamo.zip` 20 698 266 · `96a8f71b18891df027d489930e174216b9b42f37846ac53cdcf377f7bd398a8c` | `tripo_convert_ac920960-0e1f-4403-8279-2b575e7e3560.fbx` 10 677 952 · `442dded685d07ca07404684838986e98d8155ebd414947922d7ac51b69fa98a1` |
+| mestre_obras | worker Mestre de obras (Foreman) | `b7c2db67-5884-44b9-ac31-a5822ccf2066/image_2.png` (#3 de 4): malho atrás de um ombro e corda no outro, túnica laranja chapada, bigode, pose T limpa | `d4b9599d-31b2-483b-aac1-45d49156a022` | 7 305 | 65 | `arte/tripo/mestre_obras/mestre_obras_mixamo.zip` 22 505 299 · `ea1dc881e2013b0fac06b05e0a94b20abc8ff958dea47edb12eddf791f9bafe4` | `tripo_convert_2fe1da5c-869f-4fbe-8423-d7a8a9093886.fbx` 11 578 912 · `10d570c3c37a5bbc1638f28bce84eda8e0a2d89aa7033d54f589949e48239b61` |
+| fundidor | worker Fundidor (Smelter, Wave C) | `1ba74c44-5cf3-46f9-9f4b-a591a71d0a25/image_1.png` (#2 de 4): manoplas marrons contra o casaco cinza, viseira erguida, tenaz atrás, fuligem; #1/#4 luvas da cor do casaco, #3 casaco esverdeado | `a3979882-e9c8-4d9e-aa52-f6de2210f6de` | 7 124 | 65 | `arte/tripo/fundidor/fundidor_mixamo.zip` 26 266 846 · `bb38527cced325bc0c21586116e6c9c893329f37c1f7df204eb4dbe1f83def31` | `tripo_convert_51f05180-5552-4cf2-b437-bc209015beac.fbx` 13 486 096 · `2cbf6b8750072e80ec9c05ed5843667df8cc6cd80aaaaa24f9c5a4fd213144ed` |
+| mensageiro | worker Mensageiro (Courier, Wave C) | `0b2c0097-55a1-4e61-b5f9-3ab132bbee42/image_1.png` (#2 de 4): pose T horizontal, boné azul com pena, sacola atravessada, pergaminho na mão; #1 braços em A | `cec47b2d-584b-483c-876c-209cce428a1d` | 7 682 | 65 | `arte/tripo/mensageiro/mensageiro_mixamo.zip` 23 249 484 · `ced5e2d5e7922e9c369ca4d775570423c37181c4bda325a6e76d2fdc476921f1` | `tripo_convert_7d72b0ba-7a6d-4663-b314-337fa5174a66.fbx` 11 960 384 · `483be957ddde937d7e0493c3de2ce15eeaca8856338efe167b8850c6e40b4a2e` |
+| gerente | worker Gerente (manager) | `44faab6e-771a-4a8d-a39a-3f07b9863e8d/image_3.png` (#4 de 4): livro deitado na mão estendida (fica no osso da mão), casaca aberta com as pernas à mostra; #1 livro pendurado no quadril (iria para a perna), #2 braços em A, #3 livro nas duas mãos | `75eb6a69-ace7-488b-b06b-81de8521d0a7` | 7 422 | 65 | `arte/tripo/gerente/gerente_mixamo.zip` 24 815 671 · `2235c1eefdfec2b0847524ed2596c75d62670d1a2b7bb9b7998ef538cc7a6715` | `tripo_convert_126c8793-1f7c-486a-8c42-a162465c7962.fbx` 12 754 912 · `419fa91d49454dcb93467204cf13d7e7f0d9086690b743a68da8f8700e63efbe` |
+| campones | cliente Camponês (distrito 2+) | `de5079d7-e6f8-4a7d-9295-da4ba1b930c1/image_2.png` (#3 de 4): rosto redondo sorridente, chapéu de palha largo, forcado atrás, pose T | `63c70b4b-b016-43c3-9cc9-2beed7f53d18` | 7 504 | 65 | `arte/tripo/campones/campones_mixamo.zip` 22 619 108 · `bb6ed9dd08d6ac2618b1c276d4bb76aee50341059746d85445069cbf11f9b81f` | `tripo_convert_836c7883-4549-4feb-9515-91b30f5b72f5.fbx` 11 638 432 · `e1358e42e8495c04d545a10ce80cc35e45b5180ccd00486471a96c07a8e18c42` |
+| guarda_real | cliente Guarda real | `d9365ca8-bba2-4631-9154-f35f3f10f2cf/image_0.png` (#1 de 4): braços mais horizontais, lança atrás do corpo, escudo redondo no antebraço esquerdo, elmo de abas; #2 braços em A | `b0710f62-656b-422d-9400-d313a32466b1` | 7 604 | 65 | `arte/tripo/guarda_real/guarda_real_mixamo.zip` 32 277 966 · `664fc022b94b2ab2b45e8ec51a38d21961d45f34d2f2a90432d1cb73c544c092` | `tripo_convert_cf4ac22a-728f-4f0d-aaf1-b3742020255a.fbx` 16 493 424 · `6ebc75c8cea6664b35912796bde9fe90481ef5a4fc3b856d03b458afb414640a` |
+| emissario | cliente Emissário real | `c2c328d6-4857-49b0-b498-34899ea7c16c/image_1.png` (#2 de 4): capa curta até o quadril com brasão bigorna + chama (heráldica própria), pergaminho com selo vermelho na mão, simétrico; #3/#4 capa caída de um lado até a coxa | `27e8d107-fd07-4cff-b1b4-04a6c0dbd586` | 7 843 | 65 | `arte/tripo/emissario/emissario_mixamo.zip` 28 899 567 · `0d9ed42c10bd43df88a9b881d4561fa973f684bd2a9a7bde02647cf244b16679` | `tripo_convert_d6352d29-0965-48d8-9e53-75622e11cf03.fbx` 14 801 520 · `edb0bbe179424701275973b97191c86beb8bac68c06ea23577c1d2b5eee9ff96` |
+| colecionador | cliente Colecionador (Renome 2) | `9249366e-c7e1-4219-88ef-e42a31b463a2/image_2.png` (#3 de 4): casaca roxa com acabamento dourado, anéis e lupa visíveis, cartola com pena, pose T | `1416e02d-f683-4f05-8100-66521774e0c7` | 7 447 | 65 | `arte/tripo/colecionador/colecionador_mixamo.zip` 25 969 214 · `5ac4115f4b4ae322516aa25bac48e147fefbbe35cf0fe35f86357065e3dc48b1` | `tripo_convert_a352f357-a9a0-41ed-8448-c3f5ae73c6e2.fbx` 13 336 160 · `be1d313dbe72948f62516dbc97bdcbe5a92b091738b37d3b44f50ccbba0c4537` |
+
+Hashes: zip e FBX em `arte/tripo/<id>/` (fora do git pelo `.gitignore`, como os lotes anteriores); cada `.fbm/` traz 5 PNG `<id>_mixamo_{basecolor,normal,metallic,roughness,rm}.PNG`.
+
+### Arquivos do Lote 5A (sprites, 0 crédito, sem rede)
+- **Render:** Blender 5.2 headless, `client/tools/render_sprites.py` sem mudança, um personagem por vez (antes de cada um, `tasklist` sem `Unity.exe`/`blender.exe`). Padrões do script (elev 60°, 4 direções S/W/N/E, 12 fps, célula 128 px, ppu automático por modelo, luz flat + contorno + cavidade, AA 8, `--max-frames 32`, retarget por delta de repouso). Clipes: workers = `client/Builds/anims_sets/ajudante/` (Idle, LookingAround, Walking: os do ajudante); clientes = `client/Builds/anims_sets/guerreira/` (Angry, Idle, LookingAround, Thankful, Walking, Waving: os do Lote 4). SHA dos clipes = `arte/mixamo/` (§2).
+- **Comando** (raiz do projeto; `contact.png` sai de `Resources` para `client/Builds/sprites_contact/<id>.png`):
+```
+timeout 900 "/c/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup --python-exit-code 1 --python client/tools/render_sprites.py -- --model arte/tripo/<id>/<FBX> --anims client/Builds/anims_sets/<ajudante|guerreira> --out client/Assets/_FS/Resources/Sprites/<id>
+```
+- `.meta` de cada PNG, do `meta.json` e da pasta: cópia dos do minerador/ajudante (TextureImporter com máximo 4096, ASTC no Android, DXT5 no Windows), só com **GUID novo** por arquivo.
+
+| Id | FBX (`arte/tripo/<id>/`) | anims | ppu · pivô y | `Resources/Sprites/<id>/` |
+|---|---|---|---|---|
+| oficial | `tripo_convert_c43966ac-bef7-46bc-8d99-7cf4f86acc0e.fbx` | ajudante | ppu 121.33 · 40.5 px | 3 PNG + `meta.json`, 3 763 300 B |
+| balconista | `tripo_convert_a15da9fe-7596-42a5-a325-83d9ff4cb2fb.fbx` | ajudante | ppu 113.29 · 36.2 px | 3 PNG + `meta.json`, 3 343 354 B |
+| almoxarife | `tripo_convert_ac920960-0e1f-4403-8279-2b575e7e3560.fbx` | ajudante | ppu 122.54 · 40.5 px | 3 PNG + `meta.json`, 3 954 981 B |
+| mestre_obras | `tripo_convert_2fe1da5c-869f-4fbe-8423-d7a8a9093886.fbx` | ajudante | ppu 113.55 · 36.5 px | 3 PNG + `meta.json`, 4 097 432 B |
+| fundidor | `tripo_convert_51f05180-5552-4cf2-b437-bc209015beac.fbx` | ajudante | ppu 124.62 · 34.2 px | 3 PNG + `meta.json`, 3 993 967 B |
+| mensageiro | `tripo_convert_7d72b0ba-7a6d-4663-b314-337fa5174a66.fbx` | ajudante | ppu 125.13 · 36.4 px | 3 PNG + `meta.json`, 3 507 364 B |
+| gerente | `tripo_convert_126c8793-1f7c-486a-8c42-a162465c7962.fbx` | ajudante | ppu 125.33 · 38.8 px | 3 PNG + `meta.json`, 3 539 292 B |
+| campones | `tripo_convert_836c7883-4549-4feb-9515-91b30f5b72f5.fbx` | guerreira | ppu 89.22 · 35.9 px | 6 PNG + `meta.json`, 6 251 791 B |
+| guarda_real | `tripo_convert_cf4ac22a-728f-4f0d-aaf1-b3742020255a.fbx` | guerreira | ppu 105.67 · 35.1 px | 6 PNG + `meta.json`, 6 607 247 B |
+| emissario | `tripo_convert_d6352d29-0965-48d8-9e53-75622e11cf03.fbx` | guerreira | ppu 98.02 · 28.3 px | 6 PNG + `meta.json`, 6 459 918 B |
+| colecionador | `tripo_convert_a352f357-a9a0-41ed-8448-c3f5ae73c6e2.fbx` | guerreira | ppu 123.47 · 33.6 px | 6 PNG + `meta.json`, 6 877 158 B |
+
+Total: 45 PNG, 52 395 804 B. Workers: Idle e LookingAround 32 quadros (4096×512) + Walking 16 (2048×512). Clientes: Angry, Idle, LookingAround e Thankful 32 + Walking 16 + Waving 6 (768×512). Os SHA abaixo são dos arquivos entregues (o AA do Workbench pode variar alguns níveis num re-render, §6).
+
+| Arquivo (`client/Assets/_FS/Resources/Sprites/`) | px | bytes | SHA-256 |
+|---|---|---|---|
+| `oficial/Idle.png` | 4096×512 | 1 476 676 | `3c4b95599b90fa24dda0a798bed4159591f4fa926bc90417017ad12a23a06bb2` |
+| `oficial/LookingAround.png` | 4096×512 | 1 505 682 | `95ea6056e97febd7a2addd17582ce0b0eb9e987e179d8f43c4ef7174bf8673ce` |
+| `oficial/Walking.png` | 2048×512 | 780 942 | `d5d59e382a6709aaf5810ee9baaf141397f3ca1151afe9cf83f857b46ff17030` |
+| `balconista/Idle.png` | 4096×512 | 1 302 742 | `b9d661c8bb05229f5b3cca0338bc1e01c36b03b2c1c3386388e8bc8e795ee54f` |
+| `balconista/LookingAround.png` | 4096×512 | 1 350 609 | `5fad567ba9498bdfd554a0206f5b3f19717d1e56a6273724733495e745ae7d7d` |
+| `balconista/Walking.png` | 2048×512 | 690 003 | `bd36db03239ab5e24fbbf0cdd53dc194353f3c53f63d066c70999a75ee95ab8a` |
+| `almoxarife/Idle.png` | 4096×512 | 1 524 593 | `8be52ad961228c4c3a63c34c710838250fe2869c21f952909682ae983c2fccb5` |
+| `almoxarife/LookingAround.png` | 4096×512 | 1 613 158 | `bcc1dfeba6961cf7ec4a991e234e81b94b6cefcbd733f096420b86ffc5bed2f7` |
+| `almoxarife/Walking.png` | 2048×512 | 817 230 | `f943df650d2993506aa0ec0df7da4cc08493471da063acbcd83bd462d03532c8` |
+| `mestre_obras/Idle.png` | 4096×512 | 1 610 129 | `ee09a441808626bc271aef7d182d137bc584b7f7acfc39595e70550edbef4175` |
+| `mestre_obras/LookingAround.png` | 4096×512 | 1 659 736 | `24b726f624a5b650792f97d578d37d11fa38a10344b313252aabf57fc35b62c6` |
+| `mestre_obras/Walking.png` | 2048×512 | 827 567 | `5c60f3f17ee42b1605ab51785d018efb43e38a90562b900a38a1d5a574245109` |
+| `fundidor/Idle.png` | 4096×512 | 1 555 674 | `b58cf405384326255a6e8e8103e2abfd14953d39572c8e173dfdec2a2ac10dca` |
+| `fundidor/LookingAround.png` | 4096×512 | 1 610 278 | `7456aa6005a87b4c88f046b947ebdebfc7d4678083912693d1ee8dd02f4b8c1e` |
+| `fundidor/Walking.png` | 2048×512 | 828 015 | `a99685cf97c8f9d33a1ae56542590d36edd3b43d7bd7ed4158c7ce89ba7108e9` |
+| `mensageiro/Idle.png` | 4096×512 | 1 378 268 | `9b2f1b3ef504688a48cda81b5731243accb06c333b001176a7426958b6f1a4bd` |
+| `mensageiro/LookingAround.png` | 4096×512 | 1 415 388 | `e4d0158cba4103ab78e567d7c2e6b4c2f873e6d585e716d351228b0a5ec6c962` |
+| `mensageiro/Walking.png` | 2048×512 | 713 708 | `7c77c418de269e09ac678faeadafab2b8bd999e37180b792bead31596e989868` |
+| `gerente/Idle.png` | 4096×512 | 1 386 527 | `734bb2a06735d7137f2f0ba1e27b9bde0a78e84ed12d1f3ecdadd147a58c6c9b` |
+| `gerente/LookingAround.png` | 4096×512 | 1 423 365 | `bcef37fc693e7a55175f413c5dc27b55eb0b263360072f4058fdd04c27bd4051` |
+| `gerente/Walking.png` | 2048×512 | 729 400 | `174c63b55173a1421c1b549e17308b582afa4e62698576c752cb7a62fa2fe32d` |
+| `campones/Angry.png` | 4096×512 | 1 320 283 | `0ca2987aab592c964775d0699ec6bc35d93f03ae74bd2eac73b1afa3cac855b3` |
+| `campones/Idle.png` | 4096×512 | 1 323 572 | `61eae78c259cabd36c054e8a9aac6abca4eaeb55c8d3ad9b49211d32abbf634a` |
+| `campones/LookingAround.png` | 4096×512 | 1 360 930 | `c08edf5d25265549d26c93e732215cd7140449493bb2bd543318da6fafecc241` |
+| `campones/Thankful.png` | 4096×512 | 1 303 470 | `474ef2de35cc66a3faa541dca9460bcc4b400392cc023a0a242e3c9129f5fa29` |
+| `campones/Walking.png` | 2048×512 | 691 600 | `ca308a018a89c8bbb183df0c7baf76e52d1331bcfb3d29447449bcf21e275193` |
+| `campones/Waving.png` | 768×512 | 251 936 | `0d4376ba00d79881095a9d1be0f53ccf7250474d915ededaad16ab5541a1a13e` |
+| `guarda_real/Angry.png` | 4096×512 | 1 407 555 | `eefa6c102c184984f6eee14531f88aa3bbbaf1d4cace62d80a9caf336a610425` |
+| `guarda_real/Idle.png` | 4096×512 | 1 391 719 | `0cf405e1d28a54ad0e559ce3e11b082b6649b595e4a65f926f2fcd757e2a57da` |
+| `guarda_real/LookingAround.png` | 4096×512 | 1 432 430 | `94b6cc6f80e1aa63eb91711f2cbee19a2dd5683e82b3161c58f38f6a0b66b68b` |
+| `guarda_real/Thankful.png` | 4096×512 | 1 376 621 | `ec25fc0bc3522f90626d145baa9ba206dabeb97260ac2afcee12985aaa04b715` |
+| `guarda_real/Walking.png` | 2048×512 | 724 912 | `6028ec0b6c419f0ae2a6ae58f14707e6e1ad58d2f0b1a7e890b0eba0e74789a5` |
+| `guarda_real/Waving.png` | 768×512 | 274 010 | `487586844024acac35dc62d8645307459e7949496a41ea7baad69359bba6e6f1` |
+| `emissario/Angry.png` | 4096×512 | 1 378 429 | `f506beebccb91e0bcad7f0f1bca0648f44b8029233d68a19e42225004f6ad359` |
+| `emissario/Idle.png` | 4096×512 | 1 347 807 | `ff2ccc152b35a264e044b9899f4b854ecc306a6bf5137ad414a227ee4d8dca75` |
+| `emissario/LookingAround.png` | 4096×512 | 1 422 362 | `bd031fc7e6038243a2e43344624181ee3f5507acf01ea9667a6c3d12cce52c7a` |
+| `emissario/Thankful.png` | 4096×512 | 1 350 760 | `a7a3c311ac04537b34eadd43224bb43e9150b8b052f4405a950744dff846b97a` |
+| `emissario/Walking.png` | 2048×512 | 693 658 | `a9708411524f7e5fd2e436b1c5223ef08e3277415fe054cb0b0fac95f0b0d21f` |
+| `emissario/Waving.png` | 768×512 | 266 902 | `c0e4d83df56ca500621ae6fb8535b41dd59458b62a7135eeb020202f5d340aa1` |
+| `colecionador/Angry.png` | 4096×512 | 1 461 025 | `179bcddeb72166fe0e53221bfa6efdddd3e9b678d3501ce3d7be2aaca98dbe89` |
+| `colecionador/Idle.png` | 4096×512 | 1 448 867 | `1c0c693995dc4d514c6f2d72144773e06922ee885b749420fb8644c54d7ae061` |
+| `colecionador/LookingAround.png` | 4096×512 | 1 486 787 | `eafeb27bdc6b3400fe1c53270a754105291c46eb2f643e5966c42eb8055d6b25` |
+| `colecionador/Thankful.png` | 4096×512 | 1 453 054 | `7a7dee65e88b8cab93c7b089a337eabe81cf2709ce97be733c7af4ebcd9a1bec` |
+| `colecionador/Walking.png` | 2048×512 | 736 811 | `d12e36b3ee301b2b8654eb148865fe157a5cca27c7231a4216af259510564f84` |
+| `colecionador/Waving.png` | 768×512 | 290 614 | `855f3359314adf87f13ff31d58430075551b1e9b561be0bb351ccc725bded3c0` |
+
+Folhas de conferência (`client/Builds/sprites_contact/`, só QA, fora do APK):
+
+| Arquivo | px | bytes | SHA-256 |
+|---|---|---|---|
+| `v09_lote5.png` | 2270×2990 | 2 369 190 | `4ba4f17707913ba5c9b4c51de780d8abb0791490760065e858c25f355a39dbf0` |
+| `oficial.png` | 384×128 | 37 342 | `40c1fb00967a425ad80766bccc3ae50d65799309e89da17fe321b2ed83964698` |
+| `balconista.png` | 384×128 | 33 614 | `8eb5095f359d26931fb5e5f02e3bcff938490548d915a6b1e4718a18a290e756` |
+| `almoxarife.png` | 384×128 | 40 185 | `e3b22198d2b06c7790917a75eeb731c18086461c137bfd74b03da01b4d01ec58` |
+| `mestre_obras.png` | 384×128 | 40 702 | `c3800c1c7c23b5f74e4b79756feb25b18e499eba28c1133b4a7ddaba45949e7a` |
+| `fundidor.png` | 384×128 | 37 071 | `d8ccc3ca143cf9c4365fef3291ff41c197375fbf4792ca3f85924c5e443f32e7` |
+| `mensageiro.png` | 384×128 | 35 559 | `ffb21c46372219b2d6070589a28c73d2aa1ce19d26e6e3f198f575e807468663` |
+| `gerente.png` | 384×128 | 36 395 | `e2224f0342290bac60a8e4ed27bb767eb30ea40c7ff43261b7523d4ce8642ec0` |
+| `campones.png` | 768×128 | 62 484 | `4fa88ad4265ab3a905b48748a448019f94ad5d5075465db951da36ee3619debb` |
+| `guarda_real.png` | 768×128 | 71 047 | `4bab9773b9cdf5fc873b2ef4144a245eb754cfe87ed128e2ccd9cb29f4b46195` |
+| `emissario.png` | 768×128 | 70 701 | `0f55dae48b44d0073e20ecfff3dcf8571c8683a51fd21d4315c37dd33d1982cf` |
+| `colecionador.png` | 768×128 | 74 908 | `07a74d268de7e2482fc0ba98ad8382febd2cd96ddc3404b6f9c12a28fedc42c7` |
