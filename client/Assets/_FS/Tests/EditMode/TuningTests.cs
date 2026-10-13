@@ -48,7 +48,8 @@ namespace FS.Tests
         public void Padrao_FlagsLigadas_IntersticialDesligado_EPadraoEhCopia()
         {
             var t = new Tuning();
-            Assert.IsTrue(t.Encomendas && t.Vip && t.VipChamado && t.Velocidade && t.Baus, "sistemas de sempre ligados");
+            Assert.IsTrue(t.Encomendas && t.Vip && t.Baus, "sistemas de sempre ligados");
+            foreach (AdPlacementDef d in t.Placements) Assert.IsTrue(d.Ligado, "placement de rewarded ligado: " + d.Id);
             Assert.IsFalse(t.Interstitial, "P3/V10: intersticial so como flag, desligado por padrao");
             Tuning.Padrao.Price[(int)Item.Sword] = 999;
             Assert.AreEqual(10, Tuning.Padrao.Price[(int)Item.Sword], "Padrao e' copia nova: mexer nele nao muda o padrao de ninguem");
@@ -148,7 +149,8 @@ namespace FS.Tests
         [Test]
         public void Flag_VipChamado_Desligada_SoONatural()
         {
-            var off = new Tuning { VipChamado = false };
+            var off = new Tuning();
+            off.Ad(Anuncio.Vip).Ligado = false;
             var s = Liberado(off); s.FirstSaleTime = 1f; s.VipIn = 200f;
             Assert.IsFalse(s.CanSummonVip || s.SummonVip(), "sem o anuncio de chamar");
             SaveEstavel(s, off);
@@ -159,7 +161,8 @@ namespace FS.Tests
         [Test]
         public void Flag_Velocidade_Desligada_NaoLiga_OAtivoAcabaNoTempo_SaveIntacto()
         {
-            var off = new Tuning { Velocidade = false };
+            var off = new Tuning();
+            off.Ad(Anuncio.Velocidade).Ligado = false;
             var s = Liberado(off);
             Assert.AreEqual((false, 0f, 1f), (s.CanBoost, s.StartBoost(), s.BoostMul), "sem boost");
             var d = Liberado();
@@ -167,7 +170,7 @@ namespace FS.Tests
             Sim b = Sim.Load(d.Save(Now), off);
             Assert.AreEqual((2f, false, 0f), (b.BoostMul, b.CanBoost, b.StartBoost()), "o ativo continua; nao sobe para 3x");
             SaveEstavel(b, off);
-            Run(b, off.BoostSeconds + 0.1f);
+            Run(b, off.Ad(Anuncio.Velocidade).Valor + 0.1f);
             Assert.AreEqual((1f, 0f), (b.BoostMul, b.BoostLeft), "acaba no tempo dele");
         }
 
