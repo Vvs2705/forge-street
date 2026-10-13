@@ -87,7 +87,7 @@ MUTACOES = [
         'peça Normal conta para a encomenda que pede Fina (Quality, Royal)'),
     mut('enc-peca-conta-2x', ENC, 'if (k >= 0) { e.Feito[k]++; return; }', 'if (k >= 0) e.Feito[k]++;',
         'uma peça vendida conta para todas as vagas que a aceitam (era para 1, a mais antiga)'),
-    mut('enc-rush-pune', ENC, 'long ouro = e.Premio + (prazo ? e.PremioBonus : 0);', 'long ouro = prazo ? e.Premio + e.PremioBonus : e.Premio / 2;',
+    mut('enc-rush-pune', ENC, 'long ouro = e.Premio + (prazo ? e.PremioBonus : 0);', 'long ouro = e.Premio + (prazo ? e.PremioBonus : e.Def.BonusDeadline > 0f ? -e.Premio / 2 : 0);',
         'Rush fora do prazo paga menos que o normal (o prazo é só bônus)'),
     mut('enc-prazo-sem-fim', ENC, 'if (e.Prazo > 0f) e.Prazo = Math.Max(0f, e.Prazo - dt);', ';',
         'o prazo do Rush nunca acaba (o bônus fica para sempre)'),

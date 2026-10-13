@@ -1598,36 +1598,38 @@ Regra em `ECONOMIA_WAVE_B.md` §3 e GDD §10; catálogo no `CONTEUDO_V1.md` §7.
 
 ### 26.1 econsim antes × depois, 3 partidas × 360 min (`--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 360 --partidas 3`, anúncio = 30 s)
 
-Antes = `432e638` (a main com o #49 Renome e o E-PLAT-02); depois = este branch. Renome 1/2/3/4 = relógio em que o nível chegou (h:mm; "—" = não chegou em 6 h).
+Antes = `main` 67d4f4e (com o #54 WorkerDef; o econsim com a tabela de Renome deste branch); depois = este branch com a `main` mesclada. Renome 1/2/3/4 = relógio em que o nível chegou (h:mm; "—" = não chegou em 6 h).
 
 | perfil | | Produção | zona morta | Renome 1 | Renome 2 | Renome 3 | Renome 4 | Renome em 6 h | encomendas 60 min / 6 h | ouro de encomendas (% da venda, 60 min / 6 h) | renda/min 0–60 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Ideal | antes | 48:12 | 21,7 | 0:15 | 2:24 | — | — | 146 | 19,3 / 116 | 4,8% / 5,3% | 977 |
-| | **depois** | **46:34** | 20 | 0:15 | **0:59** | **2:15** | **4:15** | 613 | 30,7 / 231 | 10,9% / 16,6% | 1.005 |
-| F2P | antes | 46:48 | 21,3 | 0:14 | 2:36 | — | — | 132 | 21 / 112 | 5,0% / 5,0% | 1.015 |
-| | **depois** | **46:37** | 21 | 0:14 | **1:00** | **2:20** | **4:20** | 589 | 31 / 229 | 10,9% / 16,2% | 998 |
-| Slow | antes | 49:37 | 22,7 | 0:15 | 2:39 | — | — | 131 | 20,3 / 111 | 4,8% / 5,0% | 915 |
-| | **depois** | **47:50** | 20,7 | 0:15 | **0:57** | **2:09** | **4:05** | 619 | 32,7 / 238 | 11,4% / 17,1% | 945 |
-| AdWatcher | antes | 44:36 | 18,3 | 0:14 | 2:35 | — | — | 136 | 19,3 / 116 | 5,0% / 5,3% | 1.125 |
-| | **depois** | **43:00** | 17,3 | 0:13 | **0:59** | **2:21** | **4:27** | 568 | 30,7 / 219 | 10,9% / 15,5% | 1.151 |
-| AdWatcherE | antes | 51:36 | 25,7 | 0:19 | 2:49 | — | — | 130 | 16 / 110 | 6,6% / 5,3% | 851 |
-| | **depois** | **43:01** | 19,3 | 0:16 | **1:06** | **2:31** | **4:36** | 549 | 25,3 / 212 | 27,5%* / 16,9% | 1.008 |
+| Ideal | antes | 48:12 | 21,7 | 0:15 | 2:15 | — | — | 164 | 19,7 / 123 | 4,9% / 5,6% | 991 |
+| | **depois** | **46:34** | 20 | 0:15 | **0:59** | **2:07** | **3:46** | 702 | 31,3 / 261 | 11,4% / 19,0% | 1.024 |
+| F2P | antes | 46:48 | 21,3 | 0:14 | 2:24 | — | — | 144 | 21,7 / 124 | 5,4% / 5,6% | 1.032 |
+| | **depois** | **46:37** | 21 | 0:14 | **1:00** | **2:09** | **3:58** | 652 | 31,3 / 251 | 11,1% / 18,2% | 1.014 |
+| Slow | antes | 49:37 | 22,7 | 0:15 | 2:23 | — | — | 144 | 20,3 / 124 | 4,7% / 5,7% | 930 |
+| | **depois** | **47:50** | 20,7 | 0:15 | **0:55** | **2:07** | **3:49** | 682 | 32,3 / 262 | 11,2% / 19,2% | 957 |
+| AdWatcher | antes | 44:36 | 18,3 | 0:14 | 2:19 | — | — | 153 | 20 / 133 | 5,4% / 6,3% | 1.153 |
+| | **depois** | **43:00** | 17,3 | 0:13 | **0:57** | **2:11** | **3:58** | 643 | 31,3 / 247 | 11,3% / 18,0% | 1.199 |
+| AdWatcherE | antes | 51:36 | 25,7 | 0:19 | 2:38 | — | — | 139 | 16 / 119 | 6,5% / 5,7% | 859 |
+| | **depois** | **43:01** | 19,3 | 0:16 | **1:05** | **2:14** | **4:02** | 642 | 27 / 246 | 28,6%* / 19,5% | 1.041 |
 
-\* o AdWatcherE soma no prêmio o bônus que ele assiste (14–16 dos 30 anúncios do dia). Entregues por tipo em 6 h (F2P): Common 112, Bulk 25, Quality 29, Rush 21, Mixed 22, Royal 19 (Blueprint e Event esperam os ganchos). Pisos do §3: 0% abaixo nos 5 perfis, iguais ao antes. Depois da produção completa o ouro continua sem destino (pós-produção 720 mil em 6 h no F2P, era 648 mil): é a Wave C.
+\* o AdWatcherE soma no prêmio o bônus que ele assiste (14–16 dos 30 anúncios do dia). Entregues por tipo em 6 h (F2P): Common 122, Bulk 28, Quality 31, Rush 24, Mixed 24, Royal 22 (Blueprint e Event esperam os ganchos). Pisos do §3: 0% abaixo nos 5 perfis, iguais ao antes. A Equipe (#54) entra depois da produção completa nos dois lados; com o Orders 2.0 o Otávio (Renome 2) é contratado na 1ª hora. Pós-produção F2P em 6 h: 779 mil → 893 mil.
 
-### 26.2 8 partidas × 60 min (`--minutos 60 --partidas 8`)
+### 26.2 8 partidas × 60 min (`--minutos 60 --partidas 8`; antes = `main` 67d4f4e)
 
-| perfil | Produção (antes → depois) | zona morta | ouro de encomendas aos 60 min | encomendas em 60 min |
-|---|---|---|---|---|
-| Ideal | 47:51 → **46:20** | 21,4 → 19,5 | 11,0% | 31,1 |
-| F2P | 47:26 → **45:09** | 21 → 19 | 11,4% | 32,4 |
-| Slow | 49:48 → **48:05** | 22,6 → 20,9 | 11,0% | 31,6 |
-| AdWatcher | 44:34 → **42:36** | 19,1 → 17,4 | 11,2% | 31,3 |
-| AdWatcherE | 50:50 → **41:11** | 24,1 → 17,4 | 32,3%* | 27,8 |
+| perfil | Produção (antes → depois) | zona morta | ouro de encomendas aos 60 min | encomendas em 60 min | saldo aos 60 min |
+|---|---|---|---|---|---|
+| Ideal | 47:51 → **46:20** | 21,4 → 19,5 | 5,1% → 10,8% | 20,1 → 31,1 | 542 → 677 |
+| F2P | 47:26 → **45:09** | 21 → 19 | 5,0% → 11,8% | 20 → 32,9 | 872 → 654 |
+| Slow | 49:48 → **48:05** | 22,6 → 20,9 | 4,9% → 11,4% | 20,3 → 32,1 | 513 → 677 |
+| AdWatcher | 44:34 → **42:36** | 19,1 → 17,4 | 5,3% → 11,3% | 19,8 → 31,6 | 1.027 → 1.016 |
+| AdWatcherE | 50:50 → **41:11** | 24,1 → 17,4 | 6,6% → 32,0%* | 16,3 → 28,3 | 543 → 2.253 |
+
+Prêmio de qualidade aos 60 min (F2P) 12,4% → 12,8%.
 
 ### 26.3 AdWatcher × AdWatcherE (achado do §24)
 
-8 partidas × 60 min, Orders 2.0, varrendo o piso do bônus (`--tuning "EncomendaBonusMinSeg=N"`); o AdWatcher não assiste o bônus (42:36 em todas):
+8 partidas × 60 min, Orders 2.0, varrendo o piso do bônus (`--tuning "EncomendaBonusMinSeg=N"`); o AdWatcher não assiste o bônus (42:36 em todas). Medido antes de mesclar o #54, que não muda a produção (a Equipe só entra depois dela: 42:36 e 41:11 de novo depois da mescla):
 
 | piso do bônus | AdWatcherE, produção | diferença para o AdWatcher |
 |---|---|---|
@@ -1647,10 +1649,11 @@ Antes = `432e638` (a main com o #49 Renome e o E-PLAT-02); depois = este branch.
 | Primeiros 10 min | iguais, tick a tick | iguais até as Ferramentas (10:30): golden `EncomendasTests.PrimeirosDezMinutos_IguaisAosDeAntes_GoldenDoMain`, gerado pelo código de antes (mesmos eventos de encomenda e compra no mesmo tick, mesmo ouro, vendas, posição e Renome) | ok |
 | Produção completa | 41–55 min | 45:09 (8 partidas; antes 47:26) | ok |
 | Zona morta até a produção | ≤ 12 min (meta) | 21 → 19 | melhora; a meta é dos Blueprints e da Wave C |
-| Ouro de Orders | 4–12% da receita aos 60 min | 11,4% (Ideal 11,0%, Slow 11,0%) | ok com o desvio 2 |
-| Encomendas entregues em 60 min | ≥ 25 | 32,4 (antes 21) | ok |
-| Renome 1 / 2 | 12–25 min / 40–75 min | 0:14 / 0:55–1:00 (antes 2:36 h) | ok |
-| Renome 3 / 4 | 1,5–3 h / 3–6 h | 2:20 / 4:20 (antes: não chegavam em 6 h) | ok |
+| Ouro sem destino aos 60 min | ≤ 10 mil | 654 | ok |
+| Ouro de Orders | 4–12% da receita aos 60 min | 11,8% (Ideal 10,8%, Slow 11,4%) | ok com o desvio 2 (no limite: revisar se a Equipe vier antes da produção) |
+| Encomendas entregues em 60 min | ≥ 25 | 32,9 (antes 20) | ok |
+| Renome 1 / 2 | 12–25 min / 40–75 min | 0:14 / 0:55–1:00 (antes 2:24 h) | ok |
+| Renome 3 / 4 | 1,5–3 h / 3–6 h | 2:09 / 3:58 (antes: não chegavam em 6 h) | ok |
 | AdWatcher × F2P | ≥ 0,75 × F2P | 42:36 × 45:09 | ok |
 | AdWatcherE × AdWatcher | não mais lento (§24) | 41:11 × 42:36 | ok |
 | Pisos do §3 | 0% abaixo | 0% abaixo nos 5 perfis | ok |
