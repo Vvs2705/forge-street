@@ -29,7 +29,7 @@ COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Sc
           'Assets/_FS/Scripts/View/StationView.cs', 'Assets/_FS/Scripts/View/Servicos.cs', 'Assets/_FS/Scripts/View/Estado.cs',
           'Assets/_FS/Scripts/View/Captura.cs', 'Assets/_FS/Scripts/View/Som.cs', 'Assets/_FS/Scripts/View/Privacidade.cs',
           'Assets/_FS/Scripts/View/EsteiraView.cs', 'Assets/_FS/Scripts/View/Enquadramento.cs', 'Assets/_FS/Scripts/View/Loc.cs',
-          'Assets/_FS/Scripts/View/QualidadeView.cs', 'tools/coretests']
+          'Assets/_FS/Scripts/View/QualidadeView.cs', 'Assets/_FS/Scripts/View/Plataforma.cs', 'tools/coretests']
 SIM, DEFS, CV = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs', 'Assets/_FS/Scripts/Core/ContentValidator.cs'
 METAS = 'Assets/_FS/Scripts/Core/Metas.cs'
 ANUNCIOS = 'Assets/_FS/Scripts/Core/Anuncios.cs'
