@@ -30,7 +30,7 @@ COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Sc
           'Assets/_FS/Scripts/View/Captura.cs', 'Assets/_FS/Scripts/View/Som.cs', 'Assets/_FS/Scripts/View/Privacidade.cs',
           'Assets/_FS/Scripts/View/EsteiraView.cs', 'Assets/_FS/Scripts/View/Enquadramento.cs', 'Assets/_FS/Scripts/View/Loc.cs',
           'tools/coretests']
-SIM, DEFS = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs'
+SIM, DEFS, METAS = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs', 'Assets/_FS/Scripts/Core/Metas.cs'
 
 
 def mut(id, arquivo, trecho, troca, descricao, esperado_vivo=None):
@@ -92,6 +92,19 @@ MUTACOES = [
         'cliente sem estoque na frente trava quem quer outro produto'),
     mut('fila-paciencia-lenta', SIM, 'c.Patience -= dt;', 'c.Patience -= dt * 0.5f;',
         'paciência dos clientes acaba na metade da velocidade'),
+    # metas (D-CORE-01/02)
+    mut('meta-ledger-paga-2x', METAS, 'if (!Ledger.Add(tx)) return -1;', 'Ledger.Add(tx);',
+        'o ledger grava o ID mas paga de novo o mesmo ID de transação'),
+    mut('meta-relogio-volta', METAS, 'if (hoje > Dia)', 'if (hoje != Dia)',
+        'relógio para trás vira o dia (reabre período fechado)'),
+    mut('meta-rodizio-salto', METAS, 'Escolhe(MetasDefs.Diarias, p, Dia * 5 + p, Diarias)', 'Escolhe(MetasDefs.Diarias, p, Dia * 4 + p, Diarias)',
+        'rodízio das diárias com outro salto por dia (sai do LIVEOPS_V1 §4.1)'),
+    mut('meta-login-punitivo', METAS, 'int d = LoginDias + 1;', 'int d = Dia - LoginUltimo > 1 ? 1 : LoginDias + 1;',
+        'login com dia perdido volta ao dia 1 (DM §135 proíbe)'),
+    mut('meta-ouro-no-earned', METAS, '_sim.Gold += g;', '_sim.Gold += g; _sim.GoldEarned += g;',
+        'ouro das metas entra no GoldEarned (infla a taxa online e o cofre)'),
+    mut('meta-antes-das-ferramentas', METAS, 'if (!Aberto || !m.Pronta) return -1;', 'if (!m.Pronta) return -1;',
+        'meta paga antes das Ferramentas (mexe nos primeiros 10 min, GDD §3.3)'),
 ]
 
 

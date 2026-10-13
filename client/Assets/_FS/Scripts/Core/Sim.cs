@@ -102,6 +102,8 @@ namespace FS.Core
     {
         /// <summary>A-CORE-03: numeros de economia/ritmo e feature flags desta partida (RemoteConfig e eventos). Padrao = `new Tuning()`.</summary>
         public readonly Tuning T;
+        /// <summary>D-CORE-01/02: metas (Metas.cs). Gancho unico: o Emit conta o evento; o save leva as linhas mt.* so depois da 1a Agora.</summary>
+        public readonly Metas Metas;
         public float Time;
         /// <summary>A-CORE-06: ouro, custos e somas em long (o save e' texto: cabe sem mudar o formato). ponytail: soma sem saturar; 9,2e18 nao
         /// se alcanca jogando (1 milhao/s por 100 anos = 3e15), so editando o save.</summary>
@@ -171,6 +173,7 @@ namespace FS.Core
         public Sim(Tuning tuning = null)
         {
             T = tuning ?? new Tuning();
+            Metas = new Metas(this);
             VipIn = T.VipInterval(0);
             OrderIn = T.OrderFirstDelay;
             _clientT = new[] { 0f, 0f, T.FirstClientAt, T.ClientInterval[3], T.ClientInterval[4], T.ClientInterval[5] };
@@ -965,7 +968,11 @@ namespace FS.Core
             }
         }
 
-        void Emit(Ev kind, int a, int b, V2 pos) => Events.Add(new SimEvent(kind, a, b, pos));
+        void Emit(Ev kind, int a, int b, V2 pos)
+        {
+            Events.Add(new SimEvent(kind, a, b, pos));
+            Metas.On(kind, a, b);   // D-CORE-02: tambem os de fora do Tick (menu, cofre)
+        }
 
         /// <summary>
         /// FASE9: encomenda entregue paga o premio (como o bau, FORA do GoldEarned: nao infla a taxa online nem o cofre) e a proxima vem
@@ -1227,6 +1234,7 @@ namespace FS.Core
             // A-CORE-02: velocidade (multiplicador, s restantes, s de recarga), no tempo de jogo
             sb.Append("bst=").Append(BoostMul.ToString("0", ci)).Append(',').Append(BoostLeft.ToString("0.###", ci)).Append(',')
               .Append(BoostCooldown.ToString("0.###", ci)).Append('\n');
+            Metas.Save(sb);   // D-CORE-01/02: linhas mt.* (nada antes da 1a Agora)
             return sb.ToString();
         }
 
@@ -1364,6 +1372,7 @@ namespace FS.Core
             // pad escondido devolve o parcial: o save da v0.3 com produtivos novos (Mineiro, Joalheiro 2) esconde o luxo ate completar
             // de novo, e o pad cujo upgrade foi para o menu (FASE6) nunca mais aparece
             foreach (Pad p in sim.Pads) if (p.Current(sim) < 0) { sim.Gold += p.Paid; p.Paid = 0; }
+            sim.Metas.Load(text);   // D-CORE-01/02: save sem mt.* = metas zeradas
             return sim;
         }
 
