@@ -52,6 +52,9 @@ namespace FS
         readonly long _max;
         long _size;
 
+        /// <summary>Id da sessao (processo): o mesmo nas linhas do diario e nos eventos da Telemetria.</summary>
+        public string Sessao => _sid;
+
         public Diario(string path, long max = MaxBytes)
         {
             _path = path; _max = max;
@@ -112,7 +115,8 @@ namespace FS
         /// <summary>Save de versao mais nova ou disco ilegivel: a sessao inteira nao grava.</summary>
         public bool Bloqueado { get; private set; }
 
-        public Sim Carregar()
+        /// <param name="tuning">o Tuning da partida, ja com o RemoteConfig (A-PLAT-08); null = padrao.</param>
+        public Sim Carregar(Tuning tuning = null)
         {
             SaveEnvelope.Result r = default; int corrupt = 0; string err = null;
             try { r = _arquivo.Read(out corrupt); }
@@ -126,7 +130,7 @@ namespace FS
             }
             bool ok = r.Status == SaveEnvelope.Status.Ok || r.Status == SaveEnvelope.Status.Legacy;
             Bloqueado |= r.Status == SaveEnvelope.Status.NewerSchema;
-            Sim sim = Sim.Load(ok ? r.Payload : null);
+            Sim sim = Sim.Load(ok ? r.Payload : null, tuning);
             if (err != null) _log.Log("save_error", sim.Time, err);
             if (corrupt > 0) _log.Log("save_corrupt", sim.Time, corrupt.ToString(CultureInfo.InvariantCulture), r.Status.ToString());   // Ok/Legacy = recuperado; outro = estado novo
             if (r.Status == SaveEnvelope.Status.NewerSchema) _log.Log("save_newer", sim.Time, r.Schema.ToString(CultureInfo.InvariantCulture), r.Content);
