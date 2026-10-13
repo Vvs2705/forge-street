@@ -36,6 +36,29 @@ Status: PROPOSTO pela raia 2 (concept-art lead + character 3D + art director), a
 
 Regras: cinco matizes distintos (marrom, prata, azul, vermelho, verde) **e** cinco formas distintas; a cor nunca é o único sinal (vermelho/verde se separam por disco vs. cruz). O mesmo ícone serve pilha no chão, pilha na cabeça, balão do cliente e HUD. Teste: renderizar cada item a 24 px e 32 px, em cor e em preto; se não lê em 24 px, muda a **forma**, não a cor.
 
+### 3.1 Famílias de produto dos distritos 2–6 (Leva 9, 2026-10-13: PROPOSTO; ícones em `Resources/Sprites/item_*`, não integrados)
+
+Com 38 produtos (GDD §7) não há um matiz por item: **o matiz diz a família (o que a coisa é) e a forma diz o item (qual é)**. Os 41 ícones novos saem de `client/tools/itens_blender.py`, com a mesma pipeline do `item_espada` (§10 e `ASSETS.md` §10). Conferência: `client/Builds/validation_art_produtos/folha.png`, com cada item a 128 e a 64 px em fundo claro e escuro, mais a silhueta preta a 64 px.
+
+| Família | Matiz-assinatura | Base · sombra · luz | Itens (`item_*`) | O que separa os itens da família (forma) |
+|---|---|---|---|---|
+| Arma (lâmina e haste) | azul-aço (§3) | `#7FC4FF` · `#4C88C4` · `#B0DCFF`; cabo de madeira/couro | espada, espada_longa, lanca, machado_guerra, maca | espada ↗ larga, guarda de ouro; espada longa ↖ estreita, guarda de aço; lança = haste + folha; machado = 2 gumes em meia-lua; maça = bola de cravos |
+| Armadura | aço + couro/cobre (§2 "armaduras") | aço `#8C96A6` · `#4F5866` · `#D5DCE6`; correia `#7A4A2A`; rebite e crista cobre `#C8743A` | elmo, peitoral, grevas, manoplas | elmo = cúpula com crista e fenda em T; peitoral = tronco com quina; grevas = 2 pernas de lado com pé pontudo; manoplas = 2 mãos com os dedos para cima |
+| Escudo | vermelho (§3) | `#F2545B` | escudo | — |
+| Ferramenta | verde (§3) | `#4CD964` no cabo, cabeça de aço | ferramenta, cinzel | martelo em T × cinzel reto com cunha |
+| Joia (ourivesaria) | roxo + ouro | gema `#B07CF2` · `#6E44B8` · `#E4CCFF`; ouro `#E0B23A`; caixa `#5B2E8C` | joia, colar, broche, caixa_joias, gema | anel; U de contas com pingente; flor de 6 pétalas com alfinete; caixa aberta; pedra solta |
+| Utensílio e ornamento | cobre | `#C8743A` · `#8E4E24` · `#F0A26A`; vela `#F2E6C8`; chama `#FF7A1F` | castical, calice, fivela | 3 velas acesas; taça com pé; moldura com correia |
+| Real (Royal Arsenal) | azul-real + ouro | `#2F64B8` · `#1F4E8C` · `#6E9CE6`; ouro | kit_guarda, kit_batedor, alabarda_cerimonial, espada_gala, armadura_gala, insignia_real | heater com lança; arco com aljava; alabarda ↖ com bandeirola; espada deitada na almofada com borlas; peitoral de ouro com ombreiras e capa; estrela de 8 pontas com fita |
+| Arcano | ciano + roxo-noite | ciano `#3FE0D0` · `#1FA8A0` · `#B8FFF6`; corpo `#4B2E83` · `#2E1E5A` · `#7454B8`; cristal `#C4F4FF`; prata `#A4AEBE` | lamina_runica, escudo_runico, amuleto_arcano, cajado_liga, anel_cristal, lanterna_arcana, liga_celeste, minerio_runico, cristal | sabre curvo; hexágono com anel rúnico; losango com laço; cajado quase em pé com esfera; aro de prata com cristal alto; lanterna; barra sextavada com anel em giroscópio; rocha com 3 cristais; aglomerado de cristais |
+| Síntese (Grand Forge) | ouro + bronze | bronze `#A8743A` · `#6E4A22` · `#D9A55E`; mármore `#C9C4BA`; azul-noite `#1B2350` | panoplia_campeao, lamina_estelar, coroa_reino, estatua_bronze, sino_catedral, relicario_real | 2 espadas em X atrás de escudo vinho; espada **em pé** com guarda em estrela; coroa fechada com arcos e globo; estátua no pedestal; sino de boca larga na viga; casinha com telhado |
+| Matéria-prima nova | couro / aço / bronze | pele `#A86D45`; chapa `#8C96A6`; rebite `#5F6878`; liga `#C98A4A` com tampo de ouro | couro, placa, rebite, liga | pele aberta com 4 patas; 2 chapas com furos; 2 rebites em pé e 1 deitado; barra de 3 gomos (o lingote é liso e prata) |
+
+Regras novas:
+- Família nova não usa como dominante o matiz de outra. O real é azul profundo com ouro, e o azul-céu fica com as armas. O arcano é ciano com roxo-noite, e o roxo-lavanda fica com a gema. O utensílio é cobre, longe do marrom do minério e do ouro da moeda.
+- Quando um item cabe em duas famílias, a forma decide e a cor acompanha. A gema roxa é ourivesaria. O anel de cristal é arcano, pelo cristal e pelo aro de prata, que não é de ouro.
+- São 5 espadas, cada uma com uma orientação ou um apoio próprio: ↗ (espada; lâmina rúnica, que é curva), ↖ (espada longa), em pé (lâmina estelar) e na almofada (espada de gala). A 6ª espada precisa de orientação ou apoio novo; só a cor não basta.
+- Para aceitar o lote, nenhum par pode confundir em silhueta a 64 px, nem dentro do distrito nem com os 6 itens atuais, a moeda, a coroa do VIP e o sino das melhorias. O teste de 24/32 px do §3 continua valendo na integração.
+
 ## 4. Proporções dos personagens
 
 **3 cabeças (chibi), não 2,5.** Altura em cabeças de 0,40 m; largura de ombros ≈ 1 cabeça; mãos e botas 1,5× o natural; pescoço curto; T-pose com braços ≤ 10° da horizontal.

@@ -213,3 +213,28 @@ Todos = assunto + `[S]` + `[I]` do cabeçalho deste arquivo. Imagem escolhida en
 | caçadora | monster hunter woman, grey wolf-head fur hood, brown leather coat to the hips, crossbow strapped on the back, bandolier with bolts across the chest, tall leather boots, short brown hair | #2 |
 | alquimista | alchemist woman, round brass goggles on the forehead, green leather apron with potion bottles in the pockets, rolled-up white sleeves, messy purple hair bun, glowing blue flask hanging on the belt, brown boots | #4 (calça, sem saia) |
 | minerador | medieval miner, leather cap with a small brass oil lamp on the front, dirty blue work tunic and brown trousers, pickaxe strapped on the back, big black mustache, soot on the cheeks, sturdy boots | #2 |
+
+## 10. Leva 9 — ícones dos produtos dos distritos 2–6 (2026-10-13, 0 crédito)
+
+Wave F antecipada (raia ARTE do ORQUESTRADOR): os 34 produtos novos do GDD §7 e 7 intermediários novos, modelados por primitivas no Blender e renderizados com a pipeline do `item_espada` da §7. Matiz por família na ART_BIBLE §3.1 e proveniência com SHA-256 na PROVENIENCIA §8. **Não integrados:** a View ainda só lê os 6 itens do `Item` (`Art.ItemArtName`).
+
+Regenerar (raiz do projeto, com o Unity fechado; ~20 s; IDs opcionais regeram só aqueles itens):
+```
+"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup --python-exit-code 1 --python client/tools/itens_blender.py [-- item_elmo ...]
+python client/tools/folha_produtos.py
+```
+O 1º comando grava, em `client/Assets/_FS/Resources/Sprites/<id>/`, os arquivos `icone.png` e `deitado.png` (128×128, ppu 128, pivô no centro, formato do `item_espada`) e o `meta.json`. Os `.meta` do Unity só são criados quando faltam, e o GUID nunca muda. O 2º grava a folha de QA `client/Builds/validation_art_produtos/folha.png`: cada item a 128 e a 64 px em fundo claro e escuro, silhueta preta a 64 px e o `deitado`; embaixo, todos lado a lado. As referências são os 6 itens atuais, a moeda, a coroa e o sino.
+
+| Tier / distrito | IDs (`item_*`) |
+|---|---|
+| 1 (Blueprint) | `espada_longa` |
+| 2 Armorer's Row | `elmo`, `peitoral`, `grevas`, `manoplas`, `lanca`, `machado_guerra`, `maca` |
+| 3 Artisan Quarter | `colar`, `broche`, `cinzel`, `castical`, `caixa_joias`, `calice`, `fivela` |
+| 4 Royal Arsenal | `kit_guarda`, `kit_batedor`, `alabarda_cerimonial`, `espada_gala`, `armadura_gala`, `insignia_real` |
+| 5 Arcane Foundry | `lamina_runica`, `escudo_runico`, `amuleto_arcano`, `cajado_liga`, `anel_cristal`, `lanterna_arcana`, `liga_celeste` |
+| 5+ Grand Forge | `panoplia_campeao`, `lamina_estelar`, `coroa_reino`, `estatua_bronze`, `sino_catedral`, `relicario_real` |
+| intermediários | `couro`, `placa`, `rebite`, `gema`, `liga`, `minerio_runico`, `cristal` |
+
+Integração (raias do núcleo e da View; nada disto foi feito nesta leva):
+1. O `ItemDef.iconId` (ECONOMIA_WAVE_B §8.1) é o nome da pasta. `Art.Icon(iconId, "icone"|"deitado")` já carrega qualquer pasta, e o tamanho segue a regra do `PaintItem` (escala = tamanho × 1,1).
+2. Não há versão `_em_pe` (estoque no painel do estande). O estande só existe no Old Forge e só usa espada, escudo e ferramenta. Quando o estande dos distritos 2+ existir, a versão `_em_pe` sai do mesmo construtor pelo `arte_v05_blender.em_pe`.
