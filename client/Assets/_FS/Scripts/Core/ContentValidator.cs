@@ -85,7 +85,8 @@ namespace FS.Core
         /// <summary>
         /// Um distrito: layout (Layout), caminho do ferreiro ate cada boca e pad (Alcancavel), Charter com condicoes validas (Charter) e os
         /// workers dele. Tabela de upgrades propria (todo distrito menos o Old Forge, que o Validate ja confere): as regras de conteudo de
-        /// sempre sobre o mundo dele (IDs, itens, requisitos, alcance, luxo, custos, nomes, receitas, marcos, bocas, pisaveis, qualidade).
+        /// sempre sobre o mundo dele (IDs, itens, requisitos, alcance, luxo, custos, nomes, receitas, marcos, bocas, pisaveis, qualidade) e,
+        /// do C-CORE-05, as Masterworks e os marcos da Collection do Hall dele (Superior alcancavel com as fontes de qualidade DELE).
         /// </summary>
         public static IEnumerable<string> Distrito(DistrictDef d, DistrictDef[] mapa = null)
         {
@@ -113,6 +114,7 @@ namespace FS.Core
             e.AddRange(Pisaveis(w));
             e.AddRange(Qualidade(d.Upgrades, w));
             e.AddRange(Workers(d.Workers, w, new RenomeDef[0]));   // o wk_ que o Renome libera: o Validate confere contra os do Old Forge
+            e.AddRange(MasterworksDefs.Validar(w.Hall.Defs, w.Colecao.Marcos, w.Projetos.Defs, d.Upgrades, w));   // C-CORE-05: o Hall e a Collection que o Sim dele usa
             return e;
         }
 
