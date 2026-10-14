@@ -61,7 +61,7 @@ namespace FS.Core
                     return n;
                 case CondicaoMw.Renome: return _sim.Renome.Nivel;
                 case CondicaoMw.EncomendasItem: return Contador("order_done", i);
-                case CondicaoMw.EncomendasTipo: return Contador("order_complete", Array.IndexOf(MasterworksDefs.TiposEncomenda, c.Ref));
+                case CondicaoMw.EncomendasTipo: OrderType? t = MasterworksDefs.Tipo(c.Ref); return t == null ? 0 : Contador("order_complete", (int)t.Value);
                 case CondicaoMw.NivelWorker: int k = WorkerDefs.IndexOf(c.Ref, _sim.Equipe.Defs); return k < 0 ? 0 : _sim.Equipe.Nivel(k);
                 default: return 0;
             }

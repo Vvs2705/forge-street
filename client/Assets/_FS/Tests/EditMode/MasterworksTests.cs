@@ -207,10 +207,10 @@ namespace FS.Tests
             s.Tick(Dt, 0f, 0f);
             Assert.IsTrue(s.Colecao.Aberta);
             Assert.AreEqual(2, Count(s, Ev.Colecao), "os 2 marcos de Produtos (8 e 15) pagam no 1o Tick aberto (retroativo)");
-            Assert.AreEqual(r0 + 30L, s.Renome.Total, "+10 e +20");
+            Assert.AreEqual(r0 + 15L, s.Renome.Total, "+5 e +10 (degraus do Old Forge pela metade: BALANCE §30.6)");
             Assert.IsTrue(s.Renome.Ledger.Contains("col:col_produtos_old_forge_100"));
             s.Tick(Dt, 0f, 0f);
-            Assert.AreEqual((0, r0 + 30L), (Count(s, Ev.Colecao), s.Renome.Total), "nunca 2x");
+            Assert.AreEqual((0, r0 + 15L), (Count(s, Ev.Colecao), s.Renome.Total), "nunca 2x");
             // save/load nao paga de novo; Superior por item vai no colq=
             string text = s.Save(10);
             StringAssert.Contains("colq=espada:1,escudo:1,ferramenta:1,joia:1,espada_longa:1\n", text);
@@ -265,19 +265,36 @@ namespace FS.Tests
         static void Agora(Sim s, long t) { s.Metas.Agora(t, Fuso); s.LiveOps.Agora(t); }
 
         [Test]
-        public void Hunts_EsperamSoOSistemaDeles_ProjetoDaMasterworkNaoEMaisFalta()
+        public void Hunts_RodamNoCalendario_OProjetoERequisitoDoJogador_EOKnobDeQualidadeEntra()
         {
             var s = new Sim();
-            foreach (EventDef e in LiveOpsDefs.Eventos.Where(x => x.Template == Template.MasterworkHunt))
-            {
-                string falta = s.LiveOps.Falta(e);
-                Assert.IsNotNull(falta, e.Id + ": ainda espera o Orders 2.0 / o knob QualidadeEvento");
-                StringAssert.DoesNotContain("bp_mw", falta, e.Id);
-            }
-            Assert.IsNull(s.LiveOps.Falta(Hunt()), "com gatilho e knob de hoje, o projeto nao trava o calendario");
-            EventDef caravana = Hunt();
-            caravana.Requer = new[] { "ord_bulk_old_forge" };
-            Assert.AreEqual("requisito ord_bulk_old_forge", s.LiveOps.Falta(caravana), "Requer que nao e' Blueprint continua sistema que falta (Orders 2.0)");
+            EventDef[] hunts = LiveOpsDefs.Eventos.Where(x => x.Template == Template.MasterworkHunt).ToArray();
+            Assert.AreEqual(2, hunts.Length);
+            foreach (EventDef e in hunts) Assert.IsNull(s.LiveOps.Falta(e), e.Id + ": order_complete (Orders 2.0) e QualidadeEvento (B-CORE-08) existem");
+            EventDef outro = Hunt();
+            outro.Requer = new[] { "ord_bulk_old_forge" };
+            Assert.IsNull(s.LiveOps.Falta(outro), "OrderDef no Requer: so precisa existir");
+            outro.Requer = new[] { "ord_nao_existe" };
+            Assert.AreEqual("requisito ord_nao_existe", s.LiveOps.Falta(outro));
+            // o Hunt da Sunblade: requisito Renome 1 + o projeto da Primeira Lamina; dentro, a espada ganha +15 de qualidade (QualidadeEvento)
+            EventDef sun = hunts.First(e => e.Id.EndsWith("sunblade"));
+            Sim r = Aberta();
+            r.Renome.Ganha(RenomeDefs.Niveis[1].Limiar);
+            r.Buy(Upgrade.AnvilsLv2);
+            int q0 = r.QualityPoints(r.AnvilA);
+            Agora(r, sun.Comeca + 3600);
+            Assert.IsNull(r.LiveOps.Evento, "sem o projeto da Primeira Lamina");
+            r.Projetos.Ganha("bp_mw_primeira_lamina", BlueprintSourceKind.Milestone);
+            Agora(r, sun.Comeca + 3601);
+            Assert.AreSame(sun, r.LiveOps.Evento);
+            Assert.AreEqual((q0 + 15, 0), (r.QualityPoints(r.AnvilA), r.QualityPoints(r.ToolBench)),
+                "+15 so na espada");
+            Agora(r, sun.Termina);
+            Assert.AreEqual(q0, r.QualityPoints(r.AnvilA), "o knob volta no fim");
+            // RemoteConfig: QualidadeEvento (padrao 0) so ate a trava de 25
+            var t = new Tuning();
+            RemoteConfig.Aplicar(t, "{\"QualidadeEvento\": [0, 0, 99, 0, 0, 0, 0]}", false);
+            Assert.AreEqual(25, t.QualidadeEvento[(int)Item.Sword]);
         }
 
         [Test]

@@ -24,7 +24,8 @@ using FS.Core;
 /// (o CSV fica identico ao de antes).
 /// B-CORE-04: --worker-seg S = Bot.WorkerSegundos (contrata/sobe nivel de worker quando custa ate S s da renda; negativo = nunca); com
 /// --tuning Workers=false o jogo e' o de antes do B-CORE-04. A 4a tabela mostra os workers; compra de worker conta na zona morta.
-/// B-CORE-08: a tabela do Hall e da Collection (Masterworks registradas e a 1a; marcos pagos e o Renome deles; Renome total e os niveis 2, 3 e 4).
+/// B-CORE-08: a tabela do Hall e da Collection (Masterworks registradas e a 1a; marcos pagos e o Renome deles; o Renome das obras). Os niveis de
+/// Renome saem na tabela do B-CORE-05 (que ja soma as duas fontes).
 /// </summary>
 static class EconSim
 {
@@ -43,14 +44,16 @@ static class EconSim
         public int Morta, MortaSeq, MortaIni, SemDestinoMin, Luxo, AdsVip, AdsBoost, AdsSupply, AdsBonus, Vips; public long PosProd, Parado, Encomendas; public double Segundos;
         // B-CORE-03: % da receita acima do preco Normal (premio de qualidade) e o que o golpe somou; niveis de estacao comprados, gasto e o 1o
         public double Quali, Golpe; public int Niveis, Golpes; public long NiveisGasto; public float Nivel1;
+        // B-CORE-05: relogio em que o Renome chegou a 1..4 (-1 = nao chegou), encomendas e % do ouro de venda que veio delas aos 60 min e no fim
+        public float[] Renome; public long RenomeFim; public int Enc60, EncFim; public double Pct60, PctFim, Renda60; public int[] Tipos;
         // B-CORE-04: contratados pela Equipe, niveis subidos (ajudantes e equipe), ouro gasto e a 1a compra de worker (relogio)
         public int Contratados, NiveisWk; public long WkGasto; public float Wk1 = -1f;
         // D-CORE-03/04 (--evento): GoldEarned ao fim de cada minuto, instante de relogio da entrada no evento e o que o evento deu
         public long[] EarnedMin; public float Entrou = -1f; public int Pontos, Missoes, Ordens; public long XpPasse, OuroEvento;
         // B-CORE-07: projetos possuidos, quando chegou o de mestre das bigornas, niveis IV-V (os com projeto), bigorna longa e o que a espada longa vendeu
         public int Projetos, Mestre; public long MestreGasto, Longas; public float BpMestre = -1f, Mestre1 = -1f, Longa = -1f; public double LongaPct;
-        // B-CORE-08: Masterworks no Hall (e quais), a 1a (relogio), marcos da colecao pagos e o Renome deles, Renome das obras, total e niveis 3/4
-        public int Mw, MarcosCol; public string MwIds = ""; public float Mw1 = -1f, Rn2 = -1f, Rn3 = -1f, Rn4 = -1f; public long RenomeCol, RenomeMw, Renome;
+        // B-CORE-08: Masterworks no Hall (e quais), a 1a (relogio), marcos da colecao pagos e o Renome deles e o Renome das obras
+        public int Mw, MarcosCol; public string MwIds = ""; public float Mw1 = -1f; public long RenomeCol, RenomeMw;
     }
 
     /// <summary>--tuning "GolpeRecarga=30;NivelEstacaoCusto=500|1500|650|1900|500|1500|1000|3000|...": campos publicos do Tuning (NivelEstacaoCusto: os 16, II-III e IV-V)
@@ -168,14 +171,14 @@ static class EconSim
         }
         // B-CORE-08: Hall e Collection (Masterwork nao vende: a renda nao muda por ela; o Renome sim)
         Console.WriteLine();
-        Console.WriteLine($"| perfil | Masterworks no Hall (de {MasterworksDefs.All.Length}; a 1a) | quais | marcos da colecao (de {MasterworksDefs.Marcos.Length}; Renome) | Renome das obras | Renome total (nivel 2; nivel 3; nivel 4) |");
-        Console.WriteLine("|---|---|---|---|---|---|");
+        Console.WriteLine($"| perfil | Masterworks no Hall (de {MasterworksDefs.All.Length}; a 1a) | quais | marcos da colecao (de {MasterworksDefs.Marcos.Length}; Renome) | Renome das obras |");
+        Console.WriteLine("|---|---|---|---|---|");
         foreach (BotProfile p in perfis)
         {
             Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
             static float Media(IEnumerable<float> v) { float[] a = v.Where(t => t >= 0f).ToArray(); return a.Length == 0 ? -1f : a.Average(); }
             Console.WriteLine($"| {p.Name} | {g.Average(r => r.Mw):0.#} ({Clock(Media(g.Select(r => r.Mw1)))}) | {g.OrderByDescending(r => r.Mw).First().MwIds} | " +
-                              $"{g.Average(r => r.MarcosCol):0.#} ({g.Average(r => r.RenomeCol):0}) | {g.Average(r => r.RenomeMw):0} | {g.Average(r => r.Renome):0} ({Clock(Media(g.Select(r => r.Rn2)))}; {Clock(Media(g.Select(r => r.Rn3)))}; {Clock(Media(g.Select(r => r.Rn4)))}) |");
+                              $"{g.Average(r => r.MarcosCol):0.#} ({g.Average(r => r.RenomeCol):0}) | {g.Average(r => r.RenomeMw):0} |");
         }
         // V19: pisos do §3 em relogio; % = partidas que compraram ANTES do piso (o BalanceTests reprova) ou nao compraram
         Console.WriteLine();
@@ -204,6 +207,19 @@ static class EconSim
                 Console.WriteLine($"| {p.Name} | {g.Average(r => r.AdsVip):0.#} | {g.Average(r => r.AdsBoost):0.#} | {g.Average(r => r.AdsSupply):0.#} | {g.Average(r => r.AdsBonus):0.#} | " +
                                   $"{g.Average(r => r.AdsVip + r.AdsBoost + r.AdsSupply + r.AdsBonus):0.#} | {g.Average(r => r.Encomendas):0} |");
             }
+        }
+        // B-CORE-05: Renome (portao do ECONOMIA_WAVE_B §10: nivel 1 12-25 min, 2 40-75 min, 3 1,5-3 h, 4 3-6 h no F2P) e encomendas
+        Console.WriteLine();
+        Console.WriteLine("| perfil | Renome 1 | Renome 2 | Renome 3 | Renome 4 | Renome no fim | encomendas (60 min / fim) | ouro de encomendas (% da venda, 60 min / fim) | renda/min (0-60) | por tipo no fim (" +
+                          string.Join("/", Enum.GetNames(typeof(OrderType))) + ") |");
+        Console.WriteLine("|---|---|---|---|---|---|---|---|---|---|");
+        foreach (BotProfile p in perfis)
+        {
+            Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            string N(int k) { float[] v = g.Select(r => r.Renome[k]).Where(t => t >= 0f).ToArray(); return v.Length == 0 ? "--:--" : Clock(v.Average()) + (v.Length < g.Length ? "*" : ""); }
+            Console.WriteLine($"| {p.Name} | {N(1)} | {N(2)} | {N(3)} | {N(4)} | {g.Average(r => r.RenomeFim):0} | {g.Average(r => r.Enc60):0.#} / {g.Average(r => r.EncFim):0.#} | " +
+                              $"{g.Average(r => r.Pct60):0.0}% / {g.Average(r => r.PctFim):0.0}% | {g.Average(r => r.Renda60):0} | " +
+                              string.Join("/", Enumerable.Range(0, g[0].Tipos.Length).Select(k => g.Average(r => r.Tipos[k]).ToString("0.#"))) + " |");
         }
         if (evento != null) Evento(evento, perfis, runs, sem, minutos);
         return 0;
@@ -251,7 +267,7 @@ static class EconSim
         var clock = Stopwatch.StartNew();
         var s = new Sim(t); Bot bot = Bot.From(p); float dt = 1f / hz;
         if (workerSeg.HasValue) bot.WorkerSegundos = workerSeg.Value;
-        var r = new Run { Perfil = p.Name };
+        var r = new Run { Perfil = p.Name, Renome = new[] { 0f, -1f, -1f, -1f, -1f } };
         var csv = new StringBuilder();
         long earned0 = 0, goldAtProd = -1;
         int bought0 = 0, seq = 0, ads = 0, wk = 0, wk0 = 0;   // wk: compras de worker (contratar ou nivel), que contam como compra na zona morta
@@ -280,12 +296,10 @@ static class EconSim
                     if (e.Kind == Ev.Colecao) { r.MarcosCol++; r.RenomeCol += e.B; }
                 }
                 if (venda1 < 0f && s.FirstSaleTime >= 0f) venda1 = s.FirstSaleTime + pausa;
-                if (r.Rn2 < 0f && s.Renome.Nivel >= 2) r.Rn2 = s.Time + pausa;
-                if (r.Rn3 < 0f && s.Renome.Nivel >= 3) r.Rn3 = s.Time + pausa;
-                if (r.Rn4 < 0f && s.Renome.Nivel >= 4) r.Rn4 = s.Time + pausa;
                 if (s.UpgradesBought != before)
                     for (int i = 0; i < rel.Length; i++) if (s.Bought[i] && rel[i] < 0f) rel[i] = s.UpgradeTime[i] + pausa;
                 if (goldAtProd < 0 && s.UpgradesBought != before && s.ProductionComplete) goldAtProd = s.Gold;
+                for (int k = Math.Min(4, s.Renome.Nivel); k >= 1 && r.Renome[k] < 0f; k--) r.Renome[k] = s.Time + pausa;
                 if (evento != null && (int)s.Time != seg)   // D-CORE-03/04: o relogio do LiveOps anda com o jogo, dentro do evento (como a View, 1x/s)
                 {
                     seg = (int)s.Time;
@@ -295,6 +309,7 @@ static class EconSim
                     if (r.Entrou < 0f && s.LiveOps.Evento != null) r.Entrou = s.Time + pausa;
                 }
             }
+            if (m == 60) { r.Enc60 = s.OrderCount; r.Pct60 = 100.0 * s.OrderGold / Math.Max(1, s.GoldEarned); r.Renda60 = s.GoldEarned / 60.0; }
             r.EarnedMin[m] = s.GoldEarned;
             long gold = s.Gold, earned = s.GoldEarned;
             int compras = s.UpgradesBought - bought0 + wk - wk0;
@@ -326,7 +341,7 @@ static class EconSim
             else { r.Mestre++; r.MestreGasto += s.T.Cost(i); r.Mestre1 = r.Mestre1 < 0f ? rel[i] : Math.Min(r.Mestre1, rel[i]); }
         }
         r.Projetos = s.Projetos.Count;
-        r.Mw = s.Hall.Count; r.Renome = s.Renome.Total;
+        r.Mw = s.Hall.Count;
         foreach (MasterworkDef d in s.Hall.Defs) if (s.Hall.Tem(d.Id)) { r.RenomeMw += d.Renome; r.MwIds += (r.MwIds.Length > 0 ? " " : "") + d.Id.Substring(3); }
         r.Longa = rel[(int)Upgrade.LongAnvil];
         r.LongaPct = 100.0 * r.Longas / Math.Max(1, s.GoldEarned);
@@ -339,6 +354,8 @@ static class EconSim
         r.PosProd = goldAtProd < 0 ? 0 : s.Gold + luxSpent + paid - goldAtProd;
         r.Parado = s.Gold; r.AdsVip = bot.AdsVip; r.AdsBoost = bot.AdsBoost; r.AdsSupply = bot.AdsSupply; r.AdsBonus = bot.AdsBonus; r.Csv = csv.ToString();
         r.Encomendas = s.OrderGold;
+        r.RenomeFim = s.Renome.Total; r.EncFim = s.OrderCount; r.PctFim = 100.0 * s.OrderGold / Math.Max(1, s.GoldEarned);
+        r.Tipos = (int[])s.Encomendas.PorTipo.Clone();
         r.Ordens = s.OrderCount;
         if (evento != null)
         {

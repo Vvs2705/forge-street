@@ -5,7 +5,7 @@ namespace FS.Core
 {
     /// <summary>B-CORE-08 (CONTEUDO_V1 §10.1): o tipo da condicao especial de uma Masterwork, sempre de jogo. Vendidos = Counter:item (pecas
     /// vendidas); NivelEstacao = StationLevel:familia (RecipeDef.Family); Renome = ReputationTier; EncomendasItem = OrdersOfProduct:item;
-    /// EncomendasTipo = OrdersOfType:tipo (contador order_complete do Orders 2.0, B-CORE-05); NivelWorker = WorkerLevel:wk;
+    /// EncomendasTipo = OrdersOfType:tipo (OrderType; contador order_complete do Orders 2.0, B-CORE-05); NivelWorker = WorkerLevel:wk;
     /// VendidosQualidade = QualitySold:item@nivel. Nenhum tipo fala de anuncio, compra ou Gem (GDD §13, V4); os do distrito 2 em diante
     /// (liga, cotas, energizadas, exportacao...) entram com a mecanica deles (Wave C).</summary>
     public enum CondicaoMw { Vendidos, NivelEstacao, Renome, EncomendasItem, EncomendasTipo, NivelWorker, VendidosQualidade }
@@ -55,9 +55,8 @@ namespace FS.Core
         public const int BonusFamiliaPct = 5;
         /// <summary>A meta da v1.0 (CONTEUDO_V1 §10.1): 10 por distrito.</summary>
         public const int CatalogoV1 = 60, PorDistrito = 10;
-        /// <summary>Os tipos de encomenda na ordem do OrderType (B-CORE-05; o filtro do contador order_complete). ponytail: lista ate o Orders
-        /// 2.0 entrar; depois, Enum.Parse do OrderType.</summary>
-        public static readonly string[] TiposEncomenda = { "common", "bulk", "quality", "rush", "mixed", "royal", "blueprint", "event" };
+        /// <summary>Tipo de encomenda da condicao EncomendasTipo: o OrderType do Orders 2.0 pelo nome (sem caixa: "mixed"); null = nao existe.</summary>
+        public static OrderType? Tipo(string r) => r != null && Enum.TryParse(r, true, out OrderType t) && Enum.IsDefined(typeof(OrderType), t) ? t : (OrderType?)null;
 
         static CondicaoMasterwork Vendidos(string item, int n) => new CondicaoMasterwork(CondicaoMw.Vendidos, item, n);
         static CondicaoMasterwork Nivel(string familia, int n) => new CondicaoMasterwork(CondicaoMw.NivelEstacao, familia, n);
@@ -87,19 +86,21 @@ namespace FS.Core
         /// <summary>
         /// Os marcos que o Old Forge alcanca: os degraus do ECONOMIA_WAVE_B §7 (50% e 100% de cada aba no Old Forge: 15 produto x qualidade, 26
         /// worker x contratado/nivel maximo, 19 projetos) e os do CONTEUDO_V1 §10.3 que ja cabem (col_mw_5/10, col_workers_25 = 15 de 58).
-        /// col_mw_1 ("abre o Hall") nao e' marco: o Hall abre com a 1a obra (Hall.Aberto). Ordem = a do painel.
+        /// col_mw_1 ("abre o Hall") nao e' marco: o Hall abre com a 1a obra (Hall.Aberto). Ordem = a do painel. Degraus do §7 pela metade
+        /// (5/10, nao 10/20): o F2P paga os 7 antes das 2 h e, com o Renome por tipo do Orders 2.0, 10/20 trazia o Renome 3 para 1:22 e o 4 para
+        /// 2:48 (pisos 1:30 e 3:00); col_workers_25 segue o catalogo (+10). BALANCE §30.6.
         /// </summary>
         public static readonly MarcoColecaoDef[] Marcos =
         {
-            new MarcoColecaoDef("col_produtos_old_forge_50", AbaColecao.Produtos, 8, 10),
-            new MarcoColecaoDef("col_produtos_old_forge_100", AbaColecao.Produtos, 15, 20),
+            new MarcoColecaoDef("col_produtos_old_forge_50", AbaColecao.Produtos, 8, 5),
+            new MarcoColecaoDef("col_produtos_old_forge_100", AbaColecao.Produtos, 15, 10),
             new MarcoColecaoDef("col_mw_5", AbaColecao.Masterworks, 5, 20),
             new MarcoColecaoDef("col_mw_10", AbaColecao.Masterworks, 10, 50, "cos_col_estandarte_old_forge"),
-            new MarcoColecaoDef("col_workers_old_forge_50", AbaColecao.Workers, 13, 10),
+            new MarcoColecaoDef("col_workers_old_forge_50", AbaColecao.Workers, 13, 5),
             new MarcoColecaoDef("col_workers_25", AbaColecao.Workers, 15, 10),
-            new MarcoColecaoDef("col_workers_old_forge_100", AbaColecao.Workers, 26, 20),
-            new MarcoColecaoDef("col_bp_old_forge_50", AbaColecao.Blueprints, 10, 10),
-            new MarcoColecaoDef("col_bp_old_forge_100", AbaColecao.Blueprints, 19, 20),
+            new MarcoColecaoDef("col_workers_old_forge_100", AbaColecao.Workers, 26, 10),
+            new MarcoColecaoDef("col_bp_old_forge_50", AbaColecao.Blueprints, 10, 5),
+            new MarcoColecaoDef("col_bp_old_forge_100", AbaColecao.Blueprints, 19, 10),
         };
 
         /// <summary>Posicao da Masterwork com este ID em `table` (null = All), ou -1.</summary>
@@ -162,7 +163,7 @@ namespace FS.Core
                         case CondicaoMw.VendidosQualidade: ok &= Produto(c.Ref) >= 0 && c.MinQ >= Quality.Fine && c.MinQ <= Quality.Superior; break;
                         case CondicaoMw.NivelEstacao: ok &= c.N >= 2 && c.N <= 1 + Array.FindAll(ups, u => u.Station == c.Ref).Length && w.Stations.Exists(s => s.Produces && s.Recipe.Family == c.Ref); break;
                         case CondicaoMw.Renome: ok &= c.N < RenomeDefs.Niveis.Length; break;
-                        case CondicaoMw.EncomendasTipo: ok &= Array.IndexOf(TiposEncomenda, c.Ref) >= 0 && c.Ref != "event"; break;   // evento e' temporario
+                        case CondicaoMw.EncomendasTipo: ok &= Tipo(c.Ref) != null && Tipo(c.Ref) != OrderType.Event; break;   // evento e' temporario
                         case CondicaoMw.NivelWorker: int k = WorkerDefs.IndexOf(c.Ref, w.Equipe.Defs); ok &= k >= 0 && c.N >= 2 && c.N <= w.Equipe.Defs[k].MaxNivel; break;
                         default: ok = false; break;   // tipo que o nucleo nao conhece
                     }

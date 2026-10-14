@@ -23,7 +23,8 @@ namespace FS.Core
     /// </summary>
     public static class RenomeDefs
     {
-        /// <summary>Encomenda entregue (a de hoje e' sempre Common). Orders 2.0 (B-CORE-05): o Renome vem do OrderDef (§3.1: +1 a +10).</summary>
+        /// <summary>Encomenda Common: o retroativo do save sem rn= (0.1-0.8, toda encomenda era Common). Orders 2.0 (B-CORE-05): o Renome de
+        /// cada entrega vem do OrderDef.Reputation (§3.1: +1 a +10).</summary>
         public const int Encomenda = 1;
         /// <summary>Bau de marco aberto.</summary>
         public const int Bau = 5;

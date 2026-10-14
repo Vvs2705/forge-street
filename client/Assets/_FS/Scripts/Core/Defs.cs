@@ -231,6 +231,9 @@ namespace FS.Core
         };
         public AdPlacementDef Ad(Anuncio a) => Placements[(int)a];
         public int AnunciosTetoDia = 30;   // teto diario TOTAL de rewarded (dia local das metas; relogio para tras nao reabre)
+        /// <summary>B-CORE-05: o "bonus da encomenda" vale pelo menos estes s da renda de agora (o Valor x premio sozinho era menos que os ~30 s
+        /// de relogio do anuncio: o AdWatcherE fechava a producao depois do AdWatcher, BALANCE.md §24/§28).</summary>
+        public float EncomendaBonusMinSeg = 60f;
 
         // precos e custos
         public int[] Price = { 0, 0, 10, 25, 16, 60, 40 };      // ouro por item vendido (B-CORE-07: espada longa 40 = 20 por lingote, CONTEUDO_V1 §2.1)
@@ -271,9 +274,10 @@ namespace FS.Core
         public float BoostMax = 3f, BoostPlayerMax = 1.3f;      // Velocidade: o 2o anuncio sobe para 3x; o ferreiro no maximo 1,3x (tempo e recarga: Ad(Velocidade))
         public bool AnunciosDepoisDaPrimeiraMelhoria = true;    // D6/V18: todo rewarded so depois da 1a melhoria comprada (o boost no segundo 0 e o VIP da 1a venda furavam o §3)
 
-        // FASE9 (docs/FASE9_ENCOMENDAS.md): encomenda = vender N de uma linha aberta; uma por vez, sem prazo nem falha
-        public float OrderFirstDelay = 45f, OrderGap = 20f;     // s depois da 1a venda; s entre uma entregue e a proxima
-        public int OrderFirstTarget = 5, OrderMin = 3, OrderMax = 30;   // a 1a e' 5 espadas; depois N = OrderSeconds da renda da linha
+        // FASE9 (docs/FASE9_ENCOMENDAS.md): encomenda = vender N de uma linha aberta; sem falha. B-CORE-05: os tipos, alvos e premios estao nos
+        // OrderDef (EncomendasDefs.cs); OrderSeconds e OrderRewardSeconds sao os da Common e escalam todos os tipos (x / 150, x / 10)
+        public float OrderFirstDelay = 45f, OrderGap = 20f;     // s depois da 1a venda; s entre uma entregue e a proxima vaga
+        public int OrderFirstTarget = 5, OrderMin = 3, OrderMax = 30;   // a 1a e' 5 espadas; OrderMax = teto do ord= do save antigo (o N vem do OrderDef; OrderMin sem uso)
         public float OrderSeconds = 150f, OrderRewardSeconds = 10f;     // premio ~10 s da taxa online: 4,2% da receita no bot de 60 min (BALANCE §20)
         public int OrderRewardMin = 25;
 
@@ -289,6 +293,9 @@ namespace FS.Core
         public int[] NivelEstacaoCusto = { 250, 750, 325, 950, 250, 750, 500, 1500, 800, 1500, 1000, 1835, 800, 1500, 1600, 3000 };
         public int BigornaLongaCusto = 6000;                    // B-CORE-07: linha Meta da espada longa (CONTEUDO_V1 §5.1)
         public int TecnicaQ = 20;                               // B-CORE-07: pontos de qualidade do Blueprint de tecnica da familia (ECONOMIA_WAVE_B §1.2)
+        /// <summary>B-CORE-08: "modificador de evento 0-25" (ECONOMIA_WAVE_B §1.2, LIVEOPS_V1 §2.3): pontos de qualidade por item (indice = handle),
+        /// 0 fora de evento; so o modificador do evento (Hunt: +15 na espada ou na joia) e o RemoteConfig (trava 0-25) mexem.</summary>
+        public int[] QualidadeEvento = { 0, 0, 0, 0, 0, 0, 0 };
         public float GolpeJanela = 0.8f, GolpeRecarga = 20f;    // golpe de mestre (FS-2): anel de 0,8 s; 20 s de jogo entre um acerto e o proximo (sobe se passar de 8% da receita)
 
         /// <summary>B-CORE-04 (flag): contratacao e nivel de workers a venda (Equipe). Desligada, nada novo e' oferecido e quem ja foi contratado
