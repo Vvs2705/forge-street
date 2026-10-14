@@ -52,9 +52,11 @@ Commite essa mudança junto da próxima alteração no projeto.
 
 | O quê | Valor |
 |---|---|
-| App Key Android, app "Forge Street" (Not live yet, COPPA "Not directed") | `28953c84d` |
-| Ad unit `rewarded_vip`, recompensa "VIP" ×1, placement do jogo `vip` | `7dxdva13pxaovoae` |
-| Ad unit `rewarded_velocidade`, recompensa "Velocidade" ×1, placement do jogo `velocidade` | `gple3wvhz7xm3qk7` |
+| App Key Android, app "Forge Street" (Not live yet, COPPA "Not directed") | `28bbd582d` |
+| Ad unit `rewarded_vip`, recompensa "VIP" ×1, placement do jogo `vip` | `bagjqgdg52eedh66` |
+| Ad unit `rewarded_velocidade`, recompensa "Velocidade" ×1, placement do jogo `velocidade` | `3xcxwsgu2wz215oe` |
+
+**Conta (2026-10-14):** a conta LevelPlay da empresa, `vinicius@vstack-solutions.com.br`, com os dados da empresa e os termos assinados. O app e as 2 ad units foram recriados nela com os mesmos nomes e recompensas; as chaves antigas (`28953c84d`, `7dxdva13pxaovoae`, `gple3wvhz7xm3qk7`) eram da conta anterior e saíram do código. Na conta nova só a rede ironSource Ads está ligada; o Unity Ads entra pelo **Connect your account** do painel (ligar a conta Unity).
 
 Não foram criados placements no painel. Cada recompensa tem a sua ad unit, e o `ShowAd()` sai sem nome de placement. O capping por placement do painel, portanto, não se aplica.
 
@@ -71,7 +73,7 @@ public interface IAds
 }
 public sealed class Ads : MonoBehaviour   // fábrica: AdsLevelPlay (aparelho) ou AdsSimulado (Editor, Windows, -fakeads, fallback dev)
 {
-    public const string AppKey = "28953c84d";
+    public const string AppKey = "28bbd582d";
     public const string Vip = "vip", Velocidade = "velocidade";
     public static IAds Init(Action<string, string, string> log);     // log (evento, placement, detalhe) -> IAnalytics
     public static string Arg(string name);                           // flag da linha de comando ou do intent (intent só em build de desenvolvimento)
@@ -266,7 +268,7 @@ Todas entram no formulário Data safety e na revisão da Play. Para tirar alguma
 
 ## 8. Pendências e riscos
 
-- **Aprovação da conta**, que depende dos 2 e-mails do Vinicius. Até lá, espere `ad_load_fail` no aparelho. O build de desenvolvimento cai no simulado, e o de release esconde o botão.
+- **Conta:** desde 2026-10-14 é a conta da V-STACK, com os dados da empresa salvos (seção 2). Só a rede ironSource Ads está ligada até o Unity Ads ser conectado no painel. Sem anúncio real, o build de desenvolvimento cai no simulado e o de release esconde o botão.
 - O **test device** é cadastrado pelo Vinicius (seção 5).
 - **Privacidade:** a tela de idade e o consentimento estão feitos (seção 6). Faltam a política de privacidade com URL, o Data safety, o IARC e a decisão do público-alvo na Play Console (G-PLAT-02, G-PROD-04). Também falta conferir no POCO, pelo logcat, que nada do SDK roda antes da resposta: um `ContentProvider` de rede que se inicie sozinho apareceria aí.
 - O app está **"Not live yet"** no painel. Na publicação, o app precisa estar ligado à loja (package `br.com.vstack.forgestreet`). O AppId ainda é provisório e "não muda nunca" depois de publicado (veja o `Setup.cs`).
