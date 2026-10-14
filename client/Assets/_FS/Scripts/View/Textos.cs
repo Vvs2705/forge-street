@@ -535,10 +535,18 @@ namespace FS
         /// <summary>Familias completas no Hall (o +5% no preco), uma por linha; vazio = nenhuma.</summary>
         public static string BonusHall(Sim s)
         {
-            var t = new System.Collections.Generic.List<string>();
+            // uma linha por porcentagem ("+5% no preco de espadas, escudos, ..."): 4 familias em 4 linhas ficavam ilegiveis no aparelho
+            var t = new System.Collections.Generic.SortedDictionary<int, System.Collections.Generic.List<string>>();
             for (int i = 0; i < s.ItemDefs.Length && i < ItemId.Length; i++)
-                if (s.ItemDefs[i].Family == s.ItemDefs[i].Id && s.Hall.BonusPct((Item)i) > 0) t.Add(Loc.T("hall.bonus", s.Hall.BonusPct((Item)i), ItemNome(i, 2)));
-            return string.Join("\n", t);
+            {
+                int pct = s.ItemDefs[i].Family == s.ItemDefs[i].Id ? s.Hall.BonusPct((Item)i) : 0;
+                if (pct <= 0) continue;
+                if (!t.ContainsKey(pct)) t[pct] = new System.Collections.Generic.List<string>();
+                t[pct].Add(ItemNome(i, 2));
+            }
+            var linhas = new System.Collections.Generic.List<string>();
+            foreach (var kv in t) linhas.Add(Loc.T("hall.bonus", kv.Key, string.Join(", ", kv.Value)));
+            return string.Join("\n", linhas);
         }
 
         public static string AbaColecao(AbaColecao a) => Loc.T("col.aba." + (int)a);

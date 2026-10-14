@@ -187,7 +187,7 @@ namespace FS
             else
             {
                 d1 = Textos.PremioColecao(l.Marco);
-                d2 = Loc.T("col.dica");
+                d2 = Loc.T("col.dica." + (int)l.Marco.Aba);   // a dica da categoria do marco (era a mesma frase em toda linha)
                 selo = Textos.SeloColecao(_sim, l.Marco);
                 cor = _sim.Colecao.Pago(l.Marco) ? MenuBar.Green : MenuBar.Gray;
             }

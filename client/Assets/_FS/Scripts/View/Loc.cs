@@ -720,9 +720,10 @@ namespace FS
             { "col.marco", L("{0}: {1} de {2}", "{0}: {1} of {2}", "{0}: {1} de {2}") },
             { "col.resumo", L("{0} {1}", "{0} {1}", "{0} {1}") },   // {0} = aba, {1} = "feitas/total"
             { "col.feito", L("FEITO", "DONE", "HECHO") },
-            { "col.dica", L("Venda cada produto em Normal, Fina e Superior; contrate e evolua a equipe; junte projetos e obras-primas.",
-                "Sell each product as Normal, Fine and Superior; hire and level your crew; collect blueprints and masterworks.",
-                "Vende cada producto Normal, Fina y Superior; contrata y sube a tu equipo; junta planos y obras maestras.") },
+            { "col.dica.0", L("Venda cada produto em Normal, Fina e Superior", "Sell each product as Normal, Fine and Superior", "Vende cada producto Normal, Fina y Superior") },   // AbaColecao
+            { "col.dica.1", L("Golpe de mestre numa peça Superior, com o projeto", "Master strike on a Superior piece, with the blueprint", "Golpe maestro en una pieza Superior, con el plano") },
+            { "col.dica.2", L("Contrate e evolua a equipe", "Hire and level up your crew", "Contrata y sube de nivel a tu equipo") },
+            { "col.dica.3", L("Junte projetos", "Collect blueprints", "Junta planos") },
             { "cos.cos_col_estandarte_old_forge", L("Estandarte do Old Forge", "Old Forge banner", "Estandarte del Old Forge") },
             { "aviso.colecao", L("Coleção: +{0} Renome!", "Collection: +{0} Renown!", "¡Colección: +{0} Renombre!") },
             { "meta.masterwork_unlock", L("Faça {0} obra-prima|Faça {0} obras-primas", "Make {0} masterwork|Make {0} masterworks",
