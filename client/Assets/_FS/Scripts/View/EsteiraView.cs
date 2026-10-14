@@ -74,7 +74,9 @@ namespace FS
         public EsteiraView(WorldView w, Sim sim, Transform parent)
         {
             _w = w; _sim = sim; _simT = sim.Time;
-            Vector3 a = WorldView.W(sim.FurnaceA.Pos), b = WorldView.W(sim.AnvilA.Pos);   // ponytail: Fornalha embaixo e Bigorna em cima na mesma coluna (Sim), faixa vertical
+            // ponytail: origem embaixo e destino em cima na mesma coluna (Old Forge: Fornalha -> Bigorna; Row: Prensa -> Montagem elmo), faixa vertical
+            Station de = sim.EsteiraDe ?? sim.FurnaceA, para = sim.EsteiraPara ?? sim.FurnaceA;
+            Vector3 a = WorldView.W(de.Pos), b = WorldView.W(para.Pos);
             _len = Vector3.Distance(a, b) - 1.2f;
             int n = Mathf.Max(1, Mathf.RoundToInt(_len / PassoAlvo));
             _passo = _len / n;
@@ -93,7 +95,7 @@ namespace FS
                 _p[i] = -1f;
                 _calor[i] = Art.NewSprite(_root, "Calor", Art.Glow(), Color.clear, 3, Vector2.zero, Vector2.one * 0.6f);
                 _lingotes[i] = Art.NewSprite(_root, "Lingote", null, Color.white, 4, Vector2.zero, Vector2.one);
-                Art.PaintItem(_lingotes[i], Item.Ingot, false, LingoteS);
+                Art.PaintItem(_lingotes[i], de.OutItem, false, LingoteS);   // o que a origem faz (lingote; placa na Row)
                 _lingotes[i].enabled = _calor[i].enabled = false;
             }
             Pos(0f);

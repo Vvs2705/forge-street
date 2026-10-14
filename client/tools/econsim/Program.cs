@@ -81,6 +81,7 @@ static class EconSim
         float? workerSeg = null;  // B-CORE-04: null = o padrao do Bot
         float anuncioSeg = 30f;   // V19: ~30 s por anuncio premiado (o LevelPlay nao mostra o tempo; medir no POCO e ajustar aqui)
         bool pacote = false;
+        DistrictDef distrito = null; double fundoOF = 2400;   // C-CORE-01/02: --distrito id; --fundo-of = ouro/min do Old Forge no Charter (CONTEUDO_V1 §1)
         for (int i = 0; i < args.Length; i += 2)
         {
             string v = i + 1 < args.Length ? args[i + 1] : null;
@@ -99,14 +100,17 @@ static class EconSim
                     ok = evento != null && LiveOpsDefs.Falta(evento, Items.All) == null;   // so o que roda neste build
                     break;
                 case "--worker-seg" when ok: ok = float.TryParse(v, out float ws); workerSeg = ws; break;
+                case "--distrito" when ok: distrito = Distritos.Find(v); ok = distrito != null; break;
+                case "--fundo-of" when ok: ok = double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out fundoOF) && fundoOF >= 0; break;
                 default: ok = false; break;
             }
             if (!ok || perfis.Any(p => p.Name == null))
             {
-                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1]");
+                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400]");
                 return 2;
             }
         }
+        if (distrito != null && distrito.Indice > 0) return Distrito(distrito, perfis, minutos, partidas, anuncioSeg, knobs, workerSeg, fundoOF, saida);
 
         var jobs = new List<(BotProfile P, float Hz)>();
         foreach (BotProfile p in perfis) for (int i = 0; i < partidas; i++) jobs.Add((p, 30f + 30f * i / partidas));
@@ -359,4 +363,109 @@ static class EconSim
     }
 
     static string Clock(float s) => s < 0f ? "--:--" : $"{(int)(s / 60f)}:{(int)(s % 60f):00}";
+
+    // ------------------------------------------------------------------ C-CORE-01/02: um distrito em dados (--distrito)
+
+    sealed class RunD
+    {
+        public string Perfil, Csv; public float Venda1 = -1f, Prod = -1f, Abertura; public int Morta, MortaSeq, MortaIni, Upgrades, Luxo, SemDestino;
+        public long Earned, Fundo, Saldo, RendaProd, RendaFim; public long[] Vendas; public double Segundos;
+    }
+
+    /// <summary>
+    /// O distrito `d` do jeito que o jogador chega: Imperio com o Old Forge em producao completa (Mochila e Botas do ferreiro valem) e o Charter
+    /// dele (Imperio.Forca: o econsim nao mede as condicoes do V15), a RateEma do Old Forge = `fundoOF`/60 (a renda de fundo e' 25% dela) e o
+    /// ouro da abertura pago. O bot joga o Sim do distrito; o Imperio credita o fundo a cada passo. Relogio = jogo + anuncios (V19).
+    /// </summary>
+    static int Distrito(DistrictDef d, BotProfile[] perfis, int minutos, int partidas, float anuncioSeg, string knobs, float? workerSeg, double fundoOF, string saida)
+    {
+        var jobs = new List<(BotProfile P, float Hz)>();
+        foreach (BotProfile p in perfis) for (int i = 0; i < partidas; i++) jobs.Add((p, 30f + 30f * i / partidas));
+        var runs = new RunD[jobs.Count];
+        var wall = Stopwatch.StartNew();
+        Parallel.For(0, jobs.Count, k => runs[k] = PlayD(d, jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, () => Knobs(knobs, new Tuning()), workerSeg, fundoOF));
+        File.WriteAllText(saida, "perfil,ticks_s,min,ouro,renda_min,fundo_min,compras_min,upgrades,producao_completa_s" + Environment.NewLine + string.Concat(runs.Select(r => r.Csv)));
+        Sim amostra = new Sim(Knobs(knobs, new Tuning()), distrito: d);
+        int prod = Enumerable.Range(0, amostra.UpgradeDefs.Length).Count(amostra.IsProduction);
+        long custo = Enumerable.Range(0, amostra.UpgradeDefs.Length).Where(amostra.IsProduction).Sum(i => amostra.T.Cost(i));
+        Console.WriteLine($"econsim --distrito {d.Id}: {perfis.Length} perfis x {partidas} partidas x {minutos} min de relogio (anuncio = {anuncioSeg:0.#} s; Old Forge a {fundoOF:0}/min, fundo {fundoOF * Distritos.OldForge.FundoFator:0}/min) em {wall.Elapsed.TotalSeconds:0.0} s -> {Path.GetFullPath(saida)}");
+        Console.WriteLine($"{prod} produtivos ({custo} de ouro); abertura {d.Abertura}. Renda = vendas do distrito (GoldEarned); fundo = renda de fundo do Old Forge (fora do GoldEarned).");
+        Console.WriteLine("| perfil | 1a venda | producao completa | zona morta (min; maior seq.) | renda/min nos 10 min depois da producao | renda/min nos ultimos 10 min | fundo/min | luxo | saldo final | min sem destino |");
+        Console.WriteLine("|---|---|---|---|---|---|---|---|---|---|");
+        foreach (BotProfile p in perfis)
+        {
+            RunD[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            static string Media(IEnumerable<float> v) { float[] a = v.Where(t => t >= 0f).ToArray(); return a.Length == 0 ? "--:--" : Clock(a.Average()); }
+            RunD seq = g.OrderByDescending(r => r.MortaSeq).First();
+            string prodTxt = Media(g.Select(r => r.Prod)) + (g.Any(r => r.Prod < 0f) ? "*" : "");
+            Console.WriteLine($"| {p.Name} | {Media(g.Select(r => r.Venda1))} | {prodTxt} | {g.Average(r => r.Morta):0.#} ({seq.MortaSeq} a partir do min {seq.MortaIni}) | " +
+                              $"{g.Where(r => r.RendaProd >= 0).Select(r => (double)r.RendaProd).DefaultIfEmpty(-1).Average():0} | {g.Average(r => r.RendaFim):0} | {g.Average(r => r.Fundo) / minutos:0} | " +
+                              $"{g.Average(r => r.Luxo):0.#} | {g.Average(r => r.Saldo):0} | {g.Average(r => r.SemDestino):0.#} |");
+        }
+        Console.WriteLine();
+        Console.WriteLine($"| perfil | {string.Join(" | ", amostra.ItemDefs.Where(x => x.Product).Select(x => x.Id))} |");
+        Console.WriteLine("|" + string.Concat(Enumerable.Repeat("---|", amostra.ItemDefs.Count(x => x.Product) + 1)));
+        foreach (BotProfile p in perfis)
+        {
+            RunD[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            var cols = Enumerable.Range(0, amostra.ItemDefs.Length).Where(i => amostra.ItemDefs[i].Product)
+                .Select(i => $"{100.0 * g.Average(r => r.Vendas[i]) / Math.Max(1.0, g.Average(r => r.Earned)):0.0}%");
+            Console.WriteLine($"| {p.Name} (% da receita) | {string.Join(" | ", cols)} |");
+        }
+        return 0;
+    }
+
+    static RunD PlayD(DistrictDef d, BotProfile p, float hz, int minutos, float anuncioSeg, Func<Tuning> tuning, float? workerSeg, double fundoOF)
+    {
+        var clock = Stopwatch.StartNew();
+        Imperio imp = Imperio.Chegada(d, tuning, fundoOF);
+        if (imp.Ativo.Distrito != d) throw new InvalidOperationException("distrito " + d.Id + " nao abriu");
+        Sim s = imp.Ativo; Bot bot = Bot.From(p); float dt = 1f / hz;
+        if (workerSeg.HasValue) bot.WorkerSegundos = workerSeg.Value;
+        var r = new RunD { Perfil = p.Name, Vendas = new long[s.ItemDefs.Length] };
+        var csv = new StringBuilder();
+        var rel = new float[s.UpgradeDefs.Length];
+        for (int i = 0; i < rel.Length; i++) rel[i] = -1f;
+        float pausa = 0f; int ads = 0, bought0 = 0, seq = 0; long earned0 = 0, fundo0 = 0;
+        var earnedMin = new long[minutos + 1];
+        int prodMin = -1;
+        for (int m = 1; m <= minutos; m++)
+        {
+            while (s.Time + pausa < m * 60f)
+            {
+                int before = s.UpgradesBought;
+                bot.Step(s, dt);
+                imp.Fundo(dt);
+                pausa += (bot.AdsTotal - ads) * anuncioSeg; ads = bot.AdsTotal;
+                foreach (SimEvent e in s.Events) if (e.Kind == Ev.Sold) r.Vendas[e.A] += e.B;
+                if (r.Venda1 < 0f && s.FirstSaleTime >= 0f) r.Venda1 = s.FirstSaleTime + pausa;
+                if (s.UpgradesBought != before)
+                    for (int i = 0; i < rel.Length; i++) if (s.Bought[i] && rel[i] < 0f) rel[i] = s.UpgradeTime[i] + pausa;
+            }
+            earnedMin[m] = s.GoldEarned;
+            bool aVenda = s.Pads.Exists(pad => pad.Current(s) >= 0) || Enumerable.Range(0, s.UpgradeDefs.Length).Any(s.MenuAvailable);
+            int compras = s.UpgradesBought - bought0;
+            if (!s.ProductionComplete && compras == 0) { r.Morta++; if (++seq > r.MortaSeq) { r.MortaSeq = seq; r.MortaIni = m - seq; } } else seq = 0;
+            if (s.ProductionComplete && !aVenda) r.SemDestino++;
+            if (s.ProductionComplete && prodMin < 0) prodMin = m;
+            float tp = ProdD(s, rel);
+            csv.AppendLine(string.Join(",", p.Name, hz.ToString("0.###"), m, s.Gold, s.GoldEarned - earned0, imp.FundoGanho - fundo0, compras, s.UpgradesBought, tp < 0f ? "" : tp.ToString("0.0")));
+            earned0 = s.GoldEarned; fundo0 = imp.FundoGanho; bought0 = s.UpgradesBought;
+        }
+        r.Prod = ProdD(s, rel);
+        r.RendaProd = prodMin < 0 || prodMin + 10 > minutos ? -1 : (earnedMin[prodMin + 10] - earnedMin[prodMin]) / 10;
+        r.RendaFim = (earnedMin[minutos] - earnedMin[Math.Max(0, minutos - 10)]) / Math.Min(10, minutos);
+        r.Earned = s.GoldEarned; r.Fundo = imp.FundoGanho; r.Saldo = s.Gold; r.Upgrades = s.UpgradesBought;
+        for (int i = 0; i < s.UpgradeDefs.Length; i++) if (s.UpgradeDefs[i].Luxury && s.Bought[i]) r.Luxo++;
+        r.Csv = csv.ToString(); r.Segundos = clock.Elapsed.TotalSeconds;
+        return r;
+    }
+
+    static float ProdD(Sim s, float[] rel)
+    {
+        if (!s.ProductionComplete) return -1f;
+        float t = 0f;
+        for (int i = 0; i < s.UpgradeDefs.Length; i++) if (s.IsProduction(i)) t = Math.Max(t, rel[i]);
+        return t;
+    }
 }

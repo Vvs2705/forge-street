@@ -22,18 +22,32 @@ namespace FS
         /// <summary>ID de cada estacao por Station.Index (anexado no fim, nunca muda) na chave est.*. ponytail: vira StationDef.Id.</summary>
         public static readonly string[] EstacaoId = { "deposito", "fornalha", "fornalha2", "bigorna", "bigorna2", "escudos", "ferramentas", "balcao", "joalheria", "loja_joias", "bigorna_longa" };
 
+        // C-CORE-01: o distrito ativo (Distrito). Melhorias, itens e estacoes do MUNDO (dica, placa, cartao, rotulo, encomenda) saem daqui; as
+        // metas, missoes e projetos sao do Imperio (o Old Forge nesta leva): ItemId/NomeOF. Padrao = o Old Forge (os testes de sempre).
+        static UpgradeDef[] _ups = Upgrades.All;
+        static string[] _itens = ItemId, _est = EstacaoId;
+
+        /// <summary>O Game chama ao montar a cena com o distrito ativo.</summary>
+        public static void Distrito(DistrictDef d)
+        {
+            _ups = d.Upgrades;
+            _itens = Array.ConvertAll(d.Itens, x => x.Id);
+            _est = Array.ConvertAll(d.Estacoes, x => x.Id);
+            _nome = new string[_ups.Length];
+        }
+
         public static string Dica(Hint h, int arg, Sim s)
         {
             switch (h)
             {
                 case Hint.BuyPad: int u = s.Pads[arg].Current(s); return u < 0 ? "" : Placa(u);
                 case Hint.BuyMenu: return Menu(arg);
-                case Hint.ProductToCounter: return Loc.T("dica.balcao." + ItemId[arg]);
+                case Hint.ProductToCounter: return Loc.T("dica.balcao." + _itens[arg]);
                 case Hint.IngotToCrafter: return Loc.T("dica.lingote_bigorna");
                 case Hint.OreToFurnace: return Loc.T("dica.minerio_fornalha");
-                case Hint.PickProducts: return Loc.T("dica.pegue." + ItemId[arg]);
+                case Hint.PickProducts: return Loc.T("dica.pegue." + _itens[arg]);
                 case Hint.PickIngots: return Loc.T("dica.pegue_lingotes");
-                case Hint.ClientWaiting: return Loc.T("dica.cliente", ItemNome(arg, 1), ItemNome(arg, 2));
+                case Hint.ClientWaiting: return Cabe(Loc.T("dica.cliente", ItemNome(arg, 1), ItemNome(arg, 2)), Loc.T("dica.cliente.curta", ItemNome(arg, 1), ItemNome(arg, 2)));
                 case Hint.OpenChest: return Loc.T("dica.bau", Bau(s.Chests[arg].Index));
                 default: return Loc.T("dica.minerio");
             }
@@ -54,21 +68,26 @@ namespace FS
             return Cabe(Loc.T("dica.menu", n, a), Loc.T("dica.menu.curta", n, a), Loc.T("dica.menu.min", n));
         }
 
-        static readonly string[] _nome = new string[Upgrades.Count];
+        static string[] _nome = new string[Upgrades.Count];
         static Idioma _nomeEm;
 
-        /// <summary>Nome da melhoria no idioma atual (up.&lt;Id&gt;.nome). Guardado: a placa pergunta a cada quadro.</summary>
+        /// <summary>Nome da melhoria `u` do distrito ativo no idioma atual (up.&lt;Id&gt;.nome). Guardado: a placa pergunta a cada quadro.</summary>
         public static string Nome(int u)
         {
             if (_nomeEm != Loc.Atual) { Array.Clear(_nome, 0, _nome.Length); _nomeEm = Loc.Atual; }
-            return _nome[u] ??= Loc.T("up." + Upgrades.All[u].Id + ".nome");
+            return _nome[u] ??= Loc.T("up." + _ups[u].Id + ".nome");
         }
 
-        /// <summary>Item no singular (n == 1) ou plural.</summary>
-        public static string ItemNome(int item, long n) => Loc.P("item." + ItemId[item], n);
+        /// <summary>Melhoria do Old Forge (indice da tabela de sempre): metas e missoes, que sao do Imperio.</summary>
+        public static string NomeOF(int u) => Loc.T("up." + Upgrades.All[u].Id + ".nome");
+
+        /// <summary>Item do distrito ativo no singular (n == 1) ou plural.</summary>
+        public static string ItemNome(int item, long n) => Loc.P("item." + _itens[item], n);
+        /// <summary>Item do Old Forge (metas, missoes e projetos).</summary>
+        static string ItemNomeOF(int item, long n) => Loc.P("item." + ItemId[item], n);
 
         /// <summary>Rotulo da estacao no mundo, pelo Station.Index.</summary>
-        public static string Estacao(int index) => Loc.T("est." + EstacaoId[index]);
+        public static string Estacao(int index) => Loc.T("est." + _est[index]);
 
         /// <summary>Rotulo do bau de marco `i` (Balance.Milestones): "15 espadas!", "50 vendas!".</summary>
         public static string Bau(int i)
@@ -125,7 +144,7 @@ namespace FS
         /// <summary>Cartao travado do menu: "Precisa: Balcão 5" (curto, sem quebrar linha; up.&lt;Id&gt;.curto quando o nome nao cabe).</summary>
         public static string Precisa(int u)
         {
-            string curto = "up." + Upgrades.All[u].Id + ".curto";
+            string curto = "up." + _ups[u].Id + ".curto";
             return Loc.T("card.precisa", Loc.Tem(curto) ? Loc.T(curto) : Nome(u));
         }
 
@@ -133,10 +152,10 @@ namespace FS
         /// que ele exige, oculto (o painel de projetos mostra de onde ele vem).</summary>
         public static Cartao Estado(Sim s, int u)
         {
-            int req = Upgrades.All[u].Requires;
+            int req = s.UpgradeDefs[u].Requires;
             if (s.Bought[u]) return Cartao.Comprado;
             if (!s.TemProjeto(u)) return Cartao.Oculto;
-            if (req >= 0 && !s.Bought[req]) return Upgrades.All[u].Meta && !Upgrades.All[req].Meta ? Cartao.Oculto : Cartao.Travado;   // o nivel II espera a revelacao
+            if (req >= 0 && !s.Bought[req]) return s.UpgradeDefs[u].Meta && !s.UpgradeDefs[req].Meta ? Cartao.Oculto : Cartao.Travado;   // o nivel II espera a revelacao
             return s.Gold >= s.T.Cost(u) ? Cartao.Disponivel : Cartao.SemOuro;
         }
 
@@ -149,7 +168,7 @@ namespace FS
         /// </summary>
         public static string Beneficio(Tuning t, int u)
         {
-            switch ((Upgrade)u)
+            switch (_ups[u].Efeito)   // C-CORE-01: pelo efeito (o Fole de couro tem o texto do Fole); no Old Forge, o proprio upgrade
             {
                 case Upgrade.FurnaceSpeed1: return Loc.T("card.fornalha", Menos(t.FurnaceTime0, t.FurnaceTime1));
                 case Upgrade.FurnaceSpeed2: return Loc.T("card.fornalha", Menos(t.FurnaceTime1, t.FurnaceTime2));
@@ -161,11 +180,11 @@ namespace FS
                 case Upgrade.CounterCapacity: return Loc.T("card.clientes", Mais(t.VitrineClientMul, 1f));   // intervalo x0,7 = ritmo x1,43
                 case Upgrade.JewelVitrine: return Loc.T("card.joia", Mais(t.Price[(int)Item.Jewel], t.JewelPriceUp));
                 case Upgrade.Counter5: case Upgrade.Counter6: case Upgrade.Counter7: case Upgrade.Counter8:
-                    int n = u - (int)Upgrade.Counter5 + t.QueueCap0 + 1;
+                    int n = (int)_ups[u].Efeito - (int)Upgrade.Counter5 + t.QueueCap0 + 1;
                     return Loc.T("card.vagas", Mais(n - 1, n));
                 default:   // B-CORE-03, GDD §19: "Qualidade +0,15 · vel. +5%"
-                    return Upgrades.All[u].Station != null ? Loc.T("card.qualidade", Pontos(t.NivelEstacaoQ), Pct(t.NivelEstacaoVelocidade) + "%")
-                        : Loc.T("up." + Upgrades.All[u].Id + ".desc");
+                    return _ups[u].Station != null ? Loc.T("card.qualidade", Pontos(t.NivelEstacaoQ), Pct(t.NivelEstacaoVelocidade) + "%")
+                        : Loc.T("up." + _ups[u].Id + ".desc");
             }
         }
 
@@ -205,7 +224,7 @@ namespace FS
         /// <summary>Linha de baixo do cartao: antes → depois em numeros (era o MenuBar.Effect); "" quando o antes depende de outra compra (Lupa).</summary>
         public static string AntesDepois(Tuning t, int u)
         {
-            switch ((Upgrade)u)
+            switch (_ups[u].Efeito)
             {
                 case Upgrade.FurnaceSpeed1: return Loc.T("card.ad.s", N(t.FurnaceTime0), N(t.FurnaceTime1));
                 case Upgrade.FurnaceSpeed2: return Loc.T("card.ad.s", N(t.FurnaceTime1), N(t.FurnaceTime2));
@@ -216,15 +235,23 @@ namespace FS
                 case Upgrade.CounterCapacity: return Loc.T("card.ad.estoque", N(t.CounterCap0), N(t.CounterCap1));
                 case Upgrade.JewelVitrine: return Loc.T("card.ad.fila", N(Balance.JewelQueueCap), N(Balance.JewelQueueCapUp));
                 case Upgrade.Counter5: case Upgrade.Counter6: case Upgrade.Counter7: case Upgrade.Counter8:
-                    int n = u - (int)Upgrade.Counter5 + t.QueueCap0 + 1;
+                    int n = (int)_ups[u].Efeito - (int)Upgrade.Counter5 + t.QueueCap0 + 1;
                     return Loc.T("card.ad.vagas", N(n - 1), N(n));
                 default:
                     // B-CORE-03: depois da compra, so pelo nivel da estacao (as outras fontes ainda nao existem): L2 = 1 em 7, L3 = 1 em 3.
                     // ponytail: a frase vale para q < 100; o nivel que passar de 1,00 (L4-L5 com oficial, B-CORE-04/07) pede outra
-                    if (Upgrades.All[u].Station == null) return "";   // ponytail: Lupa = x0,6 sobre o tempo que o Martelo veloz ja mudou; o % basta
-                    int q = (Upgrades.StationLevel(u) - 1) * t.NivelEstacaoQ;
+                    if (_ups[u].Station == null) return "";   // ponytail: Lupa = x0,6 sobre o tempo que o Martelo veloz ja mudou; o % basta
+                    int q = (NivelEstacao(u) - 1) * t.NivelEstacaoQ;
                     return Loc.T("card.ad.fina", (long)Math.Round(100.0 / q, MidpointRounding.AwayFromZero));
             }
+        }
+
+        /// <summary>Upgrades.StationLevel na tabela do distrito ativo.</summary>
+        static int NivelEstacao(int u)
+        {
+            int n = 1;
+            for (int r = u; r >= 0 && _ups[r].Station != null; r = _ups[r].Requires) n++;
+            return n;
         }
 
         static string Menos(double antes, double depois) => Pct(1.0 - depois / antes) + "%";
@@ -258,9 +285,9 @@ namespace FS
             switch (d.Evento)
             {
                 case "product_sold":
-                    return d.Conta == Conta.Distintos ? Loc.T("meta.linhas", n) : Loc.T("meta.vende", n, d.Filtro < 0 ? Loc.P("meta.produto", alvo) : ItemNome(d.Filtro, alvo));
-                case "product_crafted": return Loc.T("meta.fabrica", n, ItemNome(d.Filtro, alvo));
-                case "upgrade_buy": return d.Filtro >= 0 ? Loc.T("meta.compra_um", Nome(d.Filtro)) : Loc.P("meta.compra", alvo, n);
+                    return d.Conta == Conta.Distintos ? Loc.T("meta.linhas", n) : Loc.T("meta.vende", n, d.Filtro < 0 ? Loc.P("meta.produto", alvo) : ItemNomeOF(d.Filtro, alvo));
+                case "product_crafted": return Loc.T("meta.fabrica", n, ItemNomeOF(d.Filtro, alvo));
+                case "upgrade_buy": return d.Filtro >= 0 ? Loc.T("meta.compra_um", NomeOF(d.Filtro)) : Loc.P("meta.compra", alvo, n);
                 case "currency_source": return Loc.T("meta.ganha", n);
                 case "currency_sink": return Loc.T("meta.gasta", n);
                 case "mission_complete": return Loc.P(d.Filtro == 0 ? "meta.diarias" : "meta.semanais", alvo, n);
@@ -298,19 +325,19 @@ namespace FS
         {
             string n = Qtd(x.Alvo);
             int item = x.Filtro.Length == 1 ? Items.IndexOf(x.Filtro[0]) : -1;
-            string coisa = item >= 0 ? ItemNome(item, x.Alvo) : Loc.P("meta.produto", x.Alvo);
+            string coisa = item >= 0 ? ItemNomeOF(item, x.Alvo) : Loc.P("meta.produto", x.Alvo);
             switch (x.Evento)
             {
                 case "product_sold": return Loc.T("meta.vende", n, coisa);
                 case "product_crafted": return Loc.T("meta.fabrica", n, coisa);
-                case "order_done": return item >= 0 ? Loc.P("missao.order_item", x.Alvo, n, ItemNome(item, 2)) : Loc.P("meta.order_done", x.Alvo, n);
+                case "order_done": return item >= 0 ? Loc.P("missao.order_item", x.Alvo, n, ItemNomeOF(item, 2)) : Loc.P("meta.order_done", x.Alvo, n);
                 case "upgrade_buy":
                     if (x.Filtro.Length == 0) return Loc.P("meta.compra", x.Alvo, n);
                     int u = Upgrades.IndexOf(x.Filtro[0]);
-                    return Upgrades.All[u].Station != null ? Loc.T("missao.nivel", n, Loc.T("est." + Upgrades.All[u].Station)) : Loc.T("meta.compra_um", Nome(u));
+                    return Upgrades.All[u].Station != null ? Loc.T("missao.nivel", n, Loc.T("est." + Upgrades.All[u].Station)) : Loc.T("meta.compra_um", NomeOF(u));
                 case "quality_crafted": case "quality_superior":
                     return Loc.T(x.Evento == "quality_crafted" ? "missao.fina" : "missao.superior", n, item >= 0 ? coisa : Loc.P("missao.peca", x.Alvo));
-                case "master_strike": return item >= 0 ? Loc.P("missao.golpe_item", x.Alvo, n, ItemNome(item, 2)) : Loc.P("missao.golpe", x.Alvo, n);
+                case "master_strike": return item >= 0 ? Loc.P("missao.golpe_item", x.Alvo, n, ItemNomeOF(item, 2)) : Loc.P("missao.golpe", x.Alvo, n);
                 case "order_complete":   // B-CORE-05: "Entregue 2 do tipo Real" (filtro = LiveOpsDefs.TiposEncomenda, o nome minusculo do OrderType)
                     return Enum.TryParse(x.Filtro[0], true, out OrderType t) ? Loc.P("meta.order_complete", x.Alvo, n, TipoEncomenda((int)t)) : Loc.P("meta.order_done", x.Alvo, n);
                 default: return Loc.P("meta." + x.Evento, x.Alvo, n);   // offline_claim, vip_served, worker_hired, play_day
@@ -402,7 +429,7 @@ namespace FS
         public static string PrecisaWorker(Sim s, int k)
         {
             WorkerDef d = s.Equipe.Defs[k];
-            int u = d.Requer == null ? -1 : Upgrades.IndexOf(d.Requer);
+            int u = d.Requer == null ? -1 : Upgrades.IndexOf(d.Requer, s.UpgradeDefs);
             return u >= 0 && !s.Bought[u] ? Precisa(u) : Loc.T("card.precisa_renome", RenomeDefs.NivelQueLibera(d.Id));
         }
 
@@ -430,10 +457,10 @@ namespace FS
             if (k == BlueprintKind.StationLevel || k == BlueprintKind.Technique)
             {
                 RecipeDef r = Array.Find(s.RecipeDefs, x => x.Station == t);
-                return r != null && (int)r.Output < ItemId.Length ? ItemNome((int)r.Output, 2) : t;
+                return r != null && (int)r.Output < ItemId.Length ? ItemNomeOF((int)r.Output, 2) : t;
             }
             int i = Items.IndexOf(t, s.ItemDefs);
-            return i >= 0 && i < ItemId.Length ? ItemNome(i, n) : t;
+            return i >= 0 && i < ItemId.Length ? ItemNomeOF(i, n) : t;
         }
 
         static string Fonte(Sim s, BlueprintSource f)
@@ -446,7 +473,7 @@ namespace FS
                     if (i < 0 || i >= ItemId.Length) return f.Ref;
                     bool fina = f.MinQ >= Quality.Fine;
                     long feito = Math.Min(f.N, fina ? s.Projetos.Finas[i] : s.SoldItems[i]);
-                    return Loc.T(fina ? "proj.f.fina" : "proj.f.0", Qtd(f.N), ItemNome(i, f.N), Qtd(feito));
+                    return Loc.T(fina ? "proj.f.fina" : "proj.f.0", Qtd(f.N), ItemNomeOF(i, f.N), Qtd(feito));
                 case BlueprintSourceKind.Achievement:
                     MetaDef m = MetasDefs.Achar(f.Ref);
                     return Loc.T("proj.f.4", m != null ? Meta(m, m.Alvo) : f.Ref);
