@@ -30,7 +30,7 @@ Medido nos clips da `Sintese` (RMS da janela de 50 ms mais forte, no volume 1,0;
 | golpe (de mestre) | hammer (0,75; −11,2; 39%) | Ação | 0,55 → 0,57 | −16,3 → −16,0 (+3 dB: acerto de habilidade) |
 | minerio | ore (0,20; −14,1; 13%) | Ação | 0,55 → 0,57 | −19,3 → −19,0 |
 | pegar, largar | drop (0,16; −12,2; 11%) | Ação | 0,55 → 0,46 | −17,4 → −19,0 |
-| venda | coin | Ação | 0,55 → 0,37 | −18,7 → −22,1 (agudo) |
+| venda | coin | Ação | 0,55 → 0,32 | −18,7 → −23,4 (agudo) |
 | fina | coin (×1,15) | Ação | 0,55 → 0,33 | −18,7 → −23,1 (agudo) |
 | click | click (0,06; −19,0; 73%) | UI | 0,55 → 0,55 | −24,2 (agudo) |
 | peca (golpe final) | hammer | Mundo | 0,55 → 0,29 | −16,3 → −21,9 (+3 dB: acento do compasso) |
@@ -66,7 +66,7 @@ Intervalo mínimo **por nome** (de qualquer fonte: todas as bancadas dividem o "
 | sino | 2 s | 1 ±3% | todo cliente (0,2 s) → **só quem chega à fila vazia** |
 | ajudante | 4 s | 0,8 ±3% | pegar/largar de ajudantes e workers (antes iguais aos do ferreiro) e a entrega da esteira → só ajudantes (a esteira já fala pelo clac) |
 | minerio, pegar, largar | 0,45 s | 1 / 1 / 1,1 ±2% | pegar/largar do ferreiro (0,08 s): numa carga de 6 itens (0,2 s cada) tocam 2–3 |
-| venda | 1,2 s | **1, sempre** ±2% | cada venda (0,1 s, altura subindo a cada venda) → vendas a menos de 1,2 s viram 1 moeda |
+| venda | 2 s | **1, sempre** ±2% | cada venda (0,1 s, altura subindo a cada venda) → vendas a menos de 2 s viram 1 moeda (1,2 s dava ~50/min com a oficina cheia no build; coordenador, 2026-10-13) |
 | fina | 6 s | 1,15 (Superior ×1,08) | cada peça Fina/Superior (1,35/1,6: agudo repetido) |
 | perdeu | 3 s | 1 | cliente que cansou |
 | golpe | 0,1 s | 1,25 | acerto do golpe de mestre |

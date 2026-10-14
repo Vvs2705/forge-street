@@ -70,7 +70,7 @@ namespace FS
             ["minerio"] = new Regra("ore", Cat.Acao, 0.57f, 0.45f),
             ["pegar"] = new Regra("drop", Cat.Acao, 0.46f, 0.45f),
             ["largar"] = new Regra("drop", Cat.Acao, 0.46f, 0.45f, 1.1f),
-            ["venda"] = new Regra("coin", Cat.Acao, 0.37f, 1.2f),     // vendas a menos de 1,2 s viram 1 moeda; mesma altura sempre (subia a cada venda)
+            ["venda"] = new Regra("coin", Cat.Acao, 0.32f, 2f),     // vendas a menos de 2 s viram 1 moeda (1,2 s dava ~50/min com a oficina cheia); mesma altura sempre (subia a cada venda)
             ["fina"] = new Regra("coin", Cat.Acao, 0.33f, 6f, 1.15f),  // era 1,35/1,6 a cada peca: agudo repetido; com quase tudo Fina, 1 a cada 6 s
             ["golpe"] = new Regra("hammer", Cat.Acao, 0.57f, 0.1f, 1.25f),
             ["perdeu"] = new Regra("leave", Cat.Acao, 0.4f, 3f),
