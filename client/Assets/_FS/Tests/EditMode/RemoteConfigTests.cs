@@ -70,7 +70,7 @@ namespace FS.Tests
         public void OverrideParcial_SoAsChavesDoJson()
         {
             var t = new Tuning();
-            RemoteConfig.Resultado r = Aplica(t, "{\"id\": \"ab_preco\", \"versao\": 3, \"OfflineFactor\": 0.3, \"Price\": [0, 0, 12, 25, 16, 60], \"Encomendas\": false}");
+            RemoteConfig.Resultado r = Aplica(t, "{\"id\": \"ab_preco\", \"versao\": 3, \"OfflineFactor\": 0.3, \"Price\": [0, 0, 12, 25, 16, 60, 40], \"Encomendas\": false}");
             Assert.IsTrue(r.Valido);
             Assert.AreEqual("ab_preco@3", r.Rotulo);
             Assert.AreEqual(3L, r.Versao);
@@ -95,7 +95,7 @@ namespace FS.Tests
         [Test]
         public void AplicarDuasVezes_MesmoTuning()
         {
-            const string json = "{\"id\": \"x\", \"versao\": 1, \"CostBase\": 60, \"OfflineMaxSeconds\": 9000, \"Placements.vip.Recarga\": 10, \"Price\": [0, 0, 1000, 25, 16, 60]}";
+            const string json = "{\"id\": \"x\", \"versao\": 1, \"CostBase\": 60, \"OfflineMaxSeconds\": 9000, \"Placements.vip.Recarga\": 10, \"Price\": [0, 0, 1000, 25, 16, 60, 40]}";
             var uma = new Tuning(); var duas = new Tuning();
             RemoteConfig.Resultado r1 = Aplica(uma, json);
             Aplica(duas, json); RemoteConfig.Resultado r2 = Aplica(duas, json);
@@ -251,7 +251,7 @@ namespace FS.Tests
         public void FaixaGenerica_DezVezesParaCadaLado_PadraoZeroFicaZero()
         {
             var t = new Tuning();
-            RemoteConfig.Resultado r = Aplica(t, "{\"CostBase\": 5000, \"FirstClientAt\": 0.1, \"Price\": [5, 0, 1000, 25, 16, 60], \"QualidadePct\": [100, 150, 250, 100]}");
+            RemoteConfig.Resultado r = Aplica(t, "{\"CostBase\": 5000, \"FirstClientAt\": 0.1, \"Price\": [5, 0, 1000, 25, 16, 60, 40], \"QualidadePct\": [100, 150, 250, 100]}");
             Assert.AreEqual(500, t.CostBase, "50 x 10");
             Assert.AreEqual(0.8f, t.FirstClientAt, "8 / 10");
             Assert.AreEqual(0, t.Price[(int)Item.Ore], "minerio nao se vende: padrao 0 fica 0");
@@ -276,12 +276,12 @@ namespace FS.Tests
         public void NadaCriaConteudo_ChaveNovaEArrayDeOutroTamanho_Ignorados()
         {
             var t = new Tuning();
-            RemoteConfig.Resultado r = Aplica(t, "{\"id\": \"x\", \"bau_aleatorio_pago\": true, \"Chance\": 0.5, \"Price\": [0, 0, 10, 25, 16, 60, 99], \"QualidadePct\": [100]}");
+            RemoteConfig.Resultado r = Aplica(t, "{\"id\": \"x\", \"bau_aleatorio_pago\": true, \"Chance\": 0.5, \"Price\": [0, 0, 10, 25, 16, 60, 40, 99], \"QualidadePct\": [100]}");
             Assert.IsTrue(r.Valido);
             Assert.AreEqual(0, r.Aplicadas);
             Assert.AreEqual(4, r.Avisos.Count, Avisos(r));
             StringAssert.Contains("bau_aleatorio_pago: chave desconhecida", Avisos(r));
-            StringAssert.Contains("Price: tamanho 7 (o build tem 6", Avisos(r));
+            StringAssert.Contains("Price: tamanho 8 (o build tem 7", Avisos(r));   // B-CORE-07: a espada longa e' o 7o preco
             Assert.AreEqual(Dump(new Tuning()), Dump(t), "o config so ajusta o que o build tem");
         }
 

@@ -23,7 +23,7 @@ namespace FS
         public static readonly Color HudFace = Hex(0x2A1E14), HudEdge = Hex(0xF2D9A0);
 
         /// <summary>Cor por Item (indice do enum).</summary>
-        public static readonly Color[] ItemColor = { Hex(0x9C8468), Hex(0xC8D0DC), Hex(0x7FC4FF), Hex(0xF2545B), Hex(0x4CD964), Hex(0xB07CF2) };
+        public static readonly Color[] ItemColor = { Hex(0x9C8468), Hex(0xC8D0DC), Hex(0x7FC4FF), Hex(0xF2545B), Hex(0x4CD964), Hex(0xB07CF2), Hex(0x4C88C4) };   // B-CORE-07: espada longa = aco escuro (ART_BIBLE)
         public static readonly Color DepositC = Hex(0x5E4F43), FurnaceC = Hex(0xFF8A3D), AnvilC = Hex(0x6C7A93), ShieldC = Hex(0xA64E57), ToolC = Hex(0x3E8E55), CounterC = Hex(0xD9A62E);
 
         public static Color ComAlfa(Color c, float a) => new Color(c.r, c.g, c.b, a);
@@ -81,7 +81,7 @@ namespace FS
             {
                 case Item.Ore: return Rock();
                 case Item.Ingot: return Rounded();
-                case Item.Sword: return Triangle();
+                case Item.Sword: case Item.LongSword: return Triangle();
                 case Item.Shield: return Diamond();
                 case Item.Jewel: return Jewel();
                 default: return Plus();
@@ -92,7 +92,7 @@ namespace FS
         public static Vector2 ItemScale(Item i, float s) => i == Item.Ingot ? new Vector2(s * 1.25f, s * 0.6f) : new Vector2(s, s);
 
         // ---------- arte pre-renderizada dos itens (v0.5, docs/ASSETS.md s7): as mascaras acima viram reserva ----------
-        static readonly string[] ItemArtName = { "item_minerio", "item_lingote", "item_espada", "item_escudo", "item_ferramenta", "item_joia" };
+        static readonly string[] ItemArtName = { "item_minerio", "item_lingote", "item_espada", "item_escudo", "item_ferramenta", "item_joia", "item_espada_longa" };
         const float ArtFill = 1.1f;   // o item ocupa ~116 dos 128 px da celula: escala = tamanho desejado x 1,1
 
         /// <summary>Quadro `clip` de uma folha de 1 quadro (Resources/Sprites/&lt;name&gt;); null sem a folha.</summary>

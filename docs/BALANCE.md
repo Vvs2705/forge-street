@@ -1585,51 +1585,126 @@ Aos 120 min (4 partidas): prêmio de qualidade F2P 12,7% → 18,6%; minutos sem 
 
 `EquipeTests` (20): golden dos 13 IDs; migração (mesmo upgrade, rota e ordem; nível 1 = passo e carga de antes; do save na mesma ordem); efeito neutro sem ninguém; revelação nas Ferramentas e flag desligada; compra (cobra na hora, sem ouro e no máximo nada muda, 250/400/640/1.025); requisitos por upgrade e Renome 1/2; cada papel (passo e carga por nível, oficial só na família e +25 no nível 5, mestre de obras em toda bancada e nunca na fornalha, balconista: paciência ×1,1/×1,3 e 5 → 7 vendas em 2 s, almoxarife: saídas 6/5 e estoque por nível); save de ida e volta (pilha de 6 na fornalha volta inteira), save antigo sem `wkn=` (schema 3 e o `wk=` do schema 2), lixo no `wkn=`; metas (`worker_hired` por papel, `worker_upgrade` por nível, ralo, retroativo); validator (ID, prefixo, 3 traços, custo que não sobe ou fora do múltiplo de 5, distrito/família/upgrade que o build não tem, papel da Wave C, 2º oficial da família, upgrade que já contrata, `wk_` do Renome sem worker); textos do cartão nos 3 idiomas em todo nível; `-equipe`; bot (idêntico sem os novos; 90 min com renda maior e saldo aos 60 ≤ 10 mil). `mutantes.py`: 12 mutações novas (`wk-*`: passo no nível 1, carga, oficial fora da família, mestre de obras na fornalha, atendimento sem balconista, compra sem cobrar, Renome ignorado, revelação, save sem nível, load cortando a pilha, validator de custo, bot antes da produção), todas mortas.
 
-## 26. B-CORE-05: Orders 2.0 (2026-10-13)
+## 26. Blueprints (B-CORE-07) (2026-10-13)
 
-Regra em `ECONOMIA_WAVE_B.md` §3 e GDD §10; catálogo no `CONTEUDO_V1.md` §7. **Vigente** (`Core/Encomendas.cs`, `Core/EncomendasDefs.cs`): 8 tipos em dados (`OrderDef`, IDs `ord_*`): Common (= a encomenda de antes), Bulk (2 linhas e 5 entregues), Quality (linha que já faz Fina; variante Superior no Renome 3), Rush (8 entregues; prazo de 240 s **só de bônus**: no prazo o prêmio dobra e dá +1 de Renome, fora dele paga o normal), Mixed (3 linhas; 2 produtos, 3 com 4 linhas), Royal (Renome 2, Fina; o próximo projeto da fila Royal), Blueprint (Renome 1 e projeto pendente; gancho do B-CORE-07) e Event (vaga própria enquanto o evento está ativo; só pontos; gancho do D-CORE-03). Os 5 fregueses do Old Forge (FS-3) entram na 7ª, 14ª… Common (N e item fixos, +1 coração). Rodízio do Old Forge `Common, Common, Bulk, Quality, Common, Mixed, Rush, Blueprint, Common, Royal` na posição `Abertas % 10` (abertas + entregues + trocadas), tipo travado vira Common; produto = `linhas[idx % linhas]`, pulando o que já está noutra vaga. Vagas 1 → 2 (Renome 1) → 3 (Renome 3). **Tudo o que é novo só depois das Ferramentas** (tipos, vagas extras, fregueses): até lá o jogo é o de antes, tick a tick. Prêmio em segundos da taxa online × a escala dos knobs da Common (`OrderSeconds / 150`, `OrderRewardSeconds / 10`), múltiplo de 5, fora do `GoldEarned`; Renome pelo tipo (+1 a +10). Uma peça vendida conta para uma vaga só (a mais antiga que a aceita). "Bônus da encomenda" (anúncio) = máx(50% do prêmio, **60 s de renda**) (`Tuning.EncomendaBonusMinSeg`).
+Regra em `GDD.md` §12, `ECONOMIA_WAVE_B.md` §4/§8.5 e `CONTEUDO_V1.md` §9. **Vigente:** 19 `BlueprintDef` do Old Forge (os 18 do §4 + `bp_rec_espada_longa`; 3 essenciais), posse (nunca saldo) no `Sim.Projetos`. Fontes ativas: marco de venda (com "Fina ou melhor"), produção completa, Renome e conquista resgatada; as filas de encomenda (B-CORE-05), contrato, evento, Pass e loja são ganchos. Níveis IV–V das 4 famílias (Meta, menu) exigem o projeto de mestre; a bigorna longa (pad Meta, 6.000, exige o Martelo veloz) e a espada longa (2 lingotes, 7,5 s, 40 de ouro, família das bigornas) exigem `bp_rec_espada_longa`; técnica = q +20 (`Tuning.TecnicaQ`) na família. O bot não mudou: ele compra pelo menu/pad o que o projeto libera, como qualquer melhoria.
+
+**Desvios do catálogo (decididos por padrão, revisar):** (1) `bp_bigorna_mestra` e `bp_bancada_mestra` ganham o marco "produção completa" como 2ª fonte grátis (o padrão dos `bp_mestra_*` dos distritos 2–6): sem ele os níveis IV–V esperavam as filas do B-CORE-05 e nenhum essencial era alcançável no F2P. (2) Custo dos IV–V = **1/5 do §1.5 no IV e 1/6 no V** (bigornas 800/1.500, escudos 1.000/1.835, ferramentas 800/1.500, joalheria 1.600/3.000; soma 12.035), não a metade da V26: com a metade (34.000) o retorno medido foi 104 min (portão ≤ 40). O IV continua acima do III em toda família.
+
+"Antes" = a `main` com os workers (67d4f4e, #54: o bot contrata e sobe worker só depois da produção completa); "depois" = este branch sobre ela.
+
+### 26.1 econsim, 60 min, 1 partida por perfil (anúncio = 30 s), antes → depois
+
+| perfil | Produção | zona morta (min) | prêmio de qualidade | projetos aos 60 | IV–V aos 60 (1º) | bigorna longa | worker (1ª compra; gasto aos 60) |
+|---|---|---|---|---|---|---|---|
+| Ideal | 47:56 → **50:28** | 20 → 22 | 13,4% → 16,9% | 10/19 | 3/8 (54:24) | 45:35 | 48:07 → 50:30; 25.830 → 19.390 |
+| F2P | 47:02 → **49:55** | 21 → 22 | 12,4% → 16,3% | 9/19 | 3/8 (53:48) | 45:05 | 47:07 → 50:04; 27.705 → 19.390 |
+| Slow | 49:35 → **52:29** | 23 → 25 | 12,1% → 15,9% | 9/19 | 3/8 (56:30) | 47:27 | 49:47 → 52:37; 21.370 → 13.890 |
+| AdWatcher | 44:32 → **46:38** | 18 → 19 | 13,0% → 16,8% | 9/19 | 5/8 (50:34) | 42:29 | 44:35 → 46:47; 36.295 → 25.830 |
+
+Pisos do §3 iguais (0% abaixo em todos os perfis; os primeiros 10 min não mudam, nada de projeto antes das Ferramentas). Depois da produção completa os níveis IV–V e os workers disputam o mesmo ouro (o bot compra o mais barato).
+
+### 26.2 4 partidas por perfil, 120 min (passos 30–52,5 ticks/s)
+
+| perfil | Produção | Fachada | zona morta | ouro/min 111–120 (renda final) | saldo aos 120 | min sem destino | prêmio de qualidade 120 | espada longa (% da receita) |
+|---|---|---|---|---|---|---|---|---|
+| Ideal | 47:13 → 49:59 | 73:17 → 77:20 | 20,5 → 22,5 | 2.509 → **3.083** | 83.523 → 97.512 | 32 → 30,5 | 19,7% → 29,3% | 6,9% |
+| F2P | 47:04 → **49:28** | 73:43 → 77:36 | 20,5 → 21,8 | 2.448 → **2.959** (+21%) | 81.130 → 94.161 | 31,3 → 30,3 | 18,6% → 28,4% | 6,4% |
+| Slow | 49:26 → 52:10 | 76:35 → 80:43 | 22,3 → 24,3 | 2.440 → 3.018 | 73.371 → 85.557 | 28,8 → 27,8 | 18,5% → 28,2% | 7,0% |
+| AdWatcher | 44:39 → 46:53 | 69:33 → 73:48 | 19,5 → 20,8 | 2.493 → 3.094 | 96.709 → 113.182 | 36,3 → 34,3 | 18,8% → 28,7% | 7,3% |
+
+Os 6 workers e os 48 níveis (47.040) entram nos dois; os IV–V 8/8 (12.035) no "depois", a partir de 53:30 (F2P).
+
+Projetos aos 120 min (os 4 perfis): 10 de 19 — técnica das ferramentas (150 vendidas) e das joias (50), os dois de mestre (produção completa), receita da espada longa (300 espadas), o visual da espada (500), e os projetos das Masterworks com marco (Primeira Lâmina, Broquel, Martelo do Fundador, Anel do Mercador). Os 9 que faltam só têm fila de encomenda/Royal (B-CORE-05), Renome 3 (o F2P chega lá em 1,5–3 h) ou evento. Nenhum veio de fonte paga.
+
+**Por que a produção completa atrasou 2,4 min:** o marco das 300 espadas (~40 min) abre a bigorna longa; o bot compra a de 6.000 aos ~45 min (é o pad mais barato a venda), antes da Vitrine de joias (9.000), o último produtivo. Ela fica fora da produção completa (Meta), mas o ouro gasto nela atrasa o resto; a zona morta sobe 1,3 min pelo mesmo motivo. Fica dentro do portão (41–55 min). Se incomodar: o knob é `Tuning.BigornaLongaCusto` ou pedir a Vitrine de joias como requisito do pad.
+
+### 26.3 Retorno dos níveis IV–V (A/B: IV–V a 10⁹, que o bot nunca compra, × vigente; ouro/min, 4 partidas)
+
+| janela | F2P sem → com | ganho | retorno (12.035 / ganho) | Ideal sem → com | ganho | retorno |
+|---|---|---|---|---|---|---|
+| min 91–120 (com os workers, vigente) | 2.684 → 3.030 | +346/min | **34,8 min** | 2.720 → 3.093 | +373/min | 32,3 min |
+| min 91–120 (`main` antes do #54, sem workers) | 2.130 → 2.439 | +309/min | 38,9 min | 2.167 → 2.511 | +344/min | 35,0 min |
+
+Com os workers a janela 61–90 ainda pega os IV–V sendo comprados (o 1º aos 53:30, o último perto dos 70 min), então o retorno se lê na 91–120.
+
+**Varredura que decidiu o preço** (medida antes do #54, sem workers; F2P, janela 91–120; o ganho dos IV–V fica em ~310–335/min qualquer que seja o preço: só o retorno muda):
+
+| IV–V | soma | retorno | Fachada F2P | saldo aos 120 |
+|---|---|---|---|---|
+| metade do §1.5 (V26) | 34.000 | 104 min | 69:26 | 89.840 |
+| 1/4 do §1.5 | 17.000 | 53 min | 62:05 | 108.129 |
+| 1/5 do §1.5 | 13.600 | 41 min (no limite) | 60:40 | 112.509 |
+| **1/5 no IV, 1/6 no V (vigente)** | **12.035** | **36–39 min** | 60:13 | 113.042 |
+
+Abaixo de 1/5 o IV fica mais barato que o III (bigornas 665 < 750). O ralo dos IV–V é pequeno perto do luxo (54 mil): o ouro sem destino depois da produção é dos distritos (Wave C).
+
+### 26.4 Portões (ECONOMIA_WAVE_B §10)
+
+| Medida | Portão | Medido | |
+|---|---|---|---|
+| Primeiros 10 min | iguais | iguais (pisos do §3 sem mudança; `QualidadeTests.Revelacao_PrimeirosDezMinutos_IguaisSemQualidade`) | ok |
+| Produção completa, F2P | 41–55 min | 49:55 (4 partidas: 49:28) | ok (+2,4 min, §26.2) |
+| Zona morta, F2P | não piora (meta ≤ 12 é das Orders 2.0) | 21 → 22 (4 partidas: 20,5 → 21,8) | piora 1,3 min pela bigorna longa (§26.2) |
+| Prêmio de qualidade | 5–20% aos 60; ≤ 35% aos 120 | 16,3% / 28,4% | ok |
+| Golpe de mestre | ≤ 8% F2P; ≤ 12% Perfect | 0% / 1,1% | ok |
+| Retorno L4–L5 | ≤ 40 min | 34,8 min (F2P; Ideal 32,3) | ok com o desvio de preço |
+| AdWatcher, produção completa | ≥ 0,75 × F2P | 46:38 × 49:55 | ok |
+| Produção completa nunca presa a Blueprint | nenhum produtivo exige projeto; essenciais grátis no F2P | `ProjetosTests.Bot_F2P_ChegaAosEssenciais_EUsaOsProjetos` (os 3 aos 60 min, nada pago) | ok |
+
+`BalanceTests` (bot humano, Dt 1/30, portões "medido + 30%") passam sem mudar nenhum número.
+
+**Robustez (1.000 partidas, 250 passos de tick por perfil, 90 min, com os workers):** todas chegam à produção completa e à Fachada, sem impasse com o corpo novo da bigorna longa (5,0; 1,5). Produção completa média F2P 49:38 (Ideal 50:42, Slow 52:42, AdWatcher 46:50); os 10 projetos de marco/produção em todas; IV–V 8/8 a partir de 53:34 (F2P); espada longa 6,8% da receita aos 90 min.
+
+### 26.5 Testes e prova vermelha
+
+`ProjetosTests` (12): catálogo (19, 3 essenciais, fila #1–#7 sem buraco, nada pago); posse idempotente (o mesmo marco em dois Ticks, o gancho e a transação não duplicam; o save grava ID e origem, nunca saldo); ganchos (só fonte listada, pago só com ID de transação, a mesma transação não paga 2x); fontes (marco de venda, Fina ou melhor, produção completa, Renome 3, conquista só resgatada); filas (próximo mostrado antes, sem sorteio, o que veio por outra fonte sai da fila, esgota); desbloqueio dos IV–V (menu, compra direta e cartão) e da bigorna longa (pad, linha, venda a 40, nível pela família); técnica (+20 na família toda, 1 Fina a cada 5, determinística); save (ida e volta com origem e transação, save antigo sem `bp=` vazio e o retroativo dos marcos no 1º Tick, ID desconhecido mantido); validator (essencial só pago, essencial só de contrato, só evento, Pass premium, ID repetido/fora do formato, marco inalcançável, posição de fila repetida, Renome fora da tabela, conquista e distrito inexistentes, alvo inexistente, upgrade com projeto errado e nível IV sem projeto); bot F2P com os 3 essenciais e o nível IV aos 60 min; textos do painel nos 3 idiomas. `mutantes.py`: 17 mutações novas `bp-*` (posse que duplica, transação que repete, pago sem transação, fonte não listada, Fina que conta Normal, conquista sem resgate, save sem transação, load que perde a posse, menu/compra/pad sem projeto, técnica zerada ou pela estação, nível pela estação, validator do essencial pago, contrato como permanente, mestre sem a produção completa) e a `eco-preco-ferramenta` atualizada para o preço de 7 itens: 18 mortas, 0 vivas.
+
+## 27. B-CORE-05: Orders 2.0 (2026-10-13)
+
+Regra em `ECONOMIA_WAVE_B.md` §3 e GDD §10; catálogo no `CONTEUDO_V1.md` §7. **Vigente** (`Core/Encomendas.cs`, `Core/EncomendasDefs.cs`): 8 tipos em dados (`OrderDef`, IDs `ord_*`): Common (= a encomenda de antes), Bulk (2 linhas e 5 entregues), Quality (linha que já faz Fina; variante Superior no Renome 3), Rush (8 entregues; prazo de 240 s **só de bônus**: no prazo o prêmio dobra e dá +1 de Renome, fora dele paga o normal), Mixed (3 linhas; 2 produtos, 3 com 4 linhas), Royal (Renome 2, Fina; o próximo projeto da fila Royal do `Projetos`), Blueprint (Renome 1 e projeto pendente na fila de encomenda do `Projetos`, B-CORE-07: `ProximoDaFila` no cartão, `GanhaDaFila` com o ID de transação na entrega) e Event (vaga própria enquanto o evento está ativo; só pontos; gancho do D-CORE-03). Os 5 fregueses do Old Forge (FS-3) entram na 7ª, 14ª… Common (N e item fixos, +1 coração). Rodízio do Old Forge `Common, Common, Bulk, Quality, Common, Mixed, Rush, Blueprint, Common, Royal` na posição `Abertas % 10` (abertas + entregues + trocadas), tipo travado vira Common; produto = `linhas[idx % linhas]`, pulando o que já está noutra vaga. Vagas 1 → 2 (Renome 1) → 3 (Renome 3). **Tudo o que é novo só depois das Ferramentas** (tipos, vagas extras, fregueses): até lá o jogo é o de antes, tick a tick. Prêmio em segundos da taxa online × a escala dos knobs da Common (`OrderSeconds / 150`, `OrderRewardSeconds / 10`), múltiplo de 5, fora do `GoldEarned`; Renome pelo tipo (+1 a +10). Uma peça vendida conta para uma vaga só (a mais antiga que a aceita). "Bônus da encomenda" (anúncio) = máx(50% do prêmio, **60 s de renda**) (`Tuning.EncomendaBonusMinSeg`).
 
 **Decisões e desvios (revisar):**
 1. **Rush com penalidade? Não:** só bônus (recomendação do ticket); o validator recusa bônus sem prazo e não existe campo de penalidade.
-2. **Prêmio de Bulk, Quality, Mixed e Royal = 70% dos segundos do catálogo** (32/18/30/25/45 → 22/13/21/18/32; mínimos iguais; os fregueses Quality/Bulk acompanham). Com o catálogo, o ouro de encomendas foi a 13,6% da venda aos 60 min no F2P (portão 4–12%); com 80%, 11,9% no F2P e 12,6% no Ideal; com 70%, 11,3% (4 partidas). Common, Rush e Blueprint ficam como o catálogo (a Common não pode mudar: é a dos 10 primeiros minutos).
+2. **Prêmio de Bulk, Quality, Mixed e Royal = 70% dos segundos do catálogo** (32/18/30/25/45 → 22/13/21/18/32; mínimos iguais; os fregueses Quality/Bulk acompanham). Com o catálogo, o ouro de encomendas foi a 13,6% da venda aos 60 min no F2P (portão 4–12%); com 80%, 11,9% no F2P e 12,6% no Ideal; com 70%, 11,3% (4 partidas, antes do #55; com as filas do `Projetos` ligadas, 9,3%). Common, Rush e Blueprint ficam como o catálogo (a Common não pode mudar: é a dos 10 primeiros minutos).
 3. **N de Quality e Royal × fração que a automação já faz no nível mínimo** (q / 100; Fina com Bigornas II = 0,15): o "alvo em s de renda" conta só as peças que servem. Sem isso a 1ª Quality pedia 12 Finas (~80 espadas, ~10 min com a vaga presa); com isso, o mínimo de 3.
-4. **A variante Superior do Quality só abre com a automação fazendo Superior (q > 100);** hoje (q ≤ 30) nunca abre: o F2P não golpeia, e uma encomenda que só fecha com o golpe prenderia a vaga ("nunca pune"). Abre sozinha quando técnica/liga passarem de q 100.
+4. **A variante Superior do Quality só abre com a automação fazendo Superior (q > 100);** o F2P não golpeia, e uma encomenda que só fecha com o golpe prenderia a vaga ("nunca pune"). Abre sozinha quando nível de estação, técnica e oficial passarem de q 100 (níveis IV–V do #55).
 5. **Limiares 2–4 do Renome mantidos (70/180/400):** com o Orders 2.0 eles caem dentro dos portões (abaixo), então a recalibração é "não mexer". Ressalva: o bot não resgata metas (semanais +5, conquistas +5/+10, login +2/+3); o jogador real chega um pouco antes.
 
-### 26.1 econsim antes × depois, 3 partidas × 360 min (`--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 360 --partidas 3`, anúncio = 30 s)
+### 27.1 econsim antes × depois, 3 partidas × 360 min (`--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 360 --partidas 3`, anúncio = 30 s)
 
-Antes = `main` 67d4f4e (com o #54 WorkerDef; o econsim com a tabela de Renome deste branch); depois = este branch com a `main` mesclada. Renome 1/2/3/4 = relógio em que o nível chegou (h:mm; "—" = não chegou em 6 h).
+Antes = `main` 5a06394 (com o #54 WorkerDef e o #55 Blueprints; o econsim com a tabela de Renome deste branch); depois = este branch com a `main` mesclada e as filas de encomenda ligadas ao `Projetos`. Renome 1/2/3/4 = relógio em que o nível chegou (h:mm; "—" = não chegou em 6 h).
 
 | perfil | | Produção | zona morta | Renome 1 | Renome 2 | Renome 3 | Renome 4 | Renome em 6 h | encomendas 60 min / 6 h | ouro de encomendas (% da venda, 60 min / 6 h) | renda/min 0–60 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Ideal | antes | 48:12 | 21,7 | 0:15 | 2:15 | — | — | 164 | 19,7 / 123 | 4,9% / 5,6% | 991 |
-| | **depois** | **46:34** | 20 | 0:15 | **0:59** | **2:07** | **3:46** | 702 | 31,3 / 261 | 11,4% / 19,0% | 1.024 |
-| F2P | antes | 46:48 | 21,3 | 0:14 | 2:24 | — | — | 144 | 21,7 / 124 | 5,4% / 5,6% | 1.032 |
-| | **depois** | **46:37** | 21 | 0:14 | **1:00** | **2:09** | **3:58** | 652 | 31,3 / 251 | 11,1% / 18,2% | 1.014 |
-| Slow | antes | 49:37 | 22,7 | 0:15 | 2:23 | — | — | 144 | 20,3 / 124 | 4,7% / 5,7% | 930 |
-| | **depois** | **47:50** | 20,7 | 0:15 | **0:55** | **2:07** | **3:49** | 682 | 32,3 / 262 | 11,2% / 19,2% | 957 |
-| AdWatcher | antes | 44:36 | 18,3 | 0:14 | 2:19 | — | — | 153 | 20 / 133 | 5,4% / 6,3% | 1.153 |
-| | **depois** | **43:00** | 17,3 | 0:13 | **0:57** | **2:11** | **3:58** | 643 | 31,3 / 247 | 11,3% / 18,0% | 1.199 |
-| AdWatcherE | antes | 51:36 | 25,7 | 0:19 | 2:38 | — | — | 139 | 16 / 119 | 6,5% / 5,7% | 859 |
-| | **depois** | **43:01** | 19,3 | 0:16 | **1:05** | **2:14** | **4:02** | 642 | 27 / 246 | 28,6%* / 19,5% | 1.041 |
+| Ideal | antes | 50:43 | 23,3 | 0:15 | 2:07 | 4:35 | — | 243 | 18 / 98 | 4,1% / 4,5% | 1.031 |
+| | **depois** | **48:20** | 20,3 | 0:15 | **0:56** | **2:03** | **3:33** | 762 | 30 / 209 | 9,3% / 15,3% | 1.100 |
+| F2P | antes | 49:18 | 22,3 | 0:14 | 2:19 | 5:10 | — | 211 | 20 / 101 | 4,4% / 4,5% | 1.071 |
+| | **depois** | **48:28** | 21,7 | 0:14 | **1:03** | **2:12** | **3:46** | 711 | 29 / 201 | 9,2% / 14,6% | 1.084 |
+| Slow | antes | 52:17 | 24,3 | 0:15 | 2:24 | 5:17 | — | 207 | 19 / 99 | 3,9% / 4,5% | 964 |
+| | **depois** | **51:13** | 22,7 | 0:15 | **1:00** | **2:10** | **3:41** | 736 | 29,7 / 212 | 8,4% / 15,5% | 984 |
+| AdWatcher | antes | 46:30 | 19,3 | 0:14 | 2:19 | 5:09 | — | 214 | 18,3 / 102 | 4,4% / 4,6% | 1.212 |
+| | **depois** | **44:29** | 18 | 0:13 | **0:58** | **2:08** | **3:44** | 709 | 29,3 / 194 | 9,3% / 14,1% | 1.275 |
+| AdWatcherE | antes | 54:05 | 26,7 | 0:19 | 2:33 | 5:25 | — | 202 | 15,7 / 96 | 6,4% / 4,6% | 880 |
+| | **depois** | **45:01** | 21 | 0:16 | **1:05** | **2:05** | **3:39** | 725 | 24,3 / 202 | 26,2%* / 16,0% | 1.107 |
 
-\* o AdWatcherE soma no prêmio o bônus que ele assiste (14–16 dos 30 anúncios do dia). Entregues por tipo em 6 h (F2P): Common 122, Bulk 28, Quality 31, Rush 24, Mixed 24, Royal 22 (Blueprint e Event esperam os ganchos). Pisos do §3: 0% abaixo nos 5 perfis, iguais ao antes. A Equipe (#54) entra depois da produção completa nos dois lados; com o Orders 2.0 o Otávio (Renome 2) é contratado na 1ª hora. Pós-produção F2P em 6 h: 779 mil → 893 mil.
+\* o AdWatcherE soma no prêmio o bônus que ele assiste (14–16 dos 30 anúncios do dia). Entregues por tipo em 6 h (F2P): Common 95, Bulk 22, Quality 24, Rush 19, Mixed 19, Royal 16, Blueprint 5 (a fila de encomenda do Old Forge acaba: o resto dos projetos dela sai pelos marcos; Event espera o LiveOps). Pisos do §3: 0% abaixo nos 5 perfis, iguais ao antes. Pós-produção F2P em 6 h: 969 mil → 1,12 mi.
 
-### 26.2 8 partidas × 60 min (`--minutos 60 --partidas 8`; antes = `main` 67d4f4e)
+### 27.2 8 partidas × 60 min (`--minutos 60 --partidas 8`; antes = `main` 5a06394)
 
 | perfil | Produção (antes → depois) | zona morta | ouro de encomendas aos 60 min | encomendas em 60 min | saldo aos 60 min |
 |---|---|---|---|---|---|
-| Ideal | 47:51 → **46:20** | 21,4 → 19,5 | 5,1% → 10,8% | 20,1 → 31,1 | 542 → 677 |
-| F2P | 47:26 → **45:09** | 21 → 19 | 5,0% → 11,8% | 20 → 32,9 | 872 → 654 |
-| Slow | 49:48 → **48:05** | 22,6 → 20,9 | 4,9% → 11,4% | 20,3 → 32,1 | 513 → 677 |
-| AdWatcher | 44:34 → **42:36** | 19,1 → 17,4 | 5,3% → 11,3% | 19,8 → 31,6 | 1.027 → 1.016 |
-| AdWatcherE | 50:50 → **41:11** | 24,1 → 17,4 | 6,6% → 32,0%* | 16,3 → 28,3 | 543 → 2.253 |
+| Ideal | 50:29 → **48:44** | 23,3 → 21,3 | 4,4% → 9,2% | 19,1 → 29,4 | 567 → 807 |
+| F2P | 50:04 → **47:14** | 22,4 → 19,6 | 4,3% → 9,3% | 18,8 → 30,8 | 651 → 808 |
+| Slow | 52:28 → **50:42** | 24,4 → 22,6 | 3,8% → 9,0% | 18,5 → 30,3 | 516 → 444 |
+| AdWatcher | 46:45 → **44:35** | 20,4 → 18 | 4,4% → 8,9% | 18,1 → 29 | 635 → 1.160 |
+| AdWatcherE | 53:36 → **43:19** | 25,8 → 18 | 5,9% → 28,4%* | 15,3 → 25 | 659 → 924 |
 
-Prêmio de qualidade aos 60 min (F2P) 12,4% → 12,8%.
+Prêmio de qualidade aos 60 min (F2P) 16,2% → 18,5% (a técnica das encomendas Blueprint soma q +20).
 
-### 26.3 AdWatcher × AdWatcherE (achado do §24)
+### 27.3 AdWatcher × AdWatcherE (achado do §24)
 
-8 partidas × 60 min, Orders 2.0, varrendo o piso do bônus (`--tuning "EncomendaBonusMinSeg=N"`); o AdWatcher não assiste o bônus (42:36 em todas). Medido antes de mesclar o #54, que não muda a produção (a Equipe só entra depois dela: 42:36 e 41:11 de novo depois da mescla):
+8 partidas × 60 min, Orders 2.0, varrendo o piso do bônus (`--tuning "EncomendaBonusMinSeg=N"`), medido sobre a `main` 432e638 (antes do #54 e do #55); o AdWatcher não assiste o bônus (42:36 em todas):
 
 | piso do bônus | AdWatcherE, produção | diferença para o AdWatcher |
 |---|---|---|
@@ -1640,26 +1715,27 @@ Prêmio de qualidade aos 60 min (F2P) 12,4% → 12,8%.
 | 75 s | 39:21 | −3:15 |
 | 90 s | 37:49 | −4:47 |
 
-60 s é o menor piso em que o AdWatcherE não fica mais lento que o AdWatcher (o anúncio custa 30 s de relógio e devolve 60 s de renda). Em 3 partidas × 360 min os dois empatam (43:01 × 43:00). Pisos do §3 do AdWatcherE: 0% abaixo.
+60 s é o menor piso em que o AdWatcherE não fica mais lento que o AdWatcher (o anúncio custa 30 s de relógio e devolve 60 s de renda). Com a `main` 5a06394 mesclada: 43:19 × 44:35 (−1:16; §27.2). Pisos do §3 do AdWatcherE: 0% abaixo.
 
-### 26.4 Portões (ECONOMIA_WAVE_B §10)
+### 27.4 Portões (ECONOMIA_WAVE_B §10)
 
 | Medida | Portão | Medido (F2P) | |
 |---|---|---|---|
 | Primeiros 10 min | iguais, tick a tick | iguais até as Ferramentas (10:30): golden `EncomendasTests.PrimeirosDezMinutos_IguaisAosDeAntes_GoldenDoMain`, gerado pelo código de antes (mesmos eventos de encomenda e compra no mesmo tick, mesmo ouro, vendas, posição e Renome) | ok |
-| Produção completa | 41–55 min | 45:09 (8 partidas; antes 47:26) | ok |
-| Zona morta até a produção | ≤ 12 min (meta) | 21 → 19 | melhora; a meta é dos Blueprints e da Wave C |
-| Ouro sem destino aos 60 min | ≤ 10 mil | 654 | ok |
-| Ouro de Orders | 4–12% da receita aos 60 min | 11,8% (Ideal 10,8%, Slow 11,4%) | ok com o desvio 2 (no limite: revisar se a Equipe vier antes da produção) |
-| Encomendas entregues em 60 min | ≥ 25 | 32,9 (antes 20) | ok |
-| Renome 1 / 2 | 12–25 min / 40–75 min | 0:14 / 0:55–1:00 (antes 2:24 h) | ok |
-| Renome 3 / 4 | 1,5–3 h / 3–6 h | 2:09 / 3:58 (antes: não chegavam em 6 h) | ok |
-| AdWatcher × F2P | ≥ 0,75 × F2P | 42:36 × 45:09 | ok |
-| AdWatcherE × AdWatcher | não mais lento (§24) | 41:11 × 42:36 | ok |
+| Produção completa | 41–55 min | 47:14 (8 partidas; antes 50:04) | ok |
+| Zona morta até a produção | ≤ 12 min (meta) | 22,4 → 19,6 | melhora; a meta é da Wave C |
+| Ouro sem destino aos 60 min | ≤ 10 mil | 808 | ok |
+| Ouro de Orders | 4–12% da receita aos 60 min | 9,3% (Ideal 9,2%, Slow 9,0%) | ok com o desvio 2 |
+| Encomendas entregues em 60 min | ≥ 25 | 30,8 (antes 18,8) | ok |
+| Prêmio de qualidade aos 60 min | 5–20% | 18,5% | ok |
+| Renome 1 / 2 | 12–25 min / 40–75 min | 0:14 / 0:48–1:03 (antes 2:19 h) | ok |
+| Renome 3 / 4 | 1,5–3 h / 3–6 h | 2:12 / 3:46 (antes 5:10 / não chegava em 6 h) | ok |
+| AdWatcher × F2P | ≥ 0,75 × F2P | 44:35 × 47:14 | ok |
+| AdWatcherE × AdWatcher | não mais lento (§24) | 43:19 × 44:35 | ok |
 | Pisos do §3 | 0% abaixo | 0% abaixo nos 5 perfis | ok |
 
 `BalanceTests.Bot_60Minutos_Fase2` passou a cobrar o portão da Wave B (4–12% e ≥ 25 entregues; era 3–10% com 1 vaga e 1 tipo).
 
-### 26.5 Testes e prova vermelha
+### 27.5 Testes e prova vermelha
 
-`EncomendasTests` (19): um por tipo (Common igual à de antes; Bulk só com 2 linhas e 5 entregues; Quality só com linha que faz Fina, só a Fina conta, N pela fração; Rush no prazo 2× e +1, fora dele o normal e a vaga continua; Mixed 2 e 3 produtos, cada peça no seu; Royal no Renome 2 com o projeto da fila Royal pelo ID de transação; Blueprint no Renome 1 só com projeto pendente; Event em vaga própria, só pontos, sai quando o evento acaba) e o freguês (7ª Common, o próximo que dá, coração no save); rodízio sem sorteio (golden do ciclo e de 20 posições; dois bots iguais abrem a mesma sequência); vagas 1/2/3 pelo Renome e só depois das Ferramentas, enchendo pelo relógio sem repetir produto; 1 peça para 1 vaga (a mais antiga que aceita); prêmio 1× (entregar 2× paga 1×, nem depois de save/load); save (3 vagas com Mixed, Rush no prazo, bônus e projeto; ida e volta idêntica; espelho `ord=`), save do schema 3 de antes (gerado pelo código da `main`: vira Common igual na posição entregues + trocadas e o rodízio segue), lixo e ID desconhecido; os 10 primeiros minutos do bot iguais ao golden da `main`; o bot F2P entrega os 6 tipos que abrem sem gancho em 90 min; validator (item inexistente, Masterwork como alvo, bônus sem prazo, ID fora do formato, Mixed de 1 produto, Event com ouro, Blueprint sem fila, fila inexistente, distrito que o build não tem, N invertido, prêmio fora do múltiplo de 5, ID repetido, ciclo sem Common, com Event ou com tipo sem `OrderDef`). `AnunciosTests`: bônus com piso de 60 s; trocar com 2 vagas (só a principal, no lugar dela). `LocTests`: título e barra do cartão nos 3 idiomas. `mutantes.py`: 21 mutações novas do Orders 2.0 (`enc-*` e as `ord-*`/`save-ord-*`/`ad-troca-proxima` reescritas no código novo), todas mortas; com `ad-paga-2x` e duas do Renome, 26/26 mortas (2.096 s).
+`EncomendasTests` (19): um por tipo (Common igual à de antes; Bulk só com 2 linhas e 5 entregues; Quality só com linha que faz Fina, só a Fina conta, N pela fração; Rush no prazo 2× e +1, fora dele o normal e a vaga continua; Mixed 2 e 3 produtos, cada peça no seu; Royal no Renome 2 com o projeto da fila Royal do `Projetos` pelo ID de transação; Blueprint no Renome 1 só com projeto pendente na fila do `Projetos`, Common com a fila esgotada; Event em vaga própria, só pontos, sai quando o evento acaba) e o freguês (7ª Common, o próximo que dá, coração no save); rodízio sem sorteio (golden do ciclo e de 20 posições; dois bots iguais abrem a mesma sequência); vagas 1/2/3 pelo Renome e só depois das Ferramentas, enchendo pelo relógio sem repetir produto; 1 peça para 1 vaga (a mais antiga que aceita); prêmio 1× (entregar 2× paga 1×, nem depois de save/load); save (3 vagas com Mixed, Rush no prazo, bônus e projeto; ida e volta idêntica; espelho `ord=`), save do schema 3 de antes (gerado pelo código da `main`: vira Common igual na posição entregues + trocadas e o rodízio segue), lixo e ID desconhecido; os 10 primeiros minutos do bot iguais ao golden da `main`; o bot F2P entrega os 7 tipos que abrem sem evento em 100 min; validator (item inexistente, Masterwork como alvo, bônus sem prazo, ID fora do formato, Mixed de 1 produto, Event com ouro, Blueprint sem fila, fila inexistente, distrito que o build não tem, N invertido, prêmio fora do múltiplo de 5, ID repetido, ciclo sem Common, com Event ou com tipo sem `OrderDef`). `AnunciosTests`: bônus com piso de 60 s; trocar com 2 vagas (só a principal, no lugar dela). `LocTests`: título e barra do cartão nos 3 idiomas. `mutantes.py`: 22 mutações novas do Orders 2.0 (`enc-*`, com `enc-bp-nao-ganha` da fila do `Projetos`, e as `ord-*`/`save-ord-*`/`ad-troca-proxima` reescritas no código novo), todas mortas; com `ad-paga-2x` e duas do Renome, 27/27 mortas.

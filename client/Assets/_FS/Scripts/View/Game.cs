@@ -35,7 +35,8 @@ namespace FS
     /// -renome N (forca o Renome total em N; so sobe) | -renomecard (abre o cartao do Renome; B-CORE-06).
     /// -encomendas (B-CORE-05: joga ate 180 s de jogo, parado, ate todas as vagas abrirem; com -renome 20 = 2 vagas, 180 = 3).
     /// -renome N (forca o Renome total em N; so sobe) | -renomecard (abre o cartao do Renome; B-CORE-06) | -equipe (B-CORE-04: a oficina com os
-    /// 6 ajudantes no nivel 3 e os 7 da Equipe contratados no posto; Captura.Equipe; com -menu e -gold, os cartoes de nivel).
+    /// 6 ajudantes no nivel 3 e os 7 da Equipe contratados no posto; Captura.Equipe; com -menu e -gold, os cartoes de nivel) | -projetos [todos|dar] ("dar" = os 19 sem abrir; abre o painel de
+    /// projetos; "todos" da os 19 do catalogo antes do -buy/-buyids; B-CORE-07).
     /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
     /// 1a contratacao) | -recordfull (fila cheia no 1o quadro ou erro) | -recordorder (o -record mantem o cartao da encomenda) | -offline S
     /// (cofre real de S s fora, 60..7200). Captura que mostraria algo impossivel (compra id@t sem ouro ou pre-requisito, -vipnow depois de
@@ -99,6 +100,7 @@ namespace FS
         RectTransform _cfg;   // v0.6b: cartao de configuracoes (Som, Vibracao, versao)
         TelaPrivacidade _priv;   // E-PLAT-01: idade + consentimento (Privacidade.cs)
         PainelMetas _metas;      // D-CORE-02: diarias, semanais, conquistas e login (PainelMetas.cs)
+        PainelProjetos _projetos;   // B-CORE-07: Blueprints possuidos e bloqueados com a fonte (PainelProjetos.cs)
         float _metasT; int _prontas;   // relogio da Agora (1 s) e quantas davam para resgatar (aviso de meta concluida)
         SeloRenome _renome;      // B-CORE-06: selo de nivel na HUD e cartao (SeloRenome.cs)
         Action _panelAction;
@@ -129,12 +131,13 @@ namespace FS
 
         /// <summary>A-PLAT-07: o estado do jogo, so derivado dos flags (Estados.De; tabela em Estado.cs). O voltar, o Save e os anuncios
         /// consultam aqui.</summary>
-        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv || MetasAberto || RenomeAberto,
+        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv || MetasAberto || RenomeAberto || ProjetosAberto,
             _cards != null && _cards.Saindo);
         bool Painel => _panel != null && _panel.gameObject.activeSelf;
         bool Config => _cfg != null && _cfg.gameObject.activeSelf;
         bool Priv => _priv != null && _priv.Aberta;
         bool MetasAberto => _metas != null && _metas.Aberto;
+        bool ProjetosAberto => _projetos != null && _projetos.Aberto;
         bool RenomeAberto => _renome != null && _renome.Aberto;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -190,7 +193,8 @@ namespace FS
             _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos), () => _metas.Abrir(), WorkerComprado);
             _cfg.SetAsLastSibling();     // configuracoes e painel modal cobrem a barra de melhorias
             _panel.SetAsLastSibling();
-            _metas = new PainelMetas(_safe, _sim, Pago);
+            _metas = new PainelMetas(_safe, _sim, Pago, () => _projetos.Abrir());
+            _projetos = new PainelProjetos(_safe, _sim);
             // E-PLAT-01: sem resposta (ou com texto novo) a tela de idade abre por cima de tudo e o SDK de anuncio espera (Ads.Responder).
             // Fotos e smoke (-testsession, -record, -autoplay) nao a veem, salvo com -privacidade [18]
             _priv = new TelaPrivacidade(_safe, Responder);
@@ -225,6 +229,8 @@ namespace FS
             string metas = Arg("-metas");
             int aba = metas == "conquistas" ? 2 : metas == "semanais" ? 1 : 0;
             if (metas != null) _metas.Abrir(aba);
+            bool projetos = Arg("-projetos") != null && Arg("-projetos") != "dar";   // B-CORE-07 (foto; "todos"/"dar": o DevArgs ja deu os projetos)
+            if (projetos) _projetos.Abrir();
             bool cartao = Arg("-renomecard") != null;   // foto do cartao do Renome (com -renome N)
             if (cartao) _renome.Abrir();
             if (int.TryParse(Arg("-cofre"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int cofre) && cofre > 0) ShowVault(cofre);   // foto do painel
@@ -305,6 +311,7 @@ namespace FS
                 // (o simulado recebe o voltar) nada; so com nada aberto grava e sai
                 if (Priv) _priv.Voltar();   // E-PLAT-01: consentimento -> idade; revisao fecha; 1a abertura fica
                 else if (MetasAberto) _metas.Fechar();
+                else if (ProjetosAberto) _projetos.Fechar();
                 else if (RenomeAberto) _renome.Fechar();
                 else switch (Estados.AoVoltar(EstadoAtual, Painel, _menu.IsOpen))
                 {
@@ -316,7 +323,7 @@ namespace FS
             }
             if (_screen.x != Screen.width || _screen.y != Screen.height) Fit();
 
-            bool modal = Painel || Config || Priv || MetasAberto || RenomeAberto;
+            bool modal = Painel || Config || Priv || MetasAberto || RenomeAberto || ProjetosAberto;
             Pointer ptr = Pointer.current;   // B-CORE-03: toque no anel do golpe ou na barra de qualidade (antes do joystick, que os ignora)
             if (!modal && ptr != null && ptr.press.wasPressedThisFrame) Toque(ptr.position.ReadValue());
             _joy.Blocked = modal;
@@ -357,6 +364,7 @@ namespace FS
             _metasT -= Time.unscaledDeltaTime;
             if (_metasT <= 0f) { _metasT = 1f; MetasAgora(true); }
             _metas.Refresh(Time.unscaledDeltaTime);
+            _projetos.Refresh(Time.unscaledDeltaTime);
 
             _saveT += Time.deltaTime;
             if (_saveT >= SaveEvery) { _saveT = 0f; Save(); }
@@ -420,6 +428,12 @@ namespace FS
                         Ajustes.Pulso(60, 255);
                         Notice(Loc.T("fx.qualidade", Textos.Qualidade(Quality.Masterwork)), _crown, Color.white);
                         Log("masterwork", Balance.ItemName[e.A], _sim.Stations[e.B].Name);
+                        break;
+                    // B-CORE-07: projeto novo (marco, Renome, conquista; encomenda e o resto quando existirem): som, aviso e diario
+                    case Ev.Blueprint:
+                        Sfx.Play("order", 1.2f);
+                        Notice(Loc.T("aviso.projeto"), _crown, Color.white);
+                        Log("blueprint_unlock", _sim.Projetos.Defs[e.A].Id, ((BlueprintSourceKind)e.B).ToString());
                         break;
                     case Ev.Bought: Bought(e.A, e.B, e.Pos); break;
                     case Ev.ClientArrived: Sfx.Play("client", 1f, 0.2f); break;
@@ -1415,6 +1429,8 @@ namespace FS
                 Debug.Log($"PRESET {preset}: {Captura.Flags(preset)}");
             }
             if (Arg("-intersticial") != null) _sim.T.Interstitial = true;   // E-PLAT-03 (dev): antes do Ads.Init, que so carrega com a flag
+            // B-CORE-07 (fotos): -projetos todos = todos os projetos do catalogo ANTES das compras (o -buy/-buyids alcanca os niveis IV-V e a bigorna longa)
+            if (Arg("-projetos") == "todos" || Arg("-projetos") == "dar") foreach (BlueprintDef d in _sim.Projetos.Defs) _sim.Projetos.Ganha(d.Id, d.Sources[0].Kind);
             if (int.TryParse(Arg("-buy"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
                 for (int pass = 0; pass < 2; pass++)   // o Buy recusa luxo antes da producao completa, e ha produtivos (Mineiro, Joalheiro 2) depois dos luxos
                     for (int i = 0; i < Math.Min(n, Upgrades.Count); i++)

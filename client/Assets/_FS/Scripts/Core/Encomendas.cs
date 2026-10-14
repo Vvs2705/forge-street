@@ -75,8 +75,8 @@ namespace FS.Core
     /// distrito na posicao Abertas % 10 (tipo travado vira Common); produto = linhas[idx % linhas] como a de antes, pulando a que ja esta numa
     /// vaga; a cada 7a Common, o proximo freguês (FS-3) que der. Vagas: 1, 2 no Renome 1, 3 no Renome 3. Tudo que e' novo (tipos, vagas,
     /// fregueses) so depois das Ferramentas: os 10 primeiros minutos ficam os de antes, tick a tick (EncomendasTests). Cada peca vendida conta
-    /// para no maximo uma vaga, a mais antiga que a aceita. Premio fora do GoldEarned (como o bau), Renome pelo tipo, Blueprint e pontos de
-    /// evento pelos ganchos; a vaga sai junto com o pagamento (ID de transacao `Encomenda.Tx`: entregar 2x nao paga 2x). Nunca falha nem
+    /// para no maximo uma vaga, a mais antiga que a aceita. Premio fora do GoldEarned (como o bau), Renome pelo tipo, Blueprint pela fila do
+    /// Sim.Projetos (B-CORE-07) e pontos de evento pelo gancho do LiveOps; a vaga sai junto com o pagamento (ID de transacao `Encomenda.Tx`: entregar 2x nao paga 2x). Nunca falha nem
     /// pune: Rush fora do prazo paga o normal. Save: ord= (espelho da principal para o downgrade) e linhas enc*; save sem enc= migra a
     /// encomenda de antes para uma Common igual.
     /// </summary>
@@ -96,10 +96,8 @@ namespace FS.Core
         public long RenomeGanho; public readonly int[] PorTipo = new int[Enum.GetValues(typeof(OrderType)).Length];
         /// <summary>A ultima paga (o Ev.OrderDone nao leva o tipo): o diario loga order_complete com ela. Fora do save.</summary>
         public Encomenda UltimaEntregue;
-        /// <summary>Ganchos dos sistemas que ainda nao existem (null = nenhum): Blueprint pendente da fila (B-CORE-07) e a posse dele na
-        /// entrega; evento ativo (D-CORE-03) e os pontos dele.</summary>
-        public Func<string, string> ProximoBlueprint;
-        public Action<string, string> GanhaBlueprint;
+        /// <summary>Ganchos do LiveOps (D-CORE-03; null = nenhum): o evento ativo e os pontos da encomenda dele. As filas de Blueprint sao as do
+        /// Sim.Projetos (B-CORE-07: ProximoDaFila no cartao, GanhaDaFila na entrega).</summary>
         public Func<string> EventoAtivo;
         public Action<string, int, string> GanhaPontosEvento;
 
@@ -143,7 +141,7 @@ namespace FS.Core
             int rn = e.Renome + (prazo ? e.Def.BonusReputation : 0);
             _sim.Gold += ouro; _sim.OrderGold += ouro; _sim.OrderCount++;
             _sim.Renome.Ganha(rn); RenomeGanho += rn; PorTipo[(int)e.Tipo]++; UltimaEntregue = e;
-            if (e.Blueprint != null) GanhaBlueprint?.Invoke(e.Blueprint, e.Tx);
+            if (e.Blueprint != null) _sim.Projetos.GanhaDaFila(Fila(e.Def), e.Def.District, e.Tx);   // B-CORE-07: o pendente da fila (o mostrado, se ninguem o deu antes)
             if (e.Def.EventId != null) GanhaPontosEvento?.Invoke(e.Def.EventId, e.Def.EventPoints, e.Tx);
             if (e.Def.ClientId != null) { Coracoes.TryGetValue(e.Def.ClientId, out int c); Coracoes[e.Def.ClientId] = c + 1; }
             _sim.Metas.OnEncomenda(e.Tipo, prazo);
@@ -246,7 +244,10 @@ namespace FS.Core
             return i >= 0 && linhas.Contains((Item)i) && Fracao((Item)i, d.MinQuality) > 0.0;
         }
 
-        string Pendente(OrderDef d) => d.BlueprintQueue == null ? null : ProximoBlueprint?.Invoke(d.BlueprintQueue);
+        /// <summary>B-CORE-07: o proximo Blueprint pendente da fila do OrderDef (null = sem fila ou esgotada).</summary>
+        string Pendente(OrderDef d) => d.BlueprintQueue == null ? null : _sim.Projetos.ProximoDaFila(Fila(d), d.District)?.Id;
+
+        static BlueprintSourceKind Fila(OrderDef d) => d.BlueprintQueue == OrderDefs.FilaRoyal ? BlueprintSourceKind.OrderRoyal : BlueprintSourceKind.OrderBlueprint;
 
         /// <summary>Linhas de produto abertas, na ordem dos itens (espada, escudo, ferramenta, joia): o rodizio de sempre.</summary>
         List<Item> Linhas()

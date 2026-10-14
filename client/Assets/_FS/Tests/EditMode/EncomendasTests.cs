@@ -195,6 +195,12 @@ namespace FS.Tests
             CollectionAssert.AreEqual(new[] { Item.Shield, Item.Tool, Item.Jewel }, e4.Itens);
         }
 
+        /// <summary>Esvazia a fila `fila` do Projetos (B-CORE-07) pelo proprio gancho das encomendas.</summary>
+        static void Esgota(Sim s, BlueprintSourceKind fila)
+        {
+            for (int k = 0; s.Projetos.ProximoDaFila(fila) != null; k++) Assert.IsNotNull(s.Projetos.GanhaDaFila(fila, OrderDefs.OldForge, "teste:" + k));
+        }
+
         [Test]
         public void Royal_NoRenome2_ComFina_MuitoRenome_EOProjetoDaFilaRoyal()
         {
@@ -202,24 +208,23 @@ namespace FS.Tests
             s.Renome.Ganha(69);
             Assert.AreEqual(OrderType.Common, EncTeste.Abre(s, 9).Tipo, "Renome 1: Royal travado");
             s.Renome.Ganha(1);
-            var filas = new List<string>(); string ganho = null, tx = null;
-            s.Encomendas.ProximoBlueprint = fila => { filas.Add(fila); return fila == OrderDefs.FilaRoyal ? "bp_bancada_mestra" : null; };
-            s.Encomendas.GanhaBlueprint = (bp, id) => { ganho = bp; tx = id; };
             Encomenda e = EncTeste.Abre(s, 9);
             Assert.AreEqual(OrderType.Royal, e.Tipo);
             Assert.AreEqual(Quality.Fine, e.Def.MinQuality);
             Assert.AreEqual(Item.Sword, e.Itens[0], "a linha com Fina");
             Assert.AreEqual(5, e.Alvo[0], "200 s x 4 / 30 x 0,15 = 4 -> o minimo 5");
             Assert.AreEqual(150L, e.Premio, "32 s x 4 = 128 -> o minimo 150");
-            Assert.AreEqual("bp_bancada_mestra", e.Blueprint, "o proximo da fila Royal, mostrado no cartao");
+            Assert.AreEqual("bp_bancada_mestra", e.Blueprint, "o 1o da fila Royal do Projetos, mostrado no cartao");
             long rn = s.Renome.Total;
             EncTeste.Completa(e);
             s.Tick(Dt, 0f, 0f);
             Assert.AreEqual(rn + 10L, s.Renome.Total);
-            Assert.AreEqual("bp_bancada_mestra", ganho, "o projeto vai na entrega");
-            Assert.AreEqual(e.Tx, tx, "com o ID de transacao da encomenda");
-            s.Encomendas.ProximoBlueprint = null;
-            Assert.IsNull(EncTeste.Abre(s, 19).Blueprint, "fila esgotada: so ouro e Renome");
+            Assert.IsTrue(s.Projetos.Tem("bp_bancada_mestra"), "o projeto vai na entrega");
+            Assert.AreEqual(e.Tx, s.Projetos.Posses["bp_bancada_mestra"].Tx, "com o ID de transacao da encomenda");
+            Assert.AreEqual(BlueprintSourceKind.OrderRoyal, s.Projetos.Posses["bp_bancada_mestra"].Origem);
+            Assert.AreEqual("bp_mw_sunblade", EncTeste.Abre(s, 19).Blueprint, "a seguinte mostra o proximo da fila");
+            Esgota(s, BlueprintSourceKind.OrderRoyal);
+            Assert.IsNull(EncTeste.Abre(s, 29).Blueprint, "fila esgotada: so ouro e Renome");
             Assert.AreEqual(OrderType.Royal, s.Encomendas.Principal.Tipo);
         }
 
@@ -228,24 +233,22 @@ namespace FS.Tests
         {
             Sim s = Oficina();
             s.Renome.Ganha(20);
-            Assert.AreEqual(OrderType.Common, EncTeste.Abre(s, 7).Tipo, "sem fila (B-CORE-07): Common");
-            string ganho = null;
-            s.Encomendas.ProximoBlueprint = fila => fila == OrderDefs.FilaEncomenda ? "bp_tecnica_espada" : null;
-            s.Encomendas.GanhaBlueprint = (bp, id) => ganho = bp;
             Encomenda e = EncTeste.Abre(s, 7);
             Assert.AreEqual(OrderType.Blueprint, e.Tipo);
             Assert.AreEqual(Item.Shield, e.Itens[0]);
             Assert.AreEqual(8, e.Alvo[0]);
             Assert.AreEqual(25L, e.Premio, "5 s x 4 = 20 -> o minimo 25");
-            Assert.AreEqual("bp_tecnica_espada", e.Blueprint);
+            Assert.AreEqual("bp_tecnica_espada", e.Blueprint, "o 1o da fila de encomenda do Projetos");
             long rn = s.Renome.Total;
             EncTeste.Completa(e);
             s.Tick(Dt, 0f, 0f);
-            Assert.AreEqual("bp_tecnica_espada", ganho);
+            Assert.IsTrue(s.Projetos.Tem("bp_tecnica_espada"));
+            Assert.AreEqual(BlueprintSourceKind.OrderBlueprint, s.Projetos.Posses["bp_tecnica_espada"].Origem);
             Assert.AreEqual(rn + 2L, s.Renome.Total);
-            var cedo = Oficina();
-            cedo.Encomendas.ProximoBlueprint = s.Encomendas.ProximoBlueprint;
-            Assert.AreEqual(OrderType.Common, EncTeste.Abre(cedo, 7).Tipo, "Renome 0: travado");
+            Assert.IsNull(s.Projetos.GanhaDaFila(BlueprintSourceKind.OrderBlueprint, OrderDefs.OldForge, e.Tx), "o mesmo ID nao da outro projeto");
+            Esgota(s, BlueprintSourceKind.OrderBlueprint);
+            Assert.AreEqual(OrderType.Common, EncTeste.Abre(s, 17).Tipo, "fila esgotada: vira Common");
+            Assert.AreEqual(OrderType.Common, EncTeste.Abre(Oficina(), 7).Tipo, "Renome 0: travado");
         }
 
         [Test]
@@ -320,7 +323,6 @@ namespace FS.Tests
             {
                 Sim s = Oficina(Upgrade.AnvilsLv2);
                 s.OrderCount = 8; s.Renome.Ganha(70);
-                s.Encomendas.ProximoBlueprint = f => "bp_x";
                 return s;
             }
             string a = Seq(Tudo());
@@ -416,7 +418,6 @@ namespace FS.Tests
         {
             Sim s = Oficina(Upgrade.AnvilsLv2);
             s.Renome.Ganha(180); s.OrderCount = 8;
-            s.Encomendas.ProximoBlueprint = f => "bp_mw_sunblade";
             s.Encomendas.Vagas.Clear();
             s.Encomendas.Abertas = 5; s.Encomendas.OrderIn = 0f;
             s.Tick(Dt, 0f, 0f);                     // Mixed
@@ -432,13 +433,13 @@ namespace FS.Tests
             string text = s.Save(1000);
             StringAssert.Contains("\nenc=10,", text);
             StringAssert.Contains("\nenc.v=ord_mixed_old_forge,5,105,0,0,-,ferramenta:6:0,espada:9:2\n", text);
-            StringAssert.Contains(",bp_mw_sunblade,espada:", text);
+            StringAssert.Contains(",bp_bancada_mestra,espada:", text);
             Sim b = Sim.Load(text);
             Assert.AreEqual(text, b.Save(1000), "save estavel");
             Assert.AreEqual(3, b.Encomendas.Vagas.Count);
             Assert.AreEqual(105L, b.Encomendas.Vagas[0].Premio, "o bonus do anuncio volta");
             Assert.AreEqual(123.5f, b.Encomendas.Vagas[1].Prazo, 0.001f);
-            Assert.AreEqual("bp_mw_sunblade", b.Encomendas.Vagas[2].Blueprint);
+            Assert.AreEqual("bp_bancada_mestra", b.Encomendas.Vagas[2].Blueprint);
             Assert.AreEqual(10, b.Encomendas.Abertas);
             Assert.AreEqual(4, b.Encomendas.Pulos);
             Assert.AreEqual(2, b.Encomendas.Coracoes["cli_reg_bento"]);
@@ -530,14 +531,14 @@ namespace FS.Tests
             Assert.AreEqual("7.30,5.67", s.Player.Pos.ToString());
         }
 
-        /// <summary>O bot F2P aceita e entrega os tipos novos sozinho (as vagas abrem pelo rodizio): em 90 min entrega Common, Bulk, Quality,
-        /// Rush, Mixed e Royal, e com 2 vagas entrega mais que antes.</summary>
+        /// <summary>O bot F2P aceita e entrega os tipos novos sozinho (as vagas abrem pelo rodizio): em 100 min entrega Common, Bulk, Quality,
+        /// Rush, Mixed, Royal e Blueprint (a fila do Projetos), e com 2 vagas entrega mais que antes.</summary>
         [Test]
         public void Bot_F2P_EntregaOsTiposNovos()
         {
             var s = new Sim(); var bot = new Bot();
-            for (int k = 0; k < 90 * 60 * 30; k++) bot.Step(s, Dt);   // o Royal abre no Renome 2 (~63 min) e a 1a sai aos ~80
-            foreach (OrderType t in new[] { OrderType.Common, OrderType.Bulk, OrderType.Quality, OrderType.Rush, OrderType.Mixed, OrderType.Royal })
+            for (int k = 0; k < 100 * 60 * 30; k++) bot.Step(s, Dt);   // o Royal abre no Renome 2 (~60 min) e a 1a sai aos ~95
+            foreach (OrderType t in new[] { OrderType.Common, OrderType.Bulk, OrderType.Quality, OrderType.Rush, OrderType.Mixed, OrderType.Royal, OrderType.Blueprint })
                 Assert.Greater(s.Encomendas.PorTipo[(int)t], 0, t.ToString());
             Assert.GreaterOrEqual(s.OrderCount, 25, "ECONOMIA_WAVE_B §10: >= 25 em 60 min");
             Assert.AreEqual(s.Encomendas.RenomeGanho + 5L * s.Chests.Count(c => c.State == 2) + s.Renome.Superiores / RenomeDefs.SuperiorACada, s.Renome.Total,
