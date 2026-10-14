@@ -585,5 +585,20 @@ namespace FS.Tests
             Assert.IsTrue(semCommon.Exists(m => m.Contains("sem Common")), string.Join("\n", semCommon));
             Assert.IsTrue(semCommon.Exists(m => m.Contains("Event no ciclo")), string.Join("\n", semCommon));
         }
-    }
+            [Test]
+        public void TodasAsLinhasOcupadas_NaoRepeteOCartaoDeUmItemSo()
+        {
+            // coordenador: com uma Mixed nas 3 outras linhas, a Common nova repetia a espada da outra Common ("Venda 30 espadas" 2x na tela)
+            var s = new Sim();
+            for (int pass = 0; pass < 2; pass++) for (int i = 0; i < Math.Min(37, Upgrades.Count); i++) s.Buy((Upgrade)i);
+            s.Renome.Ganha(180);
+            for (float t = 0f; t < 780f; t += 1f / 30f)
+            {
+                s.Tick(1f / 30f, 0f, 0f);
+                var unicos = s.Encomendas.Vagas.FindAll(v => v.Itens.Length == 1 && v.Def.ClientId == null && v.Def.Item == null);
+                for (int a = 0; a < unicos.Count; a++) for (int b = a + 1; b < unicos.Count; b++)
+                    Assert.AreNotEqual(unicos[a].Itens[0], unicos[b].Itens[0], $"t={t:0}: {unicos[a].Idx} e {unicos[b].Idx}");
+            }
+        }
+}
 }

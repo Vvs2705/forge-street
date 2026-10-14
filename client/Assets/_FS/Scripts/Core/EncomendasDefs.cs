@@ -52,7 +52,7 @@ namespace FS.Core
             Evento("ord_ev_hunt_ember_crown", "ev_s2w4_hunt_ember_crown"),
             Evento("ord_ev_arcane_week", "ev_arcane_week"),
             Evento("ord_ev_forge_frenzy_b", "ev_s1w5_forge_frenzy_b"),   // reservas: sem a encomenda Event a trilha parava em 700 de 1.000
-            Evento("ord_ev_royal_week_b", "ev_s2w5_royal_week_b"),
+            Evento("ord_ev_royal_week_b", "ev_s2w5_royal_week_b", 10),   // com 15 fechava no dia 3 depois da vaga sem cartao repetido (coordenador)
             // fregueses do Old Forge (o premio e o Renome do tipo; N fixo)
             new OrderDef("ord_reg_orbo", Qual, OldForge, 0f, 5, 5, 13f, 40, 3, minQuality: Fina, item: "ferramenta", fixedN: 5, clientId: "cli_reg_orbo"),
             new OrderDef("ord_reg_lirien", Common, OldForge, 0f, 8, 8, 10f, 25, 1, item: "joia", fixedN: 8, clientId: "cli_reg_lirien"),

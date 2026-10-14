@@ -281,14 +281,16 @@ namespace FS.Core
             else
             {
                 int quer = d.Type == OrderType.Mixed ? Math.Max(1, Math.Min(d.Products, n - 1)) : 1;
-                var livres = new List<Item>(); var ocupadas = new List<Item>();
+                var livres = new List<Item>(); var soVariada = new List<Item>(); var ocupadas = new List<Item>();
                 for (int k = 0; k < n; k++)
                 {
                     Item it = linhas[(idx + k) % n];
                     if (Fracao(it, d.MinQuality) <= 0.0) continue;
-                    (Vagas.Exists(v => v != fora && Array.IndexOf(v.Itens, it) >= 0) ? ocupadas : livres).Add(it);
+                    if (!Vagas.Exists(v => v != fora && Array.IndexOf(v.Itens, it) >= 0)) livres.Add(it);
+                    else (Vagas.Exists(v => v != fora && v.Itens.Length == 1 && v.Itens[0] == it) ? ocupadas : soVariada).Add(it);
                 }
-                livres.AddRange(ocupadas);   // todas ocupadas: repete o produto de outra vaga
+                // todas ocupadas: repete primeiro o que so esta dentro de uma Mixed (dois cartoes "Venda 30 espadas" lado a lado confundem)
+                livres.AddRange(soVariada); livres.AddRange(ocupadas);
                 itens = livres.GetRange(0, Math.Min(quer, livres.Count)).ToArray();
             }
             var alvo = new int[itens.Length];
