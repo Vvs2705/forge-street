@@ -26,6 +26,9 @@ using FS.Core;
 /// --tuning Workers=false o jogo e' o de antes do B-CORE-04. A 4a tabela mostra os workers; compra de worker conta na zona morta.
 /// B-CORE-08: a tabela do Hall e da Collection (Masterworks registradas e a 1a; marcos pagos e o Renome deles; o Renome das obras). Os niveis de
 /// Renome saem na tabela do B-CORE-05 (que ja soma as duas fontes).
+/// C-CORE-03: com --distrito, o bot sobe o manager (Bot.Manager) quando a carteira paga depois da producao completa; --gerente 0 = nunca (o
+/// econsim de antes). A tabela mostra o nivel final do manager do Old Forge e o minuto da 1a subida, e as camadas do Imperio: o Renome da
+/// raiz no fim (o da Row sobe o mesmo) e as vendas do distrito que as metas da raiz contaram (= as vendas: 1x).
 /// </summary>
 static class EconSim
 {
@@ -86,6 +89,7 @@ static class EconSim
         float anuncioSeg = 30f;   // V19: ~30 s por anuncio premiado (o LevelPlay nao mostra o tempo; medir no POCO e ajustar aqui)
         bool pacote = false;
         DistrictDef distrito = null; double fundoOF = 2400;   // C-CORE-01/02: --distrito id; --fundo-of = ouro/min do Old Forge no Charter (CONTEUDO_V1 §1)
+        bool gerente = true;   // C-CORE-03: --gerente 0 = o bot nunca sobe manager
         for (int i = 0; i < args.Length; i += 2)
         {
             string v = i + 1 < args.Length ? args[i + 1] : null;
@@ -106,15 +110,16 @@ static class EconSim
                 case "--worker-seg" when ok: ok = float.TryParse(v, out float ws); workerSeg = ws; break;
                 case "--distrito" when ok: distrito = Distritos.Find(v); ok = distrito != null; break;
                 case "--fundo-of" when ok: ok = double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out fundoOF) && fundoOF >= 0; break;
+                case "--gerente" when ok: ok = v == "0" || v == "1"; gerente = v == "1"; break;
                 default: ok = false; break;
             }
             if (!ok || perfis.Any(p => p.Name == null))
             {
-                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400]");
+                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400] [--gerente 0|1]");
                 return 2;
             }
         }
-        if (distrito != null && distrito.Indice > 0) return Distrito(distrito, perfis, minutos, partidas, anuncioSeg, knobs, workerSeg, fundoOF, saida);
+        if (distrito != null && distrito.Indice > 0) return Distrito(distrito, perfis, minutos, partidas, anuncioSeg, knobs, workerSeg, fundoOF, gerente, saida);
 
         var jobs = new List<(BotProfile P, float Hz)>();
         foreach (BotProfile p in perfis) for (int i = 0; i < partidas; i++) jobs.Add((p, 30f + 30f * i / partidas));
@@ -387,8 +392,8 @@ static class EconSim
 
     sealed class RunD
     {
-        public string Perfil, Csv; public float Venda1 = -1f, Prod = -1f, Abertura; public int Morta, MortaSeq, MortaIni, Upgrades, Luxo, SemDestino;
-        public long Earned, Fundo, Saldo, RendaProd, RendaFim; public long[] Vendas; public double Segundos;
+        public string Perfil, Csv; public float Venda1 = -1f, Prod = -1f, Abertura; public int Morta, MortaSeq, MortaIni, Upgrades, Luxo, SemDestino, Gerente, Gerente1 = -1;
+        public long Earned, Fundo, Saldo, RendaProd, RendaFim, Renome, MetaVendas, Vendidas; public long[] Vendas; public double Segundos;
     }
 
     /// <summary>
@@ -396,21 +401,21 @@ static class EconSim
     /// dele (Imperio.Forca: o econsim nao mede as condicoes do V15), a RateEma do Old Forge = `fundoOF`/60 (a renda de fundo e' 25% dela) e o
     /// ouro da abertura pago. O bot joga o Sim do distrito; o Imperio credita o fundo a cada passo. Relogio = jogo + anuncios (V19).
     /// </summary>
-    static int Distrito(DistrictDef d, BotProfile[] perfis, int minutos, int partidas, float anuncioSeg, string knobs, float? workerSeg, double fundoOF, string saida)
+    static int Distrito(DistrictDef d, BotProfile[] perfis, int minutos, int partidas, float anuncioSeg, string knobs, float? workerSeg, double fundoOF, bool gerente, string saida)
     {
         var jobs = new List<(BotProfile P, float Hz)>();
         foreach (BotProfile p in perfis) for (int i = 0; i < partidas; i++) jobs.Add((p, 30f + 30f * i / partidas));
         var runs = new RunD[jobs.Count];
         var wall = Stopwatch.StartNew();
-        Parallel.For(0, jobs.Count, k => runs[k] = PlayD(d, jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, () => Knobs(knobs, new Tuning()), workerSeg, fundoOF));
+        Parallel.For(0, jobs.Count, k => runs[k] = PlayD(d, jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, () => Knobs(knobs, new Tuning()), workerSeg, fundoOF, gerente));
         File.WriteAllText(saida, "perfil,ticks_s,min,ouro,renda_min,fundo_min,compras_min,upgrades,producao_completa_s" + Environment.NewLine + string.Concat(runs.Select(r => r.Csv)));
         Sim amostra = new Sim(Knobs(knobs, new Tuning()), distrito: d);
         int prod = Enumerable.Range(0, amostra.UpgradeDefs.Length).Count(amostra.IsProduction);
         long custo = Enumerable.Range(0, amostra.UpgradeDefs.Length).Where(amostra.IsProduction).Sum(i => amostra.T.Cost(i));
         Console.WriteLine($"econsim --distrito {d.Id}: {perfis.Length} perfis x {partidas} partidas x {minutos} min de relogio (anuncio = {anuncioSeg:0.#} s; Old Forge a {fundoOF:0}/min, fundo {fundoOF * Distritos.OldForge.FundoFator:0}/min) em {wall.Elapsed.TotalSeconds:0.0} s -> {Path.GetFullPath(saida)}");
         Console.WriteLine($"{prod} produtivos ({custo} de ouro); abertura {d.Abertura}. Renda = vendas do distrito (GoldEarned); fundo = renda de fundo do Old Forge (fora do GoldEarned).");
-        Console.WriteLine("| perfil | 1a venda | producao completa | zona morta (min; maior seq.) | renda/min nos 10 min depois da producao | renda/min nos ultimos 10 min | fundo/min | luxo | saldo final | min sem destino |");
-        Console.WriteLine("|---|---|---|---|---|---|---|---|---|---|");
+        Console.WriteLine("| perfil | 1a venda | producao completa | zona morta (min; maior seq.) | renda/min nos 10 min depois da producao | renda/min nos ultimos 10 min | fundo/min | luxo | saldo final | min sem destino | manager do Old Forge (nivel; 1a subida) | Renome do Imperio | vendas nas metas do Imperio / vendas |");
+        Console.WriteLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|");
         foreach (BotProfile p in perfis)
         {
             RunD[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
@@ -419,7 +424,9 @@ static class EconSim
             string prodTxt = Media(g.Select(r => r.Prod)) + (g.Any(r => r.Prod < 0f) ? "*" : "");
             Console.WriteLine($"| {p.Name} | {Media(g.Select(r => r.Venda1))} | {prodTxt} | {g.Average(r => r.Morta):0.#} ({seq.MortaSeq} a partir do min {seq.MortaIni}) | " +
                               $"{g.Where(r => r.RendaProd >= 0).Select(r => (double)r.RendaProd).DefaultIfEmpty(-1).Average():0} | {g.Average(r => r.RendaFim):0} | {g.Average(r => r.Fundo) / minutos:0} | " +
-                              $"{g.Average(r => r.Luxo):0.#} | {g.Average(r => r.Saldo):0} | {g.Average(r => r.SemDestino):0.#} |");
+                              $"{g.Average(r => r.Luxo):0.#} | {g.Average(r => r.Saldo):0} | {g.Average(r => r.SemDestino):0.#} | " +
+                              $"{g.Average(r => r.Gerente):0.#}; {(g.Any(r => r.Gerente1 >= 0) ? "min " + g.Where(r => r.Gerente1 >= 0).Average(r => r.Gerente1).ToString("0") : "--")} | " +
+                              $"{g.Average(r => r.Renome):0} | {g.Average(r => r.MetaVendas):0} / {g.Average(r => r.Vendidas):0} |");
         }
         Console.WriteLine();
         Console.WriteLine($"| perfil | {string.Join(" | ", amostra.ItemDefs.Where(x => x.Product).Select(x => x.Id))} |");
@@ -434,7 +441,7 @@ static class EconSim
         return 0;
     }
 
-    static RunD PlayD(DistrictDef d, BotProfile p, float hz, int minutos, float anuncioSeg, Func<Tuning> tuning, float? workerSeg, double fundoOF)
+    static RunD PlayD(DistrictDef d, BotProfile p, float hz, int minutos, float anuncioSeg, Func<Tuning> tuning, float? workerSeg, double fundoOF, bool gerente)
     {
         var clock = Stopwatch.StartNew();
         Imperio imp = Imperio.Chegada(d, tuning, fundoOF);
@@ -454,6 +461,7 @@ static class EconSim
             {
                 int before = s.UpgradesBought;
                 bot.Step(s, dt);
+                if (gerente && Bot.Manager(imp) && r.Gerente1 < 0) r.Gerente1 = m;   // C-CORE-03
                 imp.Fundo(dt);
                 pausa += (bot.AdsTotal - ads) * anuncioSeg; ads = bot.AdsTotal;
                 foreach (SimEvent e in s.Events) if (e.Kind == Ev.Sold) r.Vendas[e.A] += e.B;
@@ -474,7 +482,8 @@ static class EconSim
         r.Prod = ProdD(s, rel);
         r.RendaProd = prodMin < 0 || prodMin + 10 > minutos ? -1 : (earnedMin[prodMin + 10] - earnedMin[prodMin]) / 10;
         r.RendaFim = (earnedMin[minutos] - earnedMin[Math.Max(0, minutos - 10)]) / Math.Min(10, minutos);
-        r.Earned = s.GoldEarned; r.Fundo = imp.FundoGanho; r.Saldo = s.Gold; r.Upgrades = s.UpgradesBought;
+        r.Earned = s.GoldEarned; r.Fundo = imp.FundoGanho; r.Saldo = s.Gold; r.Upgrades = s.UpgradesBought; r.Gerente = imp.Manager(Distritos.OldForgeId);
+        r.Renome = imp.Raiz.Renome.Total; r.Vendidas = s.Sales; r.MetaVendas = imp.Raiz.Metas.Cont.TryGetValue("product_sold", out long mv) ? mv : 0;
         for (int i = 0; i < s.UpgradeDefs.Length; i++) if (s.UpgradeDefs[i].Luxury && s.Bought[i]) r.Luxo++;
         r.Csv = csv.ToString(); r.Segundos = clock.Elapsed.TotalSeconds;
         return r;
