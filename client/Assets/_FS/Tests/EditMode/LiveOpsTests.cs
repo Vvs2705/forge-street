@@ -384,11 +384,11 @@ namespace FS.Tests
             Assert.AreEqual(rw.Encomenda, ev.Def.Id);
             EncTeste.Completa(ev);
             s.Tick(1f / 30f, 0f, 0f);
-            Assert.AreEqual(pontos + 20, s.LiveOps.Pontos, "+20 da encomenda Event");
+            Assert.AreEqual(pontos + 15, s.LiveOps.Pontos, "+15 da encomenda Event");
             Assert.AreEqual(xp + 10L, s.LiveOps.Xp, "a Event e' uma entrega: 10 de XP, nao dobra");
             Sim r = Sim.Load(s.Save(rw.Comeca + H + 2));
             Agora(r, rw.Comeca + H + 3);
-            Assert.AreEqual(pontos + 20, r.LiveOps.Pontos, "os pontos da Event vao no save (ev.c)");
+            Assert.AreEqual(pontos + 15, r.LiveOps.Pontos, "os pontos da Event vao no save (ev.c)");
             xp = s.LiveOps.Xp;
             for (int k = 0; k < 9; k++) Entrega(s, "ord_common_old_forge");
             Assert.AreEqual(xp + 60L, s.LiveOps.Xp, "teto de 100 por dia local contando a Event (4 + 6 entregas pagam XP)");
@@ -414,6 +414,59 @@ namespace FS.Tests
             Agora(s, mc.Termina);
             Assert.IsNull(s.LiveOps.Evento);
             Assert.AreEqual(antes, s.T.OrderRewardSeconds, "o knob volta no fim");
+        }
+
+        /// <summary>Bot F2P por `seg` s de jogo com o relogio do LiveOps andando de `t0` (1x por segundo, como a View e o econsim).</summary>
+        static void Joga(Sim s, Bot bot, long t0, float seg)
+        {
+            float ini = s.Time; int ult = -1;
+            while (s.Time - ini < seg)
+            {
+                bot.Step(s, 1f / 30f);
+                int k = (int)(s.Time - ini);
+                if (k != ult) { ult = k; Agora(s, t0 + k); }
+            }
+        }
+
+        /// <summary>
+        /// LIVEOPS_V1 §2.2/§6: a trilha de evento fecha no dia 4-5 de 6, nunca numa sessao. Para cada evento que roda: (a) o bot F2P jogando
+        /// 60 min seguidos no 1o dia nao chega aos 1.000 (a missao play_day segura 100 e a encomenda Event da 15); (b) o F2P de referencia
+        /// (§1: 2 sessoes de 10 min por dia, cofre entre elas, sem anuncio nem golpe) fecha no dia 4 ou 5. Antes do evento o jogador ja jogou
+        /// 20 min por dia desde o T0, ate 2 h (a Royal Week e' o D0: comeca do zero). Os 7 eventos em paralelo (cada Sim tem o seu Tuning).
+        /// </summary>
+        [Test]
+        public void TrilhaDeEvento_NuncaNumaSessaoDe60Min_OF2PDeReferenciaFechaNoDia4a5()
+        {
+            EventDef[] evs = LiveOpsDefs.Eventos.Where(e => LiveOpsDefs.Falta(e, Items.All) == null).ToArray();
+            Assert.AreEqual(7, evs.Length);
+            var aq = new Sim(); var ab = new Bot();
+            while (aq.Time < 2 * 3600f) ab.Step(aq, 1f / 30f);
+            string jogou = aq.Save(LiveOpsDefs.T0);
+            var sessao = new int[evs.Length]; var dia = new int[evs.Length];
+            System.Threading.Tasks.Parallel.For(0, evs.Length, i =>
+            {
+                EventDef e = evs[i];
+                Sim Inicio() => e.Inicio == 0 ? new Sim() : Sim.Load(jogou);
+                Sim s = Inicio();
+                Joga(s, new Bot(), e.Comeca + H, 3600f);
+                sessao[i] = s.LiveOps.Evento == e ? s.LiveOps.Pontos : -1;
+                Sim r = Inicio(); var b = new Bot();
+                long ultimo = e.Comeca - H;
+                dia[i] = 7;
+                for (int d = 0; d < 6 && dia[i] == 7; d++)
+                    foreach (long h in new[] { H, 8 * H })
+                    {
+                        long t = e.Comeca + d * Dia + h;
+                        r.ApplyOffline(t - ultimo, t);
+                        Joga(r, b, t, 600f);
+                        ultimo = t + 600;
+                        if (r.LiveOps.Evento == e && r.LiveOps.Proximo == null) { dia[i] = d + 1; break; }
+                    }
+            });
+            // "evento: pontos em 60 min seguidos (-1 = nao entrou) / dia em que a referencia fecha (7 = nao fecha)"
+            string tabela = string.Join(" | ", evs.Select((e, i) => $"{e.Id}: {sessao[i]} / dia {dia[i]}"));
+            TestContext.WriteLine(tabela);
+            Assert.IsTrue(evs.Select((e, i) => i).All(i => sessao[i] >= 1 && sessao[i] < 1000 && dia[i] >= 4 && dia[i] <= 5), tabela);
         }
 
         // ------------------------------------------------------------------ Pass
@@ -575,6 +628,7 @@ namespace FS.Tests
             Acusa(Valida(Troca(ffb, Copia(ffb, e => e.Trilha = FF.Trilha))), "mais de uma fonte");
             Acusa(Valida(Troca(ffb, Copia(ffb, e => e.Modificadores = new[] { new Modificador("GrabTime", 0.7f) }))), "reserva com o que ainda nao existe");
             Acusa(Valida(Troca(FF, Copia(FF, e => e.Encomenda = "ord_ev_royal_week"))), "nao e' a OrderDef Event deste evento");
+            Acusa(Valida(Troca(FF, Copia(FF, e => e.Missoes = FF.Missoes.Where(x => x.Evento != "play_day").ToArray()))), "jogue em 3 dias");
             Acusa(Valida(Troca(FF, Copia(FF, e => e.Encomenda = "ord_common_old_forge"))), "nao e' a OrderDef Event deste evento");
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.Premium[1] = new RewardDef(TipoPremio.Ouro, 30)), S2 }), "o pago nunca progride");
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.Premium[1] = new RewardDef(TipoPremio.Blueprint, 0, "bp_x", new RewardDef(TipoPremio.Ouro, 60))), S2 }), "o pago nunca progride");

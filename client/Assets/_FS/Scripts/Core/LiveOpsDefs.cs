@@ -147,8 +147,8 @@ namespace FS.Core
                 Id = "ev_s1w1_royal_week", Template = Template.RoyalWeek, Temporada = S1, Inicio = 0, Renome = 1,
                 Missoes = new[]
                 {
-                    M("vip5", "vip_served", 5, 100), M("royal2", "order_complete", 2, 120, "royal"), M("vende300", "product_sold", 300, 80),
-                    M("fina40", "quality_crafted", 40, 100), M("escudos50", "product_sold", 50, 80, "escudo"), M("melhoria2", "upgrade_buy", 2, 60),
+                    M("vip5", "vip_served", 5, 100), M("royal2", "order_complete", 2, 120, "royal"), M("vende300", "product_sold", 300, 60),
+                    M("fina40", "quality_crafted", 40, 100), M("escudos50", "product_sold", 50, 60, "escudo"), M("dias3", "play_day", 3, 100),
                     M("cofre2", "offline_claim", 2, 60), M("golpe10", "master_strike", 10, 100),
                 },
                 Trilha = Trilha(Cos("cos_ev_s1w1_selo"), "cos_ev_s1w1_tapete"), Encomenda = "ord_ev_royal_week", Tema = "royal", Modificadores = Vip75(),
@@ -170,10 +170,10 @@ namespace FS.Core
                 Missoes = new[]
                 {
                     // "escudos ou pecas de armadura": as armaduras (distrito 2, Wave C) entram no filtro quando o ItemDef delas existir
-                    M("escudos150", "product_sold", 150, 150, "escudo"), M("forja_escudos100", "product_crafted", 100, 80, "escudo"),
+                    M("escudos150", "product_sold", 150, 100, "escudo"), M("forja_escudos100", "product_crafted", 100, 80, "escudo"),
                     M("enc_escudo4", "order_done", 4, 100, "escudo"), M("fina_escudos20", "quality_crafted", 20, 100, "escudo"),
                     M("nivel_escudos", "upgrade_buy", 1, 80, "escudos_nivel2", "escudos_nivel3"), M("golpe_escudos5", "master_strike", 5, 90, "escudo"),
-                    M("vende300", "product_sold", 300, 100),
+                    M("vende300", "product_sold", 300, 50), M("dias3", "play_day", 3, 100),
                 },
                 Trilha = Trilha(Cos("cos_ev_s1w3_emblema"), "cos_ev_s1w3_manequim"), Encomenda = "ord_ev_armorers_challenge", Tema = "armeiro",
                 Modificadores = new[] { new Modificador("Price", 1.2f, "escudo"), new Modificador("ShieldTimeMul", 0.9f) },
@@ -183,10 +183,10 @@ namespace FS.Core
                 Id = "ev_s1w4_hunt_sunblade", Template = Template.MasterworkHunt, Temporada = S1, Inicio = 21, Renome = 1, Requer = new[] { "bp_mw_primeira_lamina" },
                 Missoes = new[]
                 {
-                    M("espadas400", "product_sold", 400, 120, "espada"), M("superior_espadas10", "quality_superior", 10, 120, "espada"),
+                    M("espadas400", "product_sold", 400, 70, "espada"), M("superior_espadas10", "quality_superior", 10, 120, "espada"),
                     M("golpe_espadas15", "master_strike", 15, 100, "espada"), M("royal2", "order_complete", 2, 100, "royal"),
                     M("quality2", "order_complete", 2, 90, "quality"), M("nivel_bigornas", "upgrade_buy", 1, 70, "bigornas_nivel2", "bigornas_nivel3"),
-                    M("vende1000", "product_sold", 1000, 100),
+                    M("vende1000", "product_sold", 1000, 50), M("dias3", "play_day", 3, 100),
                 },
                 Trilha = Trilha(Bp("bp_mw_sunblade"), "cos_ev_s1w4_tocha"), Encomenda = "ord_ev_hunt_sunblade", Tema = "hunt",
                 Modificadores = new[] { new Modificador("QualidadeEvento", 15f, "espada", true), new Modificador("GolpeRecarga", 0.75f) },
@@ -198,9 +198,9 @@ namespace FS.Core
                 {
                     M("vende400", "product_sold", 400, 100), M("joias40", "product_sold", 40, 100, "joia"), M("lingotes250", "product_crafted", 250, 80, "lingote"),
                     M("enc8", "order_done", 8, 120), M("escudos80", "product_sold", 80, 80, "escudo"), M("vip2", "vip_served", 2, 60),
-                    M("cofre2", "offline_claim", 2, 60), M("melhoria2", "upgrade_buy", 2, 100),
+                    M("cofre2", "offline_claim", 2, 60), M("dias3", "play_day", 3, 100),
                 },
-                Trilha = Trilha(Cos("cos_ev_s1w5_emblema"), "cos_ev_s1w5_lanterna"), Tema = "frenesi_noite", Modificadores = Frenesi(),
+                Trilha = Trilha(Cos("cos_ev_s1w5_emblema"), "cos_ev_s1w5_lanterna"), Encomenda = "ord_ev_forge_frenzy_b", Tema = "frenesi_noite", Modificadores = Frenesi(),
             },
             new EventDef
             {
@@ -208,7 +208,7 @@ namespace FS.Core
                 Missoes = new[]
                 {
                     // "contratar ou subir de nivel 1 worker" (B-CORE-04); sem ninguem a contratar nem nivel a subir, completa sozinha
-                    M("lingotes400", "product_crafted", 400, 100, "lingote"), M("vende400", "product_sold", 400, 100), M("melhoria3", "upgrade_buy", 3, 80),
+                    M("lingotes400", "product_crafted", 400, 100, "lingote"), M("vende400", "product_sold", 400, 80), M("dias3", "play_day", 3, 100),
                     M("golpe5", "master_strike", 5, 80), M("contrata1", "worker_any", 1, 80), M("enc6", "order_done", 6, 100),
                     M("cofre2", "offline_claim", 2, 60), M("vip3", "vip_served", 3, 100),
                 },
@@ -233,9 +233,9 @@ namespace FS.Core
                 Requer = new[] { "ord_bulk_old_forge" },
                 Missoes = new[]
                 {
-                    M("bulk2", "order_complete", 2, 140, "bulk"), M("mixed2", "order_complete", 2, 120, "mixed"), M("enc10", "order_done", 10, 120),
-                    M("vende500", "product_sold", 500, 100), M("escudos80", "product_sold", 80, 80, "escudo"), M("cofre2", "offline_claim", 2, 60),
-                    M("vip2", "vip_served", 2, 80),
+                    M("bulk2", "order_complete", 2, 140, "bulk"), M("mixed2", "order_complete", 2, 120, "mixed"), M("enc10", "order_done", 10, 80),
+                    M("vende500", "product_sold", 500, 60), M("escudos80", "product_sold", 80, 60, "escudo"), M("cofre2", "offline_claim", 2, 60),
+                    M("vip2", "vip_served", 2, 80), M("dias3", "play_day", 3, 100),
                 },
                 Trilha = Trilha(Cos("cos_ev_s2w3_emblema"), "cos_ev_s2w3_balanca"), Encomenda = "ord_ev_merchant_caravan", Tema = "caravana",
                 Modificadores = new[] { new Modificador("OrderRewardSeconds", 1.25f) },
@@ -245,9 +245,9 @@ namespace FS.Core
                 Id = "ev_s2w4_hunt_ember_crown", Template = Template.MasterworkHunt, Temporada = S2, Inicio = 56, Abre = "joalheria", Renome = 1,
                 Missoes = new[]
                 {
-                    M("joias80", "product_sold", 80, 120, "joia"), M("fina_joias20", "quality_crafted", 20, 120, "joia"), M("golpe_joias10", "master_strike", 10, 100, "joia"),
+                    M("joias80", "product_sold", 80, 70, "joia"), M("fina_joias20", "quality_crafted", 20, 120, "joia"), M("golpe_joias10", "master_strike", 10, 100, "joia"),
                     M("royal2", "order_complete", 2, 100, "royal"), M("nivel_joalheria", "upgrade_buy", 1, 70, "joalheria_nivel2", "joalheria_nivel3"),
-                    M("vende800", "product_sold", 800, 100), M("enc_joia3", "order_done", 3, 90, "joia"),
+                    M("vende800", "product_sold", 800, 50), M("enc_joia3", "order_done", 3, 90, "joia"), M("dias3", "play_day", 3, 100),
                 },
                 Trilha = Trilha(Bp("bp_mw_ember_crown"), "cos_ev_s2w4_vitrine"), Encomenda = "ord_ev_hunt_ember_crown", Tema = "hunt_brasa",
                 Modificadores = new[] { new Modificador("QualidadeEvento", 15f, "joia", true), new Modificador("GolpeRecarga", 0.75f) },
@@ -257,11 +257,11 @@ namespace FS.Core
                 Id = "ev_s2w5_royal_week_b", Template = Template.RoyalWeek, Temporada = S2, Inicio = 63, Renome = 1, Reserva = true,
                 Missoes = new[]
                 {
-                    M("vip5", "vip_served", 5, 120), M("vende300", "product_sold", 300, 80), M("escudos60", "product_sold", 60, 80, "escudo"),
-                    M("espadas100", "product_sold", 100, 80, "espada"), M("enc6", "order_done", 6, 120), M("melhoria2", "upgrade_buy", 2, 80),
+                    M("vip5", "vip_served", 5, 120), M("vende300", "product_sold", 300, 60), M("escudos60", "product_sold", 60, 80, "escudo"),
+                    M("espadas100", "product_sold", 100, 80, "espada"), M("enc6", "order_done", 6, 120), M("dias3", "play_day", 3, 100),
                     M("cofre2", "offline_claim", 2, 60), M("lingotes200", "product_crafted", 200, 80, "lingote"),
                 },
-                Trilha = Trilha(Cos("cos_ev_s2w5_emblema"), "cos_ev_s2w5_flamula"), Tema = "royal_tarde", Modificadores = Vip75(),
+                Trilha = Trilha(Cos("cos_ev_s2w5_emblema"), "cos_ev_s2w5_flamula"), Encomenda = "ord_ev_royal_week_b", Tema = "royal_tarde", Modificadores = Vip75(),
             },
         };
 
@@ -486,6 +486,8 @@ namespace FS.Core
                 ouroEvento = Math.Max(ouroEvento, Soma(e, TipoPremio.Ouro) / 7.0);   // um evento por semana
                 if (xp > 500 || ren > 10) yield return $"{at} trilha com {xp} XP e {ren} de Renome (teto 500 e 10 por evento)";
                 if (pontos < 0.7 * ant) yield return $"{at} missoes somam {pontos} pontos, menos de 70% do ultimo limiar ({ant})";
+                if (e.Dias >= 3 && !Array.Exists(e.Missoes ?? new MissaoEvento[0], x => x.Evento == "play_day" && x.Alvo >= 3))
+                    yield return $"{at} sem a missao \"jogue em 3 dias\" (play_day >= 3): a trilha fecharia numa sessao (LIVEOPS_V1 §2.2)";
 
                 foreach (Modificador m in e.Modificadores)
                 {

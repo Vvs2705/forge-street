@@ -26,7 +26,7 @@ namespace FS.Core
             Royal = OrderType.Royal, Blueprint = OrderType.Blueprint, Event = OrderType.Event;
         const Quality Fina = Quality.Fine, Superior = Quality.Superior;
 
-        static OrderDef Evento(string id, string evento) => new OrderDef(id, Event, null, 150f, 3, 30, 0f, 0, 0, eventId: evento, eventPoints: 20);
+        static OrderDef Evento(string id, string evento, int pontos = 15) => new OrderDef(id, Event, null, 150f, 3, 30, 0f, 0, 0, eventId: evento, eventPoints: pontos);
 
         public static readonly OrderDef[] All =
         {
@@ -41,16 +41,18 @@ namespace FS.Core
             new OrderDef("ord_mixed_old_forge", Mixed, OldForge, 70f, 2, 15, 18f, 60, 3, products: 3, minLines: 3),
             new OrderDef("ord_royal_old_forge", Royal, OldForge, 200f, 5, 40, 32f, 150, 10, minQuality: Fina, blueprintQueue: FilaRoyal),
             new OrderDef("ord_blueprint_old_forge", Blueprint, OldForge, 150f, 3, 30, 5f, 25, 2, blueprintQueue: FilaEncomenda),
-            // eventos (LIVEOPS_V1 §2.2): 20 pontos por entrega, sem ouro nem Renome
+            // eventos (LIVEOPS_V1 §2.2): 15 pontos por entrega (20 fechava a trilha numa sessao; 10, so no dia 6: BALANCE §28.6), sem ouro nem Renome
             Evento("ord_ev_royal_week", "ev_s1w1_royal_week"),
             Evento("ord_ev_forge_frenzy", "ev_s1w2_forge_frenzy"),
             Evento("ord_ev_armorers_challenge", "ev_s1w3_armorers_challenge"),
             Evento("ord_ev_hunt_sunblade", "ev_s1w4_hunt_sunblade"),
             Evento("ord_ev_blacksmith_festival", "ev_s2w1_blacksmith_festival"),
             Evento("ord_ev_rare_ore_rush", "ev_s2w2_rare_ore_rush"),
-            Evento("ord_ev_merchant_caravan", "ev_s2w3_merchant_caravan"),
+            Evento("ord_ev_merchant_caravan", "ev_s2w3_merchant_caravan", 10),   // so encomendas nas missoes: com 15 fechava no dia 3 (BALANCE §28.6)
             Evento("ord_ev_hunt_ember_crown", "ev_s2w4_hunt_ember_crown"),
             Evento("ord_ev_arcane_week", "ev_arcane_week"),
+            Evento("ord_ev_forge_frenzy_b", "ev_s1w5_forge_frenzy_b"),   // reservas: sem a encomenda Event a trilha parava em 700 de 1.000
+            Evento("ord_ev_royal_week_b", "ev_s2w5_royal_week_b"),
             // fregueses do Old Forge (o premio e o Renome do tipo; N fixo)
             new OrderDef("ord_reg_orbo", Qual, OldForge, 0f, 5, 5, 13f, 40, 3, minQuality: Fina, item: "ferramenta", fixedN: 5, clientId: "cli_reg_orbo"),
             new OrderDef("ord_reg_lirien", Common, OldForge, 0f, 8, 8, 10f, 25, 1, item: "joia", fixedN: 8, clientId: "cli_reg_lirien"),

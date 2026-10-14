@@ -151,7 +151,7 @@ namespace FS.Core
 
         public static string TxMissao(EventDef e, MissaoEvento x) => "em:" + e.Id + ":" + x.Id;
 
-        /// <summary>Pontos do evento: as missoes pagas + as encomendas Event entregues nele (B-CORE-05: +20 cada, contadas enquanto o evento
+        /// <summary>Pontos do evento: as missoes pagas + as encomendas Event entregues nele (B-CORE-05: +15 cada, contadas enquanto o evento
         /// esta ativo; a trilha ja paga fica no ledger quando ele sai).</summary>
         public int PontosDe(EventDef e)
         {

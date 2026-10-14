@@ -269,7 +269,7 @@ namespace FS.Tests
             long gold = s.Gold, rn = s.Renome.Total;
             EncTeste.Completa(e);
             s.Tick(Dt, 0f, 0f);
-            Assert.AreEqual(20, s.LiveOps.Pontos, "20 pontos por entrega, na trilha do evento");
+            Assert.AreEqual(15, s.LiveOps.Pontos, "15 pontos por entrega, na trilha do evento");
             Assert.AreEqual(gold, s.Gold);
             Assert.AreEqual(rn, s.Renome.Total);
             Run(s, 1f);

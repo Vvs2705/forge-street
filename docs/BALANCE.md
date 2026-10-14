@@ -1780,22 +1780,39 @@ Prêmio de qualidade aos 60 min (F2P) 16,2% → 18,5% (a técnica das encomendas
 
 `EncomendasTests` (19): um por tipo (Common igual à de antes; Bulk só com 2 linhas e 5 entregues; Quality só com linha que faz Fina, só a Fina conta, N pela fração; Rush no prazo 2× e +1, fora dele o normal e a vaga continua; Mixed 2 e 3 produtos, cada peça no seu; Royal no Renome 2 com o projeto da fila Royal do `Projetos` pelo ID de transação; Blueprint no Renome 1 só com projeto pendente na fila do `Projetos`, Common com a fila esgotada; Event em vaga própria no Forge Frenzy do `LiveOps`, +20 pontos na trilha, sai quando o evento acaba) e o freguês (7ª Common, o próximo que dá, coração no save); rodízio sem sorteio (golden do ciclo e de 20 posições; dois bots iguais abrem a mesma sequência); vagas 1/2/3 pelo Renome e só depois das Ferramentas, enchendo pelo relógio sem repetir produto; 1 peça para 1 vaga (a mais antiga que aceita); prêmio 1× (entregar 2× paga 1×, nem depois de save/load); save (3 vagas com Mixed, Rush no prazo, bônus e projeto; ida e volta idêntica; espelho `ord=`), save do schema 3 de antes (gerado pelo código da `main`: vira Common igual na posição entregues + trocadas e o rodízio segue), lixo e ID desconhecido; os 10 primeiros minutos do bot iguais ao golden da `main`; o bot F2P entrega os 7 tipos que abrem sem evento em 100 min; validator (item inexistente, Masterwork como alvo, bônus sem prazo, ID fora do formato, Mixed de 1 produto, Event com ouro, Blueprint sem fila, fila inexistente, distrito que o build não tem, N invertido, prêmio fora do múltiplo de 5, ID repetido, ciclo sem Common, com Event ou com tipo sem `OrderDef`). `AnunciosTests`: bônus com piso de 60 s; trocar com 2 vagas (só a principal, no lugar dela). `LocTests`: título e barra do cartão nos 3 idiomas. `mutantes.py`: 22 mutações novas do Orders 2.0 (`enc-*`, com `enc-bp-nao-ganha` da fila do `Projetos`, e as `ord-*`/`save-ord-*`/`ad-troca-proxima` reescritas no código novo), todas mortas; com `ad-paga-2x` e duas do Renome, 27/27 mortas.
 
-### 28.6 Orders 2.0 no LiveOps (#56): Royal Week e Merchant Caravan rodam
+### 28.6 Orders 2.0 no LiveOps (#56): Royal Week e Merchant Caravan rodam; a trilha de evento fecha no dia 4–5
 
-Ligações: a entrega chama `LiveOps.OnEncomenda(tipo)` (gatilho `order_complete` com filtro `common|bulk|quality|mixed|rush|royal|event|blueprint`, agora em `LiveOpsDefs.Gatilhos`; `Futuros` vazio) e, na encomenda Event, `LiveOps.PontosEncomenda` (+20 no contador do evento, somado em `PontosDe`, no save pelo `ev.c`); o XP do Passe continua só no `Ev.OrderDone` (10 por entrega, teto de 100 por dia; a Event é uma entrega, não dobra). `Requer` do evento confere o ID no `OrderDefs`/`ProjetosDefs`; o validator cobra que `EventDef.Encomenda` seja a `OrderDef` Event daquele evento. Rodam agora **7 dos 10**: Royal Week e Merchant Caravan entraram; os 2 Hunts esperam o knob `QualidadeEvento` e o Rare Ore Rush o `GrabTime` (consts, não knobs).
+Ligações: a entrega chama `LiveOps.OnEncomenda(tipo)` (gatilho `order_complete` com filtro `common|bulk|quality|mixed|rush|royal|event|blueprint`, agora em `LiveOpsDefs.Gatilhos`; `Futuros` vazio) e, na encomenda Event, `LiveOps.PontosEncomenda` (pontos no contador do evento, somados em `PontosDe`, no save pelo `ev.c`); o XP do Passe continua só no `Ev.OrderDone` (10 por entrega, teto de 100 por dia; a Event é uma entrega, não dobra). `Requer` do evento confere o ID no `OrderDefs`/`ProjetosDefs`; o validator cobra que `EventDef.Encomenda` seja a `OrderDef` Event daquele evento. Rodam **7 dos 10**: Royal Week e Merchant Caravan entraram; os 2 Hunts esperam o knob `QualidadeEvento` e o Rare Ore Rush o `GrabTime` (consts, não knobs).
 
-`econsim --evento <id> --minutos 60 --partidas 4` (5 perfis; comparado com a mesma partida sem o evento):
+**Trilha de evento (portão `LIVEOPS_V1` §2.2/§6: fecha no dia 4–5 de 6, nunca numa sessão).** Com +20 por encomenda Event o F2P chegava a 995 de 1.000 numa sessão de 60 min do Merchant Caravan. Correção:
+- **Toda trilha de 3+ dias tem a missão "jogue em 3 dias do evento"** (`play_day` 3, 100 pontos, como a do Forge Frenzy): entrou em Royal Week, Armorer's Challenge, Forge Frenzy-B, Blacksmith Festival, Merchant Caravan e Royal Week-B (e nos 2 Hunts, que ainda não rodam), no lugar da `upgrade_buy` nos eventos de 8 missões e tirando os 100 das missões de volume nos de 7 (a soma segue 700). O validator recusa evento de 3+ dias sem ela.
+- **Encomenda Event: 20 → 15 pontos; 10 no Merchant Caravan** (o único em que toda missão sai de encomenda e venda). **Desvio do pedido (10 em todos), revisar:** com 10, o F2P de referência só fecha no dia 6 (Forge Frenzy, Forge Frenzy-B, Blacksmith Festival, Royal Week-B) ou não fecha (Royal Week 470 pontos em 60 min e 990 no dia 6, Armorer's Challenge); com 15 em todos, o Merchant Caravan fecha no dia 3.
+- **As reservas ganharam a encomenda Event** (`ord_ev_forge_frenzy_b`, `ord_ev_royal_week_b`): sem ela a trilha parava em 700.
+
+`LiveOpsTests.TrilhaDeEvento_*` (bot F2P, 30 Hz; o jogador já jogou 20 min por dia desde o T0, até 2 h; a Royal Week é o D0 e começa do zero): pontos em **60 min seguidos** no 1º dia e o dia em que o **F2P de referência** (`LIVEOPS_V1` §1: 2 sessões de 10 min por dia, cofre entre elas, sem anúncio e sem golpe de mestre) fecha a trilha:
+
+| evento | 60 min seguidos | referência fecha no dia |
+|---|---|---|
+| Royal Week | 590 | 5 |
+| Forge Frenzy | 815 | 4 |
+| Armorer's Challenge | 795 | 5 |
+| Forge Frenzy-B | 795 | 4 |
+| Blacksmith Festival | 745 | 4 |
+| Merchant Caravan | 790 | 4 |
+| Royal Week-B | 795 | 4 |
+
+Ressalva: o dia de fechamento mexe ±1–2 com a taxa de passo do bot (a 10 Hz o Merchant Caravan fecha no dia 6); o teste fixa 30 Hz, a do `BalanceTests`.
+
+`econsim --evento <id> --minutos 60 --partidas 4` (5 perfis; comparado com a mesma partida sem o evento), depois da correção:
 
 | evento | F2P entra | renda/min do F2P depois da entrada (sem → com) | Δ F2P | Δ nos 5 perfis | pontos do F2P (missões) | XP do Passe na sessão (F2P) |
 |---|---|---|---|---|---|---|
-| Royal Week (`VipMin`/`VipMax` ×0,75) | 14:11 | 1.441 → 1.559 | +8,2% | +0,6 a +8,8% | 710 (5/8) | 363 |
-| Merchant Caravan (`OrderRewardSeconds` ×1,25) | 14:11 | 1.441 → 1.513 | +5,0% | +3,2 a +7,8% | 995 (6/7) | 500 |
-| Forge Frenzy (referência, com as encomendas Event) | 20:28 | 1.593 → 1.627 | +2,2% | +2,2 a +7,1% | 775 (7/8) | 400 |
+| Royal Week (`VipMin`/`VipMax` ×0,75) | 14:11 | 1.441 → 1.474 | +2,3% | +0,4 a +7,2% | 568 (4/8) | 250 |
+| Merchant Caravan (`OrderRewardSeconds` ×1,25) | 14:11 | 1.441 → 1.483 | +2,9% | +2,5 a +7,5% | 710 (6/8) | 325 |
 
-- Portão "ouro/min do F2P ≤ +15% durante o evento": **passa** nos dois (e nos 5 perfis).
-- Pass com o Orders 2.0 (eventos prontos, encomendas medidas): S1 657 XP/dia → **dia 27,4**; S2 643 → **dia 28,0** (antes 29,9 e 30,6; o §27.3 previa a volta ao desenho). `LiveOpsTests.Fechamento_*` agora usa 30 encomendas/60 min.
-- **Achado (revisar):** com +20 por encomenda Event a trilha passa de 700: o F2P chega a 995 de 1.000 numa sessão de 60 min do Merchant Caravan (sem missão `play_day`) e a 710–835 na Royal Week. O portão "trilha fecha no dia 4–5" (`LIVEOPS_V1` §6) fica curto para quem joga 1 h seguida. Knobs, sem mexer aqui: `OrderDef.EventPoints` (20 → 10) ou o alvo das missões de volume; ou uma `play_day` no Merchant Caravan.
-- Testes: `LiveOpsTests.OrdersDois_RoyalWeekRoda_*` (a Common não conta como Royal, 2 Royal fecham a `royal2`, a Event abre sozinha com a `OrderDef` do evento e dá +20, XP do Passe 10 por entrega com o teto contando a Event, pontos no save) e `OrdersDois_MerchantCaravanRoda_*` (Bulk/Mixed por tipo, `order_done` conta todas, prêmio ×1,25 pelo RemoteConfig e de volta no fim); a lista dos eventos prontos e a Royal Week no calendário; o validator com a `Encomenda` trocada. `mutantes.py`: `enc-evento-sem-pontos` e `enc-evento-sem-tipo` mortas (e a `liveops-teto-encomenda` também pelo teste novo).
+- Portão "ouro/min do F2P ≤ +15% durante o evento": **passa** nos dois (e nos 5 perfis). Antes da correção eram +8,2% e +5,0%: o ouro dos limiares que a trilha deixou de pagar na sessão comprava melhoria mais cedo.
+- Pass com o Orders 2.0 (eventos prontos, encomendas medidas): S1 657 XP/dia → **dia 27,4**; S2 643 → **dia 28,0** (antes 29,9 e 30,6). Não mudou com a correção: a trilha de cada evento ainda dá 500 XP, só mais tarde.
+- Testes: `LiveOpsTests.OrdersDois_RoyalWeekRoda_*` (a Common não conta como Royal, 2 Royal fecham a `royal2`, a Event abre sozinha com a `OrderDef` do evento e dá +15, XP do Passe 10 por entrega com o teto contando a Event, pontos no save), `OrdersDois_MerchantCaravanRoda_*` (Bulk/Mixed por tipo, `order_done` conta todas, prêmio ×1,25 pelo RemoteConfig e de volta no fim), `TrilhaDeEvento_*` (a tabela acima), a lista dos eventos prontos e a Royal Week no calendário; o validator com a `Encomenda` trocada e sem a `play_day`. `mutantes.py`: `enc-evento-sem-pontos`, `enc-evento-sem-tipo`, `enc-evento-pontos-20` e `liveops-sem-play-day` mortas (e a `liveops-teto-encomenda` também pelo teste novo).
 
 ## 29. E-PLAT-04/05: compras in-app (núcleo + loja falsa) e o Pacote do Mestre (2026-10-13)
 
