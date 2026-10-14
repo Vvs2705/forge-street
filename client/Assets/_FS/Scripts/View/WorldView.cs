@@ -1645,7 +1645,7 @@ namespace FS
                 string clip = c.Moving ? "Walking" : v.CheerT > 0f ? "Cheering" : c.Role >= 0 && c.IdleT > 0.5f ? "LookingAround" : "Idle";
                 if (v == _player && _packSheet != null)   // mesma animacao e quadro, outra folha; comprou agora = poeira (o save carrega sem)
                 {
-                    SpriteSheet want = _sim.Bought[(int)Upgrade.PlayerCapacity] ? _packSheet : _plainSheet;
+                    SpriteSheet want = _sim.Has(Upgrade.PlayerCapacity) ? _packSheet : _plainSheet;   // Has: a mochila e' do ferreiro em todo distrito (C-CORE-02)
                     if (v.Body.Sheet != want && want == _packSheet && Time.timeSinceLevelLoad > 1f) Poof(c.Pos, 0.6f);
                     v.Body.Sheet = want;
                 }
