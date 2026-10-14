@@ -23,6 +23,7 @@ using FS.Core;
 /// (o CSV fica identico ao de antes).
 /// B-CORE-04: --worker-seg S = Bot.WorkerSegundos (contrata/sobe nivel de worker quando custa ate S s da renda; negativo = nunca); com
 /// --tuning Workers=false o jogo e' o de antes do B-CORE-04. A 4a tabela mostra os workers; compra de worker conta na zona morta.
+/// B-CORE-08: a tabela do Hall e da Collection (Masterworks registradas e a 1a; marcos pagos e o Renome deles; Renome total e os niveis 2, 3 e 4).
 /// </summary>
 static class EconSim
 {
@@ -47,6 +48,8 @@ static class EconSim
         public long[] EarnedMin; public float Entrou = -1f; public int Pontos, Missoes, Ordens; public long XpPasse, OuroEvento;
         // B-CORE-07: projetos possuidos, quando chegou o de mestre das bigornas, niveis IV-V (os com projeto), bigorna longa e o que a espada longa vendeu
         public int Projetos, Mestre; public long MestreGasto, Longas; public float BpMestre = -1f, Mestre1 = -1f, Longa = -1f; public double LongaPct;
+        // B-CORE-08: Masterworks no Hall (e quais), a 1a (relogio), marcos da colecao pagos e o Renome deles, Renome das obras, total e niveis 3/4
+        public int Mw, MarcosCol; public string MwIds = ""; public float Mw1 = -1f, Rn2 = -1f, Rn3 = -1f, Rn4 = -1f; public long RenomeCol, RenomeMw, Renome;
     }
 
     /// <summary>--tuning "GolpeRecarga=30;NivelEstacaoCusto=500|1500|650|1900|500|1500|1000|3000|...": campos publicos do Tuning (NivelEstacaoCusto: os 16, II-III e IV-V)
@@ -160,6 +163,17 @@ static class EconSim
             Console.WriteLine($"| {p.Name} | {g.Average(r => r.Projetos):0.#} ({Clock(Media(g.Select(r => r.BpMestre)))}) | {g.Average(r => r.Mestre):0.#} ({g.Average(r => r.MestreGasto):0}; " +
                               $"{Clock(Media(g.Select(r => r.Mestre1)))}) | {Clock(Media(g.Select(r => r.Longa)))}; {g.Average(r => r.Longas):0}; {g.Average(r => r.LongaPct):0.0}% |");
         }
+        // B-CORE-08: Hall e Collection (Masterwork nao vende: a renda nao muda por ela; o Renome sim)
+        Console.WriteLine();
+        Console.WriteLine($"| perfil | Masterworks no Hall (de {MasterworksDefs.All.Length}; a 1a) | quais | marcos da colecao (de {MasterworksDefs.Marcos.Length}; Renome) | Renome das obras | Renome total (nivel 2; nivel 3; nivel 4) |");
+        Console.WriteLine("|---|---|---|---|---|---|");
+        foreach (BotProfile p in perfis)
+        {
+            Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            static float Media(IEnumerable<float> v) { float[] a = v.Where(t => t >= 0f).ToArray(); return a.Length == 0 ? -1f : a.Average(); }
+            Console.WriteLine($"| {p.Name} | {g.Average(r => r.Mw):0.#} ({Clock(Media(g.Select(r => r.Mw1)))}) | {g.OrderByDescending(r => r.Mw).First().MwIds} | " +
+                              $"{g.Average(r => r.MarcosCol):0.#} ({g.Average(r => r.RenomeCol):0}) | {g.Average(r => r.RenomeMw):0} | {g.Average(r => r.Renome):0} ({Clock(Media(g.Select(r => r.Rn2)))}; {Clock(Media(g.Select(r => r.Rn3)))}; {Clock(Media(g.Select(r => r.Rn4)))}) |");
+        }
         // V19: pisos do §3 em relogio; % = partidas que compraram ANTES do piso (o BalanceTests reprova) ou nao compraram
         Console.WriteLine();
         Console.WriteLine($"| perfil | {string.Join(" | ", Pisos.Select(x => $"{x.Nome} (piso {Clock(x.Piso)})"))} |");
@@ -258,8 +272,13 @@ static class EconSim
                     else if (e.Kind == Ev.Sold && e.A == (int)Item.LongSword) r.Longas += e.B;   // B-CORE-07: ouro da espada longa
                     else if (e.Kind == Ev.Blueprint && s.Projetos.Defs[e.A].Id == "bp_bigorna_mestra") r.BpMestre = s.Time + pausa;
                     if (e.Kind == Ev.WorkerUp || e.Kind == Ev.Hired && e.B != 0) { wk++; if (r.Wk1 < 0f) r.Wk1 = s.Time + pausa; }
+                    if (e.Kind == Ev.Masterwork && e.B >= 0 && r.Mw1 < 0f) r.Mw1 = s.Time + pausa;   // B-CORE-08
+                    if (e.Kind == Ev.Colecao) { r.MarcosCol++; r.RenomeCol += e.B; }
                 }
                 if (venda1 < 0f && s.FirstSaleTime >= 0f) venda1 = s.FirstSaleTime + pausa;
+                if (r.Rn2 < 0f && s.Renome.Nivel >= 2) r.Rn2 = s.Time + pausa;
+                if (r.Rn3 < 0f && s.Renome.Nivel >= 3) r.Rn3 = s.Time + pausa;
+                if (r.Rn4 < 0f && s.Renome.Nivel >= 4) r.Rn4 = s.Time + pausa;
                 if (s.UpgradesBought != before)
                     for (int i = 0; i < rel.Length; i++) if (s.Bought[i] && rel[i] < 0f) rel[i] = s.UpgradeTime[i] + pausa;
                 if (goldAtProd < 0 && s.UpgradesBought != before && s.ProductionComplete) goldAtProd = s.Gold;
@@ -303,6 +322,8 @@ static class EconSim
             else { r.Mestre++; r.MestreGasto += s.T.Cost(i); r.Mestre1 = r.Mestre1 < 0f ? rel[i] : Math.Min(r.Mestre1, rel[i]); }
         }
         r.Projetos = s.Projetos.Count;
+        r.Mw = s.Hall.Count; r.Renome = s.Renome.Total;
+        foreach (MasterworkDef d in s.Hall.Defs) if (s.Hall.Tem(d.Id)) { r.RenomeMw += d.Renome; r.MwIds += (r.MwIds.Length > 0 ? " " : "") + d.Id.Substring(3); }
         r.Longa = rel[(int)Upgrade.LongAnvil];
         r.LongaPct = 100.0 * r.Longas / Math.Max(1, s.GoldEarned);
         r.Quali = 100.0 * s.QualityGold / Math.Max(1, s.GoldEarned);
