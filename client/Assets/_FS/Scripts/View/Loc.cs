@@ -458,6 +458,31 @@ namespace FS
             { "aviso.contratou", L("{0} na equipe!", "{0} joins the team!", "¡{0} en el equipo!") },
             { "aviso.worker_nivel", L("{0}: nível {1}!", "{0}: level {1}!", "¡{0}: nivel {1}!") },
 
+            // ---------- Royal Contracts (D-CORE-04): aba do painel de metas (nome <= 28, pedido <= 60 nos do build), botoes e aviso (<= 30) ----------
+            { "metas.contratos", L("Contratos", "Contracts", "Contratos") },
+            { "ctr.nenhum", L("Nenhum contrato ativo", "No active contract", "Ningún contrato activo") },
+            { "ctr.todos", L("Todos os contratos cumpridos!", "All contracts fulfilled!", "¡Todos los contratos cumplidos!") },
+            { "ctr.etapa", L("Etapa {0}/{1}: {2}", "Stage {0}/{1}: {2}", "Etapa {0}/{1}: {2}") },   // {2} = "7/20 escudos"
+            { "ctr.pede", L("Pede: {0}", "Asks: {0}", "Pide: {0}") },
+            { "ctr.projeto", L("+ projeto", "+ blueprint", "+ plano") },
+            { "ctr.aceitar", L("ACEITAR", "ACCEPT", "ACEPTAR") },
+            { "ctr.abandonar", L("ABANDONAR", "ABANDON", "ABANDONAR") },
+            { "ctr.breve", L("EM BREVE", "SOON", "PRONTO") },
+            { "ctr.ocupado", L("1 POR VEZ", "1 AT A TIME", "1 A LA VEZ") },
+            { "aviso.contrato", L("Contrato cumprido! +{0}", "Contract fulfilled! +{0}", "¡Contrato cumplido! +{0}") },
+            { "ctr.ctr_ronda_vila", L("Armar a ronda da vila", "Village Watch", "Ronda del pueblo") },   // nomes do CONTEUDO_V1 §8
+            { "ctr.ctr_vinte_guardas", L("Equipar 20 guardas", "Arm 20 Guards", "Armar guardias") },
+            { "ctr.ctr_milicia_norte", L("Milícia do norte", "North Militia", "Milicia norteña") },
+            { "ctr.ctr_obras_castelo", L("Obras do castelo", "Castle Works", "Obras castillo") },
+            { "ctr.ctr_dote_princesa", L("Dote da princesa", "Princess Dowry", "Dote princesa") },
+            { "ctr.ctr_guarda_real", L("Guarda real", "Royal Guard", "Guardia real") },
+            { "ctr.ctr_batedores", L("Batedores da fronteira", "Border Scouts", "Exploradores") },
+            { "ctr.ctr_coroacao", L("Desfile da coroação", "Coronation", "Coronación") },
+            { "ctr.ctr_torre_magos", L("Torre dos magos", "Mage Tower", "Torre de magos") },
+            { "ctr.ctr_vanguarda", L("Vanguarda rúnica", "Rune Vanguard", "Vanguardia runa") },
+            { "ctr.ctr_sinos_catedral", L("Sinos da catedral", "Cathedral Bells", "Campanas") },
+            { "ctr.ctr_campeao", L("Campeão do reino", "Realm Champion", "Campeón reino") },
+
             // ---------- LiveOps (D-CORE-03/04): eventos, Passe, missoes de evento e cosmeticos (Textos.Missao <= 32, Textos.Premios <= 44) ----------
             { "ev.ev_s1w1_royal_week", L("Semana Real", "Royal Week", "Semana Real") },
             { "ev.ev_s1w2_forge_frenzy", L("Frenesi da Forja", "Forge Frenzy", "Frenesí de la Forja") },

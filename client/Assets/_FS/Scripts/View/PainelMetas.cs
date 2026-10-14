@@ -8,9 +8,10 @@ namespace FS
 {
     /// <summary>
     /// D-CORE-02: painel das metas, modal como as Configuracoes (escurece e segura os toques; a oficina segue, o joystick trava). De cima para
-    /// baixo: titulo e ouro, faixa do login de 7 dias (toque no de hoje), abas Diarias / Semanais / Conquistas e a lista rolavel (frase da
+    /// baixo: titulo e ouro, faixa do login de 7 dias (toque no de hoje), abas Diarias / Semanais / Conquistas / Contratos e a lista rolavel (frase da
     /// meta, premio, barra "x/y" e RESGATAR ou FEITO). Quem paga e grava o ID e' o Sim.Metas; aqui so desenha e avisa o Game (`pago`: tipo,
     /// id, ouro) para o som, o aviso, o diario e o save. Linhas montadas uma vez por aba; o estado repinta 4x/s so no que mudou.
+    /// D-CORE-04: a aba Contratos tem 2 linhas (o ativo com ABANDONAR; o proximo com ACEITAR) sobre o Sim.Contratos (PintaContrato).
     /// </summary>
     public sealed class PainelMetas
     {
@@ -19,6 +20,7 @@ namespace FS
             public int Slot = -1; public MetaDef Fixa;   // vaga (diaria/semanal) ou a conquista
             public MetaDef Def; public long Feito = -1; public int Estado = -1;   // ultimo pintado
             public GameObject Go, Barra; public Text Nome, Premio, Conta, BText; public Image Cheio, BFace; public Button B;
+            public string Chave;   // D-CORE-04: o ultimo pintado da linha de contrato
         }
 
         sealed class Dia { public Image Face; public Text Rotulo, Premio; public int Estado = -1; }
@@ -28,12 +30,13 @@ namespace FS
 
         readonly Sim _sim;
         readonly Action<string, string, long> _pago;
+        readonly Action<string, string> _contrato;
         readonly RectTransform _root, _view;
         readonly ScrollRect _scroll;
-        readonly RectTransform[] _listas = new RectTransform[3];
-        readonly List<Linha>[] _linhas = { new List<Linha>(), new List<Linha>(), new List<Linha>() };
-        readonly Image[] _abas = new Image[3], _pontos = new Image[3];
-        readonly Text[] _abasTxt = new Text[3];
+        readonly RectTransform[] _listas = new RectTransform[4];
+        readonly List<Linha>[] _linhas = { new List<Linha>(), new List<Linha>(), new List<Linha>(), new List<Linha>() };
+        readonly Image[] _abas = new Image[4], _pontos = new Image[4];
+        readonly Text[] _abasTxt = new Text[4];
         readonly Dia[] _dias = new Dia[MetasDefs.LoginDias.Length];
         readonly Text _ouro, _login;
         int _aba = -1, _loginDias = -1; bool _loginPronto; long _ouroVisto = -1;
@@ -41,9 +44,9 @@ namespace FS
 
         public bool Aberto => _root.gameObject.activeSelf;
 
-        public PainelMetas(RectTransform safe, Sim sim, Action<string, string, long> pago, Action projetos)
+        public PainelMetas(RectTransform safe, Sim sim, Action<string, string, long> pago, Action projetos, Action<string, string> contrato)
         {
-            _sim = sim; _pago = pago;
+            _sim = sim; _pago = pago; _contrato = contrato;
             _root = Art.Node(safe, "Metas", Vector2.zero, Vector2.one);
             _root.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);
             Image edge = Art.Panel(_root, "Cartao", MenuBar.Leather, new Vector2(0.04f, 0.07f), new Vector2(0.96f, 0.93f));
@@ -88,12 +91,12 @@ namespace FS
                 _dias[i] = d;
             }
 
-            string[] nomes = { "metas.diarias", "metas.semanais", "metas.conquistas" };
-            for (int k = 0; k < 3; k++)
+            string[] nomes = { "metas.diarias", "metas.semanais", "metas.conquistas", "metas.contratos" };
+            for (int k = 0; k < 4; k++)
             {
                 int aba = k;
-                float x0 = 0.03f + 0.24f * k;
-                Button b = Art.NewButton(f, Loc.T(nomes[k]), 34, MenuBar.Leather, new Vector2(x0, 0.69f), new Vector2(x0 + 0.22f, 0.76f), () => Aba(aba));
+                float x0 = 0.03f + 0.19f * k;   // 4 abas + Projetos na mesma fileira (D-CORE-04)
+                Button b = Art.NewButton(f, Loc.T(nomes[k]), 34, MenuBar.Leather, new Vector2(x0, 0.69f), new Vector2(x0 + 0.176f, 0.76f), () => Aba(aba));
                 _abas[k] = b.GetComponent<Image>();
                 _abasTxt[k] = b.GetComponentInChildren<Text>();
                 _abasTxt[k].resizeTextForBestFit = true; _abasTxt[k].resizeTextMinSize = 20; _abasTxt[k].resizeTextMaxSize = 34;
@@ -103,7 +106,7 @@ namespace FS
             }
 
             // B-CORE-07: a 4a aba abre o painel de Projetos (Blueprints vem de marcos e conquistas, como as metas)
-            Button pj = Art.NewButton(f, Loc.T("proj.titulo"), 34, MenuBar.Gray, new Vector2(0.75f, 0.69f), new Vector2(0.97f, 0.76f), () => { Fechar(); projetos(); });
+            Button pj = Art.NewButton(f, Loc.T("proj.titulo"), 34, MenuBar.Gray, new Vector2(0.79f, 0.69f), new Vector2(0.97f, 0.76f), () => { Fechar(); projetos(); });
             Text pjTxt = pj.GetComponentInChildren<Text>();
             pjTxt.color = Tinta; pjTxt.resizeTextForBestFit = true; pjTxt.resizeTextMinSize = 20; pjTxt.resizeTextMaxSize = 34;
 
@@ -120,7 +123,7 @@ namespace FS
             _root.gameObject.SetActive(false);
         }
 
-        /// <param name="aba">0 diarias, 1 semanais, 2 conquistas.</param>
+        /// <param name="aba">0 diarias, 1 semanais, 2 conquistas, 3 contratos (D-CORE-04).</param>
         public void Abrir(int aba = 0)
         {
             _root.gameObject.SetActive(true);
@@ -134,7 +137,7 @@ namespace FS
         void Aba(int k)
         {
             if (_listas[k] == null) Monta(k);
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 4; i++)
             {
                 if (_listas[i] != null) _listas[i].gameObject.SetActive(i == k);
                 _abas[i].color = i == k ? MenuBar.Leather : MenuBar.Gray;
@@ -155,7 +158,8 @@ namespace FS
             col.spacing = 12f; col.childControlWidth = col.childControlHeight = true; col.childForceExpandWidth = true; col.childForceExpandHeight = false;
             c.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             _listas[k] = c;
-            if (k == 2) foreach (MetaDef d in MetasDefs.Conquistas) _linhas[k].Add(NovaLinha(c, -1, d));
+            if (k == 3) { _linhas[k].Add(NovaLinha(c, 0, null)); _linhas[k].Add(NovaLinha(c, 1, null)); }   // D-CORE-04: o ativo e o proximo
+            else if (k == 2) foreach (MetaDef d in MetasDefs.Conquistas) _linhas[k].Add(NovaLinha(c, -1, d));
             else for (int i = 0; i < (k == 0 ? Metas.NDiarias : Metas.NSemanais); i++) _linhas[k].Add(NovaLinha(c, i, null));
         }
 
@@ -193,8 +197,52 @@ namespace FS
 
         Metas.Meta Le(Linha l) => l.Fixa != null ? _sim.Metas.Conquista(l.Fixa) : _aba == 0 ? _sim.Metas.Diaria(l.Slot) : _sim.Metas.Semanal(l.Slot);
 
+        /// <summary>D-CORE-04: linha 0 = o ativo (ABANDONAR, sem penalidade); linha 1 = o proximo da lista (ACEITAR quando aberto). O nucleo decide
+        /// (Contratos.Aceitar/Abandonar); aqui so avisa o Game (`contrato`: acao, id) para o diario e o save.</summary>
+        void Contrato(Linha l)
+        {
+            Contratos c = _sim.Contratos;
+            string id = l.Slot == 0 ? c.Ativo?.Def.Id : c.Oferta?.Id;
+            if (id == null || !(l.Slot == 0 ? c.Abandonar() : c.Aceitar())) return;
+            _contrato(l.Slot == 0 ? "abandon" : "accept", id);
+            Refresh(0f);
+        }
+
+        /// <summary>Linha 0: nome, etapa x/N com a conta e o prazo, premio de agora; linha 1: nome, o que pede, premio, e o botao ACEITAR ou o que
+        /// falta (Renome, "1 por vez", distrito por vir). Repinta so quando a chave muda (o prazo, 1x por segundo).</summary>
+        void PintaContrato(Linha l)
+        {
+            Contratos c = _sim.Contratos;
+            Contrato a = c.Ativo;
+            ContractDef d = l.Slot == 0 ? a?.Def : c.Proximo;
+            bool aberto = l.Slot == 1 && c.Oferta == d;
+            string chave = d == null ? "-" : (l.Slot == 0 ? d.Id + ":" + a.Etapa + ":" + a.Feito + ":" + Mathf.CeilToInt(a.Prazo)
+                : d.Id + ":" + (aberto ? 1 : 0) + ":" + (a != null ? 1 : 0) + ":" + _sim.Renome.Nivel + ":" + (_sim.QualityRevealed ? 1 : 0)) + ":" + _sim.Metas.Ouro(d.OuroSeg);   // o ouro segue a taxa
+            if (chave == l.Chave) return;
+            l.Chave = chave;
+            l.Barra.SetActive(d != null);
+            l.B.gameObject.SetActive(d != null);
+            if (d == null) { l.Nome.text = Loc.T(l.Slot == 0 ? "ctr.nenhum" : "ctr.todos"); l.Premio.text = ""; return; }
+            l.Nome.text = Textos.ContratoNome(d);
+            l.Premio.text = Textos.ContratoPremio(_sim, d, l.Slot == 0 && a.Prazo > 0f);
+            if (l.Slot == 0)
+            {
+                l.Conta.text = Textos.ContratoEtapa(_sim, a);
+                l.Cheio.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(a.Progresso / (float)d.Total), 1f);
+                l.B.interactable = true; l.BFace.color = MenuBar.Leather; l.BText.text = Loc.T("ctr.abandonar");
+                return;
+            }
+            l.Conta.text = Textos.ContratoPede(_sim, d);
+            l.Cheio.rectTransform.anchorMax = new Vector2(0f, 1f);
+            l.B.interactable = aberto; l.BFace.color = aberto ? MenuBar.Green : MenuBar.Gray;
+            bool noBuild = Array.IndexOf(OrderDefs.Distritos, d.District) >= 0 && _sim.QualityRevealed;
+            l.BText.text = aberto ? Loc.T("ctr.aceitar") : a != null && c.Aberto(d) ? Loc.T("ctr.ocupado")
+                : noBuild && d.Renome >= 0 && !_sim.Renome.Libera(d.Id) ? Loc.T("card.precisa_renome", d.Renome) : Loc.T("ctr.breve");
+        }
+
         void Resgata(Linha l)
         {
+            if (_aba == 3) { Contrato(l); return; }
             MetaDef def = Le(l).Def;
             long g = l.Fixa != null ? _sim.Metas.ResgatarConquista(l.Fixa.Id) : _aba == 0 ? _sim.Metas.ResgatarDiaria(l.Slot) : _sim.Metas.ResgatarSemanal(l.Slot);
             if (g < 0) return;
@@ -242,7 +290,9 @@ namespace FS
             for (int k = 0; k < Metas.NSemanais; k++) if (m.Semanal(k).Pronta) w++;
             foreach (MetaDef c in MetasDefs.Conquistas) if (m.Conquista(c).Pronta) a++;
             _pontos[0].enabled = d > 0; _pontos[1].enabled = w > 0; _pontos[2].enabled = a > 0;
-            if (_aba >= 0) foreach (Linha l in _linhas[_aba]) Pinta(l, Le(l));
+            _pontos[3].enabled = _sim.Contratos.Oferta != null;   // D-CORE-04: da para aceitar um
+            if (_aba == 3) foreach (Linha l in _linhas[3]) PintaContrato(l);
+            else if (_aba >= 0) foreach (Linha l in _linhas[_aba]) Pinta(l, Le(l));
         }
 
         /// <summary>Caixa do dia `i` do ciclo: paga (cinza), a de hoje pronta (verde) ou por vir (creme); premio do dia no ouro de agora.</summary>

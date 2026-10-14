@@ -454,6 +454,43 @@ namespace FS
             }
         }
 
+        // ---------- Royal Contracts (D-CORE-04): aba do painel de metas (nome, pedido, etapa e premio) ----------
+
+        public static string ContratoNome(ContractDef d) => Loc.T("ctr." + d.Id);
+
+        /// <summary>"Pede: 30 espadas + 20 escudos + 10 ferramentas" (as etapas na ordem; "Fina+" na qualidade minima; item que o build nao
+        /// tem sai pelo ID, so no "proximo" de um distrito por vir).</summary>
+        public static string ContratoPede(Sim s, ContractDef d)
+        {
+            var p = new string[d.Etapas.Length];
+            for (int k = 0; k < p.Length; k++)
+            {
+                ContractStage e = d.Etapas[k];
+                p[k] = Qtd(e.N) + " " + ItemOuId(s, e.Item, e.N) + (e.MinQ > Quality.Normal ? " " + Loc.T("enc.min", Qualidade(e.MinQ)) : "");
+            }
+            return Loc.T("ctr.pede", string.Join(" + ", p));
+        }
+
+        /// <summary>A barra do ativo: "Etapa 2/3: 7/20 escudos", com a qualidade minima e o prazo-bonus como na encomenda.</summary>
+        public static string ContratoEtapa(Sim s, Contrato c)
+        {
+            ContractStage e = c.Atual;
+            string t = Loc.T("ctr.etapa", Math.Min(c.Etapa + 1, c.Def.Etapas.Length), c.Def.Etapas.Length, Qtd(c.Feito) + "/" + Qtd(e.N) + " " + ItemOuId(s, e.Item, e.N));
+            if (e.MinQ > Quality.Normal) t += " · " + Loc.T("enc.min", Qualidade(e.MinQ));
+            if (c.Prazo > 0f) t += " · " + ((int)c.Prazo / 60).ToString(CultureInfo.InvariantCulture) + ":" + ((int)c.Prazo % 60).ToString("00", CultureInfo.InvariantCulture);
+            return t;
+        }
+
+        /// <summary>O que paga agora (no prazo, com o bonus): ouro de s da taxa de agora, Renome e o projeto (Textos.Premio).</summary>
+        public static string ContratoPremio(Sim s, ContractDef d, bool noPrazo)
+        {
+            int seg = noPrazo ? (int)Math.Round(d.OuroSeg * ContratosDefs.BonusOuro) : d.OuroSeg;
+            string t = Premio(s.Metas.Ouro(seg), 0, d.Reputacao + (noPrazo ? ContratosDefs.BonusRenome : 0), null);
+            return d.Blueprint != null ? t + "  ·  " + Loc.T("ctr.projeto") : t;
+        }
+
+        static string ItemOuId(Sim s, string id, long n) { int i = Items.IndexOf(id, s.ItemDefs); return i >= 0 && i < ItemId.Length ? ItemNome(i, n) : id; }
+
         /// <summary>Quantidade com separador de milhar do idioma ("1.500", "1,500"); de 1 milhao em diante, a escala do Ouro ("1,23 mi").</summary>
         public static string Qtd(long v) => v >= 1000000 ? Ouro(v) : v.ToString("#,0", CultureInfo.InvariantCulture).Replace(",", Loc.T("num.mil"));
     }
