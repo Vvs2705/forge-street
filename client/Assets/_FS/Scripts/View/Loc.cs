@@ -149,6 +149,10 @@ namespace FS
             { "mapa.charter", L("Charter!", "Charter!", "¡Carta!") },
             { "mapa.btn_abrir", L("Abrir", "Open", "Abrir") },
             { "mapa.ir", L("Viajar", "Travel", "Viajar") },
+            // C-CORE-03: o manager do distrito com Charter (nome proprio = o mesmo nos 3 idiomas, CONTEUDO_V1 §0.9)
+            { "mapa.manager", L("  {0}, gerente nv {1}: rende {2}% fora", "  {0}, manager lv {1}: earns {2}% away", "  {0}, gerente nv {1}: rinde {2}% fuera") },   // {1} = "2/5"
+            { "mapa.manager_prox", L(" (nv {0}: {1})", " (lv {0}: {1})", " (nv {0}: {1})") },
+            { "mapa.btn_manager", L("Gerente nv {0}", "Manager lv {0}", "Gerente nv {0}") },
 
             // ---------- melhorias: nome (<= 16, ContentValidator.NameMax) e descricao; .curto = o "Precisa: X" do cartao travado ----------
             { "up.fole.nome", L("Fole", "Bellows", "Fuelle") },
