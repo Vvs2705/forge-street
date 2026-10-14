@@ -14,6 +14,8 @@ namespace FS.Core
     public sealed class Station
     {
         public int Index; public Kind Kind; public V2 Pos; public string Name;
+        /// <summary>C-CORE-01: ID do StationDef (o texto est.&lt;id&gt; sai dele) e a folha de arte (null = pelo tipo e produto, View).</summary>
+        public string Id, Arte;
         /// <summary>B-CORE-01: receita da familia da estacao (null = nao produz: deposito e balcoes). Insumos, produto e tempo saem dela.</summary>
         public RecipeDef Recipe;
         /// <summary>Entrada: quantos de cada insumo da receita (paralelo a Recipe.Inputs), ate InCap de cada.</summary>
@@ -110,10 +112,10 @@ namespace FS.Core
             foreach (Upgrade u in Chain)
             {
                 if (s.Bought[(int)u]) continue;
-                if (Upgrades.All[(int)u].InMenu) return -1;   // FASE6: vendido no menu inferior; cadeia so de menu = pad invisivel para sempre
-                if (Upgrades.IsLuxury((int)u) && !s.ProductionComplete) return -1;
+                if (s.UpgradeDefs[(int)u].InMenu) return -1;   // FASE6: vendido no menu inferior; cadeia so de menu = pad invisivel para sempre
+                if (s.UpgradeDefs[(int)u].Luxury && !s.ProductionComplete) return -1;
                 if (!s.TemProjeto((int)u)) return -1;   // B-CORE-07: a bigorna longa so aparece com o projeto
-                int req = Upgrades.All[(int)u].Requires;
+                int req = s.UpgradeDefs[(int)u].Requires;
                 return req < 0 || s.Bought[req] ? (int)u : -1;
             }
             return -1;
@@ -154,12 +156,18 @@ namespace FS.Core
         /// <summary>B-CORE-01: itens e receitas desta partida (padrao Items.All e Recipes.All; so o teste injeta outro). Handle de item = posicao
         /// em ItemDefs; os arrays por item (Stock, SoldItems, Crafted, Held) tem esse tamanho.</summary>
         public readonly ItemDef[] ItemDefs; public readonly RecipeDef[] RecipeDefs;
+        /// <summary>C-CORE-01: o distrito desta instancia (padrao Distritos.OldForge) e a tabela de upgrades dele (Old Forge = Upgrades.All):
+        /// Bought, UpgradeTime e o tier do custo sao indices AQUI.</summary>
+        public readonly DistrictDef Distrito; public readonly UpgradeDef[] UpgradeDefs;
+        /// <summary>C-CORE-02: o Sim do Old Forge quando este e' outro distrito do Imperio: Mochila e Botas sao do ferreiro e valem em todo
+        /// distrito (CONTEUDO_V1 §15 #15; Sim.Has). null = so os upgrades deste distrito.</summary>
+        public Sim Heroi;
         public float Time;
         /// <summary>A-CORE-06: ouro, custos e somas em long (o save e' texto: cabe sem mudar o formato). ponytail: soma sem saturar; 9,2e18 nao
         /// se alcanca jogando (1 milhao/s por 100 anos = 3e15), so editando o save.</summary>
         public long Gold;
-        public readonly bool[] Bought = new bool[Upgrades.Count];
-        public readonly float[] UpgradeTime = new float[Upgrades.Count];
+        public readonly bool[] Bought;
+        public readonly float[] UpgradeTime;
         public readonly List<Station> Stations = new List<Station>();
         public readonly List<Pad> Pads = new List<Pad>();
         /// <summary>Corpos solidos ativos (estacoes desbloqueadas, balcoes e Balance.Obstacles comprados); refeito no Recompute.</summary>
@@ -210,10 +218,12 @@ namespace FS.Core
         {
             get
             {
-                for (int i = 0; i < Upgrades.Count; i++) if (!Bought[i] && Upgrades.IsProduction(i)) return false;   // luxo e Meta nao contam
+                for (int i = 0; i < UpgradeDefs.Length; i++) if (!Bought[i] && IsProduction(i)) return false;   // luxo e Meta nao contam
                 return true;
             }
         }
+        /// <summary>Produtivo = nem luxo nem Meta, na tabela deste distrito (Upgrades.IsProduction e' a do Old Forge).</summary>
+        public bool IsProduction(int u) => !UpgradeDefs[u].Luxury && !UpgradeDefs[u].Meta;
         public readonly int[] Crafted;
         public double RateEma;                 // ouro/s online, media movel (base do offline)
         public long SavedAt, LastClaim;        // unix s; o claim offline e' idempotente por SavedAt, que nunca recua (Save)
@@ -224,30 +234,37 @@ namespace FS.Core
         public long ClockWentBack;
         bool _clockBehind;
 
+        /// <summary>Estacoes com papel fixo no codigo, achadas pelo ID do StationDef (C-CORE-01): deposito, fornalha e balcao existem em todo
+        /// distrito (ContentValidator.Layout); as outras sao do Old Forge e ficam null onde o distrito nao as tem.</summary>
         public readonly Station Deposit, FurnaceA, FurnaceB, AnvilA, AnvilB, ShieldBench, ToolBench, Counter, JewelBench, JewelShop, LongAnvil;
+        /// <summary>C-CORE-01: as duas pontas da esteira (DistrictDef.EsteiraDe/Para; Old Forge: Fornalha -> Bigorna).</summary>
+        public readonly Station EsteiraDe, EsteiraPara;
+        /// <summary>Ponto de contratacao do Old Forge; o de cada distrito e' DistrictDef.Contratacao (Sim.Contratacao).</summary>
         public static readonly V2 HireSpot = new V2(8.3f, 1.5f);
+        public V2 Contratacao => Distrito.Contratacao;
         // B-CORE-04: os ajudantes sao os WorkerDef Porter (upgrade que contrata e rota), na ordem da tabela = a de antes: Ajudante 1-3, Joalheiro,
-        // Mineiro (2o papel 0), Joalheiro 2 (2o papel 3, FASE4_MINERIO)
-        static readonly int[] HireDef = Porters();
-        static readonly Upgrade[] HireBy = Array.ConvertAll(HireDef, k => (Upgrade)Upgrades.IndexOf(WorkerDefs.All[k].Contrata));
-        static readonly int[] HireRole = Array.ConvertAll(HireDef, k => WorkerDefs.All[k].Rota);
-
-        static int[] Porters()
-        {
-            var k = new List<int>();
-            for (int i = 0; i < WorkerDefs.All.Length; i++) if (WorkerDefs.All[i].Contrata != null) k.Add(i);
-            return k.ToArray();
-        }
+        // Mineiro (2o papel 0), Joalheiro 2 (2o papel 3, FASE4_MINERIO). C-CORE-01: os do distrito (Equipe.Defs); _hireBy = indice do upgrade
+        readonly int[] _hireDef, _hireBy, _hireRole;
+        /// <summary>C-CORE-01: efeito generico (UpgradeDef.Efeito, indice = o Upgrade do Old Forge) -> indice do upgrade DESTE distrito que o
+        /// faz, ou -1. No Old Forge, _ef[u] = u.</summary>
+        readonly int[] _ef;
+        /// <summary>Item que algum deposito do distrito da (papel 0 dos ajudantes): minerio no Old Forge, minerio e couro na Row.</summary>
+        readonly bool[] _bruto;
 
         readonly float[] _clientT;
         float _serveT, _serveJ, _convT, _padDwell;
         Pad _padUnder;
 
-        /// <summary>`items`/`recipes`/`blueprints`/`masterworks` = conteudo injetado (null = Items.All / Recipes.All / ProjetosDefs.All /
-        /// MasterworksDefs.All); so o teste usa.</summary>
-        public Sim(Tuning tuning = null, ItemDef[] items = null, RecipeDef[] recipes = null, BlueprintDef[] blueprints = null, MasterworkDef[] masterworks = null)
+        /// <summary>`items`/`recipes`/`blueprints`/`masterworks` = conteudo injetado (null = o do distrito); so o teste usa. `distrito` = o
+        /// DistrictDef desta instancia (null = Distritos.OldForge); o Ajuste dele vale sobre `tuning` (o Imperio passa um Tuning novo por distrito).</summary>
+        public Sim(Tuning tuning = null, ItemDef[] items = null, RecipeDef[] recipes = null, BlueprintDef[] blueprints = null, DistrictDef distrito = null,
+            MasterworkDef[] masterworks = null)
         {
+            Distrito = distrito ?? Distritos.OldForge;
+            UpgradeDefs = Distrito.Upgrades;
+            Bought = new bool[UpgradeDefs.Length]; UpgradeTime = new float[UpgradeDefs.Length];
             T = tuning ?? new Tuning();
+            Distrito.Ajuste?.Invoke(T);
             Metas = new Metas(this);
             Anuncios = new Anuncios(this);
             Renome = new Renome(this);
@@ -255,65 +272,72 @@ namespace FS.Core
             Compras = new Compras(this);
             Equipe = new Equipe(this);
             LiveOps = new LiveOps(this);
-            ItemDefs = items ?? Items.All; RecipeDefs = recipes ?? Recipes.All;
+            ItemDefs = items ?? Distrito.Itens; RecipeDefs = recipes ?? Distrito.Receitas;
             int n = ItemDefs.Length;
-            Projetos = new Projetos(this, blueprints);
-            Hall = new Hall(this, masterworks); Colecao = new Colecao(this, null);
+            Projetos = new Projetos(this, blueprints ?? Distrito.Projetos);
+            Hall = new Hall(this, masterworks ?? Distrito.Masterworks); Colecao = new Colecao(this, Distrito.MarcosColecao);   // B-CORE-08 por distrito
             MasterworkPending = s => Hall.Pendente(s) >= 0;   // B-CORE-08: projeto e condicoes da 1a pendente da familia
             Stock = new int[n]; SoldItems = new int[n]; Crafted = new int[n]; StockQ = Lotes(n);
-            Player = new Carrier(n) { Pos = new V2(4.5f, 3.5f), Speed = Balance.PlayerSpeed, Cap = Balance.PlayerCap };
+            Player = new Carrier(n) { Pos = Distrito.Inicio, Speed = Balance.PlayerSpeed, Cap = Balance.PlayerCap };
             VipIn = T.VipInterval(0);
             // 1o cliente: espada cedo (FirstClientAt); as outras linhas no intervalo delas (B-CORE-07: por item, a espada longa entrou)
             _clientT = new float[n];
             for (int i = (int)Item.Sword; i < n; i++) _clientT[i] = i == (int)Item.Sword ? T.FirstClientAt : HasClients((Item)i) ? T.ClientInterval[i] : 0f;
-            for (int i = 0; i < Upgrades.Count; i++) UpgradeTime[i] = -1f;
-            // Bocas (FASE5 §2b): (inX, inY) = lado da ENTRADA; a SAIDA fica no lado oposto. Toda estacao que produz: entrada a
-            // esquerda, saida a direita (pilhas da view InPile -1,05 / OutPile +1,05). Fornalha, Bigorna e Joalheria eram
-            // embaixo/em cima por causa dos pads do Fole, do Martelo veloz e da Lupa, que foram para o menu (FASE6 §2).
-            // B-CORE-01: a ultima coluna e' a familia; a estacao faz a receita da familia dela (RecipeDefs)
-            Deposit = Add(Kind.Deposit, 1.5f, 1.5f, "Depósito", 0f, 1f);             // zona unica acima (lado das fornalhas)
-            FurnaceA = Add(Kind.Furnace, 1.5f, 5.5f, "Fornalha", -1f, 0f, -1, "fornalha");
-            FurnaceB = Add(Kind.Furnace, 4.5f, 5.5f, "Fornalha 2", -1f, 0f, (int)Upgrade.Furnace2, "fornalha");
-            AnvilA = Add(Kind.Crafter, 1.5f, 9.5f, "Bigorna", -1f, 0f, -1, "bigorna");
-            AnvilB = Add(Kind.Crafter, 4.5f, 9.5f, "Bigorna 2", -1f, 0f, (int)Upgrade.Anvil2, "bigorna");
-            ShieldBench = Add(Kind.Crafter, 7.5f, 9.5f, "Escudos", -1f, 0f, (int)Upgrade.Shields, "escudos");
-            ToolBench = Add(Kind.Crafter, 7.5f, 5.5f, "Ferramentas", -1f, 0f, (int)Upgrade.Tools, "ferramentas");
-            Counter = Add(Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f);                // zona unica embaixo (fila fica em cima)
-            // 2a area: ANEXADAS ao fim (indices 8 e 9) para os indices e o save antigos nao mudarem
-            JewelBench = Add(Kind.Crafter, 12f, 6.5f, "Joalheria", -1f, 0f, (int)Upgrade.Jewelry, "joalheria");
-            JewelShop = Add(Kind.Counter, 12f, 11.5f, "Loja de joias", 0f, -1f, (int)Upgrade.Jewelry);
-            // B-CORE-07: bigorna longa ANEXADA (indice 10), na fileira livre do Deposito, entre o Mineiro (2,8; 0,6) e a contratacao (8,3; 1,5)
-            LongAnvil = Add(Kind.Crafter, 5.0f, 1.5f, "Bigorna longa", -1f, 0f, (int)Upgrade.LongAnvil, "bigorna_longa");
-
-            // Pads fora das linhas de caminhada (coluna x=1,5 e diagonais ate o balcao): atravessar um pad nao pode gastar.
-            // FASE6: os pads de upgrades do menu (Fole, Mochila, Botas, Vitrine, Ajudantes ageis, Martelo veloz, Lupa, Vitrine de
-            // joias) continuam na lista (o indice do pad e' o da View e da dica; o save e' por ID desde o schema 2), mas ficam invisiveis para sempre (Pad.Current).
-            Slot(0.5f, 6.5f, Upgrade.FurnaceSpeed1, Upgrade.FurnaceSpeed2);
-            Slot(FurnaceB.Pos.X, FurnaceB.Pos.Y, Upgrade.Furnace2);
-            Slot(AnvilB.Pos.X, AnvilB.Pos.Y, Upgrade.Anvil2);
-            Slot(ShieldBench.Pos.X, ShieldBench.Pos.Y, Upgrade.Shields);
-            Slot(ToolBench.Pos.X, ToolBench.Pos.Y, Upgrade.Tools);
-            Slot(HireSpot.X, HireSpot.Y, Upgrade.Helper1, Upgrade.Helper2, Upgrade.Helper3);
-            Slot(6.5f, 0.6f, Upgrade.HelperSpeed);
-            Slot(4.5f, 0.6f, Upgrade.PlayerCapacity);
-            Slot(2.8f, 0.6f, Upgrade.PlayerSpeed);
-            Slot(0.5f, 11.2f, Upgrade.Conveyor);                     // era (0,5; 7,8): com as bocas laterais caiu no corredor da parede entre as entradas da Fornalha e da Bigorna (BALANCE §15)
-            Slot(8.4f, 3.4f, Upgrade.HammerSpeed);                    // era (0,5; 9,5): rotulo sobre o da Bigorna e corredor da fisica (FASE4 §3, BALANCE §14)
-            Slot(6.5f, 13f, Upgrade.CounterCapacity);
-            Slot(8.4f, 11.6f, Upgrade.SideCorridor);                 // 2a area, pads 12 e 13: lado direito da oficina, fora das linhas
-            Slot(JewelBench.Pos.X, JewelBench.Pos.Y, Upgrade.Jewelry);
-            Slot(14.2f, 8.5f, Upgrade.Jeweler);                      // fase 2, pads 14-16: rua lateral, fora da linha bancada -> loja (x=12)
-            Slot(14.2f, 6.8f, Upgrade.JewelSpeed);                   // era (10,2; 6,5): ficou na boca da porta lateral (FASE5 §2, BALANCE §13)
-            Slot(14.2f, 11.5f, Upgrade.JewelVitrine);
-            Slot(6.5f, 3.2f, Upgrade.WorkshopFacade);               // luxo, pads 17-19: so depois de todos os produtivos
-            Slot(4.5f, 3.2f, Upgrade.WorkshopFloor);
-            Slot(14.2f, 5.1f, Upgrade.JewelryDecor);
-            Slot(2.8f, 0.6f, Upgrade.Miner);                         // fase 4, pads 20-21. Era (0,5; 3,5): raspava a rota Deposito -> entrada da Fornalha; agora no lugar das Botas (menu, pad invisivel)
-            Slot(12f, 3.5f, Upgrade.Jeweler2);                       // rua lateral embaixo da Joalheria: longe das bocas, fila, bau e decoracao
-            Slot(LongAnvil.Pos.X, LongAnvil.Pos.Y, Upgrade.LongAnvil); // B-CORE-07, pad 22: no lugar da estacao (so com o projeto: Pad.Current)
-            foreach (MilestoneDef m in Balance.Milestones) Chests.Add(new Chest { Index = Chests.Count, Pos = m.Pos, Gold = m.Gold, Label = m.Label });
+            for (int i = 0; i < UpgradeTime.Length; i++) UpgradeTime[i] = -1f;
+            _ef = new int[Upgrades.Count];
+            for (int e = 0; e < _ef.Length; e++) _ef[e] = Array.FindIndex(UpgradeDefs, d => (int)d.Efeito == e);
+            // B-CORE-04: os ajudantes do upgrade, na ordem da tabela de workers do distrito
+            var hire = new List<int>();
+            for (int k = 0; k < Equipe.Defs.Length; k++) if (Equipe.Defs[k].Contrata != null) hire.Add(k);
+            _hireDef = hire.ToArray();
+            _hireBy = Array.ConvertAll(_hireDef, k => Upgrades.IndexOf(Equipe.Defs[k].Contrata, UpgradeDefs));
+            _hireRole = Array.ConvertAll(_hireDef, k => Equipe.Defs[k].Rota);
+            // C-CORE-01: estacoes, pads e baus do DistrictDef (o Old Forge e' o layout que estava aqui, na mesma ordem: o indice e' o do save).
+            // Bocas (FASE5 §2b): (inX, inY) = lado da ENTRADA; a SAIDA fica no lado oposto. A estacao faz a receita da familia dela (RecipeDefs)
+            _bruto = new bool[n];
+            foreach (StationDef d in Distrito.Estacoes)
+            {
+                Station s = Add(d.Kind, d.Pos.X, d.Pos.Y, d.Name, d.InX, d.InY, d.Abre == null ? -1 : Upgrades.IndexOf(d.Abre, UpgradeDefs), d.Familia);
+                s.Id = d.Id; s.Arte = d.Arte;
+                if (d.Kind == Kind.Deposit) { s.OutItem = d.Bruto; _bruto[(int)d.Bruto] = true; }
+            }
+            Deposit = Est("deposito"); FurnaceA = Est("fornalha"); FurnaceB = Est("fornalha2"); AnvilA = Est("bigorna"); AnvilB = Est("bigorna2");
+            ShieldBench = Est("escudos"); ToolBench = Est("ferramentas"); Counter = Est("balcao"); JewelBench = Est("joalheria");
+            JewelShop = Est("loja_joias"); LongAnvil = Est("bigorna_longa");
+            EsteiraDe = Est(Distrito.EsteiraDe); EsteiraPara = Est(Distrito.EsteiraPara);
+            // Pads fora das linhas de caminhada. FASE6: os pads de upgrades do menu seguem na lista, invisiveis (Pad.Current)
+            foreach (PadDef p in Distrito.Pads)
+                Pads.Add(new Pad { Slot = Pads.Count, Pos = p.Pos, Chain = Array.ConvertAll(p.Cadeia, id => (Upgrade)Upgrades.IndexOf(id, UpgradeDefs)) });
+            foreach (MilestoneDef m in Distrito.Marcos) Chests.Add(new Chest { Index = Chests.Count, Pos = m.Pos, Gold = m.Gold, Label = m.Label });
             Recompute();
         }
+
+        /// <summary>Estacao com este ID do StationDef, ou null.</summary>
+        public Station Est(string id) => id == null ? null : Stations.Find(s => s.Id == id);
+
+        /// <summary>C-CORE-01: o efeito generico `e` (o do upgrade do Old Forge) esta comprado neste distrito? Mochila e Botas sem upgrade
+        /// proprio no distrito vem do ferreiro (Heroi).</summary>
+        public bool Has(Upgrade e)
+        {
+            int i = _ef[(int)e];
+            if (i >= 0) return Bought[i];
+            return Heroi != null && (e == Upgrade.PlayerCapacity || e == Upgrade.PlayerSpeed) && Heroi.Has(e);
+        }
+
+        /// <summary>Algum upgrade deste distrito tem o efeito generico `e` (a View so monta o prop/decoracao de quem existe).</summary>
+        public bool TemEfeito(Upgrade e) => _ef[(int)e] >= 0;
+
+        /// <summary>Produto que vai a loja de joias (so onde ela existe).</summary>
+        bool Joia(Item p) => p == Item.Jewel && JewelShop != null;
+
+        /// <summary>Item que sai de deposito (o papel 0 dos ajudantes carrega).</summary>
+        public bool Bruto(Item i) => (uint)i < (uint)_bruto.Length && _bruto[(int)i];
+        /// <summary>Pilha de saida sem almoxarife: a do tipo (fornalha 4, bancada 3), ou 2 ciclos de quem faz varias pecas por ciclo (rebitadeira:
+        /// 8, senao ela so termina com a saida vazia). No Old Forge (1 peca por ciclo), a de sempre.</summary>
+        static int SaidaBase(Station s) => Math.Max(s.Kind == Kind.Furnace ? Balance.FurnaceOut : Balance.CrafterOut, s.Recipe.Qtd > 1 ? 2 * s.Recipe.Qtd : 0);
+
+        /// <summary>Insumo feito numa estacao (nem bruto nem produto): o papel 1 dos ajudantes carrega. Old Forge: so o lingote.</summary>
+        public bool Intermediario(Item i) => (uint)i < (uint)_bruto.Length && !_bruto[(int)i] && !IsProduct(i);
 
         Station Add(Kind kind, float x, float y, string name, float inX, float inY, int unlockBy = -1, string family = null)
         {
@@ -323,7 +347,10 @@ namespace FS.Core
             {
                 s.Ins = new int[s.Recipe.Inputs.Length]; s.OutItem = s.Recipe.Output;
                 bool furnace = kind == Kind.Furnace;   // pilhas: geometria da estacao, nao da receita
-                s.InCap = furnace ? Balance.FurnaceIn : Balance.CrafterIn; s.OutCap = furnace ? Balance.FurnaceOut : Balance.CrafterOut;
+                // C-CORE-01: entrada de 2x o maior insumo da receita (montagem do peitoral: 4 rebites -> 8); no Old Forge da a de sempre (4 e 6)
+                int maxQ = 0;
+                foreach ((Item _, int q) in s.Recipe.Inputs) maxQ = Math.Max(maxQ, q);
+                s.InCap = Math.Max(furnace ? Balance.FurnaceIn : Balance.CrafterIn, 2 * maxQ); s.OutCap = SaidaBase(s);
             }
             // ponto da boca = personagem encostado no meio da face (centro a CharRadius da face)
             V2 side = new V2(inX, inY), half = Balance.StationHalf;
@@ -333,8 +360,6 @@ namespace FS.Core
             Stations.Add(s);
             return s;
         }
-
-        void Slot(float x, float y, params Upgrade[] chain) => Pads.Add(new Pad { Slot = Pads.Count, Pos = new V2(x, y), Chain = chain });
 
         /// <summary>B-CORE-01: o ItemDef diz (handle fora da tabela = nao).</summary>
         public bool IsProduct(Item i) => (uint)i < (uint)ItemDefs.Length && ItemDefs[(int)i].Product;
@@ -346,9 +371,9 @@ namespace FS.Core
             return false;
         }
         /// <summary>O balcao `counter` vende `i`? O principal vende espada/escudo/ferramenta; a loja de joias, so joia.</summary>
-        public bool Sells(Station counter, Item i) => counter.Kind == Kind.Counter && IsProduct(i) && (counter == JewelShop) == (i == Item.Jewel);
-        public Station CounterFor(Item product) => product == Item.Jewel ? JewelShop : Counter;
-        public List<Client> QueueFor(Item product) => product == Item.Jewel ? JewelQueue : Queue;
+        public bool Sells(Station counter, Item i) => counter.Kind == Kind.Counter && IsProduct(i) && (counter == JewelShop) == Joia(i);
+        public Station CounterFor(Item product) => Joia(product) ? JewelShop : Counter;
+        public List<Client> QueueFor(Item product) => Joia(product) ? JewelQueue : Queue;
         /// <summary>Produto na mao de `c` que o balcao dele aceita agora (estoque com espaco), o mais adiantado primeiro; Item.Ore = nenhum.</summary>
         public Item Deliverable(Carrier c)
         {
@@ -358,13 +383,13 @@ namespace FS.Core
         /// <summary>B-CORE-07: a linha tem cliente (produto com intervalo no Tuning.ClientInterval). Produto sem intervalo (so o teste injeta) nao.</summary>
         public bool HasClients(Item p) => IsProduct(p) && (int)p < T.ClientInterval.Length && T.ClientInterval[(int)p] > 0f;
         /// <summary>B-CORE-07: o upgrade `u` nao exige projeto, ou o projeto que ele exige ja e' posse.</summary>
-        public bool TemProjeto(int u) { string b = Upgrades.All[u].Blueprint; return b == null || Projetos.Tem(b); }
+        public bool TemProjeto(int u) { string b = UpgradeDefs[u].Blueprint; return b == null || Projetos.Tem(b); }
         /// <summary>Algum cliente na fila quer `product` e nao ha nenhum no estoque (FASE7 §3: o que destrava a fila sem compra direta).</summary>
         public bool Wanted(Item product) => Stock[(int)product] == 0 && QueueFor(product).Exists(c => c.Want == product);
         /// <summary>Fama: multiplicador (1 -> 0,4) do intervalo entre clientes, pela quantidade de vendas ate aqui.</summary>
         public float Fame => Math.Max(T.FameFloor, (float)Math.Pow(T.FamePer10Sales, Sales / 10));
-        public float ClientInterval(Item product) => T.ClientInterval[(int)product] * Fame * (Bought[(int)Upgrade.CounterCapacity] ? T.VitrineClientMul : 1f)
-            * (product == Item.Jewel && Bought[(int)Upgrade.JewelVitrine] ? T.JewelVitrineClientMul : 1f);
+        public float ClientInterval(Item product) => T.ClientInterval[(int)product] * Fame * (Has(Upgrade.CounterCapacity) ? T.VitrineClientMul : 1f)
+            * (Joia(product) && Has(Upgrade.JewelVitrine) ? T.JewelVitrineClientMul : 1f);
         /// <summary>Ha um VIP esperando vaga ou numa vaga do balcao.</summary>
         public bool VipActive => _vipWant >= 0 || Queue.Exists(c => c.Vip);
         /// <summary>Botao "chamar o VIP" (anuncio): flag Vip e Ad(Vip).Ligado, depois da 1a venda, sem VIP ativo, com o natural a mais de 60 s e a
@@ -598,6 +623,9 @@ namespace FS.Core
             return best;
         }
 
+        /// <summary>C-CORE-01: Via no distrito com a parede lateral do Old Forge (DistrictDef.Parede); sem parede, o proprio alvo.</summary>
+        public V2 Rota(V2 from, V2 target) => Distrito.Parede ? Via(from, target) : target;
+
         /// <summary>Move `c` em direcao a `target` desviando dos corpos; devolve true quando chegou (dentro de `reach`).</summary>
         public bool MoveTowards(Carrier c, V2 target, float dt, float reach)
         {
@@ -605,7 +633,7 @@ namespace FS.Core
             float len = d.Len;
             c.Moving = len > reach;
             if (!c.Moving) return true;
-            V2 goal = Via(c.Pos, target);
+            V2 goal = Rota(c.Pos, target);
             V2 dir = Steer(c, goal);
             c.MoveTo(Collide(Clamp(c.Pos + dir * Math.Min(V2.Dist(c.Pos, goal), c.Speed * dt), Balance.WorldW - 0.3f)), dt);   // ponytail: ajudante usa o mapa inteiro; so mira estacao desbloqueada, entao nunca entra na rua fechada
             return false;
@@ -634,12 +662,15 @@ namespace FS.Core
             MoveTowards(w, w.State == 0 ? t.OutAt : t.InAt, dt, Balance.WorkerReach);   // buscando -> saida da fonte; entregando -> entrada do destino
         }
 
+        // C-CORE-01: os papeis pelo ITEM, nao pelo tipo da estacao (no Old Forge da o mesmo: so fornalha faz lingote, so bancada faz produto,
+        // so fornalha recebe minerio e so bancada recebe lingote). Na Row a prensa e a rebitadeira (fornalhas) recebem lingote do papel 1, e o
+        // papel 0 leva o bruto de qualquer deposito (minerio ou couro)
         bool IsSourceFor(Carrier w, Station s)
         {
-            if (w.Role == 0) return s.Kind == Kind.Deposit;
+            if (w.Role == 0) return s.Kind == Kind.Deposit && (w.Count == 0 || s.OutItem == w.Item);
             if (w.Count > 0 && s.OutItem != w.Item) return false;
             if (w.Role == 2 && !Fits(w, s)) return false;
-            return s.Produces && (w.Role == 1 ? s.Kind == Kind.Furnace : s.Kind == Kind.Crafter) && (s.Out > 0 || w.Target == s.Index);
+            return s.Produces && (w.Role == 1 ? Intermediario(s.OutItem) : IsProduct(s.OutItem)) && (s.Out > 0 || w.Target == s.Index);
         }
 
         /// <summary>Ajudante de produto: so busca o que ainda cabe na prateleira (sem a compra direta o estoque so desce com cliente
@@ -649,16 +680,16 @@ namespace FS.Core
         bool IsDestFor(Carrier w, Station s)
         {
             if (w.Role == 2) return Sells(s, w.Item) && Stock[(int)w.Item] < CounterCap;
-            return s.Accepts(w.Item) && (w.Role == 0 ? s.Kind == Kind.Furnace : s.Kind == Kind.Crafter);
+            return s.Accepts(w.Item);
         }
 
         Station PickSource(Carrier w)
         {
-            if (w.Role == 0) return Deposit;
+            if (w.Role == 0) return PickDeposit(w);
             Station best = null; float bestScore = float.MinValue;
             foreach (Station s in Stations)
             {
-                if (!s.Unlocked || !s.Produces || (w.Role == 1 ? s.Kind != Kind.Furnace : s.Kind != Kind.Crafter)) continue;
+                if (!s.Unlocked || !s.Produces || (w.Role == 1 ? !Intermediario(s.OutItem) : !IsProduct(s.OutItem))) continue;
                 if (w.Count > 0 && s.OutItem != w.Item) continue;
                 if (w.Role == 2 && !Fits(w, s)) continue;
                 if (s.Out == 0 && w.Count == 0 && !(s.Busy && s.Progress > 0.5f)) continue;   // vale esperar o que esta quase pronto
@@ -668,6 +699,23 @@ namespace FS.Core
             return best;
         }
 
+        /// <summary>Papel 0: o deposito aberto (com o bruto que ja esta na mao) cujo item tem estacao aberta com mais espaco; empate pela
+        /// distancia. Um deposito so (Old Forge): ele, sempre.</summary>
+        Station PickDeposit(Carrier w)
+        {
+            Station best = Deposit; float bestScore = float.MinValue; int n = 0;
+            foreach (Station s in Stations)
+            {
+                if (s.Kind != Kind.Deposit || !s.Unlocked || (w.Count > 0 && s.OutItem != w.Item)) continue;
+                n++;
+                int room = 0;
+                foreach (Station d in Stations) { int k = d.InIndex(s.OutItem); if (d.Unlocked && k >= 0) room = Math.Max(room, d.InCap - d.Ins[k]); }
+                float score = room * 4f - V2.Dist(w.Pos, s.Pos);
+                if (score > bestScore) { bestScore = score; best = s; }
+            }
+            return n > 1 ? best : Deposit;
+        }
+
         Station PickDest(Carrier w)
         {
             if (w.Role == 2) return CounterFor(w.Item);
@@ -675,7 +723,7 @@ namespace FS.Core
             foreach (Station s in Stations)
             {
                 int k = s.InIndex(w.Item);   // -1 = nao produz ou a receita nao usa
-                if (!s.Unlocked || k < 0 || (w.Role == 0 ? s.Kind != Kind.Furnace : s.Kind != Kind.Crafter)) continue;
+                if (!s.Unlocked || k < 0) continue;
                 int room = s.InCap - s.Ins[k];
                 if (room <= 0) continue;
                 float score = room * 4f + Need(s) - V2.Dist(w.Pos, s.Pos);
@@ -745,8 +793,8 @@ namespace FS.Core
             if (c.Held[(int)i] >= c.Cap) return false;
             if (c.Role < 0) return true;
             if (c.Count > 0 && c.Item != i) return false;
-            if (c.Role == 0) return i == Item.Ore;
-            if (c.Role == 1) return i == Item.Ingot;
+            if (c.Role == 0) return Bruto(i);   // C-CORE-01: minerio no Old Forge; minerio ou couro na Row
+            if (c.Role == 1) return Intermediario(i);   // C-CORE-01: lingote no Old Forge; lingote, placa e rebite na Row
             if (c.Role == 2) return IsProduct(i);
             if (c.Role == 3) return i == Item.Ingot || i == Item.Jewel;
             return true;
@@ -758,11 +806,11 @@ namespace FS.Core
         /// recebe os produtos que vende (FASE7 §1, pilha mista).</summary>
         int Action(Carrier c, Station s, bool outZone, out Item item)
         {
-            item = s.Kind == Kind.Deposit ? Item.Ore : outZone ? s.OutItem : s.InItem;
+            item = s.Kind == Kind.Deposit ? s.OutItem : outZone ? s.OutItem : s.InItem;   // deposito: o bruto dele (C-CORE-01)
             if (c.Role == 3 && s.Index != c.Target) return 0;   // joalheiro so mexe no proprio alvo: nao abastece a bancada do caminho
             switch (s.Kind)
             {
-                case Kind.Deposit: return CanPick(c, Item.Ore) ? 3 : 0;
+                case Kind.Deposit: return CanPick(c, s.OutItem) ? 3 : 0;
                 case Kind.Counter:
                     for (int k = (int)Item.Sword; k < ItemDefs.Length; k++)   // B-CORE-07: todo produto (a espada longa entrou)
                         if (c.Held[k] > 0 && Sells(s, (Item)k) && Stock[k] < CounterCap) { item = (Item)k; return 4; }
@@ -830,7 +878,7 @@ namespace FS.Core
         public bool Buy(Upgrade u)
         {
             if (Bought[(int)u]) return false;
-            if (Upgrades.IsLuxury((int)u) && (!ProductionComplete || !Bought[Upgrades.All[(int)u].Requires])) return false;
+            if (UpgradeDefs[(int)u].Luxury && (!ProductionComplete || !Bought[UpgradeDefs[(int)u].Requires])) return false;
             if (!TemProjeto((int)u)) return false;   // B-CORE-07: nivel IV-V e bigorna longa so com o projeto
             int workersBefore = Workers.Count;
             Bought[(int)u] = true;
@@ -839,7 +887,7 @@ namespace FS.Core
             Recompute();
             Emit(Ev.Bought, (int)u, (int)Math.Min(int.MaxValue, T.Cost(u)), PadOf(u));   // ponytail: evento e' int; acima de 2,1 bi sai no teto (so o diario le)
             foreach (Station s in Stations) if (s.UnlockBy == (int)u) Emit(Ev.Unlocked, (int)s.OutItem, s.Index, s.Pos);
-            if (Workers.Count > workersBefore) Emit(Ev.Hired, Workers.Count - 1, 0, HireSpot);
+            if (Workers.Count > workersBefore) Emit(Ev.Hired, Workers.Count - 1, 0, Contratacao);
             return true;
         }
 
@@ -859,13 +907,13 @@ namespace FS.Core
         /// <summary>Upgrade do menu a venda agora (com ou sem ouro): InMenu, nao comprado, pre-requisito comprado e o projeto que ele exige (B-CORE-07).</summary>
         public bool MenuAvailable(int u)
         {
-            UpgradeDef d = Upgrades.All[u];
+            UpgradeDef d = UpgradeDefs[u];
             return d.InMenu && !Bought[u] && (d.Requires < 0 || Bought[d.Requires]) && TemProjeto(u);
         }
 
         V2 PadOf(Upgrade u)
         {
-            if (Upgrades.All[(int)u].InMenu) return Player.Pos;   // menu: o efeito sai do jogador, nao do pad antigo
+            if (UpgradeDefs[(int)u].InMenu) return Player.Pos;   // menu: o efeito sai do jogador, nao do pad antigo
             foreach (Pad p in Pads) foreach (Upgrade c in p.Chain) if (c == u) return p.Pos;
             return Player.Pos;
         }
@@ -873,45 +921,46 @@ namespace FS.Core
         /// <summary>Deriva TUDO dos flags Bought (idempotente: vale depois de Buy e depois de Load).</summary>
         public void Recompute()
         {
-            float ft = Bought[(int)Upgrade.FurnaceSpeed2] ? T.FurnaceTime2 : Bought[(int)Upgrade.FurnaceSpeed1] ? T.FurnaceTime1 : T.FurnaceTime0;
-            float ht = Bought[(int)Upgrade.HammerSpeed] ? T.HammerTime1 : T.HammerTime0;
+            // C-CORE-01: os efeitos pelo Has (no Old Forge, Has(u) = Bought[u]: os mesmos numeros, bit a bit)
+            float ft = Has(Upgrade.FurnaceSpeed2) ? T.FurnaceTime2 : Has(Upgrade.FurnaceSpeed1) ? T.FurnaceTime1 : T.FurnaceTime0;
+            float ht = Has(Upgrade.HammerSpeed) ? T.HammerTime1 : T.HammerTime0;
             foreach (Station s in Stations)
             {
                 if (s.UnlockBy >= 0) s.Unlocked = Bought[s.UnlockBy];
                 // B-CORE-03: nivel da familia = 1 + niveis comprados dela
                 s.Level = 1;
-                if (s.Produces) foreach (UpgradeDef d in Upgrades.All) if (d.Station == s.Recipe.Family && Bought[(int)d.Up]) s.Level++;   // B-CORE-07: pela familia (bigorna longa = bigornas)
+                if (s.Produces) foreach (UpgradeDef d in UpgradeDefs) if (d.Station == s.Recipe.Family && Bought[(int)d.Up]) s.Level++;   // B-CORE-07: pela familia (bigorna longa = bigornas)
                 // B-CORE-01: base do tipo (fornalha: Fole; bancada: Martelo veloz) x multiplicador da receita; a Lupa so na Joalheria. B-CORE-03:
                 // cada nivel acima do 1 da +5% de velocidade (nivel 1 divide por 1: o tempo de antes, bit a bit)
-                if (s.Produces) s.Time = (s.Kind == Kind.Furnace ? ft : ht) * (s.Recipe.TimeMul(T) * (s == JewelBench && Bought[(int)Upgrade.JewelSpeed] ? T.JewelSpeedMul : 1f))
+                if (s.Produces) s.Time = (s.Kind == Kind.Furnace ? ft : ht) * (s.Recipe.TimeMul(T) * (s == JewelBench && Has(Upgrade.JewelSpeed) ? T.JewelSpeedMul : 1f))
                     / (1f + T.NivelEstacaoVelocidade * (s.Level - 1)) / Equipe.Ritmo(s);   // B-CORE-04: oficial e mestre de obras (ninguem = / 1f)
-                if (s.Produces) s.OutCap = (s.Kind == Kind.Furnace ? Balance.FurnaceOut : Balance.CrafterOut) + Equipe.Saida(s);   // B-CORE-04: almoxarife
+                if (s.Produces) s.OutCap = SaidaBase(s) + Equipe.Saida(s);   // B-CORE-04: almoxarife
             }
             // balcao evolutivo (FASE7 §2): +1 vaga por evolucao comprada; o corpo alarga junto (antes dos Solids)
             QueueCap = T.QueueCap0;
-            for (int u = (int)Upgrade.Counter5; u <= (int)Upgrade.Counter8; u++) if (Bought[u]) QueueCap++;
+            for (int u = (int)Upgrade.Counter5; u <= (int)Upgrade.Counter8; u++) if (Has((Upgrade)u)) QueueCap++;
             QueueCap = Math.Min(QueueCap, Balance.QueueCapMax);   // trava de geometria: um QueueCap0 maior no Tuning nao tira o balcao da oficina
             Counter.Half = new V2(Balance.CounterHalfX(QueueCap), Balance.StationHalf.Y);
             // corpos: estacao travada nao e' solida (o pad de compra fica no lugar dela); loja de joias sim (a view desenha a fachada fechada)
             Solids.Clear();
             foreach (Station s in Stations) if (s.Unlocked || s.Kind == Kind.Counter) Solids.Add(s.Body);
-            foreach (ObstacleDef o in Balance.Obstacles) if (o.Requires < 0 || Bought[o.Requires]) Solids.Add(o.Body);
-            MaxX = (Bought[(int)Upgrade.SideCorridor] ? Balance.WorldW : Balance.WorkshopW) - 0.3f;
-            Player.Speed = Bought[(int)Upgrade.PlayerSpeed] ? Balance.PlayerSpeedUp : Balance.PlayerSpeed;
-            Player.Cap = Bought[(int)Upgrade.PlayerCapacity] ? Balance.PlayerCapUp : Balance.PlayerCap;
-            CounterCap = (Bought[(int)Upgrade.CounterCapacity] ? T.CounterCap1 : T.CounterCap0) + Equipe.Estoque;   // B-CORE-04: almoxarife
-            JewelQueueCap = Bought[(int)Upgrade.JewelVitrine] ? Balance.JewelQueueCapUp : Balance.JewelQueueCap;
-            HasConveyor = Bought[(int)Upgrade.Conveyor];
-            // um ajudante por upgrade de contratacao (papel em HireRole); a lista so cresce, na ordem da compra (o Joalheiro nao exige o Ajudante 3)
-            for (int k = 0; k < HireBy.Length; k++)
+            foreach (ObstacleDef o in Distrito.Obstaculos) if (o.Requires < 0 || Bought[o.Requires]) Solids.Add(o.Body);
+            MaxX = (Has(Upgrade.SideCorridor) ? Balance.WorldW : Distrito.Largura) - 0.3f;
+            Player.Speed = Has(Upgrade.PlayerSpeed) ? Balance.PlayerSpeedUp : Balance.PlayerSpeed;
+            Player.Cap = Has(Upgrade.PlayerCapacity) ? Balance.PlayerCapUp : Balance.PlayerCap;
+            CounterCap = (Has(Upgrade.CounterCapacity) ? T.CounterCap1 : T.CounterCap0) + Equipe.Estoque;   // B-CORE-04: almoxarife
+            JewelQueueCap = Has(Upgrade.JewelVitrine) ? Balance.JewelQueueCapUp : Balance.JewelQueueCap;
+            HasConveyor = Has(Upgrade.Conveyor) && EsteiraDe != null && EsteiraPara != null;
+            // um ajudante por upgrade de contratacao (papel em _hireRole); a lista so cresce, na ordem da compra (o Joalheiro nao exige o Ajudante 3)
+            for (int k = 0; k < _hireBy.Length; k++)
             {
-                if (!Bought[(int)HireBy[k]]) continue;
-                int role = HireRole[k], want = 0, have = 0;
-                for (int j = 0; j <= k; j++) if (HireRole[j] == role && Bought[(int)HireBy[j]]) want++;
+                if (_hireBy[k] < 0 || !Bought[_hireBy[k]]) continue;
+                int role = _hireRole[k], want = 0, have = 0;
+                for (int j = 0; j <= k; j++) if (_hireRole[j] == role && _hireBy[j] >= 0 && Bought[_hireBy[j]]) want++;
                 foreach (Carrier w in Workers) if (w.Role == role) have++;
-                if (have < want) Workers.Add(new Carrier(ItemDefs.Length) { Pos = HireSpot, Role = role, Wk = HireDef[k] });
+                if (have < want) Workers.Add(new Carrier(ItemDefs.Length) { Pos = Contratacao, Role = role, Wk = _hireDef[k] });
             }
-            bool fast = Bought[(int)Upgrade.HelperSpeed];
+            bool fast = Has(Upgrade.HelperSpeed);
             foreach (Carrier w in Workers)   // B-CORE-04: nivel do ajudante (nivel 1 = x 1f e + 0)
             {
                 w.Speed = (fast ? Balance.WorkerSpeedUp : Balance.WorkerSpeed) * Equipe.Passo(w);
@@ -929,14 +978,15 @@ namespace FS.Core
                 if (s.Progress < 1f) s.Progress = Math.Min(1f, s.Progress + dt / s.Time);
                 if (s.Progress >= 1f)
                 {
-                    if (s.Out < s.OutCap)
+                    if (s.Out + s.Recipe.Qtd <= s.OutCap)   // C-CORE-01: o ciclo inteiro cabe na saida (rebitadeira: 4 de uma vez; Qtd 1 = Out < OutCap)
                     {
-                        s.Busy = false; s.Progress = 0f; s.Blocked = false; s.Crafted++; Crafted[(int)s.OutItem]++;
+                        s.Busy = false; s.Progress = 0f; s.Blocked = false; s.Crafted++; Crafted[(int)s.OutItem] += s.Recipe.Qtd;
                         Quality l = Grade(s);   // B-CORE-03: acumulador e golpe
                         if (l == Quality.Masterwork) { Masterworks++; Hall.Registra(s); }   // vai ao Hall (B-CORE-08): nunca a pilha nem o balcao
                         else
                         {
                             Put(ref s.Out, s.OutQ, l);
+                            for (int k = 1; k < s.Recipe.Qtd; k++) s.Out++;   // as outras pecas do ciclo: insumo, sempre Normal (Grade so da nivel a produto)
                             if (l > Quality.Normal) Emit(Ev.Graded, s.Index, (int)l, s.Pos);
                         }
                         Emit(Ev.Crafted, (int)s.OutItem, s.Index, s.Pos);
@@ -946,7 +996,7 @@ namespace FS.Core
             }
             if (s.Busy) return;
             for (int k = 0; k < s.Ins.Length; k++) if (s.Ins[k] < s.Recipe.Inputs[k].Qty) { s.StarveSeconds += dt; return; }   // so com a receita inteira
-            if (s.Out >= s.OutCap) { Stall(s, dt); return; }
+            if (s.Out + s.Recipe.Qtd > s.OutCap) { Stall(s, dt); return; }
             for (int k = 0; k < s.Ins.Length; k++) s.Ins[k] -= s.Recipe.Inputs[k].Qty;
             s.Busy = true; s.Progress = 0f;
         }
@@ -966,9 +1016,10 @@ namespace FS.Core
             while (_convT >= T.ConveyorTime)
             {
                 _convT -= T.ConveyorTime;
-                if (FurnaceA.Out <= 0 || !AnvilA.Accepts(FurnaceA.OutItem)) { _convT = 0f; break; }
-                FurnaceA.Out--; AnvilA.Ins[AnvilA.InIndex(FurnaceA.OutItem)]++;
-                Emit(Ev.Deposited, (int)FurnaceA.OutItem, 9, AnvilA.Pos);   // B = 9: veio pela esteira
+                Station a = EsteiraDe, b = EsteiraPara;   // C-CORE-01: as pontas do DistrictDef (Old Forge: Fornalha -> Bigorna)
+                if (a.Out <= 0 || !b.Accepts(a.OutItem)) { _convT = 0f; break; }
+                a.Out--; b.Ins[b.InIndex(a.OutItem)]++;
+                Emit(Ev.Deposited, (int)a.OutItem, 9, b.Pos);   // B = 9: veio pela esteira
             }
         }
 
@@ -996,7 +1047,7 @@ namespace FS.Core
                 _clientT[(int)p] -= dt * BoostMul;   // FASE8: a demanda acompanha o boost
                 if (_clientT[(int)p] > 0f) continue;
                 _clientT[(int)p] += ClientInterval(p);
-                bool j = p == Item.Jewel;
+                bool j = Joia(p);
                 List<Client> q = QueueFor(p);
                 int cap = j ? JewelQueueCap : QueueCap;
                 float patience = T.PatienceFor(p, RecipeDefs) * (j ? 1f : Equipe.Paciencia);   // B-CORE-04: balconista (so o balcao principal)
@@ -1017,7 +1068,7 @@ namespace FS.Core
 
         V2 Slot(bool jewel, int i) => jewel ? JewelSlot(i) : ClientSlot(i);
 
-        public int PriceOf(Item item) => item == Item.Jewel && Bought[(int)Upgrade.JewelVitrine] ? T.JewelPriceUp : T.Price[(int)item];
+        public int PriceOf(Item item) => Joia(item) && Has(Upgrade.JewelVitrine) ? T.JewelPriceUp : T.Price[(int)item];
 
         /// <summary>Vende 1 `want` do balcao: a melhor qualidade primeiro (B-CORE-03), ao PriceOf do nivel x `mul` (VIP = 3x). Masterwork nunca
         /// chega aqui (nao entra em lote: Grade a manda ao Hall).</summary>
@@ -1053,7 +1104,7 @@ namespace FS.Core
             if (!T.Baus) return;
             foreach (Chest c in Chests)
             {
-                MilestoneDef m = Balance.Milestones[c.Index];
+                MilestoneDef m = Distrito.Marcos[c.Index];
                 if (c.State != 0 || (m.Item < 0 ? Sales : SoldItems[m.Item]) < m.Count || !ChestSpotFree(c.Pos)) continue;
                 c.State = 1;
                 Emit(Ev.Milestone, c.Index, c.Gold, c.Pos);
@@ -1150,7 +1201,7 @@ namespace FS.Core
 
         /// <summary>Revelacao progressiva (GDD §19): qualidade, niveis de estacao e golpe de mestre so depois das Ferramentas (~11 min). Os 10
         /// primeiros minutos ficam intocados (ECONOMIA_WAVE_B §0.6).</summary>
-        public bool QualityRevealed => Bought[(int)Upgrade.Tools];
+        public bool QualityRevealed => _ef[(int)Upgrade.Tools] < 0 || Has(Upgrade.Tools);   // C-CORE-01: distrito sem Ferramentas = ja revelada (o ferreiro vem do Old Forge)
 
         /// <summary>Pontos de qualidade (centesimos) da estacao, por fonte (QualitySource). A soma e' o q do acumulador (QualityPoints): o que
         /// esta aqui explica 100% das pecas. Fornalha, deposito e balcao: tudo 0 (lingote e' intermediario).</summary>
@@ -1265,7 +1316,7 @@ namespace FS.Core
         public int CheapestAffordableMenu()
         {
             int best = -1;
-            for (int u = 0; u < Upgrades.Count; u++)
+            for (int u = 0; u < UpgradeDefs.Length; u++)
                 if (MenuAvailable(u) && T.Cost(u) <= Gold && (best < 0 || T.Cost(u) < T.Cost(best))) best = u;
             Pad pad = best >= 0 ? CheapestAffordablePad() : null;
             return pad != null && T.Cost(pad.Current(this)) - pad.Paid < T.Cost(best) ? -1 : best;
@@ -1324,10 +1375,10 @@ namespace FS.Core
         public long CheapestLockedCost()
         {
             long best = -1, top = 0;
-            for (int i = 0; i < Upgrades.Count; i++)
+            for (int i = 0; i < UpgradeDefs.Length; i++)
             {
-                if (!Upgrades.IsProduction(i)) continue;   // luxo e Meta (B-CORE-03) nao mexem no cofre
-                long c = T.Cost(i); int req = Upgrades.All[i].Requires;
+                if (!IsProduction(i)) continue;   // luxo e Meta (B-CORE-03) nao mexem no cofre
+                long c = T.Cost(i); int req = UpgradeDefs[i].Requires;
                 top = Math.Max(top, c);
                 // FASE7: so o que esta A VENDA (pre-requisito comprado). Sem isso o Balcao 5 (150, exige a Vitrine) baixava o cofre de
                 // 1.060 para 300 aos 10 min; e o Joalheiro 2 (2.400, exige o Mineiro) segurava o teto do par em 4.800 (agora 2x Mineiro)
@@ -1502,12 +1553,12 @@ namespace FS.Core
             sb.Append("gold=").Append(Gold).Append('\n');
             // A-CORE-04: comprados por ID estavel (id:instante da compra em s de jogo; -1 = desconhecido), na ordem da tabela; o Load nao depende dela
             var ups = new List<string>();
-            foreach (UpgradeDef d in Upgrades.All) if (Bought[(int)d.Up]) ups.Add(d.Id + ":" + UpgradeTime[(int)d.Up].ToString("0.##", ci));
+            foreach (UpgradeDef d in UpgradeDefs) if (Bought[(int)d.Up]) ups.Add(d.Id + ":" + UpgradeTime[(int)d.Up].ToString("0.##", ci));
             sb.Append("ups=").Append(string.Join(",", ups)).Append('\n');
             // espelho para a 0.1-0.6 sem envelope (downgrade le o mesmo texto: Salvamento.Gravar): flags na ordem CONGELADA IdsV1, nunca na do
             // enum. O Load do schema 2 ignora; parcial de pad e instantes nao descem
             var up = new StringBuilder();
-            foreach (string id in IdsV1) { int u = Upgrades.IndexOf(id); up.Append(u >= 0 && Bought[u] ? '1' : '0'); }
+            foreach (string id in IdsV1) { int u = Upgrades.IndexOf(id, UpgradeDefs); up.Append(u >= 0 && Bought[u] ? '1' : '0'); }
             sb.Append("up=").Append(up).Append('\n');
             // parcial de pad pelo ID do upgrade que ele esta pagando: o 1o nao comprado da cadeia (toda comprada: o ultimo; o Load devolve)
             var upp = new List<string>();
@@ -1515,7 +1566,7 @@ namespace FS.Core
             {
                 if (p.Paid <= 0) continue;
                 int k = Array.FindIndex(p.Chain, c => !Bought[(int)c]);
-                upp.Add(Upgrades.All[(int)p.Chain[k < 0 ? p.Chain.Length - 1 : k]].Id + ":" + p.Paid);
+                upp.Add(UpgradeDefs[(int)p.Chain[k < 0 ? p.Chain.Length - 1 : k]].Id + ":" + p.Paid);
             }
             sb.Append("upp=").Append(string.Join(",", upp)).Append('\n');
             foreach (Station s in Stations)
@@ -1587,11 +1638,13 @@ namespace FS.Core
 
         /// <summary>Carrega o payload sobre `tuning` (null = padrao): os tetos do load (boost, VIP, encomenda) sao os do Tuning da partida.
         /// `table` = a tabela que resolve os IDs (A-CORE-04; null = Upgrades.All) e `items`/`recipes` = o conteudo (B-CORE-01; null = o padrao):
-        /// so o teste injeta outro (B-CORE-07: `blueprints` idem).</summary>
+        /// so o teste injeta outro (B-CORE-07: `blueprints` idem). C-CORE-01: `distrito` = o DistrictDef do payload (null = Old Forge); os IDs
+        /// resolvem na tabela dele; `heroi` = o Sim do Old Forge (Imperio: a Mochila dele vale no teto da mao que volta do save).</summary>
         public static Sim Load(string text, Tuning tuning = null, UpgradeDef[] table = null, ItemDef[] items = null, RecipeDef[] recipes = null,
-            BlueprintDef[] blueprints = null)
+            BlueprintDef[] blueprints = null, DistrictDef distrito = null, Sim heroi = null)
         {
-            var sim = new Sim(tuning, items, recipes, blueprints);
+            var sim = new Sim(tuning, items, recipes, blueprints, distrito) { Heroi = heroi };
+            table ??= sim.UpgradeDefs;
             Tuning T = sim.T;   // os tetos abaixo
             if (string.IsNullOrEmpty(text)) return sim;
             // schema: sem v= (lixo, testes) = 1; maior que Schema (downgrade) = melhor esforco, como a 0.6 faz com o save da 0.7

@@ -120,7 +120,10 @@ namespace FS
         public bool Bloqueado { get; private set; }
 
         /// <param name="tuning">o Tuning da partida, ja com o RemoteConfig (A-PLAT-08); null = padrao.</param>
-        public Sim Carregar(Tuning tuning = null)
+        public Sim Carregar(Tuning tuning = null) => CarregarImperio(tuning).Raiz;
+
+        /// <summary>C-CORE-02: o mesmo, como Imperio (o save de hoje = 1 distrito; `novo` = Tuning de cada outro distrito aberto).</summary>
+        public Imperio CarregarImperio(Tuning tuning = null, Func<Tuning> novo = null)
         {
             SaveEnvelope.Result r = default; int corrupt = 0; string err = null;
             try { r = _arquivo.Read(out corrupt); }
@@ -134,21 +137,27 @@ namespace FS
             }
             bool ok = r.Status == SaveEnvelope.Status.Ok || r.Status == SaveEnvelope.Status.Legacy;
             Bloqueado |= r.Status == SaveEnvelope.Status.NewerSchema;
-            Sim sim = Sim.Load(ok ? r.Payload : null, tuning);
+            Imperio imp = Imperio.Load(ok ? r.Payload : null, novo, tuning);
+            Sim sim = imp.Raiz;
             if (err != null) _log.Log("save_error", sim.Time, err);
             if (corrupt > 0) _log.Log("save_corrupt", sim.Time, corrupt.ToString(CultureInfo.InvariantCulture), r.Status.ToString());   // Ok/Legacy = recuperado; outro = estado novo
             if (r.Status == SaveEnvelope.Status.NewerSchema) _log.Log("save_newer", sim.Time, r.Schema.ToString(CultureInfo.InvariantCulture), r.Content);
             else if (espelho && ok) _log.Log("save_prefs", sim.Time, r.Status.ToString());   // Legacy = migrou o save da 0.6
             if (sim.UnknownIds > 0) _log.Log("save_ids_desconhecidos", sim.Time, sim.UnknownIds.ToString(CultureInfo.InvariantCulture), r.Content);   // A-CORE-04: conteudo de build mais novo
-            return sim;
+            return imp;
         }
 
         /// <summary>true = o arquivo gravou (E-PLAT-04: so entao a compra e' confirmada a loja). false = sessao bloqueada ou erro no arquivo:
         /// o espelho segura o progresso, mas a proxima abertura le o arquivo antigo (troca atomica), entao a compra nao conta como gravada.</summary>
-        public bool Gravar(Sim sim, long agora, string versao)
+        public bool Gravar(Sim sim, long agora, string versao) => Grava(sim, sim.Save(agora), agora, versao);
+
+        /// <summary>C-CORE-02: o Imperio inteiro (1 distrito = o texto do Sim.Save, ao byte).</summary>
+        public bool Gravar(Imperio imp, long agora, string versao) => Grava(imp.Raiz, imp.Save(agora), agora, versao);
+
+        bool Grava(Sim sim, string payload, long agora, string versao)
         {
             if (Bloqueado) return false;
-            string text = SaveEnvelope.Wrap(sim.Save(agora), versao, agora);
+            string text = SaveEnvelope.Wrap(payload, versao, agora);
             if (sim.ClockWentBack > 0) _log.Log("clock_back", sim.Time, sim.ClockWentBack.ToString(CultureInfo.InvariantCulture), sim.SavedAt.ToString(CultureInfo.InvariantCulture));   // A-CORE-02
             bool ok = true;
             try { _arquivo.Write(text); }

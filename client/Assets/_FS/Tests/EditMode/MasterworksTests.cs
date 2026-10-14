@@ -19,6 +19,17 @@ namespace FS.Tests
         static int Idx(string id) => MasterworksDefs.IndexOf(id);
         static int Count(Sim s, Ev kind) => s.Events.Count(e => e.Kind == kind);
 
+        /// <summary>C-CORE-02 x B-CORE-08: o Hall e a Collection sao do distrito; a Row (sem obras no catalogo ainda) nao herda as do Old Forge.</summary>
+        [Test]
+        public void Hall_PorDistrito_RowNaoHerdaAsDoOldForge()
+        {
+            Assert.AreEqual(MasterworksDefs.All.Length, new Sim().Hall.Defs.Length);
+            var row = new Sim(distrito: Distritos.ArmorersRow);
+            Assert.AreEqual(0, row.Hall.Defs.Length);
+            Assert.AreEqual(0, row.Colecao.Marcos.Length);
+            foreach (Station st in row.Stations) Assert.IsFalse(row.MasterworkPending(st), st.Name);
+        }
+
         /// <summary>q 200 na Bigorna (toda peca sai Superior pela automacao) com o projeto da Primeira Lamina.</summary>
         static Sim ComProjeto(string bp = "bp_mw_primeira_lamina")
         {
