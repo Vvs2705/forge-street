@@ -41,6 +41,26 @@ namespace FS.Core
             Abertos.Add(raiz);
         }
 
+        /// <summary>
+        /// Dev, teste e econsim: o Imperio como o jogador chega ao distrito `d` (o Old Forge = um Imperio novo): o Old Forge em producao
+        /// completa (Mochila e Botas do ferreiro) rendendo `rendaOF` ouro/min (a base do fundo; CONTEUDO_V1 §1: 2.400 no Charter), o Charter
+        /// de quem libera `d` (Forca: as condicoes nao sao medidas), a abertura paga e o foco em `d`.
+        /// </summary>
+        public static Imperio Chegada(DistrictDef d, Func<Tuning> tuning = null, double rendaOF = 2400)
+        {
+            tuning ??= () => new Tuning();
+            var raiz = new Sim(tuning());
+            var imp = new Imperio(raiz, tuning);
+            if (d == null || imp.Aberto(d.Id)) return imp;
+            for (int i = 0; i < raiz.UpgradeDefs.Length; i++) if (raiz.IsProduction(i)) raiz.Buy((Upgrade)i);
+            raiz.RateEma = rendaOF / 60.0;
+            foreach (DistrictDef x in Distritos.All) if (x.Charter?.Proximo == d.Id) imp.Forca(x.Id);
+            raiz.Gold += d.Abertura;
+            imp.Abrir(d.Id);
+            imp.Trocar(d.Id);
+            return imp;
+        }
+
         public long Saldo(string moeda) => moeda == Ouro ? Ativo.Gold : 0;
         public Sim Distrito(string id) => Abertos.Find(s => s.Distrito.Id == id);
         public bool Aberto(string id) => Distrito(id) != null;
@@ -183,11 +203,12 @@ namespace FS.Core
         }
 
         /// <summary>Le o payload (save de hoje = 1 distrito, o Old Forge). Distrito que o build nao tem fica guardado e volta no save; base64 ruim
-        /// = distrito fechado (a raiz nunca se perde). `tuning` = Tuning novo da partida por distrito (null = padrao).</summary>
-        public static Imperio Load(string text, Func<Tuning> tuning = null)
+        /// = distrito fechado (a raiz nunca se perde). `tuning` = Tuning novo da partida por distrito (null = padrao); `raiz` = o do Old Forge
+        /// (null = um do `tuning`).</summary>
+        public static Imperio Load(string text, Func<Tuning> tuning = null, Tuning raiz = null)
         {
             tuning ??= () => new Tuning();
-            var imp = new Imperio(Sim.Load(text, tuning()), tuning);
+            var imp = new Imperio(Sim.Load(text, raiz ?? tuning()), tuning);
             if (string.IsNullOrEmpty(text)) return imp;
             string ativo = null;
             foreach (string raw in text.Split('\n'))

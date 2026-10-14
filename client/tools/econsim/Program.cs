@@ -399,13 +399,8 @@ static class EconSim
     static RunD PlayD(DistrictDef d, BotProfile p, float hz, int minutos, float anuncioSeg, Func<Tuning> tuning, float? workerSeg, double fundoOF)
     {
         var clock = Stopwatch.StartNew();
-        var raiz = new Sim(tuning());
-        for (int i = 0; i < Upgrades.Count; i++) if (Upgrades.IsProduction(i)) raiz.Buy((Upgrade)i);
-        raiz.RateEma = fundoOF / 60.0;
-        var imp = new Imperio(raiz, tuning);
-        imp.Forca(Distritos.OldForgeId);
-        raiz.Gold = d.Abertura;
-        if (!imp.Abrir(d.Id) || !imp.Trocar(d.Id)) throw new InvalidOperationException("distrito " + d.Id + " nao abriu");
+        Imperio imp = Imperio.Chegada(d, tuning, fundoOF);
+        if (imp.Ativo.Distrito != d) throw new InvalidOperationException("distrito " + d.Id + " nao abriu");
         Sim s = imp.Ativo; Bot bot = Bot.From(p); float dt = 1f / hz;
         if (workerSeg.HasValue) bot.WorkerSegundos = workerSeg.Value;
         var r = new RunD { Perfil = p.Name, Vendas = new long[s.ItemDefs.Length] };

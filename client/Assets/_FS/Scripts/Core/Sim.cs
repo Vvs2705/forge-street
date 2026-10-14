@@ -14,8 +14,8 @@ namespace FS.Core
     public sealed class Station
     {
         public int Index; public Kind Kind; public V2 Pos; public string Name;
-        /// <summary>C-CORE-01: ID do StationDef (o texto est.&lt;id&gt; e o sprite saem dele).</summary>
-        public string Id;
+        /// <summary>C-CORE-01: ID do StationDef (o texto est.&lt;id&gt; sai dele) e a folha de arte (null = pelo tipo e produto, View).</summary>
+        public string Id, Arte;
         /// <summary>B-CORE-01: receita da familia da estacao (null = nao produz: deposito e balcoes). Insumos, produto e tempo saem dela.</summary>
         public RecipeDef Recipe;
         /// <summary>Entrada: quantos de cada insumo da receita (paralelo a Recipe.Inputs), ate InCap de cada.</summary>
@@ -293,7 +293,7 @@ namespace FS.Core
             foreach (StationDef d in Distrito.Estacoes)
             {
                 Station s = Add(d.Kind, d.Pos.X, d.Pos.Y, d.Name, d.InX, d.InY, d.Abre == null ? -1 : Upgrades.IndexOf(d.Abre, UpgradeDefs), d.Familia);
-                s.Id = d.Id;
+                s.Id = d.Id; s.Arte = d.Arte;
                 if (d.Kind == Kind.Deposit) { s.OutItem = d.Bruto; _bruto[(int)d.Bruto] = true; }
             }
             Deposit = Est("deposito"); FurnaceA = Est("fornalha"); FurnaceB = Est("fornalha2"); AnvilA = Est("bigorna"); AnvilB = Est("bigorna2");
@@ -318,6 +318,9 @@ namespace FS.Core
             if (i >= 0) return Bought[i];
             return Heroi != null && (e == Upgrade.PlayerCapacity || e == Upgrade.PlayerSpeed) && Heroi.Has(e);
         }
+
+        /// <summary>Algum upgrade deste distrito tem o efeito generico `e` (a View so monta o prop/decoracao de quem existe).</summary>
+        public bool TemEfeito(Upgrade e) => _ef[(int)e] >= 0;
 
         /// <summary>Produto que vai a loja de joias (so onde ela existe).</summary>
         bool Joia(Item p) => p == Item.Jewel && JewelShop != null;
