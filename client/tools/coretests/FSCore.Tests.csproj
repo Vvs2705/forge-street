@@ -32,6 +32,8 @@
     <Compile Include="../../Assets/_FS/Scripts/View/Captura.cs" />
     <!-- A-AUD-23: sintese dos sons (pura); o Sfx (Unity) fica atras de #if !FS_CORETESTS -->
     <Compile Include="../../Assets/_FS/Scripts/View/Som.cs" />
+    <!-- fix/mix-audio: politica de mix (categorias, vozes, intervalos, distancia, ducking) e a medida antes/depois pelo bot (MixagemTests) -->
+    <Compile Include="../../Assets/_FS/Scripts/View/Mixagem.cs" />
     <!-- E-PLAT-01: regras de privacidade (faixa x aceite -> flags do LevelPlay); a tela fica atras de #if !FS_CORETESTS -->
     <Compile Include="../../Assets/_FS/Scripts/View/Privacidade.cs" />
     <!-- A-ART-03: alvo da camera (puro) para o EnquadramentoTests -->
