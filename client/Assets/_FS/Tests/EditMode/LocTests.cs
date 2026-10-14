@@ -132,6 +132,7 @@ namespace FS.Tests
             var sink = new Regex(@"\.text\s*\+?=|\b(Notice|ShowPanel|Float|NewButton|Paint|Abrir)\(");
             var log = new Regex(@"Debug\.Log|\bLog\(|Emit\(|Falha\(|throw ");
             var nome = new Regex(@"(Sfx\.Play|Art\.\w+|GameObject)\(\s*$");   // som, sprite e nome de objeto: nao e' texto
+            var tag = new Regex(@"^[A-Z]{3,} \w+=");   // linha de log de dev "TAG chave=valor" montada fora do Debug.Log (Mixagem.Minuto: "SOM min=")
             var letras = new Regex(@"\p{L}{2,}");
             var frase = new Regex(@"\p{L}\s+\p{L}|[\p{L}-[a-zA-Z]]|\p{L}[!?]$");
             var ruins = new List<string>();
@@ -143,7 +144,7 @@ namespace FS.Tests
                 {
                     string s = m.Groups[1].Value;
                     if (m.Index > 0 && cod[m.Index - 1] == '$') s = Regex.Replace(s, @"\{[^}]*\}", "");   // $"{a}/{b}": so o texto fixo
-                    if (EChave(s) || !letras.IsMatch(s) || nome.IsMatch(cod.Substring(0, m.Index))) continue;
+                    if (EChave(s) || !letras.IsMatch(s) || nome.IsMatch(cod.Substring(0, m.Index)) || tag.IsMatch(s)) continue;
                     if (tela || frase.IsMatch(s)) ruins.Add($"{arq}:{linha} \"{s}\"");
                 }
             }
