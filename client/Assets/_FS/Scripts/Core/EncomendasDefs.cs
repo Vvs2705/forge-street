@@ -6,17 +6,17 @@ namespace FS.Core
     /// <summary>
     /// B-CORE-05: o catalogo de encomendas que este build carrega (CONTEUDO_V1 §7, ECONOMIA_WAVE_B §3.1): os 7 tipos fixos do Old Forge (mais a
     /// variante Superior do Quality, que o Renome 3 libera e so abre quando a automacao ja faz Superior), as 9 de evento (vaga propria, so
-    /// pontos) e os 5 fregueses do Old Forge (FS-3: item e N fixos, +1 coracao). Os dos distritos 2-6 entram com os itens deles (o
-    /// ContentValidator recusa item, distrito ou fila que nao existem). IDs com prefixo ord_ (V22), nunca renomeados: o save grava o ID.
+    /// pontos), os 5 fregueses do Old Forge (FS-3: item e N fixos, +1 coracao) e, do C-CORE-05, os 7 da Armorer's Row e o freguês Brutus.
+    /// Os dos distritos 3-6 entram com os itens deles (o ContentValidator recusa item, distrito ou fila que nao existem). IDs com prefixo ord_ (V22), nunca renomeados: o save grava o ID.
     /// </summary>
     public static class OrderDefs
     {
-        public const string OldForge = "old_forge";
+        public const string OldForge = "old_forge", Row = FS.Core.Distritos.ArmorersRowId;
         /// <summary>Filas de Blueprint (BlueprintDef.sources, B-CORE-07): a do tipo Blueprint e a do Royal.</summary>
         public const string FilaEncomenda = "encomenda", FilaRoyal = "royal";
         public static readonly string[] Filas = { FilaEncomenda, FilaRoyal };
-        /// <summary>Distritos que existem no build (DistrictDef chega no C-CORE-01).</summary>
-        public static readonly string[] Distritos = { OldForge };
+        /// <summary>Distritos com encomendas no build (C-CORE-05: a Row entrou; o Encomendas le as do Sim.Distrito).</summary>
+        public static readonly string[] Distritos = { OldForge, Row };
         /// <summary>Base da escala dos knobs (a Common do catalogo): alvo x Tuning.OrderSeconds / 150 e premio x Tuning.OrderRewardSeconds / 10.</summary>
         public const float AlvoBase = 150f, PremioBase = 10f;
         /// <summary>A cada tantas Commons do distrito, a vaga vira a encomenda pessoal do proximo freguês (CONTEUDO_V1 §7.2).</summary>
@@ -61,12 +61,27 @@ namespace FS.Core
             new OrderDef("ord_reg_grunk", Bulk, OldForge, 0f, 40, 40, 22f, 60, 3, item: "espada", fixedN: 40, clientId: "cli_reg_grunk"),
             new OrderDef("ord_reg_bento", Common, OldForge, 0f, 10, 10, 10f, 25, 1, item: "escudo", fixedN: 10, clientId: "cli_reg_bento"),
             new OrderDef("ord_reg_ines", Qual, OldForge, 0f, 4, 4, 13f, 40, 3, minQuality: Fina, item: "joia", fixedN: 4, clientId: "cli_reg_ines"),
+            // C-CORE-05, Armorer's Row (CONTEUDO_V1 §7.2): "abre: distrito aberto" (sem minimo de linhas ou entregues; Mixed pede as 3 linhas).
+            // Quality e Royal pedem Fina e Blueprint a fila do distrito: viram Common enquanto a Row nao tem fonte de qualidade nem projeto
+            // (liga, niveis e Blueprints da Row). ponytail: a variante Superior do Quality (Renome 5) entra com a liga; sem ela nunca abriria.
+            // Mesmo desvio do Old Forge (revisar): Bulk, Quality, Mixed, Royal e o Brutus (Bulk) pagam 70% dos segundos do §7.2 (45/18/25/45/32
+            // -> 32/13/18/32/22): com o catalogo e as 3 vagas do Renome do Imperio o ouro de encomendas ia a 15,3% da venda (portao 4-12%);
+            // com 70%, 12,2% (e 6,1% com a vaga unica do Renome proprio da Row, hoje; BALANCE.md §33)
+            new OrderDef("ord_common_armorers_row", Common, Row, 150f, 3, 30, 10f, 75, 1),
+            new OrderDef("ord_bulk_armorers_row", Bulk, Row, 600f, 12, 120, 32f, 180, 4),
+            new OrderDef("ord_quality_armorers_row", Qual, Row, 90f, 3, 20, 13f, 120, 3, minQuality: Fina),
+            new OrderDef("ord_rush_armorers_row", Rush, Row, 150f, 3, 30, 10f, 75, 1, bonusDeadline: 240f, bonusRewardSeconds: 10f, bonusReputation: 1),
+            new OrderDef("ord_mixed_armorers_row", Mixed, Row, 70f, 2, 15, 18f, 180, 3, products: 3, minLines: 3),
+            new OrderDef("ord_royal_armorers_row", Royal, Row, 200f, 5, 40, 32f, 450, 10, minQuality: Fina, blueprintQueue: FilaRoyal),
+            new OrderDef("ord_blueprint_armorers_row", Blueprint, Row, 150f, 3, 30, 5f, 75, 2, blueprintQueue: FilaEncomenda),
+            new OrderDef("ord_reg_brutus", Bulk, Row, 0f, 30, 30, 22f, 180, 3, item: "lanca", fixedN: 30, clientId: "cli_reg_brutus"),
         };
 
         /// <summary>Rodizio de cada distrito (posicao = Encomendas.Abertas % 10; sem peso, sem sorteio). Event fica fora (vaga propria).</summary>
         public static readonly (string District, OrderType[] Cycle)[] Ciclos =
         {
             (OldForge, new[] { Common, Common, Bulk, Qual, Common, Mixed, Rush, Blueprint, Common, Royal }),
+            (Row, new[] { Common, Bulk, Qual, Common, Bulk, Mixed, Rush, Blueprint, Common, Royal }),   // §7.1: Bulk x2 ("equipar a milicia")
         };
 
         public static OrderType[] Ciclo(string district) => Array.Find(Ciclos, c => c.District == district).Cycle;
@@ -78,12 +93,18 @@ namespace FS.Core
         /// Regras do ContentValidator (ECONOMIA_WAVE_B §8.4): ID ord_ unico em [a-z0-9_]; distrito que existe (Event: sem distrito, com evento e
         /// pontos, sem ouro nem Renome); N min &lt;= max (freguês: N fixo dentro); qualidade minima ate Superior (Masterwork nunca e' alvo); bonus
         /// so com prazo (nao existe penalidade); premio positivo e multiplo de 5; Mixed com 2+ produtos e 3+ linhas; fila de Blueprint que
-        /// existe (o tipo Blueprint tem fila); item fixo que existe no jogo e e' vendido (freguês com cli_). Ciclo de distrito que existe, com
-        /// Common, sem Event e so com tipos que tem OrderDef no distrito.
+        /// existe (o tipo Blueprint tem fila); item fixo que existe no distrito dele e e' vendido la (freguês com cli_; `w` = o mundo do Old Forge,
+        /// os outros distritos pelo ContentValidator.Mundo). Ciclo de distrito que existe, com Common, sem Event e so com tipos que tem OrderDef no
+        /// distrito.
         /// </summary>
         public static IEnumerable<string> Validar(OrderDef[] defs, (string District, OrderType[] Cycle)[] ciclos, Sim w)
         {
             var ids = new HashSet<string>();
+            Sim MundoDe(string district)
+            {
+                DistrictDef dd = district == w.Distrito.Id ? null : FS.Core.Distritos.Find(district);
+                return dd == null ? w : ContentValidator.Mundo(dd);
+            }
             foreach (OrderDef d in defs)
             {
                 string at = $"encomenda {d.Id}:";
@@ -111,8 +132,9 @@ namespace FS.Core
                 if (d.Type == OrderType.Blueprint && d.BlueprintQueue == null) yield return $"{at} Blueprint sem fila";
                 if (d.Item != null)
                 {
-                    int i = Items.IndexOf(d.Item, w.ItemDefs);
-                    if (i < 0 || !w.IsProduct((Item)i) || !w.Stations.Exists(s => s.Produces && s.OutItem == (Item)i)) yield return $"{at} item \"{d.Item}\" que nao existe no jogo (ou nao e' vendido)";
+                    Sim wd = MundoDe(d.District);   // C-CORE-05: a lanca do Brutus e' item da Row
+                    int i = Items.IndexOf(d.Item, wd.ItemDefs);
+                    if (i < 0 || !wd.IsProduct((Item)i) || !wd.Stations.Exists(s => s.Produces && s.OutItem == (Item)i)) yield return $"{at} item \"{d.Item}\" que nao existe no jogo (ou nao e' vendido)";
                     if (d.FixedN <= 0) yield return $"{at} item fixo sem N fixo";
                 }
                 if (d.ClientId != null && (d.Item == null || !d.ClientId.StartsWith("cli_", StringComparison.Ordinal))) yield return $"{at} freguês \"{d.ClientId}\" sem item fixo ou fora de cli_";

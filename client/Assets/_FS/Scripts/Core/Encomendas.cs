@@ -198,12 +198,13 @@ namespace FS.Core
         Encomenda Gera(int idx, Encomenda fora)
         {
             List<Item> linhas = Linhas();
-            OrderType[] ciclo = OrderDefs.Ciclo(OrderDefs.OldForge);
+            string dist = _sim.Distrito.Id;   // C-CORE-05: as OrderDefs do distrito deste Sim
+            OrderType[] ciclo = OrderDefs.Ciclo(dist);
             OrderType t = ciclo[idx % ciclo.Length];
             OrderDef d = null;
             foreach (OrderDef x in OrderDefs.All)   // a ultima aberta do tipo: a variante Superior do Quality vem depois da Fina
-                if (x.District == OrderDefs.OldForge && x.Type == t && x.ClientId == null && Aberto(x, linhas)) d = x;
-            d ??= OrderDefs.Comum(OrderDefs.OldForge);
+                if (x.District == dist && x.Type == t && x.ClientId == null && Aberto(x, linhas)) d = x;
+            d ??= OrderDefs.Comum(dist);
             if (d.Type == OrderType.Common) d = Fregues(d, linhas) ?? d;
             return Monta(d, idx, idx == 0, linhas, fora);
         }
@@ -227,7 +228,7 @@ namespace FS.Core
         public bool TipoAberto(OrderType t)
         {
             List<Item> linhas = Linhas();
-            return Array.Exists(OrderDefs.All, x => x.District == OrderDefs.OldForge && x.Type == t && x.ClientId == null && Aberto(x, linhas));
+            return Array.Exists(OrderDefs.All, x => x.District == _sim.Distrito.Id && x.Type == t && x.ClientId == null && Aberto(x, linhas));
         }
 
         /// <summary>Condicoes do OrderDef com o estado de agora (ver OrderDef). Tudo que nao e' Common so depois das Ferramentas.</summary>
@@ -367,7 +368,7 @@ namespace FS.Core
                 Abertas = Comuns = _sim.OrderCount + Pulos;
                 int it = ord != null && ord.Length >= 6 ? I(ord[0], -1) : -1, alvo = ord != null && ord.Length >= 6 ? Clamp(I(ord[1], 0), 0, T.OrderMax) : 0;
                 if (alvo <= 0 || !_sim.IsProduct((Item)it) || !_sim.LineUnlocked((Item)it)) return;   // joia sem joalheria: nao volta; a contagem fica
-                var e = new Encomenda(OrderDefs.Comum(OrderDefs.OldForge), Abertas, new[] { (Item)it }, new[] { alvo }, Math.Max(0, L(ord[3], 0)), 0, 0f, null);
+                var e = new Encomenda(OrderDefs.Comum(_sim.Distrito.Id), Abertas, new[] { (Item)it }, new[] { alvo }, Math.Max(0, L(ord[3], 0)), 0, 0f, null);
                 e.Feito[0] = Clamp(I(ord[2], 0), 0, alvo);
                 Vagas.Add(e);
                 Abertas++; Comuns++;
