@@ -44,6 +44,7 @@ namespace FS.Core
             e.AddRange(Missoes(MetasDefs.Diarias, MetasDefs.Semanais, MetasDefs.Conquistas, MetasDefs.LoginDias, Tuning.Padrao));
             e.AddRange(NiveisRenome(renome ?? RenomeDefs.Niveis));
             e.AddRange(Workers(workers ?? WorkerDefs.All, world, renome ?? RenomeDefs.Niveis));
+            e.AddRange(LiveOpsDefs.Validar(LiveOpsDefs.Eventos, LiveOpsDefs.Passes));   // D-CORE-03/04 (LIVEOPS_V1 §5.7)
             e.AddRange(Blueprints(blueprints ?? ProjetosDefs.All, upgrades, world));
             return e;
         }

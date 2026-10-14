@@ -60,6 +60,12 @@ namespace FS.Tests
             foreach (string g in new[] { "m", "f", "mp", "fp" }) { Tem("art.o." + g); Tem("art.de." + g); }
             foreach (AdPlacementDef d in T0.Placements) Tem("ads." + d.Id);   // E-PLAT-02: cada placement do Tuning (o anuncio simulado)
             foreach (RenomeDef d in RenomeDefs.Niveis) { Tem(d.NomeKey); if (d.Nivel > 0) Tem(d.NomeKey + ".libera"); }   // B-CORE-06: SeloRenome
+            foreach (EventDef e in LiveOpsDefs.Eventos)   // D-CORE-03/04: nome do evento e cosmeticos da trilha; nome e cosmeticos free do Passe
+            {
+                Tem("ev." + e.Id);
+                foreach (Marco m in e.Trilha) foreach (RewardDef r in m.Premios) if (r.Tipo == TipoPremio.Cosmetico) Tem("cos." + r.Ref);
+            }
+            foreach (PassDef p in LiveOpsDefs.Passes) { Tem("passe." + p.Id); foreach (RewardDef r in p.Free) if (r.Tipo == TipoPremio.Cosmetico) Tem("cos." + r.Ref); }
             Assert.IsEmpty(faltam);
         }
 
@@ -188,6 +194,15 @@ namespace FS.Tests
                     if (d.Nivel > 0) Assert.LessOrEqual(Loc.T("renome.libera", Textos.LiberaRenome(d.Nivel)).Length, 110, $"{i}: nivel {d.Nivel}");
                 }
                 Assert.LessOrEqual(Textos.Ouro(long.MaxValue).Length, 8, i.ToString());
+                // D-CORE-03/04: chip do evento (<= ChipMax), avisos de evento e do Passe (1 linha na faixa)
+                foreach (long seg in new[] { 59L, 86399L, 6 * 86400L }) Assert.LessOrEqual(Loc.T("liveops.chip", Textos.Qtd(99999), Textos.Tempo(seg)).Length, Textos.ChipMax, i.ToString());
+                foreach (EventDef e in LiveOpsDefs.Eventos)
+                {
+                    Assert.LessOrEqual(Textos.NomeEvento(e).Length, Textos.EventoMax, $"{i}: {e.Id}");
+                    Assert.LessOrEqual(Loc.T("aviso.evento", Textos.NomeEvento(e)).Length, Textos.AvisoMax, $"{i}: {e.Id}");
+                }
+                Assert.LessOrEqual(Loc.T("aviso.passe_ouro", Textos.Qtd(99999)).Length, Textos.DicaMax, i.ToString());
+                Assert.LessOrEqual(Loc.T("aviso.evento_marco", 1000).Length, Textos.AvisoMax, i.ToString());
             }
         }
 

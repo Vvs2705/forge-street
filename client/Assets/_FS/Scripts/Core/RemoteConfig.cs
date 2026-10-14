@@ -68,8 +68,16 @@ namespace FS.Core
             if (o.TryGetValue("id", out object id) && id is string s && s.Length > 0) r.Id = s.Length > 40 ? s.Substring(0, 40) : s;
             else r.Id = "sem_id";
             if (o.TryGetValue("versao", out object v) && v is double d && d >= 0 && d < long.MaxValue) r.Versao = (long)d;
+            return Valores(t, o, intersticialNoBuild, r);
+        }
+
+        /// <summary>D-CORE-03: aplica `valores` (chave -> numero, bool ou lista, como o JSON le) sobre `t` com as MESMAS travas. Os modificadores
+        /// de evento (LiveOps) passam por aqui: um evento nunca fura guardrail.</summary>
+        public static Resultado Valores(Tuning t, IDictionary<string, object> valores, bool intersticialNoBuild, Resultado r = null)
+        {
+            r = r ?? new Resultado();
             var padrao = new Tuning();
-            foreach (KeyValuePair<string, object> kv in o)
+            foreach (KeyValuePair<string, object> kv in valores)
             {
                 if (kv.Key == "id" || kv.Key == "versao") continue;
                 FieldInfo f = Campo(t, padrao, kv.Key, out object alvo, out object pad, out string coringa);
