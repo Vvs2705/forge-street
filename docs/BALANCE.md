@@ -1699,3 +1699,55 @@ Conta estática do `LIVEOPS_V1.md` §5.4 com o conteúdo real (`LiveOpsDefs.XpDi
 ### 27.4 Testes e prova vermelha
 
 `LiveOpsTests` (20): calendário às 13:00 UTC e temporadas emendadas; os 10 eventos com os 9 campos, missões somando 700 e as reservas prontas; **evento novo só com dados** (um `EventDef` injetado na folga do dia 6 passa no validator, entra, aplica o knob, paga os limiares e devolve o knob); requisito (Ferramentas, Renome, encomendas) e os 10 primeiros minutos do bot iguais tick a tick com um evento forte ativo; modificadores pelo RemoteConfig sobre o config remoto e de volta no fim; evento com knob proibido preso pelas travas (offline ≤ 7.200 s) e recusado pelo validator; cofre igual; missão e limiar 1× com save/load, matar antes de gravar e reset do evento; relógio para trás; compra/contratação que completa sozinha (`worker_any` com o B-CORE-04); qualidade e golpe de mestre de verdade; Pass (retroativo 1×, espera até a temporada, teto de 100 XP/dia, RESGATAR 1×, nível 30, premium nunca paga, fim de temporada paga o alcançado); save do bot sem `ev.*`/`ps.*`; fechamento 26–30; 29 defeitos injetados no validator; textos nos 3 idiomas. `mutantes.py`: 12 mutações novas (`liveops-*`), todas mortas; o trecho do `qual-nivel-sem-velocidade` foi atualizado para o `Equipe.Ritmo` do #54 (estava desatualizado na `main`) e segue morto.
+
+## 30. B-CORE-08: Masterworks, Hall e Collection (2026-10-13)
+
+**Vigente** (`Core/MasterworksDefs.cs`, `Core/Masterworks.cs`): as 10 `MasterworkDef` do Old Forge (`ECONOMIA_WAVE_B.md` §6 = `CONTEUDO_V1.md` §10.1, sem mudança; as 50 dos distritos 2–6 entram com a Wave C, no mesmo formato). Golpe de mestre numa peça que **já sairia Superior**, com o projeto e a condição da 1ª pendente da família, vira a Masterwork: vai ao Hall 1× (nunca pilha, balcão nem `GoldEarned`), credita o Renome dela pelo ID `mw:{id}`; a 2ª vez sai Superior e vende. Ajudante e cofre offline nunca fazem (não golpeiam). Família de produto no `ItemDef.Family` (a espada longa é da espada). Hall completo numa família = +5% no preço de venda dela (FS-6). Collection derivada dos contadores (produto × Normal/Fina/Superior, Masterworks, equipe contratada/nível máximo, projetos): 9 marcos do Old Forge pagam Renome (e 1 cosmético) 1× por `col:{id}`, com retroativo; abre com o 1º projeto de Masterwork depois das Ferramentas. Os Hunts dão o projeto da Masterwork pelo `Projetos.Ganha` (origem `Event`; quem já tem recebe os 60 s). Bot Ideal: com Masterwork pendente e q ≥ 100 na bancada, só golpeia a peça que já sairia Superior (`ECONOMIA_WAVE_B.md` §1.4).
+
+**Decididos por padrão (revisar):** (1) marcos da Collection = os degraus do Old Forge do `ECONOMIA_WAVE_B.md` §7 (50%/100% de cada aba: produtos 8/15, equipe 13/26, projetos 10/19) mais os do `CONTEUDO_V1.md` §10.3 que já cabem (`col_mw_5`, `col_mw_10`, `col_workers_25` = 15 de 58); os de % do catálogo da v1.0 acima disso esperam o conteúdo (o validator recusa marco inalcançável); `col_mw_1` ("abre o Hall") não é marco, é o próprio Hall. Abas Clientes (FS-3) e Distritos (Charter) esperam o sistema delas. (2) Marco paga **Renome e cosmético, nunca ouro** (GDD §13, `CONTEUDO_V1.md` §10.3), embora o ticket aceitasse ouro em s de renda; nenhum marco do catálogo dá Blueprint. (3) +5% da família completa como bônus permanente do Hall (GDD §13/FS-6). (4) Condição `OrdersOfType` lê o contador `order_complete` do Orders 2.0 (na ordem do `OrderType` dele): até o merge, a Tenaz Eterna não sai. (5) Produto × qualidade sai do `solds=` e do `bpq=`; o único contador novo é Superior por item (`colq=`): save antigo conta a Superior de antes como Fina.
+
+"Antes" = `main` (f578df6, #57); "depois" = este branch. "Sem o Renome da coleção" = este branch com os 9 marcos a Renome 0 (A/B só no econsim, não entra no jogo).
+
+### 30.1 60 min (5 perfis × 1 partida, anúncio = 30 s)
+
+**CSV idêntico ao byte** ao da `main`: até 60 min a Collection paga 1–3 marcos (Renome 10–30), mas nada muda no ouro nem nas compras (os 10 primeiros minutos e os pisos do §3 iguais).
+
+### 30.2 120 min, 4 partidas por perfil, antes → depois
+
+| perfil | Produção | Fachada | zona morta | ouro/min 111–120 | prêmio de qualidade aos 120 | golpe de mestre |
+|---|---|---|---|---|---|---|
+| Ideal | 49:59 (igual) | 77:20 → 81:17 | 22,5 (igual) | 3.083 → 3.292 (+6,8%) | 29,3% → 31,5% | 1,1% → 0,9% |
+| F2P | 49:28 (igual) | 77:36 → 81:24 | 21,8 (igual) | 2.959 → 3.235 (+9,3%) | 28,4% → 30,8% | 0% |
+| Slow | 52:10 (igual) | 80:43 → 84:43 | 24,3 (igual) | 3.017 → 3.318 (+10,0%) | 28,2% → 30,5% | 0% |
+| AdWatcher | 46:53 (igual) | 73:48 → 77:32 | 20,8 (igual) | 3.093 → 3.367 (+8,9%) | 28,7% → 31,2% | 0% |
+
+### 30.3 240 min, 4 partidas por perfil: Hall, Collection e Renome (sem o Renome da coleção → depois)
+
+| perfil | Masterworks no Hall (a 1ª) | marcos pagos (Renome) | Renome aos 240 | Renome 2 | Renome 3 |
+|---|---|---|---|---|---|
+| Ideal | 2 (1:50:10 → **1:23:45**): Martelo do Fundador, Anel do Mercador | 5,3 (65) | 211 → 285 | 1:49:46 → 0:58:53 | 3:17:33 → 1:47:58 |
+| F2P | 0 (não golpeia) | 5 (60) | 135 → 212 | 2:18:40 → **0:59:24** | — → **3:11:21** |
+| Slow | 0 | 5 (60) | 130 → 206 | 2:25:22 → 1:02:24 | — → 3:17:15 |
+| AdWatcher | 0 | 5 (60) | 133 → 211 | 2:23:11 → 1:01:35 | — → 3:11:12 |
+
+- **A Masterwork em si não mexe na renda (~0):** com os marcos a Renome 0, F2P, Slow e AdWatcher saem **idênticos ao byte** à `main` em 240 min; o Ideal fica +0,45% (o Renome +55 das 2 obras adianta o Renome 2). As 2 obras tiram 2 peças Superiores da venda (~0,04% da receita) e a espera pela Superior baixa o golpe de 1,1% para 0,9% da receita aos 120.
+- **O Renome da coleção sim:** os marcos (+60 no F2P) trazem o Renome 2 de 2:18 para **0:59** (portão 40–75 min) e o mestre de obras (Otávio, Renome 2) é contratado mais cedo: ouro/min +7–10% na janela 91–120 e a Fachada +3,8 min (o ouro vai ao Otávio e aos níveis dele antes do luxo). Renda 1–240: +1,5% (Ideal) a +2,4% (F2P).
+- Só 2 das 10 saem na `main`: espada e escudo não chegam a q 100 sem a técnica (filas de encomenda do Orders 2.0: bigorna 60 + oficial 25 + mestre 10 = 95), então a Primeira Lâmina (o "preview do Hall" do D0) espera o `bp_tecnica_espada` (fila Blueprint #1, Renome 1); Sunblade e Ember Crown esperam a fila Royal ou o Hunt; Tenaz Eterna, as encomendas Mixed; Escudo do Brasão, o Tomé nível 5 e o projeto do Renome 3.
+
+### 30.4 Portões (ECONOMIA_WAVE_B §10)
+
+| Medida | Portão | Medido | |
+|---|---|---|---|
+| 1ª Masterwork, Perfect | ≤ 2,5 h | 1:23:45 (4 partidas) | ok |
+| 1ª Masterwork, F2P | ≤ 4 h | o bot F2P não golpeia (B-CORE-03: só o Ideal) | **não se mede (revisar:** perfil F2P que acerta 1 em 2) |
+| Renome 2, F2P | 40–75 min | 0:59:24 (antes 2:18:40) | ok (passou a valer) |
+| Renome 3, F2P | 1,5–3 h | 3:11 (antes > 4 h) | 11 min acima; o Renome por tipo do Orders 2.0 traz para dentro |
+| Prêmio de qualidade aos 120 | ≤ 35% | 30,8% (F2P) | ok |
+| Golpe de mestre | ≤ 12% Perfect | 0,9% | ok |
+| Produção completa, zona morta, 10 primeiros minutos | iguais | iguais | ok |
+| Masterwork nunca vendida nem no `GoldEarned` | — | `MasterworksTests` (golpe, bot de 45 min: receita = soma das vendas) | ok |
+
+Knob se o Renome correr demais depois do Orders 2.0: o Renome dos marcos em `MasterworksDefs.Marcos` (hoje 10/20 por aba).
+
+### 30.5 Testes e prova vermelha
+
