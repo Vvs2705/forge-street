@@ -179,6 +179,7 @@ namespace FS
             Application.logMessageReceived += Excecao;
             _save = new Salvamento(new SaveStore(Path.Combine(dir, "save.txt")), new SaveEspelho(SaveKey), _diario);
             Sfx.Init(gameObject);
+            Sfx.Log = Arg("-somlog") != null;   // fix/mix-audio (dev): "SOM min=..." por minuto no Player.log
             // ponytail: fotos e smoke usam estado novo sem ler ou gravar o save/diario normal.
             if (!_testSession && Arg("-reset") != null) _save.Apagar();
             _sim = _testSession ? new Sim(tuning) : _save.Carregar(tuning);
@@ -309,7 +310,7 @@ namespace FS
             long shown = Math.Min(elapsed, _sim.T.OfflineCap);
             Log("offline_claim", gold.ToString(), shown.ToString());
             Source("cofre", gold);
-            Sfx.Play("offline");
+            Sfx.Play("cofre");
             ShowVault(gold);
             Save();
             return gold;
@@ -382,7 +383,7 @@ namespace FS
 
             if (_vipNow && _sim.CanSummonVip) _vipNow = !_sim.SummonVip();
             _view.Refresh(Time.deltaTime);
-            Sfx.Tick(_sim, Time.unscaledDeltaTime);   // A-AUD-23: musica e ambiente que cresce com estacoes trabalhando e fila
+            Sfx.Tick(_sim, _cam, Time.unscaledDeltaTime);   // A-AUD-23: musica e ambiente que cresce com estacoes trabalhando e fila; fix/mix-audio: ouvinte, tela e fila da Mixagem
             FollowCamera(Time.deltaTime);
             RefreshHud();
             _menu.Refresh(Time.deltaTime);
@@ -422,17 +423,14 @@ namespace FS
         {
             foreach (SimEvent e in _sim.Events)
             {
+                Sfx.Evento(e);   // fix/mix-audio: o som de cada evento (Mixagem.DoEvento, o mesmo mapa da medida); compra e worker tocam no Bought/WorkerComprado
                 switch (e.Kind)
                 {
-                    case Ev.Picked: Sfx.Play(e.A == (int)Item.Ore ? "ore" : "drop", e.B < 0 ? 1f : 0.8f, 0.08f); break;
-                    case Ev.Deposited: Sfx.Play("drop", 1.1f, 0.08f); break;
                     case Ev.Crafted:
-                        Sfx.Play(e.A == (int)Item.Ingot ? "furnace" : "hammer", 1f, 0.12f);
                         _view.Crafted(e.B);   // v0.6a: o item novo da pilha de saida da pop
                         Log("product_crafted", Balance.ItemName[e.A], _sim.Stations[e.B].Name);
                         break;
                     case Ev.Sold:
-                        Sfx.Play("coin", 1f + 0.05f * (_sim.Sales % 5), 0.1f);
                         // A-AUD-22: venda comum nao vibra; so a grande, no maximo 1 a cada 1,5 s (a loja de joias atende a cada 0,4 s).
                         // A unidade do VIP (preco x3) fica de fora: o pacote vibra uma vez no VipServed. B-CORE-03: VIP = acima do preco da
                         // Superior (2,5x < 3x do VIP Normal)
@@ -446,44 +444,38 @@ namespace FS
                         break;
                     // B-CORE-03: peca Fina/Superior na pilha (moeda aguda, "Fina!" e brilhos); obra-prima ao Hall (B-CORE-08)
                     case Ev.Graded:
-                        Sfx.Play("coin", e.B == (int)Quality.Superior ? 1.6f : 1.35f, 0.15f);
                         _view.Graded(e.A, (Quality)e.B);
                         Log("product_graded", _sim.Stations[e.A].Name, ((Quality)e.B).ToString());
                         break;
                     case Ev.Masterwork:
-                        Sfx.Play("order");
                         Ajustes.Pulso(60, 255);
                         Notice(Loc.T("fx.qualidade", Textos.Qualidade(Quality.Masterwork)), _crown, Color.white);
                         Log("masterwork", Balance.ItemName[e.A], _sim.Stations[e.B].Name);
                         break;
                     // B-CORE-07: projeto novo (marco, Renome, conquista; encomenda e o resto quando existirem): som, aviso e diario
                     case Ev.Blueprint:
-                        Sfx.Play("order", 1.2f);
                         Notice(Loc.T("aviso.projeto"), _crown, Color.white);
                         Log("blueprint_unlock", _sim.Projetos.Defs[e.A].Id, ((BlueprintSourceKind)e.B).ToString());
                         break;
                     case Ev.Bought: Bought(e.A, e.B, e.Pos); break;
-                    case Ev.ClientArrived: Sfx.Play("client", 1f, 0.2f); break;
                     case Ev.ClientLeft:
-                        if (e.B == 0) { Sfx.Play("leave"); _view.Float(e.Pos, "...", Art.Bad); }
+                        if (e.B == 0) _view.Float(e.Pos, "...", Art.Bad);
                         else _view.TurnedAway(e.Pos, e.A == (int)Item.Jewel);   // fila cheia: aparece passando e vai embora
                         Log("client_left", Balance.ItemName[e.A], e.B == 0 ? "cansou" : "fila_cheia");
                         break;
                     case Ev.Bottleneck: Log("bottleneck", _sim.Stations[e.A].Name, "saida_cheia"); break;
                     case Ev.Hired:   // B-CORE-04: B = 0 e' o ajudante do upgrade (A = indice em Workers); senao o worker da Equipe (A = WorkerDef)
                         if (e.B != 0) { WorkerComprado(e.A, _sim.Equipe.Preco(e.A, 1)); break; }
-                        Sfx.Play("hire"); Log("worker_hired", e.A.ToString()); _hired = true; break;
+                        Log("worker_hired", e.A.ToString()); _hired = true; break;
                     case Ev.WorkerUp: WorkerComprado(e.A, _sim.Equipe.Preco(e.A, e.B)); break;   // pelo bot (-bot); o cartao avisa pelo callback do MenuBar
                     case Ev.Unlocked: Log("station_unlock", _sim.Stations[e.B].Name); break;
                     // baus de marco (docs/archive/AREA2_FASE2.md s3/s4): bateu = som de moeda agudo + o ferreiro comemora (o bau aparece
                     // pulsando no WorldView); abriu = moedas e "+ouro" como uma venda, e o bau some
                     case Ev.Milestone:
-                        Sfx.Play("coin", 1.4f);
                         _view.Cheer();
                         Log("milestone", e.A.ToString(), e.B.ToString());
                         break;
                     case Ev.ChestOpened:
-                        Sfx.Play("coin", 1f + 0.05f * (_sim.Sales % 5), 0.1f);
                         _view.Float(e.Pos, "+" + e.B, Art.Accent, 44);
                         FlyCoins(e.Pos, e.B);
                         Log("chest_opened", e.A.ToString(), e.B.ToString());
@@ -491,13 +483,11 @@ namespace FS
                         break;
                     // FASE8 (v0.5c): VIP entrou na vaga / levou o pacote (cada unidade ja saiu como Sold) / cansou
                     case Ev.VipArrived:
-                        Sfx.Play("vip");
                         Notice(Loc.T("aviso.vip"), _crown, Color.white);
                         _view.VipBurst(e.Pos, false);
                         Log("vip_arrived", Balance.ItemName[e.A], e.B.ToString());
                         break;
                     case Ev.VipServed:
-                        Sfx.Play("offline", 1.15f);
                         Ajustes.Pulso(40, 200);
                         _view.Float(new V2(e.Pos.X, e.Pos.Y - 1.2f), "+" + e.B, Art.Accent, 64);   // pela frente do estande: na fila ele subia para baixo da HUD
                         _view.VipBurst(e.Pos, true);
@@ -505,7 +495,6 @@ namespace FS
                         Log("vip_served", Balance.ItemName[e.A], e.B.ToString());
                         break;
                     case Ev.VipLeft:
-                        Sfx.Play("leave");
                         _view.Float(e.Pos, "...", Art.Bad, 44);
                         Log("vip_left", Balance.ItemName[e.A], e.B.ToString());
                         break;
@@ -517,7 +506,6 @@ namespace FS
                         Source("encomenda", e.B);
                         Ajustes.Pulso(40, 200);
                         if (_order == null) break;   // criativo: sem cartao, o ouro entra direto no numero
-                        Sfx.Play("order");
                         OrderText(_sim.OrderTarget, _sim.OrderTarget);   // a ultima venda e a entrega caem no mesmo tick: mostra o 5/5
                         _orderOut = true; _orderT = 0f;
                         Notice(Loc.T("aviso.entregue", e.B), _coinIcon.sprite, _coinIcon.color);
@@ -542,7 +530,7 @@ namespace FS
         void Bought(int u, long price, V2 pos)
         {
             _compraT = Time.unscaledTime;   // E-PLAT-03: compra agora = acao (veto do intersticial)
-            Sfx.Play("upgrade");
+            Sfx.Play("compra");
             // A-AUD-22: compra = pulso medio; compra que abre estacao (o Ev.Unlocked do mesmo tick) ou a rua lateral = o mais forte
             bool opens = u == (int)Upgrade.SideCorridor;
             foreach (Station s in _sim.Stations) opens |= s.UnlockBy == u;
@@ -566,7 +554,7 @@ namespace FS
         {
             WorkerDef d = _sim.Equipe.Defs[k];
             int n = _sim.Equipe.Nivel(k);
-            Sfx.Play(n <= 1 ? "hire" : "upgrade");
+            Sfx.Play(n <= 1 ? "contrata" : "compra");
             Ajustes.Pulso(30, 150);
             (Sprite icon, Color tint) = MenuBar.Retrato(d);
             Notice(Textos.AvisoWorker(d, n), icon, tint);
@@ -603,7 +591,7 @@ namespace FS
                     case "event_enter": if (avisa && e != null) Notice(Loc.T("aviso.evento", Textos.NomeEvento(e)), Art.Star(), Art.Accent); Log(tipo, id); break;
                     case "event_points": Log(tipo, id, e != null ? lo.PontosDe(e).ToString(CultureInfo.InvariantCulture) : arg); break;
                     case "event_complete":
-                        if (avisa) { Sfx.Play("coin", 1.3f); Notice(Loc.T("aviso.evento_marco", arg), _coinIcon.sprite, _coinIcon.color); }
+                        if (avisa) { Sfx.Play("meta"); Notice(Loc.T("aviso.evento_marco", arg), _coinIcon.sprite, _coinIcon.color); }
                         Log(tipo, id, arg);
                         if (ouro > 0) Source("evento", ouro);
                         pagou = true;
@@ -618,7 +606,7 @@ namespace FS
         /// <summary>RESGATAR no painel do Passe (o Sim.LiveOps ja pagou e gravou o ID): som, aviso, diario, currency_source "passe" e save.</summary>
         void PagoPasse(int nivel, long gold)
         {
-            Sfx.Play("coin", 1.3f);
+            Sfx.Play("meta");
             Ajustes.Pulso(30, 150);
             Notice(gold > 0 ? Loc.T("aviso.passe_ouro", Textos.Qtd(gold)) : Loc.T("aviso.passe_ok"), _coinIcon.sprite, _coinIcon.color);
             Log("pass_claim", _sim.LiveOps.Passe.Id, nivel.ToString(CultureInfo.InvariantCulture));
@@ -630,7 +618,7 @@ namespace FS
         /// login_claim, LIVEOPS_V1 §4.6), currency_source pela origem nova e save na hora (ouro e ID vao juntos para o disco).</summary>
         void Pago(string tipo, string id, long gold)
         {
-            Sfx.Play("coin", 1.3f);
+            Sfx.Play("meta");
             Ajustes.Pulso(30, 150);
             Notice(gold > 0 ? Loc.T("aviso.meta", Textos.Qtd(gold)) : Loc.T("aviso.meta_ok"), _coinIcon.sprite, _coinIcon.color);
             if (tipo == "login") Log("login_claim", id, _sim.Metas.LoginCiclo.ToString(CultureInfo.InvariantCulture));
@@ -645,7 +633,7 @@ namespace FS
         /// (40 ms, mais forte que a da encomenda do mesmo tick) e diario.</summary>
         void SubiuRenome(int nivel)
         {
-            Sfx.Play("vip", 0.9f);
+            Sfx.Play("renome");
             Ajustes.Pulso(40, 230);
             Notice(Textos.AvisoRenome(nivel), Art.Star(), Art.Gold);
             Log("renome_level", nivel.ToString(CultureInfo.InvariantCulture), _sim.Renome.Total.ToString(CultureInfo.InvariantCulture));
@@ -1301,7 +1289,7 @@ namespace FS
                 bool hit = _view.AcertoAgora;
                 if (_sim.Strike(hit))
                 {
-                    Sfx.Play("hammer", 1.25f);
+                    Sfx.Play("golpe");
                     Ajustes.Pulso(40, 200);
                     (Sprite icon, Color tint) = MenuBar.Icon(Upgrade.HammerSpeed);
                     Notice(Loc.T("aviso.golpe"), icon, tint);
@@ -1360,26 +1348,26 @@ namespace FS
             string n = v.ToString(CultureInfo.InvariantCulture);
             switch (a)
             {
-                case Anuncio.Vip: Sfx.Play("upgrade"); Notice(Loc.T("aviso.vip_vem"), _crown, Color.white); break;
+                case Anuncio.Vip: Sfx.Play("compra"); Notice(Loc.T("aviso.vip_vem"), _crown, Color.white); break;
                 case Anuncio.Velocidade:
-                    Sfx.Play("upgrade", 1.2f);
+                    Sfx.Play("boost");
                     _view.Float(_sim.Player.Pos, Loc.T("fx.velocidade", n), Art.Accent, 48);
                     Log("boost_start", n, _sim.T.Ad(a).Valor.ToString("0", CultureInfo.InvariantCulture));
                     break;
                 case Anuncio.Cofre:
-                    Sfx.Play("offline", 1.15f);
+                    Sfx.Play("cofre", 1.15f);
                     Source("anuncio", v);
                     Notice(Loc.T("aviso.cofre2x", n), _coinIcon.sprite, _coinIcon.color);
                     ShowVault(_sim.LastClaimGold + v);   // o painel mostra o total; o 2x some (1 por resgate)
                     break;
                 case Anuncio.EncomendaBonus:
-                    Sfx.Play("coin", 1.3f);
+                    Sfx.Play("meta");
                     if (_orderPrize != null) _orderPrize.text = "+" + _sim.OrderReward;   // pago na entrega, junto com o premio
                     Notice(Loc.T("aviso.bonus", n), _coinIcon.sprite, _coinIcon.color);
                     break;
-                case Anuncio.EncomendaTroca: Sfx.Play("order"); Notice(Loc.T("aviso.troca")); break;   // o cartao novo entra pelo OrderIndex
+                case Anuncio.EncomendaTroca: Sfx.Play("encomenda"); Notice(Loc.T("aviso.troca")); break;   // o cartao novo entra pelo OrderIndex
                 case Anuncio.Supply:
-                    Sfx.Play("furnace");
+                    Sfx.Play("supply");
                     Sprite ingot = Art.ItemArt(Item.Ingot, true);
                     Notice(Loc.T("aviso.supply", n), ingot != null ? ingot : Art.ItemSprite(Item.Ingot), ingot != null ? Color.white : Art.ItemColor[(int)Item.Ingot]);
                     break;
@@ -1404,7 +1392,7 @@ namespace FS
 
         void AdFail()
         {
-            Sfx.Play("leave", 1.3f);
+            Sfx.Play("falhou");
             Notice(Loc.T("aviso.anuncio_off"));
         }
 

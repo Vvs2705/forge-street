@@ -60,7 +60,7 @@ namespace FS
         // escura entre 2 trilhos, tambor nas pontas (a divisa some embaixo dele) e divisas a cada ~0,7 m: a 3x e 30 fps a faixa anda 0,28 m
         // por quadro, menos da metade do passo, entao nao parece andar para tras. Lingote de 0,3 m (~28 px no aparelho), como a pilha.
         // Cores da grelha das bocas (ferro escuro e barra) e divisas no amarelo da HUD.
-        const float Largura = 0.34f, PassoAlvo = 0.7f, LingoteS = 0.3f, BrasaCada = 0.22f, PoCada = 0.45f, ClacVol = 0.2f;
+        const float Largura = 0.34f, PassoAlvo = 0.7f, LingoteS = 0.3f, BrasaCada = 0.22f, PoCada = 0.45f;
         static readonly Color Faixa = WorldView.GrateC, Trilho = WorldView.GrateBar, Divisa = Art.ComAlfa(Art.Accent, 0.6f);
 
         readonly WorldView _w; readonly Sim _sim; readonly Transform _root;
@@ -129,7 +129,7 @@ namespace FS
                 _calor[i].color = Art.ComAlfa(WorldView.SparkB, 0.45f * (1f - _p[i]));   // quente na saida da fornalha, esfria ate a bigorna
             }
             if (Levando == 0) { _brasaT = _poT = 0f; return; }
-            if (clac && _w.NaTela(_root)) Sfx.Play("esteira", 0.9f + 0.1f * boost, 0.1f, ClacVol);   // 4 por travessia: ~4/s a 1x, ate 10/s no 3x
+            if (clac && _w.NaTela(_root)) Sfx.Play("esteira", 0.9f + 0.1f * boost, new V2(_root.position.x, _root.position.y));   // 4 por travessia (~4/s a 1x); a Mixagem deixa 1 a cada 3 s, so perto
             Vector3 o = _root.localPosition;
             if ((_brasaT -= dt) <= 0f)
             {
