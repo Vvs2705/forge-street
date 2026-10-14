@@ -1659,10 +1659,50 @@ Abaixo de 1/5 o IV fica mais barato que o III (bigornas 665 < 750). O ralo dos I
 ### 26.5 Testes e prova vermelha
 
 `ProjetosTests` (12): catálogo (19, 3 essenciais, fila #1–#7 sem buraco, nada pago); posse idempotente (o mesmo marco em dois Ticks, o gancho e a transação não duplicam; o save grava ID e origem, nunca saldo); ganchos (só fonte listada, pago só com ID de transação, a mesma transação não paga 2x); fontes (marco de venda, Fina ou melhor, produção completa, Renome 3, conquista só resgatada); filas (próximo mostrado antes, sem sorteio, o que veio por outra fonte sai da fila, esgota); desbloqueio dos IV–V (menu, compra direta e cartão) e da bigorna longa (pad, linha, venda a 40, nível pela família); técnica (+20 na família toda, 1 Fina a cada 5, determinística); save (ida e volta com origem e transação, save antigo sem `bp=` vazio e o retroativo dos marcos no 1º Tick, ID desconhecido mantido); validator (essencial só pago, essencial só de contrato, só evento, Pass premium, ID repetido/fora do formato, marco inalcançável, posição de fila repetida, Renome fora da tabela, conquista e distrito inexistentes, alvo inexistente, upgrade com projeto errado e nível IV sem projeto); bot F2P com os 3 essenciais e o nível IV aos 60 min; textos do painel nos 3 idiomas. `mutantes.py`: 17 mutações novas `bp-*` (posse que duplica, transação que repete, pago sem transação, fonte não listada, Fina que conta Normal, conquista sem resgate, save sem transação, load que perde a posse, menu/compra/pad sem projeto, técnica zerada ou pela estação, nível pela estação, validator do essencial pago, contrato como permanente, mestre sem a produção completa) e a `eco-preco-ferramenta` atualizada para o preço de 7 itens: 18 mortas, 0 vivas.
+## 27. D-CORE-03/04: Eventos e Pass (2026-10-13)
 
-## 27. B-CORE-05: Orders 2.0 (2026-10-13)
+**Vigente** (`Core/LiveOpsDefs.cs`, `Core/LiveOps.cs`): os 10 `EventDef` do `LIVEOPS_V1.md` §2.4 (8 do calendário + 2 reservas), 6 dias às 13:00 UTC a partir do T0 = 2026-11-02 (padrão do time, revisar: DECISÃO "datas" do D-PROD-01), um evento por vez; trilha comum (135 s de ouro, Renome +8, 500 XP do Passe, 2 cosméticos; nos Hunts o projeto da Masterwork com fallback de 60 s); modificadores aplicados pelo `RemoteConfig.Valores` (as mesmas travas: evento nunca fura guardrail) e devolvidos no fim. Pass S1/S2: 30 níveis × 600 XP, 35 dias emendados, só a trilha free (ouro 1.170 s, Renome +44, 6 cosméticos); premium só no dado (V20). XP do Passe = `Metas.PassXp` (diárias 100, semanais 350, conquistas; retroativo 1×) + encomenda entregue 10 (teto 100 por dia local) + XP das trilhas dos eventos. Ouro de limiar e de nível fora do `GoldEarned`.
 
-Regra em `ECONOMIA_WAVE_B.md` §3 e GDD §10; catálogo no `CONTEUDO_V1.md` §7. **Vigente** (`Core/Encomendas.cs`, `Core/EncomendasDefs.cs`): 8 tipos em dados (`OrderDef`, IDs `ord_*`): Common (= a encomenda de antes), Bulk (2 linhas e 5 entregues), Quality (linha que já faz Fina; variante Superior no Renome 3), Rush (8 entregues; prazo de 240 s **só de bônus**: no prazo o prêmio dobra e dá +1 de Renome, fora dele paga o normal), Mixed (3 linhas; 2 produtos, 3 com 4 linhas), Royal (Renome 2, Fina; o próximo projeto da fila Royal do `Projetos`), Blueprint (Renome 1 e projeto pendente na fila de encomenda do `Projetos`, B-CORE-07: `ProximoDaFila` no cartão, `GanhaDaFila` com o ID de transação na entrega) e Event (vaga própria enquanto o evento está ativo; só pontos; gancho do D-CORE-03). Os 5 fregueses do Old Forge (FS-3) entram na 7ª, 14ª… Common (N e item fixos, +1 coração). Rodízio do Old Forge `Common, Common, Bulk, Quality, Common, Mixed, Rush, Blueprint, Common, Royal` na posição `Abertas % 10` (abertas + entregues + trocadas), tipo travado vira Common; produto = `linhas[idx % linhas]`, pulando o que já está noutra vaga. Vagas 1 → 2 (Renome 1) → 3 (Renome 3). **Tudo o que é novo só depois das Ferramentas** (tipos, vagas extras, fregueses): até lá o jogo é o de antes, tick a tick. Prêmio em segundos da taxa online × a escala dos knobs da Common (`OrderSeconds / 150`, `OrderRewardSeconds / 10`), múltiplo de 5, fora do `GoldEarned`; Renome pelo tipo (+1 a +10). Uma peça vendida conta para uma vaga só (a mais antiga que a aceita). "Bônus da encomenda" (anúncio) = máx(50% do prêmio, **60 s de renda**) (`Tuning.EncomendaBonusMinSeg`).
+Rodam neste build: **Forge Frenzy, Armorer's Challenge, Forge Frenzy-B, Blacksmith Festival e Royal Week-B**. Esperam o sistema deles (o calendário pula a semana, nunca é erro): Royal Week e os dois Hunts (`order_complete` Royal/Quality do B-CORE-05; `QualidadeEvento` não é knob; `bp_mw_primeira_lamina` do B-CORE-07), Rare Ore Rush (Bulk; `GrabTime` ainda é const do `Balance`) e Merchant Caravan (Bulk/Mixed).
+
+### 27.1 Evento desligado
+
+econsim padrão (5 perfis × 60 min, anúncio = 30 s): **CSV idêntico ao byte** ao da `main` (67d4f4e, com o B-CORE-04) e a mesma saída. O bot sem relógio não roda o LiveOps (save sem `ev.*`/`ps.*`); com evento ativo, os 10 primeiros minutos do F2P são iguais tick a tick (as Ferramentas são requisito de todo evento; `LiveOpsTests`).
+
+### 27.2 Evento ativo (`econsim --evento <id>`, 1 partida por perfil, comparada com a mesma partida sem o evento)
+
+| evento | modificadores | F2P entra | renda/min do F2P depois da entrada (sem → com) | Δ F2P | Δ nos 5 perfis | pontos do F2P (missões) |
+|---|---|---|---|---|---|---|
+| Forge Frenzy | `ClientInterval` ×0,8; `PatienceBase` ×1,15 | 29:11 (10 encomendas) | 1.661 → 1.756 | +5,7% | +0,8 a +5,7% | 560 (7/8) |
+| Armorer's Challenge | `Price[escudo]` ×1,2; `ShieldTimeMul` ×0,9 | 14:26 (Renome 1) | 1.282 → 1.457 | +13,7% | +10,4 a +16,3% | 610 (6/7) |
+| Forge Frenzy-B | os do Forge Frenzy | 28:47 (Joalheria) | 1.632 → 1.683 | +3,1% | +1,8 a +4,0% | 640 (7/8) |
+| Blacksmith Festival | `FurnaceTime0..2` ×0,85; `ClientInterval` ×0,9 | 29:11 | 1.661 → 1.765 | +6,2% | +6,2 a +12,9% | 560 (6/8) |
+| Royal Week-B | `VipMin`/`VipMax` ×0,75 | 14:26 | 1.282 → 1.370 | +6,9% | −1,9 a +8,9% | 640 (7/8) |
+
+- Portão "ouro/min do F2P ≤ +15% durante o evento" (`LIVEOPS_V1.md` §6): **passa** nos 5 (o maior é o Armorer's, +13,7% no F2P). **Revisar:** no Armorer's o Ideal (+16,3%) e o AdWatcherE (+16,0%) passam de 15% (preço do escudo ×1,2 e bancada ×0,9 somam; os workers do B-CORE-04, comprados depois da produção completa, aumentam o efeito); knob se o portão valer para todo perfil: `Price[escudo]` ×1,15. Cofre aberto durante o evento paga igual (teste).
+- **Achado:** 30 min depois da entrada o F2P já fez 560–640 dos 700 pontos das missões (só o "jogar em 3 dias" segura). Sem a encomenda Event (+20 por entrega, gancho do Orders 2.0) a trilha para em 700 de 1.000: os limiares 850 (Renome +5) e 1.000 (XP 200 + cosmético principal) ficam fora de alcance até o B-CORE-05, e o portão "trilha de evento fecha no dia 4–5" ainda não se mede. Se o Orders 2.0 confirmar o ritmo, o knob é o alvo das missões de volume (o meio de jogo vende ~34/min).
+- Ouro dos limiares numa sessão: 1.050–3.600 (são segundos de renda: com a taxa do meio de jogo, 135 s valem ~2,2 min de venda).
+
+### 27.3 Pass: o F2P fecha a trilha free?
+
+Conta estática do `LIVEOPS_V1.md` §5.4 com o conteúdo real (`LiveOpsDefs.XpDiaF2P`: o menor XP das diárias e das semanais dos `MetasDefs`, encomendas no teto do dia, XP das trilhas da temporada / 35), conferida pelo validator e pelo `LiveOpsTests.Fechamento_*`:
+
+| temporada | desenho (8 encomendas/dia, os 5 eventos) | hoje (encomendas medidas no econsim: 6,0–7,0 por dia de 20 min; só os eventos que rodam) |
+|---|---|---|
+| S1 Royal Commission | 651 XP/dia → **dia 27,6** | 603–613 XP/dia → dia 29,4–29,9 |
+| S2 Ember Festival | 651 XP/dia → **dia 27,6** | 589–599 XP/dia → dia 30,1–30,6 |
+
+- Portão "fecha entre o dia 26 e o 30": o desenho passa nas duas; hoje a S1 passa e a **S2 passa do 30** porque só 2 dos 5 eventos dela rodam (volta ao 27,6 quando o Orders 2.0 liberar Rare Ore Rush, Merchant Caravan e Ember Crown). Knob se preciso: `PassDef.XpNivel`.
+- Numa sessão de 60 min com evento, o Passe ganha 250 XP (100 de encomendas, no teto, + 150 da trilha do evento).
+- Orçamento de ouro de LiveOps por dia (validator): metas 115,7 s + Pass 33,4 s + o evento mais caro 27,9 s (Hunt com o fallback do projeto) = **177 s ≤ 180** (14,7% dos 1.200 s de venda de um dia de 20 min; portão ≤ 15%).
+
+### 27.4 Testes e prova vermelha
+
+`LiveOpsTests` (20): calendário às 13:00 UTC e temporadas emendadas; os 10 eventos com os 9 campos, missões somando 700 e as reservas prontas; **evento novo só com dados** (um `EventDef` injetado na folga do dia 6 passa no validator, entra, aplica o knob, paga os limiares e devolve o knob); requisito (Ferramentas, Renome, encomendas) e os 10 primeiros minutos do bot iguais tick a tick com um evento forte ativo; modificadores pelo RemoteConfig sobre o config remoto e de volta no fim; evento com knob proibido preso pelas travas (offline ≤ 7.200 s) e recusado pelo validator; cofre igual; missão e limiar 1× com save/load, matar antes de gravar e reset do evento; relógio para trás; compra/contratação que completa sozinha (`worker_any` com o B-CORE-04); qualidade e golpe de mestre de verdade; Pass (retroativo 1×, espera até a temporada, teto de 100 XP/dia, RESGATAR 1×, nível 30, premium nunca paga, fim de temporada paga o alcançado); save do bot sem `ev.*`/`ps.*`; fechamento 26–30; 29 defeitos injetados no validator; textos nos 3 idiomas. `mutantes.py`: 12 mutações novas (`liveops-*`), todas mortas; o trecho do `qual-nivel-sem-velocidade` foi atualizado para o `Equipe.Ritmo` do #54 (estava desatualizado na `main`) e segue morto.
+
+## 28. B-CORE-05: Orders 2.0 (2026-10-13)
+
+Regra em `ECONOMIA_WAVE_B.md` §3 e GDD §10; catálogo no `CONTEUDO_V1.md` §7. **Vigente** (`Core/Encomendas.cs`, `Core/EncomendasDefs.cs`): 8 tipos em dados (`OrderDef`, IDs `ord_*`): Common (= a encomenda de antes), Bulk (2 linhas e 5 entregues), Quality (linha que já faz Fina; variante Superior no Renome 3), Rush (8 entregues; prazo de 240 s **só de bônus**: no prazo o prêmio dobra e dá +1 de Renome, fora dele paga o normal), Mixed (3 linhas; 2 produtos, 3 com 4 linhas), Royal (Renome 2, Fina; o próximo projeto da fila Royal do `Projetos`), Blueprint (Renome 1 e projeto pendente na fila de encomenda do `Projetos`, B-CORE-07: `ProximoDaFila` no cartão, `GanhaDaFila` com o ID de transação na entrega) e Event (vaga própria enquanto o evento do `LiveOps` está ativo, a `OrderDef` do `EventDef.Encomenda`; só pontos na trilha do evento, §28.6). Os 5 fregueses do Old Forge (FS-3) entram na 7ª, 14ª… Common (N e item fixos, +1 coração). Rodízio do Old Forge `Common, Common, Bulk, Quality, Common, Mixed, Rush, Blueprint, Common, Royal` na posição `Abertas % 10` (abertas + entregues + trocadas), tipo travado vira Common; produto = `linhas[idx % linhas]`, pulando o que já está noutra vaga. Vagas 1 → 2 (Renome 1) → 3 (Renome 3). **Tudo o que é novo só depois das Ferramentas** (tipos, vagas extras, fregueses): até lá o jogo é o de antes, tick a tick. Prêmio em segundos da taxa online × a escala dos knobs da Common (`OrderSeconds / 150`, `OrderRewardSeconds / 10`), múltiplo de 5, fora do `GoldEarned`; Renome pelo tipo (+1 a +10). Uma peça vendida conta para uma vaga só (a mais antiga que a aceita). "Bônus da encomenda" (anúncio) = máx(50% do prêmio, **60 s de renda**) (`Tuning.EncomendaBonusMinSeg`).
 
 **Decisões e desvios (revisar):**
 1. **Rush com penalidade? Não:** só bônus (recomendação do ticket); o validator recusa bônus sem prazo e não existe campo de penalidade.
@@ -1671,7 +1711,7 @@ Regra em `ECONOMIA_WAVE_B.md` §3 e GDD §10; catálogo no `CONTEUDO_V1.md` §7.
 4. **A variante Superior do Quality só abre com a automação fazendo Superior (q > 100);** o F2P não golpeia, e uma encomenda que só fecha com o golpe prenderia a vaga ("nunca pune"). Abre sozinha quando nível de estação, técnica e oficial passarem de q 100 (níveis IV–V do #55).
 5. **Limiares 2–4 do Renome mantidos (70/180/400):** com o Orders 2.0 eles caem dentro dos portões (abaixo), então a recalibração é "não mexer". Ressalva: o bot não resgata metas (semanais +5, conquistas +5/+10, login +2/+3); o jogador real chega um pouco antes.
 
-### 27.1 econsim antes × depois, 3 partidas × 360 min (`--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 360 --partidas 3`, anúncio = 30 s)
+### 28.1 econsim antes × depois, 3 partidas × 360 min (`--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 360 --partidas 3`, anúncio = 30 s)
 
 Antes = `main` 5a06394 (com o #54 WorkerDef e o #55 Blueprints; o econsim com a tabela de Renome deste branch); depois = este branch com a `main` mesclada e as filas de encomenda ligadas ao `Projetos`. Renome 1/2/3/4 = relógio em que o nível chegou (h:mm; "—" = não chegou em 6 h).
 
@@ -1688,9 +1728,9 @@ Antes = `main` 5a06394 (com o #54 WorkerDef e o #55 Blueprints; o econsim com a 
 | AdWatcherE | antes | 54:05 | 26,7 | 0:19 | 2:33 | 5:25 | — | 202 | 15,7 / 96 | 6,4% / 4,6% | 880 |
 | | **depois** | **45:01** | 21 | 0:16 | **1:05** | **2:05** | **3:39** | 725 | 24,3 / 202 | 26,2%* / 16,0% | 1.107 |
 
-\* o AdWatcherE soma no prêmio o bônus que ele assiste (14–16 dos 30 anúncios do dia). Entregues por tipo em 6 h (F2P): Common 95, Bulk 22, Quality 24, Rush 19, Mixed 19, Royal 16, Blueprint 5 (a fila de encomenda do Old Forge acaba: o resto dos projetos dela sai pelos marcos; Event espera o LiveOps). Pisos do §3: 0% abaixo nos 5 perfis, iguais ao antes. Pós-produção F2P em 6 h: 969 mil → 1,12 mi.
+\* o AdWatcherE soma no prêmio o bônus que ele assiste (14–16 dos 30 anúncios do dia). Entregues por tipo em 6 h (F2P): Common 95, Bulk 22, Quality 24, Rush 19, Mixed 19, Royal 16, Blueprint 5 (a fila de encomenda do Old Forge acaba: o resto dos projetos dela sai pelos marcos; Event só com evento ativo, §28.6). Pisos do §3: 0% abaixo nos 5 perfis, iguais ao antes. Pós-produção F2P em 6 h: 969 mil → 1,12 mi.
 
-### 27.2 8 partidas × 60 min (`--minutos 60 --partidas 8`; antes = `main` 5a06394)
+### 28.2 8 partidas × 60 min (`--minutos 60 --partidas 8`; antes = `main` 5a06394)
 
 | perfil | Produção (antes → depois) | zona morta | ouro de encomendas aos 60 min | encomendas em 60 min | saldo aos 60 min |
 |---|---|---|---|---|---|
@@ -1702,7 +1742,7 @@ Antes = `main` 5a06394 (com o #54 WorkerDef e o #55 Blueprints; o econsim com a 
 
 Prêmio de qualidade aos 60 min (F2P) 16,2% → 18,5% (a técnica das encomendas Blueprint soma q +20).
 
-### 27.3 AdWatcher × AdWatcherE (achado do §24)
+### 28.3 AdWatcher × AdWatcherE (achado do §24)
 
 8 partidas × 60 min, Orders 2.0, varrendo o piso do bônus (`--tuning "EncomendaBonusMinSeg=N"`), medido sobre a `main` 432e638 (antes do #54 e do #55); o AdWatcher não assiste o bônus (42:36 em todas):
 
@@ -1715,9 +1755,9 @@ Prêmio de qualidade aos 60 min (F2P) 16,2% → 18,5% (a técnica das encomendas
 | 75 s | 39:21 | −3:15 |
 | 90 s | 37:49 | −4:47 |
 
-60 s é o menor piso em que o AdWatcherE não fica mais lento que o AdWatcher (o anúncio custa 30 s de relógio e devolve 60 s de renda). Com a `main` 5a06394 mesclada: 43:19 × 44:35 (−1:16; §27.2). Pisos do §3 do AdWatcherE: 0% abaixo.
+60 s é o menor piso em que o AdWatcherE não fica mais lento que o AdWatcher (o anúncio custa 30 s de relógio e devolve 60 s de renda). Com a `main` 5a06394 mesclada: 43:19 × 44:35 (−1:16; §28.2). Pisos do §3 do AdWatcherE: 0% abaixo.
 
-### 27.4 Portões (ECONOMIA_WAVE_B §10)
+### 28.4 Portões (ECONOMIA_WAVE_B §10)
 
 | Medida | Portão | Medido (F2P) | |
 |---|---|---|---|
@@ -1736,6 +1776,23 @@ Prêmio de qualidade aos 60 min (F2P) 16,2% → 18,5% (a técnica das encomendas
 
 `BalanceTests.Bot_60Minutos_Fase2` passou a cobrar o portão da Wave B (4–12% e ≥ 25 entregues; era 3–10% com 1 vaga e 1 tipo).
 
-### 27.5 Testes e prova vermelha
+### 28.5 Testes e prova vermelha
 
-`EncomendasTests` (19): um por tipo (Common igual à de antes; Bulk só com 2 linhas e 5 entregues; Quality só com linha que faz Fina, só a Fina conta, N pela fração; Rush no prazo 2× e +1, fora dele o normal e a vaga continua; Mixed 2 e 3 produtos, cada peça no seu; Royal no Renome 2 com o projeto da fila Royal do `Projetos` pelo ID de transação; Blueprint no Renome 1 só com projeto pendente na fila do `Projetos`, Common com a fila esgotada; Event em vaga própria, só pontos, sai quando o evento acaba) e o freguês (7ª Common, o próximo que dá, coração no save); rodízio sem sorteio (golden do ciclo e de 20 posições; dois bots iguais abrem a mesma sequência); vagas 1/2/3 pelo Renome e só depois das Ferramentas, enchendo pelo relógio sem repetir produto; 1 peça para 1 vaga (a mais antiga que aceita); prêmio 1× (entregar 2× paga 1×, nem depois de save/load); save (3 vagas com Mixed, Rush no prazo, bônus e projeto; ida e volta idêntica; espelho `ord=`), save do schema 3 de antes (gerado pelo código da `main`: vira Common igual na posição entregues + trocadas e o rodízio segue), lixo e ID desconhecido; os 10 primeiros minutos do bot iguais ao golden da `main`; o bot F2P entrega os 7 tipos que abrem sem evento em 100 min; validator (item inexistente, Masterwork como alvo, bônus sem prazo, ID fora do formato, Mixed de 1 produto, Event com ouro, Blueprint sem fila, fila inexistente, distrito que o build não tem, N invertido, prêmio fora do múltiplo de 5, ID repetido, ciclo sem Common, com Event ou com tipo sem `OrderDef`). `AnunciosTests`: bônus com piso de 60 s; trocar com 2 vagas (só a principal, no lugar dela). `LocTests`: título e barra do cartão nos 3 idiomas. `mutantes.py`: 22 mutações novas do Orders 2.0 (`enc-*`, com `enc-bp-nao-ganha` da fila do `Projetos`, e as `ord-*`/`save-ord-*`/`ad-troca-proxima` reescritas no código novo), todas mortas; com `ad-paga-2x` e duas do Renome, 27/27 mortas.
+`EncomendasTests` (19): um por tipo (Common igual à de antes; Bulk só com 2 linhas e 5 entregues; Quality só com linha que faz Fina, só a Fina conta, N pela fração; Rush no prazo 2× e +1, fora dele o normal e a vaga continua; Mixed 2 e 3 produtos, cada peça no seu; Royal no Renome 2 com o projeto da fila Royal do `Projetos` pelo ID de transação; Blueprint no Renome 1 só com projeto pendente na fila do `Projetos`, Common com a fila esgotada; Event em vaga própria no Forge Frenzy do `LiveOps`, +20 pontos na trilha, sai quando o evento acaba) e o freguês (7ª Common, o próximo que dá, coração no save); rodízio sem sorteio (golden do ciclo e de 20 posições; dois bots iguais abrem a mesma sequência); vagas 1/2/3 pelo Renome e só depois das Ferramentas, enchendo pelo relógio sem repetir produto; 1 peça para 1 vaga (a mais antiga que aceita); prêmio 1× (entregar 2× paga 1×, nem depois de save/load); save (3 vagas com Mixed, Rush no prazo, bônus e projeto; ida e volta idêntica; espelho `ord=`), save do schema 3 de antes (gerado pelo código da `main`: vira Common igual na posição entregues + trocadas e o rodízio segue), lixo e ID desconhecido; os 10 primeiros minutos do bot iguais ao golden da `main`; o bot F2P entrega os 7 tipos que abrem sem evento em 100 min; validator (item inexistente, Masterwork como alvo, bônus sem prazo, ID fora do formato, Mixed de 1 produto, Event com ouro, Blueprint sem fila, fila inexistente, distrito que o build não tem, N invertido, prêmio fora do múltiplo de 5, ID repetido, ciclo sem Common, com Event ou com tipo sem `OrderDef`). `AnunciosTests`: bônus com piso de 60 s; trocar com 2 vagas (só a principal, no lugar dela). `LocTests`: título e barra do cartão nos 3 idiomas. `mutantes.py`: 22 mutações novas do Orders 2.0 (`enc-*`, com `enc-bp-nao-ganha` da fila do `Projetos`, e as `ord-*`/`save-ord-*`/`ad-troca-proxima` reescritas no código novo), todas mortas; com `ad-paga-2x` e duas do Renome, 27/27 mortas.
+
+### 28.6 Orders 2.0 no LiveOps (#56): Royal Week e Merchant Caravan rodam
+
+Ligações: a entrega chama `LiveOps.OnEncomenda(tipo)` (gatilho `order_complete` com filtro `common|bulk|quality|mixed|rush|royal|event|blueprint`, agora em `LiveOpsDefs.Gatilhos`; `Futuros` vazio) e, na encomenda Event, `LiveOps.PontosEncomenda` (+20 no contador do evento, somado em `PontosDe`, no save pelo `ev.c`); o XP do Passe continua só no `Ev.OrderDone` (10 por entrega, teto de 100 por dia; a Event é uma entrega, não dobra). `Requer` do evento confere o ID no `OrderDefs`/`ProjetosDefs`; o validator cobra que `EventDef.Encomenda` seja a `OrderDef` Event daquele evento. Rodam agora **7 dos 10**: Royal Week e Merchant Caravan entraram; os 2 Hunts esperam o knob `QualidadeEvento` e o Rare Ore Rush o `GrabTime` (consts, não knobs).
+
+`econsim --evento <id> --minutos 60 --partidas 4` (5 perfis; comparado com a mesma partida sem o evento):
+
+| evento | F2P entra | renda/min do F2P depois da entrada (sem → com) | Δ F2P | Δ nos 5 perfis | pontos do F2P (missões) | XP do Passe na sessão (F2P) |
+|---|---|---|---|---|---|---|
+| Royal Week (`VipMin`/`VipMax` ×0,75) | 14:11 | 1.441 → 1.559 | +8,2% | +0,6 a +8,8% | 710 (5/8) | 363 |
+| Merchant Caravan (`OrderRewardSeconds` ×1,25) | 14:11 | 1.441 → 1.513 | +5,0% | +3,2 a +7,8% | 995 (6/7) | 500 |
+| Forge Frenzy (referência, com as encomendas Event) | 20:28 | 1.593 → 1.627 | +2,2% | +2,2 a +7,1% | 775 (7/8) | 400 |
+
+- Portão "ouro/min do F2P ≤ +15% durante o evento": **passa** nos dois (e nos 5 perfis).
+- Pass com o Orders 2.0 (eventos prontos, encomendas medidas): S1 657 XP/dia → **dia 27,4**; S2 643 → **dia 28,0** (antes 29,9 e 30,6; o §27.3 previa a volta ao desenho). `LiveOpsTests.Fechamento_*` agora usa 30 encomendas/60 min.
+- **Achado (revisar):** com +20 por encomenda Event a trilha passa de 700: o F2P chega a 995 de 1.000 numa sessão de 60 min do Merchant Caravan (sem missão `play_day`) e a 710–835 na Royal Week. O portão "trilha fecha no dia 4–5" (`LIVEOPS_V1` §6) fica curto para quem joga 1 h seguida. Knobs, sem mexer aqui: `OrderDef.EventPoints` (20 → 10) ou o alvo das missões de volume; ou uma `play_day` no Merchant Caravan.
+- Testes: `LiveOpsTests.OrdersDois_RoyalWeekRoda_*` (a Common não conta como Royal, 2 Royal fecham a `royal2`, a Event abre sozinha com a `OrderDef` do evento e dá +20, XP do Passe 10 por entrega com o teto contando a Event, pontos no save) e `OrdersDois_MerchantCaravanRoda_*` (Bulk/Mixed por tipo, `order_done` conta todas, prêmio ×1,25 pelo RemoteConfig e de volta no fim); a lista dos eventos prontos e a Royal Week no calendário; o validator com a `Encomenda` trocada. `mutantes.py`: `enc-evento-sem-pontos` e `enc-evento-sem-tipo` mortas (e a `liveops-teto-encomenda` também pelo teste novo).

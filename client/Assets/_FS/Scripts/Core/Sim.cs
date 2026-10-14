@@ -141,6 +141,8 @@ namespace FS.Core
         /// <summary>B-CORE-04: workers (Equipe.cs): contratacao, nivel e o efeito de cada papel. Ganchos: Recompute (passo, carga, tempo, pilhas,
         /// estoque), QualityBreakdown, Clients (paciencia), Serve (atendimento); save na linha wkn=.</summary>
         public readonly Equipe Equipe;
+        /// <summary>D-CORE-03/04: eventos e Masterwork Pass (LiveOps.cs). Ganchos: o Emit conta, o Strike conta o golpe; save nas linhas ev.*/ps.*.</summary>
+        public readonly LiveOps LiveOps;
         /// <summary>B-CORE-07: Blueprints possuidos (Projetos.cs), posse e nunca saldo. Ganchos: o Tick checa os marcos, o Sell conta as Fina ou
         /// melhor; save nas linhas bp=/bpq=.</summary>
         public readonly Projetos Projetos;
@@ -245,6 +247,7 @@ namespace FS.Core
             Renome = new Renome(this);
             Encomendas = new Encomendas(this);
             Equipe = new Equipe(this);
+            LiveOps = new LiveOps(this);
             ItemDefs = items ?? Items.All; RecipeDefs = recipes ?? Recipes.All;
             int n = ItemDefs.Length;
             Projetos = new Projetos(this, blueprints);
@@ -1096,6 +1099,7 @@ namespace FS.Core
             Events.Add(new SimEvent(kind, a, b, pos));
             Metas.On(kind, a, b);   // D-CORE-02: tambem os de fora do Tick (menu, cofre)
             Renome.On(kind, a, b);  // B-CORE-06: bau aberto (a encomenda credita pelo tipo no Encomendas.Entregar)
+            LiveOps.On(kind, a, b); // D-CORE-03/04: missoes do evento ativo e XP de encomenda do Pass
         }
 
         // ------------------------------------------------------------------ qualidade (B-CORE-03, docs/ECONOMIA_WAVE_B.md §1)
@@ -1209,6 +1213,7 @@ namespace FS.Core
             s.Strike = true;
             StrikeCooldown = T.GolpeRecarga;
             Strikes++;
+            LiveOps.OnGolpe((int)s.OutItem);   // D-CORE-03: master_strike das missoes de evento
             return true;
         }
 
@@ -1562,6 +1567,7 @@ namespace FS.Core
             Equipe.Save(sb);  // B-CORE-04: wkn= (so com alguem de nivel; senao o texto e' o de antes)
             Projetos.Save(sb);   // B-CORE-07: bp= e bpq= (idem)
             Metas.Save(sb);   // D-CORE-01/02: linhas mt.* (nada antes da 1a Agora)
+            LiveOps.Save(sb); // D-CORE-03/04: linhas ev.*/ps.* (nada antes da 1a Agora)
             return sb.ToString();
         }
 
@@ -1718,6 +1724,7 @@ namespace FS.Core
             sim.Metas.Load(text);   // D-CORE-01/02: save sem mt.* = metas zeradas
             sim.Anuncios.Load(text);   // E-PLAT-02: save sem ad.* = nenhum anuncio visto
             sim.Renome.Load(text);  // B-CORE-06: save sem rn= = retroativo (depois das metas: soma o Renome que elas guardaram)
+            sim.LiveOps.Load(text); // D-CORE-03/04: save sem ev.*/ps.* = nenhum evento, Pass do zero (o XP das metas entra 1x na 1a temporada)
             return sim;
         }
 

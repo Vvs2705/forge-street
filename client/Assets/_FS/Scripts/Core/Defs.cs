@@ -230,7 +230,7 @@ namespace FS.Core
         public AdPlacementDef Ad(Anuncio a) => Placements[(int)a];
         public int AnunciosTetoDia = 30;   // teto diario TOTAL de rewarded (dia local das metas; relogio para tras nao reabre)
         /// <summary>B-CORE-05: o "bonus da encomenda" vale pelo menos estes s da renda de agora (o Valor x premio sozinho era menos que os ~30 s
-        /// de relogio do anuncio: o AdWatcherE fechava a producao depois do AdWatcher, BALANCE.md §24/§27).</summary>
+        /// de relogio do anuncio: o AdWatcherE fechava a producao depois do AdWatcher, BALANCE.md §24/§28).</summary>
         public float EncomendaBonusMinSeg = 60f;
 
         // precos e custos
@@ -307,6 +307,9 @@ namespace FS.Core
         /// <summary>A-PLAT-08 (DM §130): chave mestra do RemoteConfig. false = nenhum anuncio: o Game nem inicia o SDK e o RemoteConfig.Aplicar
         /// desliga as flags de anuncio (rewarded e intersticial). Feature nova com flag propria (IAP, Pass) ja e' chaveavel pelo nome do campo.</summary>
         public bool AnunciosLigados = true;
+        /// <summary>D-CORE-03/04 (DM §130): chaves do LiveOps. Eventos false = nenhum evento entra e o ativo sai (os knobs voltam); Passe false = o
+        /// Pass para de ganhar XP. Ledger, pontos e niveis ficam no save: religar continua.</summary>
+        public bool Eventos = true, Passe = true;
 
         /// <summary>Segundos na fila antes de desistir: base + k x tempo de producao da linha no inicio (B-CORE-01: soma de quantidade x tempo
         /// inicial da receita de cada insumo + o da propria receita; hoje = fornalha inicial x lingotes + bancada inicial). Espada 9 s, escudo

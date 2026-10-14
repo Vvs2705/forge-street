@@ -252,32 +252,32 @@ namespace FS.Tests
         }
 
         [Test]
-        public void Event_VagaPropria_SoPontos_SaiQuandoOEventoAcaba()
+        public void Event_VagaPropria_SoPontosNoLiveOps_SaiQuandoOEventoAcaba()
         {
             Sim s = Oficina();
-            string ativo = "ev_s1w1_royal_week"; string pts = null; int n = 0;
-            s.Encomendas.EventoAtivo = () => ativo;
-            s.Encomendas.GanhaPontosEvento = (ev, p, tx) => { pts = ev; n += p; };
+            s.OrderCount = 10;   // requisito do Forge Frenzy (D-CORE-03)
+            EventDef ff = LiveOpsDefs.Eventos.First(x => x.Id == "ev_s1w2_forge_frenzy");
+            s.Metas.Agora(ff.Comeca, 0); s.LiveOps.Agora(ff.Comeca);
+            Assert.AreSame(ff, s.LiveOps.Evento);
             EncTeste.Abre(s, 1);
             Assert.AreEqual(2, s.Encomendas.Vagas.Count, "a Common e a do evento (vaga propria)");
             Encomenda e = s.Encomendas.Vagas.Find(v => v.Tipo == OrderType.Event);
-            Assert.AreEqual("ord_ev_royal_week", e.Def.Id);
+            Assert.AreEqual(ff.Encomenda, e.Def.Id, "a encomenda do EventDef");
             Assert.AreEqual(OrderType.Common, s.Encomendas.Principal.Tipo, "a principal (anuncios) nunca e' a do evento");
             Assert.AreEqual(0L, e.Premio, "so pontos de evento");
             Assert.AreEqual(1, s.Encomendas.VagasMax, "nao conta nas vagas");
             long gold = s.Gold, rn = s.Renome.Total;
             EncTeste.Completa(e);
             s.Tick(Dt, 0f, 0f);
-            Assert.AreEqual("ev_s1w1_royal_week", pts);
-            Assert.AreEqual(20, n, "20 pontos por entrega");
+            Assert.AreEqual(20, s.LiveOps.Pontos, "20 pontos por entrega, na trilha do evento");
             Assert.AreEqual(gold, s.Gold);
             Assert.AreEqual(rn, s.Renome.Total);
             Run(s, 1f);
             Assert.IsTrue(s.Encomendas.Vagas.Exists(v => v.Tipo == OrderType.Event), "a seguinte do evento abre");
-            ativo = null;
+            s.LiveOps.Agora(ff.Termina);
+            Assert.IsNull(s.LiveOps.Evento);
             s.Tick(Dt, 0f, 0f);
             Assert.IsFalse(s.Encomendas.Vagas.Exists(v => v.Tipo == OrderType.Event), "acabou o evento: a vaga sai sem pagar");
-            Assert.AreEqual(20, n);
         }
 
         [Test]

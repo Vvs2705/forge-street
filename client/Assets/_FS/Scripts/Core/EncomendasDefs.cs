@@ -32,7 +32,7 @@ namespace FS.Core
         {
             // Old Forge: alvo (s de renda), N min-max, premio (s; min), Renome. Desvio do catalogo (revisar): Bulk, Quality, Mixed e Royal pagam 70%
             // dos segundos do CONTEUDO_V1 §7.2 (32/18/30/25/45 -> 22/13/21/18/32): com o catalogo o ouro de encomendas ia a 13,6% da venda aos
-            // 60 min no F2P (portao 4-12%, ECONOMIA_WAVE_B §10); com 70%, 11,3% (BALANCE.md §27). Common, Rush e Blueprint como no catalogo
+            // 60 min no F2P (portao 4-12%, ECONOMIA_WAVE_B §10); com 70%, 11,3% (BALANCE.md §28). Common, Rush e Blueprint como no catalogo
             new OrderDef("ord_common_old_forge", Common, OldForge, 150f, 3, 30, 10f, 25, 1),
             new OrderDef("ord_bulk_old_forge", Bulk, OldForge, 400f, 8, 80, 22f, 60, 3, minLines: 2, minDelivered: 5),
             new OrderDef("ord_quality_old_forge", Qual, OldForge, 90f, 3, 20, 13f, 40, 3, minQuality: Fina),

@@ -45,6 +45,7 @@ namespace FS.Core
             e.AddRange(NiveisRenome(renome ?? RenomeDefs.Niveis));
             e.AddRange(OrderDefs.Validar(orders ?? OrderDefs.All, OrderDefs.Ciclos, world));   // B-CORE-05 (regras em EncomendasDefs.cs)
             e.AddRange(Workers(workers ?? WorkerDefs.All, world, renome ?? RenomeDefs.Niveis));
+            e.AddRange(LiveOpsDefs.Validar(LiveOpsDefs.Eventos, LiveOpsDefs.Passes));   // D-CORE-03/04 (LIVEOPS_V1 §5.7)
             e.AddRange(Blueprints(blueprints ?? ProjetosDefs.All, upgrades, world));
             return e;
         }

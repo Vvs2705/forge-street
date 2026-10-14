@@ -96,10 +96,8 @@ namespace FS.Core
         public long RenomeGanho; public readonly int[] PorTipo = new int[Enum.GetValues(typeof(OrderType)).Length];
         /// <summary>A ultima paga (o Ev.OrderDone nao leva o tipo): o diario loga order_complete com ela. Fora do save.</summary>
         public Encomenda UltimaEntregue;
-        /// <summary>Ganchos do LiveOps (D-CORE-03; null = nenhum): o evento ativo e os pontos da encomenda dele. As filas de Blueprint sao as do
-        /// Sim.Projetos (B-CORE-07: ProximoDaFila no cartao, GanhaDaFila na entrega).</summary>
-        public Func<string> EventoAtivo;
-        public Action<string, int, string> GanhaPontosEvento;
+        // Ligacoes: a encomenda Event e' a do Sim.LiveOps.Evento (D-CORE-03: pontos pelo LiveOps.PontosEncomenda, tipos pelo OnEncomenda, XP do
+        // Passe pelo Ev.OrderDone com o teto do dia); as filas de Blueprint sao as do Sim.Projetos (B-CORE-07: ProximoDaFila / GanhaDaFila)
 
         public Encomendas(Sim sim) { _sim = sim; OrderIn = sim.T.OrderFirstDelay; }
 
@@ -118,7 +116,7 @@ namespace FS.Core
         {
             if (_sim.FirstSaleTime < 0f) return;
             foreach (Encomenda e in Vagas) if (e.Prazo > 0f) e.Prazo = Math.Max(0f, e.Prazo - dt);   // tempo de jogo: o offline nao conta
-            string ev = EventoAtivo?.Invoke();
+            string ev = _sim.LiveOps.Evento?.Id;   // D-CORE-03: o evento em que o jogador entrou (null = nenhum)
             for (int i = Vagas.Count - 1; i >= 0; i--) if (Vagas[i].Tipo == OrderType.Event && Vagas[i].Def.EventId != ev) Vagas.RemoveAt(i);   // o evento acabou: sai sem pagar
             bool entregou = false;
             for (int i = 0; i < Vagas.Count;) if (Vagas[i].Pronta) { Entregar(Vagas[i]); entregou = true; } else i++;
@@ -142,9 +140,10 @@ namespace FS.Core
             _sim.Gold += ouro; _sim.OrderGold += ouro; _sim.OrderCount++;
             _sim.Renome.Ganha(rn); RenomeGanho += rn; PorTipo[(int)e.Tipo]++; UltimaEntregue = e;
             if (e.Blueprint != null) _sim.Projetos.GanhaDaFila(Fila(e.Def), e.Def.District, e.Tx);   // B-CORE-07: o pendente da fila (o mostrado, se ninguem o deu antes)
-            if (e.Def.EventId != null) GanhaPontosEvento?.Invoke(e.Def.EventId, e.Def.EventPoints, e.Tx);
+            if (e.Def.EventId != null) _sim.LiveOps.PontosEncomenda(e.Def.EventId, e.Def.EventPoints);
             if (e.Def.ClientId != null) { Coracoes.TryGetValue(e.Def.ClientId, out int c); Coracoes[e.Def.ClientId] = c + 1; }
             _sim.Metas.OnEncomenda(e.Tipo, prazo);
+            _sim.LiveOps.OnEncomenda(e.Tipo);   // missoes order_complete do evento ativo (o XP do Passe vem do Ev.OrderDone, abaixo)
             _sim.Emit(Ev.OrderDone, (int)e.Itens[0], (int)Math.Min(int.MaxValue, ouro), _sim.CounterFor(e.Itens[0]).Pos);   // joia: na loja de joias
             OrderIn = Math.Max(OrderIn, _sim.T.OrderGap);
             return ouro;
