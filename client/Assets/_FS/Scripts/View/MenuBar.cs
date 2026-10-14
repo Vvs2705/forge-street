@@ -39,7 +39,7 @@ namespace FS
             public Image Icon, Face, Edge, Coin; public Text Name, Effect, Detail, Price, Tag; public string Cost, Lock;
         }
 
-        readonly Sim _sim;
+        readonly Sim _sim, _raiz;   // C-CORE-02: _raiz = o Sim das metas (Imperio.Raiz); o resto e' do distrito ativo
         readonly Action<int> _bought;   // fora do Tick o Ev.Bought nao chega ao HandleEvents (o proximo Tick limpa): o Game toca som/efeito por aqui
         readonly Action<int, long> _worker;   // B-CORE-04: o mesmo para o worker (indice, preco pago)
         readonly RectTransform _bar, _tray, _badge, _content, _melhorias, _metasBadge;
@@ -54,9 +54,9 @@ namespace FS
 
         /// <param name="metas">D-CORE-02: toque no botao Metas (aparece com as Ferramentas, Metas.Aberto, ao lado de Melhorias).</param>
         /// <param name="worker">B-CORE-04: contratou ou subiu nivel pelo cartao (indice do WorkerDef, preco pago).</param>
-        public MenuBar(RectTransform safe, Sim sim, Action<int> bought, Action metas, Action<int, long> worker)
+        public MenuBar(RectTransform safe, Sim sim, Action<int> bought, Action metas, Action<int, long> worker, Sim raiz = null)
         {
-            _sim = sim;
+            _sim = sim; _raiz = raiz ?? sim;
             _bought = bought;
             _worker = worker;
             _bar = Art.Node(safe, "Menu", new Vector2(0.02f, 0.005f), new Vector2(0.98f, Band));
@@ -106,7 +106,7 @@ namespace FS
             _scroll.viewport = view; _scroll.content = _content;
 
             var menu = new List<int>();
-            for (int u = 0; u < Upgrades.Count; u++) if (Upgrades.All[u].InMenu) menu.Add(u);
+            for (int u = 0; u < _sim.UpgradeDefs.Length; u++) if (_sim.UpgradeDefs[u].InMenu) menu.Add(u);   // C-CORE-01: os do distrito
             menu.Sort((a, c) => _sim.T.Cost(a).CompareTo(_sim.T.Cost(c)));
             for (int i = 0; i < menu.Count; i++) _cards.Add(BuildCard(_content, menu[i], i));   // Ord = posicao por preco, desempate dentro do estado
             for (int k = 0; k < sim.Equipe.Defs.Length; k++) _cards.Add(BuildCard(_content, -1, menu.Count + k, k));   // B-CORE-04: depois das melhorias
@@ -159,7 +159,7 @@ namespace FS
         /// </summary>
         Card BuildCard(RectTransform parent, int u, int ord, int w = -1)
         {
-            UpgradeDef d = w < 0 ? Upgrades.All[u] : null;
+            UpgradeDef d = w < 0 ? _sim.UpgradeDefs[u] : null;
             var c = new Card { U = u, W = w, Ord = ord, Cost = w < 0 ? Textos.Ouro(_sim.T.Cost(u)) : "" };
             Image edge = Art.Panel(parent, w < 0 ? d.Name : _sim.Equipe.Defs[w].Id, Leather, Vector2.zero, Vector2.one);
             c.Go = edge.gameObject;
@@ -215,7 +215,7 @@ namespace FS
             c.Name.verticalOverflow = c.Effect.verticalOverflow = c.Detail.verticalOverflow = c.Tag.verticalOverflow = c.Price.verticalOverflow = VerticalWrapMode.Truncate;
             if (w >= 0) { Worker(c); return c; }
             c.Name.text = Textos.Nome(u);
-            (c.Icon.sprite, c.Icon.color) = Icon((Upgrade)u);
+            (c.Icon.sprite, c.Icon.color) = Icon(_sim.UpgradeDefs[u].Efeito);   // C-CORE-01: pelo efeito (Fole de couro = fole)
             c.Effect.text = Textos.Beneficio(_sim.T, u);
             c.Detail.text = Textos.AntesDepois(_sim.T, u).Replace("→", Arrow);
             if (d.Requires >= 0) c.Lock = Textos.Precisa(d.Requires);   // v0.6d: "Precisa: Balcão 5" (era "requer Balcão 5 vagas" em 2 linhas)
@@ -249,6 +249,7 @@ namespace FS
         /// <summary>Icone renderizado da melhoria (tools/ui_v05b_blender.py); sem a folha, a forma/cor procedural de antes.</summary>
         public static (Sprite, Color) Icon(Upgrade u)   // v0.6d: o aviso de compra do Game usa o mesmo icone
         {
+            if ((int)u < 0) return (Art.Disc(), Art.Player);   // C-CORE-01: upgrade de distrito sem efeito generico
             string art = u switch
             {
                 Upgrade.FurnaceSpeed1 => "melhoria_fole", Upgrade.FurnaceSpeed2 => "melhoria_fole_duplo",
@@ -284,13 +285,13 @@ namespace FS
             if (_t > 0f) return;
             _t = 0.25f;
             // D-CORE-02: revelacao progressiva (GDD §19, §3.3): o botao Metas so existe depois das Ferramentas
-            bool metas = _sim.Metas.Aberto;
+            bool metas = _raiz.Metas.Aberto;
             if (_metas.activeSelf != metas)
             {
                 _metas.SetActive(metas);
                 _melhorias.anchorMax = new Vector2(metas ? 0.6f : 0.82f, 0.92f);
             }
-            int prontas = metas ? _sim.Metas.Prontas() : 0;
+            int prontas = metas ? _raiz.Metas.Prontas() : 0;
             if (prontas != _prontas)
             {
                 _prontas = prontas;

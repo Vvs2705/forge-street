@@ -28,14 +28,9 @@ namespace FS.Tests
         /// tem teste proprio), a abertura paga e o foco na Row.</summary>
         static Imperio Chegada()
         {
-            var raiz = new Sim();
-            for (int i = 0; i < Upgrades.Count; i++) if (Upgrades.IsProduction(i)) raiz.Buy((Upgrade)i);
-            raiz.RateEma = 40.0;
-            var imp = new Imperio(raiz);
-            imp.Forca(Distritos.OldForgeId);
-            raiz.Gold = Row.Abertura;
-            Assert.IsTrue(imp.Abrir(Row.Id), "abre");
-            Assert.IsTrue(imp.Trocar(Row.Id), "foco");
+            Imperio imp = Imperio.Chegada(Row);
+            Assert.AreEqual((Row.Id, 2, 40.0, 0L), (imp.Ativo.Distrito.Id, imp.Abertos.Count, imp.Raiz.RateEma, imp.Ativo.Gold), "abre, foca e paga a abertura");
+            Assert.IsTrue(imp.Raiz.ProductionComplete);
             return imp;
         }
 
@@ -368,6 +363,52 @@ namespace FS.Tests
             StringAssert.Contains("\ndist.distrito_novo=QUJD\n", futuro.Save(9000), "distrito de build mais novo volta no save");
             Imperio ruim = Imperio.Load(text.Replace("dist.armorers_row=", "dist.armorers_row=%%"));
             Assert.AreEqual((1, Distritos.OldForgeId, w), (ruim.Abertos.Count, ruim.Ativo.Distrito.Id, ruim.Ativo.Gold), "base64 ruim: a raiz e a carteira ficam");
+        }
+
+        // ------------------------------------------------------------------ textos (pt/en/es) do distrito
+
+        /// <summary>Toda chave montada por ID existe para a Row (melhoria, item, estacao, distrito) e cabe nos 3 idiomas: nome da melhoria <= 16,
+        /// dica <= 26, cartao do menu com % em 2 linhas e antes/depois <= 16. O contexto do Textos volta ao Old Forge no fim.</summary>
+        [Test]
+        public void Loc_ChavesELarguras_DaRow()
+        {
+            Sim s = NovaRow();
+            try
+            {
+                Textos.Distrito(Row);
+                var faltam = new List<string>();
+                void Tem(string k) { if (!Loc.Tem(k)) faltam.Add(k); }
+                foreach (UpgradeDef d in Row.Upgrades) { Tem("up." + d.Id + ".nome"); Tem("up." + d.Id + ".desc"); }
+                foreach (ItemDef d in Row.Itens) { Tem("item." + d.Id); Tem("dica.balcao." + d.Id); Tem("dica.pegue." + d.Id); }
+                foreach (StationDef d in Row.Estacoes) Tem("est." + d.Id);
+                foreach (DistrictDef d in Distritos.All) Tem("distrito." + d.Id);
+                CollectionAssert.IsEmpty(faltam);
+                foreach (Idioma i in new[] { Idioma.Pt, Idioma.En, Idioma.Es })
+                {
+                    Loc.Atual = i;
+                    for (int u = 0; u < Row.Upgrades.Length; u++)
+                    {
+                        Assert.LessOrEqual(Textos.Nome(u).Length, ContentValidator.NameMax, $"{i}: {Textos.Nome(u)}");
+                        foreach (string d in new[] { Textos.Placa(u), Textos.Menu(u) }) Assert.LessOrEqual(d.Length, Textos.DicaMax, $"{i}: {d}");
+                        if (!Row.Upgrades[u].InMenu) continue;
+                        string b = Textos.Beneficio(s.T, u);
+                        StringAssert.Contains("%", b, $"{i}: {b}");
+                        Assert.LessOrEqual(b.Length, 2 * 14, $"{i}: {b}");
+                        Assert.LessOrEqual(Textos.AntesDepois(s.T, u).Length, 16, $"{i}: {Textos.AntesDepois(s.T, u)}");
+                    }
+                    for (int it = 0; it < Row.Itens.Length; it++)
+                        foreach (Hint h in new[] { Hint.ProductToCounter, Hint.PickProducts, Hint.ClientWaiting })
+                        {
+                            string d = Textos.Dica(h, it, s);
+                            Assert.LessOrEqual(d.Length, Textos.DicaMax, $"{i}: {d}");
+                            StringAssert.DoesNotContain("[", d, $"{i}: chave faltando");
+                        }
+                    Assert.AreEqual(Loc.T("est.montagem_elmo"), Textos.Estacao(E(s, "montagem_elmo").Index));
+                }
+                Assert.AreEqual("Couro e nova linha: grevas", Loc.Em(Idioma.Pt, "up." + Row.Upgrades[U(s, "carroca_curtidor")].Id + ".desc"));
+            }
+            finally { Textos.Distrito(Distritos.OldForge); Loc.Atual = Idioma.Pt; }
+            Assert.AreEqual("Pise na placa da Bigorna 2", Textos.Placa((int)Upgrade.Anvil2), "o Old Forge de volta");
         }
 
         // ------------------------------------------------------------------ C-CORE-04 / validator
