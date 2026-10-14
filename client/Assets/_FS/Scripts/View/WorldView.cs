@@ -220,7 +220,8 @@ namespace FS
         const int FxAmbient = 40;   // faisca, fumaca e poeira so com menos de 40 efeitos vivos: venda, moedas e obra nunca ficam sem vaga
         internal static readonly Color SparkA = Art.Hex(0xFFD166), SparkB = Art.Hex(0xFF7A1F);
         // P2-2: icone do upgrade como prop. Fole na parede esquerda da fornalha (a direita ja tem o fole da arte), acima da pilha de
-        // entrada; martelo dourado encostado no lado direito da bancada, acima da pilha de saida; mochila nas costas do ferreiro.
+        // entrada; martelo dourado encostado no lado direito da bancada, acima da pilha de saida; mochila nas costas do ferreiro (so sem a
+        // folha ferreiro_mochila, que ja traz a mochila no corpo).
         static readonly Vector2 BellowsAt = new Vector2(-0.7f, 0.55f), HammerAt = new Vector2(0.66f, 0.22f);
         const float BellowsS = 0.45f, HammerS = 0.5f, PackS = 0.38f, PackY = 0.33f, PackDX = 0.14f, DustEvery = 0.34f;   // botas: ate 3 baforadas/s
         // P1-5: "MAX" vermelho em italico com contorno escuro sobre a pilha, enquanto o ferreiro insiste e 0,8 s depois
@@ -255,6 +256,7 @@ namespace FS
         readonly System.Random _artRng = new System.Random(7);
         int _lastArt = -1;
         SpriteSheet _nobre;
+        SpriteSheet _packSheet, _plainSheet;   // ferreiro com e sem a mochila (Init; troca em RefreshCarrier)
         SpriteRenderer _street, _streetWash, _shopTeaser; Text _streetLabel, _shopLabel;
         readonly List<(GameObject Shut, GameObject Open)> _gates = new List<(GameObject, GameObject)>();   // portao e porta de servico
         BubbleV _bubble, _jewelBubble;
@@ -329,9 +331,15 @@ namespace FS
             foreach (Chest c in sim.Chests) _chests.Add(BuildChest(c));
             _esteira = new EsteiraView(this, sim, transform);
             _player = BuildCarrier(sim.Player, Art.Player, 0.62f, Balance.PlayerCapUp * sim.Player.Held.Length);   // FASE7: ate o teto de CADA tipo
-            // v0.6a (P2-2): mochila nas costas do ferreiro (RefreshCarrier a poe do lado das costas); "MAX" (P1-5) na HUD
-            Transform pack = _player.Body != null ? Prop(_player.Root, "melhoria_mochila", Upgrade.PlayerCapacity, Vector2.zero, PackS, 0) : null;
-            if (pack != null) _player.Pack = pack.GetComponentInChildren<SpriteRenderer>(true);
+            // Mochila (feedback do POCO 2026-10-13, "item solto"): com a folha ferreiro_mochila (mesmo render, mochila presa ao Spine2) a compra
+            // troca a folha do corpo (RefreshCarrier). Sem ela, v0.6a (P2-2): icone do cartao nas costas (RefreshCarrier a poe do lado das costas)
+            if (_player.Body != null && SpriteSheet.TryGet("ferreiro_mochila", out _packSheet)) { _packSheet.Scale = CharScale("ferreiro"); _plainSheet = _player.Body.Sheet; }
+            else
+            {
+                Transform pack = _player.Body != null ? Prop(_player.Root, "melhoria_mochila", Upgrade.PlayerCapacity, Vector2.zero, PackS, 0) : null;
+                if (pack != null) _player.Pack = pack.GetComponentInChildren<SpriteRenderer>(true);
+            }
+            // "MAX" (P1-5) na HUD
             _max = Art.Outlined(Art.FreeText(_labels, "Max", 46, new Vector2(200f, 64f)), 3f);
             _max.text = Loc.T("mundo.max"); _max.fontStyle = FontStyle.BoldAndItalic; _max.color = MaxC; _max.enabled = false;
             // seta da dica: contorno escuro atras, ouro na frente, por cima de tudo menos os efeitos. v0.6d: ~80 px (era 0,5 m = 42 px),
@@ -1635,6 +1643,12 @@ namespace FS
                 if (c.Moving) v.CheerT = 0f; else v.CheerT -= dt;
                 // ajudante parado ha 0,5 s (fonte vazia ou nada a fazer) olha em volta: le como "esperando" o gargalo
                 string clip = c.Moving ? "Walking" : v.CheerT > 0f ? "Cheering" : c.Role >= 0 && c.IdleT > 0.5f ? "LookingAround" : "Idle";
+                if (v == _player && _packSheet != null)   // mesma animacao e quadro, outra folha; comprou agora = poeira (o save carrega sem)
+                {
+                    SpriteSheet want = _sim.Has(Upgrade.PlayerCapacity) ? _packSheet : _plainSheet;   // Has: a mochila e' do ferreiro em todo distrito (C-CORE-02)
+                    if (v.Body.Sheet != want && want == _packSheet && Time.timeSinceLevelLoad > 1f) Poof(c.Pos, 0.6f);
+                    v.Body.Sheet = want;
+                }
                 v.Body.Tick(clip, dt, v.Root.localPosition - before, clip == "LookingAround");
                 if (v.Pack != null)   // costas: atras do corpo de frente (S), na frente de costas (N) e de lado; linhas do ferreiro S, W, N, E
                 {

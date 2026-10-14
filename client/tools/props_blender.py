@@ -19,6 +19,7 @@ PAL = {
     "juta2": (0x9E8458, 0xC2A87A), "terracota": (0xA65A35, 0xCF7E50), "creme": (0xC9B994, 0xE6DCC0),
     "vidro": (0x3F5E5A, 0x6A8F88), "carvao": (0x2E2B2A, 0x4A4644), "agua": (0x2F5F85, 0x4F86B8),
     "chama": (0xFF7A1F, 0xFF7A1F), "nucleo": (0xFFD166, 0xFFD166),
+    "couro_esc": (0x5C3A1E, 0x7E5230), "correia": (0x3E2412, 0x5C3A1E),   # aba e alcas da mochila (tons do icone melhoria_mochila)
 }
 EMISSIVE = {"chama", "nucleo"}
 
@@ -263,8 +264,40 @@ def balde(p):
               rot=(0, -math.degrees(math.atan2(z1 - z0, x1 - x0)), 0), bevel=0)
 
 
+def tira(p, mat, x, a, b, w=0.04, t=0.014):
+    """Correia reta no plano x, de a = (y, z) a b = (y, z): caixa de largura w e espessura t."""
+    (y0, z0), (y1, z1) = a, b
+    p.add(box(w, math.hypot(y1 - y0, z1 - z0) + t, t), mat, at=(x, (y0 + y1) / 2, (z0 + z1) / 2),
+          rot=(math.degrees(math.atan2(z1 - z0, y1 - y0)), 0, 0), bevel=0.004)
+
+
+def mochila_ferreiro(p):
+    """Mochila nas costas do ferreiro (melhoria Mochila), modelada nas coordenadas do FERREIRO em repouso (arte/tripo/ferreiro,
+    0,98 m; costas = +Y em y ~0,11 de z 0,44 a 0,62; Spine2 de z 0,56 a 0,62). Nao fica no chao como os outros props: o
+    render_sprites.py --attach a prende ao osso mixamorig:Spine2 e ela segue cada quadro. Desenho = icone melhoria_mochila:
+    corpo de couro, aba escura com 2 correias e fivelas de latao, bolso, cobertor creme enrolado em cima; alcas sobre os ombros."""
+    p.add(box(0.29, 0.15, 0.25), "couro", at=(0, 0.175, 0.495), bevel=0.04)                 # corpo: y 0,10-0,25, z 0,37-0,62
+    p.add(box(0.30, 0.165, 0.04), "couro_esc", at=(0, 0.172, 0.625), bevel=0.015)           # tampa
+    p.add(box(0.28, 0.026, 0.15), "couro_esc", at=(0, 0.255, 0.555), bevel=0.012)           # aba caindo nas costas
+    for x in (-0.075, 0.075):
+        p.add(box(0.036, 0.012, 0.17), "correia", at=(x, 0.271, 0.55), bevel=0.004)
+        p.add(box(0.056, 0.016, 0.046), "ouro", at=(x, 0.276, 0.5), bevel=0.006)
+    p.add(box(0.17, 0.05, 0.085), "couro", at=(0, 0.262, 0.425), bevel=0.02)               # bolso
+    p.add(box(0.044, 0.014, 0.034), "ouro", at=(0, 0.29, 0.445), bevel=0.005)
+    # cobertor enrolado na tampa, mais largo que a cabeca (de frente, S, as pontas aparecem dos 2 lados dela); nuca em y 0,14 a z 0,70
+    p.add(cyl(0.06, 0.46, segs=14), "creme", at=(0, 0.21, 0.705), rot=(0, 90, 0), bevel=0.01)
+    for x in (-0.15, 0.15):
+        p.add(cyl(0.066, 0.024, segs=14), "correia", at=(x, 0.21, 0.705), rot=(0, 90, 0), bevel=0.004)
+    # alcas: da tampa por cima do ombro (topo z ~0,645 em x 0,08) e descendo rente ao peito (frente y -0,04 a z 0,62, -0,08 a z 0,48-0,56)
+    pts = ((0.105, 0.615), (0.04, 0.662), (-0.03, 0.647), (-0.065, 0.595), (-0.088, 0.53), (-0.087, 0.49))
+    for x in (-0.075, 0.075):
+        for a, b in zip(pts, pts[1:]):
+            tira(p, "correia", x, a, b, w=0.038)
+        p.add(box(0.05, 0.014, 0.036), "ouro", at=(x, -0.095, 0.545), rot=(-19.5, 0, 0), bevel=0.005)
+
+
 PROPS = {"barril": barril, "caixote": caixote, "sacos": sacos, "tocha": tocha, "prateleira": prateleira,
-         "suporte_armas": suporte_armas, "lenha": lenha, "balde": balde}
+         "suporte_armas": suporte_armas, "lenha": lenha, "balde": balde, "mochila_ferreiro": mochila_ferreiro}
 
 
 def export(name, p, out):
