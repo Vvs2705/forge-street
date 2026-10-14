@@ -33,6 +33,9 @@ namespace FS
         /// </summary>
         public static bool Batida(float antes, float agora, int n) => agora > antes && System.Math.Min((int)(agora * n), n - 1) > (int)(antes * n);
 
+        /// <summary>Altura da martelada por bancada (cada familia soa diferente). fix/mix-audio: a joalheria era 1,5 (aguda e repetida); agora 1,25.</summary>
+        public static float AlturaMartelo(Item produto) => produto == Item.Shield ? 0.8f : produto == Item.Tool ? 1.15f : produto == Item.Jewel ? 1.25f : 1f;
+
         /// <summary>
         /// Trabalhando (Busy com Progress &lt; 1): overdrive com o boost, aquecendo ate o calor chegar a 1, senao ativa. Parada: saida cheia
         /// (inclui a pronta esperando vaga, Busy com Progress 1; revisao da v0.6), fria se nunca fez lingote, senao sem minerio. O Sim so
@@ -75,7 +78,7 @@ namespace FS
         // achata 6% e treme 2 cm em 0,12 s, 4-6 faiscas, martelada a 45% do volume. Golpe final (Ev.Crafted): 10% e 4,5 cm em 0,2 s,
         // 9-12 faiscas maiores, "+1" sobre a pilha de saida; o som desse e' o do Game (Ev.Crafted). Timbre por bancada: escudo grave, joia fina.
         static readonly Vector2 AnvilTop = new Vector2(-0.18f, 0.45f), BenchTop = new Vector2(0f, 0.3f), OutPile = new Vector2(1.05f, -0.2f);
-        const float HitS = 0.12f, HitAmp = 0.06f, HitShake = 0.02f, BlowS = 0.2f, BlowAmp = 0.1f, BlowShake = 0.045f, HitVol = 0.25f, SparkLife = 0.3f;
+        const float HitS = 0.12f, HitAmp = 0.06f, HitShake = 0.02f, BlowS = 0.2f, BlowAmp = 0.1f, BlowShake = 0.045f, SparkLife = 0.3f;
 
         readonly WorldView _w; readonly Station _s; readonly Transform _root, _lamp; readonly SpriteRenderer _base;
         readonly SpriteRenderer _glow, _mouth, _ash, _ghost, _ring, _halo, _bulb, _spillTop, _spillFloor, _flame, _core, _pulse;
@@ -97,7 +100,7 @@ namespace FS
             {
                 _rest = art.transform.localScale; _restPos = art.transform.localPosition;
                 _top = s.OutItem == Item.Sword ? AnvilTop : BenchTop;
-                _pitch = s.OutItem == Item.Shield ? 0.8f : s.OutItem == Item.Tool ? 1.15f : s.OutItem == Item.Jewel ? 1.5f : 1f;
+                _pitch = AlturaMartelo(s.OutItem);
                 _prog = s.Busy ? s.Progress : 0f;   // save carregado no meio da peca: nao bate de saida
                 return;
             }
@@ -258,7 +261,7 @@ namespace FS
             int n = blow ? Random.Range(9, 13) : Random.Range(4, 7);
             if (!_w.NaTela(_root)) return;   // fora da camera: so a escala (barata), sem som, faisca nem "+1"
             if (blow) _w.Float(new V2(_s.Pos.X + OutPile.x, _s.Pos.Y + OutPile.y), "+1", Art.Ink, 32);
-            else Sfx.Play("martelo", _pitch, 0.1f, HitVol);
+            else Sfx.Play("martelo", _pitch, _s.Pos);   // fix/mix-audio: intervalo, distancia e volume na Mixagem
             if (!_w.Ambiente(_root, n)) return;
             int order = _front + 2;   // na frente da arte; quem passa na frente da estacao cobre
             Vector3 o = _root.localPosition + (Vector3)_top;

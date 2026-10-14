@@ -136,6 +136,8 @@ namespace FS.Core
         public readonly Anuncios Anuncios;
         /// <summary>B-CORE-06: Renome (Renome.cs), trilha que so sobe. Ganchos: o Emit credita encomenda e bau, o Sell a Superior; save na linha rn=.</summary>
         public readonly Renome Renome;
+        /// <summary>E-PLAT-04/05: compras in-app (Compras.cs): ledger por ID de transacao e posse re-derivada do recibo; save nas linhas iap.*.</summary>
+        public readonly Compras Compras;
         /// <summary>B-CORE-04: workers (Equipe.cs): contratacao, nivel e o efeito de cada papel. Ganchos: Recompute (passo, carga, tempo, pilhas,
         /// estoque), QualityBreakdown, Clients (paciencia), Serve (atendimento); save na linha wkn=.</summary>
         public readonly Equipe Equipe;
@@ -250,6 +252,7 @@ namespace FS.Core
             Metas = new Metas(this);
             Anuncios = new Anuncios(this);
             Renome = new Renome(this);
+            Compras = new Compras(this);
             Equipe = new Equipe(this);
             LiveOps = new LiveOps(this);
             ItemDefs = items ?? Items.All; RecipeDefs = recipes ?? Recipes.All;
@@ -1631,6 +1634,7 @@ namespace FS.Core
             Hall.Save(sb); Colecao.Save(sb);   // B-CORE-08: hall= e colq= (so com algo dentro)
             Metas.Save(sb);   // D-CORE-01/02: linhas mt.* (nada antes da 1a Agora)
             LiveOps.Save(sb); // D-CORE-03/04: linhas ev.*/ps.* (nada antes da 1a Agora)
+            Compras.Save(sb);   // E-PLAT-04: linhas iap.* (so com compra)
             return sb.ToString();
         }
 
@@ -1801,6 +1805,7 @@ namespace FS.Core
             sim.Renome.Load(text);  // B-CORE-06: save sem rn= = retroativo (depois das metas: soma o Renome que elas guardaram)
             sim.Hall.Load(text);    // B-CORE-08: depois do Renome (o mw: do ledger sem hall= volta registrado)
             sim.LiveOps.Load(text); // D-CORE-03/04: save sem ev.*/ps.* = nenhum evento, Pass do zero (o XP das metas entra 1x na 1a temporada)
+            sim.Compras.Load(text);   // E-PLAT-04: save sem iap.* = nada comprado; posse so no Compras.Conectar (a loja valida)
             return sim;
         }
 

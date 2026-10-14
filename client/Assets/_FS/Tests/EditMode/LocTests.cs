@@ -66,6 +66,8 @@ namespace FS.Tests
                 foreach (Marco m in e.Trilha) foreach (RewardDef r in m.Premios) if (r.Tipo == TipoPremio.Cosmetico) Tem("cos." + r.Ref);
             }
             foreach (PassDef p in LiveOpsDefs.Passes) { Tem("passe." + p.Id); foreach (RewardDef r in p.Free) if (r.Tipo == TipoPremio.Cosmetico) Tem("cos." + r.Ref); }
+            foreach (ProductDef d in Compras.Catalogo) Tem("iap." + d.Id + ".nome");   // E-PLAT-04: PainelLoja (nome e uma linha por posse)
+            foreach (string id in Compras.Posses) Tem("iap.posse." + id);
             Assert.IsEmpty(faltam);
         }
 
@@ -130,6 +132,7 @@ namespace FS.Tests
             var sink = new Regex(@"\.text\s*\+?=|\b(Notice|ShowPanel|Float|NewButton|Paint|Abrir)\(");
             var log = new Regex(@"Debug\.Log|\bLog\(|Emit\(|Falha\(|throw ");
             var nome = new Regex(@"(Sfx\.Play|Art\.\w+|GameObject)\(\s*$");   // som, sprite e nome de objeto: nao e' texto
+            var tag = new Regex(@"^[A-Z]{3,} \w+=");   // linha de log de dev "TAG chave=valor" montada fora do Debug.Log (Mixagem.Minuto: "SOM min=")
             var letras = new Regex(@"\p{L}{2,}");
             var frase = new Regex(@"\p{L}\s+\p{L}|[\p{L}-[a-zA-Z]]|\p{L}[!?]$");
             var ruins = new List<string>();
@@ -141,7 +144,7 @@ namespace FS.Tests
                 {
                     string s = m.Groups[1].Value;
                     if (m.Index > 0 && cod[m.Index - 1] == '$') s = Regex.Replace(s, @"\{[^}]*\}", "");   // $"{a}/{b}": so o texto fixo
-                    if (EChave(s) || !letras.IsMatch(s) || nome.IsMatch(cod.Substring(0, m.Index))) continue;
+                    if (EChave(s) || !letras.IsMatch(s) || nome.IsMatch(cod.Substring(0, m.Index)) || tag.IsMatch(s)) continue;
                     if (tela || frase.IsMatch(s)) ruins.Add($"{arq}:{linha} \"{s}\"");
                 }
             }
@@ -203,6 +206,15 @@ namespace FS.Tests
                 }
                 Assert.LessOrEqual(Loc.T("aviso.passe_ouro", Textos.Qtd(99999)).Length, Textos.DicaMax, i.ToString());
                 Assert.LessOrEqual(Loc.T("aviso.evento_marco", 1000).Length, Textos.AvisoMax, i.ToString());
+                // E-PLAT-04: avisos da loja (1 linha da faixa), LOJA (1/3 da fileira das Configuracoes), COMPRADO e RESTAURAR, nome e linhas do conteudo
+                foreach (string k in new[] { "aviso.compra_ok", "aviso.compra_falhou" }) Assert.LessOrEqual(Loc.T(k).Length, Textos.DicaMax, $"{i}: {k}");
+                Assert.LessOrEqual(Loc.T("aviso.restaurado", 99).Length, Textos.DicaMax, $"{i}: aviso.restaurado");
+                foreach ((string k, int max) in new[] { ("cfg.loja", 8), ("loja.comprado", 10), ("loja.restaurar", 20) }) Assert.LessOrEqual(Loc.T(k).Length, max, $"{i}: {k}");
+                foreach (ProductDef d in Compras.Catalogo)
+                {
+                    Assert.LessOrEqual(Loc.T("iap." + d.Id + ".nome").Length, 24, $"{i}: {d.Id}");
+                    foreach (ItemCompra c in d.Conteudo) Assert.LessOrEqual(Loc.T("iap.posse." + c.Id).Length, 40, $"{i}: {c.Id}");
+                }
             }
         }
 
