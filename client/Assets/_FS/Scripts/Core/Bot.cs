@@ -72,7 +72,7 @@ namespace FS.Core
                 if (s.SummonVip()) AdsVip++;                                 // o Sim recusa fora de CanSummonVip
                 if (s.BoostLeft <= 0f && s.StartBoost() > 0f) AdsBoost++;    // ponytail: so o 1o anuncio (2x); o 2o (3x) e' mais uma condicao
             }
-            if (Strike) s.Strike(true);   // o Sim recusa fora de StrikeStation (parado na boca, recarga zerada); acerto perfeito, sem tempo de anel
+            if (Strike && !EsperaSuperior(s)) s.Strike(true);   // o Sim recusa fora de StrikeStation (parado na boca, recarga zerada); acerto perfeito, sem tempo de anel
             if (s.Contratos.Oferta != null) s.Contratos.Aceitar();   // D-CORE-04: aceita o contrato oferecido (ja tem o Renome) e vende como sempre
             int menu = s.CheapestAffordableMenu(), wk = Worker(s, menu);
             bool buy = menu >= 0 || wk >= 0;   // B-CORE-04: o worker se compra como o menu (para, le a tela, toca)
@@ -104,6 +104,14 @@ namespace FS.Core
             if (menu >= 0 && s.T.Cost(menu) <= c) return -1;
             Pad pad = s.CheapestAffordablePad();
             return pad != null && s.T.Cost(pad.Current(s)) - pad.Paid <= c ? -1 : k;
+        }
+
+        /// <summary>B-CORE-08 (ECONOMIA_WAVE_B §1.4): o Perfect "espera a proxima Superior para tentar a Masterwork". Com Masterwork pendente na
+        /// familia da bancada e Superior ao alcance da automacao (q >= 100), so golpeia a peca que ja sairia Superior; sem isso, todo golpe (o de antes).</summary>
+        static bool EsperaSuperior(Sim s)
+        {
+            Station st = s.StrikeStation;
+            return st != null && s.QualityPoints(st) >= 100 && s.Hall.Pendente(st) >= 0 && s.Hall.ProximaPeca(st) != Quality.Superior;
         }
 
         static bool Assiste(Sim s, Anuncio a) => s.Anuncios.Pagar(s.Anuncios.Oferta(a)) >= 0;

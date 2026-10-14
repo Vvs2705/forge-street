@@ -41,10 +41,11 @@ namespace FS
         readonly Text _ouro, _login;
         int _aba = -1, _loginDias = -1; bool _loginPronto; long _ouroVisto = -1;
         float _t;
+        readonly Button _hallBtn;   // B-CORE-08
 
         public bool Aberto => _root.gameObject.activeSelf;
 
-        public PainelMetas(RectTransform safe, Sim sim, Action<string, string, long> pago, Action projetos, Action<string, string> contrato)
+        public PainelMetas(RectTransform safe, Sim sim, Action<string, string, long> pago, Action projetos, Action hall, Action<string, string> contrato)
         {
             _sim = sim; _pago = pago; _contrato = contrato;
             _root = Art.Node(safe, "Metas", Vector2.zero, Vector2.one);
@@ -95,8 +96,8 @@ namespace FS
             for (int k = 0; k < 4; k++)
             {
                 int aba = k;
-                float x0 = 0.03f + 0.19f * k;   // 4 abas + Projetos na mesma fileira (D-CORE-04)
-                Button b = Art.NewButton(f, Loc.T(nomes[k]), 34, MenuBar.Leather, new Vector2(x0, 0.69f), new Vector2(x0 + 0.176f, 0.76f), () => Aba(aba));
+                float x0 = 0.03f + 0.157f * k;   // B-CORE-08/D-CORE-04: 6 botoes na fileira (as 4 abas, Projetos e Hall)
+                Button b = Art.NewButton(f, Loc.T(nomes[k]), 34, MenuBar.Leather, new Vector2(x0, 0.69f), new Vector2(x0 + 0.15f, 0.76f), () => Aba(aba));
                 _abas[k] = b.GetComponent<Image>();
                 _abasTxt[k] = b.GetComponentInChildren<Text>();
                 _abasTxt[k].resizeTextForBestFit = true; _abasTxt[k].resizeTextMinSize = 20; _abasTxt[k].resizeTextMaxSize = 34;
@@ -106,9 +107,13 @@ namespace FS
             }
 
             // B-CORE-07: a 4a aba abre o painel de Projetos (Blueprints vem de marcos e conquistas, como as metas)
-            Button pj = Art.NewButton(f, Loc.T("proj.titulo"), 34, MenuBar.Gray, new Vector2(0.79f, 0.69f), new Vector2(0.97f, 0.76f), () => { Fechar(); projetos(); });
+            Button pj = Art.NewButton(f, Loc.T("proj.titulo"), 34, MenuBar.Gray, new Vector2(0.658f, 0.69f), new Vector2(0.808f, 0.76f), () => { Fechar(); projetos(); });
             Text pjTxt = pj.GetComponentInChildren<Text>();
             pjTxt.color = Tinta; pjTxt.resizeTextForBestFit = true; pjTxt.resizeTextMinSize = 20; pjTxt.resizeTextMaxSize = 34;
+            // B-CORE-08: o 5o abre o Hall e a Collection; so aparece com ela (1o projeto de Masterwork; GDD §19, nada de sistema futuro cedo)
+            _hallBtn = Art.NewButton(f, Loc.T("hall.titulo"), 34, MenuBar.Gray, new Vector2(0.815f, 0.69f), new Vector2(0.965f, 0.76f), () => { Fechar(); hall(); });
+            Text hTxt = _hallBtn.GetComponentInChildren<Text>();
+            hTxt.color = Tinta; hTxt.resizeTextForBestFit = true; hTxt.resizeTextMinSize = 20; hTxt.resizeTextMaxSize = 34;
 
             RectTransform box = Art.Node(f, "Lista", new Vector2(0.03f, 0.12f), new Vector2(0.97f, 0.68f));
             _scroll = box.gameObject.AddComponent<ScrollRect>();
@@ -126,6 +131,7 @@ namespace FS
         /// <param name="aba">0 diarias, 1 semanais, 2 conquistas, 3 contratos (D-CORE-04).</param>
         public void Abrir(int aba = 0)
         {
+            _hallBtn.gameObject.SetActive(_sim.Colecao.Aberta);
             _root.gameObject.SetActive(true);
             _root.SetAsLastSibling();
             _aba = -1;

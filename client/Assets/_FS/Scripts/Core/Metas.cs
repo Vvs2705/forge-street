@@ -47,6 +47,7 @@ namespace FS.Core
             // B-CORE-05 (LIVEOPS_V1 §5.8): entrega por tipo (filtro = OrderType), Quality/Royal/Mixed e Rush no prazo (Encomendas.Entregar)
             "order_complete", "order_premium", "order_rush_prazo",
             "worker_upgrade",   // B-CORE-04 (LIVEOPS_V1 §5.6): filtro = nivel alcancado
+            "masterwork_unlock", "masterwork_family",   // B-CORE-08 (LIVEOPS_V1 §4.6): filtro = indice no Hall / item da familia
             "contract_complete",   // D-CORE-04: Royal Contract concluido (Contratos.Concluir); o LIVEOPS_V1 §4.6 o chama royal_contract_complete
         };
 
@@ -96,6 +97,10 @@ namespace FS.Core
                 case Ev.Hired: Soma("worker_hired", b, 1); if (b > 0) Soma("currency_sink", -1, _sim.Equipe.Preco(a, 1)); break;
                 case Ev.WorkerUp: Soma("worker_upgrade", b, 1); Soma("currency_sink", -1, _sim.Equipe.Preco(a, b)); break;
                 case Ev.ChestOpened: Soma("chest_opened", -1, 1); break;
+                case Ev.Masterwork when b >= 0:   // B-CORE-08: B = indice no Hall (-1 = gancho de teste sem MasterworkDef)
+                    Soma("masterwork_unlock", b, 1);
+                    Soma("masterwork_family", Items.IndexOf(_sim.Hall.Defs[b].Familia, _sim.ItemDefs), 1);
+                    break;
                 case Ev.ContractDone: Soma("contract_complete", -1, 1); break;   // D-CORE-04
             }
         }

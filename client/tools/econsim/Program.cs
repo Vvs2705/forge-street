@@ -24,6 +24,8 @@ using FS.Core;
 /// (o CSV fica identico ao de antes).
 /// B-CORE-04: --worker-seg S = Bot.WorkerSegundos (contrata/sobe nivel de worker quando custa ate S s da renda; negativo = nunca); com
 /// --tuning Workers=false o jogo e' o de antes do B-CORE-04. A 4a tabela mostra os workers; compra de worker conta na zona morta.
+/// B-CORE-08: a tabela do Hall e da Collection (Masterworks registradas e a 1a; marcos pagos e o Renome deles; o Renome das obras). Os niveis de
+/// Renome saem na tabela do B-CORE-05 (que ja soma as duas fontes).
 /// </summary>
 static class EconSim
 {
@@ -50,6 +52,8 @@ static class EconSim
         public long[] EarnedMin; public float Entrou = -1f; public int Pontos, Missoes, Ordens; public long XpPasse, OuroEvento;
         // B-CORE-07: projetos possuidos, quando chegou o de mestre das bigornas, niveis IV-V (os com projeto), bigorna longa e o que a espada longa vendeu
         public int Projetos, Mestre; public long MestreGasto, Longas; public float BpMestre = -1f, Mestre1 = -1f, Longa = -1f; public double LongaPct;
+        // B-CORE-08: Masterworks no Hall (e quais), a 1a (relogio), marcos da colecao pagos e o Renome deles e o Renome das obras
+        public int Mw, MarcosCol; public string MwIds = ""; public float Mw1 = -1f; public long RenomeCol, RenomeMw;
         // D-CORE-04: contratos aceitos e concluidos, relogio do 1o aceite e da 1a conclusao, ouro de contrato e % da venda
         public int CtrAceitos, CtrConcluidos; public long CtrOuro; public float Ctr1 = -1f, CtrFim1 = -1f; public double CtrPct;
     }
@@ -170,6 +174,17 @@ static class EconSim
             static float Media(IEnumerable<float> v) { float[] a = v.Where(t => t >= 0f).ToArray(); return a.Length == 0 ? -1f : a.Average(); }
             Console.WriteLine($"| {p.Name} | {g.Average(r => r.Projetos):0.#} ({Clock(Media(g.Select(r => r.BpMestre)))}) | {g.Average(r => r.Mestre):0.#} ({g.Average(r => r.MestreGasto):0}; " +
                               $"{Clock(Media(g.Select(r => r.Mestre1)))}) | {Clock(Media(g.Select(r => r.Longa)))}; {g.Average(r => r.Longas):0}; {g.Average(r => r.LongaPct):0.0}% |");
+        }
+        // B-CORE-08: Hall e Collection (Masterwork nao vende: a renda nao muda por ela; o Renome sim)
+        Console.WriteLine();
+        Console.WriteLine($"| perfil | Masterworks no Hall (de {MasterworksDefs.All.Length}; a 1a) | quais | marcos da colecao (de {MasterworksDefs.Marcos.Length}; Renome) | Renome das obras |");
+        Console.WriteLine("|---|---|---|---|---|");
+        foreach (BotProfile p in perfis)
+        {
+            Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            static float Media(IEnumerable<float> v) { float[] a = v.Where(t => t >= 0f).ToArray(); return a.Length == 0 ? -1f : a.Average(); }
+            Console.WriteLine($"| {p.Name} | {g.Average(r => r.Mw):0.#} ({Clock(Media(g.Select(r => r.Mw1)))}) | {g.OrderByDescending(r => r.Mw).First().MwIds} | " +
+                              $"{g.Average(r => r.MarcosCol):0.#} ({g.Average(r => r.RenomeCol):0}) | {g.Average(r => r.RenomeMw):0} |");
         }
         // V19: pisos do §3 em relogio; % = partidas que compraram ANTES do piso (o BalanceTests reprova) ou nao compraram
         Console.WriteLine();
@@ -294,6 +309,8 @@ static class EconSim
                     else if (e.Kind == Ev.Blueprint && s.Projetos.Defs[e.A].Id == "bp_bigorna_mestra") r.BpMestre = s.Time + pausa;
                     else if (e.Kind == Ev.ContractDone && r.CtrFim1 < 0f) r.CtrFim1 = s.Time + pausa;   // D-CORE-04
                     if (e.Kind == Ev.WorkerUp || e.Kind == Ev.Hired && e.B != 0) { wk++; if (r.Wk1 < 0f) r.Wk1 = s.Time + pausa; }
+                    if (e.Kind == Ev.Masterwork && e.B >= 0 && r.Mw1 < 0f) r.Mw1 = s.Time + pausa;   // B-CORE-08
+                    if (e.Kind == Ev.Colecao) { r.MarcosCol++; r.RenomeCol += e.B; }
                 }
                 if (venda1 < 0f && s.FirstSaleTime >= 0f) venda1 = s.FirstSaleTime + pausa;
                 if (s.UpgradesBought != before)
@@ -342,6 +359,8 @@ static class EconSim
             else { r.Mestre++; r.MestreGasto += s.T.Cost(i); r.Mestre1 = r.Mestre1 < 0f ? rel[i] : Math.Min(r.Mestre1, rel[i]); }
         }
         r.Projetos = s.Projetos.Count;
+        r.Mw = s.Hall.Count;
+        foreach (MasterworkDef d in s.Hall.Defs) if (s.Hall.Tem(d.Id)) { r.RenomeMw += d.Renome; r.MwIds += (r.MwIds.Length > 0 ? " " : "") + d.Id.Substring(3); }
         r.CtrAceitos = s.Contratos.Aceitos; r.CtrConcluidos = s.Contratos.Concluidos.Count; r.CtrOuro = s.Contratos.OuroGanho;   // D-CORE-04
         r.CtrPct = 100.0 * s.Contratos.OuroGanho / Math.Max(1, s.GoldEarned);
         r.Longa = rel[(int)Upgrade.LongAnvil];

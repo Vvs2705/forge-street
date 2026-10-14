@@ -111,8 +111,9 @@ namespace FS.Tests
             CollectionAssert.AreEquivalent(Enum.GetValues(typeof(Template)).Cast<Template>().Where(t => t != Template.ArcaneWeek), evs.Select(e => e.Template).Distinct());
             Assert.AreEqual(2, evs.Count(e => e.Reserva));
             var s = new Sim();
-            CollectionAssert.AreEqual(new[] { "ev_s1w1_royal_week", "ev_s1w2_forge_frenzy", "ev_s1w3_armorers_challenge", "ev_s1w5_forge_frenzy_b", "ev_s2w1_blacksmith_festival",
-                "ev_s2w3_merchant_caravan", "ev_s2w5_royal_week_b" }, evs.Where(e => s.LiveOps.Falta(e) == null).Select(e => e.Id), "os que rodam hoje (Hunts e Rare Ore Rush esperam knobs)");
+            CollectionAssert.AreEqual(new[] { "ev_s1w1_royal_week", "ev_s1w2_forge_frenzy", "ev_s1w3_armorers_challenge", "ev_s1w4_hunt_sunblade", "ev_s1w5_forge_frenzy_b",
+                "ev_s2w1_blacksmith_festival", "ev_s2w3_merchant_caravan", "ev_s2w4_hunt_ember_crown", "ev_s2w5_royal_week_b" }, evs.Where(e => s.LiveOps.Falta(e) == null).Select(e => e.Id),
+                "os que rodam hoje (B-CORE-08: os Hunts com o QualidadeEvento; o Rare Ore Rush espera o GrabTime)");
             Assert.IsEmpty(LiveOpsDefs.Validar(LiveOpsDefs.Eventos, LiveOpsDefs.Passes).ToList());
             Assert.AreEqual(30, S1.Niveis);
             Assert.AreEqual(18000L, S1.XpTotal);
@@ -438,7 +439,7 @@ namespace FS.Tests
         public void TrilhaDeEvento_NuncaNumaSessaoDe60Min_OF2PDeReferenciaFechaNoDia4a5()
         {
             EventDef[] evs = LiveOpsDefs.Eventos.Where(e => LiveOpsDefs.Falta(e, Items.All) == null).ToArray();
-            Assert.AreEqual(7, evs.Length);
+            Assert.AreEqual(9, evs.Length);   // B-CORE-08: os 2 Hunts entraram
             var aq = new Sim(); var ab = new Bot();
             while (aq.Time < 2 * 3600f) ab.Step(aq, 1f / 30f);
             string jogou = aq.Save(LiveOpsDefs.T0);

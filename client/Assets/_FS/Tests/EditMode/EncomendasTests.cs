@@ -541,8 +541,10 @@ namespace FS.Tests
             foreach (OrderType t in new[] { OrderType.Common, OrderType.Bulk, OrderType.Quality, OrderType.Rush, OrderType.Mixed, OrderType.Royal, OrderType.Blueprint })
                 Assert.Greater(s.Encomendas.PorTipo[(int)t], 0, t.ToString());
             Assert.GreaterOrEqual(s.OrderCount, 25, "ECONOMIA_WAVE_B §10: >= 25 em 60 min");
-            Assert.AreEqual(s.Encomendas.RenomeGanho + 5L * s.Chests.Count(c => c.State == 2) + s.Renome.Superiores / RenomeDefs.SuperiorACada, s.Renome.Total,
-                "o Renome vem das encomendas (pelo tipo) e dos baus");
+            long colecao = s.Colecao.Marcos.Where(m => s.Colecao.Pago(m)).Sum(m => (long)m.Renome)   // B-CORE-08: marcos da Collection e obras do Hall
+                + s.Hall.Defs.Where(d => s.Hall.Tem(d.Id)).Sum(d => (long)d.Renome);
+            Assert.AreEqual(s.Encomendas.RenomeGanho + 5L * s.Chests.Count(c => c.State == 2) + s.Renome.Superiores / RenomeDefs.SuperiorACada + colecao, s.Renome.Total,
+                "o Renome vem das encomendas (pelo tipo), dos baus e da Collection");
         }
 
         // ------------------------------------------------------------------ validator

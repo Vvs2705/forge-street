@@ -1782,11 +1782,11 @@ Prêmio de qualidade aos 60 min (F2P) 16,2% → 18,5% (a técnica das encomendas
 
 ### 28.6 Orders 2.0 no LiveOps (#56): Royal Week e Merchant Caravan rodam; a trilha de evento fecha no dia 4–5
 
-Ligações: a entrega chama `LiveOps.OnEncomenda(tipo)` (gatilho `order_complete` com filtro `common|bulk|quality|mixed|rush|royal|event|blueprint`, agora em `LiveOpsDefs.Gatilhos`; `Futuros` vazio) e, na encomenda Event, `LiveOps.PontosEncomenda` (pontos no contador do evento, somados em `PontosDe`, no save pelo `ev.c`); o XP do Passe continua só no `Ev.OrderDone` (10 por entrega, teto de 100 por dia; a Event é uma entrega, não dobra). `Requer` do evento confere o ID no `OrderDefs`/`ProjetosDefs`; o validator cobra que `EventDef.Encomenda` seja a `OrderDef` Event daquele evento. Rodam **7 dos 10**: Royal Week e Merchant Caravan entraram; os 2 Hunts esperam o knob `QualidadeEvento` e o Rare Ore Rush o `GrabTime` (consts, não knobs).
+Ligações: a entrega chama `LiveOps.OnEncomenda(tipo)` (gatilho `order_complete` com filtro `common|bulk|quality|mixed|rush|royal|event|blueprint`, agora em `LiveOpsDefs.Gatilhos`; `Futuros` vazio) e, na encomenda Event, `LiveOps.PontosEncomenda` (pontos no contador do evento, somados em `PontosDe`, no save pelo `ev.c`); o XP do Passe continua só no `Ev.OrderDone` (10 por entrega, teto de 100 por dia; a Event é uma entrega, não dobra). `Requer` do evento confere o ID no `OrderDefs`/`ProjetosDefs`; o validator cobra que `EventDef.Encomenda` seja a `OrderDef` Event daquele evento. Rodam **7 dos 10**: Royal Week e Merchant Caravan entraram; os 2 Hunts esperavam o knob `QualidadeEvento` (entraram com o B-CORE-08, §30.6) e o Rare Ore Rush o `GrabTime` (consts, não knobs).
 
 **Trilha de evento (portão `LIVEOPS_V1` §2.2/§6: fecha no dia 4–5 de 6, nunca numa sessão).** Com +20 por encomenda Event o F2P chegava a 995 de 1.000 numa sessão de 60 min do Merchant Caravan. Correção:
 - **Toda trilha de 3+ dias tem a missão "jogue em 3 dias do evento"** (`play_day` 3, 100 pontos, como a do Forge Frenzy): entrou em Royal Week, Armorer's Challenge, Forge Frenzy-B, Blacksmith Festival, Merchant Caravan e Royal Week-B (e nos 2 Hunts, que ainda não rodam), no lugar da `upgrade_buy` nos eventos de 8 missões e tirando os 100 das missões de volume nos de 7 (a soma segue 700). O validator recusa evento de 3+ dias sem ela.
-- **Encomenda Event: 20 → 15 pontos; 10 no Merchant Caravan** (o único em que toda missão sai de encomenda e venda). **Desvio do pedido (10 em todos), revisar:** com 10, o F2P de referência só fecha no dia 6 (Forge Frenzy, Forge Frenzy-B, Blacksmith Festival, Royal Week-B) ou não fecha (Royal Week 470 pontos em 60 min e 990 no dia 6, Armorer's Challenge); com 15 em todos, o Merchant Caravan fecha no dia 3.
+- **Encomenda Event: 20 → 15 pontos; 10 no Merchant Caravan** (recalibrado na §30.6 para o F2P com 3 vagas: Caravan 12, Royal Week-B 15, Hunts 17/20; o único em que toda missão sai de encomenda e venda). **Desvio do pedido (10 em todos), revisar:** com 10, o F2P de referência só fecha no dia 6 (Forge Frenzy, Forge Frenzy-B, Blacksmith Festival, Royal Week-B) ou não fecha (Royal Week 470 pontos em 60 min e 990 no dia 6, Armorer's Challenge); com 15 em todos, o Merchant Caravan fecha no dia 3.
 - **As reservas ganharam a encomenda Event** (`ord_ev_forge_frenzy_b`, `ord_ev_royal_week_b`): sem ela a trilha parava em 700.
 
 `LiveOpsTests.TrilhaDeEvento_*` (bot F2P, 30 Hz; o jogador já jogou 20 min por dia desde o T0, até 2 h; a Royal Week é o D0 e começa do zero): pontos em **60 min seguidos** no 1º dia e o dia em que o **F2P de referência** (`LIVEOPS_V1` §1: 2 sessões de 10 min por dia, cofre entre elas, sem anúncio e sem golpe de mestre) fecha a trilha:
@@ -1832,6 +1832,95 @@ Achado nas fotos (`-buy 37 -renome 180 -warmup 600 -encomendas`): com uma Mixed 
 | AdWatcherE com o pacote | 7:04 | 27:58 | **49:05** | 49:16 | 0% |
 
 O pacote poupa o tempo dos vídeos (3,5–5 min na produção completa de 60 min) e não dá recurso que o F2P com anúncio não tenha: mesmos placements, recompensas, recarga e teto diário (30); não liga o premium do Passe. Nenhum piso do §3 cai (o anúncio só abre depois da 1a melhoria, D6). Referência: AdWatcher com `--anuncio-seg 0` (VIP **e** Velocidade de graça, limite superior que o pacote não alcança) fecha a produção em 39:30 e fica até 11 s abaixo de 3 pisos (2a bigorna 1:39, Ajudante 2:06, Escudos 2:34); por isso o VIP ficou de fora do `sem_video` (revisar com a P3).
+
+## 30. B-CORE-08: Masterworks, Hall e Collection (2026-10-13)
+
+**Vigente** (`Core/MasterworksDefs.cs`, `Core/Masterworks.cs`): as 10 `MasterworkDef` do Old Forge (`ECONOMIA_WAVE_B.md` §6 = `CONTEUDO_V1.md` §10.1, sem mudança; as 50 dos distritos 2–6 entram com a Wave C, no mesmo formato). Golpe de mestre numa peça que **já sairia Superior**, com o projeto e a condição da 1ª pendente da família, vira a Masterwork: vai ao Hall 1× (nunca pilha, balcão nem `GoldEarned`), credita o Renome dela pelo ID `mw:{id}`; a 2ª vez sai Superior e vende. Ajudante e cofre offline nunca fazem (não golpeiam). Família de produto no `ItemDef.Family` (a espada longa é da espada). Hall completo numa família = +5% no preço de venda dela (FS-6). Collection derivada dos contadores (produto × Normal/Fina/Superior, Masterworks, equipe contratada/nível máximo, projetos): 9 marcos do Old Forge pagam Renome (e 1 cosmético) 1× por `col:{id}`, com retroativo; abre com o 1º projeto de Masterwork depois das Ferramentas. Os Hunts dão o projeto da Masterwork pelo `Projetos.Ganha` (origem `Event`; quem já tem recebe os 60 s). Bot Ideal: com Masterwork pendente e q ≥ 100 na bancada, só golpeia a peça que já sairia Superior (`ECONOMIA_WAVE_B.md` §1.4).
+
+**Decididos por padrão (revisar):** (1) marcos da Collection = os degraus do Old Forge do `ECONOMIA_WAVE_B.md` §7 (50%/100% de cada aba: produtos 8/15, equipe 13/26, projetos 10/19) mais os do `CONTEUDO_V1.md` §10.3 que já cabem (`col_mw_5`, `col_mw_10`, `col_workers_25` = 15 de 58); os de % do catálogo da v1.0 acima disso esperam o conteúdo (o validator recusa marco inalcançável); `col_mw_1` ("abre o Hall") não é marco, é o próprio Hall. Abas Clientes (FS-3) e Distritos (Charter) esperam o sistema delas. (2) Marco paga **Renome e cosmético, nunca ouro** (GDD §13, `CONTEUDO_V1.md` §10.3), embora o ticket aceitasse ouro em s de renda; nenhum marco do catálogo dá Blueprint. (3) +5% da família completa como bônus permanente do Hall (GDD §13/FS-6). (4) Condição `OrdersOfType` lê o contador `order_complete` do Orders 2.0 (na ordem do `OrderType` dele): até o merge, a Tenaz Eterna não sai. (5) Produto × qualidade sai do `solds=` e do `bpq=`; o único contador novo é Superior por item (`colq=`): save antigo conta a Superior de antes como Fina.
+
+"Antes" = `main` (f578df6, #57); "depois" = este branch. "Sem o Renome da coleção" = este branch com os 9 marcos a Renome 0 (A/B só no econsim, não entra no jogo).
+
+### 30.1 60 min (5 perfis × 1 partida, anúncio = 30 s)
+
+**CSV idêntico ao byte** ao da `main`: até 60 min a Collection paga 1–3 marcos (Renome 10–30), mas nada muda no ouro nem nas compras (os 10 primeiros minutos e os pisos do §3 iguais).
+
+### 30.2 120 min, 4 partidas por perfil, antes → depois
+
+| perfil | Produção | Fachada | zona morta | ouro/min 111–120 | prêmio de qualidade aos 120 | golpe de mestre |
+|---|---|---|---|---|---|---|
+| Ideal | 49:59 (igual) | 77:20 → 81:17 | 22,5 (igual) | 3.083 → 3.292 (+6,8%) | 29,3% → 31,5% | 1,1% → 0,9% |
+| F2P | 49:28 (igual) | 77:36 → 81:24 | 21,8 (igual) | 2.959 → 3.235 (+9,3%) | 28,4% → 30,8% | 0% |
+| Slow | 52:10 (igual) | 80:43 → 84:43 | 24,3 (igual) | 3.017 → 3.318 (+10,0%) | 28,2% → 30,5% | 0% |
+| AdWatcher | 46:53 (igual) | 73:48 → 77:32 | 20,8 (igual) | 3.093 → 3.367 (+8,9%) | 28,7% → 31,2% | 0% |
+
+### 30.3 240 min, 4 partidas por perfil: Hall, Collection e Renome (sem o Renome da coleção → depois)
+
+| perfil | Masterworks no Hall (a 1ª) | marcos pagos (Renome) | Renome aos 240 | Renome 2 | Renome 3 |
+|---|---|---|---|---|---|
+| Ideal | 2 (1:50:10 → **1:23:45**): Martelo do Fundador, Anel do Mercador | 5,3 (65) | 211 → 285 | 1:49:46 → 0:58:53 | 3:17:33 → 1:47:58 |
+| F2P | 0 (não golpeia) | 5 (60) | 135 → 212 | 2:18:40 → **0:59:24** | — → **3:11:21** |
+| Slow | 0 | 5 (60) | 130 → 206 | 2:25:22 → 1:02:24 | — → 3:17:15 |
+| AdWatcher | 0 | 5 (60) | 133 → 211 | 2:23:11 → 1:01:35 | — → 3:11:12 |
+
+- **A Masterwork em si não mexe na renda (~0):** com os marcos a Renome 0, F2P, Slow e AdWatcher saem **idênticos ao byte** à `main` em 240 min; o Ideal fica +0,45% (o Renome +55 das 2 obras adianta o Renome 2). As 2 obras tiram 2 peças Superiores da venda (~0,04% da receita) e a espera pela Superior baixa o golpe de 1,1% para 0,9% da receita aos 120.
+- **O Renome da coleção sim:** os marcos (+60 no F2P) trazem o Renome 2 de 2:18 para **0:59** (portão 40–75 min) e o mestre de obras (Otávio, Renome 2) é contratado mais cedo: ouro/min +7–10% na janela 91–120 e a Fachada +3,8 min (o ouro vai ao Otávio e aos níveis dele antes do luxo). Renda 1–240: +1,5% (Ideal) a +2,4% (F2P).
+- Só 2 das 10 saem na `main`: espada e escudo não chegam a q 100 sem a técnica (filas de encomenda do Orders 2.0: bigorna 60 + oficial 25 + mestre 10 = 95), então a Primeira Lâmina (o "preview do Hall" do D0) espera o `bp_tecnica_espada` (fila Blueprint #1, Renome 1); Sunblade e Ember Crown esperam a fila Royal ou o Hunt; Tenaz Eterna, as encomendas Mixed; Escudo do Brasão, o Tomé nível 5 e o projeto do Renome 3.
+
+### 30.4 Portões (ECONOMIA_WAVE_B §10)
+
+| Medida | Portão | Medido | |
+|---|---|---|---|
+| 1ª Masterwork, Perfect | ≤ 2,5 h | 1:23:45 (4 partidas) | ok |
+| 1ª Masterwork, F2P | ≤ 4 h | o bot F2P não golpeia (B-CORE-03: só o Ideal) | **não se mede (revisar:** perfil F2P que acerta 1 em 2) |
+| Renome 2, F2P | 40–75 min | 0:59:24 (antes 2:18:40) | ok (passou a valer) |
+| Renome 3, F2P | 1,5–3 h | 3:11 (antes > 4 h) | 11 min acima; o Renome por tipo do Orders 2.0 traz para dentro |
+| Prêmio de qualidade aos 120 | ≤ 35% | 30,8% (F2P) | ok |
+| Golpe de mestre | ≤ 12% Perfect | 0,9% | ok |
+| Produção completa, zona morta, 10 primeiros minutos | iguais | iguais | ok |
+| Masterwork nunca vendida nem no `GoldEarned` | — | `MasterworksTests` (golpe, bot de 45 min: receita = soma das vendas) | ok |
+
+Knob se o Renome correr demais depois do Orders 2.0: o Renome dos marcos em `MasterworksDefs.Marcos` (10/20 por aba até o merge; **5/10 desde a §30.6**).
+
+### 30.5 Testes e prova vermelha
+
+`MasterworksTests` (16): catálogo das 10 com pedestal, projeto, família e Renome do §6 e o validator verde; o golpe numa Superior com o projeto vai ao Hall 1× (Renome +25 por `mw:`, nunca pilha, balcão nem `GoldEarned`; a 2ª vez sai Superior); sem projeto ou sem condição fica Superior, com a condição (Bigornas V) sai; a espada longa faz a obra da espada; ajudantes e cofre offline nunca fazem; família completa = +5% só na família (meio para cima), Masterwork a 0; save (ida e volta com a data, save estável, depois do load não sai de novo, sem `hall=` o ledger repara, save antigo vazio, ID desconhecido mantido); Collection (produto × qualidade pelos contadores, fechada antes das Ferramentas ou sem projeto, os marcos pagam 1× com retroativo, save/load não paga de novo, `colq=`); venda real conta a Superior, abas Equipe e Projetos; Hunts (o projeto não trava mais o calendário; o Hunt só roda com o projeto da Primeira Lâmina, dá o da Sunblade com origem `Event` sem o fallback e paga 60 s a quem já tinha); conquistas de Masterwork; 27 defeitos injetados no validator (ID, família de outro distrito, projeto errado ou só de evento, pedestal, condição de anúncio/IAP/placement, alvo e nível inexistentes, Superior inalcançável, marco inalcançável/sem prêmio/repetido); bot (o Ideal registra, F2P e Slow nunca; o Ideal espera a peça Superior); textos nos 3 idiomas. `MetasTests.Eventos_TodoGatilhoContaNoJogo` faz uma obra-prima de verdade. `mutantes.py`: 16 mutações novas `mw-*`/`col-*` e a `qual-masterwork-sem-projeto` com o gancho ligado: **17 mortas, 0 vivas**.
+
+### 30.6 Merge com o Orders 2.0 (#60, 2026-10-14): a Collection acelera o Renome e a trilha de evento depende das vagas
+
+"Antes" = `main` ddff35d (#60); "depois" = este branch mesclado. Mesmas condições da §28.1 (`--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 360 --partidas 3 --anuncio-seg 30`) e da §30.1 (`--minutos 60 --partidas 1`). O que o merge ligou: a condição `OrdersOfType` lê o `OrderType` de verdade (`MasterworksDefs.Tipo`, `Enum.TryParse`; a lista provisória saiu), `Requer` com `OrderDef` só precisa existir (`LiveOps.Requisitos`; o Blueprint continua requisito do jogador), e **`QualidadeEvento` virou knob** (`Tuning.QualidadeEvento[item]`, padrão 0, trava 0–25 no RemoteConfig; padrão 0 só sai do 0 com trava absoluta, senão o `Prende` prendia o +15 do Hunt em 0): os 2 Hunts entraram no calendário (**9 dos 10** rodam; o Rare Ore Rush espera o `GrabTime`).
+
+**CSV de 60 min:** F2P, Slow, AdWatcher e AdWatcherE **idênticos ao byte** aos da `main`; o Ideal muda só nos minutos 57–60 (a 1ª Masterwork aos ~57 min: Renome +25, nada no ouro).
+
+**Renome (360 min × 3, relógio em que o nível chegou).** O F2P paga os 7 marcos do Old Forge **todos antes das 2 h** (produtos 50% 31:35, projetos 50% 49:42, equipe 50% 56:50, `col_workers_25` 58:38, produtos 100% 1:12, equipe 100% 1:15, projetos 100% 1:57) e o Renome dos marcos realimenta o do Orders 2.0 (Renome 2 mais cedo → Royal e 2ª vaga mais cedo → mais encomendas → mais Renome): com os degraus do `ECONOMIA_WAVE_B.md` §7 a 10/20 (+100 ao F2P) o Renome 3 e o 4 furavam o piso. Knob da §30.4 aplicado: **degraus do §7 pela metade (5/10; `col_workers_25` segue o +10 do catálogo)** — desvio do §7, revisar.
+
+| perfil | Renome 1 / 2 / 3 / 4, `main` (§28.1) | degraus 10/20 | **degraus 5/10 (vigente)** | Collection ao F2P em 6 h | Hall (Ideal) |
+|---|---|---|---|---|---|
+| Ideal | 0:15 / 0:56 / 2:03 / 3:33 | 0:16 / 0:48 / 1:16 / 1:37 | 0:16 / 0:51 / 1:20 / 1:46 | 9 marcos (+125) | 10 obras, a 1ª 1:14:36; Renome das obras 320 |
+| F2P | 0:14 / 1:03 / 2:12 / 3:46 | 0:14 / 0:49 / **1:22** / **2:48** | 0:14 / 0:51 / **1:41** / **3:11** | 7 marcos (+55) | — |
+| Slow | 0:15 / 1:00 / 2:10 / 3:41 | 0:16 / 0:49 / 1:21 / 2:45 | 0:16 / 0:51 / 1:41 / 3:09 | 7 (+55) | — |
+| AdWatcher | 0:13 / 0:58 / 2:08 / 3:44 | 0:14 / 0:44 / 1:18 / 2:47 | 0:14 / 0:49 / 1:38 / 3:09 | 7 (+55) | — |
+| AdWatcherE | 0:16 / 1:05 / 2:05 / 3:39 | 0:17 / 0:50 / 1:28 / 2:51 | 0:17 / 0:51 / 1:44 / 3:16 | 6,7 (+52) | — |
+
+Portões (ECONOMIA_WAVE_B §10, F2P): Renome 2 40–75 min → **0:51** ok; Renome 3 1,5–3 h → **1:41** ok (10/20 dava 1:22); Renome 4 3–6 h → **3:11** ok (10/20 dava 2:48). Produção completa e zona morta iguais à §28.1; ouro de encomendas 9,9% / 15,3% e entregas 29,3 / 207 (§28.1: 9,2% / 14,6%; 29 / 201 — a 3ª vaga mais cedo), renda/min 0–60 igual (1.085).
+
+**Trilha de evento (`LiveOpsTests.TrilhaDeEvento_*`, o F2P de referência da §28.6).** Com o merge, 4 trilhas saíam do portão "dia 4–5" (Caravan nunca fechava). Sonda por missão: em todas as trilhas **as 7 missões fecham no dia 3**; o que resta até os 1.000 é só a encomenda Event, e ela rende **3–5 entregas por dia com 3 vagas** (`Encomendas.OnVenda`: a peça vai à vaga **mais antiga** que a aceita; a Event reabre no fim da lista e passa fome atrás das 3 normais) contra o dobro com 2. A `main` calibrou os pontos (§28.6/§28.7) com o save de referência a 175 de Renome, **5 abaixo do limiar 180**: 2 vagas nos dias 1–2 e 3 dali em diante. Qualquer fonte nova de Renome (a Collection; o jogador real que resgata metas, §28 ressalva 5) vira a referência em "3 vagas desde o 1º dia" e a trilha escorrega 1–3 dias. Recalibração dos pontos da encomenda Event para a referência a 3 vagas (`EncomendasDefs`): **Merchant Caravan 10 → 12** (15 fecha no dia 3; 10 nunca), **Royal Week-B 10 → 15** (10 não fecha em 6 dias), **Hunt da Sunblade 17** (20 fecha no dia 3; 15 no dia 6) e **Hunt da Ember Crown 20** (15 não fecha: os 100 pontos de `master_strike` são inalcançáveis sem golpe); os outros 5 ficam em 15.
+
+| evento | `main` (§28.6, 2 vagas) | merge com 10/20 | **vigente** (60 min seguidos / dia; pontos da Event) |
+|---|---|---|---|
+| Royal Week | 590 / 5 | 605 / 6 | 605 / **5** (15) |
+| Forge Frenzy | 815 / 4 | 800 / 4 | 785 / **4** (15) |
+| Armorer's Challenge | 795 / 5 | 750 / 6 | 810 / **5** (15) |
+| Hunt da Sunblade | não rodava | 665 / 6 | 840 / **4** (17) |
+| Forge Frenzy-B | 795 / 4 | 780 / 4 | 765 / **4** (15) |
+| Blacksmith Festival | 745 / 4 | 745 / 4 | 700 / **5** (15) |
+| Merchant Caravan | 790 / 4 | 660 / 7 | 780 / **5** (12) |
+| Hunt da Ember Crown | não rodava | 785 / 5 | 820 / **4** (20) |
+| Royal Week-B | 795 / 4 | 720 / 6 | 810 / **4** (15) |
+
+Ressalvas: (1) o dia de fechamento continua caótico (±1 com a taxa de passo e com qualquer mudança de estado: a 5/10 com os pontos antigos a Royal Week-B dava 7 e com 10/20 dava 6); (2) **a trilha é função de `VagasMax`** — decisão para o coordenador: deixar como está (calibrado para 3 vagas, o estado do jogador real a partir de ~1:40) ou dar à encomenda Event a conta própria na venda (`OnVenda` contar a peça para a Event além da vaga normal), o que a tira das vagas mas muda o portão "nunca numa sessão" e exige reafinar os pontos dos 9 eventos; (3) a Collection do Old Forge é conteúdo de 0–2 h: qualquer Renome dela cai na janela Renome 2 → 3, então o knob certo é o tamanho dela, não a hora.
+
+**Testes e mutações do merge:** `MasterworksTests.Hunts_RodamNoCalendario_*` (os 2 Hunts sem `Falta`; `OrderDef` no `Requer` só precisa existir; o Hunt entra só com o projeto da Primeira Lâmina, +15 só na espada e o knob volta no fim; RemoteConfig prende `QualidadeEvento` em 25) e `Colecao_*` (+5/+10); `LiveOpsTests` (9 eventos rodam; a tabela acima); `EncomendasTests.Bot_F2P_EntregaOsTiposNovos` soma a Collection e o Hall na conta do Renome. `mutantes.py`: `mw-hunt-sem-requisito` com o `Requisitos` novo; novas `enc-caravan-pontos-15` e `enc-sunblade-pontos-20` (as duas medidas direto: dia 3 → a trilha reprova; **mortas**); as 16 `mw-*`/`col-*` da §30.5 seguem válidas (o `Requisitos` e o `Marcos` são os únicos trechos que o merge tocou).
 
 ## 31. C-CORE-01/02: `DistrictDef` e Império (2026-10-14)
 
