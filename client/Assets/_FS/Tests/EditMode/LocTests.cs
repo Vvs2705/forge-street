@@ -70,6 +70,7 @@ namespace FS.Tests
             foreach (PassDef p in LiveOpsDefs.Passes) { Tem("passe." + p.Id); foreach (RewardDef r in p.Free) if (r.Tipo == TipoPremio.Cosmetico) Tem("cos." + r.Ref); }
             foreach (ProductDef d in Compras.Catalogo) Tem("iap." + d.Id + ".nome");   // E-PLAT-04: PainelLoja (nome e uma linha por posse)
             foreach (string id in Compras.Posses) Tem("iap.posse." + id);
+            foreach (ContractDef d in ContratosDefs.All) Tem("ctr." + d.Id);   // D-CORE-04: aba de contratos
             Assert.IsEmpty(faltam);
         }
 
@@ -225,6 +226,12 @@ namespace FS.Tests
                 foreach (string k in new[] { "aviso.compra_ok", "aviso.compra_falhou" }) Assert.LessOrEqual(Loc.T(k).Length, Textos.DicaMax, $"{i}: {k}");
                 Assert.LessOrEqual(Loc.T("aviso.restaurado", 99).Length, Textos.DicaMax, $"{i}: aviso.restaurado");
                 foreach ((string k, int max) in new[] { ("cfg.loja", 8), ("loja.comprado", 10), ("loja.restaurar", 20) }) Assert.LessOrEqual(Loc.T(k).Length, max, $"{i}: {k}");
+                foreach (ContractDef d in ContratosDefs.All)   // D-CORE-04: nome (1 linha, best-fit a 22 px) e, nos do build, o pedido na barra (22 px, ~60 colunas)
+                {
+                    Assert.LessOrEqual(Textos.ContratoNome(d).Length, 28, $"{i}: {d.Id}");
+                    if (Array.IndexOf(OrderDefs.Distritos, d.District) >= 0) Assert.LessOrEqual(Textos.ContratoPede(s, d).Length, 60, $"{i}: {Textos.ContratoPede(s, d)}");
+                }
+                Assert.LessOrEqual(Loc.T("aviso.contrato", Textos.Qtd(99999)).Length, Textos.AvisoMax, i.ToString());
                 foreach (ProductDef d in Compras.Catalogo)
                 {
                     Assert.LessOrEqual(Loc.T("iap." + d.Id + ".nome").Length, 24, $"{i}: {d.Id}");

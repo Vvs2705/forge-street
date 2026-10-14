@@ -42,6 +42,7 @@ PROJ, PDEFS = 'Assets/_FS/Scripts/Core/Projetos.cs', 'Assets/_FS/Scripts/Core/Pr
 EQUIPE, BOT = 'Assets/_FS/Scripts/Core/Equipe.cs', 'Assets/_FS/Scripts/Core/Bot.cs'
 LIVEOPS, LIVEOPSDEFS = 'Assets/_FS/Scripts/Core/LiveOps.cs', 'Assets/_FS/Scripts/Core/LiveOpsDefs.cs'
 MW, MWDEFS = 'Assets/_FS/Scripts/Core/Masterworks.cs', 'Assets/_FS/Scripts/Core/MasterworksDefs.cs'
+CTR, CTRD = 'Assets/_FS/Scripts/Core/Contratos.cs', 'Assets/_FS/Scripts/Core/ContratosDefs.cs'
 MIX = 'Assets/_FS/Scripts/View/Mixagem.cs'
 
 
@@ -397,6 +398,39 @@ MUTACOES = [
         'validator aceita condição de anúncio ou compra'),
     mut('mw-validator-sem-permanente', MWDEFS, 'else if (!Array.Exists(bps[b].Sources, f => ProjetosDefs.Permanente(f.Kind)))', 'else if (false)',
         'validator aceita projeto de Masterwork só de evento'),
+    # Royal Contracts (D-CORE-04)
+    mut('ctr-concluido-volta', CTR, 'if (!Concluido(d.Id)) Concluidos.Add(d.Id);', ';',
+        'contrato concluído não entra em Concluidos (volta à oferta; o Charter não o conta)'),
+    mut('ctr-sem-bonus', CTR, 'bool prazo = c.Prazo > 0f;', 'bool prazo = false;',
+        'prazo-bônus nunca paga (ouro x1,5 e Renome +5 somem)'),
+    mut('ctr-item-qualquer', CTR, 'if (item != e.Item || q < e.MinQ) return;', 'if (q < e.MinQ) return;',
+        'qualquer item vendido conta para a etapa'),
+    mut('ctr-qualidade-ignorada', CTR, 'if (item != e.Item || q < e.MinQ) return;', 'if (item != e.Item) return;',
+        'peça Normal conta numa etapa Fina'),
+    mut('ctr-oferta-sem-renome', CTR, 'if (d.Renome >= 0 && !_sim.Renome.Libera(d.Id)) return false;', ';',
+        'contrato abre sem o Renome da tabela'),
+    mut('ctr-duas-vagas', CTR, 'return d != null && Ativo == null && Aberto(d) ? d : null;', 'return d != null && Aberto(d) ? d : null;',
+        'oferta com a vaga ocupada (2 ativos)'),
+    mut('ctr-abandono-pune', CTR, 'Ativo = null; Abandonados++;', 'Ativo = null; Abandonados++; _sim.Gold = 0;',
+        'abandonar zera o ouro (abandono com penalidade)'),
+    mut('ctr-save-sem-feito', CTR, ".Append(Ativo.Etapa).Append(',').Append(Ativo.Feito).Append(',')", ".Append(Ativo.Etapa).Append(',').Append(0).Append(',')",
+        'save grava feito = 0 (o progresso da etapa some ao reabrir)'),
+    mut('ctr-prazo-parado', CTR, 'if (Ativo.Prazo > 0f) Ativo.Prazo = Math.Max(0f, Ativo.Prazo - dt);', ';',
+        'prazo-bônus não anda (sempre no prazo)'),
+    mut('ctr-bp-nao-ganha', CTR, 'if (d.Blueprint != null) _sim.Projetos.Ganha(d.Blueprint, BlueprintSourceKind.Contract, c.Tx);', ';',
+        'contrato não dá o Blueprint'),
+    mut('ctr-flag-ignorada', CTR, 'if (!_sim.T.Contratos || !_sim.QualityRevealed', 'if (!_sim.QualityRevealed',
+        'flag Contratos desligada ainda oferece'),
+    mut('ctr-antes-das-ferramentas', CTR, 'if (!_sim.T.Contratos || !_sim.QualityRevealed', 'if (!_sim.T.Contratos',
+        'contrato abre antes das Ferramentas (fura os 10 primeiros minutos)'),
+    mut('ctr-etapa-nao-fecha', CTR, 'if (++Ativo.Feito >= e.N) { Ativo.Etapa++; Ativo.Feito = 0; }', 'if (++Ativo.Feito > e.N) { Ativo.Etapa++; Ativo.Feito = 0; }',
+        'etapa só fecha com N + 1 peças'),
+    mut('ctr-validator-item', CTRD, 'if (!noBuild) continue;', 'continue;',
+        'validator não confere o item das etapas nos contratos do build'),
+    mut('ctr-raiz-ignorada', SIM, 'public Contratos Contratos => Heroi != null ? Heroi.Contratos : _contratos;', 'public Contratos Contratos => _contratos;',
+        'contrato de outro distrito do Império é o próprio, não o da raiz (venda lá não conta)'),
+    mut('ctr-validator-essencial', CTRD, "if (bps[b].Essential && !Array.Exists(bps[b].Sources, f => ProjetosDefs.Permanente(f.Kind)))", "if (false)",
+        'validator aceita Blueprint essencial só por contrato'),
 ]
 
 

@@ -57,6 +57,8 @@ static class EconSim
         public int Projetos, Mestre; public long MestreGasto, Longas; public float BpMestre = -1f, Mestre1 = -1f, Longa = -1f; public double LongaPct;
         // B-CORE-08: Masterworks no Hall (e quais), a 1a (relogio), marcos da colecao pagos e o Renome deles e o Renome das obras
         public int Mw, MarcosCol; public string MwIds = ""; public float Mw1 = -1f; public long RenomeCol, RenomeMw;
+        // D-CORE-04: contratos aceitos e concluidos, relogio do 1o aceite e da 1a conclusao, ouro de contrato e % da venda
+        public int CtrAceitos, CtrConcluidos; public long CtrOuro; public float Ctr1 = -1f, CtrFim1 = -1f; public double CtrPct;
     }
 
     /// <summary>--tuning "GolpeRecarga=30;NivelEstacaoCusto=500|1500|650|1900|500|1500|1000|3000|...": campos publicos do Tuning (NivelEstacaoCusto: os 16, II-III e IV-V)
@@ -230,6 +232,16 @@ static class EconSim
                               $"{g.Average(r => r.Pct60):0.0}% / {g.Average(r => r.PctFim):0.0}% | {g.Average(r => r.Renda60):0} | " +
                               string.Join("/", Enumerable.Range(0, g[0].Tipos.Length).Select(k => g.Average(r => r.Tipos[k]).ToString("0.#"))) + " |");
         }
+        // D-CORE-04: Royal Contracts (o ronda da vila abre no Renome 3; --tuning Contratos=false = o jogo de antes)
+        Console.WriteLine();
+        Console.WriteLine("| perfil | contratos aceitos / concluidos | 1o aceite | 1a conclusao | ouro de contratos (% da venda) |");
+        Console.WriteLine("|---|---|---|---|---|");
+        foreach (BotProfile p in perfis)
+        {
+            Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            float c1 = g.Where(r => r.Ctr1 >= 0f).Select(r => r.Ctr1).DefaultIfEmpty(-1f).Average(), cf = g.Where(r => r.CtrFim1 >= 0f).Select(r => r.CtrFim1).DefaultIfEmpty(-1f).Average();
+            Console.WriteLine($"| {p.Name} | {g.Average(r => r.CtrAceitos):0.#} / {g.Average(r => r.CtrConcluidos):0.#} | {Clock(c1)} | {Clock(cf)} | {g.Average(r => r.CtrOuro):0} ({g.Average(r => r.CtrPct):0.0}%) |");
+        }
         if (evento != null) Evento(evento, perfis, runs, sem, minutos);
         return 0;
     }
@@ -300,6 +312,7 @@ static class EconSim
                     if (e.Kind == Ev.VipServed) r.Vips++;
                     else if (e.Kind == Ev.Sold && e.A == (int)Item.LongSword) r.Longas += e.B;   // B-CORE-07: ouro da espada longa
                     else if (e.Kind == Ev.Blueprint && s.Projetos.Defs[e.A].Id == "bp_bigorna_mestra") r.BpMestre = s.Time + pausa;
+                    else if (e.Kind == Ev.ContractDone && r.CtrFim1 < 0f) r.CtrFim1 = s.Time + pausa;   // D-CORE-04
                     if (e.Kind == Ev.WorkerUp || e.Kind == Ev.Hired && e.B != 0) { wk++; if (r.Wk1 < 0f) r.Wk1 = s.Time + pausa; }
                     if (e.Kind == Ev.Masterwork && e.B >= 0 && r.Mw1 < 0f) r.Mw1 = s.Time + pausa;   // B-CORE-08
                     if (e.Kind == Ev.Colecao) { r.MarcosCol++; r.RenomeCol += e.B; }
@@ -309,6 +322,7 @@ static class EconSim
                     for (int i = 0; i < rel.Length; i++) if (s.Bought[i] && rel[i] < 0f) rel[i] = s.UpgradeTime[i] + pausa;
                 if (goldAtProd < 0 && s.UpgradesBought != before && s.ProductionComplete) goldAtProd = s.Gold;
                 for (int k = Math.Min(4, s.Renome.Nivel); k >= 1 && r.Renome[k] < 0f; k--) r.Renome[k] = s.Time + pausa;
+                if (r.Ctr1 < 0f && s.Contratos.Aceitos > 0) r.Ctr1 = s.Time + pausa;   // D-CORE-04: o bot aceita assim que o contrato abre
                 if (evento != null && (int)s.Time != seg)   // D-CORE-03/04: o relogio do LiveOps anda com o jogo, dentro do evento (como a View, 1x/s)
                 {
                     seg = (int)s.Time;
@@ -352,6 +366,8 @@ static class EconSim
         r.Projetos = s.Projetos.Count;
         r.Mw = s.Hall.Count;
         foreach (MasterworkDef d in s.Hall.Defs) if (s.Hall.Tem(d.Id)) { r.RenomeMw += d.Renome; r.MwIds += (r.MwIds.Length > 0 ? " " : "") + d.Id.Substring(3); }
+        r.CtrAceitos = s.Contratos.Aceitos; r.CtrConcluidos = s.Contratos.Concluidos.Count; r.CtrOuro = s.Contratos.OuroGanho;   // D-CORE-04
+        r.CtrPct = 100.0 * s.Contratos.OuroGanho / Math.Max(1, s.GoldEarned);
         r.Longa = rel[(int)Upgrade.LongAnvil];
         r.LongaPct = 100.0 * r.Longas / Math.Max(1, s.GoldEarned);
         r.Quali = 100.0 * s.QualityGold / Math.Max(1, s.GoldEarned);

@@ -77,8 +77,9 @@ namespace FS.Core
     /// nunca 0); WorkerUp (anexado) = subiu de nivel (A = indice em WorkerDefs, B = nivel novo).
     /// B-CORE-07 (anexado): Blueprint = projeto novo, 1x por ID (A = indice em Projetos.Defs, B = BlueprintSourceKind da fonte).
     /// B-CORE-08: Masterwork ganhou o B = indice em Hall.Defs (-1 = obra-prima sem MasterworkDef, so o gancho de teste); Colecao (anexado) =
-    /// marco da colecao pago, 1x por ID (A = indice em Colecao.Marcos, B = Renome).</summary>
-    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone, Graded, Masterwork, WorkerUp, Blueprint, Colecao }
+    /// marco da colecao pago, 1x por ID (A = indice em Colecao.Marcos, B = Renome). D-CORE-04 (anexado): ContractDone = Royal Contract
+    /// concluido, 1x por ID (A = indice em Contratos.Defs, B = ouro pago).</summary>
+    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone, Graded, Masterwork, WorkerUp, Blueprint, Colecao, ContractDone }
 
     /// <summary>Dica contextual da HUD (a view so traduz). Arg = indice do pad (BuyPad), do item, do bau (OpenChest) ou do upgrade (BuyMenu).
     /// BuyMenu ANEXADO no fim (FASE6): a compra mais barata pagavel agora e' um upgrade do menu inferior.</summary>
@@ -304,6 +305,9 @@ namespace FS.Core
         /// <summary>B-CORE-04 (flag): contratacao e nivel de workers a venda (Equipe). Desligada, nada novo e' oferecido e quem ja foi contratado
         /// continua; com ela desligada desde o inicio o jogo e' o de antes do B-CORE-04 (o econsim --tuning Workers=false, BALANCE.md §25).</summary>
         public bool Workers = true;
+        /// <summary>D-CORE-04 (flag): Royal Contracts (Contratos). Desligada, nenhum contrato e' oferecido (o ativo continua e paga); com ela
+        /// desligada desde o inicio o jogo e' o de antes do D-CORE-04 (o econsim --tuning Contratos=false, BALANCE.md §32).</summary>
+        public bool Contratos = true;
 
         // offline (raia B §5 + coordenador 2026-10-06)
         public float OfflineFactor = 0.25f;                     // 25% da taxa online

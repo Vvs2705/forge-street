@@ -73,6 +73,7 @@ namespace FS.Core
                 if (s.BoostLeft <= 0f && s.StartBoost() > 0f) AdsBoost++;    // ponytail: so o 1o anuncio (2x); o 2o (3x) e' mais uma condicao
             }
             if (Strike && !EsperaSuperior(s)) s.Strike(true);   // o Sim recusa fora de StrikeStation (parado na boca, recarga zerada); acerto perfeito, sem tempo de anel
+            if (s.Contratos.Oferta != null) s.Contratos.Aceitar();   // D-CORE-04: aceita o contrato oferecido (ja tem o Renome) e vende como sempre
             int menu = s.CheapestAffordableMenu(), wk = Worker(s, menu);
             bool buy = menu >= 0 || wk >= 0;   // B-CORE-04: o worker se compra como o menu (para, le a tela, toca)
             V2 t = buy ? s.Player.Pos : Target(s);
