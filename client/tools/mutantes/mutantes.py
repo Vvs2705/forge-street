@@ -29,11 +29,13 @@ COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Sc
           'Assets/_FS/Scripts/View/StationView.cs', 'Assets/_FS/Scripts/View/Servicos.cs', 'Assets/_FS/Scripts/View/Estado.cs',
           'Assets/_FS/Scripts/View/Captura.cs', 'Assets/_FS/Scripts/View/Som.cs', 'Assets/_FS/Scripts/View/Privacidade.cs',
           'Assets/_FS/Scripts/View/EsteiraView.cs', 'Assets/_FS/Scripts/View/Enquadramento.cs', 'Assets/_FS/Scripts/View/Loc.cs',
-          'Assets/_FS/Scripts/View/QualidadeView.cs', 'Assets/_FS/Scripts/View/Plataforma.cs', 'tools/coretests']
+          'Assets/_FS/Scripts/View/QualidadeView.cs', 'Assets/_FS/Scripts/View/Plataforma.cs', 'Assets/_FS/Scripts/View/Loja.cs',
+          'tools/coretests']
 SIM, DEFS, CV = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs', 'Assets/_FS/Scripts/Core/ContentValidator.cs'
 METAS = 'Assets/_FS/Scripts/Core/Metas.cs'
 ANUNCIOS = 'Assets/_FS/Scripts/Core/Anuncios.cs'
 RENOME = 'Assets/_FS/Scripts/Core/Renome.cs'
+COMPRAS = 'Assets/_FS/Scripts/Core/Compras.cs'
 PROJ, PDEFS = 'Assets/_FS/Scripts/Core/Projetos.cs', 'Assets/_FS/Scripts/Core/ProjetosDefs.cs'
 EQUIPE, BOT = 'Assets/_FS/Scripts/Core/Equipe.cs', 'Assets/_FS/Scripts/Core/Bot.cs'
 LIVEOPS, LIVEOPSDEFS = 'Assets/_FS/Scripts/Core/LiveOps.cs', 'Assets/_FS/Scripts/Core/LiveOpsDefs.cs'
@@ -187,6 +189,21 @@ MUTACOES = [
         'meta resgatada guarda o Renome só no Metas e não credita no Renome real'),
     mut('renome-superior-nao-conta', SIM, 'Renome.OnVendaQualidade((int)l);', 'Renome.OnVendaQualidade(0);',
         'peça Superior vendida no balcão não conta para o Renome'),
+    # compras in-app (E-PLAT-04/05/07)
+    mut('iap-recibo-repetido-entrega', COMPRAS, 'if (_ledger.TryGetValue(r.Tx, out Registro g))', 'if (_ledger.TryGetValue(r.Tx + "#", out Registro g))',
+        'o mesmo recibo (duplicado, restore) vira compra nova: entrega e grava de novo'),
+    mut('iap-confirma-sem-save', COMPRAS, 'if (Pendentes && !gravar()) return feitos;', 'if (Pendentes) gravar();',
+        'confirma a compra à loja mesmo com o save que falhou (app morto = pago e perdido)'),
+    mut('iap-posse-sem-recibo', COMPRAS, ' || Validador == null || !Validador.Valido(g.R)) continue;', ') continue;',
+        'posse sai de qualquer linha iap.tx do save, sem validar o recibo (save editado liga o Pacote)'),
+    mut('iap-load-confirmada', COMPRAS, 'E = p[2] == "c" ? EstadoCompra.Confirmada : EstadoCompra.Entregue,', 'E = EstadoCompra.Confirmada,',
+        'save gravado antes da confirmação volta como confirmado (nunca confirma se a loja não reenviar)'),
+    mut('iap-validator-moeda', COMPRAS, 'if (Array.IndexOf(MoedasAVenda, c.Id) < 0) yield return', 'if (false) yield return',
+        'validator aceita produto com ouro ou moeda que não está à venda (V9/V20)'),
+    mut('iap-sem-video-todos', COMPRAS, '=> Tem(SemVideo) && Array.IndexOf(SemVideoCobre, a) >= 0;', '=> Tem(SemVideo);',
+        'Pacote do Mestre dispensa o vídeo também no VIP, no Cofre 2x e no bônus (ouro direto, fora da V20)'),
+    mut('iap-remove-ads-nao-chega', COMPRAS, '_sim.Anuncios.RemoveAds = Tem(RemoveAds);', ';',
+        'a posse remove_ads não chega ao veto do intersticial'),
     # workers (B-CORE-04)
     mut('wk-nivel1-passo', EQUIPE, '1f + WorkerDefs.PorterVel * (Nivel(w.Wk) - 1)', '1f + WorkerDefs.PorterVel * Nivel(w.Wk)',
         'o ajudante no nível 1 já anda 6% mais rápido (o jogo deixa de ser o de antes)'),

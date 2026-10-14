@@ -35,8 +35,8 @@ namespace FS.Core
         public long HojeDia;
         /// <summary>Supply Drop pago e ainda nao entregue: entra nas saidas das fornalhas abertas conforme ha espaco (Tick).</summary>
         public int Lingotes;
-        /// <summary>Entitlement "remove_ads": placeholder ate a IAP da Wave E (E-PLAT-04 deriva do recibo). Tira so o intersticial; o rewarded
-        /// continua opcional. Nao vai no save.</summary>
+        /// <summary>Entitlement "remove_ads": so o Compras.Derivar escreve (posse re-derivada do recibo valido, E-PLAT-04/05). Tira so o
+        /// intersticial; o rewarded continua opcional. Nao vai no save.</summary>
         public bool RemoveAds;
         /// <summary>E-PLAT-03: intersticiais mostrados nesta sessao (processo) e o instante do ultimo, em s de sessao. Nao vao no save.</summary>
         public int IntersticiaisSessao;

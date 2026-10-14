@@ -66,6 +66,8 @@ namespace FS.Tests
                 foreach (Marco m in e.Trilha) foreach (RewardDef r in m.Premios) if (r.Tipo == TipoPremio.Cosmetico) Tem("cos." + r.Ref);
             }
             foreach (PassDef p in LiveOpsDefs.Passes) { Tem("passe." + p.Id); foreach (RewardDef r in p.Free) if (r.Tipo == TipoPremio.Cosmetico) Tem("cos." + r.Ref); }
+            foreach (ProductDef d in Compras.Catalogo) Tem("iap." + d.Id + ".nome");   // E-PLAT-04: PainelLoja (nome e uma linha por posse)
+            foreach (string id in Compras.Posses) Tem("iap.posse." + id);
             Assert.IsEmpty(faltam);
         }
 
@@ -203,6 +205,15 @@ namespace FS.Tests
                 }
                 Assert.LessOrEqual(Loc.T("aviso.passe_ouro", Textos.Qtd(99999)).Length, Textos.DicaMax, i.ToString());
                 Assert.LessOrEqual(Loc.T("aviso.evento_marco", 1000).Length, Textos.AvisoMax, i.ToString());
+                // E-PLAT-04: avisos da loja (1 linha da faixa), LOJA (1/3 da fileira das Configuracoes), COMPRADO e RESTAURAR, nome e linhas do conteudo
+                foreach (string k in new[] { "aviso.compra_ok", "aviso.compra_falhou" }) Assert.LessOrEqual(Loc.T(k).Length, Textos.DicaMax, $"{i}: {k}");
+                Assert.LessOrEqual(Loc.T("aviso.restaurado", 99).Length, Textos.DicaMax, $"{i}: aviso.restaurado");
+                foreach ((string k, int max) in new[] { ("cfg.loja", 8), ("loja.comprado", 10), ("loja.restaurar", 20) }) Assert.LessOrEqual(Loc.T(k).Length, max, $"{i}: {k}");
+                foreach (ProductDef d in Compras.Catalogo)
+                {
+                    Assert.LessOrEqual(Loc.T("iap." + d.Id + ".nome").Length, 24, $"{i}: {d.Id}");
+                    foreach (ItemCompra c in d.Conteudo) Assert.LessOrEqual(Loc.T("iap.posse." + c.Id).Length, 40, $"{i}: {c.Id}");
+                }
             }
         }
 

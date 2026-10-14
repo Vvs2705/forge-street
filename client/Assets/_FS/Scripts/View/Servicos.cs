@@ -5,8 +5,8 @@ using FS.Core;
 
 namespace FS
 {
-    // A-PLAT-06 (Documento Mestre s129): so as 3 costuras que ja tem consumidor (o Game) e 2 implementacoes. RemoteConfig, crash e IAP
-    // nascem com o fornecedor (decisao P8). Arquivo sem UnityEngine: o coretests compila e testa o Diario e o Salvamento no dotnet.
+    // A-PLAT-06 (Documento Mestre s129): so as 3 costuras que ja tem consumidor (o Game) e 2 implementacoes. RemoteConfig e analytics
+    // remoto: Plataforma.cs; loja (IAP): Loja.cs; crash nasce com o fornecedor (decisao P8). Arquivo sem UnityEngine: o coretests compila e testa o Diario e o Salvamento no dotnet.
 
     /// <summary>Anuncio premiado. Real = AdsLevelPlay (aparelho); simulado = AdsSimulado (Editor, Windows, -fakeads e fallback do build de
     /// desenvolvimento sem anuncio carregado). Os dois saem do Ads.Init.</summary>
@@ -143,14 +143,18 @@ namespace FS
             return sim;
         }
 
-        public void Gravar(Sim sim, long agora, string versao)
+        /// <summary>true = o arquivo gravou (E-PLAT-04: so entao a compra e' confirmada a loja). false = sessao bloqueada ou erro no arquivo:
+        /// o espelho segura o progresso, mas a proxima abertura le o arquivo antigo (troca atomica), entao a compra nao conta como gravada.</summary>
+        public bool Gravar(Sim sim, long agora, string versao)
         {
-            if (Bloqueado) return;
+            if (Bloqueado) return false;
             string text = SaveEnvelope.Wrap(sim.Save(agora), versao, agora);
             if (sim.ClockWentBack > 0) _log.Log("clock_back", sim.Time, sim.ClockWentBack.ToString(CultureInfo.InvariantCulture), sim.SavedAt.ToString(CultureInfo.InvariantCulture));   // A-CORE-02
+            bool ok = true;
             try { _arquivo.Write(text); }
-            catch (Exception e) { _log.Log("save_error", sim.Time, e.GetType().Name); }   // disco cheio nao derruba o jogo; o espelho segura o progresso
+            catch (Exception e) { ok = false; _log.Log("save_error", sim.Time, e.GetType().Name); }   // disco cheio nao derruba o jogo; o espelho segura o progresso
             _espelho.Write(text);   // espelho na chave antiga: um downgrade para a 0.6 le o mesmo texto
+            return ok;
         }
 
         /// <summary>-reset (dev): apaga o save do arquivo, o .bak e o espelho; a quarentena fica.</summary>
