@@ -4,6 +4,7 @@ Uso (Blender 5.2; render_sprites.ps1 ao lado monta esta linha):
   blender.exe -b --factory-startup --python-exit-code 1 --python render_sprites.py --
       --model Model.fbx --out saida/ (--anims pasta_com_fbx/ | --self) [--elev 60] [--dirs 4|8] [--fps 12]
       [--size 128] [--scale PX_POR_METRO] [--yaw 0] [--light flat|matcap|studio|forja] [--shadow] [--aa 8] [--src-fps 30]
+      [--attach prop.fbx [--bone mixamorig:Spine2]] [--pivot-y PX]
 Saida: <Clipe>.png (linha = direcao, coluna = frame; linha 0 em cima), meta.json, contact.png.
 Direcoes em sentido horario a partir de S (de frente para a camera = para baixo na tela):
   4 -> S, W, N, E      8 -> S, SW, W, NW, N, NE, E, SE
@@ -52,6 +53,9 @@ def parse_args():
     p.add_argument("--aa", default="8", help="OFF|FXAA|5|8|11|16|32")
     p.add_argument("--src-fps", type=int, default=30, help="fps dos clipes de origem")
     p.add_argument("--max-frames", type=int, default=32, help="teto de quadros por clipe (largura da folha)")
+    p.add_argument("--attach", help="FBX de prop rigido modelado nas coordenadas do repouso do modelo, preso ao --bone (mochila)")
+    p.add_argument("--bone", default="mixamorig:Spine2", help="osso que leva o --attach")
+    p.add_argument("--pivot-y", type=float, default=0.0, help="pivo em px a partir da base da celula (0 = auto); com --scale repete o pivo de outra folha")
     return p.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
 
 
@@ -317,6 +321,18 @@ def main():
     if len(arms) > 1 or not meshes:
         die("modelo precisa de malha(s) e no maximo 1 armature; achei %d armature(s) e %d malha(s)" % (len(arms), len(meshes)))
     arm = arms[0] if arms else None
+    if a.attach:  # prop parentado ao osso no repouso: segue cada quadro de cada clipe (a mochila nao "flutua" fora do balanco)
+        if arm is None or a.bone not in arm.data.bones:
+            die("--attach precisa de armature com o osso " + a.bone)
+        extra = [o for o in import_file(os.path.abspath(a.attach)) if o.type == "MESH"]
+        arm.data.pose_position = "REST"
+        bpy.context.view_layer.update()
+        for o in extra:
+            mw = o.matrix_world.copy()
+            o.parent, o.parent_type, o.parent_bone = arm, "BONE", a.bone
+            o.matrix_world = mw  # fica onde foi modelado em relacao ao corpo em repouso
+        arm.data.pose_position = "POSE"
+        model, meshes = model + extra, meshes + extra
     # sem armature = prop estatico (estacao): 1 quadro "Static", mesma camera e escala dos personagens
     clips = [(n, act, sample_frames(act, a)) for n, act in load_clips(a, arm)] if arm else [("Static", None, [0.0])]
 
@@ -330,6 +346,8 @@ def main():
         print("AVISO recorte: personagem ocupa %.2f m e a celula so %.2f m (--scale menor ou --size maior)" % (extent, cell))
     vc = (vmin + vmax) / 2.0  # centro vertical do personagem na tela; o pivo (origem) fica abaixo dele
     pivot_y = a.size / 2.0 - vc * ppu
+    if a.pivot_y:  # pivo fixo (+ --scale): a folha ferreiro_mochila troca com a ferreiro no jogo sem pular
+        pivot_y, vc = a.pivot_y, (a.size / 2.0 - a.pivot_y) / ppu
 
     sc.render.engine, sc.render.film_transparent = "BLENDER_WORKBENCH", True
     sc.render.image_settings.file_format, sc.render.image_settings.color_mode = "PNG", "RGBA"
