@@ -35,6 +35,9 @@ namespace FS
     /// -renome N (forca o Renome total em N; so sobe) | -renomecard (abre o cartao do Renome; B-CORE-06) | -equipe (B-CORE-04: a oficina com os
     /// 6 ajudantes no nivel 3 e os 7 da Equipe contratados no posto; Captura.Equipe; com -menu e -gold, os cartoes de nivel) | -projetos [todos|dar] ("dar" = os 19 sem abrir; abre o painel de
     /// projetos; "todos" da os 19 do catalogo antes do -buy/-buyids; B-CORE-07).
+    /// D-CORE-03/04: -evento id (relogio do LiveOps 1 h depois do inicio do evento, ex. forge_frenzy; entra sem esperar o requisito; evento que
+    /// ainda nao roda neste build = Falha) | -eventocard (abre o cartao do evento) | -pass (abre o Passe; sem -evento o relogio vai ao T0 + 1 h) |
+    /// -passxp N (N de XP no Passe). Os chips aparecem depois das Ferramentas (-buy 12).
     /// E-PLAT-04/05 (Loja.cs, docs/IAP.md): -lojafalsa [interrompe|duplica|recusa] (so build dev: loja falsa com o Pacote do Mestre; o botao
     /// LOJA aparece nas Configuracoes) | -loja (abre o painel da loja; pede -lojafalsa) | -lojacompra (compra o Pacote do Mestre na abertura).
     /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
@@ -103,6 +106,8 @@ namespace FS
         PainelProjetos _projetos;   // B-CORE-07: Blueprints possuidos e bloqueados com a fonte (PainelProjetos.cs)
         float _metasT; int _prontas;   // relogio da Agora (1 s) e quantas davam para resgatar (aviso de meta concluida)
         SeloRenome _renome;      // B-CORE-06: selo de nivel na HUD e cartao (SeloRenome.cs)
+        PainelLiveOps _liveops;  // D-CORE-03/04: chips do evento e do Passe, cartao do evento e painel do Passe (PainelLiveOps.cs)
+        long _relogioEv;         // -evento/-pass (dev): s somados ao relogio do LiveOps
         IStore _loja;            // E-PLAT-04: null = build sem loja (release sem SDK): nada de loja aparece
         PainelLoja _lojaUi;
         Action _panelAction;
@@ -134,7 +139,7 @@ namespace FS
 
         /// <summary>A-PLAT-07: o estado do jogo, so derivado dos flags (Estados.De; tabela em Estado.cs). O voltar, o Save e os anuncios
         /// consultam aqui.</summary>
-        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv || MetasAberto || RenomeAberto || ProjetosAberto || LojaAberta,
+        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv || MetasAberto || RenomeAberto || LiveOpsAberto || ProjetosAberto || LojaAberta,
             _order != null && _orderOut && _order.gameObject.activeSelf);
         bool Painel => _panel != null && _panel.gameObject.activeSelf;
         bool Config => _cfg != null && _cfg.gameObject.activeSelf;
@@ -142,6 +147,7 @@ namespace FS
         bool MetasAberto => _metas != null && _metas.Aberto;
         bool ProjetosAberto => _projetos != null && _projetos.Aberto;
         bool RenomeAberto => _renome != null && _renome.Aberto;
+        bool LiveOpsAberto => _liveops != null && _liveops.Aberto;
         bool LojaAberta => _lojaUi != null && _lojaUi.Aberto;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -240,6 +246,12 @@ namespace FS
             if (_loja != null && Arg("-lojacompra") != null) Comprar(Compras.Catalogo[0].Id);   // foto do comprado: o fluxo inteiro na abertura
             bool foto = Arg("-loja") != null;   // foto do painel (com -lojafalsa)
             if (foto && _lojaUi != null && _sim.T.Loja) _lojaUi.Abrir();
+            // D-CORE-03/04 (fotos): -evento entra sem esperar o requisito; -passxp da XP; -eventocard e -pass abrem os modais
+            if (Arg("-evento") != null && _sim.LiveOps.Evento == null) _sim.LiveOps.Forca(_sim.LiveOps.NoCalendario(_sim.LiveOps.Relogio));
+            if (long.TryParse(Arg("-passxp"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long pxp)) _sim.LiveOps.Ganha(pxp);
+            LiveOpsAgora(false);
+            if (Arg("-eventocard") != null) _liveops.AbrirEvento();
+            if (Arg("-pass") != null) _liveops.AbrirPasse();
             string metas = Arg("-metas");
             int aba = metas == "conquistas" ? 2 : metas == "semanais" ? 1 : 0;
             if (metas != null) _metas.Abrir(aba);
@@ -324,6 +336,7 @@ namespace FS
                 else if (MetasAberto) _metas.Fechar();
                 else if (ProjetosAberto) _projetos.Fechar();
                 else if (RenomeAberto) _renome.Fechar();
+                else if (LiveOpsAberto) _liveops.Fechar();
                 else if (LojaAberta) _lojaUi.Fechar();
                 else switch (Estados.AoVoltar(EstadoAtual, Painel, _menu.IsOpen))
                 {
@@ -335,7 +348,7 @@ namespace FS
             }
             if (_screen.x != Screen.width || _screen.y != Screen.height) Fit();
 
-            bool modal = Painel || Config || Priv || MetasAberto || RenomeAberto || ProjetosAberto || LojaAberta;
+            bool modal = Painel || Config || Priv || MetasAberto || RenomeAberto || LiveOpsAberto || ProjetosAberto || LojaAberta;
             Pointer ptr = Pointer.current;   // B-CORE-03: toque no anel do golpe ou na barra de qualidade (antes do joystick, que os ignora)
             if (!modal && ptr != null && ptr.press.wasPressedThisFrame) Toque(ptr.position.ReadValue());
             _joy.Blocked = modal;
@@ -376,6 +389,7 @@ namespace FS
             _metasT -= Time.unscaledDeltaTime;
             if (_metasT <= 0f) { _metasT = 1f; MetasAgora(true); }
             _metas.Refresh(Time.unscaledDeltaTime);
+            _liveops.Refresh(Time.unscaledDeltaTime);
             _projetos.Refresh(Time.unscaledDeltaTime);
             _lojaUi?.Refresh();
 
@@ -570,6 +584,46 @@ namespace FS
             int n = _sim.Metas.Prontas();
             if (avisa && n > _prontas) Notice(Loc.T("aviso.meta_pronta"), Art.Star(), Art.Accent);
             _prontas = n;
+            LiveOpsAgora(avisa);
+        }
+
+        /// <summary>D-CORE-03/04: o LiveOps no relogio de agora (deslocado pelo -evento/-pass no dev) e o que ele contou: aviso, diario
+        /// (event_enter, event_points com o total, event_complete com o limiar, pass_level; LIVEOPS_V1 §4.6), currency_source "evento" e save na
+        /// hora quando um limiar pagou (ouro e ID vao juntos para o disco).</summary>
+        void LiveOpsAgora(bool avisa)
+        {
+            LiveOps lo = _sim.LiveOps;
+            lo.Agora(Now() + _relogioEv);
+            bool pagou = false;
+            foreach ((string tipo, string id, string arg, long ouro) in lo.Novidades)
+            {
+                EventDef e = Array.Find(lo.Eventos, x => x.Id == id);
+                switch (tipo)
+                {
+                    case "event_enter": if (avisa && e != null) Notice(Loc.T("aviso.evento", Textos.NomeEvento(e)), Art.Star(), Art.Accent); Log(tipo, id); break;
+                    case "event_points": Log(tipo, id, e != null ? lo.PontosDe(e).ToString(CultureInfo.InvariantCulture) : arg); break;
+                    case "event_complete":
+                        if (avisa) { Sfx.Play("coin", 1.3f); Notice(Loc.T("aviso.evento_marco", arg), _coinIcon.sprite, _coinIcon.color); }
+                        Log(tipo, id, arg);
+                        if (ouro > 0) Source("evento", ouro);
+                        pagou = true;
+                        break;
+                    case "pass_level": if (avisa) Notice(Loc.T("aviso.passe", arg), Art.Star(), Art.Gold); Log(tipo, id, arg); break;
+                }
+            }
+            lo.Novidades.Clear();
+            if (pagou) Save();
+        }
+
+        /// <summary>RESGATAR no painel do Passe (o Sim.LiveOps ja pagou e gravou o ID): som, aviso, diario, currency_source "passe" e save.</summary>
+        void PagoPasse(int nivel, long gold)
+        {
+            Sfx.Play("coin", 1.3f);
+            Ajustes.Pulso(30, 150);
+            Notice(gold > 0 ? Loc.T("aviso.passe_ouro", Textos.Qtd(gold)) : Loc.T("aviso.passe_ok"), _coinIcon.sprite, _coinIcon.color);
+            Log("pass_claim", _sim.LiveOps.Passe.Id, nivel.ToString(CultureInfo.InvariantCulture));
+            if (gold > 0) Source("passe", gold);
+            Save();
         }
 
         /// <summary>Resgate no painel (o Sim.Metas ja pagou e gravou o ID): som, aviso, diario (mission_complete / achievement_unlock /
@@ -759,6 +813,7 @@ namespace FS
             _hint.resizeTextForBestFit = true; _hint.resizeTextMinSize = 22; _hint.resizeTextMaxSize = 32;
             _hint.verticalOverflow = VerticalWrapMode.Truncate;
             _notice = MakeNotice(top, hintMin, hintMax);
+            _liveops = new PainelLiveOps(top, _safe, _sim, PagoPasse);   // D-CORE-03/04: chips presos embaixo da pilula da dica (por cima dela)
             _crown = Art.Icon("coroa", "icone");
             // versao: so no build dev (o playtest usa); release so nas configuracoes (v0.6b, P1-1); criativo nenhuma. v0.6d: pequena, logo
             // abaixo da pilula de ouro, na folga de 24 px que o balao do 1o da fila respeita (no canto de baixo batia no cartao e no VIP)
@@ -1591,6 +1646,16 @@ namespace FS
                 if (Captura.Flags(preset) == null) { Falha($"PRESET desconhecido '{preset}' (validos: {Captura.Nomes})"); return; }
                 Debug.Log($"PRESET {preset}: {Captura.Flags(preset)}");
             }
+            // D-CORE-03/04: -evento id / -pass deslocam o relogio do LiveOps para dentro da janela (o das metas segue o do aparelho)
+            string evf = Arg("-evento");
+            if (evf != null)
+            {
+                EventDef e = Array.Find(_sim.LiveOps.Eventos, x => x.Id == evf || x.Id.EndsWith("_" + evf, StringComparison.Ordinal));
+                if (e == null) { Falha($"EVENTO desconhecido '{evf}'"); return; }
+                if (_sim.LiveOps.Falta(e) != null) { Falha($"EVENTO {e.Id} ainda nao roda neste build ({_sim.LiveOps.Falta(e)})"); return; }
+                _relogioEv = e.Comeca + 3600 - Now();
+            }
+            else if (Arg("-pass") != null) _relogioEv = LiveOpsDefs.T0 + 3600 - Now();
             if (Arg("-intersticial") != null) _sim.T.Interstitial = true;   // E-PLAT-03 (dev): antes do Ads.Init, que so carrega com a flag
             // B-CORE-07 (fotos): -projetos todos = todos os projetos do catalogo ANTES das compras (o -buy/-buyids alcanca os niveis IV-V e a bigorna longa)
             if (Arg("-projetos") == "todos" || Arg("-projetos") == "dar") foreach (BlueprintDef d in _sim.Projetos.Defs) _sim.Projetos.Ganha(d.Id, d.Sources[0].Kind);

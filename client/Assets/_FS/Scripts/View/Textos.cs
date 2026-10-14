@@ -257,6 +257,58 @@ namespace FS
             return s;
         }
 
+        // ---------- LiveOps (D-CORE-03/04): nome do evento e do Passe, frase da missao (<= MetaMax), recompensa (<= PremioMax) e tempo ----------
+
+        /// <summary>Nome do evento (aviso "Evento: X" &lt;= AvisoMax) e o chip da HUD ("1.000 pts · 6d 23h").</summary>
+        public const int EventoMax = 22, ChipMax = 20;
+        public static string NomeEvento(EventDef e) => Loc.T("ev." + e.Id);
+        public static string NomePasse(PassDef p) => Loc.T("passe." + p.Id);
+
+        /// <summary>"Venda 100 espadas", "Fabrique 20 escudos (Fina+)", "Acerte 5 golpes em escudos", "Suba 1 nível: Escudos", "Jogue em 3 dias do
+        /// evento": a frase sai do gatilho + filtro + alvo, como a das metas.</summary>
+        public static string Missao(MissaoEvento x)
+        {
+            string n = Qtd(x.Alvo);
+            int item = x.Filtro.Length == 1 ? Items.IndexOf(x.Filtro[0]) : -1;
+            string coisa = item >= 0 ? ItemNome(item, x.Alvo) : Loc.P("meta.produto", x.Alvo);
+            switch (x.Evento)
+            {
+                case "product_sold": return Loc.T("meta.vende", n, coisa);
+                case "product_crafted": return Loc.T("meta.fabrica", n, coisa);
+                case "order_done": return item >= 0 ? Loc.P("missao.order_item", x.Alvo, n, ItemNome(item, 2)) : Loc.P("meta.order_done", x.Alvo, n);
+                case "upgrade_buy":
+                    if (x.Filtro.Length == 0) return Loc.P("meta.compra", x.Alvo, n);
+                    int u = Upgrades.IndexOf(x.Filtro[0]);
+                    return Upgrades.All[u].Station != null ? Loc.T("missao.nivel", n, Loc.T("est." + Upgrades.All[u].Station)) : Loc.T("meta.compra_um", Nome(u));
+                case "quality_crafted": case "quality_superior":
+                    return Loc.T(x.Evento == "quality_crafted" ? "missao.fina" : "missao.superior", n, item >= 0 ? coisa : Loc.P("missao.peca", x.Alvo));
+                case "master_strike": return item >= 0 ? Loc.P("missao.golpe_item", x.Alvo, n, ItemNome(item, 2)) : Loc.P("missao.golpe", x.Alvo, n);
+                case "order_complete": return Loc.P("meta.order_done", x.Alvo, n);   // ponytail: o tipo (Royal, Bulk...) ganha nome com o Orders 2.0
+                default: return Loc.P("meta." + x.Evento, x.Alvo, n);   // offline_claim, vip_served, worker_hired, play_day
+            }
+        }
+
+        /// <summary>"+60 de ouro  ·  +200 XP  ·  Tapete real do balcão": ouro no ouro de agora (s x taxa); cosmetico pelo nome; Blueprint pelo
+        /// tipo. Conveniencia e Gems so no premium (desligado: nunca aparece).</summary>
+        public static string Premios(RewardDef[] rs, Sim s)
+        {
+            string t = "";
+            foreach (RewardDef r in rs)
+            {
+                string p = r.Tipo == TipoPremio.Ouro ? Loc.T("meta.premio.ouro", Qtd(s.Metas.Ouro(r.Valor)))
+                    : r.Tipo == TipoPremio.PassXp ? Loc.T("meta.premio.xp", r.Valor)
+                    : r.Tipo == TipoPremio.Renome ? Loc.T("meta.premio.renome", r.Valor)
+                    : r.Tipo == TipoPremio.Cosmetico ? Loc.T("cos." + r.Ref)
+                    : r.Tipo == TipoPremio.Blueprint ? Loc.T("liveops.projeto") : null;
+                if (p != null) t += (t.Length > 0 ? "  ·  " : "") + p;
+            }
+            return t;
+        }
+
+        /// <summary>"6d 23h", "5h 12m", "8m" (o que falta do evento ou da temporada).</summary>
+        public static string Tempo(long s) => s >= 86400 ? Loc.T("tempo.dh", s / 86400, s % 86400 / 3600)
+            : s >= 3600 ? Loc.T("tempo.hm", s / 3600, s % 3600 / 60) : Loc.T("tempo.m", Math.Max(1, s / 60));
+
         /// <summary>B-CORE-06: nome do nivel de Renome (selo da HUD &lt;= RenomeMax, cartao) e o aviso ao subir (&lt;= AvisoMax; LocTests).</summary>
         public const int RenomeMax = 20, AvisoMax = 30;
         public static string NomeRenome(int nivel) => Loc.T("renome." + nivel);

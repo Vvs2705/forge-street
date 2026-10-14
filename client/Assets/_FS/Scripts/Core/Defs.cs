@@ -303,6 +303,9 @@ namespace FS.Core
         /// <summary>A-PLAT-08 (DM §130): chave mestra do RemoteConfig. false = nenhum anuncio: o Game nem inicia o SDK e o RemoteConfig.Aplicar
         /// desliga as flags de anuncio (rewarded e intersticial). Feature nova com flag propria (IAP, Pass) ja e' chaveavel pelo nome do campo.</summary>
         public bool AnunciosLigados = true;
+        /// <summary>D-CORE-03/04 (DM §130): chaves do LiveOps. Eventos false = nenhum evento entra e o ativo sai (os knobs voltam); Passe false = o
+        /// Pass para de ganhar XP. Ledger, pontos e niveis ficam no save: religar continua.</summary>
+        public bool Eventos = true, Passe = true;
         /// <summary>A-PLAT-08 / E-PLAT-04: chave da loja. false = o botao LOJA some (nenhuma compra nova); recibo, restore automatico e posse
         /// seguem (quem pagou nao perde).</summary>
         public bool Loja = true;
