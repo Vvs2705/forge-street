@@ -41,6 +41,7 @@ COMPRAS = 'Assets/_FS/Scripts/Core/Compras.cs'
 PROJ, PDEFS = 'Assets/_FS/Scripts/Core/Projetos.cs', 'Assets/_FS/Scripts/Core/ProjetosDefs.cs'
 EQUIPE, BOT = 'Assets/_FS/Scripts/Core/Equipe.cs', 'Assets/_FS/Scripts/Core/Bot.cs'
 LIVEOPS, LIVEOPSDEFS = 'Assets/_FS/Scripts/Core/LiveOps.cs', 'Assets/_FS/Scripts/Core/LiveOpsDefs.cs'
+MW, MWDEFS = 'Assets/_FS/Scripts/Core/Masterworks.cs', 'Assets/_FS/Scripts/Core/MasterworksDefs.cs'
 MIX = 'Assets/_FS/Scripts/View/Mixagem.cs'
 
 
@@ -303,6 +304,10 @@ MUTACOES = [
         'validator aceita evento sem a "jogue em 3 dias": a trilha fecha numa sessão (LIVEOPS_V1 §2.2)'),
     mut('enc-evento-pontos-20', ENCD, 'int pontos = 15)', 'int pontos = 20)',
         'encomenda Event volta a 20 pontos: a trilha fecha cedo demais'),
+    mut('enc-caravan-pontos-15', ENCD, '"ev_s2w3_merchant_caravan", 12)', '"ev_s2w3_merchant_caravan", 15)',
+        'Merchant Caravan a 15 pontos: com 3 vagas o F2P de referência fecha a trilha no dia 3 (BALANCE §30.6)'),
+    mut('enc-sunblade-pontos-20', ENCD, '"ev_s1w4_hunt_sunblade", 17)', '"ev_s1w4_hunt_sunblade", 20)',
+        'Hunt da Sunblade a 20 pontos: fecha no dia 3 (BALANCE §30.6)'),
     # Blueprints (B-CORE-07)
     mut('bp-posse-duplica', PROJ, 'if (Posses.ContainsKey(Defs[i].Id)) return false;\n            if (tx != null)', 'if (tx != null)',
         'ganhar o mesmo Blueprint de novo regrava e emite outra vez (posse vira contador)'),
@@ -359,6 +364,39 @@ MUTACOES = [
         'moeda da venda volta a subir de altura a cada venda'),
     mut('bp-mestre-sem-producao', PDEFS, 'true, FilaEncomenda(3), Producao()),', 'true, FilaEncomenda(3)),',
         'projeto de mestre das bigornas só pela fila de encomenda (inalcançável no F2P de hoje)'),
+    # Masterworks e Collection (B-CORE-08)
+    mut('mw-sem-projeto', MW, 'public bool Liberada(MasterworkDef d) => _sim.Projetos.Tem(d.Blueprint) && ', 'public bool Liberada(MasterworkDef d) => ',
+        'Masterwork sai sem o projeto (Blueprint)'),
+    mut('mw-sem-condicao', MW, 'Array.TrueForAll(d.Condicoes, c => Valor(c) >= c.N)', 'true',
+        'Masterwork sai sem a condição especial'),
+    mut('mw-entra-2x', MW, 'if (Defs[i].Familia == f && !Tem(Defs[i].Id) && Liberada(Defs[i])) return i;', 'if (Defs[i].Familia == f && Liberada(Defs[i])) return i;',
+        'a mesma Masterwork sai de novo (a 2a vez devia sair Superior e vender)'),
+    mut('mw-renome-sem-tx', MW, '_sim.Renome.Credita(Tx(Defs[k]), Defs[k].Renome);', '_sim.Renome.Ganha(Defs[k].Renome);',
+        'Renome da obra sem ID de transação (o ledger não guarda mw:)'),
+    mut('mw-familia-pelo-item', MW, '_sim.ItemDefs[(int)s.OutItem].Family : null;', '_sim.ItemDefs[(int)s.OutItem].Id : null;',
+        'família da peça pelo item (a espada longa perde as obras da espada)'),
+    mut('mw-bonus-sem-familia-completa', MW, 'if (d.Familia == f) { if (!Tem(d.Id)) return 0; alguma = true; }', 'if (d.Familia == f) alguma = true;',
+        '+5% no preço sem a família completa no Hall'),
+    mut('mw-hall-load-ignora', MW, 'if (!raw.StartsWith("hall=", StringComparison.Ordinal)) continue;', 'if (!raw.StartsWith("hallx=", StringComparison.Ordinal)) continue;',
+        'o Load perde a data do Hall'),
+    mut('mw-metas-nao-conta', METAS, 'Soma("masterwork_unlock", b, 1);', ';',
+        'conquistas de Masterwork não contam'),
+    mut('col-paga-2x', MW, 'if (Pago(m) || Feitas(m.Aba) < m.N) continue;', 'if (Feitas(m.Aba) < m.N) continue;',
+        'marco da coleção pago (e avisado) de novo a cada Tick'),
+    mut('col-abre-no-ftue', MW, 'if (!_sim.QualityRevealed) return false;', ';',
+        'coleção abre antes das Ferramentas (primeiros 10 min)'),
+    mut('col-superior-nao-conta', MW, 'if (l == Quality.Superior && (uint)item < (uint)Superiores.Length) Superiores[item]++;', ';',
+        'Superior vendida não conta na aba Produtos'),
+    mut('mw-bot-nao-espera', BOT, 'if (Strike && !EsperaSuperior(s)) s.Strike(true);', 'if (Strike) s.Strike(true);',
+        'o Ideal golpeia a peça que não sairia Superior mesmo com Masterwork pendente'),
+    mut('mw-hunt-sem-posse', LIVEOPS, 'if (r0.Tipo == TipoPremio.Blueprint && _sim.Projetos.Ganha(r0.Ref, origem, tx)) continue;', ';',
+        'o Hunt nunca dá o projeto da Masterwork (só o fallback de ouro)'),
+    mut('mw-hunt-sem-requisito', LIVEOPS, ' && Array.TrueForAll(e.Requer, r => ProjetosDefs.IndexOf(r) < 0 || _sim.Projetos.Tem(r));', ';',
+        'o Hunt entra sem o projeto que o evento pede'),
+    mut('mw-validator-pago', MWDEFS, 'if (Array.Exists(Pagos, p => r.StartsWith(p, StringComparison.Ordinal)) || Array.Exists(w.T.Placements, p => p.Id == r))', 'if (false)',
+        'validator aceita condição de anúncio ou compra'),
+    mut('mw-validator-sem-permanente', MWDEFS, 'else if (!Array.Exists(bps[b].Sources, f => ProjetosDefs.Permanente(f.Kind)))', 'else if (false)',
+        'validator aceita projeto de Masterwork só de evento'),
 ]
 
 

@@ -48,6 +48,7 @@ namespace FS.Core
             e.AddRange(Workers(workers ?? WorkerDefs.All, world, renome ?? RenomeDefs.Niveis));
             e.AddRange(LiveOpsDefs.Validar(LiveOpsDefs.Eventos, LiveOpsDefs.Passes));   // D-CORE-03/04 (LIVEOPS_V1 §5.7)
             e.AddRange(Blueprints(blueprints ?? ProjetosDefs.All, upgrades, world));
+            e.AddRange(MasterworksDefs.Validar(MasterworksDefs.All, MasterworksDefs.Marcos, blueprints ?? ProjetosDefs.All, upgrades, world));   // B-CORE-08
             e.AddRange(Mapa(FS.Core.Distritos.All));   // C-CORE-01/02/04
             return e;
         }
@@ -435,13 +436,18 @@ namespace FS.Core
                     else if (Array.IndexOf(Metas.Eventos, d.Evento) < 0) yield return $"{at} gatilho {d.Evento} que o Sim nao emite";
                     int max = d.Evento == "upgrade_buy" ? Upgrades.Count - 1 : d.Evento == "mission_complete" ? 1 : d.Evento == "order_complete" ? (int)OrderType.Event
                         : d.Evento == "product_sold" || d.Evento == "product_crafted" || d.Evento == "order_done" || d.Evento == "vip_served" ? Items.All.Length - 1
-                        : d.Evento == "worker_hired" ? (int)WorkerRole.Manager : d.Evento == "worker_upgrade" ? NivelWorkerMax : -1;   // B-CORE-04: papel / nivel
+                        : d.Evento == "worker_hired" ? (int)WorkerRole.Manager : d.Evento == "worker_upgrade" ? NivelWorkerMax   // B-CORE-04: papel / nivel
+                        : d.Evento == "masterwork_unlock" ? MasterworksDefs.All.Length - 1 : d.Evento == "masterwork_family" ? Items.All.Length - 1 : -1;   // B-CORE-08
                     if (d.Filtro < (d.Evento == "mission_complete" ? 0 : -1) || d.Filtro > max || d.Evento == "worker_upgrade" && d.Filtro >= 0 && d.Filtro < 2)
                         yield return $"{at} filtro {d.Filtro} invalido para {d.Evento}";
                     // B-CORE-04: contratar/subir mais workers do que o build tem nunca fecha
                     long workers = d.Evento == "worker_hired" ? Array.FindAll(WorkerDefs.All, x => d.Filtro < 0 || (int)x.Papel == d.Filtro).Length
                         : d.Evento == "worker_upgrade" && d.Filtro >= 2 ? Array.FindAll(WorkerDefs.All, x => x.MaxNivel >= d.Filtro).Length : long.MaxValue;
                     if (tipo == TipoMeta.Conquista && d.Alvo > workers) yield return $"{at} alvo {d.Alvo} acima dos {workers} workers do build";
+                    // B-CORE-08: registrar mais Masterworks (da familia, ou aquela) do que o build tem nunca fecha (ach_mw30/60 esperam os distritos)
+                    long mws = d.Evento == "masterwork_unlock" ? (d.Filtro < 0 ? MasterworksDefs.All.Length : 1)
+                        : d.Evento == "masterwork_family" ? Array.FindAll(MasterworksDefs.All, m => Items.IndexOf(m.Familia) == d.Filtro).Length : long.MaxValue;
+                    if (tipo == TipoMeta.Conquista && d.Alvo > mws) yield return $"{at} alvo {d.Alvo} acima das {mws} Masterworks do build";
                     if (d.Alvo <= 0) yield return $"{at} alvo {d.Alvo}";
                     if (d.Abre != null && Upgrades.IndexOf(d.Abre) < 0) yield return $"{at} abre com \"{d.Abre}\", que nao e' upgrade";
                     if (d.Conta == Conta.Segundos && !d.Evento.StartsWith("currency_", StringComparison.Ordinal)) yield return $"{at} alvo em segundos de renda fora de currency_*";

@@ -75,8 +75,10 @@ namespace FS.Core
     /// B-CORE-03 (anexados): Graded = peca acima de Normal na pilha (A = estacao, B = Quality); Masterwork = obra-prima foi ao Hall (A = item, B = estacao).
     /// B-CORE-04: Hired = ajudante do upgrade (A = indice em Sim.Workers, B = 0) ou worker da Equipe (A = indice em WorkerDefs, B = WorkerRole,
     /// nunca 0); WorkerUp (anexado) = subiu de nivel (A = indice em WorkerDefs, B = nivel novo).
-    /// B-CORE-07 (anexado): Blueprint = projeto novo, 1x por ID (A = indice em Projetos.Defs, B = BlueprintSourceKind da fonte).</summary>
-    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone, Graded, Masterwork, WorkerUp, Blueprint }
+    /// B-CORE-07 (anexado): Blueprint = projeto novo, 1x por ID (A = indice em Projetos.Defs, B = BlueprintSourceKind da fonte).
+    /// B-CORE-08: Masterwork ganhou o B = indice em Hall.Defs (-1 = obra-prima sem MasterworkDef, so o gancho de teste); Colecao (anexado) =
+    /// marco da colecao pago, 1x por ID (A = indice em Colecao.Marcos, B = Renome).</summary>
+    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone, Graded, Masterwork, WorkerUp, Blueprint, Colecao }
 
     /// <summary>Dica contextual da HUD (a view so traduz). Arg = indice do pad (BuyPad), do item, do bau (OpenChest) ou do upgrade (BuyMenu).
     /// BuyMenu ANEXADO no fim (FASE6): a compra mais barata pagavel agora e' um upgrade do menu inferior.</summary>
@@ -294,6 +296,9 @@ namespace FS.Core
         public int[] NivelEstacaoCusto = { 250, 750, 325, 950, 250, 750, 500, 1500, 800, 1500, 1000, 1835, 800, 1500, 1600, 3000 };
         public int BigornaLongaCusto = 6000;                    // B-CORE-07: linha Meta da espada longa (CONTEUDO_V1 §5.1)
         public int TecnicaQ = 20;                               // B-CORE-07: pontos de qualidade do Blueprint de tecnica da familia (ECONOMIA_WAVE_B §1.2)
+        /// <summary>B-CORE-08: "modificador de evento 0-25" (ECONOMIA_WAVE_B §1.2, LIVEOPS_V1 §2.3): pontos de qualidade por item (indice = handle),
+        /// 0 fora de evento; so o modificador do evento (Hunt: +15 na espada ou na joia) e o RemoteConfig (trava 0-25) mexem.</summary>
+        public int[] QualidadeEvento = { 0, 0, 0, 0, 0, 0, 0 };
         public float GolpeJanela = 0.8f, GolpeRecarga = 20f;    // golpe de mestre (FS-2): anel de 0,8 s; 20 s de jogo entre um acerto e o proximo (sobe se passar de 8% da receita)
 
         /// <summary>B-CORE-04 (flag): contratacao e nivel de workers a venda (Equipe). Desligada, nada novo e' oferecido e quem ja foi contratado
@@ -508,7 +513,9 @@ namespace FS.Core
         public readonly string Id, Name;
         public readonly int Tier;      // 1-5 (GDD §7)
         public readonly bool Product;  // vai ao balcao e tem preco; minerio e lingote (insumos) nao
-        public ItemDef(string id, string name, int tier, bool product) { Id = id; Name = name; Tier = tier; Product = product; }
+        /// <summary>B-CORE-08 (ECONOMIA_WAVE_B §8.1): familia de produto (agrupa as Masterworks e o +5% do Hall); o proprio ID quando nao dada.</summary>
+        public readonly string Family;
+        public ItemDef(string id, string name, int tier, bool product, string family = null) { Id = id; Name = name; Tier = tier; Product = product; Family = family ?? id; }
     }
 
     /// <summary>
@@ -545,7 +552,7 @@ namespace FS.Core
             new ItemDef("escudo", "escudo", 1, true),
             new ItemDef("ferramenta", "ferramenta", 1, true),
             new ItemDef("joia", "joia", 3, true),
-            new ItemDef("espada_longa", "espada longa", 1, true),   // B-CORE-07: linha Meta da bigorna longa (CONTEUDO_V1 §2.1)
+            new ItemDef("espada_longa", "espada longa", 1, true, "espada"),   // B-CORE-07: linha Meta da bigorna longa (CONTEUDO_V1 §2.1); familia espada (§3)
         };
 
         /// <summary>Handle do item com este ID, ou -1 (desconhecido). `table` = o conteudo da partida (null = All).</summary>

@@ -58,6 +58,7 @@ namespace FS
             ["encomenda"] = new Regra("order", Cat.Importante, 0.76f),
             ["obra"] = new Regra("order", Cat.Importante, 0.76f),
             ["projeto"] = new Regra("order", Cat.Importante, 0.72f, 0f, 1.2f),
+            ["colecao"] = new Regra("order", Cat.Importante, 0.72f, 0f, 1.1f),   // B-CORE-08: marco da Collection pago
             ["cofre"] = new Regra("offline", Cat.Importante, 0.6f),
             ["vipPago"] = new Regra("offline", Cat.Importante, 0.6f, 0f, 1.15f),
             ["meta"] = new Regra("coin", Cat.Importante, 0.62f, 0f, 1.3f),
@@ -108,6 +109,7 @@ namespace FS
                 case Ev.Graded: pitch = e.B == (int)Quality.Superior ? 1.08f : 1f; return "fina";
                 case Ev.Masterwork: return "obra";
                 case Ev.Blueprint: return "projeto";
+                case Ev.Colecao: return "colecao";   // B-CORE-08
                 case Ev.ClientArrived: return e.B == 1 ? "sino" : null;   // B = tamanho da fila com ele: so o 1o (a fila estava vazia)
                 case Ev.ClientLeft: return e.B == 0 ? "perdeu" : null;    // B = 2: fila cheia, nem entrou
                 case Ev.Hired: return e.B == 0 ? "contrata" : null;       // B != 0: worker da Equipe (Game.WorkerComprado)

@@ -153,6 +153,20 @@ namespace FS
             s.Player.Pos = new V2(4.5f, 7.5f);   // no meio da oficina: oficiais, balconista e mestre de obras na tela
         }
 
+        /// <summary>B-CORE-08 -masterwork N (fotos): os projetos de Masterwork do catalogo e as `n` primeiras no Hall (data 0), com o Renome
+        /// delas pelo ID (como a de verdade), entao o painel do Hall e a Collection tem conteudo. ponytail: sem o golpe; a foto do aviso
+        /// "Obra-prima!" sai do jogo (bot ou toque).</summary>
+        public static void Hall(Sim s, int n)
+        {
+            foreach (BlueprintDef d in s.Projetos.Defs) if (d.Kind == BlueprintKind.Masterwork) s.Projetos.Ganha(d.Id, d.Sources[0].Kind);
+            for (int i = 0; i < Math.Min(n, s.Hall.Defs.Length); i++)
+            {
+                MasterworkDef d = s.Hall.Defs[i];
+                s.Hall.Feitas[d.Id] = 0;
+                s.Renome.Credita(FS.Core.Hall.Tx(d), d.Renome);
+            }
+        }
+
         /// <summary>-offline S: s fora para o cofre real (Sim.ApplyOffline); -1 = fora de 60 s (abaixo o jogo nao paga) ao teto de 2 h.</summary>
         public static long OfflineSegundos(string v) =>
             long.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out long s) && s >= 60 && s <= Balance.OfflineCapSeconds ? s : -1;

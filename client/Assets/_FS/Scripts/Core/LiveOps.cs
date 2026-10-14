@@ -63,9 +63,10 @@ namespace FS.Core
 
         public string Falta(EventDef e) => LiveOpsDefs.Falta(e, _sim.ItemDefs);
 
-        /// <summary>Ferramentas (FTUE intocado) + o que o evento pede. Tudo monotonico: quem entrou fica ate o fim.</summary>
+        /// <summary>Ferramentas (FTUE intocado) + o que o evento pede (B-CORE-08: o Blueprint do Requer possuido, ex. o da Primeira Lamina no Hunt
+        /// da Sunblade; OrderDef no Requer so precisa existir, LiveOpsDefs.Falta). Tudo monotonico: quem entrou fica ate o fim.</summary>
         public bool Requisitos(EventDef e) => M.Aberto && (e.Abre == null || _sim.Bought[Upgrades.IndexOf(e.Abre)])
-            && _sim.Renome.Nivel >= e.Renome && _sim.OrderCount >= e.Encomendas;
+            && _sim.Renome.Nivel >= e.Renome && _sim.OrderCount >= e.Encomendas && Array.TrueForAll(e.Requer, r => ProjetosDefs.IndexOf(r) < 0 || _sim.Projetos.Tem(r));
 
         /// <summary>s ate o fim do evento ativo (0 = nenhum).</summary>
         public long Restante => Evento == null ? 0 : Math.Max(0, Evento.Termina - Relogio);
@@ -144,7 +145,7 @@ namespace FS.Core
             foreach (Marco m in e.Trilha)
             {
                 if (p < m.Pontos) break;
-                long g = Credita("e:" + e.Id + ":" + m.Pontos.ToString(CultureInfo.InvariantCulture), m.Premios);
+                long g = Credita("e:" + e.Id + ":" + m.Pontos.ToString(CultureInfo.InvariantCulture), m.Premios, BlueprintSourceKind.Event);
                 if (g >= 0) Novidades.Add(("event_complete", e.Id, m.Pontos.ToString(CultureInfo.InvariantCulture), g));
             }
         }
@@ -245,13 +246,16 @@ namespace FS.Core
         void Add(string k, long n) => _cont[k] = (_cont.TryGetValue(k, out long v) ? v : 0) + n;
 
         /// <summary>Paga as recompensas pelo Metas.Paga (1x por `tx`): ouro em s de renda, XP do Pass e Renome somados; cosmetico = a posse e' o
-        /// proprio ID no ledger. Devolve o ouro ou -1 (ja pago).</summary>
-        long Credita(string tx, RewardDef[] rs)
+        /// proprio ID no ledger. B-CORE-08 (V20): Blueprint = posse nova pelo Projetos.Ganha (fonte `origem`, com o `tx`: fonte extra, a gratis
+        /// permanente continua); quem ja tem (ou projeto que nao lista a fonte) recebe o fallback no mesmo ID. Devolve o ouro ou -1 (ja pago).</summary>
+        long Credita(string tx, RewardDef[] rs, BlueprintSourceKind origem)
         {
+            if (M.Ledger.Contains(tx)) return -1;   // antes da posse: o projeto tambem sai 1x pelo ID
             int ouro = 0, xp = 0, ren = 0;
             foreach (RewardDef r0 in rs)
             {
-                RewardDef r = r0.Tipo == TipoPremio.Blueprint ? r0.Fallback : r0;   // ponytail: sem o B-CORE-07 paga o fallback; ele liga a posse aqui
+                if (r0.Tipo == TipoPremio.Blueprint && _sim.Projetos.Ganha(r0.Ref, origem, tx)) continue;
+                RewardDef r = r0.Tipo == TipoPremio.Blueprint ? r0.Fallback : r0;
                 if (r.Tipo == TipoPremio.Ouro) ouro += r.Valor;
                 else if (r.Tipo == TipoPremio.PassXp) xp += r.Valor;
                 else if (r.Tipo == TipoPremio.Renome) ren += r.Valor;
@@ -310,7 +314,7 @@ namespace FS.Core
         public long Resgatar(int n)
         {
             if (Passe == null || n < 1 || n > Nivel || !M.Aberto) return -1;
-            return Credita(TxNivel(Passe, n), new[] { Passe.Free[n - 1] });
+            return Credita(TxNivel(Passe, n), new[] { Passe.Free[n - 1] }, BlueprintSourceKind.PassFree);
         }
 
         /// <summary>Niveis alcancados e nao resgatados (badge).</summary>

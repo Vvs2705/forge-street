@@ -31,6 +31,7 @@ namespace FS.Core
             ["OfflineMaxSeconds"] = (0, Balance.OfflineCapSeconds),   // P2: 2 h e' trava do nucleo; um evento so encurta
             ["OfflineFactor"] = (0, 1),                                // offline nunca rende mais que online (P2: premium mexe na taxa) - revisar
             ["Placements.cofre2x.Valor"] = (0, 1),                     // P2: o Cofre 2x dobra o mesmo resgate uma vez, nunca mais
+            ["QualidadeEvento"] = (0, 25),                              // B-CORE-08: padrao 0; o evento (Hunt) soma ate +25 (LIVEOPS_V1 §2.3)
         };
 
         /// <summary>Nunca abaixo do padrao do build: as recargas por placement (P14/V11: VIP e Velocidade 5 min; Supply 10 min) e o cooldown do
@@ -163,14 +164,16 @@ namespace FS.Core
 
         static bool Em(string[] lista, string chave, string coringa) => Array.IndexOf(lista, chave) >= 0 || Array.IndexOf(lista, coringa) >= 0;
 
-        /// <summary>`d` na faixa da chave: [padrao/10, padrao x 10] (padrao 0 = so 0), NuncaMenor/NuncaMaior pelo padrao e a Trava absoluta
+        /// <summary>`d` na faixa da chave: [padrao/10, padrao x 10] (padrao 0 = so 0, salvo Trava), NuncaMenor/NuncaMaior pelo padrao e a Trava absoluta
         /// (exata, senao a do coringa); inteiro arredonda.</summary>
         static double Prende(string chave, string coringa, Type ty, double padrao, double d)
         {
             double lo = Math.Min(padrao / 10, padrao * 10), hi = Math.Max(padrao / 10, padrao * 10);
             if (Em(NuncaMenor, chave, coringa)) lo = Math.Max(lo, padrao);
             if (Em(NuncaMaior, chave, coringa)) hi = Math.Min(hi, padrao);
-            if (Travas.TryGetValue(chave, out (double Min, double Max) tr) || Travas.TryGetValue(coringa, out tr)) { lo = Math.Max(lo, tr.Min); hi = Math.Min(hi, tr.Max); }
+            // padrao 0 so sai do 0 com Trava absoluta (B-CORE-08: QualidadeEvento); com padrao nao zero, a Trava corta a faixa generica
+            if (Travas.TryGetValue(chave, out (double Min, double Max) tr) || Travas.TryGetValue(coringa, out tr))
+            { lo = padrao == 0 ? tr.Min : Math.Max(lo, tr.Min); hi = padrao == 0 ? tr.Max : Math.Min(hi, tr.Max); }
             if (ty != typeof(float)) { lo = Math.Ceiling(lo); hi = Math.Floor(hi); d = Math.Round(d, MidpointRounding.AwayFromZero); }   // 2,5 -> 3 conta como preso
             return Math.Min(hi, Math.Max(lo, d));
         }

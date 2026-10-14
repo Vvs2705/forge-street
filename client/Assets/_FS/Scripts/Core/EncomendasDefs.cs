@@ -41,18 +41,20 @@ namespace FS.Core
             new OrderDef("ord_mixed_old_forge", Mixed, OldForge, 70f, 2, 15, 18f, 60, 3, products: 3, minLines: 3),
             new OrderDef("ord_royal_old_forge", Royal, OldForge, 200f, 5, 40, 32f, 150, 10, minQuality: Fina, blueprintQueue: FilaRoyal),
             new OrderDef("ord_blueprint_old_forge", Blueprint, OldForge, 150f, 3, 30, 5f, 25, 2, blueprintQueue: FilaEncomenda),
-            // eventos (LIVEOPS_V1 §2.2): 15 pontos por entrega (20 fechava a trilha numa sessao; 10, so no dia 6: BALANCE §28.6), sem ouro nem Renome
+            // eventos (LIVEOPS_V1 §2.2): 15 pontos por entrega (20 fechava a trilha numa sessao; 10, so no dia 6: BALANCE §28.6), sem ouro nem Renome.
+            // A Event passa fome atras das vagas normais (OnVenda: a mais antiga que aceita); com 3 vagas antes do evento (Renome 3 em ~1:40 com
+            // a Collection do B-CORE-08) ela rende metade: Caravan 12, Hunts 17/20 (100 pontos de golpe inalcancaveis sem golpe), RW-B 15 (BALANCE §30.6)
             Evento("ord_ev_royal_week", "ev_s1w1_royal_week"),
             Evento("ord_ev_forge_frenzy", "ev_s1w2_forge_frenzy"),
             Evento("ord_ev_armorers_challenge", "ev_s1w3_armorers_challenge"),
-            Evento("ord_ev_hunt_sunblade", "ev_s1w4_hunt_sunblade"),
+            Evento("ord_ev_hunt_sunblade", "ev_s1w4_hunt_sunblade", 17),   // 20 fecha no dia 3; 15, no dia 6
             Evento("ord_ev_blacksmith_festival", "ev_s2w1_blacksmith_festival"),
             Evento("ord_ev_rare_ore_rush", "ev_s2w2_rare_ore_rush"),
-            Evento("ord_ev_merchant_caravan", "ev_s2w3_merchant_caravan", 10),   // so encomendas nas missoes: com 15 fechava no dia 3 (BALANCE §28.6)
-            Evento("ord_ev_hunt_ember_crown", "ev_s2w4_hunt_ember_crown"),
+            Evento("ord_ev_merchant_caravan", "ev_s2w3_merchant_caravan", 12),   // so encomendas nas missoes: 15 fecha no dia 3, 10 nunca (3 vagas; BALANCE §30.6)
+            Evento("ord_ev_hunt_ember_crown", "ev_s2w4_hunt_ember_crown", 20),   // 15 nao fecha em 6 dias
             Evento("ord_ev_arcane_week", "ev_arcane_week"),
             Evento("ord_ev_forge_frenzy_b", "ev_s1w5_forge_frenzy_b"),   // reservas: sem a encomenda Event a trilha parava em 700 de 1.000
-            Evento("ord_ev_royal_week_b", "ev_s2w5_royal_week_b", 10),   // com 15 fechava no dia 3 depois da vaga sem cartao repetido (coordenador)
+            Evento("ord_ev_royal_week_b", "ev_s2w5_royal_week_b"),   // 10 (§28.7, 2 vagas) nao fecha em 6 dias com 3 vagas (BALANCE §30.6)
             // fregueses do Old Forge (o premio e o Renome do tipo; N fixo)
             new OrderDef("ord_reg_orbo", Qual, OldForge, 0f, 5, 5, 13f, 40, 3, minQuality: Fina, item: "ferramenta", fixedN: 5, clientId: "cli_reg_orbo"),
             new OrderDef("ord_reg_lirien", Common, OldForge, 0f, 8, 8, 10f, 25, 1, item: "joia", fixedN: 8, clientId: "cli_reg_lirien"),

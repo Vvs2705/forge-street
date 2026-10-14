@@ -150,6 +150,9 @@ namespace FS.Core
         /// <summary>B-CORE-07: Blueprints possuidos (Projetos.cs), posse e nunca saldo. Ganchos: o Tick checa os marcos, o Sell conta as Fina ou
         /// melhor; save nas linhas bp=/bpq=.</summary>
         public readonly Projetos Projetos;
+        /// <summary>B-CORE-08: o Hall das obras-primas e a Collection (Masterworks.cs). Ganchos: MasterworkPending e o Produce (Hall), o Tick
+        /// (marcos), o Sell (Superiores por item), o PriceOf (+5% da familia completa); save nas linhas hall=/colq=.</summary>
+        public readonly Hall Hall; public readonly Colecao Colecao;
         /// <summary>B-CORE-01: itens e receitas desta partida (padrao Items.All e Recipes.All; so o teste injeta outro). Handle de item = posicao
         /// em ItemDefs; os arrays por item (Stock, SoldItems, Crafted, Held) tem esse tamanho.</summary>
         public readonly ItemDef[] ItemDefs; public readonly RecipeDef[] RecipeDefs;
@@ -252,9 +255,10 @@ namespace FS.Core
         float _serveT, _serveJ, _convT, _padDwell;
         Pad _padUnder;
 
-        /// <summary>`items`/`recipes`/`blueprints` = conteudo injetado (null = o do distrito); so o teste usa. `distrito` = o DistrictDef desta
-        /// instancia (null = Distritos.OldForge); o Ajuste dele vale sobre `tuning` (o Imperio passa um Tuning novo por distrito).</summary>
-        public Sim(Tuning tuning = null, ItemDef[] items = null, RecipeDef[] recipes = null, BlueprintDef[] blueprints = null, DistrictDef distrito = null)
+        /// <summary>`items`/`recipes`/`blueprints`/`masterworks` = conteudo injetado (null = o do distrito); so o teste usa. `distrito` = o
+        /// DistrictDef desta instancia (null = Distritos.OldForge); o Ajuste dele vale sobre `tuning` (o Imperio passa um Tuning novo por distrito).</summary>
+        public Sim(Tuning tuning = null, ItemDef[] items = null, RecipeDef[] recipes = null, BlueprintDef[] blueprints = null, DistrictDef distrito = null,
+            MasterworkDef[] masterworks = null)
         {
             Distrito = distrito ?? Distritos.OldForge;
             UpgradeDefs = Distrito.Upgrades;
@@ -271,6 +275,8 @@ namespace FS.Core
             ItemDefs = items ?? Distrito.Itens; RecipeDefs = recipes ?? Distrito.Receitas;
             int n = ItemDefs.Length;
             Projetos = new Projetos(this, blueprints ?? Distrito.Projetos);
+            Hall = new Hall(this, masterworks ?? Distrito.Masterworks); Colecao = new Colecao(this, Distrito.MarcosColecao);   // B-CORE-08 por distrito
+            MasterworkPending = s => Hall.Pendente(s) >= 0;   // B-CORE-08: projeto e condicoes da 1a pendente da familia
             Stock = new int[n]; SoldItems = new int[n]; Crafted = new int[n]; StockQ = Lotes(n);
             Player = new Carrier(n) { Pos = Distrito.Inicio, Speed = Balance.PlayerSpeed, Cap = Balance.PlayerCap };
             VipIn = T.VipInterval(0);
@@ -465,6 +471,7 @@ namespace FS.Core
             Clients(dt);
             Milestones();
             Projetos.Checa();   // B-CORE-07: marcos, Renome e conquista viram projeto (Ev.Blueprint)
+            Colecao.Checa();    // B-CORE-08: marcos da colecao (Ev.Colecao), 1x pelo ID
             Encomendas.Tick(dt);   // B-CORE-05
             if (BoostLeft > 0f) { if ((BoostLeft -= dt) <= 0f) { BoostLeft = 0f; BoostMul = 1f; BoostCooldown = T.Ad(Anuncio.Velocidade).Recarga; } }   // recarga conta do fim
             else BoostCooldown = Math.Max(0f, BoostCooldown - dt);
@@ -975,7 +982,7 @@ namespace FS.Core
                     {
                         s.Busy = false; s.Progress = 0f; s.Blocked = false; s.Crafted++; Crafted[(int)s.OutItem] += s.Recipe.Qtd;
                         Quality l = Grade(s);   // B-CORE-03: acumulador e golpe
-                        if (l == Quality.Masterwork) { Masterworks++; Emit(Ev.Masterwork, (int)s.OutItem, s.Index, s.Pos); }   // vai ao Hall: nunca a pilha nem o balcao
+                        if (l == Quality.Masterwork) { Masterworks++; Hall.Registra(s); }   // vai ao Hall (B-CORE-08): nunca a pilha nem o balcao
                         else
                         {
                             Put(ref s.Out, s.OutQ, l);
@@ -1070,8 +1077,9 @@ namespace FS.Core
             Quality l = Take(ref Stock[(int)want], StockQ[(int)want]);
             Renome.OnVendaQualidade((int)l);   // B-CORE-06: +1 a cada 10 Superiores vendidas
             Projetos.OnVenda((int)want, l);    // B-CORE-07: marco "N Fina ou melhor"
+            Colecao.OnVenda((int)want, l);     // B-CORE-08: aba Produtos (item x qualidade)
             int price = PriceOf(want, l) * mul;
-            QualityGold += price - PriceOf(want) * mul;
+            QualityGold += price - PriceOf(want, Quality.Normal) * mul;
             Gold += price; GoldEarned += price; Sales++; SoldItems[(int)want]++;
             Encomendas.OnVenda(want, l);   // B-CORE-05: conta para a vaga mais antiga que aceita a peca
             if (FirstSaleTime < 0f) FirstSaleTime = Time;
@@ -1203,7 +1211,8 @@ namespace FS.Core
             if (!s.Produces || !IsProduct(s.OutItem)) return b;
             b[(int)QualitySource.StationLevel] = (s.Level - 1) * T.NivelEstacaoQ;
             b[(int)QualitySource.Worker] = Equipe.QualidadeOficial(s);   // B-CORE-04: oficial da familia
-            b[(int)QualitySource.Buff] = Equipe.QualidadeMestre(s);      // B-CORE-04: mestre de obras
+            b[(int)QualitySource.Buff] = Equipe.QualidadeMestre(s)       // B-CORE-04: mestre de obras
+                + ((int)s.OutItem < T.QualidadeEvento.Length ? T.QualidadeEvento[(int)s.OutItem] : 0);   // B-CORE-08: modificador do evento (Hunt)
             b[(int)QualitySource.Blueprint] = Projetos.Tecnica(s.Recipe.Family);   // B-CORE-07: tecnica da familia (posse do projeto)
             return b;
         }
@@ -1217,8 +1226,8 @@ namespace FS.Core
         }
 
         /// <summary>Preco de `item` no nivel `l`: preco base x Tuning.QualidadePct, inteiro e meio para cima (espada 10/15/25, escudo 25/38/63).
-        /// Masterwork = 0 (nao vende).</summary>
-        public int PriceOf(Item item, Quality l) => (PriceOf(item) * T.QualidadePct[(int)l] + 50) / 100;
+        /// Masterwork = 0 (nao vende). B-CORE-08: familia completa no Hall, +5% (Hall.BonusPct) na mesma conta (sem bonus, o de antes ao byte).</summary>
+        public int PriceOf(Item item, Quality l) => (int)(((long)PriceOf(item) * T.QualidadePct[(int)l] * (100 + Hall.BonusPct(item)) + 5000) / 10000);
 
         /// <summary>
         /// Nivel da peca que sai agora da estacao (§1.3): parte inteira de q = nivel garantido; a fracao enche o acumulador e, ao passar de 100,
@@ -1620,6 +1629,7 @@ namespace FS.Core
             Renome.Save(sb);  // B-CORE-06: rn= (o Load de antes ignora chave desconhecida)
             Equipe.Save(sb);  // B-CORE-04: wkn= (so com alguem de nivel; senao o texto e' o de antes)
             Projetos.Save(sb);   // B-CORE-07: bp= e bpq= (idem)
+            Hall.Save(sb); Colecao.Save(sb);   // B-CORE-08: hall= e colq= (so com algo dentro)
             Metas.Save(sb);   // D-CORE-01/02: linhas mt.* (nada antes da 1a Agora)
             LiveOps.Save(sb); // D-CORE-03/04: linhas ev.*/ps.* (nada antes da 1a Agora)
             Compras.Save(sb);   // E-PLAT-04: linhas iap.* (so com compra)
@@ -1745,6 +1755,7 @@ namespace FS.Core
                 }
             }
             sim.Projetos.Load(text);   // B-CORE-07: antes do pad (o parcial da bigorna longa so fica com o projeto); sem bp= o 1o Tick da o retroativo dos marcos
+            sim.Colecao.Load(text);    // B-CORE-08: colq= (Superiores por item; Normal e Fina saem do solds= e do bpq=)
             sim.Gold += refund;
             sim.UpgradesBought = 0;
             foreach (bool b in sim.Bought) if (b) sim.UpgradesBought++;
@@ -1781,6 +1792,7 @@ namespace FS.Core
             sim.Metas.Load(text);   // D-CORE-01/02: save sem mt.* = metas zeradas
             sim.Anuncios.Load(text);   // E-PLAT-02: save sem ad.* = nenhum anuncio visto
             sim.Renome.Load(text);  // B-CORE-06: save sem rn= = retroativo (depois das metas: soma o Renome que elas guardaram)
+            sim.Hall.Load(text);    // B-CORE-08: depois do Renome (o mw: do ledger sem hall= volta registrado)
             sim.LiveOps.Load(text); // D-CORE-03/04: save sem ev.*/ps.* = nenhum evento, Pass do zero (o XP das metas entra 1x na 1a temporada)
             sim.Compras.Load(text);   // E-PLAT-04: save sem iap.* = nada comprado; posse so no Compras.Conectar (a loja valida)
             return sim;

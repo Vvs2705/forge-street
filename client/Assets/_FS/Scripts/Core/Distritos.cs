@@ -50,6 +50,7 @@ namespace FS.Core
         public string Id, Nome;
         public int Indice;
         public ItemDef[] Itens; public RecipeDef[] Receitas; public UpgradeDef[] Upgrades; public WorkerDef[] Workers; public BlueprintDef[] Projetos;
+        public MasterworkDef[] Masterworks; public MarcoColecaoDef[] MarcosColecao;   // B-CORE-08: Hall e Collection do distrito
         public StationDef[] Estacoes; public PadDef[] Pads; public ObstacleDef[] Obstaculos; public MilestoneDef[] Marcos;
         public V2 Inicio, Contratacao;
         /// <summary>Limite direito do ferreiro (m) ate o efeito do Corredor (SideCorridor); sem Corredor no distrito, o mapa inteiro.</summary>
@@ -77,6 +78,7 @@ namespace FS.Core
         {
             Id = OldForgeId, Nome = "Old Forge", Indice = 0,
             Itens = Items.All, Receitas = Recipes.All, Upgrades = FS.Core.Upgrades.All, Workers = WorkerDefs.All, Projetos = ProjetosDefs.All,
+            Masterworks = MasterworksDefs.All, MarcosColecao = MasterworksDefs.Marcos,
             // Bocas (FASE5 §2b): (inX, inY) = lado da ENTRADA. Toda estacao que produz: entrada a esquerda, saida a direita. A 2a area foi
             // ANEXADA (8 e 9) e a bigorna longa (10, B-CORE-07) tambem: os indices e o save antigos nao mudam
             Estacoes = new[]
@@ -209,6 +211,7 @@ namespace FS.Core
         {
             Id = ArmorersRowId, Nome = "Armorer's Row", Indice = 1,
             Itens = ItensArmeiros, Receitas = ReceitasArmeiros, Upgrades = UpgradesArmeiros, Projetos = new BlueprintDef[0],
+            Masterworks = new MasterworkDef[0], MarcosColecao = new MarcoColecaoDef[0],   // ponytail: as obras da Row (CONTEUDO_V1 §10) entram no C-CORE-05
             // ponytail: a turma Ferraz (§6, 1 WorkerDef com 4 corpos) sao 4 Porters ate o campo `crew` existir; o 4o leva o bruto (minerio ou couro)
             Workers = new[] { Ferraz(1, 0), Ferraz(2, 1), Ferraz(3, 2), Ferraz(4, 0) },
             // Fileiras de 2,5 m (deposito -> fornalhas -> prensas -> montagens -> forjas -> balcao), colunas de 3 m; entrada a esquerda
