@@ -25,7 +25,7 @@ namespace FS
     /// </summary>
     public sealed class Ads : MonoBehaviour
     {
-        public const string AppKey = "28953c84d";   // Android, app "Forge Street" no painel LevelPlay (nao e' segredo: vai no APK)
+        public const string AppKey = "28bbd582d";   // Android, app "Forge Street" na conta LevelPlay da V-STACK (nao e' segredo: vai no APK)
         public const string Vip = "vip", Velocidade = "velocidade", Intersticial = "intersticial";
         /// <summary>E-PLAT-03: ad unit do intersticial no painel. TODO (Vinicius, no painel LevelPlay): criar "interstitial_transicao" e colar o ID
         /// aqui; vazio = nada a carregar mesmo com a flag ligada (o build de desenvolvimento cai no simulado).</summary>
@@ -197,7 +197,7 @@ namespace FS
     /// pedido lembra o placement, que e' o que o nucleo paga. Intersticial so com a flag ligada e com ad unit (Ads.InterstitialUnit).</summary>
     sealed class AdsLevelPlay : IAds
     {
-        const string UnitVip = "7dxdva13pxaovoae", UnitVelocidade = "gple3wvhz7xm3qk7";
+        const string UnitVip = "bagjqgdg52eedh66", UnitVelocidade = "3xcxwsgu2wz215oe";
         /// <summary>Placement -> ad unit. E-PLAT-02: os placements novos usam a unit da Velocidade ate o painel ter as deles. TODO (Vinicius, no
         /// painel LevelPlay): criar rewarded_cofre2x, rewarded_encomenda e rewarded_supply e trocar aqui. O nome da recompensa do painel nao
         /// importa: o nucleo aplica pelo placement do pedido (Anuncios.Pagar).</summary>
