@@ -89,7 +89,9 @@ namespace FS
         const float ItemS = 0.5f, StackMax = 1.6f;
         static readonly Item[] PileOrder = { Item.Ore, Item.Shield, Item.Jewel, Item.Tool, Item.Ingot, Item.LongSword, Item.Sword };   // B-CORE-07: a espada longa, fina como a espada
         static readonly float[] LyingH = { 0.88f, 0.57f, 0.3f, 0.95f, 0.61f, 0.95f, 0.3f };   // por Item (B-CORE-07: espada longa ~ espada; remedir com a arte)
-        readonly float[] _pileY = new float[Balance.PlayerCapUp * Items.All.Length];
+        float[] _pileY;
+        // C-CORE-01: a ordem e as alturas acima sao dos itens do Old Forge; distrito com outra tabela empilha na ordem dela, 0,6 de altura (remedir com a arte)
+        Item[] _pileOrder; float[] _lyingH;
         internal const float PileS = 0.4f; const float PileStep = 0.2f;   // pilhas das estacoes (2 colunas de itens deitados)
         // Balao do pedido (BENCHMARK_VISUAL P0-2): 1o da fila com balao 1,32 x 1,12 m e icone de 0,9 m, deslocado 0,2 m para a esquerda
         // (o 1o e' a vaga mais a esquerda) para nao encostar no mini-icone do 2o; o rabicho fica sobre a cabeca. Anel = borda de 0,1 m.
@@ -291,6 +293,14 @@ namespace FS
         {
             _sim = sim; _cam = cam; _labels = labels;
             _bought = sim.UpgradesBought;
+            int nItens = sim.ItemDefs.Length;
+            _pileY = new float[Balance.PlayerCapUp * nItens];
+            _pileOrder = PileOrder; _lyingH = LyingH;
+            if (sim.ItemDefs != Items.All)
+            {
+                _pileOrder = new Item[nItens]; _lyingH = new float[nItens];
+                for (int i = 0; i < nItens; i++) { _pileOrder[i] = (Item)i; _lyingH[i] = 0.6f; }
+            }
             _coin = Art.Icon("moeda", "icone");
             _crown = Art.Icon("coroa", "icone");
             foreach (string n in ClientArt)
@@ -301,16 +311,18 @@ namespace FS
             _streetLabel.text = Loc.T("mundo.rua");   // 2 linhas: so 1,2 m da rua cabe na tela antes do Corredor
             _streetLabel.color = StreetInk;       // v0.6d: 28 px #E8D9B8 (era Ink a 55%, sumia na pedra)
             _streetHalfW = _streetLabel.preferredWidth / 2f;
-            Deco("carroca", CartPos, CartCell, 1.3f);
-            _shopTeaser = Deco("loja_joalheria", sim.JewelShop.Pos, StationCell, 1.3f);   // mesma folha e celula da estacao
+            // C-CORE-01: decoracao do Old Forge so onde o distrito tem a peca (carroca = o obstaculo dela; loja e luxo = o efeito/estacao)
+            foreach (ObstacleDef o in sim.Distrito.Obstaculos) if (o.Name == "carroca") Deco("carroca", CartPos, CartCell, 1.3f);
+            _shopTeaser = sim.JewelShop != null ? Deco("loja_joalheria", sim.JewelShop.Pos, StationCell, 1.3f) : null;   // mesma folha e celula da estacao
             if (_shopTeaser != null) _shopTeaser.color = Shut;
             _shopLabel = Art.FreeText(_labels, "JoalheriaFechada", 26, new Vector2(400f, 40f));
             _shopLabel.text = Loc.T("mundo.joalheria_fechada");
             _shopLabel.color = Art.ComAlfa(Art.Ink, 0.7f);
-            Lux(Upgrade.WorkshopFloor, BuildTiles());
-            Lux(Upgrade.WorkshopFacade, BuildFacade());
-            Lux(Upgrade.JewelryDecor, BuildJewelryDecor());
-            _hasStand = true;
+            _shopLabel.enabled = _streetLabel.enabled = false;
+            if (sim.TemEfeito(Upgrade.WorkshopFloor)) Lux(Upgrade.WorkshopFloor, BuildTiles());
+            if (sim.TemEfeito(Upgrade.WorkshopFacade)) Lux(Upgrade.WorkshopFacade, BuildFacade());
+            if (sim.TemEfeito(Upgrade.JewelryDecor) && sim.JewelShop != null) Lux(Upgrade.JewelryDecor, BuildJewelryDecor());
+            _hasStand = sim.ItemDefs == Items.All;   // os modulos do estande sao das linhas do Old Forge (espada, escudo, ferramenta)
             foreach (string n in StandPieces) _hasStand &= SpriteSheet.TryGet(n, out _);   // sem os modulos: balcao procedural de sempre
             _bubble = BuildBubble("BalaoFila");
             _jewelBubble = BuildBubble("BalaoJoias");
@@ -390,6 +402,7 @@ namespace FS
 
         string StationArt(Station s)
         {
+            if (s.Arte != null) return s.Arte;   // C-CORE-01: StationDef.Arte (a Row usa a da familia mais proxima)
             switch (s.Kind)
             {
                 case Kind.Deposit: return "deposito";
@@ -427,6 +440,7 @@ namespace FS
         /// <summary>Chaos, paredes, sombra de contato e props. Nada muda com o jogo, so a tinta da rua lateral (RefreshArea) e o brilho das tochas.</summary>
         void BuildScenery()
         {
+            if (!_sim.Distrito.Parede) { BuildRua(); return; }
             float ws = Balance.WorkshopW, w = Balance.WorldW, h = Balance.WorldH;
             Sprite rua = Art.Ground("rua"), parede = Art.Ground("parede");
             // fundo de toda a camera: grama (v0.5b; era calcamento a 42%, "exterior vazio"), um pouco abaixo do valor da oficina
@@ -478,6 +492,42 @@ namespace FS
                 Art.NewSprite(transform, "TampoDir", Art.Square(), WallCap, WallOrder + 1, new Vector2(x0 + CapW / 2f, (y0 + y1) / 2f), new Vector2(CapW, y1 - y0));
             }
             foreach (V2 p in CornerPillars) Deco("pilar", p, RealCell("pilar"), 0f);
+            foreach ((string n, float x, float y) in Outside)
+            {
+                SpriteRenderer art = Deco(n, new V2(x, y), RealCell(n), n == "arvore" ? 1.3f : n == "poste" ? 0.4f : 1f);
+                if (art != null && n == "poste")
+                    _glows.Add(Art.NewSprite(art.transform.parent, "Brilho", Art.Glow(), Art.ComAlfa(GlowColor, GlowAlpha), GlowOrder, new Vector2(0f, LampY * 0.5f), Vector2.one * GlowSize * 1.2f));
+            }
+        }
+
+        /// <summary>
+        /// C-CORE-01: distrito sem a parede lateral do Old Forge (Armorer's Row): uma rua so, de pedra fria, com a parede de pedra quente
+        /// a esquerda e embaixo, o muro baixo a direita, os mesmos props e o exterior. ponytail: o kit visual proprio do distrito (C-ART-13)
+        /// troca o chao, a paleta e os props.
+        /// </summary>
+        void BuildRua()
+        {
+            float w = Balance.WorldW, h = Balance.WorldH;
+            Sprite rua = Art.Ground("rua"), parede = Art.Ground("parede");
+            Tiled("Exterior", Art.Ground("grama"), Gray(0.82f), ExteriorOrder, new Vector2(-4f, -7f), new Vector2(w + 4f, h + 8f));
+            Tiled("Rua", rua, StreetOpen, FloorOrder, new Vector2(-4f, h), new Vector2(w + 4f, h + 2.6f));
+            Tiled("Chao", rua, StreetOpen, FloorOrder, Vector2.zero, new Vector2(w, h));
+            Art.NewSprite(transform, "LuzRua", Art.Square(), StreetWash, WashOrder, new Vector2(w / 2f, (h + 2.6f) / 2f), new Vector2(w + 8f, h + 2.6f));
+            Shade(Vector2.zero, new Vector2(0.35f, h), false);
+            Shade(Vector2.zero, new Vector2(w, 0.3f), true);
+            Tiled("ParedeEsq", parede, Color.white, WallOrder, new Vector2(-WallT, 0f), new Vector2(0f, h), true);
+            Tiled("ParedeBaixo", parede, Color.white, WallOrder, new Vector2(-WallT, -WallT), new Vector2(w + MuroT, 0f));
+            Tiled("ParedeFace", parede, FaceTint, WallOrder, new Vector2(-WallT, -WallT - WallFace), new Vector2(w + MuroT, -WallT));
+            Tiled("MuroDir", parede, MuroTint, WallOrder, new Vector2(w, 0f), new Vector2(w + MuroT, h), true);
+            Art.NewSprite(transform, "TampoEsq", Art.Square(), WallCap, WallOrder + 1, new Vector2(-CapW / 2f, h / 2f), new Vector2(CapW, h));
+            Art.NewSprite(transform, "TampoBaixo", Art.Square(), WallCap, WallOrder + 1, new Vector2(w / 2f, -CapW / 2f), new Vector2(w, CapW));
+            foreach ((string n, float x, float y) in Props)
+            {
+                SpriteRenderer art = Deco(n, new V2(x, y), RealCell(n), PropShadow(n));
+                if (art != null && n == "tocha")
+                    _glows.Add(Art.NewSprite(art.transform.parent, "Brilho", Art.Glow(), Art.ComAlfa(GlowColor, GlowAlpha), GlowOrder, new Vector2(0f, FlameY), Vector2.one * GlowSize));
+            }
+            for (int i = 0; i < 3; i++) Deco("pilar", CornerPillars[i], RealCell("pilar"), 0f);   // o 4o canto e' o da parede lateral do Old Forge
             foreach ((string n, float x, float y) in Outside)
             {
                 SpriteRenderer art = Deco(n, new V2(x, y), RealCell(n), n == "arvore" ? 1.3f : n == "poste" ? 0.4f : 1f);
@@ -544,14 +594,14 @@ namespace FS
             v.Label.text = Textos.Estacao(s.Index);
             v.Label.fontStyle = FontStyle.Bold;
             // bocas no chao (FASE5 s2b): deposito so entrega, balcoes so recebem, quem produz tem as duas. v0.5b: placa no chao
-            if (s.Kind == Kind.Deposit) Mouth(v.Root, s.OutAt - s.Pos, false, (int)Item.Ore);
+            if (s.Kind == Kind.Deposit) Mouth(v.Root, s.OutAt - s.Pos, false, (int)s.OutItem);   // o bruto do deposito (minerio; couro na Row)
             else Mouth(v.Root, s.InAt - s.Pos, true, s.Produces ? (int)s.InItem : s == _sim.JewelShop ? (int)Item.Jewel : -1);
             if (s.Produces) Mouth(v.Root, s.OutAt - s.Pos, false, (int)s.OutItem);
             if (s.Produces)
             {
                 v.InPile = Pile(v.Root, s.InItem, s.InCap, -1.05f);
                 // B-CORE-04: a pilha de saida cresce com o almoxarife (Equipe.Saida); pre-aloca o teto
-                v.OutPile = Pile(v.Root, s.OutItem, (s.Kind == Kind.Furnace ? Balance.FurnaceOut : Balance.CrafterOut) + WorkerDefs.QmSaida, 1.05f);
+                v.OutPile = Pile(v.Root, s.OutItem, Mathf.Max(s.Kind == Kind.Furnace ? Balance.FurnaceOut : Balance.CrafterOut, s.Recipe.Qtd > 1 ? 2 * s.Recipe.Qtd : 0) + WorkerDefs.QmSaida, 1.05f);   // C-CORE-01: rebitadeira guarda 8
                 v.PileScale = v.OutPile[0].transform.localScale;
                 // barra arredondada (capsula 9-fatias) com o icone do produto na ponta (P1-3)
                 v.BarBg = Capsule(v.Root, "BarraFundo", Art.ComAlfa(Art.Bg, 0.85f), 3, new Vector2(0f, BarY), BarW, BarH);
@@ -678,24 +728,21 @@ namespace FS
         {
             tint = Color.white;
             fill = 0.72f;
-            string st = (Upgrade)u switch
-            {
-                Upgrade.Anvil2 or Upgrade.LongAnvil => "bigorna", Upgrade.Furnace2 => "fornalha", Upgrade.Shields => "bancada_escudos", Upgrade.Tools => "bancada_ferramentas",
-                Upgrade.Jewelry => "bancada_joalheria", _ => null,
-            };
+            // C-CORE-01: a estacao que o upgrade abre (a 1a do distrito; Joalheria = a bancada), o efeito (Corredor, Esteira) ou o ajudante que ele contrata
+            Station abre = _sim.Stations.Find(x => x.UnlockBy == u && x.Kind != Kind.Counter);
+            string st = abre != null ? StationArt(abre) : null;
             if (st != null) return StaticArt(st, StationCell);   // mesma celula da estacao: o 1o Frame no cache serve aos dois
-            switch ((Upgrade)u)
+            UpgradeDef d = _sim.UpgradeDefs[u];
+            if (d.Efeito == Upgrade.SideCorridor) { fill = 1f; return StaticArt("portao_fechado", RealCell("portao_fechado")); }
+            if (d.Efeito == Upgrade.Conveyor) { fill = 0.9f; return Art.ItemArt(_sim.EsteiraDe != null ? _sim.EsteiraDe.OutItem : Item.Ingot, true) ?? Art.Rounded(); }
+            if (System.Array.Exists(_sim.Equipe.Defs, k => k.Contrata == d.Id) && SpriteSheet.TryGet("ajudante", out SpriteSheet sh))
             {
-                case Upgrade.SideCorridor: fill = 1f; return StaticArt("portao_fechado", RealCell("portao_fechado"));
-                case Upgrade.Conveyor: fill = 0.9f; return Art.ItemArt(Item.Ingot, true) ?? Art.Rounded();
-                case Upgrade.Helper1: case Upgrade.Helper2: case Upgrade.Helper3: case Upgrade.Jeweler: case Upgrade.Miner: case Upgrade.Jeweler2:
-                    if (!SpriteSheet.TryGet("ajudante", out SpriteSheet sh)) break;
-                    sh.Scale = CharScale("ajudante");   // o quadro entra no cache com a escala do corpo do ajudante (BuildCarrier)
-                    fill = 0.65f;
-                    return sh.Frame("Idle", 0, 0f);
+                sh.Scale = CharScale("ajudante");   // o quadro entra no cache com a escala do corpo do ajudante (BuildCarrier)
+                fill = 0.65f;
+                return sh.Frame("Idle", 0, 0f);
             }
             fill = 1f;
-            if (Upgrades.IsLuxury(u)) { tint = Art.Accent; return Art.Star(); }
+            if (d.Luxury) { tint = Art.Accent; return Art.Star(); }
             tint = Art.Accent;
             return Art.Plus();
         }
@@ -747,7 +794,7 @@ namespace FS
             _lux.Add(v);
         }
 
-        bool On(LuxV v) => _sim.Bought[(int)v.U] && (v.Off < 0 || !_sim.Bought[v.Off]);
+        bool On(LuxV v) => _sim.Has(v.U) && (v.Off < 0 || !_sim.Has((Upgrade)v.Off));   // C-CORE-01: pelo efeito (Fole de couro = fole; Mochila do ferreiro)
 
         /// <summary>
         /// v0.6a (P2-2): icone renderizado do upgrade (`melhoria_*`, 1 m de celula) como prop de `size` m em `at` do pai, ligado pela
@@ -1126,7 +1173,8 @@ namespace FS
         /// <summary>Rua lateral escura com rotulo ate o Corredor; loja de joias escurecida "fechada" entre o Corredor e a Joalheria (AREA2 s7).</summary>
         void RefreshArea()
         {
-            bool corridor = _sim.Bought[(int)Upgrade.SideCorridor], teaser = corridor && !_sim.Bought[(int)Upgrade.Jewelry];
+            if (!_sim.Distrito.Parede) return;   // C-CORE-01: sem rua lateral nem loja fechada (BuildRua)
+            bool corridor = _sim.Has(Upgrade.SideCorridor), teaser = corridor && !_sim.Has(Upgrade.Jewelry) && _sim.JewelShop != null;
             _street.color = corridor ? StreetOpen : StreetShut;
             _streetWash.enabled = corridor;
             foreach ((GameObject shut, GameObject open) in _gates)   // fechado ate o Corredor, aberto depois (folhas contra o muro da rua)
@@ -1298,7 +1346,7 @@ namespace FS
             }
             if (s.Produces)
             {
-                int inn = s == _sim.AnvilA ? s.In - _esteira.Levando : s.In;   // B-ART-08: o lingote da esteira so entra na pilha quando chega
+                int inn = s == _sim.EsteiraPara ? s.In - _esteira.Levando : s.In;   // B-ART-08: o lingote da esteira so entra na pilha quando chega
                 for (int i = 0; i < v.InPile.Length; i++) v.InPile[i].enabled = i < inn;
                 bool blocked = s.Blocked || (s.Out >= s.OutCap);
                 int pop = -1; float ps = 1f;   // v0.6a: o item que acabou de sair (Ev.Crafted) da pop 0 -> 1,15 -> 1
@@ -1610,7 +1658,7 @@ namespace FS
                 }
             }
             // v0.6a (P2-2): Botas = poeirinha nos pes andando, ate 3/s (ambiente: so com vaga no pool)
-            if (v == _player && c.Moving && _sim.Bought[(int)Upgrade.PlayerSpeed] && (v.DustT -= dt) <= 0f)
+            if (v == _player && c.Moving && _sim.Has(Upgrade.PlayerSpeed) && (v.DustT -= dt) <= 0f)
             {
                 v.DustT = DustEvery;
                 if (_fxLive < FxAmbient)
@@ -1622,10 +1670,10 @@ namespace FS
             // FASE7: pilha mista (o ferreiro leva ate o teto de cada tipo), na ordem PileOrder; o 1o item apoia na cabeca (StackY)
             int k = 0;
             float y = 0f, prev = 0f;
-            foreach (Item it in PileOrder)
+            foreach (Item it in _pileOrder)
                 for (int n = 0; n < c.Held[(int)it] && k < v.Stack.Length; n++, k++)
                 {
-                    float h = LyingH[(int)it] * ItemS;
+                    float h = _lyingH[(int)it] * ItemS;
                     y += k == 0 ? h * 0.5f : (prev + h) * 0.375f;   // centro a centro = 75% da media das alturas
                     prev = h;
                     _pileY[k] = y;
@@ -1817,7 +1865,7 @@ namespace FS
             switch (h)
             {
                 case Hint.BuyPad: _hintAt = _sim.Pads[arg].Pos; break;
-                case Hint.ProductToCounter: _hintAt = arg == (int)Item.Jewel ? _sim.JewelShop.InAt : _sim.Counter.InAt; break;
+                case Hint.ProductToCounter: _hintAt = _sim.CounterFor((Item)arg).InAt; break;
                 case Hint.IngotToCrafter: _hintOn = Nearest(s => s.Kind == Kind.Crafter && s.In < s.InCap, true); break;
                 case Hint.OreToFurnace: _hintOn = Nearest(s => s.Kind == Kind.Furnace && s.In < s.InCap, true); break;
                 case Hint.PickProducts: _hintOn = Nearest(s => s.Kind == Kind.Crafter && (int)s.OutItem == arg && s.Out > 0, false); break;
