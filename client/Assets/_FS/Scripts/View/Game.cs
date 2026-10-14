@@ -1647,6 +1647,13 @@ namespace FS
             if (Arg("-equipe") != null) Captura.Equipe(_sim);   // B-CORE-04 (fotos): a oficina com os 13 workers do Old Forge; o -gold vem depois
             if (long.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long g)) _sim.Gold = Math.Max(0, g);   // A-CORE-06: aceita > int (foto da HUD)
             if (long.TryParse(Arg("-renome"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long rn)) _raiz.Renome.Ganha(rn - _raiz.Renome.Total);   // B-CORE-06: so sobe
+            // C-CORE-03 (fotos): -gerente N = o manager do Old Forge no nivel N (precisa do Charter: -distrito armorers_row), sem gastar o ouro
+            if (int.TryParse(Arg("-gerente"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int ger))
+                for (int nv = _imp.Manager(Distritos.OldForgeId) + 1; nv <= ger && _imp.CustoManager(Distritos.OldForgeId) >= 0; nv++)
+                {
+                    _sim.Gold += _imp.CustoManager(Distritos.OldForgeId);
+                    _imp.SobeManager(Distritos.OldForgeId, nv);
+                }
             string ctr = Arg("-contrato");   // D-CORE-04 (foto): ativa o contrato da raiz sem requisito nem flag (-contratos so abre a aba)
             if (ctr != null && !_raiz.Contratos.Forca(ctr)) { Falha($"CONTRATO desconhecido ou ja concluido '{ctr}'"); return; }
             string[] px = (Arg("-px") ?? "").Split(',');
@@ -1709,11 +1716,13 @@ namespace FS
 
         bool MapaVisivel => _imp.Abertos.Count > 1 || _imp.Charters.Count > 0 || _imp.CharterFalta(_sim.Distrito.Id) == null;
 
-        /// <summary>Uma linha por distrito (aqui, aberto, abrir por N, falta o Charter) e UM botao: a proxima acao (Charter, abrir, ir).</summary>
+        /// <summary>Uma linha por distrito (aqui, aberto, abrir por N, falta o Charter; C-CORE-03: e o manager de quem tem o Charter) e UM botao:
+        /// a proxima acao por prioridade (Charter, abrir, subir o manager, viajar), a do 1o distrito do mapa que a tem.</summary>
         void AbrirMapa()
         {
             var linhas = new System.Collections.Generic.List<string>();
-            string acao = null; Action fazer = null;   // a 1a acao possivel, na ordem do mapa
+            var acoes = new (string Texto, Action Fazer)[4];   // C-CORE-03: 1 acao por vez: 0 Charter, 1 abrir, 2 manager, 3 viajar
+            void Poe(int p, string texto, Action fazer) { if (acoes[p].Fazer == null) acoes[p] = (texto, fazer); }
             foreach (DistrictDef d in Distritos.All)
             {
                 string nome = Loc.T("distrito." + d.Id);
@@ -1721,21 +1730,35 @@ namespace FS
                 {
                     string falta = _imp.CharterFalta(d.Id);
                     linhas.Add(Loc.T(falta == null ? "mapa.charter_pronto" : falta == "concedido" ? "mapa.aqui" : "mapa.falta." + falta, nome));
-                    if (falta == null && fazer == null) { acao = Loc.T("mapa.charter"); fazer = () => { _imp.Charter(d.Id); Log("charter", d.Id); Save(); AbrirMapa(); }; }
+                    if (falta == null) Poe(0, Loc.T("mapa.charter"), () => { _imp.Charter(d.Id); Log("charter", d.Id); Save(); AbrirMapa(); });
                 }
                 else if (_imp.Aberto(d.Id))
                 {
                     linhas.Add(Loc.T("mapa.aberto", nome));
-                    if (fazer == null) { acao = Loc.T("mapa.ir"); fazer = () => Renascer(d.Id); }
+                    Poe(3, Loc.T("mapa.ir"), () => Renascer(d.Id));
                 }
                 else if (_imp.Liberado(d.Id))
                 {
                     linhas.Add(Loc.T("mapa.abrir", nome, Textos.Ouro(d.Abertura)));
-                    if (fazer == null && _sim.Gold >= d.Abertura) { acao = Loc.T("mapa.btn_abrir"); fazer = () => { if (_imp.Abrir(d.Id)) { Log("district_open", d.Id); Renascer(d.Id); } }; }
+                    if (_sim.Gold >= d.Abertura) Poe(1, Loc.T("mapa.btn_abrir"), () => { if (_imp.Abrir(d.Id)) { Log("district_open", d.Id); Renascer(d.Id); } });
                 }
                 else linhas.Add(Loc.T("mapa.fechado", nome));
+                // C-CORE-03: o manager vem com o Charter; o nivel sobe a renda de fundo (25 -> 40% da taxa), nunca o teto de 2 h
+                WorkerDef m = Imperio.ManagerDe(d.Id);
+                int nv = _imp.Manager(d.Id);
+                if (m == null || nv == 0) continue;
+                long custo = _imp.CustoManager(d.Id);
+                string pct = Math.Round(_imp.FundoFator(d.Id) * 100.0).ToString("0", CultureInfo.InvariantCulture);
+                linhas.Add(Loc.T("mapa.manager", m.Nome, nv + "/" + m.MaxNivel, pct) + (custo < 0 ? "" : Loc.T("mapa.manager_prox", nv + 1, Textos.Ouro(custo))));
+                if (custo >= 0 && _sim.Gold >= custo)
+                    Poe(2, Loc.T("mapa.btn_manager", nv + 1), () =>
+                    {
+                        if (_imp.SobeManager(d.Id, nv + 1)) { Log("manager_up", d.Id, (nv + 1).ToString(CultureInfo.InvariantCulture)); Save(); }
+                        AbrirMapa();
+                    });
             }
-            ShowPanel(Loc.T("mapa.titulo"), string.Join("\n", linhas), acao ?? Loc.T("ui.ok"), fazer ?? ClosePanel);
+            (string Texto, Action Fazer) acao = Array.Find(acoes, x => x.Fazer != null);
+            ShowPanel(Loc.T("mapa.titulo"), string.Join("\n", linhas), acao.Texto ?? Loc.T("ui.ok"), acao.Fazer ?? ClosePanel);
         }
 
         /// <summary>Foco no distrito `id` e a cena renasce com o mesmo Imperio (grava antes): o mundo, a HUD e o menu nascem do Sim dele.</summary>

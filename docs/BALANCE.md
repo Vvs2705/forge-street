@@ -1997,3 +1997,50 @@ Tudo o mais (produção completa, Renome 1–3, encomendas, prêmio de qualidade
 `ContratosTests` (15): catálogo e validator limpo, oferta determinística (Ferramentas, Renome, 1 vaga, flag, distrito), progresso por etapa e qualidade mínima, conclusão 1× (ouro da taxa fora do `GoldEarned`, Renome, Blueprint pela fonte `Contract`, ledger), gancho no-op sem o Blueprint no build, prazo-bônus, abandono, save ida e volta / antigo / lixo / ID desconhecido, relógio para trás, Império (venda na Rua dos Armeiros conta no contrato da raiz pelo ID, prazo no tick do ativo, aviso no ativo, save só na raiz), missão `contract_complete` de evento, bot F2P (aceita no Renome 3 e cumpre vendendo; sem a flag a partida de 60 min é idêntica) e validator com 17 defeitos injetados. `MetasTests.Eventos_TodoGatilhoContaNoJogo` ganhou Renome 3 no bot (o gatilho novo conta de verdade). LocTests cobra `ctr.<id>` e as larguras.
 
 **Prova vermelha** (`python client/tools/mutantes/mutantes.py --so ctr-…`, sobre o branch com o #61/#62 mesclados; os arquivos mutados não mudam com o #63): **16 mutações `ctr-*`, todas mortas** (0 vivas, 0 inválidas, 2.102 s): contrato concluído volta à oferta, prazo-bônus nunca paga, qualquer item conta, qualidade mínima ignorada, oferta sem o Renome, 2 ativos, abandono que pune, save sem o progresso da etapa, prazo parado, sem o Blueprint, flag ignorada, contrato antes das Ferramentas, etapa que fecha com N + 1, contrato de outro distrito do Império que não é o da raiz, e o validator sem a checagem de item e de Blueprint essencial só por contrato.
+
+## 34. C-CORE-03: managers e Império (2026-10-14)
+
+**Vigente** (`Core/Imperio.cs`, `Core/Sim.cs`, `Core/Encomendas.cs`, `Core/Masterworks.cs`, `Core/Bot.cs`, `View/Game.cs`, `View/Loc.cs`, `tools/econsim`; branch `feat/managers-imperio`). **Managers** (GDD §8, `CONTEUDO_V1.md` §1 e §6, P2): o manager vem com o Charter do distrito (nível 1, contratação 0) e sobe aos níveis 2–5 por ouro da carteira; cada nível sobe a **taxa** da renda de fundo do distrito, online (fora de foco) e offline, **nunca o teto de 2 h** (`Imperio.ApplyOffline` segue com `min(Δt, OfflineCap)`). Dados em `Imperio.Managers` (um `WorkerDef` com papel `Manager` por distrito: Mestre Anselmo no Old Forge, Dona Gertrudes na Row; os dos distritos 3–6 entram com o `DistrictDef` deles) e `Imperio.FundoNivel` = ×1 / 1,2 / 1,32 / 1,44 / 1,6 sobre o `DistrictDef.FundoFator` (o nível 1, 25%): **25 / 30 / 33 / 36 / 40%** da `RateEma` congelada. Fração sempre < 1: o distrito ativo rende a taxa inteira, então rende mais que ele mesmo em fundo em todo nível (invariante testado para todo distrito do build). Compra com **ID de transação = (distrito, nível)**: `SobeManager(id, nivel)` só aceita o próximo nível, 1×, com o Charter e o ouro (toque duplo, pular nível e o mesmo nível depois de save/load recusam). Save: linha opcional `mgr=id:nível` (só acima do 1) no bloco do Império, schema 3; save sem ela = nível 1; lixo fica de fora, nível acima de 5 corta, distrito de build mais novo volta no save. Bot (`Bot.Manager`, só no econsim `--distrito`): depois da produção completa do distrito ativo, sobe o manager mais barato que a carteira paga (`--gerente 0` = nunca, o econsim de antes).
+
+**Camadas do Império:** o `Sim.Renome` de um distrito **é** o da raiz (propriedade: encomenda, Superior vendida, obra-prima e marco da coleção do distrito sobem o mesmo Renome, e o nível dele libera vagas, encomendas e projetos no distrito); o payload do distrito não grava mais `rn=` e um payload antigo com `rn=` não pisa no Renome do Império. Venda, VIP, encomenda (`order_done` e o tipo pelo `OnEncomenda`), golpe de mestre e cofre do distrito contam **também** nas metas (diárias, semanais, conquistas), no evento e no XP do Pass da raiz, 1× (`Sim.Emit`, `Sim.Strike`, `Encomendas.Entregar`), com o item traduzido pelo ID (o que o Old Forge não tem conta no total, sem filtro de item: o elmo da Row, handle 2, não vira espada). O contador do próprio distrito segue (o Hall dele lê). Fora desta leva: compra, contratação, qualidade e obra-prima do distrito nas metas da raiz (índice de upgrade, worker, estação e Hall não traduzem; entram com a meta/missão que os peça por distrito). Correções que vieram junto: o Charter conta a obra-prima pelo Hall (`max(contador, Hall.Count)`: o contador da sessão não vai no save e o Charter travava depois de reabrir) e o Hall de cada distrito só readota do ledger (agora o do Império) a obra-prima dele.
+
+Mapa (C-UI-20): na linha de cada distrito com Charter, o manager ("Mestre Anselmo, gerente nv 2/5: rende 30% fora (nv 3: 64 mil)") e, com ouro, o botão "Gerente nv N"; o painel continua com **uma ação por vez**, agora por prioridade (Charter → Abrir → Gerente → Viajar; antes, na Row com o Charter pronto, o botão mostrava "Viajar" ao Old Forge). Dev/fotos: `-gerente N` (manager do Old Forge no nível N, sem gastar ouro; precisa do Charter, `-distrito armorers_row -testsession`).
+
+### 34.1 Fundo por nível (HIPÓTESE de custo: 20/40/80/160 min da renda alvo, `CONTEUDO_V1.md` §6)
+
+| nível | fração da taxa | Old Forge a 2.400/min (fundo/min) | custo | retorno (min de fundo) | Row a 7.200/min no Charter (fundo/min) | custo | retorno (min de fundo) |
+|---|---|---|---|---|---|---|---|
+| 1 (Charter) | 25% | 600 | — | — | 1.800 | — | — |
+| 2 | 30% | 720 | 32.000 | 267 | 2.160 | 96.000 | 267 |
+| 3 | 33% | 792 | 64.000 | 889 | 2.376 | 190.000 | 880 |
+| 4 | 36% | 864 | 130.000 | 1.806 | 2.592 | 380.000 | 1.759 |
+| 5 | 40% | 960 | 260.000 | 2.708 | 2.880 | 770.000 | 2.674 |
+
+Offline com o manager no nível 5: 10 h fora pagam 40% × 2.400/min × 120 min = **115.200** (o mesmo que 2 h; `Manager_Offline_TetoDeDuasHorasIntocado`).
+
+### 34.2 Old Forge idêntico ao byte (`main` 55b59ee × este branch)
+
+| econsim | SHA-256 do CSV (os dois lados) |
+|---|---|
+| `--perfis F2P --minutos 60 --partidas 8 --anuncio-seg 30` | `9f3f548e…3fdb3` (idêntico) |
+| `--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 60 --partidas 2 --anuncio-seg 30` | `3acf0f6f…d3a96` (idêntico) |
+| `--distrito armorers_row --perfis Ideal,F2P,Slow,AdWatcher --minutos 150 --partidas 2 --anuncio-seg 30 --gerente 0` | `9cf20606…ee28f` (idêntico: as camadas não mudam a economia da Row) |
+
+F2P ×8: produção completa 47:14, zona morta 19,6, saldo 619 — os da `main`. Portões (GDD §3.3, `ECONOMIA_WAVE_B.md` §10): primeiros 10 min tick a tick, produção completa 41–55 e pisos do §3 — **iguais à `main`** (CSV idêntico).
+
+### 34.3 Row com o manager do Old Forge e o Império (`--distrito armorers_row --perfis Ideal,F2P,Slow,AdWatcher --partidas 2 --anuncio-seg 30`)
+
+| perfil | min | manager do Old Forge (nível no fim; 1ª subida) | fundo/min (média) com × sem | saldo final com × sem | Renome do Império no fim | vendas nas metas do Império / vendas |
+|---|---|---|---|---|---|---|
+| Ideal | 150 | 2; min 135 | 612 × 599 | 12.997 × 22.875 | 28 | 1.105 / 1.105 |
+| F2P | 150 | 2; min 119 | 624 × 599 | 34.024 × 7.390 | 65 | 1.509 / 1.509 |
+| Slow | 150 | 1,5; min 146 | 601 × 599 | 20.389 × 36.112 | 55 | 1.057 / 1.057 |
+| AdWatcher | 150 | 2; min 129 | 534 × 519 | 22.142 × 29.880 | 53 | 1.233 / 1.233 |
+| Ideal | 300 | 3,5; min 135 | 688 × 600 | 53.253 × 184.236 | 96 | 2.235 / 2.235 |
+| F2P | 300 | 4; min 119 | 707 × 600 | 78.169 × 288.579 | 142 | 3.143 / 3.143 |
+| Slow | 300 | 3; min 149 | 678 × 600 | 79.691 × 128.214 | 141 | 2.319 / 2.319 |
+| AdWatcher | 300 | 4; min 129 | 601 × 520 | 8.003 × 190.802 | 131 | 2.578 / 2.578 |
+
+Produção completa, zona morta e renda até a produção: as do §31.2 (o manager só entra depois dela). **Leitura.** (1) O manager é o ralo do rabo da Row: aos 300 min o saldo parado cai de 128–289 mil para 8–80 mil e o fundo do Old Forge sobe de 600 para 680–710/min (nível 3–4); o luxo da Row sai igual (3) aos 300 min, mais tarde aos 150 (o bot sobe o manager antes de juntar para o luxo mais caro). (2) O retorno é lento de propósito (267 min de fundo no nível 2, ~45 h no 5): o manager é progressão de longo prazo, não atalho; HIPÓTESE a confirmar no POCO (se o jogador não sentir o nível, baratear o 2 ou mostrar o ganho por hora no mapa). (3) Camadas: com a Row ativa as metas do Império contam **cada** venda dela 1× (vendas nas metas = vendas) e o Renome do Império sobe 28–65 em 150 min e 96–142 em 300 min só com as encomendas da Row (antes da leva isso ficava no Renome do distrito, que ninguém lia).
+
+Mutações (`dotnet test --filter "ImperioTests|DistritosTests|MasterworksTests"`): **18 provadas, todas mortas** — `mgr-fundo-sem-nivel`, `mgr-teto-pelo-nivel` (o nível estica o teto offline), `mgr-compra-qualquer-nivel`, `mgr-sem-pagar`, `mgr-sem-charter`, `mgr-save-sem-linha`, `mgr-load-sem-teto`, `mgr-bot-antes-da-producao`, `imp-sem-repasse`, `imp-venda-2x`, `imp-sem-traducao`, `imp-cofre-fora`, `imp-golpe-fora`, `imp-encomenda-tipo-fora`, `imp-renome-do-distrito`, `imp-renome-load-distrito`, `imp-hall-ledger-alheio`, `imp-charter-contador`.

@@ -144,6 +144,7 @@ namespace FS.Core
             if (e.Def.ClientId != null) { Coracoes.TryGetValue(e.Def.ClientId, out int c); Coracoes[e.Def.ClientId] = c + 1; }
             _sim.Metas.OnEncomenda(e.Tipo, prazo);
             _sim.LiveOps.OnEncomenda(e.Tipo);   // missoes order_complete do evento ativo (o XP do Passe vem do Ev.OrderDone, abaixo)
+            if (_sim.Heroi != null) { _sim.Heroi.Metas.OnEncomenda(e.Tipo, prazo); _sim.Heroi.LiveOps.OnEncomenda(e.Tipo); }   // C-CORE-03: e nas do Imperio (a raiz)
             _sim.Emit(Ev.OrderDone, (int)e.Itens[0], (int)Math.Min(int.MaxValue, ouro), _sim.CounterFor(e.Itens[0]).Pos);   // joia: na loja de joias
             OrderIn = Math.Max(OrderIn, _sim.T.OrderGap);
             return ouro;

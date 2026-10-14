@@ -128,8 +128,10 @@ namespace FS.Core
                     if (MasterworksDefs.IndexOf(id, Defs) < 0) _sim.UnknownIds++;
                 }
             }
+            // C-CORE-03: o ledger e' o do Imperio (o Renome da raiz): so volta a obra-prima deste distrito (a de build mais novo segue no rn=)
             foreach (string tx in _sim.Renome.Ledger)
-                if (tx.StartsWith(Prefixo, StringComparison.Ordinal) && !Feitas.ContainsKey(tx.Substring(Prefixo.Length))) Feitas[tx.Substring(Prefixo.Length)] = 0;
+                if (tx.StartsWith(Prefixo, StringComparison.Ordinal) && !Feitas.ContainsKey(tx.Substring(Prefixo.Length))
+                    && MasterworksDefs.IndexOf(tx.Substring(Prefixo.Length), Defs) >= 0) Feitas[tx.Substring(Prefixo.Length)] = 0;
         }
     }
 

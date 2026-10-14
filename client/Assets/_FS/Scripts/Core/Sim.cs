@@ -136,8 +136,11 @@ namespace FS.Core
         public readonly Metas Metas;
         /// <summary>E-PLAT-02/03: rewarded por placement (ID de transacao, recarga, teto diario) e o veto do intersticial (Anuncios.cs).</summary>
         public readonly Anuncios Anuncios;
-        /// <summary>B-CORE-06: Renome (Renome.cs), trilha que so sobe. Ganchos: o Emit credita o bau, o Sell a Superior (a encomenda: Encomendas.Entregar, pelo tipo); save na linha rn=.</summary>
-        public readonly Renome Renome;
+        /// <summary>B-CORE-06: Renome (Renome.cs), trilha que so sobe. Ganchos: o Emit credita o bau, o Sell a Superior (a encomenda: Encomendas.Entregar, pelo tipo); save na linha rn=.
+        /// C-CORE-03: e' do Imperio: num distrito (Heroi) e' o da raiz, entao encomenda, Superior, obra-prima e marco do distrito sobem o mesmo Renome
+        /// (e o nivel dele libera vagas e projetos no distrito); o payload do distrito nao leva rn=.</summary>
+        public Renome Renome => Heroi != null ? Heroi.Renome : _renome;
+        readonly Renome _renome;
         /// <summary>B-CORE-05: Orders 2.0 (Encomendas.cs): vagas, rodizio, premio. Ganchos: Tick, Sell (OnVenda), Save/Load.</summary>
         public readonly Encomendas Encomendas;
         /// <summary>D-CORE-04: Royal Contracts (Contratos.cs) do Imperio: os da raiz (Heroi) quando este Sim e' outro distrito, senao os
@@ -272,7 +275,7 @@ namespace FS.Core
             Distrito.Ajuste?.Invoke(T);
             Metas = new Metas(this);
             Anuncios = new Anuncios(this);
-            Renome = new Renome(this);
+            _renome = new Renome(this);
             Encomendas = new Encomendas(this);
             _contratos = new Contratos(this);
             Compras = new Compras(this);
@@ -1170,7 +1173,20 @@ namespace FS.Core
             Metas.On(kind, a, b);   // D-CORE-02: tambem os de fora do Tick (menu, cofre)
             Renome.On(kind, a, b);  // B-CORE-06: bau aberto (a encomenda credita pelo tipo no Encomendas.Entregar)
             LiveOps.On(kind, a, b); // D-CORE-03/04: missoes do evento ativo e XP de encomenda do Pass
+            // C-CORE-03: venda, VIP, encomenda e cofre de um distrito contam tambem nas metas, no evento e no Pass do Imperio (os da raiz), 1x;
+            // o contador do proprio distrito segue (o Hall dele le). ponytail: compra, contratacao, qualidade e obra-prima ficam so no distrito
+            // (indice de upgrade, worker, estacao e Hall nao traduzem para a raiz); entram com uma meta/missao que os peca por distrito
+            if (Heroi != null && (kind == Ev.Sold || kind == Ev.VipServed || kind == Ev.OrderDone || kind == Ev.Offline))
+            {
+                int r = kind == Ev.Offline ? a : NaRaiz(a);
+                Heroi.Metas.On(kind, r, b);
+                Heroi.LiveOps.On(kind, r, b);
+            }
         }
+
+        /// <summary>C-CORE-03: o item `item` deste distrito na tabela da raiz, pelo ID (o que o Old Forge nao tem = -1: conta no total da meta ou
+        /// missao, sem filtro de item).</summary>
+        int NaRaiz(int item) => Items.IndexOf(ItemDefs[item].Id, Heroi.ItemDefs);
 
         // ------------------------------------------------------------------ qualidade (B-CORE-03, docs/ECONOMIA_WAVE_B.md §1)
 
@@ -1285,6 +1301,7 @@ namespace FS.Core
             StrikeCooldown = T.GolpeRecarga;
             Strikes++;
             LiveOps.OnGolpe((int)s.OutItem);   // D-CORE-03: master_strike das missoes de evento
+            Heroi?.LiveOps.OnGolpe(NaRaiz((int)s.OutItem));   // C-CORE-03: e no evento do Imperio
             return true;
         }
 
@@ -1634,7 +1651,7 @@ namespace FS.Core
             sb.Append("bst=").Append(BoostMul.ToString("0", ci)).Append(',').Append(BoostLeft.ToString("0.###", ci)).Append(',')
               .Append(BoostCooldown.ToString("0.###", ci)).Append('\n');
             Anuncios.Save(sb);   // E-PLAT-02: linhas ad.* (so o que nao e' o padrao)
-            Renome.Save(sb);  // B-CORE-06: rn= (o Load de antes ignora chave desconhecida)
+            if (Heroi == null) Renome.Save(sb);  // B-CORE-06: rn= (o Load de antes ignora chave desconhecida); C-CORE-03: o do distrito e' o da raiz
             Equipe.Save(sb);  // B-CORE-04: wkn= (so com alguem de nivel; senao o texto e' o de antes)
             Projetos.Save(sb);   // B-CORE-07: bp= e bpq= (idem)
             Hall.Save(sb); Colecao.Save(sb);   // B-CORE-08: hall= e colq= (so com algo dentro)
@@ -1801,7 +1818,7 @@ namespace FS.Core
             foreach (Pad p in sim.Pads) if (p.Current(sim) < 0) { sim.Gold += p.Paid; p.Paid = 0; }
             sim.Metas.Load(text);   // D-CORE-01/02: save sem mt.* = metas zeradas
             sim.Anuncios.Load(text);   // E-PLAT-02: save sem ad.* = nenhum anuncio visto
-            sim.Renome.Load(text);  // B-CORE-06: save sem rn= = retroativo (depois das metas: soma o Renome que elas guardaram)
+            if (heroi == null) sim.Renome.Load(text);  // B-CORE-06: save sem rn= = retroativo (depois das metas: soma o Renome que elas guardaram); C-CORE-03: distrito = o da raiz
             sim.Hall.Load(text);    // B-CORE-08: depois do Renome (o mw: do ledger sem hall= volta registrado)
             sim.LiveOps.Load(text); // D-CORE-03/04: save sem ev.*/ps.* = nenhum evento, Pass do zero (o XP das metas entra 1x na 1a temporada)
             sim.Compras.Load(text);   // E-PLAT-04: save sem iap.* = nada comprado; posse so no Compras.Conectar (a loja valida)

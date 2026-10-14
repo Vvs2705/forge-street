@@ -106,6 +106,21 @@ namespace FS.Core
             return pad != null && s.T.Cost(pad.Current(s)) - pad.Paid <= c ? -1 : k;
         }
 
+        /// <summary>C-CORE-03: com a producao completa do distrito ativo, sobe o manager mais barato que a carteira paga (chamar depois do Step;
+        /// devolve se subiu). ponytail: sem estimar retorno nem esperar o luxo mais caro (o manager pode atrasar um luxo; o efeito medido esta no
+        /// BALANCE.md §34); vira prioridade por retorno se o bot precisar escolher melhor.</summary>
+        public static bool Manager(Imperio imp)
+        {
+            if (!imp.Ativo.ProductionComplete) return false;
+            string id = null; long c = long.MaxValue;
+            foreach (DistrictDef d in Distritos.All)
+            {
+                long k = imp.CustoManager(d.Id);
+                if (k >= 0 && k < c) { c = k; id = d.Id; }
+            }
+            return id != null && imp.SobeManager(id, imp.Manager(id) + 1);
+        }
+
         /// <summary>B-CORE-08 (ECONOMIA_WAVE_B §1.4): o Perfect "espera a proxima Superior para tentar a Masterwork". Com Masterwork pendente na
         /// familia da bancada e Superior ao alcance da automacao (q >= 100), so golpeia a peca que ja sairia Superior; sem isso, todo golpe (o de antes).</summary>
         static bool EsperaSuperior(Sim s)
