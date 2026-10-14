@@ -60,6 +60,8 @@ namespace FS.Tests
             foreach (string g in new[] { "m", "f", "mp", "fp" }) { Tem("art.o." + g); Tem("art.de." + g); }
             foreach (AdPlacementDef d in T0.Placements) Tem("ads." + d.Id);   // E-PLAT-02: cada placement do Tuning (o anuncio simulado)
             foreach (RenomeDef d in RenomeDefs.Niveis) { Tem(d.NomeKey); if (d.Nivel > 0) Tem(d.NomeKey + ".libera"); }   // B-CORE-06: SeloRenome
+            foreach (OrderType t in Enum.GetValues(typeof(OrderType))) Tem("enc.tipo." + (int)t);   // B-CORE-05: cartao e metas
+            foreach (OrderDef d in OrderDefs.All) if (d.ClientId != null) Tem("cli." + d.ClientId);
             foreach (EventDef e in LiveOpsDefs.Eventos)   // D-CORE-03/04: nome do evento e cosmeticos da trilha; nome e cosmeticos free do Passe
             {
                 Tem("ev." + e.Id);
@@ -189,6 +191,19 @@ namespace FS.Tests
                 Assert.LessOrEqual(Loc.T("aviso.troca").Length, Textos.DicaMax, i.ToString());
                 Assert.LessOrEqual(Loc.T("enc.troca", 30).Length, 11, $"{i}: {Loc.T("enc.troca", 30)}");
                 Assert.LessOrEqual(Loc.T("cofre.dobrar", 99999).Length, 15, $"{i}: {Loc.T("cofre.dobrar", 99999)}");
+                // B-CORE-05: titulo do cartao (1 linha; o best-fit vai a 22 px) com o maior N de cada OrderDef de 1 item, e a conta da barra
+                foreach (OrderDef d in OrderDefs.All)
+                {
+                    if (d.Type == OrderType.Mixed) continue;   // 2-3 itens: o best-fit encolhe (conferir na foto -encomendas)
+                    for (int it = (int)Item.Sword; it <= (int)Item.Jewel; it++)
+                    {
+                        var e = new Encomenda(d, 0, new[] { (Item)it }, new[] { Math.Max(d.TargetMax, d.FixedN) }, 99999, 0, d.BonusDeadline, null);
+                        string t = Textos.Encomenda(e), b = Textos.BarraEncomenda(e);
+                        StringAssert.DoesNotContain("[", t + b, $"{i}: {d.Id}");
+                        Assert.LessOrEqual(t.Length, 28, $"{i}: {d.Id} \"{t}\"");
+                        if (d.MinQuality < Quality.Superior) Assert.LessOrEqual(b.Length, 13, $"{i}: {d.Id} \"{b}\"");   // a Superior so abre com a automacao fazendo Superior
+                    }
+                }
                 for (long v = 1; v > 0 && v < long.MaxValue / 7; v *= 7) Assert.LessOrEqual(Textos.Ouro(v).Length, 8, $"{i}: {Textos.Ouro(v)}");
                 foreach (RenomeDef d in RenomeDefs.Niveis)   // B-CORE-06: selo (1 linha ao lado da estrela), aviso (1 linha na faixa) e cartao (3 linhas)
                 {

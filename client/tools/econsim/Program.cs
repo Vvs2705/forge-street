@@ -42,6 +42,8 @@ static class EconSim
         public int Morta, MortaSeq, MortaIni, SemDestinoMin, Luxo, AdsVip, AdsBoost, AdsSupply, AdsBonus, Vips; public long PosProd, Parado, Encomendas; public double Segundos;
         // B-CORE-03: % da receita acima do preco Normal (premio de qualidade) e o que o golpe somou; niveis de estacao comprados, gasto e o 1o
         public double Quali, Golpe; public int Niveis, Golpes; public long NiveisGasto; public float Nivel1;
+        // B-CORE-05: relogio em que o Renome chegou a 1..4 (-1 = nao chegou), encomendas e % do ouro de venda que veio delas aos 60 min e no fim
+        public float[] Renome; public long RenomeFim; public int Enc60, EncFim; public double Pct60, PctFim, Renda60; public int[] Tipos;
         // B-CORE-04: contratados pela Equipe, niveis subidos (ajudantes e equipe), ouro gasto e a 1a compra de worker (relogio)
         public int Contratados, NiveisWk; public long WkGasto; public float Wk1 = -1f;
         // D-CORE-03/04 (--evento): GoldEarned ao fim de cada minuto, instante de relogio da entrada no evento e o que o evento deu
@@ -195,6 +197,19 @@ static class EconSim
                                   $"{g.Average(r => r.AdsVip + r.AdsBoost + r.AdsSupply + r.AdsBonus):0.#} | {g.Average(r => r.Encomendas):0} |");
             }
         }
+        // B-CORE-05: Renome (portao do ECONOMIA_WAVE_B §10: nivel 1 12-25 min, 2 40-75 min, 3 1,5-3 h, 4 3-6 h no F2P) e encomendas
+        Console.WriteLine();
+        Console.WriteLine("| perfil | Renome 1 | Renome 2 | Renome 3 | Renome 4 | Renome no fim | encomendas (60 min / fim) | ouro de encomendas (% da venda, 60 min / fim) | renda/min (0-60) | por tipo no fim (" +
+                          string.Join("/", Enum.GetNames(typeof(OrderType))) + ") |");
+        Console.WriteLine("|---|---|---|---|---|---|---|---|---|---|");
+        foreach (BotProfile p in perfis)
+        {
+            Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            string N(int k) { float[] v = g.Select(r => r.Renome[k]).Where(t => t >= 0f).ToArray(); return v.Length == 0 ? "--:--" : Clock(v.Average()) + (v.Length < g.Length ? "*" : ""); }
+            Console.WriteLine($"| {p.Name} | {N(1)} | {N(2)} | {N(3)} | {N(4)} | {g.Average(r => r.RenomeFim):0} | {g.Average(r => r.Enc60):0.#} / {g.Average(r => r.EncFim):0.#} | " +
+                              $"{g.Average(r => r.Pct60):0.0}% / {g.Average(r => r.PctFim):0.0}% | {g.Average(r => r.Renda60):0} | " +
+                              string.Join("/", Enumerable.Range(0, g[0].Tipos.Length).Select(k => g.Average(r => r.Tipos[k]).ToString("0.#"))) + " |");
+        }
         if (evento != null) Evento(evento, perfis, runs, sem, minutos);
         return 0;
     }
@@ -241,7 +256,7 @@ static class EconSim
         var clock = Stopwatch.StartNew();
         var s = new Sim(t); Bot bot = Bot.From(p); float dt = 1f / hz;
         if (workerSeg.HasValue) bot.WorkerSegundos = workerSeg.Value;
-        var r = new Run { Perfil = p.Name };
+        var r = new Run { Perfil = p.Name, Renome = new[] { 0f, -1f, -1f, -1f, -1f } };
         var csv = new StringBuilder();
         long earned0 = 0, goldAtProd = -1;
         int bought0 = 0, seq = 0, ads = 0, wk = 0, wk0 = 0;   // wk: compras de worker (contratar ou nivel), que contam como compra na zona morta
@@ -271,6 +286,7 @@ static class EconSim
                 if (s.UpgradesBought != before)
                     for (int i = 0; i < rel.Length; i++) if (s.Bought[i] && rel[i] < 0f) rel[i] = s.UpgradeTime[i] + pausa;
                 if (goldAtProd < 0 && s.UpgradesBought != before && s.ProductionComplete) goldAtProd = s.Gold;
+                for (int k = Math.Min(4, s.Renome.Nivel); k >= 1 && r.Renome[k] < 0f; k--) r.Renome[k] = s.Time + pausa;
                 if (evento != null && (int)s.Time != seg)   // D-CORE-03/04: o relogio do LiveOps anda com o jogo, dentro do evento (como a View, 1x/s)
                 {
                     seg = (int)s.Time;
@@ -280,6 +296,7 @@ static class EconSim
                     if (r.Entrou < 0f && s.LiveOps.Evento != null) r.Entrou = s.Time + pausa;
                 }
             }
+            if (m == 60) { r.Enc60 = s.OrderCount; r.Pct60 = 100.0 * s.OrderGold / Math.Max(1, s.GoldEarned); r.Renda60 = s.GoldEarned / 60.0; }
             r.EarnedMin[m] = s.GoldEarned;
             long gold = s.Gold, earned = s.GoldEarned;
             int compras = s.UpgradesBought - bought0 + wk - wk0;
@@ -322,6 +339,8 @@ static class EconSim
         r.PosProd = goldAtProd < 0 ? 0 : s.Gold + luxSpent + paid - goldAtProd;
         r.Parado = s.Gold; r.AdsVip = bot.AdsVip; r.AdsBoost = bot.AdsBoost; r.AdsSupply = bot.AdsSupply; r.AdsBonus = bot.AdsBonus; r.Csv = csv.ToString();
         r.Encomendas = s.OrderGold;
+        r.RenomeFim = s.Renome.Total; r.EncFim = s.OrderCount; r.PctFim = 100.0 * s.OrderGold / Math.Max(1, s.GoldEarned);
+        r.Tipos = (int[])s.Encomendas.PorTipo.Clone();
         r.Ordens = s.OrderCount;
         if (evento != null)
         {

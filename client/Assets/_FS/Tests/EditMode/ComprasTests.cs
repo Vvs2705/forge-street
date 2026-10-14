@@ -332,7 +332,7 @@ namespace FS.Tests
         {
             Sim s = TuningTests.Liberado();
             s.FirstSaleTime = 1f; s.VipIn = 200f;
-            s.OrderItem = (int)Item.Sword; s.OrderTarget = 5; s.OrderReward = 100;
+            EncTeste.Poe(s, Item.Sword, 5, 100);   // B-CORE-05: a encomenda aberta (vaga do Orders 2.0)
             s.LastClaim = 777; s.LastClaimGold = 400;
             return s;
         }

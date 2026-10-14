@@ -381,7 +381,7 @@ namespace FS.Tests
             int price = Tuning.Padrao.Price[(int)Item.Sword];
             Assert.AreEqual((start + price, start + price, 1), (s.Gold, s.GoldEarned, s.Sales), "a venda passa do int.MaxValue");
             s.Chests[0].State = 1; s.Player.Pos = s.Chests[0].Pos;
-            s.FirstSaleTime = 1f; s.OrderItem = (int)Item.Sword; s.OrderTarget = 1; s.OrderProgress = 1; s.OrderReward = 100;
+            s.FirstSaleTime = 1f; EncTeste.Poe(s, Item.Sword, 1, 100, 1);
             s.Tick(Dt, 0f, 0f);
             Assert.AreEqual(start + price + s.Chests[0].Gold + 100, s.Gold, "bau e encomenda tambem");
             for (int i = 0; i < Upgrades.Count; i++) s.Buy((Upgrade)i);   // teto relativo do cofre em 18.000: nao interfere
@@ -2065,14 +2065,15 @@ namespace FS.Tests
         {
             var n = new Sim();
             Run(n, 120f);
-            Assert.AreEqual((-1, Tuning.Padrao.OrderFirstDelay), (n.OrderItem, n.OrderIn), "sem venda o relogio nao anda");
+            Assert.AreEqual((0, Tuning.Padrao.OrderFirstDelay), (n.Encomendas.Vagas.Count, n.Encomendas.OrderIn), "sem venda o relogio nao anda");
             var s = Sold();
             Run(s, Tuning.Padrao.OrderFirstDelay - 1f);
-            Assert.AreEqual(-1, s.OrderItem, "aos 44 s ainda nao");
+            Assert.IsNull(s.Encomendas.Principal, "aos 44 s ainda nao");
             Assert.IsTrue(RunUntil(s, Ev.OrderNew, 2f), "OrderNew aos 45 s");
-            Assert.AreEqual(((int)Item.Sword, Tuning.Padrao.OrderFirstTarget, 0), (s.OrderItem, s.OrderTarget, s.OrderProgress));
-            Assert.GreaterOrEqual(s.OrderReward, Tuning.Padrao.OrderRewardMin);
-            Assert.AreEqual(0, s.OrderReward % 5, "premio redondo");
+            Encomenda e = s.Encomendas.Principal;
+            Assert.AreEqual((Item.Sword, Tuning.Padrao.OrderFirstTarget, 0), (e.Itens[0], e.Alvo[0], e.Feito[0]));
+            Assert.GreaterOrEqual(e.Premio, (long)Tuning.Padrao.OrderRewardMin);
+            Assert.AreEqual(0L, e.Premio % 5, "premio redondo");
         }
 
         /// <summary>FASE9 §1: so conta venda feita depois do inicio; entregue paga o premio FORA do GoldEarned (como o bau: nao infla a taxa
@@ -2084,8 +2085,8 @@ namespace FS.Tests
             Assert.IsTrue(RunUntil(s, Ev.OrderNew, 60f, Item.Sword));
             int before = s.SoldItems[(int)Item.Sword];
             Assert.Greater(before, 0, "vendeu espada antes da encomenda");
-            Assert.AreEqual(0, s.OrderProgress, "venda de antes nao conta");
-            int reward = s.OrderReward; long gold = 0, earned = 0;
+            Assert.AreEqual(0, s.Encomendas.Principal.Feito[0], "venda de antes nao conta");
+            long reward = s.Encomendas.Principal.Premio, gold = 0, earned = 0;
             bool done = false;
             for (float t = 0f; t < 600f && !done; t += Dt)
             {
@@ -2097,9 +2098,9 @@ namespace FS.Tests
             Assert.IsTrue(done, "entregou");
             Assert.AreEqual(reward, (s.Gold - gold) - (s.GoldEarned - earned), "premio no ouro, fora do GoldEarned");
             Assert.GreaterOrEqual(s.SoldItems[(int)Item.Sword] - before, Tuning.Padrao.OrderFirstTarget);
-            Assert.AreEqual((-1, 1), (s.OrderItem, s.OrderCount));
+            Assert.AreEqual((0, 1), (s.Encomendas.Vagas.Count, s.OrderCount));
             Run(s, Tuning.Padrao.OrderGap - 1f);
-            Assert.AreEqual(-1, s.OrderItem, "intervalo de 20 s");
+            Assert.IsNull(s.Encomendas.Principal, "intervalo de 20 s");
             Assert.IsTrue(RunUntil(s, Ev.OrderNew, 2f), "a 2a chega");
         }
 
@@ -2114,12 +2115,13 @@ namespace FS.Tests
             var seen = new List<int>();
             for (int k = 1; k <= 6; k++)
             {
-                s.OrderItem = -1; s.OrderCount = k; s.OrderIn = 0f;
-                s.Tick(Dt, 0f, 0f);
-                seen.Add(s.OrderItem);
-                int want = Math.Max(Tuning.Padrao.OrderMin, Math.Min(Tuning.Padrao.OrderMax, (int)Math.Round(Tuning.Padrao.OrderSeconds * 4.0 / (3 * s.PriceOf((Item)s.OrderItem)))));
-                Assert.AreEqual(want, s.OrderTarget, $"tamanho da encomenda {k}");
-                Assert.AreEqual(Math.Max(Tuning.Padrao.OrderRewardMin, 5 * (int)Math.Round(4.0 * Tuning.Padrao.OrderRewardSeconds / 5.0)), s.OrderReward);
+                Encomenda e = EncTeste.Abre(s, k);   // B-CORE-05: a posicao no rodizio e' o Encomendas.Abertas
+                seen.Add((int)e.Itens[0]);
+                if (k == 5) { Assert.AreEqual(OrderType.Mixed, e.Tipo, "a 6a do ciclo e' Mixed (EncomendasTests)"); continue; }
+                Assert.AreEqual(OrderType.Common, e.Tipo, $"tipo da {k} (Bulk e Rush travados: poucas entregues; Quality: sem qualidade)");
+                int want = Math.Max(3, Math.Min(30, (int)Math.Round(Tuning.Padrao.OrderSeconds * 4.0 / (3 * s.PriceOf(e.Itens[0])))));
+                Assert.AreEqual(want, e.Alvo[0], $"tamanho da encomenda {k}");
+                Assert.AreEqual(Math.Max(Tuning.Padrao.OrderRewardMin, 5 * (long)Math.Round(4.0 * Tuning.Padrao.OrderRewardSeconds / 5.0)), e.Premio);
             }
             CollectionAssert.AreEqual(new[] { 3, 4, 2, 3, 4, 2 }, seen, "escudo, ferramenta, espada...; sem joia (joalheria fechada)");
         }
@@ -2131,21 +2133,25 @@ namespace FS.Tests
         {
             var s = Sold();
             Assert.IsTrue(RunUntil(s, Ev.OrderNew, 60f));
-            s.OrderProgress = 3;
+            s.Encomendas.Principal.Feito[0] = 3;
+            long premio = s.Encomendas.Principal.Premio;
             string text = s.Save(10);
-            StringAssert.Contains("ord=2,5,3," + s.OrderReward + ",0,", text);
+            StringAssert.Contains("ord=2,5,3," + premio + ",0,", text);
             Sim b = Sim.Load(text);
-            Assert.AreEqual((2, 5, 3, s.OrderReward, 0), (b.OrderItem, b.OrderTarget, b.OrderProgress, b.OrderReward, b.OrderCount));
+            Encomenda e = b.Encomendas.Principal;
+            Assert.AreEqual((Item.Sword, 5, 3, 0), (e.Itens[0], e.Alvo[0], e.Feito[0], b.OrderCount));
+            Assert.AreEqual(premio, e.Premio);
             Assert.AreEqual(text, b.Save(10), "save estavel");
-            string old = string.Join("\n", Array.FindAll(text.Split('\n'), l => !l.StartsWith("ord=")));
+            // FASE9: so o ord= (sem as linhas enc* do B-CORE-05: o save da 0.6-0.8)
+            string old = string.Join("\n", Array.FindAll(text.Split('\n'), l => !l.StartsWith("ord=") && !l.StartsWith("enc")));
             Sim o = Sim.Load(old);
-            Assert.AreEqual((-1, 0, Tuning.Padrao.OrderFirstDelay), (o.OrderItem, o.OrderCount, o.OrderIn), "save antigo: do zero");
+            Assert.AreEqual((0, 0, Tuning.Padrao.OrderFirstDelay), (o.Encomendas.Vagas.Count, o.OrderCount, o.Encomendas.OrderIn), "save antigo: do zero");
             Sim g = Sim.Load(old + "ord=x,-4,99,-1,-2,abc\n");
-            Assert.AreEqual((-1, 0, Tuning.Padrao.OrderFirstDelay), (g.OrderItem, g.OrderCount, g.OrderIn), "lixo vira o padrao");
+            Assert.AreEqual((0, 0, Tuning.Padrao.OrderFirstDelay), (g.Encomendas.Vagas.Count, g.OrderCount, g.Encomendas.OrderIn), "lixo vira o padrao");
             g = Sim.Load(old + "ord=5,10,2,100,3,0\n");
-            Assert.AreEqual((-1, 3), (g.OrderItem, g.OrderCount), "joia sem joalheria nao volta; a contagem fica");
+            Assert.AreEqual((0, 3), (g.Encomendas.Vagas.Count, g.OrderCount), "joia sem joalheria nao volta; a contagem fica");
             g = Sim.Load(old + "ord=2,5,99,100,0,0\n");
-            Assert.AreEqual(5, g.OrderProgress, "progresso no teto do alvo");
+            Assert.AreEqual(5, g.Encomendas.Principal.Feito[0], "progresso no teto do alvo");
         }
 
         /// <summary>FASE9 §4 (revisao da v0.6): OrderNew/OrderDone saem no balcao que vende o item; a de joia, na loja de joias.</summary>
@@ -2154,11 +2160,11 @@ namespace FS.Tests
         {
             var s = new Sim();
             s.Buy(Upgrade.SideCorridor); s.Buy(Upgrade.Jewelry);
-            s.FirstSaleTime = 1f; s.OrderCount = 1; s.OrderIn = 0f;   // linhas abertas: espada, joia -> a 2a e' joia
-            s.Tick(Dt, 0f, 0f);
+            s.FirstSaleTime = 1f;
+            EncTeste.Abre(s, 1);   // linhas abertas: espada, joia -> a 2a do rodizio e' joia
             SimEvent n = s.Events.Find(e => e.Kind == Ev.OrderNew);
             Assert.AreEqual(((int)Item.Jewel, s.JewelShop.Pos.X, s.JewelShop.Pos.Y), (n.A, n.Pos.X, n.Pos.Y), "nova na loja de joias");
-            s.OrderProgress = s.OrderTarget;
+            EncTeste.Completa(s);
             s.Tick(Dt, 0f, 0f);
             SimEvent d = s.Events.Find(e => e.Kind == Ev.OrderDone);
             Assert.AreEqual(((int)Item.Jewel, s.JewelShop.Pos.X, s.JewelShop.Pos.Y), (d.A, d.Pos.X, d.Pos.Y), "entregue na loja de joias");

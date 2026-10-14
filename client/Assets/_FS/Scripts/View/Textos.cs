@@ -115,6 +115,32 @@ namespace FS
         /// <summary>Titulo do cartao da encomenda: verbo + N + item no plural ("Venda 5 espadas").</summary>
         public static string Venda(int n, int item) => Loc.T("order.venda", n, ItemNome(item, n));
 
+        /// <summary>B-CORE-05: nome curto do tipo de encomenda (enc.tipo.N): "Grande", "Urgente"...</summary>
+        public static string TipoEncomenda(int tipo) => Loc.T("enc.tipo." + tipo);
+
+        /// <summary>B-CORE-05: titulo do cartao. Common de 1 item = o de sempre ("Venda 5 espadas"); freguês = "Grunk: 40 espadas"; os outros
+        /// = "Urgente: 20 espadas", "Variado: 6 ferramentas + 9 espadas" (o best-fit do cartao encolhe a linha).</summary>
+        public static string Encomenda(Encomenda e)
+        {
+            if (e.Def.ClientId == null && e.Tipo == OrderType.Common && e.Itens.Length == 1) return Venda(e.Alvo[0], (int)e.Itens[0]);
+            var p = new string[e.Itens.Length];
+            for (int k = 0; k < p.Length; k++) p[k] = e.Alvo[k].ToString(CultureInfo.InvariantCulture) + " " + ItemNome((int)e.Itens[k], e.Alvo[k]);
+            string quem = e.Def.ClientId != null ? Loc.T("cli." + e.Def.ClientId) : TipoEncomenda((int)e.Tipo);
+            return Loc.T("enc.titulo", quem, string.Join(" + ", p));
+        }
+
+        /// <summary>B-CORE-05: a conta na barra do cartao: "3/20", com a qualidade minima ("0/5 · Fina+") e o prazo de bonus ("3/20 · 3:12").</summary>
+        public static string BarraEncomenda(Encomenda e)
+        {
+            string s = e.Progresso.ToString(CultureInfo.InvariantCulture) + "/" + e.Total.ToString(CultureInfo.InvariantCulture);
+            if (e.Def.MinQuality > Quality.Normal) s += " · " + Loc.T("enc.min", Qualidade(e.Def.MinQuality));
+            if (e.Prazo > 0f) s += " · " + ((int)e.Prazo / 60).ToString(CultureInfo.InvariantCulture) + ":" + ((int)e.Prazo % 60).ToString("00", CultureInfo.InvariantCulture);
+            return s;
+        }
+
+        /// <summary>B-CORE-05: o que a entrega paga agora (no prazo, com o bonus do Rush), para o "+N" do cartao.</summary>
+        public static long PremioEncomenda(Encomenda e) => e.Premio + (e.Prazo > 0f ? e.PremioBonus : 0);
+
         /// <summary>Cartao travado do menu: "Precisa: Balcão 5" (curto, sem quebrar linha; up.&lt;Id&gt;.curto quando o nome nao cabe).</summary>
         public static string Precisa(int u)
         {
@@ -265,6 +291,8 @@ namespace FS
                 case "currency_source": return Loc.T("meta.ganha", n);
                 case "currency_sink": return Loc.T("meta.gasta", n);
                 case "mission_complete": return Loc.P(d.Filtro == 0 ? "meta.diarias" : "meta.semanais", alvo, n);
+                case "order_complete":   // B-CORE-05: por tipo, ou "os 7 tipos" (Distintos)
+                    return d.Conta == Conta.Distintos ? Loc.T("meta.order_tipos", n) : Loc.P("meta.order_complete", alvo, n, TipoEncomenda(d.Filtro));
                 // B-CORE-04: worker_hired com filtro = papel ("Contrate 1 oficial"); worker_upgrade com filtro = nivel ("Leve 13 ajudantes ao nivel 5")
                 case "worker_hired" when d.Filtro > 0: return Loc.T("meta.worker_papel", n, Loc.P("wk.papel." + d.Filtro, alvo));
                 case "worker_upgrade" when d.Filtro >= 2: return Loc.P("meta.worker_nivel", alvo, n, d.Filtro);
@@ -310,7 +338,8 @@ namespace FS
                 case "quality_crafted": case "quality_superior":
                     return Loc.T(x.Evento == "quality_crafted" ? "missao.fina" : "missao.superior", n, item >= 0 ? coisa : Loc.P("missao.peca", x.Alvo));
                 case "master_strike": return item >= 0 ? Loc.P("missao.golpe_item", x.Alvo, n, ItemNomeOF(item, 2)) : Loc.P("missao.golpe", x.Alvo, n);
-                case "order_complete": return Loc.P("meta.order_done", x.Alvo, n);   // ponytail: o tipo (Royal, Bulk...) ganha nome com o Orders 2.0
+                case "order_complete":   // B-CORE-05: "Entregue 2 do tipo Real" (filtro = LiveOpsDefs.TiposEncomenda, o nome minusculo do OrderType)
+                    return Enum.TryParse(x.Filtro[0], true, out OrderType t) ? Loc.P("meta.order_complete", x.Alvo, n, TipoEncomenda((int)t)) : Loc.P("meta.order_done", x.Alvo, n);
                 default: return Loc.P("meta." + x.Evento, x.Alvo, n);   // offline_claim, vip_served, worker_hired, play_day
             }
         }

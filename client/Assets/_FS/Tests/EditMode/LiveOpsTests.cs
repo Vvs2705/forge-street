@@ -85,11 +85,11 @@ namespace FS.Tests
             Assert.AreSame(S1, s.LiveOps.PasseEm(LiveOpsDefs.T0));
             Assert.AreSame(S1, s.LiveOps.PasseEm(LiveOpsDefs.T0 + 35 * Dia - 1));
             Assert.AreSame(S2, s.LiveOps.PasseEm(LiveOpsDefs.T0 + 35 * Dia), "temporadas emendadas");
-            // a Royal Week espera o Orders 2.0 (encomenda Royal): fora do calendario ate la, nunca erro
+            // a Royal Week esperava o Orders 2.0 (order_complete Royal, B-CORE-05): agora abre o calendario
             Sim r = Aberta();
             Agora(r, LiveOpsDefs.T0 + H);
-            Assert.IsNull(r.LiveOps.Evento);
-            StringAssert.Contains("order_complete", r.LiveOps.Falta(Evt("_royal_week")));
+            Assert.AreSame(Evt("_royal_week"), r.LiveOps.Evento);
+            StringAssert.Contains("knob", r.LiveOps.Falta(Evt("_rare_ore_rush")), "o Rare Ore Rush ainda espera o GrabTime virar knob");
         }
 
         [Test]
@@ -111,8 +111,8 @@ namespace FS.Tests
             CollectionAssert.AreEquivalent(Enum.GetValues(typeof(Template)).Cast<Template>().Where(t => t != Template.ArcaneWeek), evs.Select(e => e.Template).Distinct());
             Assert.AreEqual(2, evs.Count(e => e.Reserva));
             var s = new Sim();
-            CollectionAssert.AreEqual(new[] { "ev_s1w2_forge_frenzy", "ev_s1w3_armorers_challenge", "ev_s1w5_forge_frenzy_b", "ev_s2w1_blacksmith_festival", "ev_s2w5_royal_week_b" },
-                evs.Where(e => s.LiveOps.Falta(e) == null).Select(e => e.Id), "os que rodam hoje (os outros esperam Orders 2.0, Blueprints e knobs)");
+            CollectionAssert.AreEqual(new[] { "ev_s1w1_royal_week", "ev_s1w2_forge_frenzy", "ev_s1w3_armorers_challenge", "ev_s1w5_forge_frenzy_b", "ev_s2w1_blacksmith_festival",
+                "ev_s2w3_merchant_caravan", "ev_s2w5_royal_week_b" }, evs.Where(e => s.LiveOps.Falta(e) == null).Select(e => e.Id), "os que rodam hoje (Hunts e Rare Ore Rush esperam knobs)");
             Assert.IsEmpty(LiveOpsDefs.Validar(LiveOpsDefs.Eventos, LiveOpsDefs.Passes).ToList());
             Assert.AreEqual(30, S1.Niveis);
             Assert.AreEqual(18000L, S1.XpTotal);
@@ -343,6 +343,132 @@ namespace FS.Tests
             Assert.AreEqual(1L, s.LiveOps.Feito(Armeiro.Missoes.First(x => x.Id == "golpe_escudos5")));
         }
 
+        // ------------------------------------------------------------------ Orders 2.0 (B-CORE-05)
+
+        /// <summary>Entrega pelo caminho real (Encomendas.Entregar no Tick) uma encomenda `ordId` de 1 espada.</summary>
+        static Encomenda Entrega(Sim s, string ordId)
+        {
+            OrderDef d = OrderDefs.All.First(o => o.Id == ordId);
+            var e = new Encomenda(d, s.Encomendas.Abertas++, new[] { Item.Sword }, new[] { 1 }, d.Type == OrderType.Event ? 0 : 25, 0, 0f, null);
+            s.Encomendas.Vagas.Add(e);
+            EncTeste.Completa(e);
+            s.Tick(1f / 30f, 0f, 0f);
+            Assert.IsFalse(s.Encomendas.Vagas.Contains(e), ordId + " entregue");
+            return e;
+        }
+
+        [Test]
+        public void OrdersDois_RoyalWeekRoda_OrderCompletePorTipo_EncomendaEventDaPontos_XpDoPasseUmaVez()
+        {
+            Sim s = Aberta();
+            s.FirstSaleTime = 1f;
+            EventDef rw = Evt("_royal_week");
+            Assert.IsNull(s.LiveOps.Falta(rw), "o Orders 2.0 deu o order_complete");
+            Agora(s, rw.Comeca + H);
+            Assert.AreSame(rw, s.LiveOps.Evento);
+            MissaoEvento royal2 = rw.Missoes.First(x => x.Id == "royal2");
+            Entrega(s, "ord_common_old_forge");
+            Assert.AreEqual(0L, s.LiveOps.Feito(royal2), "Common nao conta como Royal");
+            Entrega(s, "ord_royal_old_forge");
+            Entrega(s, "ord_royal_old_forge");
+            Assert.AreEqual(2L, s.LiveOps.Feito(royal2));
+            Assert.AreEqual(30L, s.LiveOps.Xp, "XP do Passe: 10 por entrega, 1x (o Ev.OrderDone)");
+            Agora(s, rw.Comeca + H + 1);
+            Assert.IsTrue(s.LiveOps.Paga(royal2));
+            int pontos = s.LiveOps.Pontos;
+            Assert.AreEqual(royal2.Pontos, pontos);
+            long xp = s.LiveOps.Xp;
+            s.Tick(1f / 30f, 0f, 0f);   // tick sem entrega: abre
+            Encomenda ev = s.Encomendas.Vagas.Find(v => v.Tipo == OrderType.Event);
+            Assert.IsNotNull(ev, "a vaga da encomenda do evento abriu sozinha");
+            Assert.AreEqual(rw.Encomenda, ev.Def.Id);
+            EncTeste.Completa(ev);
+            s.Tick(1f / 30f, 0f, 0f);
+            Assert.AreEqual(pontos + 15, s.LiveOps.Pontos, "+15 da encomenda Event");
+            Assert.AreEqual(xp + 10L, s.LiveOps.Xp, "a Event e' uma entrega: 10 de XP, nao dobra");
+            Sim r = Sim.Load(s.Save(rw.Comeca + H + 2));
+            Agora(r, rw.Comeca + H + 3);
+            Assert.AreEqual(pontos + 15, r.LiveOps.Pontos, "os pontos da Event vao no save (ev.c)");
+            xp = s.LiveOps.Xp;
+            for (int k = 0; k < 9; k++) Entrega(s, "ord_common_old_forge");
+            Assert.AreEqual(xp + 60L, s.LiveOps.Xp, "teto de 100 por dia local contando a Event (4 + 6 entregas pagam XP)");
+        }
+
+        [Test]
+        public void OrdersDois_MerchantCaravanRoda_BulkEMixed_PremioX125_VoltaNoFim()
+        {
+            Sim s = Aberta();
+            s.FirstSaleTime = 1f;
+            EventDef mc = Evt("_merchant_caravan");
+            Assert.IsNull(s.LiveOps.Falta(mc), "requer a ord_bulk_old_forge, que existe");
+            float antes = s.T.OrderRewardSeconds;
+            Agora(s, mc.Comeca + H);
+            Assert.AreSame(mc, s.LiveOps.Evento);
+            Assert.AreEqual(antes * 1.25f, s.T.OrderRewardSeconds, 0.0001f, "premio das encomendas x1,25 (RemoteConfig.Valores)");
+            Entrega(s, "ord_bulk_old_forge");
+            Entrega(s, "ord_bulk_old_forge");
+            Entrega(s, "ord_mixed_old_forge");
+            Assert.AreEqual(2L, s.LiveOps.Feito(mc.Missoes.First(x => x.Id == "bulk2")));
+            Assert.AreEqual(1L, s.LiveOps.Feito(mc.Missoes.First(x => x.Id == "mixed2")));
+            Assert.AreEqual(3L, s.LiveOps.Feito(mc.Missoes.First(x => x.Id == "enc10")), "order_done conta todas");
+            Agora(s, mc.Termina);
+            Assert.IsNull(s.LiveOps.Evento);
+            Assert.AreEqual(antes, s.T.OrderRewardSeconds, "o knob volta no fim");
+        }
+
+        /// <summary>Bot F2P por `seg` s de jogo com o relogio do LiveOps andando de `t0` (1x por segundo, como a View e o econsim).</summary>
+        static void Joga(Sim s, Bot bot, long t0, float seg)
+        {
+            float ini = s.Time; int ult = -1;
+            while (s.Time - ini < seg)
+            {
+                bot.Step(s, 1f / 30f);
+                int k = (int)(s.Time - ini);
+                if (k != ult) { ult = k; Agora(s, t0 + k); }
+            }
+        }
+
+        /// <summary>
+        /// LIVEOPS_V1 §2.2/§6: a trilha de evento fecha no dia 4-5 de 6, nunca numa sessao. Para cada evento que roda: (a) o bot F2P jogando
+        /// 60 min seguidos no 1o dia nao chega aos 1.000 (a missao play_day segura 100 e a encomenda Event da 15); (b) o F2P de referencia
+        /// (§1: 2 sessoes de 10 min por dia, cofre entre elas, sem anuncio nem golpe) fecha no dia 4 ou 5. Antes do evento o jogador ja jogou
+        /// 20 min por dia desde o T0, ate 2 h (a Royal Week e' o D0: comeca do zero). Os 7 eventos em paralelo (cada Sim tem o seu Tuning).
+        /// </summary>
+        [Test]
+        public void TrilhaDeEvento_NuncaNumaSessaoDe60Min_OF2PDeReferenciaFechaNoDia4a5()
+        {
+            EventDef[] evs = LiveOpsDefs.Eventos.Where(e => LiveOpsDefs.Falta(e, Items.All) == null).ToArray();
+            Assert.AreEqual(7, evs.Length);
+            var aq = new Sim(); var ab = new Bot();
+            while (aq.Time < 2 * 3600f) ab.Step(aq, 1f / 30f);
+            string jogou = aq.Save(LiveOpsDefs.T0);
+            var sessao = new int[evs.Length]; var dia = new int[evs.Length];
+            System.Threading.Tasks.Parallel.For(0, evs.Length, i =>
+            {
+                EventDef e = evs[i];
+                Sim Inicio() => e.Inicio == 0 ? new Sim() : Sim.Load(jogou);
+                Sim s = Inicio();
+                Joga(s, new Bot(), e.Comeca + H, 3600f);
+                sessao[i] = s.LiveOps.Evento == e ? s.LiveOps.Pontos : -1;
+                Sim r = Inicio(); var b = new Bot();
+                long ultimo = e.Comeca - H;
+                dia[i] = 7;
+                for (int d = 0; d < 6 && dia[i] == 7; d++)
+                    foreach (long h in new[] { H, 8 * H })
+                    {
+                        long t = e.Comeca + d * Dia + h;
+                        r.ApplyOffline(t - ultimo, t);
+                        Joga(r, b, t, 600f);
+                        ultimo = t + 600;
+                        if (r.LiveOps.Evento == e && r.LiveOps.Proximo == null) { dia[i] = d + 1; break; }
+                    }
+            });
+            // "evento: pontos em 60 min seguidos (-1 = nao entrou) / dia em que a referencia fecha (7 = nao fecha)"
+            string tabela = string.Join(" | ", evs.Select((e, i) => $"{e.Id}: {sessao[i]} / dia {dia[i]}"));
+            TestContext.WriteLine(tabela);
+            Assert.IsTrue(evs.Select((e, i) => i).All(i => sessao[i] >= 1 && sessao[i] < 1000 && dia[i] >= 4 && dia[i] <= 5), tabela);
+        }
+
         // ------------------------------------------------------------------ Pass
 
         [Test]
@@ -455,7 +581,7 @@ namespace FS.Tests
             double xp = LiveOpsDefs.XpDiaF2P(S1, LiveOpsDefs.Eventos, LiveOpsDefs.EncomendasDiaF2P);
             Assert.AreEqual(651.4, xp, 0.1, "LIVEOPS_V1 §3.3: 300 + 200 + 80 + 2.500/35");
             double desenho = LiveOpsDefs.DiaFechamento(S1, LiveOpsDefs.Eventos, LiveOpsDefs.EncomendasDiaF2P);
-            double hoje = LiveOpsDefs.DiaFechamento(S1, LiveOpsDefs.Eventos, 20 / 3.0, true);   // 20 encomendas em 60 min no F2P (econsim), so os eventos prontos
+            double hoje = LiveOpsDefs.DiaFechamento(S1, LiveOpsDefs.Eventos, 30 / 3.0, true);   // 30 encomendas em 60 min no F2P (econsim, Orders 2.0), so os eventos prontos
             Assert.That(desenho, Is.InRange(26.0, 30.0), $"desenho: dia {desenho:0.0}");
             Assert.That(hoje, Is.InRange(26.0, 30.0), $"hoje: dia {hoje:0.0}");
             Assert.That(LiveOpsDefs.DiaFechamento(S2, LiveOpsDefs.Eventos, LiveOpsDefs.EncomendasDiaF2P), Is.InRange(26.0, 30.0));
@@ -500,7 +626,10 @@ namespace FS.Tests
             Acusa(Valida(Troca(FF, Copia(FF, e => e.Trilha = FF.Trilha.Concat(new[] { new Marco(1100, new RewardDef(TipoPremio.Blueprint, 0, "bp_x")) }).ToArray()))), "sem fallback");
             EventDef ffb = Evt("_forge_frenzy_b");
             Acusa(Valida(Troca(ffb, Copia(ffb, e => e.Trilha = FF.Trilha))), "mais de uma fonte");
-            Acusa(Valida(Troca(ffb, Copia(ffb, e => e.Missoes = ffb.Missoes.Concat(new[] { M("bulk", "order_complete", 1, 10, "bulk") }).ToArray()))), "reserva com o que ainda nao existe");
+            Acusa(Valida(Troca(ffb, Copia(ffb, e => e.Modificadores = new[] { new Modificador("GrabTime", 0.7f) }))), "reserva com o que ainda nao existe");
+            Acusa(Valida(Troca(FF, Copia(FF, e => e.Encomenda = "ord_ev_royal_week"))), "nao e' a OrderDef Event deste evento");
+            Acusa(Valida(Troca(FF, Copia(FF, e => e.Missoes = FF.Missoes.Where(x => x.Evento != "play_day").ToArray()))), "jogue em 3 dias");
+            Acusa(Valida(Troca(FF, Copia(FF, e => e.Encomenda = "ord_common_old_forge"))), "nao e' a OrderDef Event deste evento");
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.Premium[1] = new RewardDef(TipoPremio.Ouro, 30)), S2 }), "o pago nunca progride");
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.Premium[1] = new RewardDef(TipoPremio.Blueprint, 0, "bp_x", new RewardDef(TipoPremio.Ouro, 60))), S2 }), "o pago nunca progride");
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.Premium[1] = new RewardDef(TipoPremio.PassXp, 100)), S2 }), "o pago nunca progride");
