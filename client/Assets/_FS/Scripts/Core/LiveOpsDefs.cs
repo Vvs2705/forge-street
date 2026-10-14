@@ -99,6 +99,7 @@ namespace FS.Core
             "product_sold", "product_crafted", "order_done", "upgrade_buy", "offline_claim", "vip_served", "worker_any",
             "quality_crafted", "quality_superior", "master_strike", "play_day",
             "order_complete",   // B-CORE-05: entrega por tipo (LiveOps.OnEncomenda; filtro = TiposEncomenda)
+            "contract_complete",   // D-CORE-04: Royal Contract concluido (filtro = ID ctr_*; vazio = qualquer): a Royal Week ganha pontos por ele so com a missao no dado
         };
         /// <summary>Ganchos: gatilhos do LIVEOPS_V1 §4.6 que nascem com o sistema deles (vazio: o order_complete chegou com o Orders 2.0).</summary>
         public static readonly string[] Futuros = new string[0];
@@ -321,7 +322,8 @@ namespace FS.Core
         /// <summary>Indice do filtro `id` do gatilho `evento` no conteudo (melhoria pelo Upgrades, tipo de encomenda pela lista, item pelo
         /// `items`), ou -1.</summary>
         public static int Indice(string evento, string id, ItemDef[] items) =>
-            evento == "upgrade_buy" ? Upgrades.IndexOf(id) : evento == "order_complete" ? Array.IndexOf(TiposEncomenda, id) : Items.IndexOf(id, items);
+            evento == "upgrade_buy" ? Upgrades.IndexOf(id) : evento == "order_complete" ? Array.IndexOf(TiposEncomenda, id)
+            : evento == "contract_complete" ? ContratosDefs.IndexOf(id) : Items.IndexOf(id, items);
 
         /// <summary>Por que o evento ainda nao pode rodar neste conteudo (gatilho, filtro, knob ou requisito de um sistema que nao existe), ou
         /// null = pronto. O calendario so ativa evento pronto.</summary>

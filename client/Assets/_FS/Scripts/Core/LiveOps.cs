@@ -223,6 +223,7 @@ namespace FS.Core
                 case Ev.Offline: Conta("offline_claim", null); break;
                 case Ev.VipServed: Conta("vip_served", Item(a)); break;
                 case Ev.Hired: case Ev.WorkerUp: Conta("worker_any", null); break;   // B-CORE-04: contratou (upgrade ou Equipe) ou subiu nivel
+                case Ev.ContractDone: Conta("contract_complete", _sim.Contratos.Defs[a].Id); break;   // D-CORE-04: contrato concluido (filtro = ID)
                 case Ev.Graded:   // A = estacao, B = nivel (so acima de Normal)
                     string it = Item((int)_sim.Stations[a].OutItem);
                     Conta("quality_crafted", it);
