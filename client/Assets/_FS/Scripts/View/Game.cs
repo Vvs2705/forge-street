@@ -32,6 +32,8 @@ namespace FS
     /// E-PLAT-02/03: -adcofre (resgate real de 1 h: painel com o "Cofre 2x") | -adencomenda (bonus e trocar no cartao da encomenda) |
     /// -adsupply (botao do Supply Drop na fornalha) | -intersticial (liga a flag Tuning.Interstitial na sessao: carrega e mostra o
     /// intersticial nos vetos do nucleo).
+    /// -renome N (forca o Renome total em N; so sobe) | -renomecard (abre o cartao do Renome; B-CORE-06).
+    /// -encomendas (B-CORE-05: joga ate 180 s de jogo, parado, ate todas as vagas abrirem; com -renome 20 = 2 vagas, 180 = 3).
     /// -renome N (forca o Renome total em N; so sobe) | -renomecard (abre o cartao do Renome; B-CORE-06) | -equipe (B-CORE-04: a oficina com os
     /// 6 ajudantes no nivel 3 e os 7 da Equipe contratados no posto; Captura.Equipe; com -menu e -gold, os cartoes de nivel) | -projetos [todos|dar] ("dar" = os 19 sem abrir; abre o painel de
     /// projetos; "todos" da os 19 do catalogo antes do -buy/-buyids; B-CORE-07).
@@ -130,9 +132,8 @@ namespace FS
         static string Delivered => Loc.T("aviso.entregue", "");   // o -shotorder espera este aviso (o premio vai no fim em todo idioma)
         Sprite _crown;
         bool _vipNow;
-        // v0.6c: cartao da encomenda (FASE9) e o estado da animacao (_orderKey = OrderIndex da encomenda na tela: entregues + trocadas)
-        RectTransform _order; CanvasGroup _orderG; Image _orderIcon, _orderFill, _orderCoin; Text _orderText, _orderPrize, _orderBar;
-        int _orderKey = -1, _orderSeen = -1; float _orderT, _orderPunch; bool _orderOut;
+        // v0.6c: cartao da encomenda (FASE9); B-CORE-05: um por vaga (CartoesEncomenda; null no criativo sem -recordorder)
+        CartoesEncomenda _cards;
         static readonly Color AdFace = Art.HudFace, AdOff = MenuBar.GrayDark;   // A-UI-16: era roxo #3B2650 / #5A5560; a borda de ouro e o ▶ marcam o anuncio
         // v0.6d: botoes de anuncio e cartoes de baixo a 32 px das bordas da area segura, com largura fixa; topo dos botoes de anuncio
         const float Edge = 32f, AdW = 140f, AdTop = MenuBar.Band - 0.004f;
@@ -140,7 +141,7 @@ namespace FS
         /// <summary>A-PLAT-07: o estado do jogo, so derivado dos flags (Estados.De; tabela em Estado.cs). O voltar, o Save e os anuncios
         /// consultam aqui.</summary>
         Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv || MetasAberto || RenomeAberto || LiveOpsAberto || ProjetosAberto || LojaAberta,
-            _order != null && _orderOut && _order.gameObject.activeSelf);
+            _cards != null && _cards.Saindo);
         bool Painel => _panel != null && _panel.gameObject.activeSelf;
         bool Config => _cfg != null && _cfg.gameObject.activeSelf;
         bool Priv => _priv != null && _priv.Aberta;
@@ -273,7 +274,10 @@ namespace FS
             // de jogo pela encomenda (o warmup pode parar no intervalo entre duas); -adsupply so confere. Pedem a 1a melhoria (D6) e, o cofre e a
             // encomenda, vendas no warmup (ex.: -buy 13 -warmup 240)
             if (Arg("-adcofre") != null && PagaCofre(3600, _sim.LastClaim + 1) <= 0) { Falha("ADCOFRE: cofre vazio (o warmup nao teve vendas)"); return; }
-            if (Arg("-adencomenda") != null) for (float t = 0f; t < 60f && _sim.OrderItem < 0; t += MaxStep) _sim.Tick(MaxStep, 0f, 0f);
+            if (Arg("-adencomenda") != null) for (float t = 0f; t < 60f && _sim.Encomendas.Principal == null; t += MaxStep) _sim.Tick(MaxStep, 0f, 0f);
+            // B-CORE-05, foto: -encomendas joga ate 180 s de jogo (sem andar) ate todas as vagas abrirem (com -renome 20/180: 2/3 vagas)
+            if (Arg("-encomendas") != null)
+                for (float t = 0f; t < 180f && _sim.Encomendas.Vagas.Count < _sim.Encomendas.VagasMax; t += MaxStep) _sim.Tick(MaxStep, 0f, 0f);
             foreach ((string flag, Anuncio a) in new[] { ("-adcofre", Anuncio.Cofre), ("-adencomenda", Anuncio.EncomendaBonus), ("-adsupply", Anuncio.Supply) })
                 if (Arg(flag) != null && !_sim.Anuncios.Pode(a)) { Falha($"AD: {flag} sem o placement {a} (D6 pede -buy 1; encomenda e cofre, vendas no -warmup)"); return; }
             _botDrive = Arg("-bot") != null;
@@ -498,18 +502,21 @@ namespace FS
                         _view.Float(e.Pos, "...", Art.Bad, 44);
                         Log("vip_left", Balance.ItemName[e.A], e.B.ToString());
                         break;
-                    // FASE9 (v0.6c): a encomenda nova entra pelo estado do Sim (RefreshOrder, vale tambem para a do save); entregue = som,
+                    // FASE9 (v0.6c): a encomenda nova entra pelo estado do Sim (CartoesEncomenda.Refresh, vale tambem para a do save); entregue = som,
                     // aviso e moedas saindo do cartao (o premio ja entrou no Gold, fora do GoldEarned, como o bau)
                     case Ev.OrderNew: Log("order_new", Balance.ItemName[e.A], e.B.ToString()); break;
                     case Ev.OrderDone:
                         Log("order_done", Balance.ItemName[e.A], e.B.ToString());
+                        // B-CORE-05 (LIVEOPS_V1 §5.8): order_complete com o tipo ("rush_prazo" no bonus). ponytail: 2 entregues no mesmo tick logam o
+                        // tipo da ultima nas duas linhas; vira campo do Ev se o relatorio precisar
+                        if (_sim.Encomendas.UltimaEntregue is Encomenda u)
+                            Log("order_complete", u.Tipo == OrderType.Rush && u.Prazo > 0f ? "rush_prazo" : u.Tipo.ToString().ToLowerInvariant(), Balance.ItemName[e.A]);
                         Source("encomenda", e.B);
                         Ajustes.Pulso(40, 200);
-                        if (_order == null) break;   // criativo: sem cartao, o ouro entra direto no numero
-                        OrderText(_sim.OrderTarget, _sim.OrderTarget);   // a ultima venda e a entrega caem no mesmo tick: mostra o 5/5
-                        _orderOut = true; _orderT = 0f;
+                        if (_cards == null) break;   // criativo: sem cartao, o ouro entra direto no numero
+                        Vector3 de = _cards.Entregue(_sim);   // o cartao dela mostra a conta cheia e sai
                         Notice(Loc.T("aviso.entregue", e.B), _coinIcon.sprite, _coinIcon.color);
-                        FlyCoins(_orderCoin.rectTransform.position, e.B);
+                        FlyCoins(de, e.B);
                         TentaIntersticial();   // E-PLAT-03: o cartao saindo = estado Transition
                         break;
                 }
@@ -536,7 +543,7 @@ namespace FS
             foreach (Station s in _sim.Stations) opens |= s.UnlockBy == u;
             Ajustes.Pulso(opens ? 60 : 30, opens ? 255 : 150);
             string name = Loc.T("aviso.compra", Textos.Nome(u));
-            if (_order == null) _view.Float(pos, name, Art.Good, 44);
+            if (_cards == null) _view.Float(pos, name, Art.Good, 44);
             else
             {
                 Sprite icon; Color tint;
@@ -918,7 +925,7 @@ namespace FS
             TickCoins(Time.deltaTime);
             RefreshAdUi();
             float real = Mathf.Min(Captura.Passo, 0.1f);   // tempo real (o simulado zera o timeScale; gravando, o do quadro), sem o salto do 1o quadro
-            RefreshOrder(real);
+            _cards?.Refresh(_sim, real);   // B-CORE-05
             _renome.Refresh();   // antes do TickNotice: o aviso de nivel novo entra na fila neste quadro
             TickNotice(real);
             // numero rolando: persegue o valor (sobe na venda, desce na compra) em ~0,3 s em vez de pular
@@ -1105,7 +1112,7 @@ namespace FS
             b.G.alpha = Mathf.Clamp01((NoticeTime - b.Age) / 0.4f);
         }
 
-        static float Pop(float age)
+        internal static float Pop(float age)
         {
             float k = Mathf.Clamp01(age / 0.3f);
             return k < 0.6f ? Mathf.Lerp(0.3f, 1.1f, k / 0.6f) : Mathf.Lerp(1.1f, 1f, (k - 0.6f) / 0.4f);
@@ -1143,15 +1150,16 @@ namespace FS
                 ((RectTransform)_supplyBtn.B.transform).anchoredPosition = local;
             }
             Ofertou(Anuncio.Supply, sup, on);
-            bool card = _order != null && _order.gameObject.activeSelf && !_orderOut;
+            bool card = _cards != null && _cards.PrincipalNaTela(_sim);   // B-CORE-05: bonus e trocar sao da principal
             bool bonus = card && Pode(Anuncio.EncomendaBonus), troca = card && Pode(Anuncio.EncomendaTroca);
             if (_bonusChip.B.gameObject.activeSelf != bonus) _bonusChip.B.gameObject.SetActive(bonus);
             if (bonus) _bonusChip.Label.text = "+" + _sim.Anuncios.Previa(Anuncio.EncomendaBonus);
             if (_trocaChip.B.gameObject.activeSelf != troca) _trocaChip.B.gameObject.SetActive(troca);
             if (troca)
             {
-                (Item it, int target, _) = _sim.Anuncios.ProximaEncomenda();   // a que entra, mostrada antes (P5)
-                _trocaChip.Label.text = Loc.T("enc.troca", target);
+                Encomenda prox = _sim.Anuncios.ProximaEncomenda();   // a que entra, mostrada antes (P5)
+                Item it = prox.Itens[0];
+                _trocaChip.Label.text = Loc.T("enc.troca", prox.Total);
                 _trocaChip.Video.SetActive(!_sim.Compras.SemVideoEm(Anuncio.EncomendaTroca));   // E-PLAT-05: Pacote do Mestre, sem video
                 Sprite s = Art.ItemArt(it, true);
                 _trocaChip.Icon.sprite = s != null ? s : Art.ItemSprite(it);
@@ -1199,81 +1207,12 @@ namespace FS
         /// (G-UA-02, preset order).
         /// v0.6d: 420 x 104 px a 32 px da borda e 24 px acima do botao VIP (era 0,02-0,40 da largura, colado nele); titulo com verbo,
         /// a conta "3/5" em cima da barra de 20 px.
+        /// B-CORE-05: um cartao por vaga (CartoesEncomenda): o da principal aqui, as outras vagas e a de evento acima dos chips, a 80%.
         /// </summary>
         void BuildOrderUi()
         {
             if (Arg("-record") != null && Arg("-recordorder") == null) return;
-            Image edge = Art.Panel(_safe, "Encomenda", Art.HudEdge, new Vector2(0f, AdTop), new Vector2(0f, AdTop));
-            edge.rectTransform.pivot = Vector2.zero; edge.rectTransform.sizeDelta = new Vector2(420f, 104f);
-            edge.rectTransform.anchoredPosition = new Vector2(Edge, 24f);
-            edge.raycastTarget = false;
-            Image face = Art.Panel(edge.transform, "Fundo", Art.ComAlfa(Art.HudFace, 0.95f), Vector2.zero, Vector2.one);
-            face.rectTransform.offsetMin = new Vector2(5f, 5f); face.rectTransform.offsetMax = new Vector2(-5f, -5f);
-            face.raycastTarget = false;
-            _orderIcon = Art.Node(edge.transform, "Item", new Vector2(0.03f, 0.1f), new Vector2(0.22f, 0.9f)).gameObject.AddComponent<Image>();
-            _orderIcon.preserveAspect = true; _orderIcon.raycastTarget = false;
-            // titulo numa linha so: caixa de ~44 px (2 linhas nao cabem) e o best-fit encolhe "Venda 30 ferramentas" em vez de quebrar
-            _orderText = Art.Outlined(Art.NewText(edge.transform, "Texto", 34, new Vector2(0.24f, 0.5f), new Vector2(0.98f, 0.92f), TextAnchor.MiddleLeft), 2f);
-            _orderText.fontStyle = FontStyle.Bold;
-            _orderText.resizeTextForBestFit = true; _orderText.resizeTextMinSize = 22; _orderText.resizeTextMaxSize = 34;
-            _orderText.verticalOverflow = VerticalWrapMode.Truncate;
-            Image bar = Art.Node(edge.transform, "Barra", new Vector2(0.25f, 0.29f), new Vector2(0.64f, 0.29f)).gameObject.AddComponent<Image>();
-            bar.rectTransform.offsetMin = new Vector2(0f, -10f); bar.rectTransform.offsetMax = new Vector2(0f, 10f);   // 20 px de altura
-            bar.color = new Color(0f, 0f, 0f, 0.6f); bar.raycastTarget = false;
-            _orderFill = Art.Node(bar.transform, "Cheio", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
-            _orderFill.color = Art.Good; _orderFill.raycastTarget = false;
-            _orderBar = Art.Outlined(Art.NewText(bar.transform, "Conta", 24, Vector2.zero, Vector2.one), 2f);
-            _orderBar.fontStyle = FontStyle.Bold; _orderBar.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _orderCoin = Art.Node(edge.transform, "Moeda", new Vector2(0.67f, 0.08f), new Vector2(0.77f, 0.5f)).gameObject.AddComponent<Image>();
-            _orderCoin.sprite = _coinIcon.sprite; _orderCoin.color = _coinIcon.color; _orderCoin.preserveAspect = true; _orderCoin.raycastTarget = false;
-            _orderPrize = Art.Outlined(Art.NewText(edge.transform, "Premio", 32, new Vector2(0.78f, 0.04f), new Vector2(0.99f, 0.54f), TextAnchor.MiddleLeft), 2f);
-            _orderPrize.fontStyle = FontStyle.Bold; _orderPrize.color = Art.Accent; _orderPrize.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _order = edge.rectTransform;
-            _orderG = edge.gameObject.AddComponent<CanvasGroup>();
-            _orderG.blocksRaycasts = false;
-            _order.gameObject.SetActive(false);
-        }
-
-        /// <summary>Cartao pelo estado do Sim: encomenda nova entra pulando como o aviso, cada venda dela da um pulso e, entregue (o Ev.OrderDone
-        /// liga _orderOut), cresce e some em 0,35 s.</summary>
-        void RefreshOrder(float dt)
-        {
-            if (_order == null) return;
-            _orderT += dt; _orderPunch = Mathf.Max(0f, _orderPunch - dt);
-            int it = _sim.OrderItem;
-            if (it >= 0 && _orderKey != _sim.OrderIndex)   // E-PLAT-02: a trocada tambem entra pulando
-            {
-                _orderKey = _sim.OrderIndex; _orderOut = false; _orderT = 0f; _orderSeen = -1;
-                Sprite s = Art.ItemArt((Item)it, true);
-                _orderIcon.sprite = s != null ? s : Art.ItemSprite((Item)it);
-                _orderIcon.color = s != null ? Color.white : Art.ItemColor[it];
-                _orderText.text = Textos.Venda(_sim.OrderTarget, it);
-                _orderPrize.text = "+" + _sim.OrderReward;
-                _order.gameObject.SetActive(true);
-            }
-            if (!_order.gameObject.activeSelf) return;
-            if (_orderOut)
-            {
-                float k = _orderT / 0.35f;
-                if (k >= 1f) { _order.gameObject.SetActive(false); return; }
-                _order.localScale = Vector3.one * (1f + 0.25f * k);
-                _orderG.alpha = 1f - k;
-                return;
-            }
-            if (_sim.OrderProgress != _orderSeen)
-            {
-                if (_orderSeen >= 0) _orderPunch = PunchTime;
-                _orderSeen = _sim.OrderProgress;
-                OrderText(_orderSeen, _sim.OrderTarget);
-            }
-            _order.localScale = Vector3.one * Pop(_orderT) * (1f + 0.12f * Mathf.Sin(Mathf.PI * _orderPunch / PunchTime));
-            _orderG.alpha = 1f;
-        }
-
-        void OrderText(int done, int target)
-        {
-            _orderBar.text = $"{done}/{target}";
-            _orderFill.rectTransform.anchorMax = new Vector2(target > 0 ? Mathf.Clamp01(done / (float)target) : 0f, 1f);
+            _cards = new CartoesEncomenda(_safe, Edge, AdTop, ChipH + 8f, _coinIcon.sprite, _coinIcon.color);   // os chips de anuncio ficam entre o 1o e os outros
         }
 
         /// <summary>
@@ -1362,10 +1301,10 @@ namespace FS
                     break;
                 case Anuncio.EncomendaBonus:
                     Sfx.Play("meta");
-                    if (_orderPrize != null) _orderPrize.text = "+" + _sim.OrderReward;   // pago na entrega, junto com o premio
+                    // pago na entrega, junto com o premio: o "+N" do cartao ja sobe (CartoesEncomenda.Refresh)
                     Notice(Loc.T("aviso.bonus", n), _coinIcon.sprite, _coinIcon.color);
                     break;
-                case Anuncio.EncomendaTroca: Sfx.Play("encomenda"); Notice(Loc.T("aviso.troca")); break;   // o cartao novo entra pelo OrderIndex
+                case Anuncio.EncomendaTroca: Sfx.Play("encomenda"); Notice(Loc.T("aviso.troca")); break;   // o cartao novo entra no lugar da trocada (CartoesEncomenda)
                 case Anuncio.Supply:
                     Sfx.Play("supply");
                     Sprite ingot = Art.ItemArt(Item.Ingot, true);
@@ -1729,7 +1668,7 @@ namespace FS
                 // v0.6c: espera o aviso da 1a encomenda entregue (ate 180 s) e fotografa -shotdelay s depois (moedas no ar, cartao saindo).
                 // A-UI-19: o aviso divide a fila com os outros; espera ele estar na tela
                 float until = Time.realtimeSinceStartup + 180f;
-                while (_order != null && !(_notice.R.gameObject.activeSelf && _notice.T.text.StartsWith(Delivered, StringComparison.Ordinal))
+                while (_cards != null && !(_notice.R.gameObject.activeSelf && _notice.T.text.StartsWith(Delivered, StringComparison.Ordinal))
                     && Time.realtimeSinceStartup < until) yield return null;
                 yield return new WaitForSecondsRealtime(delay);
             }

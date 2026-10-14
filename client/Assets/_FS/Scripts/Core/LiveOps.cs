@@ -151,12 +151,27 @@ namespace FS.Core
 
         public static string TxMissao(EventDef e, MissaoEvento x) => "em:" + e.Id + ":" + x.Id;
 
-        /// <summary>Pontos do evento: as missoes pagas (a encomenda Event, +20 por entrega, soma aqui com o Orders 2.0).</summary>
+        /// <summary>Pontos do evento: as missoes pagas + as encomendas Event entregues nele (B-CORE-05: +15 cada, contadas enquanto o evento
+        /// esta ativo; a trilha ja paga fica no ledger quando ele sai).</summary>
         public int PontosDe(EventDef e)
         {
-            int p = 0;
+            int p = e == Evento && _cont.TryGetValue(PontosEnc, out long enc) ? (int)Math.Min(int.MaxValue, enc) : 0;
             foreach (MissaoEvento x in e.Missoes) if (M.Ledger.Contains(TxMissao(e, x))) p += x.Pontos;
             return p;
+        }
+
+        const string PontosEnc = "encomenda_evento";
+
+        /// <summary>B-CORE-05 (Encomendas.Entregar): encomenda Event do evento `evento` entregue. Os pontos entram na trilha no proximo Avanca.</summary>
+        public void PontosEncomenda(string evento, int pontos)
+        {
+            if (Evento != null && Evento.Id == evento && pontos > 0) Add(PontosEnc, pontos);
+        }
+
+        /// <summary>B-CORE-05: encomenda entregue por tipo (o Ev.OrderDone nao leva o tipo): order_complete.{common|bulk|...} das missoes.</summary>
+        public void OnEncomenda(OrderType t)
+        {
+            if (Evento != null) Conta("order_complete", t.ToString().ToLowerInvariant());
         }
 
         public int Pontos => Evento == null ? 0 : PontosDe(Evento);

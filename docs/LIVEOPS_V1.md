@@ -79,7 +79,7 @@ Todo evento reaproveita este molde (DM §124: trocar missões, arte, modificador
 | Fonte | Pontos | Nota |
 |---|---|---|
 | Missões do evento (7–8, fixas) | soma **700** | contam do `event_enter` em diante |
-| Encomenda Event (vaga própria, `ECONOMIA_WAVE_B.md` §3.1–3.2) | **20** por entrega | alvo 150 s de renda, produto do rodízio, qualidade Normal; F2P ~4 por dia |
+| Encomenda Event (vaga própria, `ECONOMIA_WAVE_B.md` §3.1–3.2) | **15** por entrega (10 no Merchant Caravan) | alvo 150 s de renda, produto do rodízio, qualidade Normal; F2P ~6–8 por dia de 20 min (Orders 2.0, `BALANCE.md` §28.6; era 20 e fechava a trilha numa sessão) |
 | Bônus de evento (rewarded, GDD §17.1) | +30, 1× por dia, valor mostrado antes | **fora** da conta de fechamento |
 
 **Trilha** (igual em todos; o crédito é automático ao cruzar o limiar, com aviso na fila de avisos, A-UI-19):
@@ -97,7 +97,7 @@ Todo evento reaproveita este molde (DM §124: trocar missões, arte, modificador
 | 850 | Renome +5 | `e:{evento}:850` |
 | 1.000 | XP do Pass 200 + cosmético principal do evento | `e:{evento}:1000` |
 
-Por evento: 135 s de ouro, 8 de Renome, 500 de XP do Pass, 2 cosméticos. **Fechamento:** 700 das missões + 15 encomendas Event; o F2P de referência fecha no dia 4–5 de 6, sem anúncio (portão no §6).
+Por evento: 135 s de ouro, 8 de Renome, 500 de XP do Pass, 2 cosméticos. **Fechamento:** 700 das missões (todo evento tem a "jogue em 3 dias", `play_day`) + ~20 encomendas Event; o F2P de referência fecha no dia 4–5 de 6, sem anúncio, e 60 min seguidos não fecham (portão no §6; `LiveOpsTests.TrilhaDeEvento_*`).
 
 **Outras regras do template:** os modificadores valem só online e só para quem cumpriu o requisito (quem está no FTUE não vê evento nem modificador); missão de comprar/contratar se completa sozinha se não houver mais o que comprar (`exhaust = AutoComplete`, §5.2); toda missão aceita pelo menos uma família do distrito 1 (o jogador nos distritos 2–6 conta qualquer família da lista no distrito ativo). **Ofertas: nenhuma até a Wave E** (sem IAP, sem moeda premium, V9). Na Wave E, se aprovado, só Event Bundle de cosmético fixo; nunca pontos, XP, ouro, Renome ou Blueprint à venda.
 

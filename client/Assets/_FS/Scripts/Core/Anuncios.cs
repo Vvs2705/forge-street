@@ -53,7 +53,7 @@ namespace FS.Core
             switch (a)
             {
                 case Anuncio.Cofre: return _sim.LastClaimGold > 0 ? _sim.LastClaim : 0;
-                case Anuncio.EncomendaBonus: case Anuncio.EncomendaTroca: return _sim.OrderItem >= 0 ? _sim.OrderIndex + 1 : 0;
+                case Anuncio.EncomendaBonus: case Anuncio.EncomendaTroca: return _sim.Encomendas.Principal is Encomenda e ? e.Idx + 1 : 0;   // B-CORE-05: a do cartao principal
                 default: return Pago[(int)a] + 1;
             }
         }
@@ -96,7 +96,10 @@ namespace FS.Core
                 case Anuncio.Vip: return (long)v;
                 case Anuncio.Velocidade: return _sim.BoostLeft > 0f ? (long)_sim.BoostMul + 1 : 2;
                 case Anuncio.Cofre: return (long)Math.Round(_sim.LastClaimGold * (double)v);
-                case Anuncio.EncomendaBonus: return _sim.OrderItem < 0 ? 0 : Math.Max(5, 5 * (long)Math.Round(_sim.OrderReward * (double)v / 5.0, MidpointRounding.AwayFromZero));
+                case Anuncio.EncomendaBonus:   // B-CORE-05: v do premio, nunca abaixo de EncomendaBonusMinSeg s de renda (o anuncio custa ~30 s de relogio)
+                    Encomenda e = _sim.Encomendas.Principal;
+                    return e == null ? 0 : Math.Max(Math.Max(5, 5 * (long)Math.Round(e.Premio * (double)v / 5.0, MidpointRounding.AwayFromZero)),
+                        5 * (long)Math.Round(_sim.RateEma * _sim.T.EncomendaBonusMinSeg / 5.0, MidpointRounding.AwayFromZero));
                 case Anuncio.Supply:
                     long n = 0;   // v s de producao de cada fornalha aberta, no tempo de ciclo de agora (Fole e Fole duplo contam)
                     foreach (Station s in _sim.Stations) if (s.Unlocked && s.Kind == Kind.Furnace) n += (long)(v / s.Time);
@@ -105,8 +108,9 @@ namespace FS.Core
             }
         }
 
-        /// <summary>"Trocar encomenda": a que entra se o jogador assistir (P5: sem sorteio, mostrada antes; = a natural seguinte do rodizio).</summary>
-        public (Item item, int target, int reward) ProximaEncomenda() => _sim.OrderAt(_sim.OrderIndex + 1);
+        /// <summary>"Trocar encomenda": a que entra no lugar da principal se o jogador assistir (P5: sem sorteio, mostrada antes; = a proxima do
+        /// rodizio). null sem encomenda.</summary>
+        public Encomenda ProximaEncomenda() => _sim.Encomendas.Proxima();
 
         /// <summary>ID de transacao da oferta de agora ("id:chave"), ou null se o placement nao pode.</summary>
         public string Oferta(Anuncio a) => Pode(a) ? Def(a).Id + ":" + Chave(a).ToString(CultureInfo.InvariantCulture) : null;
@@ -126,8 +130,8 @@ namespace FS.Core
                     case Anuncio.Vip: if (!_sim.SummonVip()) return -1; break;
                     case Anuncio.Velocidade: v = (long)_sim.StartBoost(); if (v <= 0) return -1; break;
                     case Anuncio.Cofre: _sim.Gold += v; break;   // como o cofre: fora do GoldEarned (nao infla a taxa online)
-                    case Anuncio.EncomendaBonus: _sim.OrderReward += (int)v; break;   // pago na entrega, junto com o premio
-                    case Anuncio.EncomendaTroca: _sim.TrocarEncomenda(); break;
+                    case Anuncio.EncomendaBonus: _sim.Encomendas.Principal.Premio += v; break;   // pago na entrega, junto com o premio
+                    case Anuncio.EncomendaTroca: _sim.Encomendas.Trocar(); break;
                     case Anuncio.Supply: Lingotes += (int)v; Recarga[i] = Def(a).Recarga; break;
                 }
                 Pago[i] = k;

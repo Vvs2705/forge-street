@@ -94,7 +94,7 @@ namespace FS.Tests
                     Assert.Greater(s.ApplyOffline(Captura.OfflineSegundos(off), s.LastClaim + 1), 0L, p.Nome + ": cofre com ouro");
                 if (Captura.Valor(a, "-recordorder") != null)
                 {
-                    Assert.GreaterOrEqual(s.OrderItem, 0, p.Nome + ": cartao no 1o quadro");
+                    Assert.IsNotNull(s.Encomendas.Principal, p.Nome + ": cartao no 1o quadro");
                     float fim = s.Time + F(Captura.Valor(a, "-recordsec")) - 2f;   // entregue com 2 s de folga para o aviso
                     bool entregue = false;
                     while (s.Time < fim && !entregue) { s.Tick(Step, 0f, 0f); entregue = s.Events.Exists(e => e.Kind == Ev.OrderDone); }
