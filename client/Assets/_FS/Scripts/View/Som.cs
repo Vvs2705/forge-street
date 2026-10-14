@@ -454,79 +454,105 @@ namespace FS
 
 #if !FS_CORETESTS
     /// <summary>
-    /// "Mixer leve" (A-AUD-23; o AudioMixer de asset exige o Editor): 3 grupos por codigo. Efeitos = pool de 6 AudioSource (sem fonte nova
-    /// por evento; cheia, rouba a mais antiga; cada voz com a sua altura, o que o PlayOneShot numa fonte so nao fazia), Ambiente = 4 lacos
-    /// (fogo, fogo grave, rua, rua densa) com volume seguindo o Sim, Musica = 1 laco com fade. Efeitos e ambiente obedecem a chave Efeitos;
-    /// a musica, a chave Musica (Ajustes). Desligado = fonte parada (nada mixando), nao volume 0. Os efeitos sao sintetizados no Init (a
-    /// abertura toca o cofre); musica e ambiente numa thread e entram quando ficam prontos.
+    /// "Mixer leve" (A-AUD-23; o AudioMixer de asset exige o Editor): 3 grupos por codigo. Efeitos = pool de Mixagem.Vozes AudioSource que so
+    /// executa o que a Mixagem decide (fix/mix-audio: categoria, prioridade, intervalos, distancia e a fila dos Importantes); Ambiente = 4 lacos
+    /// (fogo, fogo grave, rua, rua densa) com volume seguindo o Sim; Musica = 1 volta e Mixagem.MusicaPausa s de silencio. Importante soando
+    /// abaixa musica, ambiente e Mundo 6 dB (Mixagem.Duck). Efeitos e ambiente obedecem a chave Efeitos; a musica, a chave Musica (Ajustes).
+    /// Desligado = fonte parada (nada mixando), nao volume 0. Efeitos sintetizados no Init (a abertura toca o cofre); musica e ambiente numa
+    /// thread e entram quando ficam prontos. -somlog (Log): uma linha "SOM min=..." por minuto no Player.log.
     /// </summary>
     public static class Sfx
     {
-        // ponytail: volumes dos grupos chutados sem ouvir; calibrar no POCO (alto-falante e fone) e no PC
-        // (RMS dos clips: efeitos ~0,14 a 0,55 de volume; musica 0,12; fogo 0,21; rua 0,11 -> musica ~-7 dB e ambiente -13 dB parado / -4 dB
-        // cheio abaixo dos efeitos)
-        const float MusicaVol = 0.3f, AmbienteVol = 0.15f, FadeMusica = 1.5f, Suave = 0.8f;
-        const int Vozes = 6;
-        static readonly AudioSource[] _fx = new AudioSource[Vozes], _amb = new AudioSource[4];
-        static readonly float[] _ambPitch = { 1f, 0.82f, 1f, 1.08f }, _ambVol = new float[4];
+        // fix/mix-audio, pelo RMS dos clips (docs/AUDIO.md §2): efeitos de -14 dBFS (Importante) a -25 (Mundo perto) com o volume da Mixagem.Regras;
+        // musica 0,18 = -33 dB de RMS medio (era 0,3 = -29, em laco sem parar); ambiente 0,11 com as camadas de densidade a 60%: parado ~-38 dB,
+        // cheio ~-30, +7,7 dB (era -35 / -26, +9,4). ponytail: calibrar no POCO (alto-falante e fone) e no PC
+        const float MusicaVol = 0.18f, AmbienteVol = 0.11f, Suave = 0.8f;
+        static readonly AudioSource[] _fx = new AudioSource[Mixagem.Vozes], _amb = new AudioSource[4];
+        static readonly float[] _ambPitch = { 1f, 0.82f, 1f, 1.08f }, _ambGanho = { 1f, 0.6f, 1f, 0.6f }, _ambVol = new float[4], _vol = new float[Mixagem.Vozes];
         static AudioSource _musica;
-        static int _voz;
+        static Mixagem _mix;
         static bool _musicaOn, _ambOn, _fxOn = true;
+        static float _musT, _logT;
+        static int _logMin;
         static Task<float[][]> _fundo;
+        /// <summary>-somlog (dev): uma linha por minuto no Player.log com o que tocou, o pico de vozes e o que foi cortado ou barrado.</summary>
+        public static bool Log;
 
-        sealed class Som { public AudioClip[] V; public int K; public float Last = -99f; }
+        sealed class Som { public AudioClip[] V; public int K; }
         static readonly Dictionary<string, Som> Sons = new Dictionary<string, Som>();
 
         public static void Init(GameObject host)
         {
-            _musicaOn = _ambOn = false; _fxOn = true; _voz = 0;   // Editor sem domain reload: estaticos da sessao anterior
-            for (int i = 0; i < Vozes; i++) _fx[i] = Fonte(host, false);
+            _musicaOn = _ambOn = false; _fxOn = true; _logT = 0f; _logMin = 0;   // Editor sem domain reload: estaticos da sessao anterior
+            for (int i = 0; i < _fx.Length; i++) _fx[i] = Fonte(host, false);
             for (int i = 0; i < _amb.Length; i++) { _amb[i] = Fonte(host, true); _amb[i].pitch = _ambPitch[i]; }
-            _musica = Fonte(host, true);
+            _musica = Fonte(host, false);   // 1 volta e pausa (Musica), nao laco
             foreach (string n in Sintese.Nomes)
             {
                 var v = new AudioClip[Sintese.Variacoes(n)];
                 for (int k = 0; k < v.Length; k++) v[k] = Clip(n + k, Sintese.Efeito(n, k), Sintese.Taxa);
                 Sons[n] = new Som { V = v };
             }
+            _mix = new Mixagem(n => Sons[n].V[0].length);
             _fundo = Task.Run(() => new[] { Sintese.Fogo(), Sintese.Rua(), Sintese.Musica() });
         }
 
-        /// <summary>Toca no maximo uma vez por `minGap` segundos por nome (varias marteladas no mesmo quadro viram uma), alternando as variacoes.</summary>
-        public static void Play(string name, float pitch = 1f, float minGap = 0.05f, float vol = 0.55f)
+        /// <summary>Som `som` (nome da Mixagem.Regras; o nome de um clip tambem toca, como Importante) sem lugar: UI, Importante, o ferreiro.</summary>
+        public static void Play(string som, float pitch = 1f) => Toca(som, pitch, null);
+
+        /// <summary>Som com lugar no mundo (bancada, esteira): Mundo so na tela e atenuado pela distancia ao ferreiro.</summary>
+        public static void Play(string som, float pitch, V2 pos) => Toca(som, pitch, pos);
+
+        /// <summary>O som de um evento do Sim (Mixagem.DoEvento: o mesmo mapa que a medida do MixagemTests usa).</summary>
+        public static void Evento(SimEvent e)
         {
-            if (!Ajustes.Efeitos || !Sons.TryGetValue(name, out Som s)) return;   // Efeitos desligado = nada toca
-            if (Time.unscaledTime - s.Last < minGap) return;
-            s.Last = Time.unscaledTime;
-            AudioSource src = Livre();
+            string som = Mixagem.DoEvento(e, out float p);
+            if (som != null) Toca(som, p, e.Pos);
+        }
+
+        static void Toca(string som, float pitch, V2? pos)
+        {
+            if (_mix == null || !Ajustes.Efeitos) return;   // Efeitos desligado = nada toca
+            if (_mix.Pedir(som, Time.unscaledTime, out Mixagem.Toque q, pos, pitch)) Inicia(q);
+        }
+
+        static void Inicia(Mixagem.Toque q)
+        {
+            if (!Sons.TryGetValue(q.Clip, out Som s)) return;
+            AudioSource src = _fx[q.Voz];
+            src.Stop();   // voz roubada (a Mixagem so rouba de prioridade menor, ou o mesmo som reiniciando)
             src.clip = s.V[s.K];
             s.K = (s.K + 1) % s.V.Length;
-            src.pitch = pitch;
-            src.volume = vol;
+            src.pitch = q.Pitch;
+            _vol[q.Voz] = q.Vol;
+            src.volume = q.Vol * (q.Cat == Cat.Mundo ? _mix.Duck(Time.unscaledTime) : 1f);
             src.Play();
         }
 
         /// <summary>
-        /// Um quadro (Game.Update): liga/desliga os grupos pelas chaves, faz o fade da musica e leva o ambiente ate o alvo das
-        /// Sintese.Camadas (estacoes produzindo agora e clientes nas filas, lidos do Sim) em ~1 s.
+        /// Um quadro (Game.Update): ouvinte e tela da Mixagem (ferreiro e camera), Importantes da fila, ducking, chaves dos grupos, a musica e o
+        /// ambiente ate o alvo das Sintese.Camadas (estacoes produzindo agora e clientes nas filas, lidos do Sim) em ~1 s; -somlog, a linha do minuto.
         /// </summary>
-        public static void Tick(Sim sim, float dt)
+        public static void Tick(Sim sim, Camera cam, float dt)
         {
             if (_fundo != null && _fundo.IsCompleted) Fundo();
+            float t = Time.unscaledTime, duck = _mix.Duck(t);
+            _mix.Ouvinte = sim.Player.Pos;
+            Vector3 c = cam.transform.position;
+            _mix.Tela(new V2(c.x, c.y), cam.orthographicSize * cam.aspect, cam.orthographicSize);
             bool fx = Ajustes.Efeitos;
             if (fx != _fxOn)
             {
                 _fxOn = fx;
-                if (!fx) foreach (AudioSource s in _fx) s.Stop();   // desligou no meio de um som: corta
+                if (!fx) { foreach (AudioSource s in _fx) s.Stop(); _mix.Cala(); }   // desligou no meio de um som: corta e esvazia a fila
             }
-
-            bool m = Ajustes.Musica && _musica.clip != null;
-            if (m != _musicaOn)
+            if (fx)
             {
-                _musicaOn = m;
-                if (m) { _musica.volume = 0f; _musica.Play(); } else _musica.Stop();
+                while (_mix.Fila(t, out Mixagem.Toque q)) Inicia(q);
+                for (int i = 0; i < _fx.Length; i++) if (_mix.CatDa(i) == Cat.Mundo && _fx[i].isPlaying) _fx[i].volume = _vol[i] * duck;
             }
-            if (m) _musica.volume = Mathf.MoveTowards(_musica.volume, MusicaVol, dt * MusicaVol / FadeMusica);
+            if (Log && (_logT += dt) >= 60f) { _logT -= 60f; Debug.Log(_mix.Minuto(++_logMin)); }
+            Musica(Mathf.Min(dt, 0.1f), duck);
 
             bool a = fx && _amb[0].clip != null;
             if (a != _ambOn)
@@ -545,10 +571,36 @@ namespace FS
             foreach (Station s in sim.Stations) if (s.Unlocked && s.Produces && s.Busy && s.Progress < 1f) ativas++;
             var (f1, f2, r1, r2) = Sintese.Camadas(ativas, sim.Queue.Count + sim.JewelQueue.Count);
             float k = Mathf.Min(1f, dt * Suave);
-            Mix(0, f1, k); Mix(1, f2, k); Mix(2, r1, k); Mix(3, r2, k);
+            Mix(0, f1, k, duck); Mix(1, f2, k, duck); Mix(2, r1, k, duck); Mix(3, r2, k, duck);
         }
 
-        static void Mix(int i, float alvo, float k) => _amb[i].volume = AmbienteVol * (_ambVol[i] += (alvo - _ambVol[i]) * k);
+        static void Mix(int i, float alvo, float k, float duck) => _amb[i].volume = AmbienteVol * _ambGanho[i] * duck * (_ambVol[i] += (alvo - _ambVol[i]) * k);
+
+        /// <summary>
+        /// Musica: 1 volta (28,8 s) e Mixagem.MusicaPausa s so com o ambiente (em laco o mesmo trecho voltava ~60 vezes em 30 min), entrando e
+        /// saindo suave (Mixagem.MusicaGanho), com o ducking. Ligou (chave ou clip pronto): comeca a volta do inicio.
+        /// </summary>
+        static void Musica(float dt, float duck)
+        {
+            bool m = Ajustes.Musica && _musica.clip != null;
+            if (m != _musicaOn)
+            {
+                _musicaOn = m;
+                if (m) Volta(); else _musica.Stop();
+            }
+            if (!m) return;
+            float volta = _musica.clip.length;
+            if (_musica.isPlaying) _musT = _musica.time;
+            else if ((_musT = Mathf.Max(_musT, volta) + dt) >= volta + Mixagem.MusicaPausa) Volta();   // a volta acabou: conta a pausa
+            _musica.volume = MusicaVol * Mixagem.MusicaGanho(_musT, volta) * duck;
+        }
+
+        static void Volta()
+        {
+            _musT = 0f;
+            _musica.time = 0f;
+            _musica.Play();
+        }
 
         /// <summary>Musica e ambiente prontos na thread: viram clip aqui (a API de audio so no thread principal). Falhou: segue sem eles.</summary>
         static void Fundo()
@@ -560,22 +612,6 @@ namespace FS
             _amb[0].clip = _amb[1].clip = Clip("fogo", r[0], Sintese.Taxa);
             _amb[2].clip = _amb[3].clip = Clip("rua", r[1], Sintese.Taxa);
             _musica.clip = Clip("musica", r[2], Sintese.TaxaMusica);
-        }
-
-        /// <summary>Voz livre do pool, a partir da seguinte a ultima usada; todas ocupadas = a mais antiga (ponytail: rodizio, sem prioridade
-        /// por som; 6 vozes + a espera por nome bastaram no bot; prioridade se o VIP for cortado por moedas).</summary>
-        static AudioSource Livre()
-        {
-            for (int i = 0; i < Vozes; i++)
-            {
-                int j = (_voz + i) % Vozes;
-                if (_fx[j].isPlaying) continue;
-                _voz = (j + 1) % Vozes;
-                return _fx[j];
-            }
-            AudioSource o = _fx[_voz];
-            _voz = (_voz + 1) % Vozes;
-            return o;
         }
 
         static AudioSource Fonte(GameObject host, bool loop)

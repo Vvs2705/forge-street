@@ -30,6 +30,7 @@ COPIAR = ['Assets/_FS/Scripts/Core', 'Assets/_FS/Tests/EditMode', 'Assets/_FS/Sc
           'Assets/_FS/Scripts/View/Captura.cs', 'Assets/_FS/Scripts/View/Som.cs', 'Assets/_FS/Scripts/View/Privacidade.cs',
           'Assets/_FS/Scripts/View/EsteiraView.cs', 'Assets/_FS/Scripts/View/Enquadramento.cs', 'Assets/_FS/Scripts/View/Loc.cs',
           'Assets/_FS/Scripts/View/QualidadeView.cs', 'Assets/_FS/Scripts/View/Plataforma.cs', 'Assets/_FS/Scripts/View/Loja.cs',
+          'Assets/_FS/Scripts/View/Mixagem.cs',
           'tools/coretests']
 SIM, DEFS, CV = 'Assets/_FS/Scripts/Core/Sim.cs', 'Assets/_FS/Scripts/Core/Defs.cs', 'Assets/_FS/Scripts/Core/ContentValidator.cs'
 METAS = 'Assets/_FS/Scripts/Core/Metas.cs'
@@ -40,6 +41,7 @@ COMPRAS = 'Assets/_FS/Scripts/Core/Compras.cs'
 PROJ, PDEFS = 'Assets/_FS/Scripts/Core/Projetos.cs', 'Assets/_FS/Scripts/Core/ProjetosDefs.cs'
 EQUIPE, BOT = 'Assets/_FS/Scripts/Core/Equipe.cs', 'Assets/_FS/Scripts/Core/Bot.cs'
 LIVEOPS, LIVEOPSDEFS = 'Assets/_FS/Scripts/Core/LiveOps.cs', 'Assets/_FS/Scripts/Core/LiveOpsDefs.cs'
+MIX = 'Assets/_FS/Scripts/View/Mixagem.cs'
 
 
 def mut(id, arquivo, trecho, troca, descricao, esperado_vivo=None):
@@ -334,6 +336,27 @@ MUTACOES = [
         'validator aceita Blueprint essencial só pago (receita essencial nunca só paga)'),
     mut('bp-permanente-contrato', PDEFS, 'k <= BlueprintSourceKind.Achievement;', 'k <= BlueprintSourceKind.Contract;',
         'contrato segura essencial sozinho (contrato nunca bloqueia, GDD §11)'),
+    # mix de audio (fix/mix-audio): as regras que tiram a "barulheira"
+    mut('mix-sem-teto-categoria', MIX, 'if (n >= Teto[(int)cat]) return cat == Cat.UI ? ui : -1;', 'if (false) return -1;',
+        'sem teto por categoria: o 3o som de Mundo ocupa a voz livre'),
+    mut('mix-rouba-sem-prioridade', MIX, '_v[i].Cat < _v[v].Cat ||', '_v[i].Cat > _v[v].Cat ||',
+        'Importante rouba a Acao em vez do Mundo mais antigo'),
+    mut('mix-importante-atropela', MIX, 'if (i >= 0 && _v[i].Som != som)', 'if (false)',
+        'Importante sem fila: corta o outro Importante que soa'),
+    mut('mix-gap-nome', MIX, '&& t - u < r.Gap) return Barra();', '&& t - u < 0f) return Barra();',
+        'sem intervalo por nome: martelo de cada bancada e cada venda tocam'),
+    mut('mix-gap-categoria', MIX, 'if (t - _ultCat[c] < GapCat[c]) return Barra();', 'if (false) return Barra();',
+        'sem intervalo por categoria: sons de Mundo colados'),
+    mut('mix-mundo-fora-da-tela', MIX, 'if (r.Cat == Cat.Mundo && !NaTela(pos.Value)) return Barra();', 'if (false) return Barra();',
+        'Mundo fora da tela ainda toca'),
+    mut('mix-distancia', MIX, 'if (g < Minimo) return Barra();', 'if (g < 0f) return Barra();',
+        'Mundo longe do ferreiro toca (mudo, mas ocupa voz)'),
+    mut('mix-sem-ducking', MIX, 'if (t <= _duckFim) return DuckGanho;', 'if (t <= _duckFim) return 1f;',
+        'Importante nao abaixa musica, ambiente e Mundo'),
+    mut('mix-sino-sempre', MIX, 'case Ev.ClientArrived: return e.B == 1 ? "sino" : null;', 'case Ev.ClientArrived: return "sino";',
+        'sino a cada cliente, nao so com a fila vazia'),
+    mut('mix-moeda-sobe', MIX, 'case Ev.Sold: return "venda";', 'case Ev.Sold: pitch = 1f + 0.05f * (e.B % 5); return "venda";',
+        'moeda da venda volta a subir de altura a cada venda'),
     mut('bp-mestre-sem-producao', PDEFS, 'true, FilaEncomenda(3), Producao()),', 'true, FilaEncomenda(3)),',
         'projeto de mestre das bigornas só pela fila de encomenda (inalcançável no F2P de hoje)'),
 ]

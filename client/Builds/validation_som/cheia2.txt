@@ -1,0 +1,3 @@
+SOM min=1 plays=78 pico=3 cortados=0 barrados=589 fila=0 porCategoria=Importante:2,Acao:32,Mundo:44,UI:0
+SOM min=2 plays=104 pico=4 cortados=0 barrados=774 fila=2 porCategoria=Importante:8,Acao:50,Mundo:46,UI:0
+SOM min=3 plays=104 pico=3 cortados=0 barrados=779 fila=0 porCategoria=Importante:3,Acao:53,Mundo:48,UI:0
