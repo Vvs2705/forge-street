@@ -50,7 +50,7 @@ Orçamento: **4 vozes** no total (eram 6). A ordem das categorias é a prioridad
 
 | Categoria | Sons | Teto de vozes | Intervalo entre 2 da categoria | Distância / tela | Quando o orçamento está cheio |
 |---|---|---|---|---|---|
-| **Importante** | compra, contrata, boost, vip, renome, encomenda, obra, projeto, cofre, vipPago, meta, marco, bau, supply, vipFoi, falhou | 1 | — | não atenua | **sempre toca**: rouba a voz de menor prioridade (a mais antiga). Outro Importante soando = **fila** (toca quando aquele acaba: fanfarras nunca se atropelam); o mesmo nome reinicia a própria voz. Enquanto soa, música, ambiente e Mundo descem **6 dB** por até 1 s e voltam em 0,3 s (ducking) |
+| **Importante** | compra, contrata, boost, vip (VIP e compra na loja), renome, encomenda, obra, projeto, cofre, vipPago, meta (metas, marco de evento, Passe), marco, bau, supply, vipFoi, falhou | 1 | — | não atenua | **sempre toca**: rouba a voz de menor prioridade (a mais antiga). Outro Importante soando = **fila** (toca quando aquele acaba: fanfarras nunca se atropelam); o mesmo nome reinicia a própria voz. Enquanto soa, música, ambiente e Mundo descem **6 dB** por até 1 s e voltam em 0,3 s (ducking) |
 | **UI** | click (e o "quase" do golpe) | 1 | — | — | rouba Mundo/Ação; o clique novo troca o velho |
 | **Ação** | minerio, pegar, largar, venda, fina, golpe, perdeu | 2 | — | com posição (venda, perdeu): cheio até 2 m, cai até o **piso de 35%** | rouba só Mundo; no teto, o novo é barrado |
 | **Mundo** | martelo, peca, lingote, esteira, sino, ajudante | 2 | **0,75 s** | **só com a fonte na tela**; cheio até 2 m do ferreiro, zero a 6 m; ganho < 0,2 (além de ~5,2 m) nem toca | nunca rouba; barrado |

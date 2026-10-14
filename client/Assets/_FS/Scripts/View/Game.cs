@@ -35,6 +35,11 @@ namespace FS
     /// -renome N (forca o Renome total em N; so sobe) | -renomecard (abre o cartao do Renome; B-CORE-06) | -equipe (B-CORE-04: a oficina com os
     /// 6 ajudantes no nivel 3 e os 7 da Equipe contratados no posto; Captura.Equipe; com -menu e -gold, os cartoes de nivel) | -projetos [todos|dar] ("dar" = os 19 sem abrir; abre o painel de
     /// projetos; "todos" da os 19 do catalogo antes do -buy/-buyids; B-CORE-07).
+    /// D-CORE-03/04: -evento id (relogio do LiveOps 1 h depois do inicio do evento, ex. forge_frenzy; entra sem esperar o requisito; evento que
+    /// ainda nao roda neste build = Falha) | -eventocard (abre o cartao do evento) | -pass (abre o Passe; sem -evento o relogio vai ao T0 + 1 h) |
+    /// -passxp N (N de XP no Passe). Os chips aparecem depois das Ferramentas (-buy 12).
+    /// E-PLAT-04/05 (Loja.cs, docs/IAP.md): -lojafalsa [interrompe|duplica|recusa] (so build dev: loja falsa com o Pacote do Mestre; o botao
+    /// LOJA aparece nas Configuracoes) | -loja (abre o painel da loja; pede -lojafalsa) | -lojacompra (compra o Pacote do Mestre na abertura).
     /// G-UA-02 (Captura.cs, docs/CRIATIVOS.md): -preset nome (alias de flags; a linha de comando vence) | -recordhire (o 1o quadro e' o da
     /// 1a contratacao) | -recordfull (fila cheia no 1o quadro ou erro) | -recordorder (o -record mantem o cartao da encomenda) | -offline S
     /// (cofre real de S s fora, 60..7200). Captura que mostraria algo impossivel (compra id@t sem ouro ou pre-requisito, -vipnow depois de
@@ -101,6 +106,10 @@ namespace FS
         PainelProjetos _projetos;   // B-CORE-07: Blueprints possuidos e bloqueados com a fonte (PainelProjetos.cs)
         float _metasT; int _prontas;   // relogio da Agora (1 s) e quantas davam para resgatar (aviso de meta concluida)
         SeloRenome _renome;      // B-CORE-06: selo de nivel na HUD e cartao (SeloRenome.cs)
+        PainelLiveOps _liveops;  // D-CORE-03/04: chips do evento e do Passe, cartao do evento e painel do Passe (PainelLiveOps.cs)
+        long _relogioEv;         // -evento/-pass (dev): s somados ao relogio do LiveOps
+        IStore _loja;            // E-PLAT-04: null = build sem loja (release sem SDK): nada de loja aparece
+        PainelLoja _lojaUi;
         Action _panelAction;
         Image _coinIcon;
         sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
@@ -130,7 +139,7 @@ namespace FS
 
         /// <summary>A-PLAT-07: o estado do jogo, so derivado dos flags (Estados.De; tabela em Estado.cs). O voltar, o Save e os anuncios
         /// consultam aqui.</summary>
-        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv || MetasAberto || RenomeAberto || ProjetosAberto,
+        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv || MetasAberto || RenomeAberto || LiveOpsAberto || ProjetosAberto || LojaAberta,
             _order != null && _orderOut && _order.gameObject.activeSelf);
         bool Painel => _panel != null && _panel.gameObject.activeSelf;
         bool Config => _cfg != null && _cfg.gameObject.activeSelf;
@@ -138,6 +147,8 @@ namespace FS
         bool MetasAberto => _metas != null && _metas.Aberto;
         bool ProjetosAberto => _projetos != null && _projetos.Aberto;
         bool RenomeAberto => _renome != null && _renome.Aberto;
+        bool LiveOpsAberto => _liveops != null && _liveops.Aberto;
+        bool LojaAberta => _lojaUi != null && _lojaUi.Aberto;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -173,6 +184,11 @@ namespace FS
             if (!_testSession && Arg("-reset") != null) _save.Apagar();
             _sim = _testSession ? new Sim(tuning) : _save.Carregar(tuning);
             DevArgs();
+            // E-PLAT-04: loja so com SDK; hoje so a falsa, no build de desenvolvimento com -lojafalsa (no -testsession, so na memoria). A posse
+            // sai dos recibos do save validados por ela; sem loja, nenhuma
+            string lf = Debug.isDebugBuild ? Arg("-lojafalsa") : null;
+            if (lf != null) _loja = new LojaFalsa(_testSession ? null : Path.Combine(dir, LojaFalsa.Arquivo), LojaFalsa.Ler(lf));
+            _sim.Compras.Conectar(_loja);
             // -cam W (dev, P2-3 do BENCHMARK_VISUAL): largura visivel em m, 6..11,4 (padrao 9; 11,4 = a camera antiga, fotos de antes)
             _visW = Mathf.Clamp(ArgF("-cam", VisibleWidth), 6f, Enquadramento.OficinaInteira);
             string cfg = Arg("-settings");
@@ -195,6 +211,7 @@ namespace FS
             _panel.SetAsLastSibling();
             _metas = new PainelMetas(_safe, _sim, Pago, () => _projetos.Abrir());
             _projetos = new PainelProjetos(_safe, _sim);
+            if (_loja != null) _lojaUi = new PainelLoja(_safe, _sim, _loja, Comprar, Restaurar);
             // E-PLAT-01: sem resposta (ou com texto novo) a tela de idade abre por cima de tudo e o SDK de anuncio espera (Ads.Responder).
             // Fotos e smoke (-testsession, -record, -autoplay) nao a veem, salvo com -privacidade [18]
             _priv = new TelaPrivacidade(_safe, Responder);
@@ -226,6 +243,16 @@ namespace FS
             _started = true;   // A-PLAT-07: Loading -> Playing; o save grava daqui em diante (o resgate do cofre logo abaixo ja grava)
             Offline();
             MetasAgora(false);   // D-CORE-01: o dia de hoje (o que ja estava pronto ao abrir nao vira aviso)
+            IniciarLoja();
+            if (_loja != null && Arg("-lojacompra") != null) Comprar(Compras.Catalogo[0].Id);   // foto do comprado: o fluxo inteiro na abertura
+            bool foto = Arg("-loja") != null;   // foto do painel (com -lojafalsa)
+            if (foto && _lojaUi != null && _sim.T.Loja) _lojaUi.Abrir();
+            // D-CORE-03/04 (fotos): -evento entra sem esperar o requisito; -passxp da XP; -eventocard e -pass abrem os modais
+            if (Arg("-evento") != null && _sim.LiveOps.Evento == null) _sim.LiveOps.Forca(_sim.LiveOps.NoCalendario(_sim.LiveOps.Relogio));
+            if (long.TryParse(Arg("-passxp"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long pxp)) _sim.LiveOps.Ganha(pxp);
+            LiveOpsAgora(false);
+            if (Arg("-eventocard") != null) _liveops.AbrirEvento();
+            if (Arg("-pass") != null) _liveops.AbrirPasse();
             string metas = Arg("-metas");
             int aba = metas == "conquistas" ? 2 : metas == "semanais" ? 1 : 0;
             if (metas != null) _metas.Abrir(aba);
@@ -310,6 +337,8 @@ namespace FS
                 else if (MetasAberto) _metas.Fechar();
                 else if (ProjetosAberto) _projetos.Fechar();
                 else if (RenomeAberto) _renome.Fechar();
+                else if (LiveOpsAberto) _liveops.Fechar();
+                else if (LojaAberta) _lojaUi.Fechar();
                 else switch (Estados.AoVoltar(EstadoAtual, Painel, _menu.IsOpen))
                 {
                     case Voltar.FechaPainel: ClosePanel(); break;
@@ -320,7 +349,7 @@ namespace FS
             }
             if (_screen.x != Screen.width || _screen.y != Screen.height) Fit();
 
-            bool modal = Painel || Config || Priv || MetasAberto || RenomeAberto || ProjetosAberto;
+            bool modal = Painel || Config || Priv || MetasAberto || RenomeAberto || LiveOpsAberto || ProjetosAberto || LojaAberta;
             Pointer ptr = Pointer.current;   // B-CORE-03: toque no anel do golpe ou na barra de qualidade (antes do joystick, que os ignora)
             if (!modal && ptr != null && ptr.press.wasPressedThisFrame) Toque(ptr.position.ReadValue());
             _joy.Blocked = modal;
@@ -361,7 +390,9 @@ namespace FS
             _metasT -= Time.unscaledDeltaTime;
             if (_metasT <= 0f) { _metasT = 1f; MetasAgora(true); }
             _metas.Refresh(Time.unscaledDeltaTime);
+            _liveops.Refresh(Time.unscaledDeltaTime);
             _projetos.Refresh(Time.unscaledDeltaTime);
+            _lojaUi?.Refresh();
 
             _saveT += Time.deltaTime;
             if (_saveT >= SaveEvery) { _saveT = 0f; Save(); }
@@ -541,6 +572,46 @@ namespace FS
             int n = _sim.Metas.Prontas();
             if (avisa && n > _prontas) Notice(Loc.T("aviso.meta_pronta"), Art.Star(), Art.Accent);
             _prontas = n;
+            LiveOpsAgora(avisa);
+        }
+
+        /// <summary>D-CORE-03/04: o LiveOps no relogio de agora (deslocado pelo -evento/-pass no dev) e o que ele contou: aviso, diario
+        /// (event_enter, event_points com o total, event_complete com o limiar, pass_level; LIVEOPS_V1 §4.6), currency_source "evento" e save na
+        /// hora quando um limiar pagou (ouro e ID vao juntos para o disco).</summary>
+        void LiveOpsAgora(bool avisa)
+        {
+            LiveOps lo = _sim.LiveOps;
+            lo.Agora(Now() + _relogioEv);
+            bool pagou = false;
+            foreach ((string tipo, string id, string arg, long ouro) in lo.Novidades)
+            {
+                EventDef e = Array.Find(lo.Eventos, x => x.Id == id);
+                switch (tipo)
+                {
+                    case "event_enter": if (avisa && e != null) Notice(Loc.T("aviso.evento", Textos.NomeEvento(e)), Art.Star(), Art.Accent); Log(tipo, id); break;
+                    case "event_points": Log(tipo, id, e != null ? lo.PontosDe(e).ToString(CultureInfo.InvariantCulture) : arg); break;
+                    case "event_complete":
+                        if (avisa) { Sfx.Play("meta"); Notice(Loc.T("aviso.evento_marco", arg), _coinIcon.sprite, _coinIcon.color); }
+                        Log(tipo, id, arg);
+                        if (ouro > 0) Source("evento", ouro);
+                        pagou = true;
+                        break;
+                    case "pass_level": if (avisa) Notice(Loc.T("aviso.passe", arg), Art.Star(), Art.Gold); Log(tipo, id, arg); break;
+                }
+            }
+            lo.Novidades.Clear();
+            if (pagou) Save();
+        }
+
+        /// <summary>RESGATAR no painel do Passe (o Sim.LiveOps ja pagou e gravou o ID): som, aviso, diario, currency_source "passe" e save.</summary>
+        void PagoPasse(int nivel, long gold)
+        {
+            Sfx.Play("meta");
+            Ajustes.Pulso(30, 150);
+            Notice(gold > 0 ? Loc.T("aviso.passe_ouro", Textos.Qtd(gold)) : Loc.T("aviso.passe_ok"), _coinIcon.sprite, _coinIcon.color);
+            Log("pass_claim", _sim.LiveOps.Passe.Id, nivel.ToString(CultureInfo.InvariantCulture));
+            if (gold > 0) Source("passe", gold);
+            Save();
         }
 
         /// <summary>Resgate no painel (o Sim.Metas ja pagou e gravou o ID): som, aviso, diario (mission_complete / achievement_unlock /
@@ -566,6 +637,68 @@ namespace FS
             Ajustes.Pulso(40, 230);
             Notice(Textos.AvisoRenome(nivel), Art.Star(), Art.Gold);
             Log("renome_level", nivel.ToString(CultureInfo.InvariantCulture), _sim.Renome.Total.ToString(CultureInfo.InvariantCulture));
+        }
+
+        // ---------- loja (E-PLAT-04/05: Core/Compras.cs, Loja.cs, docs/IAP.md) ----------
+
+        /// <summary>Conecta a loja (a falsa reentrega aqui a compra paga e nao confirmada de uma abertura anterior) e confirma o que o save ja
+        /// gravou e a loja ainda nao sabe (o app morreu entre gravar e confirmar).</summary>
+        void IniciarLoja()
+        {
+            if (_loja == null) return;
+            _loja.Iniciar(Compras.Catalogo, ReciboChegou, FalhaCompra);
+            Concluir();
+        }
+
+        /// <summary>Recibo da loja (nova, pendente de outra abertura ou restaurada): o nucleo entrega 1x pelo ID de transacao; invalido nao
+        /// entrega nem confirma (a loja devolve o dinheiro). O ID de transacao nao vai ao diario nem ao analytics (dado de compra).</summary>
+        void ReciboChegou(Recibo r)
+        {
+            EstadoCompra? e = _sim.Compras.Receber(r);
+            string p = r != null ? r.Produto : "";
+            if (e == null) { Log("iap_fail", p, "recibo_invalido"); return; }
+            bool nova = e == EstadoCompra.Pendente;
+            Log("iap_pending", p, nova ? "nova" : "repetida");
+            if (Concluir() == 0 || !nova) return;
+            Sfx.Play("vip");
+            Ajustes.Pulso(40, 230);
+            Notice(Loc.T("aviso.compra_ok"), _crown, Color.white);
+        }
+
+        /// <summary>Grava e SO ENTAO confirma a loja (Compras.Concluir); save que falhou = nada confirmado, a loja reentrega na proxima abertura.</summary>
+        int Concluir()
+        {
+            if (_loja == null) return 0;
+            System.Collections.Generic.List<Recibo> feitos = _sim.Compras.Concluir(Save, _loja.Confirmar);
+            foreach (Recibo r in feitos) Log("iap_delivered", r.Produto, "confirmada");
+            if (_sim.Compras.Pendentes) Log("iap_fail", "", "save");
+            return feitos.Count;
+        }
+
+        /// <summary>A loja recusou, o jogador cancelou ou o pagamento ficou para depois ("adiada": o recibo vem quando pagar).</summary>
+        void FalhaCompra(string produto, string motivo)
+        {
+            _sim.Compras.Falhou(produto);
+            Log(motivo == "adiada" ? "iap_pending" : "iap_fail", produto, motivo);
+            bool avisa = motivo != "cancelada" && motivo != "adiada";
+            if (avisa) Notice(Loc.T("aviso.compra_falhou"));
+        }
+
+        void Comprar(string id)
+        {
+            if (!_sim.Compras.Iniciar(id)) return;
+            Log("iap_start", id, _loja.Preco(id));
+            _loja.Comprar(id);   // a resposta vem pelo ReciboChegou ou pelo FalhaCompra (a falsa, na hora)
+        }
+
+        void Restaurar()
+        {
+            Log("iap_restore", "pedido");
+            _loja.Restaurar(n =>
+            {
+                Log("iap_restore", "fim", n.ToString(CultureInfo.InvariantCulture));
+                Notice(Loc.T("aviso.restaurado", n));
+            });
         }
 
         // s86 currency_source/currency_sink: o ouro soma por origem/destino e sai numa linha por chave a cada minuto de jogo e na pausa/saida
@@ -668,6 +801,7 @@ namespace FS
             _hint.resizeTextForBestFit = true; _hint.resizeTextMinSize = 22; _hint.resizeTextMaxSize = 32;
             _hint.verticalOverflow = VerticalWrapMode.Truncate;
             _notice = MakeNotice(top, hintMin, hintMax);
+            _liveops = new PainelLiveOps(top, _safe, _sim, PagoPasse);   // D-CORE-03/04: chips presos embaixo da pilula da dica (por cima dela)
             _crown = Art.Icon("coroa", "icone");
             // versao: so no build dev (o playtest usa); release so nas configuracoes (v0.6b, P1-1); criativo nenhuma. v0.6d: pequena, logo
             // abaixo da pilula de ouro, na folga de 24 px que o balao do 1o da fila respeita (no canto de baixo batia no cartao e no VIP)
@@ -1002,7 +1136,8 @@ namespace FS
             if (_supplyBtn.B.gameObject.activeSelf != (sup || supCool)) _supplyBtn.B.gameObject.SetActive(sup || supCool);
             if (sup || supCool)
             {
-                Paint(_supplyBtn, sup, Color.white, sup ? "+" + _sim.Anuncios.Previa(Anuncio.Supply) : Clock(_sim.Anuncios.Recarga[(int)Anuncio.Supply]));
+                Paint(_supplyBtn, sup, Color.white, sup ? "+" + _sim.Anuncios.Previa(Anuncio.Supply) : Clock(_sim.Anuncios.Recarga[(int)Anuncio.Supply]),
+                    !_sim.Compras.SemVideoEm(Anuncio.Supply));
                 Vector3 sp = _cam.WorldToScreenPoint(new Vector3(_sim.FurnaceA.Pos.X, _sim.FurnaceA.Pos.Y + SupplyY, 0f));
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(_labels, sp, null, out Vector2 local);
                 ((RectTransform)_supplyBtn.B.transform).anchoredPosition = local;
@@ -1017,6 +1152,7 @@ namespace FS
             {
                 (Item it, int target, _) = _sim.Anuncios.ProximaEncomenda();   // a que entra, mostrada antes (P5)
                 _trocaChip.Label.text = Loc.T("enc.troca", target);
+                _trocaChip.Video.SetActive(!_sim.Compras.SemVideoEm(Anuncio.EncomendaTroca));   // E-PLAT-05: Pacote do Mestre, sem video
                 Sprite s = Art.ItemArt(it, true);
                 _trocaChip.Icon.sprite = s != null ? s : Art.ItemSprite(it);
                 _trocaChip.Icon.color = s != null ? Color.white : Art.ItemColor[(int)it];
@@ -1033,7 +1169,7 @@ namespace FS
             Ofertou(Anuncio.Cofre, cofre, cofre);
             bool show = can || cool;
             if (_speedBtn.B.gameObject.activeSelf != show) _speedBtn.B.gameObject.SetActive(show);
-            if (show) Paint(_speedBtn, can, Art.Accent, can ? (active ? "→3×" : "2×") : Clock(_sim.BoostCooldown));   // v0.6d: com boost, o PROXIMO nivel ("3×" lia como o atual)
+            if (show) Paint(_speedBtn, can, Art.Accent, can ? (active ? "→3×" : "2×") : Clock(_sim.BoostCooldown), !_sim.Compras.SemVideoEm(Anuncio.Velocidade));   // v0.6d: com boost, o PROXIMO nivel ("3×" lia como o atual)
             if (_boostSeal.gameObject.activeSelf != active) _boostSeal.gameObject.SetActive(active);
             if (active)
             {
@@ -1043,13 +1179,14 @@ namespace FS
             }
         }
 
-        /// <summary>Botao de anuncio pronto (face da HUD, icone em `on`, selo de video) ou na recarga (cinza, sem video, legenda = cronometro).</summary>
-        static void Paint(AdBtn b, bool can, Color on, string label)
+        /// <summary>Botao de anuncio pronto (face da HUD, icone em `on`, selo de video) ou na recarga (cinza, sem video, legenda = cronometro).
+        /// `video` = false: o Pacote do Mestre da este sem video (E-PLAT-05), o selo some.</summary>
+        static void Paint(AdBtn b, bool can, Color on, string label, bool video = true)
         {
             b.B.interactable = can;
             b.Face.color = can ? AdFace : AdOff;
             b.Icon.color = can ? on : Art.ComAlfa(Art.Ink, 0.45f);
-            b.Video.SetActive(can);
+            b.Video.SetActive(can && video);
             b.Label.text = label;
         }
 
@@ -1172,8 +1309,8 @@ namespace FS
             Log("quality_breakdown", st.Name, _sim.QualityPoints(st).ToString(CultureInfo.InvariantCulture));
         }
 
-        /// <summary>Botao do placement disponivel: o nucleo deixa (Anuncios.Pode) e o IAds tem anuncio.</summary>
-        bool Pode(Anuncio a) => _sim.Anuncios.Pode(a) && _ads.Ready(_sim.T.Ad(a).Id);
+        /// <summary>Botao do placement disponivel: o nucleo deixa (Anuncios.Pode) e o IAds tem anuncio (ou o Pacote do Mestre dispensa o video).</summary>
+        bool Pode(Anuncio a) => _sim.Anuncios.Pode(a) && (_sim.Compras.SemVideoEm(a) || _ads.Ready(_sim.T.Ad(a).Id));
 
         /// <summary>s86 rewarded_offer: uma por aparicao do botao disponivel (cinza da recarga nao e' oferta), contada quando da para tocar.</summary>
         void Ofertou(Anuncio a, bool pode, bool tocavel, string b = "")
@@ -1192,14 +1329,17 @@ namespace FS
             if (!Estados.Anuncia(EstadoAtual) && !(a == Anuncio.Cofre && EstadoAtual == Estado.Modal && Painel)) return;
             string tx = _sim.Anuncios.Oferta(a), p = _sim.T.Ad(a).Id;
             if (tx == null) return;
-            _ads.Show(p, () =>
+            bool semVideo = _sim.Compras.SemVideoEm(a);   // E-PLAT-05: mesma oferta, recarga, teto e ledger; so sem o video
+            void Recompensa()
             {
                 long v = _sim.Anuncios.Pagar(tx);
-                Log("ad_paid", p, tx + " " + v.ToString(CultureInfo.InvariantCulture));
+                Log("ad_paid", p, tx + " " + v.ToString(CultureInfo.InvariantCulture) + (semVideo ? " sem_video" : ""));
                 if (v < 0) return;
                 Pago(a, v);
                 Save();   // a chave paga, a recarga e o ouro vao juntos para o disco
-            }, AdFail);
+            }
+            if (semVideo) Recompensa();
+            else _ads.Show(p, Recompensa, AdFail);
         }
 
         /// <summary>O que a tela faz depois que o nucleo aplicou a recompensa `v` (Anuncios.Previa do toque).</summary>
@@ -1302,6 +1442,23 @@ namespace FS
             priv.GetComponentInChildren<Text>().color = MenuBar.Cream;
             Button close = Art.NewButton(face.transform, Loc.T("cfg.fechar"), 40, MenuBar.Leather, new Vector2(0.51f, 0.045f), new Vector2(0.95f, 0.175f), () => _cfg.gameObject.SetActive(false));
             close.GetComponentInChildren<Text>().color = MenuBar.Cream;
+            // E-PLAT-04: com loja (hoje so a falsa) e a chave Tuning.Loja ligada, LOJA entra no meio da fileira de baixo; sem loja nada muda
+            if (_loja != null && _sim.T.Loja)
+            {
+                Button loja = Art.NewButton(face.transform, Loc.T("cfg.loja"), 40, MenuBar.Leather, new Vector2(0.37f, 0.045f), new Vector2(0.63f, 0.175f), () =>
+                {
+                    _cfg.gameObject.SetActive(false);
+                    _lojaUi.Abrir();
+                });
+                ((RectTransform)priv.transform).anchorMax = new Vector2(0.35f, 0.175f);
+                ((RectTransform)close.transform).anchorMin = new Vector2(0.65f, 0.045f);
+                foreach (Button b in new[] { priv, loja, close })
+                {
+                    Text t = b.GetComponentInChildren<Text>();
+                    t.color = MenuBar.Cream;
+                    t.resizeTextForBestFit = true; t.resizeTextMinSize = 22; t.resizeTextMaxSize = 40;
+                }
+            }
             _cfg.gameObject.SetActive(false);
         }
 
@@ -1430,10 +1587,10 @@ namespace FS
 
         /// <summary>A-PLAT-02/06: o Salvamento grava arquivo + espelho; versao mais nova ou disco ilegivel deixam a sessao sem gravar.
         /// A-PLAT-07: Boot/Loading nao gravam (Estados.Grava): um foco perdido antes do Start avancava o SavedAt e comia o cofre.</summary>
-        void Save()
+        bool Save()
         {
-            if (_headless || _testSession || !Estados.Grava(EstadoAtual)) return;
-            _save.Gravar(_sim, Now(), Application.version);
+            if (_headless || !Estados.Grava(EstadoAtual)) return false;
+            return _testSession || _save.Gravar(_sim, Now(), Application.version);   // E-PLAT-04: o -testsession nao persiste nada (nem a loja falsa): vale
         }
 
         // Voltar de outro app tambem paga o cofre (antes so a abertura pagava: quem trocava de app perdia o tempo fora).
@@ -1477,6 +1634,16 @@ namespace FS
                 if (Captura.Flags(preset) == null) { Falha($"PRESET desconhecido '{preset}' (validos: {Captura.Nomes})"); return; }
                 Debug.Log($"PRESET {preset}: {Captura.Flags(preset)}");
             }
+            // D-CORE-03/04: -evento id / -pass deslocam o relogio do LiveOps para dentro da janela (o das metas segue o do aparelho)
+            string evf = Arg("-evento");
+            if (evf != null)
+            {
+                EventDef e = Array.Find(_sim.LiveOps.Eventos, x => x.Id == evf || x.Id.EndsWith("_" + evf, StringComparison.Ordinal));
+                if (e == null) { Falha($"EVENTO desconhecido '{evf}'"); return; }
+                if (_sim.LiveOps.Falta(e) != null) { Falha($"EVENTO {e.Id} ainda nao roda neste build ({_sim.LiveOps.Falta(e)})"); return; }
+                _relogioEv = e.Comeca + 3600 - Now();
+            }
+            else if (Arg("-pass") != null) _relogioEv = LiveOpsDefs.T0 + 3600 - Now();
             if (Arg("-intersticial") != null) _sim.T.Interstitial = true;   // E-PLAT-03 (dev): antes do Ads.Init, que so carrega com a flag
             // B-CORE-07 (fotos): -projetos todos = todos os projetos do catalogo ANTES das compras (o -buy/-buyids alcanca os niveis IV-V e a bigorna longa)
             if (Arg("-projetos") == "todos" || Arg("-projetos") == "dar") foreach (BlueprintDef d in _sim.Projetos.Defs) _sim.Projetos.Ganha(d.Id, d.Sources[0].Kind);
