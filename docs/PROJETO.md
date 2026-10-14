@@ -111,44 +111,46 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 | viewcheck não compila o caminho `#if UNITY_ANDROID` e só roda com o Unity local | — | `client/tools/viewcheck` | PR #13 (viewcheck Android); Unity no CI = P15 |
 | `dotnet test` (NUnit 3.14) aceita tupla `int` × `long`; o EditMode do Unity (NUnit 3.5) não | portão | `FSCore.Tests.csproj` | regra: `verify.sh full` antes de todo PR de jogo |
 | 0.6.0 sem aparelho físico | — | `VALIDACAO_V06A.md` | gate de Feature Complete (POCO só em marcos) |
-| Diário CSV grava também no release e cresce sem limite | P2 | `Game.cs:1070` | A-PLAT-06 |
+| ~~Diário CSV grava também no release e cresce sem limite~~ | — | `Servicos.cs` | resolvido (A-PLAT-06: teto de 1 MB, desligado no release; conferido no #53) |
 | Sem analytics remoto, crash reporting e RemoteConfig | antes de UA | — | A-PLAT-08/09 (decisão P8) |
 | Textos no código, sem localização | antes de en/es | DM §109 | — |
 | Bandeja mostra o cartão travado primeiro; "Ajudantes ágeis" fora do padrão "Ajudantes rápidos" | P2 | `VALIDACAO_V05.md` | — |
 | Fome da Bigorna 2 (2.582 s em 60 min no bot) | P2 | `BACKLOG_V07.md` | — |
 | Zona morta ~53% da curva até a produção completa; ouro sem destino depois dela | design | `BALANCE.md` §22 | Waves B (Orders 2.0, Blueprints) e C (distritos) |
+| **Barulheira:** muitos sons ao mesmo tempo (Vinicius no POCO, 2026-10-13: "uma zona sonora", irritou em 5 min) | **P1** (sensação; retenção) | `Som.cs` (`Sfx`: 6 vozes sem prioridade, categoria nem distância) | raia `fix/mix-audio` (categorias, orçamento de vozes, distância, ducking, `-somlog`) |
+| **Mochila parece item solto** colado no ferreiro (Vinicius no POCO, 2026-10-13) | **P1** (sensação) | `WorldView.cs` (ícone do cartão sobreposto com deslocamento fixo) | raia `art/mochila-ferreiro` (mochila no rig, folhas `ferreiro_mochila`) |
 | Conta LevelPlay aguardando aprovação | — | `LEVELPLAY.md` | Vinicius |
 
 ## 8. Progresso rumo ao 100% (definição de jogo completo, DM §164)
 
-Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-13, depois do #49). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
+Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-13, depois do #56). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
 
 | Item (§164) | % | Onde está | Próximo passo |
 |---|---|---|---|
-| Core polido | 65 | loop completo, Save 2.0 schema 3 por ID (melhorias e itens), itens/receitas em dados com vários insumos (#44), exploits fechados, ouro long, validator, `Tuning`/flags | `Sim` em partes; replay determinístico (§23 item 1) |
-| 6 distritos | 18 | Old Forge + rua lateral; catálogo dos 6 em [`CONTEUDO_V1.md`](CONTEUDO_V1.md) (#45) | `DistrictDef` + Império (C-CORE-01/02) e distritos 2–6 do catálogo |
-| 35–45 produtos | 20 | 4 vendáveis no jogo; 38 no catálogo; 41 ícones prontos (#46) | `ItemDef`/`RecipeDef` dos distritos (Wave C) |
-| Workers | 28 | 6 ajudantes de papel fixo; 29 `WorkerDef` no catálogo; 11 personagens novos do Tripo no branch `art/lote5-personagens` | `WorkerDef` (B-CORE-04) + ligar os sprites |
-| Quality | 75 | 4 níveis, acumulador sem sorteio, `QualityBreakdown`, níveis de estação II/III, golpe de mestre (#48) | fontes oficial/técnica/material; Masterwork pelo B-CORE-08 |
-| Orders | 12 | Encomendas (1 tipo, 1 vaga); 61 `OrderDef` no catálogo | Orders 2.0, 8 tipos (B-CORE-05) |
-| Royal Contracts | 5 | 12 no catálogo | D-CORE-04 |
-| Blueprints | 15 | 101 no catálogo (25 essenciais); WIP no branch `feat/blueprints` | B-CORE-07 |
-| Masterworks | 8 | 60 no catálogo; gancho `MasterworkPending` no golpe | B-CORE-08 |
+| Core polido | 65 | loop completo, Save 2.0 schema 3 por ID, itens/receitas em dados, exploits fechados, ouro long, validator, `Tuning`/flags, RemoteConfig com travas (#53) | `Sim` em partes; replay determinístico (§23 item 1); **mix de áudio e mochila (feedback do POCO)** |
+| 6 distritos | 18 | Old Forge + rua lateral; catálogo dos 6 em [`CONTEUDO_V1.md`](CONTEUDO_V1.md) | `DistrictDef` + Império (C-CORE-01/02) e distritos 2–6 |
+| 35–45 produtos | 22 | 5 vendáveis no jogo (espada longa, #55); 38 no catálogo; 41 ícones | `ItemDef`/`RecipeDef` dos distritos (Wave C) |
+| Workers | 55 | 13 `WorkerDef` do Old Forge, 8 papéis, níveis 1–5, sprites do Lote 5A no posto, cartões com retrato (#54) | workers dos distritos e managers (Wave C); retorno de ~90 min (revisar) |
+| Quality | 82 | 4 níveis, acumulador sem sorteio, níveis de estação II–V, golpe de mestre, técnica por Blueprint, oficiais (#48, #54, #55) | fonte material; Masterwork pelo B-CORE-08 |
+| Orders | 12 | Encomendas (1 tipo, 1 vaga); Orders 2.0 pronto no branch `feat/orders-2` | merge (8 tipos, vagas pelo Renome, filas de Blueprint) |
+| Royal Contracts | 5 | 12 no catálogo | D-CORE-04 (depois do Orders 2.0) |
+| Blueprints | 55 | 19 `BlueprintDef` do Old Forge (3 essenciais), posse com origem e transação, painel pela aba Projetos, validator "essencial nunca só pago" (#55) | os 82 dos distritos (Wave C); filas de encomenda com o Orders 2.0 |
+| Masterworks | 8 | 60 no catálogo; gancho `MasterworkPending` e campo do projeto no `BlueprintDef` | B-CORE-08 |
 | Collection | 5 | marcos no catálogo | B-CORE-08 |
-| Reputation | 70 | Renome 10 níveis, monotônico, selo e cartão, retroativo (#49) | recalibrar limiares 2–4 com o Orders 2.0 |
-| Daily / Weekly / Achievements | 80 | 32 diárias, 14 semanais, 75 conquistas, login de 7 dias, calendário + ledger (#47) | modelos que esperam sistemas (qualidade, Renome, eventos, Pass) |
-| Events (LiveOps) | 5 | calendário e ledger prontos (#47); desenho no `LIVEOPS_V1.md` | D-CORE-03 |
-| Pass | 5 | XP do Pass já acumulado pelas metas (#47) | D-CORE-04 |
-| Ads | 45 | 2 rewarded; recarga do VIP; consentimento por idade; Data Safety (#42); placements por config + interstitial com flag no branch `feat/anuncios-config` | integrar o branch (E-PLAT-02/03) |
-| IAP | 0 | — | E-PLAT-04/05 (Unity IAP) |
-| Analytics | 28 | `IAnalytics` + diário local com os eventos novos (metas, Renome, qualidade) | provedor remoto (A-PLAT-09) |
-| RemoteConfig | 15 | `Tuning` de instância com knobs e flags | A-PLAT-08 |
-| Save | 85 | Save 2.0 + schema 3; migração da 0.5.1 provada no POCO (2026-10-12) | cloud save (opcional) |
-| Release pipeline | 55 | AAB assinado por env, `verify release`, 16 KB, API 36; roteiro do `POCO_RELEASE_GATE` (#40) | chave real (aval), Unity no CI, release automatizada |
-| Arte final | 38 | fornalha/bigorna/esteira/câmera/HUD/cartões; qualidade legível; 41 ícones de produto | elenco (branch Tripo), estações dos distritos, herói, logo |
-| Áudio final | 35 | 3 grupos, 15 efeitos sintetizados, ambiente que cresce | banco de sons real + 5 músicas |
-| Store assets | 25 | 37 criativos, 9 presets; ASO pt/en/es; política e Data Safety em rascunho (#42) | ícone/logo, screenshots, vídeo |
-| **Média** | **~32** | | |
+| Reputation | 70 | Renome 10 níveis (#49) | limiares 2–4 recalibrados no Orders 2.0 (1:03 / 2:12 / 3:46 h) |
+| Daily / Weekly / Achievements | 82 | 32 diárias, 14 semanais, 75 conquistas, login de 7 dias; metas de worker (#54) | modelos que esperam Masterworks e distritos |
+| Events (LiveOps) | 50 | 10 `EventDef` em dados, 5 rodando, modificadores pelas travas do RemoteConfig, chips e cartão (#56) | encomenda Event (Orders 2.0), Hunts (B-CORE-08), knobs que faltam |
+| Pass | 50 | 30 níveis × 600 XP, temporada de 35 dias, trilha free com RESGATAR; premium no dado, desligado (#56) | premium na Wave E (preço = decisão) |
+| Ads | 70 | 6 placements por config, teto diário, ID de transação, intersticial atrás de flag, `ad_impression` (#52) | ad units novas no painel (Vinicius); A/B do intersticial no Limited Release |
+| IAP | 0 | núcleo + loja falsa no branch `feat/iap-core` (sem SDK) | pacote Unity IAP (aval de download) |
+| Analytics | 45 | `Telemetria` com fila até o consentimento, esquema v1, exceções (#53) | provedor remoto (P8) |
+| RemoteConfig | 45 | JSON local com travas no núcleo, chave mestra dos anúncios, cache, HTTP desligado (#53) | provedor remoto (P8); `econsim --rc` |
+| Save | 85 | Save 2.0 + schema 3; migração da 0.5.1 provada no POCO | cloud save (opcional) |
+| Release pipeline | 55 | AAB assinado por env, `verify release`, 16 KB, API 36 | chave real (aval), Unity no CI, release automatizada |
+| Arte final | 42 | estações, HUD, cartões, 41 ícones, elenco do Lote 5A ligado (#51, #54) | mochila no rig, estações dos distritos, herói, logo |
+| Áudio final | 30 | 3 grupos, 15 efeitos sintetizados, ambiente que cresce — **mix reprovado no POCO (barulheira)** | mix (`fix/mix-audio`), depois banco de sons real + 5 músicas |
+| Store assets | 25 | 37 criativos, 9 presets; ASO pt/en/es; política e Data Safety em rascunho | ícone/logo, screenshots, vídeo |
+| **Média** | **~42** | | |
 
 ## 9. Retomada (handoff 2026-10-13)
 
@@ -156,28 +158,30 @@ Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões
 
 **Meta e autorização (Vinicius, 2026-10-13):** levar o GDD a ≥ 90% (placar do §8) antes de qualquer teste no POCO ou publicação; "tudo autorizado": commit, push, PR e merge sem perguntar (sempre depois do `verify.sh full`), Tripo3D para o que for preciso (saldo visto: **16 570** créditos; registrar no `PROVENIENCIA.md`), créditos de IA. Seguem com aval explícito: tag/Release, publicação na loja, chave de assinatura real, criação de conta, pagamento. POCO F4 só no fim (30–60 fps basta).
 
-**Branches pendentes (no GitHub, sem PR):**
+**Feito na retomada de 2026-10-13:** #51 Lote 5A, #52 anúncios por config, #53 RemoteConfig/Analytics, #54 WorkerDef, #55 Blueprints, #56 Eventos+Pass.
+
+**Feedback do Vinicius no POCO (2026-10-13), prioridade máxima:** "barulheira, muitos sons ao mesmo tempo" e "a mochila parece um item solto mal colado"; irritou em 5 min. Perguntar o que mais incomodou nos primeiros 5 min.
+
+**Branches em andamento:**
 
 | Branch | Estado | Próximo passo |
 |---|---|---|
-| `feat/anuncios-config` (ed4b4c7) | E-PLAT-02/03 implementados (placements por `Tuning`: Chamar VIP, Velocidade, Cofre 2×, Bônus/Trocar encomenda, Supply Drop; teto diário; ID de transação; interstitial atrás de flag desligada com 5 vetos; `ad_impression`); main mesclada até o #48 | `git merge origin/main` (#49 Renome), mutantes + econsim idêntico nos perfis sem anúncio, CHANGELOG e seção do `BALANCE.md`, `verify.sh full`, fotos `-testsession -adcofre`/`-adencomenda`/`-adsupply`, PR |
-| `feat/blueprints` (d0b4907, WIP) | B-CORE-07 começado (`Core/Blueprints.cs`, `Defs.cs`, `Sim.cs`); parado pelo limite de uso | refazer a raia: `BlueprintDef` (posse, não saldo), fontes (marcos, conquistas; ganchos para encomenda/contrato/evento/pass/loja), níveis de estação IV–V (custo pela V26), técnica como fonte de qualidade, espada longa (`bigorna_longa`, Meta, ícone `item_espada_longa`), validator "essencial nunca só paga", save `bp=`, painel `-projetos` |
-| `art/lote5-personagens` (00d083a) | 11 personagens Tripo (oficial, balconista, almoxarife, mestre_obras, fundidor, mensageiro, gerente, campones, guarda_real, emissario, colecionador), sprites em `Resources/Sprites/<id>/`, ASSETS §11, PROVENIENCIA §9, CharScale proposto no ASSETS §11 | `verify.sh full` + PR; o uso na View entra com o `WorkerDef` e os distritos |
+| `fix/mix-audio` | raia de mix: categorias, orçamento de vozes, distância/fora da tela, ducking, `-somlog`, métrica antes/depois no `docs/AUDIO.md` | `verify.sh full`, medir com `-bot -somlog` no build, PR |
+| `art/mochila-ferreiro` | mochila modelada e presa ao osso das costas, folhas `ferreiro_mochila` (Blender headless com `C:/fsv_blender.lock`) | conferir folha antes × depois, `verify.sh full`, foto com `-buyids …,mochila`, PR |
+| `feat/orders-2` | B-CORE-05 pronto sobre o #55; ligando a encomenda Event ao LiveOps (#56) | `verify.sh full`, fotos `-buy 37 -renome 180 -warmup 600 -encomendas`, PR (BALANCE §28) |
+| `feat/iap-core` | E-PLAT-04/05/07 só núcleo + loja falsa (sem SDK) | terminar, `verify.sh full`, PR; pacote Unity IAP depende do aval de download |
 
 **Fila das próximas levas (ordem):**
-1. Fechar os 3 branches acima.
-2. Orders 2.0 (B-CORE-05: 8 tipos, rodízio sem sorteio, vagas pelo Renome, prêmio com ID de transação) + recalibrar os limiares 2–4 do Renome no econsim.
-3. Masterworks + Collection (B-CORE-08) sobre o gancho `MasterworkPending` e os Blueprints.
-4. `WorkerDef` (B-CORE-04: nível, especialidade, os 8 papéis) + ligar os sprites do Lote 5A.
-5. Wave C: `DistrictDef` + Império (C-CORE-01/02), Charter, distritos 2–6 do `CONTEUDO_V1.md` (itens, receitas, estações, upgrades), mapa de distritos (C-UI-20); Lote 5B no Tripo para as estações-assinatura e marcos de cada distrito.
-6. Royal Contracts (D-CORE-04), eventos (D-CORE-03, 8 templates do `LIVEOPS_V1.md`) e Pass.
-7. IAP (E-PLAT-04/05, Unity IAP, sem item aleatório pago), provedor de Analytics/RemoteConfig (A-PLAT-08/09).
-8. Áudio real (banco de efeitos + 5 músicas; licença registrada) e store assets (ícone/logo, 2 × 8 screenshots pelos presets, vídeo).
-9. Só então: `POCO_RELEASE_GATE` (`docs/ROTEIRO_TESTE_POCO.md`) e loja.
+1. Fechar os 4 branches acima (mix e mochila primeiro).
+2. Masterworks + Collection (B-CORE-08) sobre o gancho `MasterworkPending` e o campo de projeto do `BlueprintDef`; ligar os Hunts do LiveOps.
+3. Royal Contracts (D-CORE-04, depois do Orders 2.0).
+4. Wave C: `DistrictDef` + Império (C-CORE-01/02), Charter, distritos 2–6 do `CONTEUDO_V1.md` (itens, receitas, estações, upgrades, workers, os 82 Blueprints restantes), mapa de distritos (C-UI-20); Lote 5B no Tripo.
+5. Áudio real (banco de efeitos + 5 músicas; licença registrada) e store assets (ícone/logo, 2 × 8 screenshots pelos presets, vídeo).
+6. Só então: `POCO_RELEASE_GATE` (`docs/ROTEIRO_TESTE_POCO.md`) e loja.
 
 **Como o coordenador trabalha (o que funcionou):**
 - Levas de até 4 agentes em worktree isolada, só `dotnet` (sem Unity/emulador; Blender só headless e conferindo `tasklist` antes). Cada prompt: copiar as 3 DLLs para `client/Library/ScriptAssemblies`, NUnit 3.5 com tuplas de tipo exato, `.meta` com GUID novo, sem CHANGELOG, sem push; ao fim, `git merge origin/main`.
 - Integração na worktree `C:/fsv` (tem `client/Library` próprio): `git checkout -q -- .` (o Unity reescreve `ProjectSettings`), `git switch <branch>`, `git merge origin/main`, CHANGELOG (entrada no topo de `### Adicionado`), `client/tools/verify.sh full`, fotos com `-testsession` e `-shot` de caminho ABSOLUTO, PR, CI "testes do nucleo (dotnet)", `gh pr merge --squash -R Vvs2705/forge-street` rodado FORA do repositório (o `main` local fica em uso por outra worktree), apagar o branch remoto, `git checkout --detach origin/main` em `C:/fsv` e `git worktree remove -f -f` na worktree do agente.
 - Fotos e presets SEMPRE com `-testsession` (sem ele o `-preset` usa o save real).
-- PC de 7,7 GB: um processo pesado por vez (Unity, Blender, emulador). Disco C: apertado (~9–11 GB livres): remover worktrees de agente depois de integrar.
+- PC de 7,7 GB: um processo pesado por vez (Unity, Blender, emulador). Raia com Blender cria `C:/fsv_blender.lock` enquanto roda; o coordenador espera o lock e `^blender\.exe` no `tasklist` antes do Unity (o `mcp-for-blender.exe` fica sempre aberto: não confundir). Disco C: apertado (~9–11 GB livres): remover worktrees de agente depois de integrar.
 - AVD `fs_playstore` sem boot (precisa de `-wipe-data`); não é necessário até o gate final no POCO.
