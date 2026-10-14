@@ -580,7 +580,7 @@ namespace FS
             for (int k = 0; k < p.Length; k++)
             {
                 ContractStage e = d.Etapas[k];
-                p[k] = Qtd(e.N) + " " + ItemOuId(s, e.Item, e.N) + (e.MinQ > Quality.Normal ? " " + Loc.T("enc.min", Qualidade(e.MinQ)) : "");
+                p[k] = Qtd(e.N) + " " + ItemOuId(e.Item, e.N) + (e.MinQ > Quality.Normal ? " " + Loc.T("enc.min", Qualidade(e.MinQ)) : "");
             }
             return Loc.T("ctr.pede", string.Join(" + ", p));
         }
@@ -589,7 +589,7 @@ namespace FS
         public static string ContratoEtapa(Sim s, Contrato c)
         {
             ContractStage e = c.Atual;
-            string t = Loc.T("ctr.etapa", Math.Min(c.Etapa + 1, c.Def.Etapas.Length), c.Def.Etapas.Length, Qtd(c.Feito) + "/" + Qtd(e.N) + " " + ItemOuId(s, e.Item, e.N));
+            string t = Loc.T("ctr.etapa", Math.Min(c.Etapa + 1, c.Def.Etapas.Length), c.Def.Etapas.Length, Qtd(c.Feito) + "/" + Qtd(e.N) + " " + ItemOuId(e.Item, e.N));
             if (e.MinQ > Quality.Normal) t += " · " + Loc.T("enc.min", Qualidade(e.MinQ));
             if (c.Prazo > 0f) t += " · " + ((int)c.Prazo / 60).ToString(CultureInfo.InvariantCulture) + ":" + ((int)c.Prazo % 60).ToString("00", CultureInfo.InvariantCulture);
             return t;
@@ -603,7 +603,9 @@ namespace FS
             return d.Blueprint != null ? t + "  ·  " + Loc.T("ctr.projeto") : t;
         }
 
-        static string ItemOuId(Sim s, string id, long n) { int i = Items.IndexOf(id, s.ItemDefs); return i >= 0 && i < ItemId.Length ? ItemNome(i, n) : id; }
+        /// <summary>Nome do item pelo ID (C-CORE-05: o elmo da Row no cartao do contrato da raiz; pelo indice saia "20 elmo" ou o item do distrito
+        /// ativo); item sem chave (distrito por vir) sai pelo ID.</summary>
+        static string ItemOuId(string id, long n) => Loc.Tem("item." + id) ? Loc.P("item." + id, n) : id;
 
         /// <summary>Quantidade com separador de milhar do idioma ("1.500", "1,500"); de 1 milhao em diante, a escala do Ouro ("1,23 mi").</summary>
         public static string Qtd(long v) => v >= 1000000 ? Ouro(v) : v.ToString("#,0", CultureInfo.InvariantCulture).Replace(",", Loc.T("num.mil"));

@@ -51,6 +51,21 @@ namespace FS.Core
 
         const Quality Fina = Quality.Fine;
 
+        /// <summary>C-CORE-05: `item` e' produto de algum distrito do build (OrderDefs.Distritos): do Sim `w` (a raiz) ou de outro distrito. O
+        /// contrato e' do Imperio e as etapas cruzam distritos (ctr_vinte_guardas: espada e escudo do Old Forge, elmo da Row). ponytail: "no
+        /// build", nao "aberto pelo jogador": o Old Forge ja ve a oferta e a etapa do elmo espera a Row; o "aberto" pede o Imperio na raiz.</summary>
+        public static bool NoBuild(string item, Sim w)
+        {
+            int i = Items.IndexOf(item, w.ItemDefs);
+            if (i >= 0 && w.IsProduct((Item)i)) return true;
+            foreach (string id in OrderDefs.Distritos)
+            {
+                DistrictDef dd = id == w.Distrito.Id ? null : FS.Core.Distritos.Find(id);
+                if (dd != null && Array.Exists(dd.Itens, x => x.Product && x.Id == item)) return true;
+            }
+            return false;
+        }
+
         static ContractDef C(string id, string distrito, Quality q, float bonusMin, int ouroSeg, int renome, string bp, params (string item, int n)[] pede)
         {
             var e = new ContractStage[pede.Length];
@@ -106,7 +121,7 @@ namespace FS.Core
                     if (e.MinQ > Quality.Superior) yield return $"{at} qualidade minima {e.MinQ} (Masterwork nunca e' alvo)";
                     if (!noBuild) continue;
                     int i = Items.IndexOf(e.Item, w.ItemDefs);
-                    if (i < 0 || !w.IsProduct((Item)i) || !w.Stations.Exists(s => s.Produces && s.OutItem == (Item)i)) yield return $"{at} item \"{e.Item}\" que nao existe no jogo (ou nao e' vendido)";
+                    if (i >= 0 ? !w.IsProduct((Item)i) || !w.Stations.Exists(s => s.Produces && s.OutItem == (Item)i) : !NoBuild(e.Item, w)) yield return $"{at} item \"{e.Item}\" que nao existe no jogo (ou nao e' vendido)";
                 }
                 if (d.OuroSeg <= 0 || d.Reputacao <= 0) yield return $"{at} premio {d.OuroSeg} s; Renome {d.Reputacao} (positivos)";
                 if (d.BonusMin < 0f) yield return $"{at} prazo-bonus negativo";

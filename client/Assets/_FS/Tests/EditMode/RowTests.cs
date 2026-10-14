@@ -85,6 +85,34 @@ namespace FS.Tests
                 OrderDefs.Ciclo(OrderDefs.OldForge), "o ciclo do Old Forge nao mudou");
         }
 
+        /// <summary>Royal Contracts (#64) com a Row no build: depois do Ronda, o Vinte Guardas abre (o elmo e' produto da Row) e o Milicia do
+        /// Norte espera o Renome 5; o cartao traduz o item pelo ID com qualquer distrito ativo na View (antes saia "20 elmo").</summary>
+        [Test]
+        public void Contratos_DaRow_AbremEOCartaoTraduzOElmo()
+        {
+            var s = new Sim();
+            s.Buy(Upgrade.Shields); s.Buy(Upgrade.Tools); s.Renome.Ganha(180);
+            s.Contratos.Concluidos.Add("ctr_ronda_vila");
+            ContractDef d = s.Contratos.Oferta;
+            Assert.AreEqual("ctr_vinte_guardas", d?.Id);
+            try
+            {
+                foreach (DistrictDef ativo in new[] { Distritos.OldForge, Row })
+                {
+                    Textos.Distrito(ativo);
+                    Assert.AreEqual("Pede: 20 espadas + 20 escudos + 20 elmos", Textos.ContratoPede(s, d), ativo.Id);
+                    Loc.Atual = Idioma.Es;
+                    StringAssert.EndsWith("+ 20 yelmos", Textos.ContratoPede(s, d), ativo.Id);
+                    Loc.Atual = Idioma.Pt;
+                }
+            }
+            finally { Textos.Distrito(Distritos.OldForge); Loc.Atual = Idioma.Pt; }
+            s.Contratos.Concluidos.Add("ctr_vinte_guardas");
+            Assert.IsNull(s.Contratos.Oferta, "o Milicia do Norte pede o Renome 5");
+            s.Renome.Ganha(570);
+            Assert.AreEqual("ctr_milicia_norte", s.Contratos.Oferta?.Id, "lanca, maca e grevas da Row");
+        }
+
         // ------------------------------------------------------------------ Masterwork da Row
 
         static MasterworkDef ElmoVigia() => new MasterworkDef("mw_elmo_vigia", Row.Id, "elmo", "bp_mw_elmo_vigia", 30, 1);

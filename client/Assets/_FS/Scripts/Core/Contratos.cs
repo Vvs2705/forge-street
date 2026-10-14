@@ -62,7 +62,7 @@ namespace FS.Core
         {
             if (!_sim.T.Contratos || !_sim.QualityRevealed || Array.IndexOf(OrderDefs.Distritos, d.District) < 0) return false;
             if (d.Renome >= 0 && !_sim.Renome.Libera(d.Id)) return false;
-            foreach (ContractStage e in d.Etapas) { int i = Items.IndexOf(e.Item, _sim.ItemDefs); if (i < 0 || !_sim.IsProduct((Item)i)) return false; }
+            foreach (ContractStage e in d.Etapas) if (!ContratosDefs.NoBuild(e.Item, _sim)) return false;   // C-CORE-05: o elmo e' da Row
             return true;
         }
 
