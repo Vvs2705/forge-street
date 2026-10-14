@@ -331,7 +331,9 @@ namespace FS.Core
                 foreach (string f in x.Filtro) if (Indice(x.Evento, f, items) < 0) return "filtro " + f;
             }
             foreach (Modificador m in e.Modificadores) if (Campo(m.Knob) == null) return "knob " + m.Knob;
-            return e.Requer.Length > 0 ? "requisito " + e.Requer[0] : null;
+            // B-CORE-08: Blueprint do catalogo no Requer e' requisito do JOGADOR (LiveOps.Requisitos: possuir); o resto e' sistema que nao existe
+            string falta = Array.Find(e.Requer, r => ProjetosDefs.IndexOf(r) < 0);
+            return falta != null ? "requisito " + falta : null;
         }
 
         public static long XpTrilha(EventDef e) => Soma(e, TipoPremio.PassXp);

@@ -45,6 +45,7 @@ namespace FS.Core
             "product_sold", "product_crafted", "order_done", "upgrade_buy", "worker_hired", "offline_claim", "currency_source", "currency_sink",
             "vip_served", "chest_opened", "mission_complete", "login_claim",
             "worker_upgrade",   // B-CORE-04 (LIVEOPS_V1 §5.6): filtro = nivel alcancado
+            "masterwork_unlock", "masterwork_family",   // B-CORE-08 (LIVEOPS_V1 §4.6): filtro = indice no Hall / item da familia
         };
 
         public sealed class Slot { public MetaDef Def; public long Base, Alvo; }
@@ -93,6 +94,10 @@ namespace FS.Core
                 case Ev.Hired: Soma("worker_hired", b, 1); if (b > 0) Soma("currency_sink", -1, _sim.Equipe.Preco(a, 1)); break;
                 case Ev.WorkerUp: Soma("worker_upgrade", b, 1); Soma("currency_sink", -1, _sim.Equipe.Preco(a, b)); break;
                 case Ev.ChestOpened: Soma("chest_opened", -1, 1); break;
+                case Ev.Masterwork when b >= 0:   // B-CORE-08: B = indice no Hall (-1 = gancho de teste sem MasterworkDef)
+                    Soma("masterwork_unlock", b, 1);
+                    Soma("masterwork_family", Items.IndexOf(_sim.Hall.Defs[b].Familia, _sim.ItemDefs), 1);
+                    break;
             }
         }
 

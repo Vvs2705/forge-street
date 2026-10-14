@@ -359,6 +359,9 @@ namespace FS.Tests
             s.Metas.ResgatarDiaria(0);
             s.Gold += 1000;   // B-CORE-04: o bot so sobe nivel depois da producao completa (~47 min); aqui o nivel 2 do Ajudante, como o jogador no menu
             Assert.IsTrue(s.Equipe.Comprar(WorkerDefs.IndexOf("wk_ajudante1")), "worker_upgrade: nivel 2 do Ajudante");
+            s.T.NivelEstacaoQ = 200; s.Recompute();   // B-CORE-08: masterwork_*: uma obra-prima de verdade (Superior + projeto + golpe)
+            s.Projetos.Ganha("bp_mw_primeira_lamina", BlueprintSourceKind.Milestone);
+            Assert.AreEqual(Quality.Masterwork, MasterworksTests.ComGolpe(s, s.AnvilA));
             foreach (string ev in Metas.Eventos)
                 Assert.Greater(s.Metas.Cont.TryGetValue(ev, out long v) ? v : 0, 0L, ev);
             var todos = new Sim();

@@ -52,7 +52,7 @@ namespace FS.Core
         const int A = 0, B = 1;
         const string Sold = "product_sold", Craft = "product_crafted", Ord = "order_done", Buy = "upgrade_buy", Src = "currency_source",
             Sink = "currency_sink", Cofre = "offline_claim", Vip = "vip_served", Hire = "worker_hired", Bau = "chest_opened",
-            Missao = "mission_complete", Login = "login_claim", Nivel = "worker_upgrade";
+            Missao = "mission_complete", Login = "login_claim", Nivel = "worker_upgrade", Mw = "masterwork_unlock", MwFamilia = "masterwork_family";
         /// <summary>B-CORE-04: os workers do Old Forge (6 ajudantes + 7 da Equipe, LIVEOPS_V1 §5.5 ach_workers13).</summary>
         static readonly int WorkersOldForge = Array.FindAll(WorkerDefs.All, d => d.Distrito == WorkerDefs.OldForge).Length;
         const int Lingote = (int)Item.Ingot, Espada = (int)Item.Sword, Escudo = (int)Item.Shield, Ferram = (int)Item.Tool, Joia = (int)Item.Jewel;
@@ -172,6 +172,14 @@ namespace FS.Core
             C("ach_worker_n5", Nivel, 5, 1, xp: 100),
             C("ach_workers13", Hire, -1, WorkersOldForge, xp: 150, renome: 10),
             C("ach_workers13_n5", Nivel, 5, WorkersOldForge, insignia: "mestre_oficio"),
+            // B-CORE-08 (LIVEOPS_V1 §4.5 #20-25): Masterworks registradas no Hall. O Renome ja vem da obra (Hall): a conquista da so XP ou insignia.
+            // ach_mw30/ach_mw60 esperam as 60 (requiresContent: o validator recusa alvo acima das do build)
+            C("ach_mw1", Mw, -1, 1, xp: 100),
+            C("ach_mw5", Mw, -1, 5, xp: 150),
+            C("ach_mw10_oldforge", Mw, -1, 10, xp: 200, insignia: "hall_completo"),
+            C("ach_familia_espada", MwFamilia, Espada, 3, xp: 100),
+            C("ach_sunblade", Mw, MasterworksDefs.IndexOf("mw_sunblade"), 1, insignia: "sol_do_rei"),
+            C("ach_ember_crown", Mw, MasterworksDefs.IndexOf("mw_ember_crown"), 1, insignia: "coroa_de_brasa"),
             // Automation (melhorias)
             C("ach_melhoria1", Buy, -1, 1, ouroS: 30),                 // novo
             C("ach_melhorias10", Buy, -1, 10, xp: 50),                 // novo
