@@ -17,6 +17,7 @@ using FS.Core;
 /// Uso: dotnet run -c Release --project client/tools/econsim -- --perfis Ideal,F2P,Slow,AdWatcher --minutos 60 --partidas 1 --anuncio-seg 30 --saida econsim.csv
 /// B-CORE-03: --tuning "GolpeRecarga=30;NivelEstacaoQ=25" troca knobs do Tuning (varredura sem recompilar); a 3a tabela mostra o premio de
 /// qualidade, o golpe e os niveis de estacao.
+/// E-PLAT-05: --pacote 1 = quem comprou o Pacote do Mestre (Compras.SemVideoCobre): Velocidade e Supply Drop sem os s do video; VIP e bonus seguem.
 /// D-CORE-03/04: --evento id (ou o fim do id, ex. forge_frenzy) joga cada partida com o relogio do LiveOps dentro do evento (Metas e LiveOps
 /// a cada segundo de jogo, como a View) e de novo sem ele: a tabela mostra a renda/min depois da entrada (com x sem), pontos, missoes, XP do
 /// Passe e o ouro dos limiares; e a conta de fechamento da trilha free do Passe com as encomendas medidas. Sem --evento nada disso roda
@@ -79,6 +80,7 @@ static class EconSim
         BotProfile[] perfis = BotProfile.All; int minutos = 60, partidas = 1; string saida = "econsim.csv", knobs = null; EventDef evento = null;
         float? workerSeg = null;  // B-CORE-04: null = o padrao do Bot
         float anuncioSeg = 30f;   // V19: ~30 s por anuncio premiado (o LevelPlay nao mostra o tempo; medir no POCO e ajustar aqui)
+        bool pacote = false;
         for (int i = 0; i < args.Length; i += 2)
         {
             string v = i + 1 < args.Length ? args[i + 1] : null;
@@ -91,6 +93,7 @@ static class EconSim
                 case "--partidas" when ok: ok = int.TryParse(v, out partidas) && partidas > 0; break;
                 case "--anuncio-seg" when ok: ok = float.TryParse(v, out anuncioSeg) && anuncioSeg >= 0f; break;
                 case "--saida" when ok: saida = v; break;
+                case "--pacote" when ok: ok = v == "0" || v == "1"; pacote = v == "1"; break;
                 case "--evento" when ok:
                     evento = Array.Find(LiveOpsDefs.Eventos, e => e.Id == v || e.Id.EndsWith("_" + v, StringComparison.Ordinal));
                     ok = evento != null && LiveOpsDefs.Falta(evento, Items.All) == null;   // so o que roda neste build
@@ -100,7 +103,7 @@ static class EconSim
             }
             if (!ok || perfis.Any(p => p.Name == null))
             {
-                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id]");
+                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1]");
                 return 2;
             }
         }
@@ -109,9 +112,9 @@ static class EconSim
         foreach (BotProfile p in perfis) for (int i = 0; i < partidas; i++) jobs.Add((p, 30f + 30f * i / partidas));
         var runs = new Run[jobs.Count];
         var wall = Stopwatch.StartNew();
-        Parallel.For(0, jobs.Count, k => runs[k] = Play(jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, Knobs(knobs, new Tuning()), workerSeg, evento));   // cada Sim e' isolado (Tuning proprio); a ordem do CSV e' a de jobs
+        Parallel.For(0, jobs.Count, k => runs[k] = Play(jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, Knobs(knobs, new Tuning()), workerSeg, evento, pacote));   // cada Sim e' isolado (Tuning proprio); a ordem do CSV e' a de jobs
         var sem = new Run[jobs.Count];   // D-CORE-03/04: a mesma partida sem o evento (base da comparacao)
-        if (evento != null) Parallel.For(0, jobs.Count, k => sem[k] = Play(jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, Knobs(knobs, new Tuning()), workerSeg, null));
+        if (evento != null) Parallel.For(0, jobs.Count, k => sem[k] = Play(jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, Knobs(knobs, new Tuning()), workerSeg, null, pacote));
         if (knobs != null) Console.WriteLine("tuning: " + knobs);
         File.WriteAllText(saida, Header + Environment.NewLine + string.Concat(runs.Select(r => r.Csv)));
 
@@ -244,7 +247,7 @@ static class EconSim
                               $"{LiveOpsDefs.XpDiaF2P(ps, LiveOpsDefs.Eventos, enc, true):0} | {LiveOpsDefs.DiaFechamento(ps, LiveOpsDefs.Eventos, enc, true):0.0} |");
     }
 
-    static Run Play(BotProfile p, float hz, int minutos, float anuncioSeg, Tuning t, float? workerSeg, EventDef evento = null)
+    static Run Play(BotProfile p, float hz, int minutos, float anuncioSeg, Tuning t, float? workerSeg, EventDef evento = null, bool pacote = false)
     {
         var clock = Stopwatch.StartNew();
         var s = new Sim(t); Bot bot = Bot.From(p); float dt = 1f / hz;
@@ -265,8 +268,9 @@ static class EconSim
             {
                 int before = s.UpgradesBought;
                 bot.Step(s, dt);
-                pausa += (bot.AdsTotal - ads) * anuncioSeg;   // o anuncio vem antes do Tick do mesmo passo
-                ads = bot.AdsTotal;
+                int vistos = pacote ? bot.AdsVip + bot.AdsBonus : bot.AdsTotal;   // E-PLAT-05: com o pacote, Velocidade e Supply sem video
+                pausa += (vistos - ads) * anuncioSeg;   // o anuncio vem antes do Tick do mesmo passo
+                ads = vistos;
                 foreach (SimEvent e in s.Events)
                 {
                     if (e.Kind == Ev.VipServed) r.Vips++;

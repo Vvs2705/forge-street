@@ -335,6 +335,10 @@ namespace FS
             { "cli.cli_reg_grunk", L("Grunk", "Grunk", "Grunk") },
             { "cli.cli_reg_bento", L("Sir Bento", "Sir Bento", "Sir Bento") },
             { "cli.cli_reg_ines", L("Dona Inês", "Lady Inês", "Doña Inés") },
+            // E-PLAT-04: avisos da loja (1 linha da faixa, LocTests)
+            { "aviso.compra_ok", L("Compra concluída!", "Purchase complete!", "¡Compra completada!") },
+            { "aviso.compra_falhou", L("Compra não concluída", "Purchase not completed", "Compra no completada") },
+            { "aviso.restaurado", L("Compras restauradas: {0}", "Purchases restored: {0}", "Compras restauradas: {0}") },
 
             { "aviso.meta_pronta", L("Meta concluída!", "Goal complete!", "¡Meta cumplida!") },
             { "aviso.meta", L("Meta resgatada! +{0}", "Goal claimed! +{0}", "¡Meta reclamada! +{0}") },
@@ -602,6 +606,17 @@ namespace FS
             { "cfg.versao", L("Forge Street v{0}", "Forge Street v{0}", "Forge Street v{0}") },
             { "cfg.privacidade", L("PRIVACIDADE", "PRIVACY", "PRIVACIDAD") },
             { "cfg.fechar", L("FECHAR", "CLOSE", "CERRAR") },
+            { "cfg.loja", L("LOJA", "SHOP", "TIENDA") },
+
+            // ---------- loja (E-PLAT-04/05, Loja.cs): nome por produto (iap.<id>.nome) e uma linha por posse (iap.posse.<id>) ----------
+            { "loja.titulo", L("Loja", "Shop", "Tienda") },
+            { "loja.comprado", L("COMPRADO", "OWNED", "COMPRADO") },
+            { "loja.restaurar", L("RESTAURAR COMPRAS", "RESTORE PURCHASES", "RESTAURAR COMPRAS") },
+            { "loja.falsa", L("Loja de teste: nenhum pagamento real", "Test store: no real payment", "Tienda de prueba: ningún pago real") },
+            { "iap.iap_pacote_mestre.nome", L("Pacote do Mestre", "Master's Pack", "Paquete del Maestro") },
+            { "iap.posse.remove_ads", L("Sem anúncio entre telas", "No ads between screens", "Sin anuncios entre pantallas") },
+            { "iap.posse.sem_video", L("Velocidade, Lingotes e Trocar sem vídeo", "Speed, Ingots and Swap without video",
+                "Velocidad, Lingotes y Cambiar sin video") },
 
             // ---------- privacidade (E-PLAT-01). O hash do pt-BR trava a Privacidade.Versao; en/es podem mudar sem pedir de novo ----------
             { "priv.idade.titulo", L("Qual é a sua idade?", "How old are you?", "¿Qué edad tienes?") },

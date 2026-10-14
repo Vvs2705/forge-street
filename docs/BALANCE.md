@@ -1796,3 +1796,18 @@ Ligações: a entrega chama `LiveOps.OnEncomenda(tipo)` (gatilho `order_complete
 - Pass com o Orders 2.0 (eventos prontos, encomendas medidas): S1 657 XP/dia → **dia 27,4**; S2 643 → **dia 28,0** (antes 29,9 e 30,6; o §27.3 previa a volta ao desenho). `LiveOpsTests.Fechamento_*` agora usa 30 encomendas/60 min.
 - **Achado (revisar):** com +20 por encomenda Event a trilha passa de 700: o F2P chega a 995 de 1.000 numa sessão de 60 min do Merchant Caravan (sem missão `play_day`) e a 710–835 na Royal Week. O portão "trilha fecha no dia 4–5" (`LIVEOPS_V1` §6) fica curto para quem joga 1 h seguida. Knobs, sem mexer aqui: `OrderDef.EventPoints` (20 → 10) ou o alvo das missões de volume; ou uma `play_day` no Merchant Caravan.
 - Testes: `LiveOpsTests.OrdersDois_RoyalWeekRoda_*` (a Common não conta como Royal, 2 Royal fecham a `royal2`, a Event abre sozinha com a `OrderDef` do evento e dá +20, XP do Passe 10 por entrega com o teto contando a Event, pontos no save) e `OrdersDois_MerchantCaravanRoda_*` (Bulk/Mixed por tipo, `order_done` conta todas, prêmio ×1,25 pelo RemoteConfig e de volta no fim); a lista dos eventos prontos e a Royal Week no calendário; o validator com a `Encomenda` trocada. `mutantes.py`: `enc-evento-sem-pontos` e `enc-evento-sem-tipo` mortas (e a `liveops-teto-encomenda` também pelo teste novo).
+
+## 29. E-PLAT-04/05: compras in-app (núcleo + loja falsa) e o Pacote do Mestre (2026-10-13)
+
+**Quem não compra: nada muda.** O `Sim` só ganhou o `Compras` (ledger e posse re-derivada do recibo) e as linhas `iap.*` no save, que só aparecem com compra; o bot não compra. econsim `--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 60 --partidas 2 --anuncio-seg 30`: **CSV idêntico ao byte** ao da `main` ef8b4c2 (#56; SHA-256 `5d0ffc58…fac0ed4` nos dois); o resumo difere só na coluna s/partida (tempo de máquina). O mesmo deu idêntico contra a d0d78f0 e a 67d4f4e, a cada merge.
+
+**Quem compra** (Pacote do Mestre, `docs/IAP.md` §1: Velocidade, Lingotes e Trocar sem o vídeo, com as mesmas recargas e teto): flag nova `--pacote 1` no econsim (Velocidade e Supply sem os 30 s do vídeo; VIP e bônus seguem pagando o tempo). Média de 3 partidas, anúncio = 30 s, sobre a ef8b4c2:
+
+| perfil | Esteira | Joalheria | Produção | 1a compra de worker | pisos do §3 abaixo |
+|---|---|---|---|---|---|
+| AdWatcher | 7:05 | 26:50 | 46:30 | 46:40 | 0% |
+| AdWatcher com o pacote | 6:35 | 24:50 | **43:00** | 43:10 | 0% (2a bigorna 2:09, Ajudante 2:36, Escudos 3:04) |
+| AdWatcherE | 8:04 | 31:18 | 54:05 | 54:16 | 0% |
+| AdWatcherE com o pacote | 7:04 | 27:58 | **49:05** | 49:16 | 0% |
+
+O pacote poupa o tempo dos vídeos (3,5–5 min na produção completa de 60 min) e não dá recurso que o F2P com anúncio não tenha: mesmos placements, recompensas, recarga e teto diário (30); não liga o premium do Passe. Nenhum piso do §3 cai (o anúncio só abre depois da 1a melhoria, D6). Referência: AdWatcher com `--anuncio-seg 0` (VIP **e** Velocidade de graça, limite superior que o pacote não alcança) fecha a produção em 39:30 e fica até 11 s abaixo de 3 pisos (2a bigorna 1:39, Ajudante 2:06, Escudos 2:34); por isso o VIP ficou de fora do `sem_video` (revisar com a P3).
