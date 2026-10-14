@@ -77,6 +77,11 @@ namespace FS
         const int BigSale = 60;   // A-AUD-22: venda grande = >= 60 de ouro numa venda normal (6 espadas; hoje so a joia, 60/80)
 
         Sim _sim;
+        // C-CORE-02: o Imperio da partida; _sim = o distrito ativo (mundo, menu, anuncios, dica), _raiz = o Old Forge (Renome, metas, eventos,
+        // projetos e compras, que sao do Imperio nesta leva). Old Forge ativo: _raiz == _sim, o jogo de sempre
+        Imperio _imp; Sim _raiz;
+        /// <summary>Trocar de distrito = cena nova com o mesmo Imperio (a HUD inteira nasce do Sim ativo; Renascer).</summary>
+        static Imperio _proximo;
         Bot _bot;
         WorldView _view;
         Joystick _joy;
@@ -174,7 +179,9 @@ namespace FS
             // A-PLAT-08: o RemoteConfig vale antes do Sim nascer (-rcfile so no build dev; fotos e smoke sem o cache baixado). Travas no nucleo
             _rc = new RemoteConfigHttp(new RemoteConfigLocal(dir, Debug.isDebugBuild ? Arg("-rcfile") : null, !_testSession), this);
             var tuning = new Tuning();
-            _rcr = RemoteConfig.Aplicar(tuning, _rc.Ler(out _rcOrigem), IntersticialNoBuild);
+            string rcJson = _rc.Ler(out _rcOrigem);
+            _rcr = RemoteConfig.Aplicar(tuning, rcJson, IntersticialNoBuild);
+            Func<Tuning> novoTuning = () => { var t = new Tuning(); RemoteConfig.Aplicar(t, rcJson, IntersticialNoBuild); return t; };   // um por distrito
             // A-PLAT-09: provedor remoto = nulo ate a P8 (-analyticslog ecoa no Player.log); excecao nao tratada vira evento (5 por sessao)
             _diario = new Telemetria(diario, new ProvedorNulo(Arg("-analyticslog") != null ? s => Debug.Log("ANALYTICS " + s) : (Action<string>)null),
                 diario.Sessao, Application.version, _rcr.Rotulo, dir, Application.dataPath);
@@ -184,13 +191,18 @@ namespace FS
             Sfx.Log = Arg("-somlog") != null;   // fix/mix-audio (dev): "SOM min=..." por minuto no Player.log
             // ponytail: fotos e smoke usam estado novo sem ler ou gravar o save/diario normal.
             if (!_testSession && Arg("-reset") != null) _save.Apagar();
-            _sim = _testSession ? new Sim(tuning) : _save.Carregar(tuning);
+            bool renasceu = _proximo != null;   // troca de distrito: o mesmo Imperio, cena nova (o -distrito so vale na 1a cena)
+            if (renasceu) { _imp = _proximo; _proximo = null; }
+            else _imp = _testSession ? new Imperio(new Sim(tuning), novoTuning) : _save.CarregarImperio(tuning, novoTuning);
+            _sim = _imp.Ativo; _raiz = _imp.Raiz;
+            if (!renasceu) DistritoArg(novoTuning);   // -distrito id (dev, fotos)
+            Textos.Distrito(_sim.Distrito); Art.Distrito(_sim.ItemDefs);   // C-CORE-01: textos e arte dos itens do distrito ativo
             DevArgs();
             // E-PLAT-04: loja so com SDK; hoje so a falsa, no build de desenvolvimento com -lojafalsa (no -testsession, so na memoria). A posse
             // sai dos recibos do save validados por ela; sem loja, nenhuma
             string lf = Debug.isDebugBuild ? Arg("-lojafalsa") : null;
             if (lf != null) _loja = new LojaFalsa(_testSession ? null : Path.Combine(dir, LojaFalsa.Arquivo), LojaFalsa.Ler(lf));
-            _sim.Compras.Conectar(_loja);
+            _raiz.Compras.Conectar(_loja);
             // -cam W (dev, P2-3 do BENCHMARK_VISUAL): largura visivel em m, 6..11,4 (padrao 9; 11,4 = a camera antiga, fotos de antes)
             _visW = Mathf.Clamp(ArgF("-cam", VisibleWidth), 6f, Enquadramento.OficinaInteira);
             string cfg = Arg("-settings");
@@ -204,16 +216,16 @@ namespace FS
             _cam.orthographic = true;
             _cam.clearFlags = CameraClearFlags.SolidColor;
             _cam.backgroundColor = Art.Bg;
-            _cam.transform.position = new Vector3(Balance.WorkshopW / 2f, Balance.WorldH / 2f, -10f);
+            _cam.transform.position = new Vector3(_sim.Distrito.Largura / 2f, Balance.WorldH / 2f, -10f);
             BuildHud();
             _view = new GameObject("Mundo").AddComponent<WorldView>();
             _view.Init(_sim, _cam, _labels);
-            _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos), () => _metas.Abrir(), WorkerComprado);
+            _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos), () => _metas.Abrir(), WorkerComprado, _raiz);
             _cfg.SetAsLastSibling();     // configuracoes e painel modal cobrem a barra de melhorias
             _panel.SetAsLastSibling();
-            _metas = new PainelMetas(_safe, _sim, Pago, () => _projetos.Abrir(), Contrato);
-            _projetos = new PainelProjetos(_safe, _sim);
-            if (_loja != null) _lojaUi = new PainelLoja(_safe, _sim, _loja, Comprar, Restaurar);
+            _metas = new PainelMetas(_safe, _raiz, Pago, () => _projetos.Abrir(), Contrato);   // D-CORE-04: a aba de contratos le os da raiz
+            _projetos = new PainelProjetos(_safe, _raiz);
+            if (_loja != null) _lojaUi = new PainelLoja(_safe, _raiz, _loja, Comprar, Restaurar);
             // E-PLAT-01: sem resposta (ou com texto novo) a tela de idade abre por cima de tudo e o SDK de anuncio espera (Ads.Responder).
             // Fotos e smoke (-testsession, -record, -autoplay) nao a veem, salvo com -privacidade [18]
             _priv = new TelaPrivacidade(_safe, Responder);
@@ -250,8 +262,8 @@ namespace FS
             bool foto = Arg("-loja") != null;   // foto do painel (com -lojafalsa)
             if (foto && _lojaUi != null && _sim.T.Loja) _lojaUi.Abrir();
             // D-CORE-03/04 (fotos): -evento entra sem esperar o requisito; -passxp da XP; -eventocard e -pass abrem os modais
-            if (Arg("-evento") != null && _sim.LiveOps.Evento == null) _sim.LiveOps.Forca(_sim.LiveOps.NoCalendario(_sim.LiveOps.Relogio));
-            if (long.TryParse(Arg("-passxp"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long pxp)) _sim.LiveOps.Ganha(pxp);
+            if (Arg("-evento") != null && _raiz.LiveOps.Evento == null) _raiz.LiveOps.Forca(_raiz.LiveOps.NoCalendario(_raiz.LiveOps.Relogio));
+            if (long.TryParse(Arg("-passxp"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long pxp)) _raiz.LiveOps.Ganha(pxp);
             LiveOpsAgora(false);
             if (Arg("-eventocard") != null) _liveops.AbrirEvento();
             if (Arg("-pass") != null) _liveops.AbrirPasse();
@@ -263,6 +275,7 @@ namespace FS
             if (projetos) _projetos.Abrir();
             bool cartao = Arg("-renomecard") != null;   // foto do cartao do Renome (com -renome N)
             if (cartao) _renome.Abrir();
+            if (Arg("-mapa") != null) AbrirMapa();   // C-CORE-02 (foto): o mapa minimo dos distritos (com -distrito, -renome, -gold)
             if (int.TryParse(Arg("-cofre"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int cofre) && cofre > 0) ShowVault(cofre);   // foto do painel
             // G-UA-02 -offline S: o cofre de verdade, como na volta do jogador depois de S s fora (o -cofre N so desenha o painel com N)
             string off = Arg("-offline");
@@ -311,7 +324,7 @@ namespace FS
         /// <summary>Paga o cofre de `elapsed` s fora (claim idempotente por `claim`), mostra o painel e devolve o ouro (0 = nada).</summary>
         long PagaCofre(long elapsed, long claim)
         {
-            long gold = _sim.ApplyOffline(elapsed, claim);
+            long gold = _imp.ApplyOffline(elapsed, claim);   // C-CORE-02: o cofre do ativo + o fundo dos outros distritos (teto de 2 h)
             if (gold <= 0) return 0;
             long shown = Math.Min(elapsed, _sim.T.OfflineCap);
             Log("offline_claim", gold.ToString(), shown.ToString());
@@ -383,6 +396,7 @@ namespace FS
                 dt -= step;
                 if (_botDrive) _bot.Step(_sim, step);
                 else _sim.Tick(step, input.x, input.y);
+                _imp.Fundo(step);   // C-CORE-02: renda de fundo dos distritos fora de foco
                 TimedBuys();   // depois do Tick: o Ev.Bought fica em Events e o HandleEvents toca o som e o "+nome!"
                 HandleEvents();
             }
@@ -434,7 +448,7 @@ namespace FS
                 {
                     case Ev.Crafted:
                         _view.Crafted(e.B);   // v0.6a: o item novo da pilha de saida da pop
-                        Log("product_crafted", Balance.ItemName[e.A], _sim.Stations[e.B].Name);
+                        Log("product_crafted", _sim.ItemDefs[e.A].Name, _sim.Stations[e.B].Name);
                         break;
                     case Ev.Sold:
                         // A-AUD-22: venda comum nao vibra; so a grande, no maximo 1 a cada 1,5 s (a loja de joias atende a cada 0,4 s).
@@ -443,9 +457,9 @@ namespace FS
                         bool vipSale = e.B > _sim.PriceOf((Item)e.A, Quality.Superior);
                         if (e.B >= BigSale && !vipSale) Ajustes.Pulso(20, 90, 1.5f);
                         _view.SaleFloat(new V2(e.Pos.X, e.Pos.Y - 0.9f), e.B);   // v0.5: pela frente do estande; v0.6d: vendas a < 0,4 s somam num "+N" so
-                        _view.Sold(e.Pos, e.A == (int)Item.Jewel);   // v0.5b: balao estoura com coracao e brilhos
+                        _view.Sold(e.Pos, _sim.CounterFor((Item)e.A) == _sim.JewelShop);   // v0.5b: balao estoura com coracao e brilhos
                         FlyCoins(e.Pos, e.B);
-                        Log("product_sold", Balance.ItemName[e.A], e.B.ToString());
+                        Log("product_sold", _sim.ItemDefs[e.A].Name, e.B.ToString());
                         Source(vipSale ? "vip" : "venda", e.B);   // a unidade do VIP sai a preco x3
                         break;
                     // B-CORE-03: peca Fina/Superior na pilha (moeda aguda, "Fina!" e brilhos); obra-prima ao Hall (B-CORE-08)
@@ -456,24 +470,24 @@ namespace FS
                     case Ev.Masterwork:
                         Ajustes.Pulso(60, 255);
                         Notice(Loc.T("fx.qualidade", Textos.Qualidade(Quality.Masterwork)), _crown, Color.white);
-                        Log("masterwork", Balance.ItemName[e.A], _sim.Stations[e.B].Name);
+                        Log("masterwork", _sim.ItemDefs[e.A].Name, _sim.Stations[e.B].Name);
                         break;
                     // B-CORE-07: projeto novo (marco, Renome, conquista; encomenda e o resto quando existirem): som, aviso e diario
                     case Ev.Blueprint:
                         Notice(Loc.T("aviso.projeto"), _crown, Color.white);
-                        Log("blueprint_unlock", _sim.Projetos.Defs[e.A].Id, ((BlueprintSourceKind)e.B).ToString());
+                        Log("blueprint_unlock", _raiz.Projetos.Defs[e.A].Id, ((BlueprintSourceKind)e.B).ToString());
                         break;
                     case Ev.ContractDone:   // D-CORE-04: pago 1x pelo nucleo (ledger das metas); aqui o aviso, o diario, a fonte e a vibracao
                         Notice(Loc.T("aviso.contrato", Textos.Qtd(e.B)), _coinIcon.sprite, _coinIcon.color);
-                        Log("contract_complete", _sim.Contratos.Defs[e.A].Id, e.B.ToString());
+                        Log("contract_complete", _raiz.Contratos.Defs[e.A].Id, e.B.ToString());
                         Source("contrato", e.B);
                         Ajustes.Pulso(40, 200);
                         break;
                     case Ev.Bought: Bought(e.A, e.B, e.Pos); break;
                     case Ev.ClientLeft:
                         if (e.B == 0) _view.Float(e.Pos, "...", Art.Bad);
-                        else _view.TurnedAway(e.Pos, e.A == (int)Item.Jewel);   // fila cheia: aparece passando e vai embora
-                        Log("client_left", Balance.ItemName[e.A], e.B == 0 ? "cansou" : "fila_cheia");
+                        else _view.TurnedAway(e.Pos, _sim.CounterFor((Item)e.A) == _sim.JewelShop);   // fila cheia: aparece passando e vai embora
+                        Log("client_left", _sim.ItemDefs[e.A].Name, e.B == 0 ? "cansou" : "fila_cheia");
                         break;
                     case Ev.Bottleneck: Log("bottleneck", _sim.Stations[e.A].Name, "saida_cheia"); break;
                     case Ev.Hired:   // B-CORE-04: B = 0 e' o ajudante do upgrade (A = indice em Workers); senao o worker da Equipe (A = WorkerDef)
@@ -497,28 +511,28 @@ namespace FS
                     case Ev.VipArrived:
                         Notice(Loc.T("aviso.vip"), _crown, Color.white);
                         _view.VipBurst(e.Pos, false);
-                        Log("vip_arrived", Balance.ItemName[e.A], e.B.ToString());
+                        Log("vip_arrived", _sim.ItemDefs[e.A].Name, e.B.ToString());
                         break;
                     case Ev.VipServed:
                         Ajustes.Pulso(40, 200);
                         _view.Float(new V2(e.Pos.X, e.Pos.Y - 1.2f), "+" + e.B, Art.Accent, 64);   // pela frente do estande: na fila ele subia para baixo da HUD
                         _view.VipBurst(e.Pos, true);
                         FlyCoins(e.Pos, e.B, 12);   // so visual: o ouro ja entrou unidade por unidade
-                        Log("vip_served", Balance.ItemName[e.A], e.B.ToString());
+                        Log("vip_served", _sim.ItemDefs[e.A].Name, e.B.ToString());
                         break;
                     case Ev.VipLeft:
                         _view.Float(e.Pos, "...", Art.Bad, 44);
-                        Log("vip_left", Balance.ItemName[e.A], e.B.ToString());
+                        Log("vip_left", _sim.ItemDefs[e.A].Name, e.B.ToString());
                         break;
                     // FASE9 (v0.6c): a encomenda nova entra pelo estado do Sim (CartoesEncomenda.Refresh, vale tambem para a do save); entregue = som,
                     // aviso e moedas saindo do cartao (o premio ja entrou no Gold, fora do GoldEarned, como o bau)
-                    case Ev.OrderNew: Log("order_new", Balance.ItemName[e.A], e.B.ToString()); break;
+                    case Ev.OrderNew: Log("order_new", _sim.ItemDefs[e.A].Name, e.B.ToString()); break;
                     case Ev.OrderDone:
-                        Log("order_done", Balance.ItemName[e.A], e.B.ToString());
+                        Log("order_done", _sim.ItemDefs[e.A].Name, e.B.ToString());
                         // B-CORE-05 (LIVEOPS_V1 §5.8): order_complete com o tipo ("rush_prazo" no bonus). ponytail: 2 entregues no mesmo tick logam o
                         // tipo da ultima nas duas linhas; vira campo do Ev se o relatorio precisar
                         if (_sim.Encomendas.UltimaEntregue is Encomenda u)
-                            Log("order_complete", u.Tipo == OrderType.Rush && u.Prazo > 0f ? "rush_prazo" : u.Tipo.ToString().ToLowerInvariant(), Balance.ItemName[e.A]);
+                            Log("order_complete", u.Tipo == OrderType.Rush && u.Prazo > 0f ? "rush_prazo" : u.Tipo.ToString().ToLowerInvariant(), _sim.ItemDefs[e.A].Name);
                         Source("encomenda", e.B);
                         Ajustes.Pulso(40, 200);
                         if (_cards == null) break;   // criativo: sem cartao, o ouro entra direto no numero
@@ -547,7 +561,7 @@ namespace FS
             _compraT = Time.unscaledTime;   // E-PLAT-03: compra agora = acao (veto do intersticial)
             Sfx.Play("compra");
             // A-AUD-22: compra = pulso medio; compra que abre estacao (o Ev.Unlocked do mesmo tick) ou a rua lateral = o mais forte
-            bool opens = u == (int)Upgrade.SideCorridor;
+            bool opens = _sim.UpgradeDefs[u].Efeito == Upgrade.SideCorridor;
             foreach (Station s in _sim.Stations) opens |= s.UnlockBy == u;
             Ajustes.Pulso(opens ? 60 : 30, opens ? 255 : 150);
             string name = Loc.T("aviso.compra", Textos.Nome(u));
@@ -555,12 +569,12 @@ namespace FS
             else
             {
                 Sprite icon; Color tint;
-                if (Upgrades.All[u].InMenu) (icon, tint) = MenuBar.Icon((Upgrade)u);
+                if (_sim.UpgradeDefs[u].InMenu) (icon, tint) = MenuBar.Icon(_sim.UpgradeDefs[u].Efeito);
                 else icon = _view.PadIcon(u, out tint, out _);
                 Notice(name, icon, tint);
             }
-            Log("upgrade_buy", ((Upgrade)u).ToString(), price.ToString());
-            Count(_sink, Upgrades.IsLuxury(u) ? "luxo" : Upgrades.All[u].Meta ? "nivel_estacao" : "upgrade", price);   // B-CORE-03: o ralo Meta a parte
+            Log("upgrade_buy", _sim.UpgradeDefs == Upgrades.All ? ((Upgrade)u).ToString() : _sim.UpgradeDefs[u].Id, price.ToString());   // distrito novo: pelo ID
+            Count(_sink, _sim.UpgradeDefs[u].Luxury ? "luxo" : _sim.UpgradeDefs[u].Meta ? "nivel_estacao" : "upgrade", price);   // B-CORE-03: o ralo Meta a parte
         }
 
         /// <summary>B-CORE-04: contratou ou subiu nivel (cartao do menu ou bot): som (contratacao = o do ajudante; nivel = o da melhoria), aviso
@@ -583,8 +597,8 @@ namespace FS
         /// ficou pronta desde a ultima olhada vira aviso (`avisa`) e o badge do botao Metas acompanha (MenuBar).</summary>
         void MetasAgora(bool avisa)
         {
-            _sim.Metas.Agora(Now(), (long)TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow).TotalSeconds);
-            int n = _sim.Metas.Prontas();
+            _raiz.Metas.Agora(Now(), (long)TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow).TotalSeconds);
+            int n = _raiz.Metas.Prontas();
             if (avisa && n > _prontas) Notice(Loc.T("aviso.meta_pronta"), Art.Star(), Art.Accent);
             _prontas = n;
             LiveOpsAgora(avisa);
@@ -595,7 +609,7 @@ namespace FS
         /// hora quando um limiar pagou (ouro e ID vao juntos para o disco).</summary>
         void LiveOpsAgora(bool avisa)
         {
-            LiveOps lo = _sim.LiveOps;
+            LiveOps lo = _raiz.LiveOps;
             lo.Agora(Now() + _relogioEv);
             bool pagou = false;
             foreach ((string tipo, string id, string arg, long ouro) in lo.Novidades)
@@ -624,7 +638,7 @@ namespace FS
             Sfx.Play("meta");
             Ajustes.Pulso(30, 150);
             Notice(gold > 0 ? Loc.T("aviso.passe_ouro", Textos.Qtd(gold)) : Loc.T("aviso.passe_ok"), _coinIcon.sprite, _coinIcon.color);
-            Log("pass_claim", _sim.LiveOps.Passe.Id, nivel.ToString(CultureInfo.InvariantCulture));
+            Log("pass_claim", _raiz.LiveOps.Passe.Id, nivel.ToString(CultureInfo.InvariantCulture));
             if (gold > 0) Source("passe", gold);
             Save();
         }
@@ -636,11 +650,11 @@ namespace FS
             Sfx.Play("meta");
             Ajustes.Pulso(30, 150);
             Notice(gold > 0 ? Loc.T("aviso.meta", Textos.Qtd(gold)) : Loc.T("aviso.meta_ok"), _coinIcon.sprite, _coinIcon.color);
-            if (tipo == "login") Log("login_claim", id, _sim.Metas.LoginCiclo.ToString(CultureInfo.InvariantCulture));
+            if (tipo == "login") Log("login_claim", id, _raiz.Metas.LoginCiclo.ToString(CultureInfo.InvariantCulture));
             else if (tipo == "achievement") Log("achievement_unlock", id);
             else Log("mission_complete", tipo, id);
             if (gold > 0) Source(tipo == "login" ? "login" : tipo == "achievement" ? "conquista" : tipo == "daily" ? "diaria" : "semanal", gold);
-            _prontas = _sim.Metas.Prontas();
+            _prontas = _raiz.Metas.Prontas();
             Save();
         }
 
@@ -658,7 +672,7 @@ namespace FS
             Sfx.Play("renome");
             Ajustes.Pulso(40, 230);
             Notice(Textos.AvisoRenome(nivel), Art.Star(), Art.Gold);
-            Log("renome_level", nivel.ToString(CultureInfo.InvariantCulture), _sim.Renome.Total.ToString(CultureInfo.InvariantCulture));
+            Log("renome_level", nivel.ToString(CultureInfo.InvariantCulture), _raiz.Renome.Total.ToString(CultureInfo.InvariantCulture));
         }
 
         // ---------- loja (E-PLAT-04/05: Core/Compras.cs, Loja.cs, docs/IAP.md) ----------
@@ -676,7 +690,7 @@ namespace FS
         /// entrega nem confirma (a loja devolve o dinheiro). O ID de transacao nao vai ao diario nem ao analytics (dado de compra).</summary>
         void ReciboChegou(Recibo r)
         {
-            EstadoCompra? e = _sim.Compras.Receber(r);
+            EstadoCompra? e = _raiz.Compras.Receber(r);
             string p = r != null ? r.Produto : "";
             if (e == null) { Log("iap_fail", p, "recibo_invalido"); return; }
             bool nova = e == EstadoCompra.Pendente;
@@ -691,16 +705,16 @@ namespace FS
         int Concluir()
         {
             if (_loja == null) return 0;
-            System.Collections.Generic.List<Recibo> feitos = _sim.Compras.Concluir(Save, _loja.Confirmar);
+            System.Collections.Generic.List<Recibo> feitos = _raiz.Compras.Concluir(Save, _loja.Confirmar);
             foreach (Recibo r in feitos) Log("iap_delivered", r.Produto, "confirmada");
-            if (_sim.Compras.Pendentes) Log("iap_fail", "", "save");
+            if (_raiz.Compras.Pendentes) Log("iap_fail", "", "save");
             return feitos.Count;
         }
 
         /// <summary>A loja recusou, o jogador cancelou ou o pagamento ficou para depois ("adiada": o recibo vem quando pagar).</summary>
         void FalhaCompra(string produto, string motivo)
         {
-            _sim.Compras.Falhou(produto);
+            _raiz.Compras.Falhou(produto);
             Log(motivo == "adiada" ? "iap_pending" : "iap_fail", produto, motivo);
             bool avisa = motivo != "cancelada" && motivo != "adiada";
             if (avisa) Notice(Loc.T("aviso.compra_falhou"));
@@ -708,7 +722,7 @@ namespace FS
 
         void Comprar(string id)
         {
-            if (!_sim.Compras.Iniciar(id)) return;
+            if (!_raiz.Compras.Iniciar(id)) return;
             Log("iap_start", id, _loja.Preco(id));
             _loja.Comprar(id);   // a resposta vem pelo ReciboChegou ou pelo FalhaCompra (a falsa, na hora)
         }
@@ -767,7 +781,7 @@ namespace FS
         {
             float aspect = Screen.width / (float)Mathf.Max(1, Screen.height);
             _cam.orthographicSize = _visW / (2f * aspect);
-            float right = _sim.Bought[(int)Upgrade.SideCorridor] ? Balance.WorldW : Balance.WorkshopW;
+            float right = _sim.Has(Upgrade.SideCorridor) ? Balance.WorldW : _sim.Distrito.Largura;   // C-CORE-01: distrito sem Corredor = o mapa inteiro
             V2 a = Enquadramento.Alvo(_sim.Player.Pos, aspect, _visW, right, _hudFrac, _barFrac, _menu.IsOpen ? _trayFrac : 0f);
             _cam.transform.position = Vector3.Lerp(_cam.transform.position, new Vector3(a.X, a.Y, -10f), 1f - Mathf.Exp(-6f * dt));
         }
@@ -808,7 +822,7 @@ namespace FS
             _gold.fontStyle = FontStyle.Bold;
             _gold.resizeTextForBestFit = true; _gold.resizeTextMinSize = 36; _gold.resizeTextMaxSize = 62;   // "1,23 mi" encolhe em vez de quebrar
             _gold.rectTransform.pivot = new Vector2(0f, 0.5f);   // o pulso cresce a partir da moeda, sem empurrar o numero
-            _renome = new SeloRenome(top, _safe, _sim, SubiuRenome);   // B-CORE-06: selo de nivel preso embaixo da pilula (nao e' saldo)
+            _renome = new SeloRenome(top, _safe, _raiz, SubiuRenome);   // B-CORE-06: selo de nivel preso embaixo da pilula (nao e' saldo)
             // A-UI-16: borda creme e face marrom como a pilula de ouro (era o azul-marinho Art.Bg)
             Vector2 hintMin = new Vector2(0.385f, 0.1f), hintMax = new Vector2(Arg("-record") == null ? 0.875f : 1f, 0.9f);   // v0.6b: a engrenagem fica a direita (criativo: sem ela)
             Image hintPill = Art.Panel(top, "PilulaDica", Art.HudEdge, hintMin, hintMax);
@@ -823,7 +837,7 @@ namespace FS
             _hint.resizeTextForBestFit = true; _hint.resizeTextMinSize = 22; _hint.resizeTextMaxSize = 32;
             _hint.verticalOverflow = VerticalWrapMode.Truncate;
             _notice = MakeNotice(top, hintMin, hintMax);
-            _liveops = new PainelLiveOps(top, _safe, _sim, PagoPasse);   // D-CORE-03/04: chips presos embaixo da pilula da dica (por cima dela)
+            _liveops = new PainelLiveOps(top, _safe, _raiz, PagoPasse);   // D-CORE-03/04: chips presos embaixo da pilula da dica (por cima dela)
             _crown = Art.Icon("coroa", "icone");
             // versao: so no build dev (o playtest usa); release so nas configuracoes (v0.6b, P1-1); criativo nenhuma. v0.6d: pequena, logo
             // abaixo da pilula de ouro, na folga de 24 px que o balao do 1o da fila respeita (no canto de baixo batia no cartao e no VIP)
@@ -838,6 +852,7 @@ namespace FS
             }
 
             BuildSettings(top);
+            BuildMapa(top);   // C-CORE-02
 
             // painel modal (cofre; no dev tambem o -adtest). v0.6d: cartao creme das configuracoes; "+N" grande com a moeda so no cofre
             _panel = Art.Node(_safe, "Painel", Vector2.zero, Vector2.one);
@@ -858,6 +873,7 @@ namespace FS
             _panelGold.fontStyle = FontStyle.Bold; _panelGold.color = Art.Accent; _panelGold.horizontalOverflow = HorizontalWrapMode.Overflow;
             _panelBody = Art.NewText(card.transform, "Corpo", 26, new Vector2(0.06f, 0.33f), new Vector2(0.94f, 0.46f));
             _panelBody.color = Art.ComAlfa(MenuBar.Brown, 0.8f);
+            _panelBody.resizeTextForBestFit = true; _panelBody.resizeTextMinSize = 22; _panelBody.resizeTextMaxSize = 40;   // mapa e qualidade: legivel no aparelho
             Button ok = Art.NewButton(card.transform, Loc.T("ui.ok"), 46, MenuBar.Leather, new Vector2(0.25f, 0.06f), new Vector2(0.75f, 0.26f), () => _panelAction?.Invoke());
             _panelBtn = ok.GetComponentInChildren<Text>();
             _panelBtn.color = MenuBar.Cream;
@@ -952,6 +968,8 @@ namespace FS
             _hintT -= Time.deltaTime;
             if (_hintT > 0f) return;
             _hintT = 0.25f;
+            bool mapa = MapaVisivel;   // C-CORE-02: 4x/s, como a dica
+            if (_mapaBtn != null && _mapaBtn.gameObject.activeSelf != mapa) _mapaBtn.gameObject.SetActive(mapa);
             Hint h = _sim.CurrentHint();
             int arg = _sim.HintArg, u = h == Hint.BuyPad ? _sim.Pads[arg].Current(_sim) : -1;   // a placa pode trocar de upgrade com a mesma dica
             if (h != _hintH || arg != _hintArg || u != _hintU)
@@ -1159,7 +1177,7 @@ namespace FS
             if (sup || supCool)
             {
                 Paint(_supplyBtn, sup, Color.white, sup ? "+" + _sim.Anuncios.Previa(Anuncio.Supply) : Clock(_sim.Anuncios.Recarga[(int)Anuncio.Supply]),
-                    !_sim.Compras.SemVideoEm(Anuncio.Supply));
+                    !_raiz.Compras.SemVideoEm(Anuncio.Supply));
                 Vector3 sp = _cam.WorldToScreenPoint(new Vector3(_sim.FurnaceA.Pos.X, _sim.FurnaceA.Pos.Y + SupplyY, 0f));
                 RectTransformUtility.ScreenPointToLocalPointInRectangle(_labels, sp, null, out Vector2 local);
                 ((RectTransform)_supplyBtn.B.transform).anchoredPosition = local;
@@ -1175,7 +1193,7 @@ namespace FS
                 Encomenda prox = _sim.Anuncios.ProximaEncomenda();   // a que entra, mostrada antes (P5)
                 Item it = prox.Itens[0];
                 _trocaChip.Label.text = Loc.T("enc.troca", prox.Total);
-                _trocaChip.Video.SetActive(!_sim.Compras.SemVideoEm(Anuncio.EncomendaTroca));   // E-PLAT-05: Pacote do Mestre, sem video
+                _trocaChip.Video.SetActive(!_raiz.Compras.SemVideoEm(Anuncio.EncomendaTroca));   // E-PLAT-05: Pacote do Mestre, sem video
                 Sprite s = Art.ItemArt(it, true);
                 _trocaChip.Icon.sprite = s != null ? s : Art.ItemSprite(it);
                 _trocaChip.Icon.color = s != null ? Color.white : Art.ItemColor[(int)it];
@@ -1192,7 +1210,7 @@ namespace FS
             Ofertou(Anuncio.Cofre, cofre, cofre);
             bool show = can || cool;
             if (_speedBtn.B.gameObject.activeSelf != show) _speedBtn.B.gameObject.SetActive(show);
-            if (show) Paint(_speedBtn, can, Art.Accent, can ? (active ? "→3×" : "2×") : Clock(_sim.BoostCooldown), !_sim.Compras.SemVideoEm(Anuncio.Velocidade));   // v0.6d: com boost, o PROXIMO nivel ("3×" lia como o atual)
+            if (show) Paint(_speedBtn, can, Art.Accent, can ? (active ? "→3×" : "2×") : Clock(_sim.BoostCooldown), !_raiz.Compras.SemVideoEm(Anuncio.Velocidade));   // v0.6d: com boost, o PROXIMO nivel ("3×" lia como o atual)
             if (_boostSeal.gameObject.activeSelf != active) _boostSeal.gameObject.SetActive(active);
             if (active)
             {
@@ -1264,7 +1282,7 @@ namespace FS
         }
 
         /// <summary>Botao do placement disponivel: o nucleo deixa (Anuncios.Pode) e o IAds tem anuncio (ou o Pacote do Mestre dispensa o video).</summary>
-        bool Pode(Anuncio a) => _sim.Anuncios.Pode(a) && (_sim.Compras.SemVideoEm(a) || _ads.Ready(_sim.T.Ad(a).Id));
+        bool Pode(Anuncio a) => _sim.Anuncios.Pode(a) && (_raiz.Compras.SemVideoEm(a) || _ads.Ready(_sim.T.Ad(a).Id));
 
         /// <summary>s86 rewarded_offer: uma por aparicao do botao disponivel (cinza da recarga nao e' oferta), contada quando da para tocar.</summary>
         void Ofertou(Anuncio a, bool pode, bool tocavel, string b = "")
@@ -1283,7 +1301,7 @@ namespace FS
             if (!Estados.Anuncia(EstadoAtual) && !(a == Anuncio.Cofre && EstadoAtual == Estado.Modal && Painel)) return;
             string tx = _sim.Anuncios.Oferta(a), p = _sim.T.Ad(a).Id;
             if (tx == null) return;
-            bool semVideo = _sim.Compras.SemVideoEm(a);   // E-PLAT-05: mesma oferta, recarga, teto e ledger; so sem o video
+            bool semVideo = _raiz.Compras.SemVideoEm(a);   // E-PLAT-05: mesma oferta, recarga, teto e ledger; so sem o video
             void Recompensa()
             {
                 long v = _sim.Anuncios.Pagar(tx);
@@ -1337,6 +1355,7 @@ namespace FS
         void TentaIntersticial()
         {
             bool acao = _joy.Active || _menu.IsOpen || Time.unscaledTime - _compraT < 2f;
+            _sim.Anuncios.RemoveAds = _raiz.Anuncios.RemoveAds;   // C-CORE-02: a posse da compra (Compras da raiz) vale em todo distrito
             string veto = _sim.Anuncios.VetoIntersticial(EstadoAtual == Estado.Transition, acao, _sessionT);
             if (veto == null && !_ads.InterstitialReady) veto = "sem_anuncio";
             if (veto != null) { if (veto != "flag") Log("ad_veto", Ads.Intersticial, veto); return; }
@@ -1524,6 +1543,7 @@ namespace FS
             _panelBtn.text = button;
             _panelAction = action;
             _panelRow.gameObject.SetActive(gold > 0);
+            _panelBody.rectTransform.anchorMax = new Vector2(0.94f, gold > 0 ? 0.46f : 0.74f);   // sem o "+N" do cofre, o texto usa o vao abaixo do titulo
             if (gold <= 0) return;
             _panelGold.text = "+" + gold;
             _panelRow.sizeDelta = new Vector2(96f + _panelGold.preferredWidth, 90f);   // moeda + numero centrados juntos
@@ -1544,7 +1564,7 @@ namespace FS
         bool Save()
         {
             if (_headless || !Estados.Grava(EstadoAtual)) return false;
-            return _testSession || _save.Gravar(_sim, Now(), Application.version);   // E-PLAT-04: o -testsession nao persiste nada (nem a loja falsa): vale
+            return _testSession || _save.Gravar(_imp, Now(), Application.version);   // E-PLAT-04: o -testsession nao persiste nada (nem a loja falsa): vale
         }
 
         // Voltar de outro app tambem paga o cofre (antes so a abertura pagava: quem trocava de app perdia o tempo fora).
@@ -1592,27 +1612,27 @@ namespace FS
             string evf = Arg("-evento");
             if (evf != null)
             {
-                EventDef e = Array.Find(_sim.LiveOps.Eventos, x => x.Id == evf || x.Id.EndsWith("_" + evf, StringComparison.Ordinal));
+                EventDef e = Array.Find(_raiz.LiveOps.Eventos, x => x.Id == evf || x.Id.EndsWith("_" + evf, StringComparison.Ordinal));
                 if (e == null) { Falha($"EVENTO desconhecido '{evf}'"); return; }
-                if (_sim.LiveOps.Falta(e) != null) { Falha($"EVENTO {e.Id} ainda nao roda neste build ({_sim.LiveOps.Falta(e)})"); return; }
+                if (_raiz.LiveOps.Falta(e) != null) { Falha($"EVENTO {e.Id} ainda nao roda neste build ({_raiz.LiveOps.Falta(e)})"); return; }
                 _relogioEv = e.Comeca + 3600 - Now();
             }
             else if (Arg("-pass") != null) _relogioEv = LiveOpsDefs.T0 + 3600 - Now();
             if (Arg("-intersticial") != null) _sim.T.Interstitial = true;   // E-PLAT-03 (dev): antes do Ads.Init, que so carrega com a flag
             // B-CORE-07 (fotos): -projetos todos = todos os projetos do catalogo ANTES das compras (o -buy/-buyids alcanca os niveis IV-V e a bigorna longa)
-            if (Arg("-projetos") == "todos" || Arg("-projetos") == "dar") foreach (BlueprintDef d in _sim.Projetos.Defs) _sim.Projetos.Ganha(d.Id, d.Sources[0].Kind);
+            if (Arg("-projetos") == "todos" || Arg("-projetos") == "dar") foreach (BlueprintDef d in _raiz.Projetos.Defs) _raiz.Projetos.Ganha(d.Id, d.Sources[0].Kind);
             if (int.TryParse(Arg("-buy"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
                 for (int pass = 0; pass < 2; pass++)   // o Buy recusa luxo antes da producao completa, e ha produtivos (Mineiro, Joalheiro 2) depois dos luxos
-                    for (int i = 0; i < Math.Min(n, Upgrades.Count); i++)
-                        if (Upgrades.IsLuxury(i) == (pass == 1)) _sim.Buy((Upgrade)i);
+                    for (int i = 0; i < Math.Min(n, _sim.UpgradeDefs.Length); i++)   // C-CORE-01: os do distrito ativo
+                        if (_sim.UpgradeDefs[i].Luxury == (pass == 1)) _sim.Buy((Upgrade)i);
             // -buyids 1,5,0@300 (criativos): compra estes upgrades (indice do enum ou ID estavel, A-CORE-04) fora da ordem do -buy (ex.: 4 bancadas e 1 fornalha
             // sem fole); "id@t" compra quando o relogio do jogo passa de t s, na ordem dada, cobrando o preco (TimedBuys).
             _buyAt = Captura.Compras(_sim, Arg("-buyids"));
             if (Arg("-equipe") != null) Captura.Equipe(_sim);   // B-CORE-04 (fotos): a oficina com os 13 workers do Old Forge; o -gold vem depois
             if (long.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long g)) _sim.Gold = Math.Max(0, g);   // A-CORE-06: aceita > int (foto da HUD)
-            if (long.TryParse(Arg("-renome"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long rn)) _sim.Renome.Ganha(rn - _sim.Renome.Total);   // B-CORE-06: so sobe
-            string ctr = Arg("-contrato");   // D-CORE-04 (foto): ativa o contrato sem requisito nem flag (-contratos so abre a aba)
-            if (ctr != null && !_sim.Contratos.Forca(ctr)) { Falha($"CONTRATO desconhecido ou ja concluido '{ctr}'"); return; }
+            if (long.TryParse(Arg("-renome"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long rn)) _raiz.Renome.Ganha(rn - _raiz.Renome.Total);   // B-CORE-06: so sobe
+            string ctr = Arg("-contrato");   // D-CORE-04 (foto): ativa o contrato da raiz sem requisito nem flag (-contratos so abre a aba)
+            if (ctr != null && !_raiz.Contratos.Forca(ctr)) { Falha($"CONTRATO desconhecido ou ja concluido '{ctr}'"); return; }
             string[] px = (Arg("-px") ?? "").Split(',');
             if (px.Length == 2 && float.TryParse(px[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x)
                 && float.TryParse(px[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y)) _sim.Player.Pos = new V2(x, y);
@@ -1620,8 +1640,12 @@ namespace FS
             // v0.5c: -boost N = N anuncios de velocidade (1 = 2x, 2 = 3x) ANTES do warmup (warmup >= 60 = foto da recarga)
             if (int.TryParse(Arg("-boost"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int nb)) for (int i = 0; i < nb; i++) _sim.StartBoost();
             float warm = ArgF("-warmup", 0f);
-            for (float t = 0f; t < warm && !_headless; t += MaxStep) { _sim.Tick(MaxStep, 0f, 0f); TimedBuys(); }
+            for (float t = 0f; t < warm && !_headless; t += MaxStep) { _sim.Tick(MaxStep, 0f, 0f); _imp.Fundo(MaxStep); TimedBuys(); }
             if (_headless) return;   // compra id@t impossivel no warmup (Falha)
+            // C-CORE-01 (fotos do distrito): -botwarmup S = o bot joga S s antes do 1o quadro (o -warmup deixa o ferreiro parado)
+            float botWarm = ArgF("-botwarmup", 0f);
+            var aquece = new Bot();
+            for (float t = 0f; t < botWarm; t += MaxStep) { aquece.Step(_sim, MaxStep); _imp.Fundo(MaxStep); }
             // fotos da v0.5, depois do warmup: -hold 0,3,3,3,0,0 = carga mista do ferreiro (por Item, ate o teto de cada tipo) e
             // -stock 10,10,10 = estoque do balcao (espada, escudo, ferramenta, joia; ate o teto). A fila do warmup compra ja no 1o tick.
             string[] hold = (Arg("-hold") ?? "").Split(','), stock = (Arg("-stock") ?? "").Split(',');
@@ -1639,6 +1663,81 @@ namespace FS
                 if (warm > 0f && _sim.FirstSaleTime < 0f) { Falha($"VIPNOW: o warmup de {warm:0} s nao teve venda real"); return; }
                 _vipNow = !_sim.SummonVip();
             }
+        }
+
+        /// <summary>C-CORE-01 (dev, fotos): -distrito id = comeca no distrito como o jogador chega a ele (Imperio.Chegada: Old Forge em
+        /// producao completa, o Charter que o libera, a abertura paga); so com -testsession (nunca mexe no save). Antes do DevArgs: o -buy,
+        /// o -gold e o -warmup valem no distrito.</summary>
+        void DistritoArg(Func<Tuning> tuning)
+        {
+            string id = Arg("-distrito");
+            if (id == null) return;
+            DistrictDef d = Distritos.Find(id);
+            if (d == null) { Falha($"DISTRITO desconhecido '{id}' (validos: {string.Join(", ", Array.ConvertAll(Distritos.All, x => x.Id))})"); return; }
+            if (!_testSession) { Falha("DISTRITO: -distrito so com -testsession (nao grava por cima do save)"); return; }
+            _imp = Imperio.Chegada(d, tuning);
+            _sim = _imp.Ativo; _raiz = _imp.Raiz;
+        }
+
+        // ---------- C-CORE-02: mapa minimo dos distritos (C-UI-20 completo depois) ----------
+
+        Button _mapaBtn;
+
+        /// <summary>Botao MAPA (embaixo da engrenagem): aparece quando o Charter do distrito ativo esta pronto ou ja ha outro distrito.</summary>
+        void BuildMapa(RectTransform top)
+        {
+            _mapaBtn = Art.NewButton(_safe, Loc.T("mapa.botao"), 30, MenuBar.Leather, new Vector2(0.8f, 1f - HudBand - 0.045f), new Vector2(0.97f, 1f - HudBand - 0.006f), AbrirMapa);
+            _mapaBtn.GetComponentInChildren<Text>().color = MenuBar.Cream;
+            _mapaBtn.gameObject.SetActive(false);
+        }
+
+        bool MapaVisivel => _imp.Abertos.Count > 1 || _imp.Charters.Count > 0 || _imp.CharterFalta(_sim.Distrito.Id) == null;
+
+        /// <summary>Uma linha por distrito (aqui, aberto, abrir por N, falta o Charter) e UM botao: a proxima acao (Charter, abrir, ir).</summary>
+        void AbrirMapa()
+        {
+            var linhas = new System.Collections.Generic.List<string>();
+            string acao = null; Action fazer = null;   // a 1a acao possivel, na ordem do mapa
+            foreach (DistrictDef d in Distritos.All)
+            {
+                string nome = Loc.T("distrito." + d.Id);
+                if (d.Id == _sim.Distrito.Id)
+                {
+                    string falta = _imp.CharterFalta(d.Id);
+                    linhas.Add(Loc.T(falta == null ? "mapa.charter_pronto" : falta == "concedido" ? "mapa.aqui" : "mapa.falta." + falta, nome));
+                    if (falta == null && fazer == null) { acao = Loc.T("mapa.charter"); fazer = () => { _imp.Charter(d.Id); Log("charter", d.Id); Save(); AbrirMapa(); }; }
+                }
+                else if (_imp.Aberto(d.Id))
+                {
+                    linhas.Add(Loc.T("mapa.aberto", nome));
+                    if (fazer == null) { acao = Loc.T("mapa.ir"); fazer = () => Renascer(d.Id); }
+                }
+                else if (_imp.Liberado(d.Id))
+                {
+                    linhas.Add(Loc.T("mapa.abrir", nome, Textos.Ouro(d.Abertura)));
+                    if (fazer == null && _sim.Gold >= d.Abertura) { acao = Loc.T("mapa.btn_abrir"); fazer = () => { if (_imp.Abrir(d.Id)) { Log("district_open", d.Id); Renascer(d.Id); } }; }
+                }
+                else linhas.Add(Loc.T("mapa.fechado", nome));
+            }
+            ShowPanel(Loc.T("mapa.titulo"), string.Join("\n", linhas), acao ?? Loc.T("ui.ok"), fazer ?? ClosePanel);
+        }
+
+        /// <summary>Foco no distrito `id` e a cena renasce com o mesmo Imperio (grava antes): o mundo, a HUD e o menu nascem do Sim dele.</summary>
+        void Renascer(string id)
+        {
+            _imp.Trocar(id);
+            Log("district_switch", id);
+            Save();
+            _proximo = _imp;
+            _headless = true;   // este Game para (Update, Save) ate a cena nova
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += Renasceu;
+            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+        }
+
+        static void Renasceu(UnityEngine.SceneManagement.Scene s, UnityEngine.SceneManagement.LoadSceneMode m)
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= Renasceu;
+            Boot();
         }
 
         /// <summary>-buyids id@t: compra quando _sim.Time passa de t e cobra o preco (Captura.Vence). G-UA-02: sem ouro ou sem
@@ -1690,7 +1789,7 @@ namespace FS
                 yield return new WaitForSecondsRealtime(delay);
             }
             else yield return new WaitForSecondsRealtime(delay);
-            Debug.Log($"SHOT t={_sim.Time:0.0} upgrades={_sim.UpgradesBought} nobres={_sim.JewelQueue.Count}/{_sim.JewelQueueCap} baus={string.Join(",", _sim.Chests.ConvertAll(c => c.State))} som={Ajustes.Som} vibra={Ajustes.Vibra} idioma={Loc.Codigo} fornalhas={_view.Fornalhas()} metas={_sim.Metas.Prontas()} golpe={_sim.StrikeStation?.Name ?? "-"} renome={_sim.Renome.Nivel}/{_sim.Renome.Total}");   // A-ART-06: estado desenhado; B-CORE-03: anel
+            Debug.Log($"SHOT t={_sim.Time:0.0} upgrades={_sim.UpgradesBought} nobres={_sim.JewelQueue.Count}/{_sim.JewelQueueCap} baus={string.Join(",", _sim.Chests.ConvertAll(c => c.State))} som={Ajustes.Som} vibra={Ajustes.Vibra} idioma={Loc.Codigo} fornalhas={_view.Fornalhas()} metas={_raiz.Metas.Prontas()} golpe={_sim.StrikeStation?.Name ?? "-"} renome={_raiz.Renome.Nivel}/{_raiz.Renome.Total}");   // A-ART-06: estado desenhado; B-CORE-03: anel
             ScreenCapture.CaptureScreenshot(path);
             yield return null;
             yield return null;

@@ -115,7 +115,7 @@ namespace FS.Core
         {
             V2 d = target - s.Player.Pos;
             float len = d.Len;
-            return len <= Reach ? new V2(0f, 0f) : s.Steer(s.Player, Sim.Via(s.Player.Pos, target));   // porta/arco da parede e contorno das estacoes
+            return len <= Reach ? new V2(0f, 0f) : s.Steer(s.Player, s.Rota(s.Player.Pos, target));   // porta/arco da parede e contorno das estacoes
         }
 
         public static V2 Target(Sim s)
@@ -135,19 +135,21 @@ namespace FS.Core
             // produto); produto que o balcao nao aceita fica na mao e o bot vai buscar o que a fila pede
             Item deliver = s.Deliverable(p);
             if (deliver != Item.Ore) return s.CounterFor(deliver).InAt;
-            for (Item i = Item.Ingot; i >= Item.Ore; i--)
+            // C-CORE-01: todo insumo na mao, o mais adiantado (maior handle) primeiro; no Old Forge sao so lingote e minerio, nessa ordem
+            for (int k = p.Held.Length - 1; k >= 0; k--)
             {
-                Station dest = p.Has(i) ? BestInput(s, i, p.Pos) : null;
+                Station dest = !s.IsProduct((Item)k) && p.Held[k] > 0 ? BestInput(s, (Item)k, p.Pos) : null;
                 if (dest != null) return dest.InAt;
             }
 
             Station pick = BestOutput(s, Kind.Crafter, p);   // produto pronto -> boca de SAIDA
             if (pick != null) return pick.OutAt;
-            pick = BestOutput(s, Kind.Furnace, p);
-            if (pick != null && BestInput(s, Item.Ingot, pick.Pos) != null) return pick.OutAt;
-            if (s.CanPick(p, Item.Ore) && BestInput(s, Item.Ore, p.Pos) != null) return s.Deposit.OutAt;
+            pick = BestOutput(s, Kind.Furnace, p);   // insumo pronto que tem para onde ir (lingote; na Row tambem placa e rebite)
+            if (pick != null) return pick.OutAt;
+            Station dep = BestDeposit(s, p);
+            if (dep != null) return dep.OutAt;
             if (chest != null) return chest.Pos;
-            if (p.Count > 0) return s.IsProduct(p.Item) ? s.CounterFor(p.Item).InAt : p.Item == Item.Ore ? s.FurnaceA.InAt : s.AnvilA.InAt;   // tudo cheio e nada a recolher: espera onde vai caber
+            if (p.Count > 0) return s.IsProduct(p.Item) ? s.CounterFor(p.Item).InAt : Esperar(s, p.Item).InAt;   // tudo cheio e nada a recolher: espera onde vai caber
             // fornalhas cheias e nada pronto: espera onde o proximo lingote vai sair
             Station soon = null;
             foreach (Station st in s.Stations)
@@ -176,6 +178,20 @@ namespace FS.Core
             return best;
         }
 
+        /// <summary>C-CORE-01: deposito aberto cujo bruto cabe na mao e tem estacao com espaco; o bruto que o ferreiro tem menos na mao primeiro,
+        /// empate pela ordem das estacoes. Um deposito so (Old Forge): o minerio, como antes.</summary>
+        static Station BestDeposit(Sim s, Carrier p)
+        {
+            Station best = null;
+            foreach (Station st in s.Stations)
+                if (st.Kind == Kind.Deposit && st.Unlocked && s.CanPick(p, st.OutItem) && BestInput(s, st.OutItem, p.Pos) != null
+                    && (best == null || p.Held[(int)st.OutItem] < p.Held[(int)best.OutItem])) best = st;
+            return best;
+        }
+
+        /// <summary>Onde esperar com o insumo `i` na mao e tudo cheio: a 1a estacao que o usa (Old Forge: minerio na Fornalha, lingote na Bigorna).</summary>
+        static Station Esperar(Sim s, Item i) => s.Stations.Find(st => st.InIndex(i) >= 0) ?? s.FurnaceA;
+
         static Station BestOutput(Sim s, Kind kind, Carrier p)
         {
             Station best = null; float bestScore = float.MinValue;
@@ -183,6 +199,7 @@ namespace FS.Core
             {
                 if (!st.Unlocked || st.Kind != kind || st.Out <= 0 || !s.CanPick(p, st.OutItem)) continue;   // teto daquele tipo na mao
                 if (kind == Kind.Crafter && s.Stock[(int)st.OutItem] >= s.CounterCap && st.Out < st.OutCap) continue; // balcao cheio desse produto: deixa na bancada
+                if (!s.IsProduct(st.OutItem) && BestInput(s, st.OutItem, st.Pos) == null) continue;   // insumo sem entrada com espaco: fica (C-CORE-01)
                 float score = st.Out * 5f - V2.Dist(p.Pos, st.OutAt) + (kind == Kind.Crafter && s.Wanted(st.OutItem) ? 12f : 0f);   // a fila pede e o estoque nao tem
                 if (score > bestScore) { bestScore = score; best = st; }
             }

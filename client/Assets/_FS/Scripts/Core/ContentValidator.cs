@@ -50,14 +50,193 @@ namespace FS.Core
             e.AddRange(LiveOpsDefs.Validar(LiveOpsDefs.Eventos, LiveOpsDefs.Passes));   // D-CORE-03/04 (LIVEOPS_V1 §5.7)
             e.AddRange(Blueprints(blueprints ?? ProjetosDefs.All, upgrades, world));
             e.AddRange(ContratosDefs.Validar(contracts ?? ContratosDefs.All, blueprints ?? ProjetosDefs.All, renome ?? RenomeDefs.Niveis, upgrades, world));   // D-CORE-04 (regras em ContratosDefs.cs)
+            e.AddRange(Mapa(FS.Core.Distritos.All));   // C-CORE-01/02/04
             return e;
         }
 
         /// <summary>B-CORE-04: maior nivel de worker do build (filtro das metas worker_upgrade).</summary>
         static int NivelWorkerMax { get { int m = 1; foreach (WorkerDef d in WorkerDefs.All) m = Math.Max(m, d.MaxNivel); return m; } }
 
-        /// <summary>Distritos que o build tem. ponytail: so o Old Forge ate os DistrictDef (C-CORE-01), que trocam esta lista pela tabela.</summary>
-        public static readonly string[] Distritos = { WorkerDefs.OldForge };
+        /// <summary>Distritos que o build tem (C-CORE-01: os IDs da tabela Distritos.All).</summary>
+        public static readonly string[] Distritos = Array.ConvertAll(FS.Core.Distritos.All, d => d.Id);
+
+        // ------------------------------------------------------------------ C-CORE-01/02/04: distritos
+
+        /// <summary>
+        /// C-CORE-01/02/04: o mapa (ID unico em [a-z0-9_], indice = posicao, o 1o aberto de graca e os outros com abertura positiva, cada um
+        /// liberado pelo Charter de exatamente um anterior) e cada distrito (Distrito).
+        /// </summary>
+        public static IEnumerable<string> Mapa(DistrictDef[] ds)
+        {
+            var ids = new HashSet<string>();
+            for (int i = 0; i < ds.Length; i++)
+            {
+                DistrictDef d = ds[i];
+                string at = $"distrito {d.Id}:";
+                if (string.IsNullOrEmpty(d.Id) || !IdOk(d.Id)) yield return $"{at} ID fora de [a-z0-9_]";
+                else if (!ids.Add(d.Id)) yield return $"{at} ID repetido";
+                if (d.Indice != i) yield return $"{at} indice {d.Indice} na posicao {i} do mapa";
+                if (i == 0 ? d.Abertura != 0 : d.Abertura <= 0) yield return $"{at} abertura {d.Abertura} (o 1o abre de graca; os outros custam ouro)";
+                int libera = Array.FindAll(ds, o => o.Charter?.Proximo == d.Id).Length;
+                if (i > 0 && libera != 1) yield return $"{at} liberado pelo Charter de {libera} distritos (tem de ser 1)";
+                foreach (string v in Distrito(d, ds)) yield return v;
+            }
+        }
+
+        /// <summary>
+        /// Um distrito: layout (Layout), caminho do ferreiro ate cada boca e pad (Alcancavel), Charter com condicoes validas (Charter) e os
+        /// workers dele. Tabela de upgrades propria (todo distrito menos o Old Forge, que o Validate ja confere): as regras de conteudo de
+        /// sempre sobre o mundo dele (IDs, itens, requisitos, alcance, luxo, custos, nomes, receitas, marcos, bocas, pisaveis, qualidade).
+        /// </summary>
+        public static IEnumerable<string> Distrito(DistrictDef d, DistrictDef[] mapa = null)
+        {
+            mapa ??= FS.Core.Distritos.All;
+            var e = new List<string>(Layout(d));
+            if (e.Count > 0) return e;   // sem layout coerente o Sim do distrito nem monta
+            var w = Mundo(d);
+            e.AddRange(LayoutMundo(d, w));
+            e.AddRange(Alcancavel(d));
+            e.AddRange(Charter(d, mapa));
+            foreach (WorkerDef k in d.Workers) if (k.Distrito != d.Id) e.Add($"distrito {d.Id}: worker {k.Id} e' do distrito \"{k.Distrito}\"");
+            if (d.Upgrades == Upgrades.All) return e;
+            e.AddRange(IdsDistrito(d.Upgrades));
+            e.AddRange(ItensDistrito(w.ItemDefs, w));
+            e.AddRange(Requisitos(d.Upgrades));
+            e.AddRange(Alcance(d.Upgrades, w));
+            e.AddRange(Luxo(d.Upgrades, w, false));
+            var custos = new long[d.Upgrades.Length]; int prod = 0;
+            for (int i = 0; i < custos.Length; i++) { custos[i] = w.T.Cost(i); if (w.IsProduction(i)) prod++; }
+            e.AddRange(Custos(custos, prod));
+            e.AddRange(Nomes(d.Upgrades));
+            e.AddRange(Receitas(w.T.Price, w));
+            e.AddRange(Marcos(d.Marcos, w));
+            e.AddRange(Bocas(w));
+            e.AddRange(Pisaveis(w));
+            e.AddRange(Qualidade(d.Upgrades, w));
+            e.AddRange(Workers(d.Workers, w, new RenomeDef[0]));   // o wk_ que o Renome libera: o Validate confere contra os do Old Forge
+            return e;
+        }
+
+        /// <summary>O distrito com tudo comprado (todos os corpos possiveis).</summary>
+        public static Sim Mundo(DistrictDef d)
+        {
+            var w = new Sim(distrito: d);
+            for (int u = 0; u < w.Bought.Length; u++) w.Bought[u] = true;
+            w.Recompute();
+            return w;
+        }
+
+        /// <summary>C-CORE-01, so nos dados (antes de montar o Sim): estacoes com ID unico; deposito, fornalha e balcao existem (o Sim, o bot e
+        /// a dica contam com eles); todo deposito da um item da tabela que nao e' produto nem tem receita; quem abre a estacao e as cadeias dos
+        /// pads sao upgrades do distrito; os handles 0 e 1 sao minerio e lingote (papeis 0 e 1 dos ajudantes) e o 2 e' produto feito por uma
+        /// estacao do kit (1o cliente cedo, VIP); largura dentro do mapa.</summary>
+        public static IEnumerable<string> Layout(DistrictDef d)
+        {
+            string at = $"distrito {d.Id}:";
+            var ids = new HashSet<string>();
+            foreach (StationDef s in d.Estacoes)
+            {
+                if (string.IsNullOrEmpty(s.Id) || !IdOk(s.Id)) yield return $"{at} estacao com ID \"{s.Id}\" fora de [a-z0-9_]";
+                else if (!ids.Add(s.Id)) yield return $"{at} estacao \"{s.Id}\" repetida";
+                if (s.Abre != null && Upgrades.IndexOf(s.Abre, d.Upgrades) < 0) yield return $"{at} estacao {s.Id} aberta por \"{s.Abre}\", que nao e' upgrade do distrito";
+                if (s.Kind == Kind.Deposit && ((uint)s.Bruto >= (uint)d.Itens.Length || d.Itens[(int)s.Bruto].Product || Recipes.Making(s.Bruto, d.Receitas) != null))
+                    yield return $"{at} deposito {s.Id} da o item {(int)s.Bruto}, que nao e' bruto (produto, com receita ou fora da tabela)";
+            }
+            foreach (string req in new[] { "deposito", "fornalha", "balcao" })
+                if (!ids.Contains(req)) yield return $"{at} sem a estacao \"{req}\"";
+            foreach (PadDef p in d.Pads)
+                foreach (string c in p.Cadeia)
+                    if (Upgrades.IndexOf(c, d.Upgrades) < 0) yield return $"{at} pad ({p.Pos}) vende \"{c}\", que nao e' upgrade do distrito";
+            if (d.Itens.Length < 3 || d.Itens[0].Id != "minerio" || d.Itens[1].Id != "lingote" || !d.Itens[2].Product)
+                yield return $"{at} itens 0, 1 e 2 tem de ser minerio, lingote e um produto (papeis dos ajudantes, 1o cliente)";
+            else if (!Array.Exists(d.Estacoes, s => s.Abre == null && s.Familia != null && Recipes.Making((Item)2, d.Receitas)?.Station == s.Familia))
+                yield return $"{at} o produto {d.Itens[2].Id} (1o cliente) nao sai de uma estacao do kit";
+            if (d.Largura <= 0f || d.Largura > Balance.WorldW) yield return $"{at} largura {d.Largura.ToString(System.Globalization.CultureInfo.InvariantCulture)} fora do mapa";
+        }
+
+        /// <summary>No mundo com tudo comprado: a esteira liga quem faz a quem usa; inicio do ferreiro e ponto de contratacao no mapa e fora dos corpos.</summary>
+        public static IEnumerable<string> LayoutMundo(DistrictDef d, Sim w)
+        {
+            string at = $"distrito {d.Id}:";
+            Station de = w.Est(d.EsteiraDe), para = w.Est(d.EsteiraPara);
+            if (d.EsteiraDe != null || d.EsteiraPara != null)
+                if (de == null || para == null || !de.Produces || para.InIndex(de.OutItem) < 0) yield return $"{at} esteira {d.EsteiraDe} -> {d.EsteiraPara} nao liga quem faz a quem usa";
+            foreach (var (nome, p) in new[] { ("inicio do ferreiro", d.Inicio), ("ponto de contratacao", d.Contratacao) })
+                if (!InWalls(p) || Clearance(w, p) < Balance.CharRadius) yield return $"{at} {nome} ({p}) fora do mapa ou dentro de um corpo";
+        }
+
+        /// <summary>
+        /// C-CORE-04 (minimo): o ferreiro chega a toda boca e a todo pad, andando como o bot e os ajudantes (Sim.MoveTowards: Steer, Collide e a
+        /// rota da parede) a partir do inicio, em ate 60 s, no mundo do kit e no mundo com tudo comprado (o mais cheio de corpos). Pad no lugar
+        /// de uma estacao aberta nao conta (some quando ela abre). ponytail: a rota e' a do Steer (quinas), nao um grafo de waypoints; um
+        /// labirinto que o Steer nao resolve aparece aqui como inalcancavel.
+        /// </summary>
+        public static IEnumerable<string> Alcancavel(DistrictDef d)
+        {
+            foreach (bool tudo in new[] { false, true })
+            {
+                Sim w = tudo ? Mundo(d) : new Sim(distrito: d);
+                var alvos = new List<(string nome, V2 pos, float reach)>();
+                foreach (Station s in w.Stations)
+                {
+                    if (!s.Unlocked) continue;
+                    alvos.Add(("entrada de " + s.Id, s.InAt, Balance.WorkerReach));
+                    if (s.Produces) alvos.Add(("saida de " + s.Id, s.OutAt, Balance.WorkerReach));
+                }
+                foreach (Pad p in PadsInWorld(w))
+                    if (!w.Stations.Exists(s => s.Unlocked && V2.Dist(s.Pos, p.Pos) < 0.01f)) alvos.Add(("pad " + w.UpgradeDefs[(int)p.Chain[0]].Id, p.Pos, Balance.PadRadius - 0.1f));
+                foreach (var (nome, pos, reach) in alvos)
+                {
+                    var c = new Carrier(w.ItemDefs.Length) { Pos = d.Inicio, Speed = Balance.PlayerSpeed };
+                    bool ok = false;
+                    for (int k = 0; k < 60 * 30 && !ok; k++) ok = w.MoveTowards(c, pos, 1f / 30f, reach);
+                    if (!ok) yield return $"distrito {d.Id}: {nome} ({pos}) inalcancavel do inicio ({(tudo ? "tudo comprado" : "kit")}; parou em {c.Pos})";
+                }
+            }
+        }
+
+        /// <summary>C-CORE-02/03 (V5, V15): Charter com Renome positivo ate o ultimo limiar e igual ao do nivel que libera "charter_&lt;id&gt;"
+        /// (quando algum libera), Masterworks >= 0, e o proximo distrito existe no mapa (ou null = o ultimo).</summary>
+        public static IEnumerable<string> Charter(DistrictDef d, DistrictDef[] mapa)
+        {
+            string at = $"distrito {d.Id}: Charter";
+            CharterDef c = d.Charter;
+            if (c == null) { yield return $"{at} ausente (V5: todo distrito tem o seu, 1x)"; yield break; }
+            long topo = RenomeDefs.Niveis[RenomeDefs.Niveis.Length - 1].Limiar;
+            if (c.Renome <= 0 || c.Renome > topo) yield return $"{at} pede Renome {c.Renome} (1 ate {topo})";
+            int n = RenomeDefs.NivelQueLibera("charter_" + d.Id);
+            if (n >= 0 && RenomeDefs.Niveis[n].Limiar != c.Renome) yield return $"{at} pede Renome {c.Renome}, mas o nivel {n} (o que libera charter_{d.Id}) comeca em {RenomeDefs.Niveis[n].Limiar}";
+            if (c.Masterworks < 0) yield return $"{at} pede {c.Masterworks} Masterworks";
+            if (c.Proximo != null && !Array.Exists(mapa, o => o.Id == c.Proximo)) yield return $"{at} libera \"{c.Proximo}\", que nao esta no mapa";
+            if (c.Proximo == d.Id) yield return $"{at} libera o proprio distrito";
+            if (d.FundoFator <= 0f || d.FundoFator >= 1f) yield return $"distrito {d.Id}: renda de fundo {d.FundoFator.ToString(System.Globalization.CultureInfo.InvariantCulture)} da taxa (0-1: sempre menor que a ativa)";
+        }
+
+        /// <summary>IDs da tabela de um distrito: Up = posicao (indice do Sim e do custo), ID estavel [a-z0-9_] unico.</summary>
+        public static IEnumerable<string> IdsDistrito(UpgradeDef[] all)
+        {
+            var ids = new HashSet<string>();
+            for (int i = 0; i < all.Length; i++)
+            {
+                if ((int)all[i].Up != i) yield return $"id: tabela[{i}] ({all[i].Id}) com handle {(int)all[i].Up}";
+                if (string.IsNullOrEmpty(all[i].Id) || !IdOk(all[i].Id)) yield return $"id: \"{all[i].Id}\" fora de [a-z0-9_]";
+                else if (!ids.Add(all[i].Id)) yield return $"id: \"{all[i].Id}\" repetido";
+            }
+        }
+
+        /// <summary>Itens de um distrito: ID [a-z0-9_] unico, nome e tier 1-5 (o lugar dos 6 primeiros e' regra so do Old Forge, Itens).</summary>
+        public static IEnumerable<string> ItensDistrito(ItemDef[] all, Sim w)
+        {
+            var ids = new HashSet<string>();
+            foreach (ItemDef d in all)
+            {
+                if (string.IsNullOrEmpty(d.Id) || !IdOk(d.Id)) yield return $"item: ID \"{d.Id}\" vazio ou fora de [a-z0-9_]";
+                else if (!ids.Add(d.Id)) yield return $"item: \"{d.Id}\" repetido";
+                if (string.IsNullOrWhiteSpace(d.Name)) yield return $"item: {d.Id} sem nome";
+                if (d.Tier < 1 || d.Tier > 5) yield return $"item: {d.Id} com tier {d.Tier} (1-5)";
+            }
+            if (w.T.Price.Length < all.Length || w.T.ClientInterval.Length < all.Length) yield return $"item: {all.Length} itens, {w.T.Price.Length} precos e {w.T.ClientInterval.Length} intervalos de cliente";
+        }
 
         /// <summary>
         /// B-CORE-04 (ECONOMIA_WAVE_B §8.3, §9 #8): ID unico com prefixo wk_ em [a-z0-9_], nome e skin; distrito do build; 1-2 tracos (DM §23: no
@@ -84,7 +263,7 @@ namespace FS.Core
                     else if (i > 0 && d.Niveis[i] <= d.Niveis[i - 1]) yield return $"{at} nivel {i + 2} ({d.Niveis[i]}) nao sobe do {i + 1} ({d.Niveis[i - 1]})";
                 if (d.Papel == WorkerRole.Porter)
                 {
-                    if (d.Contrata == null || Upgrades.IndexOf(d.Contrata) < 0) yield return $"{at} ajudante sem upgrade que contrata (\"{d.Contrata}\")";
+                    if (d.Contrata == null || Upgrades.IndexOf(d.Contrata, w.UpgradeDefs) < 0) yield return $"{at} ajudante sem upgrade que contrata (\"{d.Contrata}\")";
                     else if (!contrata.Add(d.Contrata)) yield return $"{at} upgrade \"{d.Contrata}\" ja contrata outro worker";
                     if (d.Rota < 0 || d.Rota > 3) yield return $"{at} rota {d.Rota} (0 minerio, 1 lingote, 2 produto, 3 joalheiro)";
                     if (d.Contratacao != 0 || d.Requer != null) yield return $"{at} ajudante com preco ou requisito proprio (o upgrade e' que contrata)";
@@ -92,7 +271,7 @@ namespace FS.Core
                 }
                 if (d.Contrata != null || d.Rota != -1) yield return $"{at} so o ajudante (Porter) e' contratado por upgrade e tem rota";
                 if (d.Contratacao <= 0 || d.Contratacao % 5 != 0) yield return $"{at} contratacao {d.Contratacao} (positiva e multipla de 5)";
-                if (d.Requer != null && Upgrades.IndexOf(d.Requer) < 0) yield return $"{at} requisito \"{d.Requer}\", que nao e' upgrade do build";
+                if (d.Requer != null && Upgrades.IndexOf(d.Requer, w.UpgradeDefs) < 0) yield return $"{at} requisito \"{d.Requer}\", que nao e' upgrade do build";
                 if (d.Papel > WorkerRole.Foreman) yield return $"{at} papel {d.Papel} ainda sem regra no nucleo (Wave C)";
                 if (d.Papel == WorkerRole.Smith)
                 {
@@ -404,7 +583,7 @@ namespace FS.Core
         }
 
         /// <summary>Luxo (FASE3): marca bate com Upgrades.ProductionCount, so em pad, sempre com requisito e nunca abre estacao.</summary>
-        public static IEnumerable<string> Luxo(UpgradeDef[] all, Sim w)
+        public static IEnumerable<string> Luxo(UpgradeDef[] all, Sim w, bool contagem = true)
         {
             int prod = 0;
             foreach (UpgradeDef d in all)
@@ -413,19 +592,19 @@ namespace FS.Core
                 if (d.InMenu) yield return $"luxo: {d.Up} no menu (luxo e' de pad, depois de toda a producao)";
                 if (d.Requires < 0) yield return $"luxo: {d.Up} sem requisito (o Sim.Buy le Bought[Requires] do luxo)";
             }
-            if (prod != Upgrades.ProductionCount) yield return $"luxo: {prod} produtivos marcados, Upgrades.ProductionCount = {Upgrades.ProductionCount}";
+            if (contagem && prod != Upgrades.ProductionCount) yield return $"luxo: {prod} produtivos marcados, Upgrades.ProductionCount = {Upgrades.ProductionCount}";
             foreach (Station s in w.Stations)
                 if (s.UnlockBy >= 0 && s.UnlockBy < all.Length && all[s.UnlockBy].Luxury) yield return $"luxo: {all[s.UnlockBy].Up} abre a estacao {s.Name} (luxo nao produz)";
         }
 
         /// <summary>Custo positivo, multiplo de 5 (preco legivel) e subindo tier a tier na parte da formula.</summary>
-        public static IEnumerable<string> Custos(long[] cost)
+        public static IEnumerable<string> Custos(long[] cost, int formula = FormulaTiers)
         {
             for (int i = 0; i < cost.Length; i++)
             {
                 if (cost[i] <= 0) yield return $"custo: {(Upgrade)i} = {cost[i]}";
                 else if (cost[i] % 5 != 0) yield return $"custo: {(Upgrade)i} = {cost[i]}, fora do multiplo de 5";
-                if (i > 0 && i < FormulaTiers && cost[i] <= cost[i - 1]) yield return $"custo: {(Upgrade)i} = {cost[i]} nao sobe do tier anterior ({cost[i - 1]})";
+                if (i > 0 && i < formula && cost[i] <= cost[i - 1]) yield return $"custo: {(Upgrade)i} = {cost[i]} nao sobe do tier anterior ({cost[i - 1]})";
             }
         }
 
@@ -447,7 +626,7 @@ namespace FS.Core
         public static IEnumerable<string> Receitas(int[] price, Sim w)
         {
             string Name(Item i) => (uint)i < (uint)w.ItemDefs.Length ? w.ItemDefs[(int)i].Id : ((int)i).ToString();
-            bool Made(Item i) => w.Stations.Exists(s => s.Kind == Kind.Deposit ? i == Item.Ore : s.Produces && s.OutItem == i);
+            bool Made(Item i) => w.Stations.Exists(s => s.Kind == Kind.Deposit ? s.OutItem == i : s.Produces && s.OutItem == i);   // C-CORE-01: o bruto de cada deposito
             bool Used(Item i) => w.Stations.Exists(s => s.InIndex(i) >= 0);
             bool Sold(Item i) => w.Stations.Exists(s => w.Sells(s, i));
             for (int k = 0; k < w.ItemDefs.Length; k++)
@@ -462,7 +641,7 @@ namespace FS.Core
                 else if (s.Produces && s.Recipe.Kind != s.Kind) yield return $"receita: {s.Name} ({s.Kind}) com receita de {s.Recipe.Kind}";
             // fecho a partir do minerio: o que as estacoes fazem quando todos os insumos ja sao alcancaveis (pega o ciclo)
             var reach = new HashSet<Item>();
-            if (Made(Item.Ore)) reach.Add(Item.Ore);
+            foreach (Station s in w.Stations) if (s.Kind == Kind.Deposit) reach.Add(s.OutItem);
             for (bool grew = true; grew;)
             {
                 grew = false;
@@ -523,18 +702,18 @@ namespace FS.Core
             foreach (Pad p in PadsInWorld(w))
                 if (!w.Stations.Exists(st => V2.Dist(st.Pos, p.Pos) < 0.01f)) spots.Add(("pad " + p.Chain[0], p.Pos));
             foreach (Chest c in w.Chests) spots.Add(("bau " + c.Index, c.Pos));
-            spots.Add(("ponto de contratacao", Sim.HireSpot));
+            spots.Add(("ponto de contratacao", w.Contratacao));
             foreach (var (name, p) in spots)
             {
                 if (!InWalls(p)) yield return $"pisavel: {name} ({p}) fora das paredes";
                 if (Clearance(w, p) < Balance.CharRadius) yield return $"pisavel: {name} ({p}) dentro de um corpo";
             }
             for (int i = 0; i <= Balance.QueueCapMax; i++) if (Within(w, w.ClientSlot(i))) yield return $"pisavel: vaga {i} do balcao dentro de um corpo";
-            for (int i = 0; i <= Balance.JewelQueueCapUp; i++) if (Within(w, w.JewelSlot(i))) yield return $"pisavel: vaga {i} da loja de joias dentro de um corpo";
+            for (int i = 0; i <= Balance.JewelQueueCapUp && w.JewelShop != null; i++) if (Within(w, w.JewelSlot(i))) yield return $"pisavel: vaga {i} da loja de joias dentro de um corpo";
         }
 
         /// <summary>Pads que ainda podem aparecer no mundo: cadeia com pelo menos um upgrade fora do menu.</summary>
-        static List<Pad> PadsInWorld(Sim w) => w.Pads.FindAll(p => Array.Exists(p.Chain, u => !Upgrades.All[(int)u].InMenu));
+        static List<Pad> PadsInWorld(Sim w) => w.Pads.FindAll(p => Array.Exists(p.Chain, u => !w.UpgradeDefs[(int)u].InMenu));
 
         static bool InWalls(V2 p) => p.X >= 0.3f && p.X <= Balance.WorldW - 0.3f && p.Y >= 0.3f && p.Y <= Balance.WorldH - 0.3f;   // limites do Sim.Clamp
 

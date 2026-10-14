@@ -238,6 +238,9 @@ namespace FS.Core
         public int JewelPriceUp = 80;                           // Vitrine de joias: nobres pagam mais, sem mudar as outras linhas
         public int CostBase = 50; public float CostGrowth = 1.30f; // custo(tier) = 50 * 1,30^tier, arredondado a 5 (varredura em docs/BALANCE.md)
         public int SideCorridorCost = 690, JewelryCost = 1515;  // 2a area: fora da formula (coordenador 2026-10-07, BALANCE.md §9)
+        /// <summary>C-CORE-01: custo por indice do upgrade no distrito (DistrictDef.Ajuste; CONTEUDO_V1 §5). null = a formula e as excecoes do
+        /// Old Forge abaixo (o padrao: nada muda).</summary>
+        public long[] CustoTabela;
         public int JewelerCost = 2200, JewelSpeedCost = 5500, JewelVitrineCost = 9000;   // fase 2: decisao aprovada (BALANCE.md §10.7)
         public int WorkshopFacadeCost = 14000, WorkshopFloorCost = 18000, JewelryDecorCost = 22000;   // luxo: Leva 11, Fachada +8,7 min depois da producao (BALANCE.md §15)
         public int MinerCost = 3000, Jeweler2Cost = 2400;       // fase 4: regra de retorno 8-12 min, varredura em BALANCE.md §14
@@ -347,6 +350,7 @@ namespace FS.Core
         /// Upgrades.CostMax (em int estourava no tier 67 e o Math.Max devolvia 5).</summary>
         public long Cost(int tier)
         {
+            if (CustoTabela != null) return tier >= 0 && tier < CustoTabela.Length ? CustoTabela[tier] : Upgrades.CostMax;   // C-CORE-01: distrito com tabela
             // ponytail: a 2a area sai da formula porque fica no FIM do enum (save antigo de 15/17 flags) com preco de meio de
             // jogo. Mais uma area assim = trocar por uma tabela de precos por upgrade.
             switch ((Upgrade)tier)
@@ -399,11 +403,15 @@ namespace FS.Core
         /// <summary>B-CORE-07: ID do Blueprint que a compra exige (posse, nunca gasto; null = nenhum). Sem ele: fora do menu, pad escondido e o
         /// Sim.Buy recusa (Sim.TemProjeto).</summary>
         public readonly string Blueprint;
+        /// <summary>C-CORE-01: efeito generico (Sim.Has) = o do upgrade do Old Forge com este handle: Fole, Martelo veloz, Mochila, Esteira,
+        /// Balcao N vagas... No Old Forge e' o proprio `Up`; num distrito, o upgrade dele que faz o mesmo (fole_couro = FurnaceSpeed1).
+        /// Sem efeito generico (abre estacao, contrata, luxo) = (Upgrade)(-1).</summary>
+        public readonly Upgrade Efeito;
         public UpgradeDef(Upgrade up, string id, int requires, string name, string desc, bool luxury = false, bool menu = false, string station = null,
-            bool meta = false, string blueprint = null)
+            bool meta = false, string blueprint = null, Upgrade? efeito = null)
         {
             Up = up; Id = id; Requires = requires; Name = name; Desc = desc; Luxury = luxury; InMenu = menu; Station = station;
-            Meta = meta || station != null; Blueprint = blueprint;
+            Meta = meta || station != null; Blueprint = blueprint; Efeito = efeito ?? up;
         }
     }
 
@@ -517,12 +525,16 @@ namespace FS.Core
     {
         public readonly string Station, Family; public readonly Kind Kind;
         public readonly Item Output;
+        /// <summary>C-CORE-01 (CONTEUDO_V1 §3.1, outputCount): pecas por ciclo (rebitadeira: 1 lingote -> 4 rebites). 1 em toda receita do Old Forge.</summary>
+        public readonly int Qtd = 1;
         public readonly (Item Item, int Qty)[] Inputs;
         public readonly Func<Tuning, float> TimeMul;
         public RecipeDef(string station, Kind kind, Item output, Func<Tuning, float> timeMul, params (Item Item, int Qty)[] inputs)
             : this(station, station, kind, output, timeMul, inputs) { }
         public RecipeDef(string station, string family, Kind kind, Item output, Func<Tuning, float> timeMul, params (Item Item, int Qty)[] inputs)
         { Station = station; Family = family; Kind = kind; Output = output; TimeMul = timeMul; Inputs = inputs; }
+        public RecipeDef(string station, string family, Kind kind, Item output, int qtd, Func<Tuning, float> timeMul, params (Item Item, int Qty)[] inputs)
+            : this(station, family, kind, output, timeMul, inputs) { Qtd = qtd; }
     }
 
     public static class Items

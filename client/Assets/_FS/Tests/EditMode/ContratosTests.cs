@@ -309,6 +309,35 @@ namespace FS.Tests
             Assert.AreEqual(-1L, b.Metas.Paga("ctr:ctr_ronda_vila", 300, 0, 15));
         }
 
+        /// <summary>C-CORE-02: os contratos sao do Imperio (os da raiz, o Old Forge). Num outro distrito o Sim.Contratos e' o da raiz: a venda de
+        /// la conta pelo ID do item, o prazo anda no tick dele, a conclusao paga na raiz (metas, ledger) e o aviso chega ao distrito ativo; o
+        /// payload do distrito nunca leva linha ctr*.</summary>
+        [Test]
+        public void Imperio_OutroDistrito_UsaOsDaRaiz_VendaContaPeloId_SaveSoNaRaiz()
+        {
+            Imperio imp = Imperio.Chegada(Distritos.ArmorersRow);
+            Sim raiz = imp.Raiz, row = imp.Ativo;
+            Assert.AreNotSame(raiz, row);
+            Assert.AreSame(raiz.Contratos, row.Contratos, "o Heroi (a raiz) da os contratos");
+            raiz.Contratos.Defs = new[] { Def("ctr_elmos", OrderDefs.OldForge, Quality.Normal, 10f, 1, 15, null, ("elmo", 2)) };
+            Assert.IsTrue(raiz.Contratos.Forca("ctr_elmos"));
+            Item elmo = (Item)Items.IndexOf("elmo", row.ItemDefs);
+            float p0 = raiz.Contratos.Ativo.Prazo;
+            EncTeste.Vende(row, elmo);
+            Assert.AreEqual(1, raiz.Contratos.Ativo.Feito, "o elmo vendido na Row conta (pelo ID)");
+            Assert.Less(raiz.Contratos.Ativo.Prazo, p0, "o prazo anda no tick do distrito ativo");
+            StringAssert.DoesNotContain("\nctr", row.Save(1), "o payload do distrito nao leva contrato");
+            StringAssert.Contains("\nctr.v=ctr_elmos,0,1,", raiz.Save(1));
+            long rn = raiz.Renome.Total;
+            EncTeste.Vende(row, elmo);
+            Assert.AreEqual(1, Count(row, Ev.ContractDone), "o aviso chega ao distrito ativo (a View le os eventos dele)");
+            CollectionAssert.AreEqual(new[] { "ctr_elmos" }, raiz.Contratos.Concluidos);
+            Assert.AreEqual(rn + 20L, raiz.Renome.Total, "Renome da raiz: +15 e +5 do prazo");
+            Assert.IsTrue(raiz.Metas.Ledger.Contains("ctr:ctr_elmos"));
+            raiz.Metas.Cont.TryGetValue("contract_complete", out long n);
+            Assert.AreEqual(1L, n, "as metas da raiz contam");
+        }
+
         // ------------------------------------------------------------------ eventos, bot e validator
 
         [Test]

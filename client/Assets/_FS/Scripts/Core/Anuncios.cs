@@ -166,7 +166,7 @@ namespace FS.Core
         public string VetoIntersticial(bool transicao, bool acao, float agora) =>
             !_sim.T.Interstitial ? "flag"
             : RemoveAds ? "remove_ads"
-            : !_sim.Bought[(int)Upgrade.Tools] ? "tutorial"
+            : !_sim.QualityRevealed ? "tutorial"   // = antes das Ferramentas (C-CORE-01: num distrito sem elas, nunca)
             : !transicao || acao ? "acao"
             : agora - _ultimoIntersticial < _sim.T.InterstitialCooldown ? "cooldown"
             : IntersticiaisSessao >= _sim.T.InterstitialMaxSessao ? "cap"

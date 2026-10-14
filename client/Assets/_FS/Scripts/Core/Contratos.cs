@@ -20,7 +20,8 @@ namespace FS.Core
     }
 
     /// <summary>
-    /// D-CORE-04 Royal Contracts (GDD §11, CONTEUDO_V1 §8, V25): objetivo de medio prazo em paralelo ao loop. Oferta sem sorteio: o 1o da lista
+    /// D-CORE-04 Royal Contracts (GDD §11, CONTEUDO_V1 §8, V25): objetivo de medio prazo em paralelo ao loop, do Imperio: moram no Sim da raiz
+    /// (o Old Forge, como Renome e metas nesta leva) e os outros distritos chegam a eles pelo Sim.Heroi (Sim.Contratos). Oferta sem sorteio: o 1o da lista
     /// (Defs) nao concluido e nao ativo e' o Proximo; e' Oferta quando abre (flag Tuning.Contratos, Ferramentas, distrito no build, Renome que a
     /// tabela do Renome pede e itens que este build vende). 1 ativo por vez (Vagas). Progresso por etapa pelas vendas reais (Sim.Sell -&gt;
     /// OnVenda, o caminho das encomendas: so o item da etapa atual, no nivel minimo ou melhor; cada peca conta 1). Concluir paga 1x pelo ID
@@ -90,26 +91,29 @@ namespace FS.Core
             return true;
         }
 
-        /// <summary>Do Sim.Tick, depois das encomendas: o prazo-bonus anda no tempo de jogo (o offline nao conta); completo = paga.</summary>
-        internal void Tick(float dt)
+        /// <summary>Do Sim.Tick do distrito `ativo` (so ele anda), depois das encomendas: o prazo-bonus anda no tempo de jogo (o offline nao
+        /// conta); completo = paga.</summary>
+        internal void Tick(float dt, Sim ativo)
         {
             if (Ativo == null) return;
             if (Ativo.Prazo > 0f) Ativo.Prazo = Math.Max(0f, Ativo.Prazo - dt);
-            if (Ativo.Pronto) Concluir();
+            if (Ativo.Pronto) Concluir(ativo);
         }
 
-        /// <summary>Do Sim.Sell: a peca vendida conta para a etapa atual se e' o item dela no nivel minimo ou melhor.</summary>
-        internal void OnVenda(Item item, Quality q)
+        /// <summary>Do Sim.Sell de qualquer distrito: a peca `item` (ID do ItemDef: o handle muda de distrito para distrito) conta para a etapa
+        /// atual se e' o item dela no nivel minimo ou melhor.</summary>
+        internal void OnVenda(string item, Quality q)
         {
             if (Ativo == null || Ativo.Pronto) return;
             ContractStage e = Ativo.Atual;
-            if (_sim.ItemDefs[(int)item].Id != e.Item || q < e.MinQ) return;
+            if (item != e.Item || q < e.MinQ) return;
             if (++Ativo.Feito >= e.N) { Ativo.Etapa++; Ativo.Feito = 0; }
         }
 
         /// <summary>Paga o ativo completo 1x: ouro (no prazo x1,5) e Renome (+5 no prazo) pelo ledger das metas (ID = Tx), o Blueprint pelo
-        /// Projetos (so se o BlueprintDef lista o contrato). Devolve o ouro; -1 = o ID ja estava no ledger (nada paga de novo).</summary>
-        long Concluir()
+        /// Projetos (so se o BlueprintDef lista o contrato). Ev.ContractDone na raiz (metas, eventos) e no distrito `ativo` (a View le os eventos
+        /// dele: aviso e diario). Devolve o ouro; -1 = o ID ja estava no ledger (nada paga de novo).</summary>
+        long Concluir(Sim ativo)
         {
             Contrato c = Ativo; ContractDef d = c.Def;
             Ativo = null;
@@ -119,7 +123,9 @@ namespace FS.Core
             if (g < 0) return -1;
             OuroGanho += g;
             if (d.Blueprint != null) _sim.Projetos.Ganha(d.Blueprint, BlueprintSourceKind.Contract, c.Tx);
-            _sim.Emit(Ev.ContractDone, Array.IndexOf(Defs, d), (int)Math.Min(int.MaxValue, g), _sim.Player.Pos);
+            int i = Array.IndexOf(Defs, d), b = (int)Math.Min(int.MaxValue, g);
+            _sim.Emit(Ev.ContractDone, i, b, _sim.Player.Pos);
+            if (ativo != _sim) ativo.Events.Add(new SimEvent(Ev.ContractDone, i, b, ativo.Player.Pos));   // o ouro vai a carteira pelo Imperio.Fundo
             return g;
         }
 

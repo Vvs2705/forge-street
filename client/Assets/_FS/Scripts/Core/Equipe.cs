@@ -109,7 +109,8 @@ namespace FS.Core
     public sealed class Equipe
     {
         readonly Sim _sim;
-        public readonly WorkerDef[] Defs = WorkerDefs.All;
+        /// <summary>Os workers do distrito do Sim (C-CORE-01: DistrictDef.Workers; Old Forge = WorkerDefs.All).</summary>
+        public readonly WorkerDef[] Defs;
         readonly int[] _nivel, _contrata;   // nivel (0 = nao contratado; Porter: 0 = nivel 1); upgrade que contrata o Porter (-1 = Equipe)
         /// <summary>Metrica do bot (fora do save, como o OrderGold): ouro gasto em contratacao e nivel.</summary>
         public long Gasto;
@@ -117,8 +118,9 @@ namespace FS.Core
         public Equipe(Sim sim)
         {
             _sim = sim;
+            Defs = sim.Distrito.Workers;
             _nivel = new int[Defs.Length];
-            _contrata = Array.ConvertAll(Defs, d => d.Contrata == null ? -1 : Upgrades.IndexOf(d.Contrata));
+            _contrata = Array.ConvertAll(Defs, d => d.Contrata == null ? -1 : Upgrades.IndexOf(d.Contrata, sim.UpgradeDefs));
         }
 
         public bool Aberta => _sim.T.Workers && _sim.QualityRevealed;
@@ -130,7 +132,7 @@ namespace FS.Core
         public bool Liberado(int k)
         {
             WorkerDef d = Defs[k];
-            int u = d.Requer == null ? -1 : Upgrades.IndexOf(d.Requer);
+            int u = d.Requer == null ? -1 : Upgrades.IndexOf(d.Requer, _sim.UpgradeDefs);
             if (d.Requer != null && (u < 0 || !_sim.Bought[u])) return false;
             return RenomeDefs.NivelQueLibera(d.Id) < 0 || _sim.Renome.Libera(d.Id);
         }
@@ -165,8 +167,8 @@ namespace FS.Core
             _sim.Gold -= c; Gasto += c;
             _nivel[k] = contrata ? 1 : Nivel(k) + 1;
             _sim.Recompute();
-            if (contrata) _sim.Emit(Ev.Hired, k, (int)Defs[k].Papel, Sim.HireSpot);
-            else _sim.Emit(Ev.WorkerUp, k, _nivel[k], Sim.HireSpot);
+            if (contrata) _sim.Emit(Ev.Hired, k, (int)Defs[k].Papel, _sim.Contratacao);
+            else _sim.Emit(Ev.WorkerUp, k, _nivel[k], _sim.Contratacao);
             return true;
         }
 
