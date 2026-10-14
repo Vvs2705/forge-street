@@ -27,7 +27,8 @@ namespace FS
     /// liga/desliga Som e Vibracao antes, gravando como o toque) | -cofre N (mostra o painel do cofre com N de ouro, sem dar o ouro) |
     /// -playtest (liga o diario num build de release; o dev ja grava) | -privacidade [18] (abre a tela de idade mesmo com resposta ou no
     /// -testsession, onde a resposta nao e' gravada; 18 = direto no consentimento) | -lang pt|en|es (idioma da sessao sem gravar; Loc) |
-    /// -metas [semanais|conquistas] (abre o painel de metas na aba; D-CORE-02) | -qualidade (B-CORE-03: niveis de estacao, pecas
+    /// -metas [semanais|conquistas|contratos] (abre o painel de metas na aba; D-CORE-02) | -contratos (aba de contratos: o ativo e o
+    /// proximo; com -renome 180 o ronda da vila esta aberto) | -contrato ctr_id (ativa o contrato sem requisito e abre a aba; D-CORE-04) | -qualidade (B-CORE-03: niveis de estacao, pecas
     /// Fina/Superior nas pilhas e no balcao, ferreiro na Bigorna; Captura.Qualidade) | -golpe (o mesmo com o anel do golpe de mestre na tela) |
     /// E-PLAT-02/03: -adcofre (resgate real de 1 h: painel com o "Cofre 2x") | -adencomenda (bonus e trocar no cartao da encomenda) |
     /// -adsupply (botao do Supply Drop na fornalha) | -intersticial (liga a flag Tuning.Interstitial na sessao: carrega e mostra o
@@ -225,7 +226,7 @@ namespace FS
             _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos), () => _metas.Abrir(), WorkerComprado, _raiz);
             _cfg.SetAsLastSibling();     // configuracoes e painel modal cobrem a barra de melhorias
             _panel.SetAsLastSibling();
-            _metas = new PainelMetas(_safe, _raiz, Pago, () => _projetos.Abrir(), () => _hall.Abrir());
+            _metas = new PainelMetas(_safe, _raiz, Pago, () => _projetos.Abrir(), () => _hall.Abrir(), Contrato);   // D-CORE-04: a aba de contratos le os da raiz
             _projetos = new PainelProjetos(_safe, _raiz);
             _hall = new PainelHall(_safe, _raiz);   // B-CORE-08: Hall e Colecao do Old Forge, como metas e projetos (C-CORE-02)
             if (_loja != null) _lojaUi = new PainelLoja(_safe, _raiz, _loja, Comprar, Restaurar);
@@ -271,8 +272,9 @@ namespace FS
             if (Arg("-eventocard") != null) _liveops.AbrirEvento();
             if (Arg("-pass") != null) _liveops.AbrirPasse();
             string metas = Arg("-metas");
-            int aba = metas == "conquistas" ? 2 : metas == "semanais" ? 1 : 0;
-            if (metas != null) _metas.Abrir(aba);
+            bool contratos = Arg("-contratos") != null || Arg("-contrato") != null;   // D-CORE-04 (foto): a aba de contratos (o -contrato id ja ativou um no DevArgs)
+            int aba = metas == "contratos" || contratos ? 3 : metas == "conquistas" ? 2 : metas == "semanais" ? 1 : 0;
+            if (metas != null || contratos) _metas.Abrir(aba);
             bool projetos = Arg("-projetos") != null && Arg("-projetos") != "dar";   // B-CORE-07 (foto; "todos"/"dar": o DevArgs ja deu os projetos)
             if (projetos) _projetos.Abrir();
             string hall = Arg("-hall");   // B-CORE-08 (foto; com -masterwork N o Hall tem obras): -hall colecao = a aba da Collection
@@ -489,6 +491,12 @@ namespace FS
                         Notice(Loc.T("aviso.projeto"), _crown, Color.white);
                         Log("blueprint_unlock", _raiz.Projetos.Defs[e.A].Id, ((BlueprintSourceKind)e.B).ToString());
                         break;
+                    case Ev.ContractDone:   // D-CORE-04: pago 1x pelo nucleo (ledger das metas); aqui o aviso, o diario, a fonte e a vibracao
+                        Notice(Loc.T("aviso.contrato", Textos.Qtd(e.B)), _coinIcon.sprite, _coinIcon.color);
+                        Log("contract_complete", _raiz.Contratos.Defs[e.A].Id, e.B.ToString());
+                        Source("contrato", e.B);
+                        Ajustes.Pulso(40, 200);
+                        break;
                     case Ev.Bought: Bought(e.A, e.B, e.Pos); break;
                     case Ev.ClientLeft:
                         if (e.B == 0) _view.Float(e.Pos, "...", Art.Bad);
@@ -661,6 +669,13 @@ namespace FS
             else Log("mission_complete", tipo, id);
             if (gold > 0) Source(tipo == "login" ? "login" : tipo == "achievement" ? "conquista" : tipo == "daily" ? "diaria" : "semanal", gold);
             _prontas = _raiz.Metas.Prontas();
+            Save();
+        }
+
+        /// <summary>D-CORE-04: ACEITAR/ABANDONAR na aba de contratos (o nucleo ja decidiu): diario e save. A conclusao vem pelo Ev.ContractDone.</summary>
+        void Contrato(string acao, string id)
+        {
+            Log("contract_" + acao, id);
             Save();
         }
 
@@ -1632,6 +1647,8 @@ namespace FS
             if (Arg("-equipe") != null) Captura.Equipe(_sim);   // B-CORE-04 (fotos): a oficina com os 13 workers do Old Forge; o -gold vem depois
             if (long.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long g)) _sim.Gold = Math.Max(0, g);   // A-CORE-06: aceita > int (foto da HUD)
             if (long.TryParse(Arg("-renome"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long rn)) _raiz.Renome.Ganha(rn - _raiz.Renome.Total);   // B-CORE-06: so sobe
+            string ctr = Arg("-contrato");   // D-CORE-04 (foto): ativa o contrato da raiz sem requisito nem flag (-contratos so abre a aba)
+            if (ctr != null && !_raiz.Contratos.Forca(ctr)) { Falha($"CONTRATO desconhecido ou ja concluido '{ctr}'"); return; }
             string[] px = (Arg("-px") ?? "").Split(',');
             if (px.Length == 2 && float.TryParse(px[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x)
                 && float.TryParse(px[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y)) _sim.Player.Pos = new V2(x, y);

@@ -21,7 +21,8 @@ namespace FS.Core
         /// <summary>Todas as regras. Sem argumentos = o conteudo real; o teste injeta uma COPIA quebrada no que quiser. `items`/`recipes` =
         /// conteudo do mundo (World); com `world` dado, valem os dele.</summary>
         public static List<string> Validate(UpgradeDef[] upgrades = null, long[] costs = null, int[] prices = null, MilestoneDef[] milestones = null, Sim world = null,
-            ItemDef[] items = null, RecipeDef[] recipes = null, RenomeDef[] renome = null, WorkerDef[] workers = null, BlueprintDef[] blueprints = null, OrderDef[] orders = null)
+            ItemDef[] items = null, RecipeDef[] recipes = null, RenomeDef[] renome = null, WorkerDef[] workers = null, BlueprintDef[] blueprints = null, OrderDef[] orders = null,
+            ContractDef[] contracts = null)
         {
             upgrades ??= Upgrades.All;
             costs ??= RealCosts();
@@ -48,6 +49,7 @@ namespace FS.Core
             e.AddRange(Workers(workers ?? WorkerDefs.All, world, renome ?? RenomeDefs.Niveis));
             e.AddRange(LiveOpsDefs.Validar(LiveOpsDefs.Eventos, LiveOpsDefs.Passes));   // D-CORE-03/04 (LIVEOPS_V1 §5.7)
             e.AddRange(Blueprints(blueprints ?? ProjetosDefs.All, upgrades, world));
+            e.AddRange(ContratosDefs.Validar(contracts ?? ContratosDefs.All, blueprints ?? ProjetosDefs.All, renome ?? RenomeDefs.Niveis, upgrades, world));   // D-CORE-04 (regras em ContratosDefs.cs)
             e.AddRange(MasterworksDefs.Validar(MasterworksDefs.All, MasterworksDefs.Marcos, blueprints ?? ProjetosDefs.All, upgrades, world));   // B-CORE-08
             e.AddRange(Mapa(FS.Core.Distritos.All));   // C-CORE-01/02/04
             return e;

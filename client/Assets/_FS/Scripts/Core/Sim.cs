@@ -140,6 +140,11 @@ namespace FS.Core
         public readonly Renome Renome;
         /// <summary>B-CORE-05: Orders 2.0 (Encomendas.cs): vagas, rodizio, premio. Ganchos: Tick, Sell (OnVenda), Save/Load.</summary>
         public readonly Encomendas Encomendas;
+        /// <summary>D-CORE-04: Royal Contracts (Contratos.cs) do Imperio: os da raiz (Heroi) quando este Sim e' outro distrito, senao os
+        /// proprios. Ganchos: Tick (o prazo anda no distrito ativo), Sell (pelo ID do item: a venda de qualquer distrito conta) e Save/Load
+        /// (ctr=, ctr.v=, so no payload da raiz).</summary>
+        public Contratos Contratos => Heroi != null ? Heroi.Contratos : _contratos;
+        readonly Contratos _contratos;
         /// <summary>E-PLAT-04/05: compras in-app (Compras.cs): ledger por ID de transacao e posse re-derivada do recibo; save nas linhas iap.*.</summary>
         public readonly Compras Compras;
         /// <summary>B-CORE-04: workers (Equipe.cs): contratacao, nivel e o efeito de cada papel. Ganchos: Recompute (passo, carga, tempo, pilhas,
@@ -269,6 +274,7 @@ namespace FS.Core
             Anuncios = new Anuncios(this);
             Renome = new Renome(this);
             Encomendas = new Encomendas(this);
+            _contratos = new Contratos(this);
             Compras = new Compras(this);
             Equipe = new Equipe(this);
             LiveOps = new LiveOps(this);
@@ -473,6 +479,7 @@ namespace FS.Core
             Projetos.Checa();   // B-CORE-07: marcos, Renome e conquista viram projeto (Ev.Blueprint)
             Colecao.Checa();    // B-CORE-08: marcos da colecao (Ev.Colecao), 1x pelo ID
             Encomendas.Tick(dt);   // B-CORE-05
+            Contratos.Tick(dt, this);   // D-CORE-04: prazo-bonus e a conclusao (os da raiz, no tempo de jogo de qualquer distrito)
             if (BoostLeft > 0f) { if ((BoostLeft -= dt) <= 0f) { BoostLeft = 0f; BoostMul = 1f; BoostCooldown = T.Ad(Anuncio.Velocidade).Recarga; } }   // recarga conta do fim
             else BoostCooldown = Math.Max(0f, BoostCooldown - dt);
 
@@ -1082,6 +1089,7 @@ namespace FS.Core
             QualityGold += price - PriceOf(want, Quality.Normal) * mul;
             Gold += price; GoldEarned += price; Sales++; SoldItems[(int)want]++;
             Encomendas.OnVenda(want, l);   // B-CORE-05: conta para a vaga mais antiga que aceita a peca
+            Contratos.OnVenda(ItemDefs[(int)want].Id, l);    // D-CORE-04: e para a etapa atual do contrato ativo (o da raiz)
             if (FirstSaleTime < 0f) FirstSaleTime = Time;
             Emit(Ev.Sold, (int)want, price, pos);
             return price;
@@ -1630,6 +1638,7 @@ namespace FS.Core
             Equipe.Save(sb);  // B-CORE-04: wkn= (so com alguem de nivel; senao o texto e' o de antes)
             Projetos.Save(sb);   // B-CORE-07: bp= e bpq= (idem)
             Hall.Save(sb); Colecao.Save(sb);   // B-CORE-08: hall= e colq= (so com algo dentro)
+            _contratos.Save(sb);   // D-CORE-04: ctr= e ctr.v= (so com contrato; num distrito que nao e' a raiz, nunca)
             Metas.Save(sb);   // D-CORE-01/02: linhas mt.* (nada antes da 1a Agora)
             LiveOps.Save(sb); // D-CORE-03/04: linhas ev.*/ps.* (nada antes da 1a Agora)
             Compras.Save(sb);   // E-PLAT-04: linhas iap.* (so com compra)
@@ -1785,6 +1794,7 @@ namespace FS.Core
             }
             if (vipPack > 0 && vipWant >= (int)Item.Sword && vipWant <= (int)Item.Tool && sim.LineUnlocked((Item)vipWant)) { sim._vipWant = vipWant; sim._vipPack = vipPack; sim._vipPaid = vipPaid; sim._vipQuiet = vipQuiet; sim._vipSummoned = vipSummoned; }
             sim.Encomendas.Load(text);   // B-CORE-05 (ord= e enc*): antes do Renome (o retroativo le o OrderCount)
+            sim._contratos.Load(text);   // D-CORE-04: save sem ctr* = nenhum contrato
             sim.Player.Pos = sim.Collide(Clamp(sim.Player.Pos, sim.MaxX));   // save antigo com o jogador dentro de um corpo: sai pela borda
             // pad escondido devolve o parcial: o save da v0.3 com produtivos novos (Mineiro, Joalheiro 2) esconde o luxo ate completar
             // de novo, e o pad cujo upgrade foi para o menu (FASE6) nunca mais aparece

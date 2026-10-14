@@ -1954,6 +1954,50 @@ Mix (F2P, % da receita): elmo 20,2 · maça 15,1 · grevas 21,5 · lança 12,4 �
 
 Mutações (DistritosTests, `dotnet test --filter DistritosTests`): 7 provadas, todas mortas — `imp-troca-sem-saldo` (Trocar sem passar o saldo: 2 testes caem), `imp-offline-sem-claim` (ApplyOffline sem o claimId por distrito), `imp-fundo-sem-charter` (fundo sem Charter), `imp-charter-2x` (Charter concedido 2×), `imp-save-sem-ativo` (save sem a linha `imp=`), `loc-chave-faltando` (`item.couro` fora do Loc), `view-estacao-sem-arte` (`Station.Arte` não chega do `StationDef`; assert novo em `Row_Kit_BalcaoDe6EOsNumerosDoDistrito`).
 
+## 32. D-CORE-04: Royal Contracts (2026-10-14)
+
+Regra em GDD §11 e CONTEUDO_V1 §8 (os 12 contratos), V25 (contrato nunca bloqueia). **Vigente** (`Core/Contratos.cs`, `Core/ContratosDefs.cs`): os 12 `ContractDef` em dados (IDs `ctr_*`, distrito de origem, etapas item × N × qualidade mínima, prazo-bônus em minutos de jogo, ouro em s da taxa, Renome, Blueprint); o requisito de Renome é o da tabela do `RenomeDefs` (ronda 3, milícia 5, dote 6, coroação 7, vanguarda 8, campeão 9); só `ctr_ronda_vila` é do Old Forge — os outros 11 abrem com o distrito deles e ficam dormentes até a Wave C (o validator não cobra item de distrito fora do build). Os contratos são do **Império**: moram no Sim da raiz (o Old Forge, como Renome e metas nesta leva) e o `Sim.Contratos` de outro distrito devolve os da raiz pelo `Heroi` (C-CORE-02, #61): a venda de qualquer distrito conta pelo ID do item, o prazo anda no tick do distrito ativo, a conclusão paga na raiz (o ouro vai à carteira pelo `Imperio.Fundo`) e o aviso chega ao distrito ativo; só o payload da raiz grava `ctr=`/`ctr.v=`. Oferta sem sorteio: o 1º da lista não concluído é o "próximo"; vira oferta depois das Ferramentas, com o Renome, com o distrito no build e com a flag `Tuning.Contratos`. **1 ativo por vez** (ponytail: a `mesa_real` do distrito 4 dá a 2ª vaga com o C-CORE-05). Progresso por etapa pelo caminho do Orders 2.0 (`Sim.Sell` → `Contratos.OnVenda`): só o item da etapa atual, no nível mínimo ou melhor, cada peça conta 1 (ponytail: a peça vendida conta para o contrato e para a encomenda; o seletor de cota 0/25/50/100% do catálogo, que desvia a peça à mesa do contrato, é o upgrade quando a decisão "vender ou cumprir" precisar de peso). Conclusão paga **1×** pelo ID `ctr:{id}` no ledger das metas (`Metas.Paga`: ouro = s × `RateEma` de agora, múltiplo de 5, piso das encomendas, **fora do `GoldEarned`**; Renome) e o Blueprint pelo `Projetos.Ganha` (fonte `Contract`, mesmo ID; os `bp_var_*` do catálogo são do "império" e entram no `ProjetosDefs` com a Wave C — até lá o gancho é no-op e o validator só cobra o Blueprint que existe no build). Prazo só de bônus (no prazo: ouro ×1,5 e Renome +5; fora: o normal; nunca falha nem expira). Abandonar não pune (nada pago, o progresso recomeça). `Ev.ContractDone` → diário `contract_complete`, gatilho `contract_complete` nas metas (`Metas.Eventos`) e nas missões de evento (`LiveOpsDefs.Gatilhos`; a Royal Week de hoje não tem a missão: só o gancho, V16). Save: linhas `ctr=` (concluídos, na ordem; ID de um build mais novo fica) e `ctr.v=` (o ativo), só quando existem; save antigo carrega sem contrato; nada lê relógio (o prazo anda com o `dt`): relógio para trás não reabre nem paga.
+
+**Decisões e desvios (revisar):**
+1. **Etapas sequenciais** (espada → escudo → ferramenta), não paralelas: o cartão mostra "etapa x/N" e a decisão é uma por vez.
+2. **Baú cosmético (`cos_ctr_*`) fora:** não existe cosmético de oficina no núcleo; fica só o ID no catálogo (V9: se houver baú, conteúdo fixo mostrado antes).
+3. **Prêmio do contrato no mesmo caminho das metas e dos eventos** (`Metas.Paga`, ledger `mt.led`), não num ledger próprio: o `Renome.Credita("ctr:…")` previsto no B-CORE-06 fica sem uso (o ledger das metas já garante 1× e o ouro).
+4. **Nome do gatilho:** `contract_complete` (o brief), não `royal_contract_complete` (LIVEOPS_V1 §4.6): acertar o doc ou renomear antes de existir `wkl_contrato1`/`ach_contrato1`.
+5. **O ronda é "dinheiro fácil" no Old Forge:** com o Renome 3 (1 h 41 no F2P) o bot vende as 60 peças em ~8 min (prazo-bônus de 90 min sempre batido); o contrato só pesa como decisão com o seletor de cota (desvio 1 acima) ou com N maiores. Fica para quando houver playtest do sistema.
+
+### 32.1 F2P 8 × 60 min (`--perfis F2P --minutos 60 --partidas 8`): antes = `--tuning Contratos=false`, depois = flag ligada
+
+Medido no branch com a `main` mesclada (#61 distritos e Império, #62 mochila, #63 Masterworks e Collection). CSV **idêntico ao byte** (`cmp`): o ronda pede Renome 3, que o F2P alcança à 1 h 41. Produção completa 47:14, zona morta 19,6 min, ouro de encomendas 9,9% da venda, Renome 1 14:35, Renome 2 48:00, saldo aos 60 min 619, contratos 0/0. Pisos do §3: 0% abaixo.
+
+### 32.2 5 perfis × 3 partidas × 240 min (`--minutos 240 --partidas 3`): antes (flag desligada) → depois
+
+| perfil | Produção | Renome 3 (= aceite) | 1ª conclusão | Renome 4 (antes → depois) | Renome em 4 h | ouro do contrato (% da venda em 4 h) | pós-produção (antes → depois) |
+|---|---|---|---|---|---|---|---|
+| Ideal | 48:20 | 1:20:10 | 1:27:50 | 1:46:12 → **1:43:58** | 928 → 949 | 25.903 (3,8%) | 684.377 → 712.919 |
+| F2P | 48:28 | 1:40:54 | 1:48:42 | 3:11:00 → **3:01:24** | 514 → 534 | 25.487 (3,9%) | 652.346 → 677.833 |
+| Slow | 51:13 | 1:41:16 | 1:49:18 | 3:09:21 → **3:01:03** | 517 → 537 | 24.997 (3,8%) | 647.058 → 672.054 |
+| AdWatcher | 44:29 | 1:38:00 | 1:46:51 | 3:08:39 → **2:58:46** | 523 → 543 | 24.133 (3,5%) | 697.146 → 721.279 |
+| AdWatcherE | 45:01 | 1:44:23 | 1:53:32 | 3:15:58 → **3:05:49** | 502 → 522 | 26.805 (4,0%) | 674.735 → 701.540 |
+
+Tudo o mais (produção completa, Renome 1–3, encomendas, prêmio de qualidade, projetos, níveis IV–V, pisos do §3 a 0% abaixo) é idêntico antes e depois: o contrato entra só depois do Renome 3 e nunca bloqueia (o bot fecha o Old Forge sem ele; com a flag desligada o jogo é o de antes). O contrato paga uma vez 450 s da taxa (300 × 1,5 no prazo) = ~25 mil à 1 h 49 no F2P (uma encomenda Royal paga 32 s), +20 de Renome (15 + 5): o Renome 4 chega ~10 min antes. Antes do merge do #63 (sem os marcos de Renome da Collection) o aceite era às 2 h 13 e a conclusão às 2 h 20 no F2P, com o mesmo ouro (3,8%) e o mesmo adianto do Renome 4 (3:46 → 3:37).
+
+### 32.3 Portões (GDD §3, ECONOMIA_WAVE_B §10)
+
+| Medida | Portão | Medido (F2P) | |
+|---|---|---|---|
+| Primeiros 10 min | iguais, tick a tick | CSV de 60 min idêntico ao byte com a flag ligada; golden `EncomendasTests.PrimeirosDezMinutos` verde | ok |
+| Produção completa | 41–55 min | 47:14 (8 × 60), 48:28 (3 × 240) — iguais ao antes | ok |
+| Ouro sem destino aos 60 min | ≤ 10 mil | 619 | ok |
+| Renome 1 / 2 / 3 / 4 | 12–25 min / 40–75 min / 1,5–3 h / 3–6 h | 14:18 / 50:47 / 1:40:54 / 3:01:24 (antes 3:11:00) | ok |
+| Contrato nunca bloqueia (V25, GDD §23 #7) | bot fecha o distrito sem contrato | produção completa igual com a flag desligada; validator: melhoria nunca exige Blueprint só de contrato | ok |
+| Recompensa 1× com ID de transação | `ctr:{id}` | `ContratosTests`: entregar 2×, save/load, relógio para trás e ledger `Metas.Paga` = −1 | ok |
+
+### 32.4 Testes e prova vermelha
+
+`ContratosTests` (15): catálogo e validator limpo, oferta determinística (Ferramentas, Renome, 1 vaga, flag, distrito), progresso por etapa e qualidade mínima, conclusão 1× (ouro da taxa fora do `GoldEarned`, Renome, Blueprint pela fonte `Contract`, ledger), gancho no-op sem o Blueprint no build, prazo-bônus, abandono, save ida e volta / antigo / lixo / ID desconhecido, relógio para trás, Império (venda na Rua dos Armeiros conta no contrato da raiz pelo ID, prazo no tick do ativo, aviso no ativo, save só na raiz), missão `contract_complete` de evento, bot F2P (aceita no Renome 3 e cumpre vendendo; sem a flag a partida de 60 min é idêntica) e validator com 17 defeitos injetados. `MetasTests.Eventos_TodoGatilhoContaNoJogo` ganhou Renome 3 no bot (o gatilho novo conta de verdade). LocTests cobra `ctr.<id>` e as larguras.
+
+**Prova vermelha** (`python client/tools/mutantes/mutantes.py --so ctr-…`, sobre o branch com o #61/#62 mesclados; os arquivos mutados não mudam com o #63): **16 mutações `ctr-*`, todas mortas** (0 vivas, 0 inválidas, 2.102 s): contrato concluído volta à oferta, prazo-bônus nunca paga, qualquer item conta, qualidade mínima ignorada, oferta sem o Renome, 2 ativos, abandono que pune, save sem o progresso da etapa, prazo parado, sem o Blueprint, flag ignorada, contrato antes das Ferramentas, etapa que fecha com N + 1, contrato de outro distrito do Império que não é o da raiz, e o validator sem a checagem de item e de Blueprint essencial só por contrato.
+
 ## 33. C-CORE-05: Rua dos Armeiros afinada (2026-10-14)
 
 **Vigente** (`Core/Distritos.cs`, `Core/EncomendasDefs.cs`, `Core/Encomendas.cs`, `Core/ContentValidator.cs`, `Core/MasterworksDefs.cs`, `View/Loc.cs`; testes em `Tests/EditMode/RowTests.cs`; branch `feat/row-conteudo`). Só a Armorer's Row mudou; o Old Forge é o de sempre, ao byte (§33.4).

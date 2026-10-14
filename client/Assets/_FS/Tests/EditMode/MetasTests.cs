@@ -350,6 +350,7 @@ namespace FS.Tests
         public void Eventos_TodoGatilhoContaNoJogo()
         {
             var s = new Sim(); var bot = new Bot();
+            s.Renome.Ganha(180);   // D-CORE-04: o ronda da vila (Renome 3) abre com as Ferramentas; o bot aceita e cumpre vendendo (contract_complete)
             for (float t = 0f; t < 45 * 60f; t += 1f / 30f) bot.Step(s, 1f / 30f);
             s.ApplyOffline(3600, 1);
             s.Metas.Agora(Em(D, 10), Fuso);
