@@ -858,6 +858,7 @@ namespace FS
             _panelGold.fontStyle = FontStyle.Bold; _panelGold.color = Art.Accent; _panelGold.horizontalOverflow = HorizontalWrapMode.Overflow;
             _panelBody = Art.NewText(card.transform, "Corpo", 26, new Vector2(0.06f, 0.33f), new Vector2(0.94f, 0.46f));
             _panelBody.color = Art.ComAlfa(MenuBar.Brown, 0.8f);
+            _panelBody.resizeTextForBestFit = true; _panelBody.resizeTextMinSize = 22; _panelBody.resizeTextMaxSize = 40;   // mapa e qualidade: legivel no aparelho
             Button ok = Art.NewButton(card.transform, Loc.T("ui.ok"), 46, MenuBar.Leather, new Vector2(0.25f, 0.06f), new Vector2(0.75f, 0.26f), () => _panelAction?.Invoke());
             _panelBtn = ok.GetComponentInChildren<Text>();
             _panelBtn.color = MenuBar.Cream;
@@ -1527,6 +1528,7 @@ namespace FS
             _panelBtn.text = button;
             _panelAction = action;
             _panelRow.gameObject.SetActive(gold > 0);
+            _panelBody.rectTransform.anchorMax = new Vector2(0.94f, gold > 0 ? 0.46f : 0.74f);   // sem o "+N" do cofre, o texto usa o vao abaixo do titulo
             if (gold <= 0) return;
             _panelGold.text = "+" + gold;
             _panelRow.sizeDelta = new Vector2(96f + _panelGold.preferredWidth, 90f);   // moeda + numero centrados juntos
