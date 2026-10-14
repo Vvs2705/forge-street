@@ -135,9 +135,9 @@ Trocar de build: `adb uninstall $P` (apaga o save do aparelho; o backup está em
 - **FAIL:** venda comum vibra, evento importante não vibra, vibra com a chave desligada, chave que não fica gravada.
 
 **G9. Áudio** (A-AUD-23, DM §70/§71)
-- **Fazer:** volume de mídia em ~50%. (a) Configurações: desligar Música (ficam efeitos e ambiente), religar; desligar Efeitos (efeitos e ambiente somem juntos, fica a música); reabrir o app; (b) comparar o som da oficina parada (começo) com a oficina cheia (estações trabalhando e fila); (c) 10 min seguidos com a Música ligada; (d) HOME com som tocando e voltar.
+- **Fazer:** volume de mídia em ~50%. (a) Configurações: desligar Música (ficam efeitos e ambiente), religar; desligar Efeitos (efeitos e ambiente somem juntos, fica a música); reabrir o app; (b) comparar o som da oficina parada (começo) com a oficina cheia (estações trabalhando e fila); (c) 10 min seguidos com a Música ligada (fix/mix-audio: o build dev aberto com `-somlog` grava `SOM min=...` por minuto no Player.log/logcat); (d) HOME com som tocando e voltar.
 - **Medir:** ouvido (fone opcional). O custo do áudio procedural está no G11–G13; a síntese dos 14 efeitos está no `TotalTime` do G3.
-- **PASS:** cada chave isola o seu grupo e fica gravada ao reabrir; a oficina cheia soa claramente mais cheia que a parada (o projeto dá ~9,5 dB); a volta do laço de 28,8 s da música não estala; nos 10 min o Vinicius não desliga a música (parecer dele); fora do jogo, silêncio; ao voltar, o som volta.
+- **PASS:** cada chave isola o seu grupo e fica gravada ao reabrir; a oficina cheia soa claramente mais cheia que a parada (o projeto dá ~7,7 dB, `docs/AUDIO.md`); a música toca 1 volta (28,8 s), descansa 30 s e volta entrando e saindo suave, sem estalo; compra, VIP e encomenda se ouvem por cima de tudo (a música e o ambiente abaixam); nunca mais que ~3 sons ao mesmo tempo (`pico` ≤ 4 no `-somlog`); nos 10 min o Vinicius não desliga a música (parecer dele); fora do jogo, silêncio; ao voltar, o som volta.
 - **FAIL:** chave que não isola ou não grava, som em segundo plano, estalo na emenda, som cortado ou distorcido, música que cansa (parecer).
 
 **G10. Toque** (§151 "touch")

@@ -119,15 +119,16 @@ namespace FS.Tests
                 "nenhum numero publico gravavel");
         }
 
-        /// <summary>Fontes de hoje pelo fluxo do Sim: encomenda entregue +1 (Common), bau aberto +5, +1 a cada 10 Superiores vendidas; nada mais
-        /// muda o total.</summary>
+        /// <summary>Fontes de hoje pelo fluxo do Sim: encomenda entregue pelo tipo (B-CORE-05: Common +1 ... Royal +10), bau aberto +5, +1 a cada
+        /// 10 Superiores vendidas; nada mais muda o total.</summary>
         [Test]
         public void Fontes_EncomendaBauESuperior_PeloFluxoDoSim()
         {
             Sim s = Bot(30);
             Assert.Greater(s.OrderCount, 0, "premissa: encomendas entregues");
             Assert.Greater(BausAbertos(s), 0L, "premissa: baus abertos");
-            Assert.AreEqual(s.OrderCount * 1L + 5L * BausAbertos(s) + s.Renome.Superiores / RenomeDefs.SuperiorACada, s.Renome.Total);
+            Assert.Greater(s.Encomendas.RenomeGanho, (long)s.OrderCount, "premissa: tipos com mais de +1 (Bulk, Quality, Mixed)");
+            Assert.AreEqual(s.Encomendas.RenomeGanho + 5L * BausAbertos(s) + s.Renome.Superiores / RenomeDefs.SuperiorACada, s.Renome.Total);
         }
 
         /// <summary>A venda de verdade no balcao (Sim.Sell) conta a Superior, nao a Fina nem a Normal.</summary>
@@ -198,7 +199,7 @@ namespace FS.Tests
         [Test]
         public void Retroativo_IgualAoAoVivo_ESaveNovoNaoGanha()
         {
-            Sim s = Bot(20);
+            Sim s = Bot(10);   // B-CORE-05: antes das Ferramentas toda encomenda e' Common (+1), como nos saves sem rn=
             Assert.Greater(s.Renome.Total, 0L, "premissa");
             string text = s.Save(1000);
             Sim novo = Sim.Load(text);
@@ -237,14 +238,16 @@ namespace FS.Tests
             Assert.AreEqual(203L, b.Renome.Total, "a 30a Superior conta a partir do contador salvo");
         }
 
-        /// <summary>Renome nao paga ouro: o bot joga igual com o Renome no maximo desde o comeco (nada no Sim le o Renome).</summary>
+        /// <summary>Renome nao paga ouro: ele so libera vagas e tipos de encomenda (B-CORE-05), e isso so depois das Ferramentas. Ate la o bot
+        /// joga igual com o Renome no maximo desde o comeco.</summary>
         [Test]
         public void Bot_ComQualquerRenome_JogaIgual()
         {
             Sim a = new Sim(), b = new Sim();
             b.Renome.Ganha(long.MaxValue);
             Bot ba = new Bot(), bb = new Bot();
-            for (int k = 0; k < 20 * 60 * 30; k++) { ba.Step(a, Dt); bb.Step(b, Dt); }
+            for (int k = 0; k < 10 * 60 * 30; k++) { ba.Step(a, Dt); bb.Step(b, Dt); }
+            Assert.IsFalse(a.Bought[(int)Upgrade.Tools], "premissa: ainda sem as Ferramentas");
             Assert.AreEqual(a.Gold, b.Gold);
             Assert.AreEqual(a.GoldEarned, b.GoldEarned);
             Assert.AreEqual(a.Sales, b.Sales);

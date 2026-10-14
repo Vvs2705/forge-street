@@ -229,6 +229,9 @@ namespace FS.Core
         };
         public AdPlacementDef Ad(Anuncio a) => Placements[(int)a];
         public int AnunciosTetoDia = 30;   // teto diario TOTAL de rewarded (dia local das metas; relogio para tras nao reabre)
+        /// <summary>B-CORE-05: o "bonus da encomenda" vale pelo menos estes s da renda de agora (o Valor x premio sozinho era menos que os ~30 s
+        /// de relogio do anuncio: o AdWatcherE fechava a producao depois do AdWatcher, BALANCE.md §24/§28).</summary>
+        public float EncomendaBonusMinSeg = 60f;
 
         // precos e custos
         public int[] Price = { 0, 0, 10, 25, 16, 60, 40 };      // ouro por item vendido (B-CORE-07: espada longa 40 = 20 por lingote, CONTEUDO_V1 §2.1)
@@ -269,9 +272,10 @@ namespace FS.Core
         public float BoostMax = 3f, BoostPlayerMax = 1.3f;      // Velocidade: o 2o anuncio sobe para 3x; o ferreiro no maximo 1,3x (tempo e recarga: Ad(Velocidade))
         public bool AnunciosDepoisDaPrimeiraMelhoria = true;    // D6/V18: todo rewarded so depois da 1a melhoria comprada (o boost no segundo 0 e o VIP da 1a venda furavam o §3)
 
-        // FASE9 (docs/FASE9_ENCOMENDAS.md): encomenda = vender N de uma linha aberta; uma por vez, sem prazo nem falha
-        public float OrderFirstDelay = 45f, OrderGap = 20f;     // s depois da 1a venda; s entre uma entregue e a proxima
-        public int OrderFirstTarget = 5, OrderMin = 3, OrderMax = 30;   // a 1a e' 5 espadas; depois N = OrderSeconds da renda da linha
+        // FASE9 (docs/FASE9_ENCOMENDAS.md): encomenda = vender N de uma linha aberta; sem falha. B-CORE-05: os tipos, alvos e premios estao nos
+        // OrderDef (EncomendasDefs.cs); OrderSeconds e OrderRewardSeconds sao os da Common e escalam todos os tipos (x / 150, x / 10)
+        public float OrderFirstDelay = 45f, OrderGap = 20f;     // s depois da 1a venda; s entre uma entregue e a proxima vaga
+        public int OrderFirstTarget = 5, OrderMin = 3, OrderMax = 30;   // a 1a e' 5 espadas; OrderMax = teto do ord= do save antigo (o N vem do OrderDef; OrderMin sem uso)
         public float OrderSeconds = 150f, OrderRewardSeconds = 10f;     // premio ~10 s da taxa online: 4,2% da receita no bot de 60 min (BALANCE §20)
         public int OrderRewardMin = 25;
 
@@ -303,6 +307,12 @@ namespace FS.Core
         /// <summary>A-PLAT-08 (DM §130): chave mestra do RemoteConfig. false = nenhum anuncio: o Game nem inicia o SDK e o RemoteConfig.Aplicar
         /// desliga as flags de anuncio (rewarded e intersticial). Feature nova com flag propria (IAP, Pass) ja e' chaveavel pelo nome do campo.</summary>
         public bool AnunciosLigados = true;
+        /// <summary>D-CORE-03/04 (DM §130): chaves do LiveOps. Eventos false = nenhum evento entra e o ativo sai (os knobs voltam); Passe false = o
+        /// Pass para de ganhar XP. Ledger, pontos e niveis ficam no save: religar continua.</summary>
+        public bool Eventos = true, Passe = true;
+        /// <summary>A-PLAT-08 / E-PLAT-04: chave da loja. false = o botao LOJA some (nenhuma compra nova); recibo, restore automatico e posse
+        /// seguem (quem pagou nao perde).</summary>
+        public bool Loja = true;
 
         /// <summary>Segundos na fila antes de desistir: base + k x tempo de producao da linha no inicio (B-CORE-01: soma de quantidade x tempo
         /// inicial da receita de cada insumo + o da propria receita; hoje = fornalha inicial x lingotes + bancada inicial). Espada 9 s, escudo

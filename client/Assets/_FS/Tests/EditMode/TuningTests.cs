@@ -120,13 +120,13 @@ namespace FS.Tests
             var off = new Tuning { Encomendas = false };
             var s = new Sim(off) { FirstSaleTime = 1f };
             Assert.AreEqual(0, RunCount(s, 120f, Ev.OrderNew), "nenhuma encomenda nova");
-            Assert.AreEqual((-1, 0, off.OrderFirstDelay), (s.OrderItem, s.OrderCount, s.OrderIn), "relogio parado");
+            Assert.AreEqual((0, 0, off.OrderFirstDelay), (s.Encomendas.Vagas.Count, s.OrderCount, s.Encomendas.OrderIn), "relogio parado");
             SaveEstavel(s, off);
             Sim on = Sim.Load(s.Save(Now));   // religada: continua de onde parou
             Assert.AreEqual(1, RunCount(on, off.OrderFirstDelay + 1f, Ev.OrderNew), "religar abre a 1a no horario");
-            s.OrderItem = (int)Item.Sword; s.OrderTarget = 5; s.OrderProgress = 5; s.OrderReward = 100;   // aberta antes de desligar
+            EncTeste.Poe(s, Item.Sword, 5, 100, 5);   // aberta antes de desligar
             s.Tick(Dt, 0f, 0f);
-            Assert.AreEqual((1, 100L, -1), (Count(s, Ev.OrderDone), s.OrderGold, s.OrderItem), "a aberta ainda entrega e paga");
+            Assert.AreEqual((1, 100L, 0), (Count(s, Ev.OrderDone), s.OrderGold, s.Encomendas.Vagas.Count), "a aberta ainda entrega e paga");
             Assert.AreEqual(0, RunCount(s, 60f, Ev.OrderNew), "e a seguinte nao vem");
         }
 

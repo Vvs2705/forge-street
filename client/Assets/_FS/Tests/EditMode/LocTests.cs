@@ -60,6 +60,16 @@ namespace FS.Tests
             foreach (string g in new[] { "m", "f", "mp", "fp" }) { Tem("art.o." + g); Tem("art.de." + g); }
             foreach (AdPlacementDef d in T0.Placements) Tem("ads." + d.Id);   // E-PLAT-02: cada placement do Tuning (o anuncio simulado)
             foreach (RenomeDef d in RenomeDefs.Niveis) { Tem(d.NomeKey); if (d.Nivel > 0) Tem(d.NomeKey + ".libera"); }   // B-CORE-06: SeloRenome
+            foreach (OrderType t in Enum.GetValues(typeof(OrderType))) Tem("enc.tipo." + (int)t);   // B-CORE-05: cartao e metas
+            foreach (OrderDef d in OrderDefs.All) if (d.ClientId != null) Tem("cli." + d.ClientId);
+            foreach (EventDef e in LiveOpsDefs.Eventos)   // D-CORE-03/04: nome do evento e cosmeticos da trilha; nome e cosmeticos free do Passe
+            {
+                Tem("ev." + e.Id);
+                foreach (Marco m in e.Trilha) foreach (RewardDef r in m.Premios) if (r.Tipo == TipoPremio.Cosmetico) Tem("cos." + r.Ref);
+            }
+            foreach (PassDef p in LiveOpsDefs.Passes) { Tem("passe." + p.Id); foreach (RewardDef r in p.Free) if (r.Tipo == TipoPremio.Cosmetico) Tem("cos." + r.Ref); }
+            foreach (ProductDef d in Compras.Catalogo) Tem("iap." + d.Id + ".nome");   // E-PLAT-04: PainelLoja (nome e uma linha por posse)
+            foreach (string id in Compras.Posses) Tem("iap.posse." + id);
             Assert.IsEmpty(faltam);
         }
 
@@ -124,6 +134,7 @@ namespace FS.Tests
             var sink = new Regex(@"\.text\s*\+?=|\b(Notice|ShowPanel|Float|NewButton|Paint|Abrir)\(");
             var log = new Regex(@"Debug\.Log|\bLog\(|Emit\(|Falha\(|throw ");
             var nome = new Regex(@"(Sfx\.Play|Art\.\w+|GameObject)\(\s*$");   // som, sprite e nome de objeto: nao e' texto
+            var tag = new Regex(@"^[A-Z]{3,} \w+=");   // linha de log de dev "TAG chave=valor" montada fora do Debug.Log (Mixagem.Minuto: "SOM min=")
             var letras = new Regex(@"\p{L}{2,}");
             var frase = new Regex(@"\p{L}\s+\p{L}|[\p{L}-[a-zA-Z]]|\p{L}[!?]$");
             var ruins = new List<string>();
@@ -135,7 +146,7 @@ namespace FS.Tests
                 {
                     string s = m.Groups[1].Value;
                     if (m.Index > 0 && cod[m.Index - 1] == '$') s = Regex.Replace(s, @"\{[^}]*\}", "");   // $"{a}/{b}": so o texto fixo
-                    if (EChave(s) || !letras.IsMatch(s) || nome.IsMatch(cod.Substring(0, m.Index))) continue;
+                    if (EChave(s) || !letras.IsMatch(s) || nome.IsMatch(cod.Substring(0, m.Index)) || tag.IsMatch(s)) continue;
                     if (tela || frase.IsMatch(s)) ruins.Add($"{arq}:{linha} \"{s}\"");
                 }
             }
@@ -180,6 +191,19 @@ namespace FS.Tests
                 Assert.LessOrEqual(Loc.T("aviso.troca").Length, Textos.DicaMax, i.ToString());
                 Assert.LessOrEqual(Loc.T("enc.troca", 30).Length, 11, $"{i}: {Loc.T("enc.troca", 30)}");
                 Assert.LessOrEqual(Loc.T("cofre.dobrar", 99999).Length, 15, $"{i}: {Loc.T("cofre.dobrar", 99999)}");
+                // B-CORE-05: titulo do cartao (1 linha; o best-fit vai a 22 px) com o maior N de cada OrderDef de 1 item, e a conta da barra
+                foreach (OrderDef d in OrderDefs.All)
+                {
+                    if (d.Type == OrderType.Mixed) continue;   // 2-3 itens: o best-fit encolhe (conferir na foto -encomendas)
+                    for (int it = (int)Item.Sword; it <= (int)Item.Jewel; it++)
+                    {
+                        var e = new Encomenda(d, 0, new[] { (Item)it }, new[] { Math.Max(d.TargetMax, d.FixedN) }, 99999, 0, d.BonusDeadline, null);
+                        string t = Textos.Encomenda(e), b = Textos.BarraEncomenda(e);
+                        StringAssert.DoesNotContain("[", t + b, $"{i}: {d.Id}");
+                        Assert.LessOrEqual(t.Length, 28, $"{i}: {d.Id} \"{t}\"");
+                        if (d.MinQuality < Quality.Superior) Assert.LessOrEqual(b.Length, 13, $"{i}: {d.Id} \"{b}\"");   // a Superior so abre com a automacao fazendo Superior
+                    }
+                }
                 for (long v = 1; v > 0 && v < long.MaxValue / 7; v *= 7) Assert.LessOrEqual(Textos.Ouro(v).Length, 8, $"{i}: {Textos.Ouro(v)}");
                 foreach (RenomeDef d in RenomeDefs.Niveis)   // B-CORE-06: selo (1 linha ao lado da estrela), aviso (1 linha na faixa) e cartao (3 linhas)
                 {
@@ -188,6 +212,24 @@ namespace FS.Tests
                     if (d.Nivel > 0) Assert.LessOrEqual(Loc.T("renome.libera", Textos.LiberaRenome(d.Nivel)).Length, 110, $"{i}: nivel {d.Nivel}");
                 }
                 Assert.LessOrEqual(Textos.Ouro(long.MaxValue).Length, 8, i.ToString());
+                // D-CORE-03/04: chip do evento (<= ChipMax), avisos de evento e do Passe (1 linha na faixa)
+                foreach (long seg in new[] { 59L, 86399L, 6 * 86400L }) Assert.LessOrEqual(Loc.T("liveops.chip", Textos.Qtd(99999), Textos.Tempo(seg)).Length, Textos.ChipMax, i.ToString());
+                foreach (EventDef e in LiveOpsDefs.Eventos)
+                {
+                    Assert.LessOrEqual(Textos.NomeEvento(e).Length, Textos.EventoMax, $"{i}: {e.Id}");
+                    Assert.LessOrEqual(Loc.T("aviso.evento", Textos.NomeEvento(e)).Length, Textos.AvisoMax, $"{i}: {e.Id}");
+                }
+                Assert.LessOrEqual(Loc.T("aviso.passe_ouro", Textos.Qtd(99999)).Length, Textos.DicaMax, i.ToString());
+                Assert.LessOrEqual(Loc.T("aviso.evento_marco", 1000).Length, Textos.AvisoMax, i.ToString());
+                // E-PLAT-04: avisos da loja (1 linha da faixa), LOJA (1/3 da fileira das Configuracoes), COMPRADO e RESTAURAR, nome e linhas do conteudo
+                foreach (string k in new[] { "aviso.compra_ok", "aviso.compra_falhou" }) Assert.LessOrEqual(Loc.T(k).Length, Textos.DicaMax, $"{i}: {k}");
+                Assert.LessOrEqual(Loc.T("aviso.restaurado", 99).Length, Textos.DicaMax, $"{i}: aviso.restaurado");
+                foreach ((string k, int max) in new[] { ("cfg.loja", 8), ("loja.comprado", 10), ("loja.restaurar", 20) }) Assert.LessOrEqual(Loc.T(k).Length, max, $"{i}: {k}");
+                foreach (ProductDef d in Compras.Catalogo)
+                {
+                    Assert.LessOrEqual(Loc.T("iap." + d.Id + ".nome").Length, 24, $"{i}: {d.Id}");
+                    foreach (ItemCompra c in d.Conteudo) Assert.LessOrEqual(Loc.T("iap.posse." + c.Id).Length, 40, $"{i}: {c.Id}");
+                }
             }
         }
 
