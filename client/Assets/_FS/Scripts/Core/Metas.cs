@@ -48,6 +48,7 @@ namespace FS.Core
             "order_complete", "order_premium", "order_rush_prazo",
             "worker_upgrade",   // B-CORE-04 (LIVEOPS_V1 §5.6): filtro = nivel alcancado
             "masterwork_unlock", "masterwork_family",   // B-CORE-08 (LIVEOPS_V1 §4.6): filtro = indice no Hall / item da familia
+            "contract_complete",   // D-CORE-04: Royal Contract concluido (Contratos.Concluir); o LIVEOPS_V1 §4.6 o chama royal_contract_complete
         };
 
         public sealed class Slot { public MetaDef Def; public long Base, Alvo; }
@@ -100,6 +101,7 @@ namespace FS.Core
                     Soma("masterwork_unlock", b, 1);
                     Soma("masterwork_family", Items.IndexOf(_sim.Hall.Defs[b].Familia, _sim.ItemDefs), 1);
                     break;
+                case Ev.ContractDone: Soma("contract_complete", -1, 1); break;   // D-CORE-04
             }
         }
 
