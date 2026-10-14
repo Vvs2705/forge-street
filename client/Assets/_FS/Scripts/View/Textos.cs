@@ -241,6 +241,9 @@ namespace FS
                 // B-CORE-04: worker_hired com filtro = papel ("Contrate 1 oficial"); worker_upgrade com filtro = nivel ("Leve 13 ajudantes ao nivel 5")
                 case "worker_hired" when d.Filtro > 0: return Loc.T("meta.worker_papel", n, Loc.P("wk.papel." + d.Filtro, alvo));
                 case "worker_upgrade" when d.Filtro >= 2: return Loc.P("meta.worker_nivel", alvo, n, d.Filtro);
+                // B-CORE-08: "Obra-prima: Lamina Solar do Rei" (filtro = indice no Hall); "Faca 3 obras-primas de espada" (filtro = item da familia)
+                case "masterwork_unlock" when d.Filtro >= 0: return Loc.T("meta.masterwork_um", Loc.T("mw." + MasterworksDefs.All[d.Filtro].Id));
+                case "masterwork_family": return Loc.T("meta.masterwork_familia", n, ItemNome(d.Filtro, 1));
                 default: return Loc.P("meta." + d.Evento, alvo, n);   // order_done, offline_claim, vip_served, worker_hired, worker_upgrade, chest_opened, login_claim
             }
         }
@@ -424,6 +427,83 @@ namespace FS
                 default: return Loc.T("proj.f." + (int)f.Kind, f.N);   // filas: a posicao; Renome: o nivel; o resto sem numero
             }
         }
+
+        // ---------- Hall e Collection (B-CORE-08): o PainelHall so desenha; MasterworksTests confere os 3 idiomas ----------
+
+        /// <summary>Linha do Hall (&lt;= HallMax) e linhas de detalhe (condicao, projeto: 1 linha de 24 px com best fit, &lt;= HallDetalheMax).</summary>
+        public const int HallMax = 28, HallDetalheMax = 64;
+
+        public static string NomeMasterwork(MasterworkDef d) => Loc.T("mw." + d.Id);
+
+        /// <summary>Selo da linha: NO HALL, PRONTA (projeto e condicoes: falta o golpe numa Superior) ou BLOQUEADO.</summary>
+        public static string SeloMasterwork(Sim s, MasterworkDef d) =>
+            Loc.T(s.Hall.Tem(d.Id) ? "hall.no_hall" : s.Hall.Liberada(d) ? "hall.pronta" : "proj.falta");
+
+        /// <summary>A condicao especial com o progresso ("Bigorna nível 5 (3/5)"; varias: " · "); sem nenhuma, "Sem condição extra". Registrada:
+        /// "No Hall desde 13/10/2026" (data 0 = sem relogio: so "NO HALL" no selo, a linha fica a da condicao).</summary>
+        public static string CondicaoMasterwork(Sim s, MasterworkDef d)
+        {
+            if (s.Hall.Feitas.TryGetValue(d.Id, out long u) && u > 0)
+                return Loc.T("hall.desde", DateTimeOffset.FromUnixTimeSeconds(u).ToString(Loc.T("hall.data"), CultureInfo.InvariantCulture));
+            if (d.Condicoes.Length == 0) return Loc.T("hall.sem_condicao");
+            return string.Join(" · ", Array.ConvertAll(d.Condicoes, c => Condicao(s, c)));
+        }
+
+        static string Condicao(Sim s, CondicaoMasterwork c)
+        {
+            string n = Qtd(c.N), v = Qtd(Math.Min(c.N, s.Hall.Valor(c)));
+            int i = Items.IndexOf(c.Ref, s.ItemDefs);
+            string item = i >= 0 && i < ItemId.Length ? ItemNome(i, c.N) : c.Ref;
+            switch (c.Kind)
+            {
+                case CondicaoMw.NivelEstacao: return Loc.T("hall.c.1", Loc.Tem("est." + c.Ref) ? Loc.T("est." + c.Ref) : c.Ref, n, v);
+                case CondicaoMw.Renome: return Loc.T("hall.c.2", n, v);
+                case CondicaoMw.EncomendasItem: return Loc.T("hall.c.3", n, i >= 0 && i < ItemId.Length ? ItemNome(i, 1) : c.Ref, v);
+                case CondicaoMw.EncomendasTipo: return Loc.T("hall.c.4", n, Loc.Tem("hall.tipo." + c.Ref) ? Loc.T("hall.tipo." + c.Ref) : c.Ref, v);
+                case CondicaoMw.NivelWorker:
+                    int k = WorkerDefs.IndexOf(c.Ref, s.Equipe.Defs);
+                    return Loc.T("hall.c.5", k >= 0 ? s.Equipe.Defs[k].Nome : c.Ref, n, v);
+                case CondicaoMw.VendidosQualidade: return Loc.T("hall.c.6", n, item + " " + Qualidade(c.MinQ), v);
+                default: return Loc.T("hall.c.0", n, item, v);
+            }
+        }
+
+        /// <summary>O projeto: "Projeto na mão" ou "Projeto: Venda 100 espadas (37/100)" (as fontes, como no painel de projetos).</summary>
+        public static string ProjetoMasterwork(Sim s, MasterworkDef d)
+        {
+            if (s.Projetos.Tem(d.Blueprint)) return Loc.T("hall.projeto_tem");
+            BlueprintDef b = Array.Find(s.Projetos.Defs, x => x.Id == d.Blueprint);
+            return Loc.T("hall.projeto", b != null ? ProjetoFonte(s, b) : d.Blueprint);
+        }
+
+        /// <summary>Familias completas no Hall (o +5% no preco), uma por linha; vazio = nenhuma.</summary>
+        public static string BonusHall(Sim s)
+        {
+            var t = new System.Collections.Generic.List<string>();
+            for (int i = 0; i < s.ItemDefs.Length && i < ItemId.Length; i++)
+                if (s.ItemDefs[i].Family == s.ItemDefs[i].Id && s.Hall.BonusPct((Item)i) > 0) t.Add(Loc.T("hall.bonus", s.Hall.BonusPct((Item)i), ItemNome(i, 2)));
+            return string.Join("\n", t);
+        }
+
+        public static string AbaColecao(AbaColecao a) => Loc.T("col.aba." + (int)a);
+
+        /// <summary>"Produtos 6/15 · Obras-primas 1/10 · Equipe 9/26 · Projetos 10/19" (o cabecalho da aba).</summary>
+        public static string ResumoColecao(Sim s) => string.Join("  ·  ", Array.ConvertAll((AbaColecao[])Enum.GetValues(typeof(AbaColecao)),
+            a => Loc.T("col.resumo", AbaColecao(a), s.Colecao.Feitas(a) + "/" + s.Colecao.Total(a))));
+
+        /// <summary>Linha do marco: "Produtos: 8 de 15".</summary>
+        public static string MarcoColecao(Sim s, MarcoColecaoDef m) => Loc.T("col.marco", AbaColecao(m.Aba), Qtd(m.N), Qtd(s.Colecao.Total(m.Aba)));
+
+        /// <summary>O premio do marco: "+10 Renome" e o cosmetico pelo nome.</summary>
+        public static string PremioColecao(MarcoColecaoDef m)
+        {
+            string p = Premio(0, 0, m.Renome, null);
+            return m.Cosmetico == null ? p : p + (p.Length > 0 ? "  ·  " : "") + Loc.T("cos." + m.Cosmetico);
+        }
+
+        /// <summary>Selo do marco: FEITO ou "feitas/N".</summary>
+        public static string SeloColecao(Sim s, MarcoColecaoDef m) =>
+            s.Colecao.Pago(m) ? Loc.T("col.feito") : Qtd(Math.Min(m.N, s.Colecao.Feitas(m.Aba))) + "/" + Qtd(m.N);
 
         /// <summary>Quantidade com separador de milhar do idioma ("1.500", "1,500"); de 1 milhao em diante, a escala do Ouro ("1,23 mi").</summary>
         public static string Qtd(long v) => v >= 1000000 ? Ouro(v) : v.ToString("#,0", CultureInfo.InvariantCulture).Replace(",", Loc.T("num.mil"));
