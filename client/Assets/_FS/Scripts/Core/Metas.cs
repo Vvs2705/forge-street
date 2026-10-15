@@ -48,7 +48,12 @@ namespace FS.Core
             "order_complete", "order_premium", "order_rush_prazo",
             "worker_upgrade",   // B-CORE-04 (LIVEOPS_V1 §5.6): filtro = nivel alcancado
             "masterwork_unlock", "masterwork_family",   // B-CORE-08 (LIVEOPS_V1 §4.6): filtro = indice no Hall / item da familia
-            "contract_complete",   // D-CORE-04: Royal Contract concluido (Contratos.Concluir); o LIVEOPS_V1 §4.6 o chama royal_contract_complete
+            "contract_complete",   // D-CORE-04: Royal Contract concluido (Contratos.Concluir)
+            // metas de sistemas (raia H): contados aqui (Ev.Graded, Sim.Strike, LiveOps.Entra) ou DERIVADOS do estado do nucleo (Valor: retroativo,
+            // nada no mt.c): Charter e marco da Collection pelo ledger do Renome, projetos, nivel do Renome, nivel de estacao, trilha de evento e
+            // do Passe pelo ledger das metas
+            "quality_crafted", "quality_superior", "master_strike", "event_enter",
+            "district_unlock", "collection_milestone", "blueprint_unlock", "reputation_level", "station_level", "event_complete", "pass_level",
         };
 
         public sealed class Slot { public MetaDef Def; public long Base, Alvo; }
@@ -102,8 +107,21 @@ namespace FS.Core
                     Soma("masterwork_family", Items.IndexOf(_sim.Hall.Defs[b].Familia, _sim.ItemDefs), 1);
                     break;
                 case Ev.ContractDone: Soma("contract_complete", -1, 1); break;   // D-CORE-04
+                case Ev.Graded:   // raia H: A = estacao, B = nivel (so acima de Normal; a Masterwork vai ao Hall sem Ev.Graded)
+                    int it = (int)_sim.Stations[a].OutItem;
+                    Soma("quality_crafted", it, 1);
+                    if (b >= (int)Quality.Superior) Soma("quality_superior", it, 1);
+                    break;
             }
         }
+
+        /// <summary>Raia H: contagem fora do fluxo de Ev: golpe de mestre acertado (Sim.Strike; item da raiz, -1 = so o total) e entrada num
+        /// evento (LiveOps.Entra).</summary>
+        public void Registra(string ev, int filtro = -1) => Soma(ev, filtro, 1);
+
+        /// <summary>C-CORE-03 (raia H): venda de um item que a raiz nao tem (o elmo da Rua dos Armeiros): a chave vai pelo ID (product_sold.elmo);
+        /// o total ja contou no On.</summary>
+        public void RegistraItem(string ev, string item) => Add(ev + "." + item, 1);
 
         /// <summary>B-CORE-05: encomenda entregue (o Ev.OrderDone nao leva o tipo). So conta: o Sim segue identico.</summary>
         public void OnEncomenda(OrderType t, bool noPrazo)
@@ -128,6 +146,27 @@ namespace FS.Core
         /// <summary>Valor do contador da meta (Distintos: quantos produtos com pelo menos 1; em order_complete, quantos tipos fora o Event).</summary>
         public long Valor(MetaDef d)
         {
+            switch (d.Evento)   // raia H: derivados do estado do nucleo (LIVEOPS_V1 §4.5: save antigo ganha o retroativo, nada novo no save)
+            {
+                case "district_unlock": return _sim.Renome.Ledger.Contains("charter:" + d.Ref) ? 1 : 0;   // Ref = distrito (Renome.OnCharter)
+                case "collection_milestone": return _sim.Renome.Ledger.Contains(Colecao.Prefixo + d.Ref) ? 1 : 0;   // Ref = marco (Colecao.Tx)
+                case "blueprint_unlock": return _sim.Projetos.Count;
+                case "reputation_level": return _sim.Renome.Nivel;
+                case "station_level":   // filtro = nivel: familias com um nivel >= filtro comprado (a bigorna longa, Meta sem estacao, nao conta)
+                    UpgradeDef[] ups = _sim.UpgradeDefs;
+                    var fam = new HashSet<string>();
+                    for (int u = 0; u < ups.Length; u++)
+                    {
+                        int nv = 1;
+                        for (int r = u; r >= 0 && ups[r].Station != null; r = ups[r].Requires) nv++;   // Upgrades.StationLevel na tabela deste Sim
+                        if (_sim.Bought[u] && nv >= d.Filtro && ups[u].Station != null) fam.Add(ups[u].Station);
+                    }
+                    return fam.Count;
+                case "event_complete":   // o ultimo limiar da trilha pago (e:{evento}:{pontos}; o ledger nunca limpa e:)
+                    return Array.FindAll(_sim.LiveOps.Eventos, e => Ledger.Contains("e:" + e.Id + ":" + S(e.Trilha[e.Trilha.Length - 1].Pontos))).Length;
+                case "pass_level":   // o ultimo nivel da trilha free resgatado (RESGATAR ou o fim da temporada, que paga o alcancado)
+                    return Array.FindAll(_sim.LiveOps.Passes, p => Ledger.Contains(LiveOps.TxNivel(p, p.Niveis))).Length;
+            }
             if (d.Conta != Conta.Distintos) { Cont.TryGetValue(d.Chave, out long v); return v; }
             bool tipos = d.Evento == "order_complete";
             long n = 0;
@@ -217,6 +256,10 @@ namespace FS.Core
                 case "order_complete": return _sim.Encomendas.TipoAberto((OrderType)d.Filtro);
                 case "order_premium": return _sim.Encomendas.TipoAberto(OrderType.Quality) || _sim.Encomendas.TipoAberto(OrderType.Mixed);
                 case "order_rush_prazo": return _sim.Encomendas.TipoAberto(OrderType.Rush);
+                // raia H: contrato so com um a cumprir (o ativo ou a oferta); qualidade e golpe so com a Quality aberta (LIVEOPS_V1 §4.3: uma
+                // linha ja faz Fina). ponytail: a vaga escolhida fica ate a virada mesmo se o contrato for abandonado (abandonar nao pune)
+                case "contract_complete": return _sim.Contratos.Ativo != null || _sim.Contratos.Oferta != null;
+                case "quality_crafted": case "quality_superior": case "master_strike": return _sim.Encomendas.TipoAberto(OrderType.Quality);
                 default: return true;
             }
         }
@@ -331,6 +374,7 @@ namespace FS.Core
             }
             Max("worker_upgrade", -1, subidos);
             Max("chest_opened", -1, s.Chests.FindAll(c => c.State == 2).Count);
+            Max("contract_complete", -1, s.Contratos.Concluidos.Count);   // raia H (o Ev.ContractDone conta desde o #64)
         }
 
         void Max(string ev, int filtro, long v)

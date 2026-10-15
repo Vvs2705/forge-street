@@ -169,7 +169,8 @@ namespace FS.Tests
             EventDef rw = LiveOpsDefs.Eventos.First(e => e.Id.EndsWith("_royal_week", StringComparison.Ordinal));
             raiz.Metas.Agora(rw.Comeca + 3600, 0); raiz.LiveOps.Agora(rw.Comeca + 3600);
             if (raiz.LiveOps.Evento == null) Assert.IsTrue(raiz.LiveOps.Forca(rw));
-            MissaoEvento vende = rw.Missoes.First(x => x.Id == "vende300"), golpe = rw.Missoes.First(x => x.Id == "golpe10"),
+            // raia H: a Royal Week trocou os 10 golpes pelo contrato; o contador do evento conta o golpe com ou sem a missao no dado
+            MissaoEvento vende = rw.Missoes.First(x => x.Id == "vende300"), golpe = new MissaoEvento("golpe10", "master_strike", 10, 100),
                 cofre = rw.Missoes.First(x => x.Id == "cofre2");
             long sold0 = Cont(raiz, "product_sold"), espada0 = Cont(raiz, "product_sold.2"), done0 = Cont(raiz, "order_done"), rn0 = raiz.Renome.Total;
             Bot b = Bot.Ideal();
@@ -183,6 +184,7 @@ namespace FS.Tests
             Assert.AreEqual((long)row.OrderCount, tipos, "o tipo da encomenda tambem");
             Assert.AreEqual(row.Encomendas.RenomeGanho, raiz.Renome.Total - rn0, "o Renome das encomendas da Row sobe o da raiz, 1x");
             Assert.AreEqual((Math.Min(row.Sales, 300L), Math.Min(row.Strikes, 10L)), (raiz.LiveOps.Feito(vende), raiz.LiveOps.Feito(golpe)), "evento da raiz");
+            Assert.AreEqual((long)row.Strikes, Cont(raiz, "master_strike"), "e o golpe nas metas da raiz (raia H)");
             Assert.AreEqual(0L, raiz.LiveOps.Feito(cofre));
             long cofreMeta = Cont(raiz, "offline_claim");
             Assert.Greater(imp.ApplyOffline(3600, 99), 0L);

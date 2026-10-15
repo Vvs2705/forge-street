@@ -78,8 +78,9 @@ namespace FS.Tests
             // (dia x 5 + 2) mod 19 -> 5
             CollectionAssert.AreEqual(new[] { "dly_ferram20", "dly_worker_nivel", "dly_lingotes100" }, Ids(a));
             CollectionAssert.AreEqual(Ids(a), Ids(b), "mesmo dia, mesmas diarias");
-            // semana: (semana x 3 + k) mod 14 a partir de 3; joias100 travada (Joalheria) -> a seguinte
-            CollectionAssert.AreEqual(new[] { "wkl_melhoria10", "wkl_vip15", "wkl_cofre5", "wkl_diarias15" }, IdsW(a));
+            // semana: (semana x 3 + k) mod 20 a partir de 11 (raia H: 20 semanais); forja_joias100 travada (Joalheria); a Mixed ja abre (3 linhas);
+            // Bulk, Royal, contrato, Superior e golpe fechados (Metas.Livre) -> as seguintes, sem repetir contador
+            CollectionAssert.AreEqual(new[] { "wkl_renda1h", "wkl_gasta30min", "wkl_enc_premium5", "wkl_enc25" }, IdsW(a));
             a.Metas.Agora(Em(D + 1, 10), Fuso);
             // travadas puladas: vende150 e vende300 (Joalheria, Vitrine de joias); B = (20001 x 5 + 1) mod 14 -> 4
             CollectionAssert.AreEqual(new[] { "dly_forja_ferram60", "dly_gasta10min", "dly_renda5min" }, Ids(a));
@@ -363,11 +364,220 @@ namespace FS.Tests
             s.T.NivelEstacaoQ = 200; s.Recompute();   // B-CORE-08: masterwork_*: uma obra-prima de verdade (Superior + projeto + golpe)
             s.Projetos.Ganha("bp_mw_primeira_lamina", BlueprintSourceKind.Milestone);
             Assert.AreEqual(Quality.Masterwork, MasterworksTests.ComGolpe(s, s.AnvilA));
-            foreach (string ev in Metas.Eventos)
-                Assert.Greater(s.Metas.Cont.TryGetValue(ev, out long v) ? v : 0, 0L, ev);
+            // raia H: Superior de verdade (Ev.Graded: o golpe numa Superior sem projeto), o Charter do Old Forge (producao, Renome 4, a obra),
+            // marcos da Collection (os projetos), nivel III, o evento do T0 com a trilha inteira e o nivel 30 do Passe resgatado
+            Assert.AreEqual(Quality.Superior, MasterworksTests.ComGolpe(s, s.AnvilA));
+            for (int u = 0; u < s.UpgradeDefs.Length; u++) if (s.IsProduction(u)) s.Buy((Upgrade)u);
+            s.Buy(Upgrade.AnvilsLv2); s.Buy(Upgrade.AnvilsLv3);
+            s.Renome.Ganha(400);
+            Assert.IsTrue(new Imperio(s).Charter(Distritos.OldForgeId), "Charter do Old Forge pelo caminho real");
+            foreach (BlueprintDef d in s.Projetos.Defs) s.Projetos.Ganha(d.Id, d.Sources[0].Kind);
+            s.Tick(1f / 30f, 0f, 0f);   // a Collection paga os marcos alcancados
+            s.LiveOps.Agora(LiveOpsDefs.T0 + 3600);
+            Assert.IsNotNull(s.LiveOps.Evento, "a Royal Week do T0");
+            s.LiveOps.PontosEncomenda(s.LiveOps.Evento.Id, 1000);   // a trilha inteira pela encomenda Event
+            s.LiveOps.Agora(LiveOpsDefs.T0 + 3601);
+            s.LiveOps.Ganha(s.LiveOps.Passe.XpTotal);
+            s.LiveOps.Resgatar(s.LiveOps.Passe.Niveis);
+            MarcoColecaoDef pago = Array.Find(s.Colecao.Marcos, s.Colecao.Pago);
+            foreach (string ev in Metas.Eventos)   // contador do mt.c ou derivado do nucleo (Metas.Valor)
+            {
+                var sonda = new MetaDef("ach_sonda", TipoMeta.Conquista, -1, ev, ev == "station_level" ? 3 : -1, 1, null, 0, 0, 0,
+                    refId: ev == "district_unlock" ? Distritos.OldForgeId : ev == "collection_milestone" ? pago?.Id : null);
+                Assert.Greater(s.Metas.Valor(sonda), 0L, ev);
+            }
             var todos = new Sim();
             for (int u = 0; u < Upgrades.Count; u++) todos.Buy((Upgrade)u);
             Assert.AreEqual(Metas.AjudantesOldForge, todos.Workers.Count);
+        }
+
+        // ------------------------------------------------------------------ metas de sistemas (raia H)
+
+        static MetaDef A(string id) => MetasDefs.Achar(id);
+
+        /// <summary>A conquista `id` esta pronta e paga 1x: a 2a vez e depois do save/load devolvem -1 (o ID ficou no ledger). Devolve o ouro.</summary>
+        static long UmaVez(Sim s, string id)
+        {
+            Assert.IsTrue(s.Metas.Conquista(A(id)).Pronta, id + " pronta");
+            long g = s.Metas.ResgatarConquista(id);
+            Assert.GreaterOrEqual(g, 0L, id);
+            Assert.AreEqual(-1L, s.Metas.ResgatarConquista(id), id + ": 2a vez");
+            Sim r = Sim.Load(s.Save(Em(D, 12)));
+            Assert.IsTrue(r.Metas.Conquista(A(id)).Paga, id + ": paga depois do load");
+            Assert.AreEqual(-1L, r.Metas.ResgatarConquista(id), id + ": depois do load");
+            return g;
+        }
+
+        /// <summary>A vaga em que a semanal `id` cai, virando a semana a partir do dia `dia` (ate `max` semanas; `dia` fica na semana achada), ou -1.</summary>
+        static int SemanaCom(Sim s, string id, ref long dia, int max)
+        {
+            for (int w = 0; w < max; w++, dia += 7)
+            {
+                s.Metas.Agora(Em(dia, 10), Fuso);
+                int k = Array.IndexOf(IdsW(s), id);
+                if (k >= 0) return k;
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// Raia H (C-CORE-03 + D-CORE-04): o contrato da raiz cumprido com elmos vendidos na Rua dos Armeiros conta nas conquistas do Imperio
+        /// (contract_complete) e o elmo conta pelo ID (product_sold.elmo, sem virar espada); cada uma paga 1x e o save do Imperio leva o contador.
+        /// </summary>
+        [Test]
+        public void ContratoEElmo_VendidosNaRua_ContamNaRaiz_PagamUmaVez()
+        {
+            Imperio imp = Imperio.Chegada(Distritos.ArmorersRow);
+            Sim raiz = imp.Raiz, row = imp.Ativo;
+            raiz.RateEma = 2.0;
+            raiz.Metas.Agora(Em(D, 10), Fuso);
+            raiz.Contratos.Defs = new[] { new ContractDef("ctr_elmos", OrderDefs.OldForge, new[] { new ContractStage("elmo", 2, Quality.Normal) }, 10f, 1, 15, null) };
+            Assert.IsTrue(raiz.Contratos.Forca("ctr_elmos"));
+            Item elmo = (Item)Items.IndexOf("elmo", row.ItemDefs);
+            Assert.AreEqual(0L, raiz.Metas.Conquista(A("ach_contrato1")).Feito);
+            EncTeste.Vende(row, elmo);
+            EncTeste.Vende(row, elmo);
+            Assert.IsTrue(raiz.Contratos.Concluido("ctr_elmos"), "a venda da Row cumpriu o contrato da raiz");
+            Assert.AreEqual(1L, raiz.Metas.Conquista(A("ach_contratos12")).Feito, "1 de 12");
+            Assert.AreEqual(2L, raiz.Metas.Conquista(A("ach_elmos100")).Feito, "o elmo conta pelo ID na raiz");
+            Assert.AreEqual(0L, raiz.Metas.Conquista(A("ach_espadas_venda100")).Feito, "e nao vira espada (handle 2 da Row)");
+            long xp = raiz.Metas.PassXp;
+            Assert.AreEqual(0L, UmaVez(raiz, "ach_contrato1"), "XP 150, sem ouro");
+            Assert.AreEqual(xp + 150L, raiz.Metas.PassXp);
+            for (int k = 0; k < 98; k++) EncTeste.Vende(row, elmo);
+            UmaVez(raiz, "ach_elmos100");
+            Assert.IsFalse(raiz.Metas.Conquista(A("ach_contratos12")).Pronta);
+            Imperio r = Imperio.Load(imp.Save(1));
+            Assert.AreEqual(100L, r.Raiz.Metas.Conquista(A("ach_elmos100")).Feito, "product_sold.elmo no mt.c");
+            Assert.AreEqual(-1L, r.Raiz.Metas.ResgatarConquista("ach_elmos100"));
+        }
+
+        /// <summary>Raia H: a semanal de contrato so entra no rodizio com um contrato a cumprir (o ronda pede Renome 3); fecha pelo Ev.ContractDone
+        /// e paga 1x (save/load inclusive).</summary>
+        [Test]
+        public void SemanalDeContrato_SoComUmACumprir_FechaPeloContrato_UmaVez()
+        {
+            Sim s = Aberta();
+            long dia = D;
+            Assert.AreEqual(-1, SemanaCom(s, "wkl_contrato1", ref dia, 25), "sem contrato a cumprir nunca entra");
+            s.Renome.Ganha(180);
+            Assert.IsNotNull(s.Contratos.Oferta, "o ronda abriu");
+            int k = SemanaCom(s, "wkl_contrato1", ref dia, 25);
+            Assert.GreaterOrEqual(k, 0, "com o ronda aberto entra");
+            Assert.IsFalse(s.Metas.Semanal(k).Pronta);
+            Assert.IsTrue(s.Contratos.Aceitar());
+            s.Contratos.Ativo.Etapa = s.Contratos.Ativo.Def.Etapas.Length;
+            s.Tick(1f / 30f, 0f, 0f);
+            Assert.IsTrue(s.Metas.Semanal(k).Pronta, "o contrato cumprido fechou a semanal");
+            Assert.Greater(s.Metas.ResgatarSemanal(k), 0L);
+            Assert.AreEqual(-1L, s.Metas.ResgatarSemanal(k));
+            Sim r = Sim.Load(s.Save(Em(dia, 11)));
+            r.Metas.Agora(Em(dia, 11), Fuso);
+            Assert.IsTrue(r.Metas.Semanal(k).Paga);
+            Assert.AreEqual(-1L, r.Metas.ResgatarSemanal(k), "reabrir nao paga de novo");
+        }
+
+        /// <summary>Raia H (B-CORE-03): Superior pela automacao (Ev.Graded) e golpe de mestre de verdade (Sim.Strike) pagam as conquistas 1x; as
+        /// semanais de Superior e de golpe so entram no rodizio com a Quality aberta (uma linha ja faz Fina).</summary>
+        [Test]
+        public void QualidadeEGolpe_PeloCaminhoReal_PagamUmaVez_SemanaisSoComAQualityAberta()
+        {
+            long dia = D;
+            Sim sem = Aberta();
+            Assert.IsFalse(sem.Encomendas.TipoAberto(OrderType.Quality));
+            Assert.AreEqual(-1, SemanaCom(sem, "wkl_superior20", ref dia, 25), "sem a Quality aberta");
+            Assert.AreEqual(-1, SemanaCom(sem, "wkl_golpe50", ref dia, 25));
+            Sim s = QualidadeTests.ComQ(200);   // Ferramentas e Bigornas II com q 200: toda espada sai Superior
+            s.RateEma = 2.0;
+            s.Metas.Agora(Em(D, 10), Fuso);
+            Assert.IsFalse(s.Metas.Conquista(A("ach_primeira_fina")).Pronta);
+            Assert.AreEqual(Quality.Superior, QualidadeTests.Peca(s));
+            Assert.AreEqual(1L, s.Metas.Conquista(A("ach_primeira_superior")).Feito, "Ev.Graded Superior");
+            Assert.AreEqual(1L, s.Metas.Conquista(A("ach_primeira_fina")).Feito, "Superior conta como Fina ou melhor");
+            Assert.AreEqual(0L, s.Metas.Conquista(A("ach_golpe1")).Feito);
+            Assert.AreEqual(Quality.Superior, MasterworksTests.ComGolpe(s, s.AnvilA), "sem projeto, o golpe numa Superior fica Superior");
+            Assert.AreEqual(1L, s.Metas.Conquista(A("ach_golpe1")).Feito, "Sim.Strike");
+            Assert.AreEqual(2L, s.Metas.Conquista(A("ach_fina100")).Feito);
+            s.Metas.On(Ev.Graded, s.ShieldBench.Index, (int)Quality.Fine);   // o On que o Sim.Emit chama: uma Fina de escudo
+            Assert.AreEqual(3L, s.Metas.Conquista(A("ach_fina100")).Feito);
+            Assert.AreEqual(2L, s.Metas.Conquista(A("ach_superior1k")).Feito, "Fina nao e' Superior");
+            long renome = s.Renome.Total;
+            UmaVez(s, "ach_primeira_superior");
+            Assert.AreEqual(renome + 3L, s.Renome.Total);
+            Assert.Greater(UmaVez(s, "ach_golpe1"), 0L);
+            Assert.Greater(UmaVez(s, "ach_primeira_fina"), 0L);
+            Assert.IsTrue(s.Encomendas.TipoAberto(OrderType.Quality));
+            dia = D;
+            Assert.GreaterOrEqual(SemanaCom(s, "wkl_superior20", ref dia, 25), 0);
+            Assert.GreaterOrEqual(SemanaCom(s, "wkl_golpe50", ref dia, 25), 0);
+        }
+
+        /// <summary>
+        /// Raia H: as derivadas do estado do nucleo (nada novo no save): projetos, nivel de estacao, Renome, marco da Collection e Charter. Feitas
+        /// antes da 1a abertura das metas, chegam pelo retroativo; cada uma paga 1x; conquista de Renome nunca da Renome.
+        /// </summary>
+        [Test]
+        public void Derivadas_ProjetosEstacaoRenomeColecaoECharter_RetroativasUmaVez()
+        {
+            Sim s = QualidadeTests.ComQ(200);
+            s.RateEma = 2.0;
+            BlueprintDef[] bps = s.Projetos.Defs;
+            for (int i = 0; i < 9; i++) Assert.IsTrue(s.Projetos.Ganha(bps[i].Id, bps[i].Sources[0].Kind));
+            s.Metas.Agora(Em(D, 10), Fuso);
+            Assert.AreEqual(9L, s.Metas.Conquista(A("ach_bp10")).Feito, "retroativo: os projetos que ja tinha");
+            Assert.IsFalse(s.Metas.Conquista(A("ach_bp10")).Pronta);
+            Assert.IsTrue(s.Projetos.Ganha(bps[9].Id, bps[9].Sources[0].Kind));
+            Assert.Greater(UmaVez(s, "ach_bp1"), 0L);
+            long rn = s.Renome.Total;
+            UmaVez(s, "ach_bp10");
+            Assert.AreEqual(rn + 5L, s.Renome.Total);
+            Assert.IsFalse(s.Metas.Conquista(A("ach_bp18")).Pronta);
+            // nivel de estacao: Bigornas II nao e' o nivel 3; a meta das 5 pede as 4 familias com nivel V
+            Assert.IsFalse(s.Metas.Conquista(A("ach_estacao_n3")).Pronta, "so o nivel II");
+            s.Buy(Upgrade.AnvilsLv3);
+            UmaVez(s, "ach_estacao_n3");
+            Assert.AreEqual(4L, A("ach_estacoes_n5").Alvo);
+            Assert.AreEqual(0L, s.Metas.Conquista(A("ach_estacoes_n5")).Feito);
+            // Renome: o nivel 4 fecha as duas; nenhuma da Renome (sem laco)
+            Assert.IsFalse(s.Metas.Conquista(A("ach_renome1")).Pronta);
+            s.Renome.Ganha(RenomeDefs.Niveis[4].Limiar);
+            UmaVez(s, "ach_renome1");
+            rn = s.Renome.Total;
+            UmaVez(s, "ach_renome4");
+            Assert.AreEqual(rn, s.Renome.Total, "conquista de Renome nunca da Renome");
+            // Collection: o marco de 10 projetos paga e nao conta; Produtos 100% (as 15 produto x qualidade) conta
+            s.Projetos.Ganha("bp_mw_primeira_lamina", BlueprintSourceKind.Milestone);
+            s.Tick(1f / 30f, 0f, 0f);
+            Assert.IsTrue(s.Colecao.Pago(Array.Find(s.Colecao.Marcos, m => m.Id == "col_bp_old_forge_50")));
+            Assert.IsFalse(s.Metas.Conquista(A("ach_colecao_produtos")).Pronta, "outro marco nao conta");
+            for (int i = 0; i < s.ItemDefs.Length; i++)
+                if (s.IsProduct((Item)i)) { s.SoldItems[i] = 3; s.Projetos.Finas[i] = 2; s.Colecao.Superiores[i] = 1; }
+            s.Tick(1f / 30f, 0f, 0f);
+            UmaVez(s, "ach_colecao_produtos");
+            // Charter do Old Forge pelo Imperio (producao completa, Renome 4, 1 obra-prima): o Renome.OnCharter grava charter:old_forge
+            for (int u = 0; u < s.UpgradeDefs.Length; u++) if (s.IsProduction(u)) s.Buy((Upgrade)u);
+            Assert.AreEqual(Quality.Masterwork, MasterworksTests.ComGolpe(s, s.AnvilA));
+            var imp = new Imperio(s);
+            Assert.IsFalse(s.Metas.Conquista(A("ach_charter1")).Pronta);
+            Assert.IsTrue(imp.Charter(Distritos.OldForgeId));
+            UmaVez(s, "ach_charter1");
+        }
+
+        /// <summary>Raia H: save do #64 com o contrato concluido e as metas nunca abertas (sem mt.*): a conquista chega pelo retroativo (ctr=).</summary>
+        [Test]
+        public void SaveAntigo_ContratoConcluido_ConquistaPeloRetroativo()
+        {
+            Sim s = Aberta();
+            s.Renome.Ganha(180);
+            Assert.IsTrue(s.Contratos.Aceitar());
+            s.Contratos.Ativo.Etapa = s.Contratos.Ativo.Def.Etapas.Length;
+            s.Tick(1f / 30f, 0f, 0f);
+            string velho = s.Save(1000);
+            StringAssert.DoesNotContain("mt.", velho);
+            StringAssert.Contains("ctr=ctr_ronda_vila", velho);
+            Sim r = Sim.Load(velho);
+            r.Metas.Agora(Em(D, 10), Fuso);
+            UmaVez(r, "ach_contrato1");
         }
 
         [Test]
@@ -392,7 +602,7 @@ namespace FS.Tests
             MetaDef Dly(string id, string ev, int filtro, long alvo, int ouro = 20, int xp = 100, int pool = 0, string abre = "ferramentas") =>
                 new MetaDef(id, TipoMeta.Diaria, pool, ev, filtro, alvo, abre, ouro, xp, 0);
             Acusa(Valida(Com(MetasDefs.Diarias, Dly("dly_vende50", "product_sold", -1, 10))), "ID repetido");
-            Acusa(Valida(Com(MetasDefs.Diarias, Dly("dly_qualidade", "quality_crafted", -1, 10))), "que o Sim nao emite");
+            Acusa(Valida(Com(MetasDefs.Diarias, Dly("dly_contrato", "royal_contract_complete", -1, 10))), "que o Sim nao emite");   // o nome do LIVEOPS_V1 antigo
             Acusa(Valida(Com(MetasDefs.Diarias, Dly("dly_perde", "client_left", -1, 10))), "pune ou exige anuncio");
             Acusa(Valida(Com(MetasDefs.Diarias, Dly("dly_rico", "product_sold", -1, 10, ouro: 300))), "fora da faixa");
             Acusa(Valida(Com(MetasDefs.Diarias, Dly("dly_quebrado", "product_sold", -1, 10, ouro: 22))), "fora da faixa");
@@ -411,6 +621,23 @@ namespace FS.Tests
             Acusa(Valida(login: Enumerable.Repeat(new LoginDia(60, 0), 7).ToArray(), dly: MetasDefs.Diarias.Select(d =>
                 new MetaDef(d.Id, d.Tipo, d.Pool, d.Evento, d.Filtro, d.Alvo, d.Abre, 30, d.Xp, 0)).ToArray(), wkl: MetasDefs.Semanais.Select(d =>
                 new MetaDef(d.Id, d.Tipo, d.Pool, d.Evento, d.Filtro, d.Alvo, d.Abre, 90, d.Xp, d.Renome)).ToArray()), "acima de 180");
+            // raia H: alvo dentro do conteudo do build (requiresContent), filtro por ID so onde vale e que exista, Renome que nao da Renome
+            MetaDef Ach(string id, string ev, int filtro, long alvo, int renome = 0, string refId = null) =>
+                new MetaDef(id, TipoMeta.Conquista, -1, ev, filtro, alvo, null, 0, 50, renome, refId: refId);
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_c13", "contract_complete", -1, 13))), "acima do que o build tem (12)");
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_bp99", "blueprint_unlock", -1, 99))), "acima do que o build tem");
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_ev11", "event_enter", -1, 11))), "acima do que o build tem (10)");
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_n5x5", "station_level", 5, 5))), "acima do que o build tem (4)");
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_ch2", "district_unlock", -1, 2, refId: "old_forge"))), "acima do que o build tem (1)");
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_n1", "station_level", 1, 1))), "filtro 1 invalido");
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_q9", "quality_crafted", 9, 1))), "filtro 9 invalido");
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_rn", "reputation_level", -1, 2, renome: 5))), "laco");
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_ch", "district_unlock", -1, 1, refId: "nada"))), "ID \"nada\" invalido");
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_ch0", "district_unlock", -1, 1))), "invalido para district_unlock");
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_col", "collection_milestone", -1, 1, refId: "col_x"))), "ID \"col_x\" invalido");
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_lingote", "product_sold", -1, 1, refId: "lingote"))), "ID \"lingote\" invalido");   // insumo
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_elmo2", "product_sold", 2, 1, refId: "elmo"))), "ID \"elmo\" invalido");   // ID e filtro
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_ref", "order_done", -1, 1, refId: "elmo"))), "ID \"elmo\" invalido");   // ID fora do lugar
         }
 
         [Test]

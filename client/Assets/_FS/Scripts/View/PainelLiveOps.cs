@@ -19,7 +19,7 @@ namespace FS
         sealed class LinhaNivel { public GameObject Go; public RewardDef Premio; public Text Nome, Texto, BText; public Image BFace; public Button B; public int Estado = -1; public long Ouro = -1; }
 
         static readonly Color Fundo = Art.Hex(0xF3DFB8), Tinta = MenuBar.Brown;
-        const int MaxMissoes = 8;
+        const int MaxMissoes = LiveOpsDefs.MaxMissoes;   // o validator recusa evento com mais
         const float LinhaPx = 120f;
 
         readonly Sim _sim;

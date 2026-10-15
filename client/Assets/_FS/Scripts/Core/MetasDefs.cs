@@ -16,19 +16,20 @@ namespace FS.Core
     /// </summary>
     public sealed class MetaDef
     {
-        /// <summary>Chave = contador do Metas.Cont; Tx = ID de transacao da conquista (a:{id}; missao usa o do periodo).</summary>
-        public readonly string Id, Evento, Abre, Insignia, Chave, Tx;
+        /// <summary>Chave = contador do Metas.Cont; Tx = ID de transacao da conquista (a:{id}; missao usa o do periodo). Ref = filtro por ID
+        /// (raia H): item de outro distrito (product_sold.elmo, C-CORE-03), distrito do Charter ou marco da Collection; com Ref, Filtro = -1.</summary>
+        public readonly string Id, Evento, Abre, Insignia, Chave, Tx, Ref;
         public readonly TipoMeta Tipo;
         public readonly int Pool, Filtro, OuroS, Xp, Renome;
         public readonly long Alvo;
         public readonly Conta Conta;
 
         public MetaDef(string id, TipoMeta tipo, int pool, string evento, int filtro, long alvo, string abre, int ouroS, int xp, int renome,
-            Conta conta = Conta.Unidades, string insignia = null)
+            Conta conta = Conta.Unidades, string insignia = null, string refId = null)
         {
             Id = id; Tipo = tipo; Pool = pool; Evento = evento; Filtro = filtro; Alvo = alvo; Abre = abre;
-            OuroS = ouroS; Xp = xp; Renome = renome; Conta = conta; Insignia = insignia;
-            Chave = Metas.Chave(evento, filtro);
+            OuroS = ouroS; Xp = xp; Renome = renome; Conta = conta; Insignia = insignia; Ref = refId;
+            Chave = refId != null ? evento + "." + refId : Metas.Chave(evento, filtro);
             Tx = tipo == TipoMeta.Conquista ? "a:" + id : null;
         }
     }
@@ -41,9 +42,10 @@ namespace FS.Core
     }
 
     /// <summary>
-    /// D-CORE-02: os modelos. So entram os que tem gatilho que o Sim (ou o Metas) emite HOJE; os do LIVEOPS_V1 com evento ✗ (qualidade, golpe,
-    /// Renome, eventos (worker_upgrade entrou com o B-CORE-04; ach_workers20 espera os distritos), categoria de upgrade, Masterwork, Blueprint, distrito, contrato, familias distintas) entram com o
-    /// sistema deles. Os extras sobre eventos que ja existem (marcados "novo") completam os minimos do GDD §23 #12.
+    /// D-CORE-02: os modelos. So entram os que tem gatilho que o Sim (ou o Metas) emite HOJE; os do LIVEOPS_V1 com evento ✗ entram com o
+    /// sistema deles (raia H: contrato, Charter, Collection, projetos, Renome, nivel de estacao, qualidade, golpe, evento e Passe ja entraram;
+    /// esperam: a diaria do pool C, o golpe que faz Superior, ach_workers20 e os de 3+ distritos). Os extras sobre eventos que ja existem
+    /// (marcados "novo") completam os minimos do GDD §23 #12.
     /// Renome ainda nao existe: "abre com Renome 1" usa a Joalheria (12-25 min ~ 23 min no F2P) e "Renome 2" a Vitrine de joias, ate o B-CORE-06.
     /// </summary>
     public static class MetasDefs
@@ -53,7 +55,12 @@ namespace FS.Core
         const string Sold = "product_sold", Craft = "product_crafted", Ord = "order_done", Buy = "upgrade_buy", Src = "currency_source",
             Sink = "currency_sink", Cofre = "offline_claim", Vip = "vip_served", Hire = "worker_hired", Bau = "chest_opened",
             Missao = "mission_complete", Login = "login_claim", Nivel = "worker_upgrade",
-            Tipo = "order_complete", Premium = "order_premium", Rush = "order_rush_prazo", Mw = "masterwork_unlock", MwFamilia = "masterwork_family";
+            Tipo = "order_complete", Premium = "order_premium", Rush = "order_rush_prazo", Mw = "masterwork_unlock", MwFamilia = "masterwork_family",
+            // metas de sistemas (raia H): contratos (#64), Charter (#61), Collection (#63), projetos (#55), Renome, niveis de estacao, qualidade e golpe
+            // (B-CORE-03), eventos e Passe (D-CORE-03/04)
+            Ctr = "contract_complete", Charter = "district_unlock", Col = "collection_milestone", Bp = "blueprint_unlock", Ren = "reputation_level",
+            Est = "station_level", Fina = "quality_crafted", Sup = "quality_superior", Golpe = "master_strike", EvFim = "event_complete",
+            EvEntra = "event_enter", Passe = "pass_level";
         /// <summary>B-CORE-04: os workers do Old Forge (6 ajudantes + 7 da Equipe, LIVEOPS_V1 §5.5 ach_workers13).</summary>
         static readonly int WorkersOldForge = Array.FindAll(WorkerDefs.All, d => d.Distrito == WorkerDefs.OldForge).Length;
         const int Lingote = (int)Item.Ingot, Espada = (int)Item.Sword, Escudo = (int)Item.Shield, Ferram = (int)Item.Tool, Joia = (int)Item.Jewel;
@@ -66,8 +73,9 @@ namespace FS.Core
         static MetaDef W(string id, string ev, int filtro, long alvo, string abre, Conta c = Conta.Unidades) =>
             new MetaDef(id, TipoMeta.Semanal, -1, ev, filtro, alvo, abre, 60, 350, 5, c);
 
-        static MetaDef C(string id, string ev, int filtro, long alvo, int ouroS = 0, int xp = 0, int renome = 0, string insignia = null, Conta c = Conta.Unidades) =>
-            new MetaDef(id, TipoMeta.Conquista, -1, ev, filtro, alvo, null, ouroS, xp, renome, c, insignia);
+        static MetaDef C(string id, string ev, int filtro, long alvo, int ouroS = 0, int xp = 0, int renome = 0, string insignia = null, Conta c = Conta.Unidades,
+            string refId = null) =>
+            new MetaDef(id, TipoMeta.Conquista, -1, ev, filtro, alvo, null, ouroS, xp, renome, c, insignia, refId);
 
         /// <summary>Pools A (volume) e B (gestao); a C (qualidade/Renome/evento) ainda nao tem gatilho e cai na A (LIVEOPS_V1 §4.1).</summary>
         public static readonly MetaDef[] Diarias =
@@ -127,6 +135,10 @@ namespace FS.Core
             W("wkl_enc_premium5", Premium, -1, 5, Ferr),
             W("wkl_bulk3", Tipo, (int)OrderType.Bulk, 3, Ferr),
             W("wkl_royal2", Tipo, (int)OrderType.Royal, 2, Ferr),
+            // metas de sistemas (raia H, LIVEOPS_V1 §4.3 #12-14): so entram no rodizio com um contrato a cumprir / o tipo Quality aberto (Metas.Livre)
+            W("wkl_contrato1", Ctr, -1, 1, Ferr),
+            W("wkl_superior20", Sup, -1, 20, Ferr),
+            W("wkl_golpe50", Golpe, -1, 50, Ferr),
         };
 
         public static readonly MetaDef[] Conquistas =
@@ -233,7 +245,41 @@ namespace FS.Core
             C("ach_semanais1", Missao, 1, 1, xp: 50),                  // novo
             C("ach_semanais10", Missao, 1, 10, xp: 150),
             C("ach_semanais50", Missao, 1, 50, xp: 200),               // novo
+            // metas de sistemas (raia H, LIVEOPS_V1 §4.5): os gatilhos que esperavam um sistema que ja existe. Conquista de Renome nunca da
+            // Renome; a de Charter, Collection e Masterwork da so XP ou insignia (a fonte ja deu o Renome). Districts:
+            C("ach_charter1", Charter, -1, 1, xp: 200, refId: Distritos.OldForgeId),   // a insignia e' do proprio Charter (GDD §11)
+            C("ach_elmos100", Sold, -1, 100, xp: 100, refId: "elmo"),                   // a venda da Rua dos Armeiros chega pela raiz (C-CORE-03)
+            C("ach_contrato1", Ctr, -1, 1, xp: 150),
+            C("ach_contratos12", Ctr, -1, 12, insignia: "arsenal_do_reino"),            // 9 dos 12 abrem com os distritos 3-6 (Wave C)
+            // Quality (B-CORE-03): Fina+ / Superior+ fabricada (Ev.Graded) e golpe de mestre acertado (Sim.Strike)
+            C("ach_primeira_fina", Fina, -1, 1, ouroS: 30),
+            C("ach_primeira_superior", Sup, -1, 1, xp: 50, renome: 3),
+            C("ach_fina100", Fina, -1, 100, xp: 100),
+            C("ach_superior1k", Sup, -1, 1000, insignia: "olho_de_mestre"),
+            C("ach_golpe1", Golpe, -1, 1, ouroS: 30),
+            C("ach_golpe100", Golpe, -1, 100, xp: 100, renome: 5),
+            // Blueprints (B-CORE-07), niveis de estacao (filtro = nivel), Renome (nivel) e Collection (marco por ID)
+            C("ach_bp1", Bp, -1, 1, ouroS: 30),
+            C("ach_bp10", Bp, -1, 10, xp: 100, renome: 5),
+            C("ach_bp18", Bp, -1, 18, xp: 200, insignia: "arquivista"),
+            C("ach_estacao_n3", Est, 3, 1, xp: 50),
+            C("ach_estacoes_n5", Est, 5, Estacoes(5), xp: 200, insignia: "oficina_de_ferro"),
+            C("ach_renome1", Ren, -1, 1, xp: 50),
+            C("ach_renome4", Ren, -1, 4, insignia: "fornecedor_do_reino"),
+            C("ach_colecao_produtos", Col, -1, 1, xp: 100, refId: "col_produtos_old_forge_100"),
+            // LiveOps (D-CORE-03/04): trilha de evento fechada, eventos em que entrou, trilha free do Passe fechada (o nivel 30 resgatado)
+            C("ach_evento1", EvFim, -1, 1, xp: 100),
+            C("ach_eventos4", EvEntra, -1, 4, xp: 150),
+            C("ach_passe_free", Passe, -1, 1, insignia: "veterano_de_temporada"),
         };
+
+        /// <summary>Raia H: estacoes (familias) do Old Forge com nivel `nivel` a venda (o alvo de "todas no nivel 5").</summary>
+        public static int Estacoes(int nivel)
+        {
+            var f = new System.Collections.Generic.HashSet<string>();
+            foreach (UpgradeDef u in Upgrades.All) if (u.Station != null && Upgrades.StationLevel((int)u.Up) >= nivel) f.Add(u.Station);
+            return f.Count;
+        }
 
         /// <summary>Login de 7 dias (LIVEOPS_V1 §4.4). Dia 7: a decoracao do ciclo (cos_login_*) e' posse pelo ledger (l:{ciclo}:7) e entra quando
         /// houver cosmetico; ate la ele paga o ouro de 60 s que o desenho ja previa do ciclo 5 em diante (nada prometido que nao aparece).</summary>

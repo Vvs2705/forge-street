@@ -441,9 +441,19 @@ namespace FS.Core
                     int max = d.Evento == "upgrade_buy" ? Upgrades.Count - 1 : d.Evento == "mission_complete" ? 1 : d.Evento == "order_complete" ? (int)OrderType.Event
                         : d.Evento == "product_sold" || d.Evento == "product_crafted" || d.Evento == "order_done" || d.Evento == "vip_served" ? Items.All.Length - 1
                         : d.Evento == "worker_hired" ? (int)WorkerRole.Manager : d.Evento == "worker_upgrade" ? NivelWorkerMax   // B-CORE-04: papel / nivel
-                        : d.Evento == "masterwork_unlock" ? MasterworksDefs.All.Length - 1 : d.Evento == "masterwork_family" ? Items.All.Length - 1 : -1;   // B-CORE-08
-                    if (d.Filtro < (d.Evento == "mission_complete" ? 0 : -1) || d.Filtro > max || d.Evento == "worker_upgrade" && d.Filtro >= 0 && d.Filtro < 2)
+                        : d.Evento == "masterwork_unlock" ? MasterworksDefs.All.Length - 1 : d.Evento == "masterwork_family" ? Items.All.Length - 1   // B-CORE-08
+                        : d.Evento.StartsWith("quality_", StringComparison.Ordinal) || d.Evento == "master_strike" ? Items.All.Length - 1   // raia H: item
+                        : d.Evento == "station_level" ? MaxNivelEstacao : -1;   // raia H: nivel
+                    if (d.Filtro < (d.Evento == "mission_complete" ? 0 : -1) || d.Filtro > max || d.Evento == "worker_upgrade" && d.Filtro >= 0 && d.Filtro < 2
+                        || d.Evento == "station_level" && d.Filtro < 2)
                         yield return $"{at} filtro {d.Filtro} invalido para {d.Evento}";
+                    // metas de sistemas (raia H): filtro por ID que exista, alvo dentro do conteudo do build, gatilho de Renome sem Renome (sem laco)
+                    bool porId = d.Evento == "district_unlock" || d.Evento == "collection_milestone";
+                    if (porId != (d.Ref != null) && d.Evento != "product_sold" || d.Ref != null && (d.Filtro >= 0 || !RefExiste(d)))
+                        yield return $"{at} ID \"{d.Ref}\" invalido para {d.Evento}";
+                    long conteudo = Teto(d);
+                    if (tipo == TipoMeta.Conquista && d.Alvo > conteudo) yield return $"{at} alvo {d.Alvo} acima do que o build tem ({conteudo})";
+                    if (d.Evento == "reputation_level" && d.Renome > 0) yield return $"{at} conquista de Renome que da Renome (laco)";
                     // B-CORE-04: contratar/subir mais workers do que o build tem nunca fecha
                     long workers = d.Evento == "worker_hired" ? Array.FindAll(WorkerDefs.All, x => d.Filtro < 0 || (int)x.Papel == d.Filtro).Length
                         : d.Evento == "worker_upgrade" && d.Filtro >= 2 ? Array.FindAll(WorkerDefs.All, x => x.MaxNivel >= d.Filtro).Length : long.MaxValue;
@@ -480,6 +490,41 @@ namespace FS.Core
             foreach (LoginDia l in login) loginOuro += l.OuroS;
             double dia = Metas.NDiarias * Mais(diarias) + Metas.NSemanais * Mais(semanais) / 7.0 + loginOuro / 7.0;
             if (dia > OrcamentoDia) yield return $"meta: ouro de LiveOps {dia:0} s por dia, acima de {OrcamentoDia} (LIVEOPS_V1 §1)";
+        }
+
+        // ---------- metas de sistemas (raia H) ----------
+
+        static int MaxNivelEstacao { get { int m = 1; for (int u = 0; u < Upgrades.Count; u++) if (Upgrades.All[u].Station != null) m = Math.Max(m, Upgrades.StationLevel(u)); return m; } }
+
+        /// <summary>O ID do filtro existe: produto de algum distrito do build (product_sold), distrito com Charter (district_unlock) ou marco da
+        /// Collection (collection_milestone).</summary>
+        static bool RefExiste(MetaDef d)
+        {
+            foreach (DistrictDef x in FS.Core.Distritos.All)
+                switch (d.Evento)
+                {
+                    case "product_sold": if (Array.Exists(x.Itens, i => i.Id == d.Ref && i.Product)) return true; break;
+                    case "district_unlock": if (x.Id == d.Ref && x.Charter != null) return true; break;
+                    case "collection_milestone": if (Array.Exists(x.MarcosColecao ?? MasterworksDefs.Marcos, m => m.Id == d.Ref)) return true; break;
+                }
+            return false;
+        }
+
+        /// <summary>LIVEOPS_V1 §5.5 requiresContent: o maximo que o conteudo do build deixa uma conquista contar (long.MaxValue = sem teto aqui).
+        /// ponytail: os contratos dormentes (distritos 3-6, Wave C) contam como conteudo: o ContractDef existe e abre com o distrito.</summary>
+        static long Teto(MetaDef d)
+        {
+            switch (d.Evento)
+            {
+                case "contract_complete": return ContratosDefs.All.Length;
+                case "district_unlock": case "collection_milestone": return 1;
+                case "blueprint_unlock": return ProjetosDefs.All.Length;
+                case "reputation_level": return RenomeDefs.Niveis.Length - 1;
+                case "station_level": return MetasDefs.Estacoes(d.Filtro);
+                case "event_complete": case "event_enter": return LiveOpsDefs.Eventos.Length;
+                case "pass_level": return LiveOpsDefs.Passes.Length;
+                default: return long.MaxValue;
+            }
         }
 
         public static long[] RealCosts()
