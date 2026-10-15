@@ -131,7 +131,7 @@ Legenda de gatilho: ✓ = evento do diário que já existe; ✗ = evento novo (l
 | id | `ev_s1w1_royal_week` |
 | início / fim | T0+0d 13:00 UTC → T0+6d 13:00 UTC (S1, semana 1) |
 | requisitos | Ferramentas + Renome 1 |
-| missões (700) | atender 5 VIPs (`vip_served` ✓) 100 · entregar 2 encomendas Royal (`order_complete` ✗; pede Renome 2 durante o evento) 120 · vender 300 produtos (`product_sold` ✓) 80 · fabricar 40 peças Fina ou melhor (`quality_crafted` ✗) 100 · vender 50 escudos ou peças de armadura (`product_sold` ✓) 80 · comprar 2 melhorias (`upgrade_buy` ✓, auto) 60 · abrir o cofre 2× (`offline_claim` ✓) 60 · acertar 10 golpes de mestre (`master_strike` ✗) 100 |
+| missões (700) | atender 5 VIPs (`vip_served` ✓) 100 · entregar 2 encomendas Royal (`order_complete` ✗; pede Renome 2 durante o evento) 120 · vender 300 produtos (`product_sold` ✓) 80 · fabricar 40 peças Fina ou melhor (`quality_crafted` ✗) 100 · vender 50 escudos ou peças de armadura (`product_sold` ✓) 80 · comprar 2 melhorias (`upgrade_buy` ✓, auto) 60 · abrir o cofre 2× (`offline_claim` ✓) 60 · cumprir 1 Royal Contract (`contract_complete` ✓; raia H, no lugar dos 10 golpes de mestre: o cartão mostra 8 missões, `BALANCE.md` §36) 100 |
 | recompensas | trilha do §2.2; 450: `cos_ev_s1w1_selo` "Selo do Emissário" (emblema do perfil); 1.000: `cos_ev_s1w1_tapete` "Tapete real do balcão" (decoração) |
 | pontos de evento | trilha do §2.2; encomenda Event "Pedido da corte" |
 | visual | estandartes azul e ouro na fachada e na rua, VIP de capa real, música "royal" (GDD §18), fala curta do capitão real no cartão (GDD §4) |
@@ -440,7 +440,7 @@ Pools: A tem 13, B tem 11, C tem 10. Logo depois das Ferramentas já há ≥ 3 a
 | 11 | `wkl_royal2` | Entregar 2 encomendas Royal | Renome 2 | `order_complete` ✗ |
 | 12 | `wkl_superior20` | Fabricar 20 peças Superiores | Quality aberta | `quality_crafted` ✗ |
 | 13 | `wkl_golpe50` | Acertar 50 golpes de mestre | Quality aberta | `master_strike` ✗ |
-| 14 | `wkl_contrato1` | Cumprir 1 Royal Contract (DM §31) | Royal Contracts (Wave D) | `royal_contract_complete` ✗ |
+| 14 | `wkl_contrato1` | Cumprir 1 Royal Contract (DM §31) | Royal Contracts (Wave D) | `contract_complete` ✓ |
 | 15 | `wkl_diarias15` | Concluir 15 diárias | Ferramentas | `mission_complete` ✗ |
 | 16 | `wkl_evento350` | Fazer 350 pontos no evento da semana (DM §31 "participar de evento") | evento ativo + requisito | `event_points` ✗ |
 
@@ -526,8 +526,8 @@ Todas visíveis (nenhuma escondida), progresso **derivado dos contadores do núc
 | 54 | `ach_elmos100` | Vender 100 elmos (Armorer's Row) | Districts | `product_sold` (elmo) ✓ | XP 100 |
 | 55 | `ach_distritos3` | 3 distritos abertos | Districts | `district_unlock` ✗ | XP 200 + Renome +10 |
 | 56 | `ach_distritos6` | 6 distritos abertos | Districts | `district_unlock` ✗ | insígnia "Senhor das Ruas" |
-| 57 | `ach_contrato1` | 1º Royal Contract | Districts | `royal_contract_complete` ✗ | XP 150 |
-| 58 | `ach_contratos12` | Os 12 Royal Contracts | Districts | `royal_contract_complete` ✗ | insígnia "Arsenal do Reino" |
+| 57 | `ach_contrato1` | 1º Royal Contract | Districts | `contract_complete` ✓ | XP 150 |
+| 58 | `ach_contratos12` | Os 12 Royal Contracts | Districts | `contract_complete` ✓ | insígnia "Arsenal do Reino" |
 | 59 | `ach_ouro10k` | Ganhar 10 mil de ouro em vendas | Economy | `currency_source` ✓ | XP 50 |
 | 60 | `ach_ouro1m` | Ganhar 1 milhão de ouro em vendas | Economy | `currency_source` ✓ | XP 200 + Renome +10 |
 | 61 | `ach_gasto50k` | Gastar 50 mil em melhorias | Economy | `currency_sink` ✓ | XP 100 |
@@ -567,7 +567,7 @@ Por categoria (DM §32 + Quality, Blueprints, Renome e LiveOps): Crafting 12 · 
 | `masterwork_unlock` | Masterwork, família | sim | B-CORE-08 | 8 conquistas |
 | `collection_milestone` | aba, marco | não | B-CORE-08 | 2 conquistas |
 | `district_unlock` | distrito, via (charter) | sim | C-CORE-01..03 | 3 conquistas |
-| `royal_contract_complete` (+ `royal_contract_start`) | contrato, distrito | sim | D-CORE-04 | 1 semanal, 2 conquistas |
+| `contract_complete` (+ `royal_contract_start`; o núcleo usa o nome curto, `BALANCE.md` §32) | contrato, distrito | sim | D-CORE-04 | 1 semanal, 2 conquistas, 1 missão da Royal Week |
 | `event_enter` / `event_complete` | evento, limiar | sim | D-CORE-03 | 2 conquistas; telemetria |
 | `event_points` | evento, total | não | D-CORE-03 | 1 diária, 1 semanal |
 | `login_claim` | dia do ciclo, ciclo | não | D-CORE-02 | 1 conquista, 2 eventos ("jogar em 3 dias") |
