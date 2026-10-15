@@ -301,3 +301,41 @@ Todos = assunto + ", " + `[S]` + ", " + `[I]` do cabeçalho deste arquivo, digit
 
 ## 12. Mochila do ferreiro presa ao corpo (2026-10-14, Blender — 0 crédito)
 Feedback do POCO (Vinicius, 2026-10-13, P1): a mochila da melhoria "parece um item solto mal colado" (ícone `melhoria_mochila` colado nas costas pela `WorldView`). Solução: folha própria `client/Assets/_FS/Resources/Sprites/ferreiro_mochila/` (Idle 32 q, Walking 16 q, Cheering 32 q, 4 direções) = re-render do ferreiro do Lote 1 (`arte/tripo/ferreiro` + os 3 clipes Mixamo de `arte/mixamo`) com o prop `mochila_ferreiro` (`client/tools/props_blender.py`: 1 416 tris, 10 materiais, primitivas nas coordenadas do ferreiro em repouso — corpo de couro, tampa, aba com 2 correias e fivelas de latão, bolso, cobertor creme enrolado mais largo que a cabeça, alças sobre os ombros) parentado ao osso `mixamorig:Spine2` (`render_sprites.py --attach prop.fbx --bone mixamorig:Spine2`): a mochila segue o balanço de cada quadro. Mesmos parâmetros da folha `ferreiro` fixados à mão (`--scale 109.87 --pivot-y 35.58`, célula 128, elev 60, flat, 12 fps, teto 32 q) para a `WorldView` trocar a folha do corpo na compra sem pular (`_packSheet`/`_plainSheet`; sem a folha, cai no ícone solto de antes). Conferência antes × depois: `client/Builds/sprites_contact/mochila_antes_depois.png` (`client/tools/folha_mochila.py`).
+
+## 13. Marca e ícone (C-ART-14, 2026-10-15, 0 crédito)
+
+Ticket C-ART-14 (`PRODUCAO_V1_MAPA_TICKETS.md`): marca, logo e 4 variantes de ícone; o ícone lê a 48 px e entra no build. As variantes seguem o DM §77 (personagem + martelo, bigorna + fogo, personagem + ouro, close da obra-prima), e o logo segue o DM §179–180 (metal e madeira, bigorna e martelo, simples, legível pequeno, sem letra medieval). Tudo sai de render dos modelos do jogo (Blender) e de um quadro gravado do jogo. Não houve crédito de IA nem download. Proveniência com SHA-256 na PROVENIENCIA §11.
+
+Regenerar (raiz do projeto, Unity fechado; o 1º comando leva de 5 a 11 min na 1ª vez, que é o import do FBX do ferreiro, e 7 s depois, com o cache `client/Builds/marca/cache_ferreiro.blend`):
+```
+"C:/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup --python-exit-code 1 --python client/tools/marca_blender.py
+python client/tools/marca_compor.py
+```
+O 1º grava as camadas RGBA em `client/Builds/marca/camadas/` (2048 px, EEVEE com o toon de 3 faixas e o contorno do preset `forja` do `render_sprites.py`, luz-chave quente de baixo-esquerda). O 2º compõe tudo com Pillow + numpy: fundo, halo, contorno `#1E1612`, faíscas com semente fixa, texto e folhas. A escolhida está na constante `ESCOLHIDA` do `marca_compor.py`.
+
+| Variante (`arte/marca/`) | O que tem | Fundo |
+|---|---|---|
+| `icone_a_ferreiro_martelo.png` (**ESCOLHIDA**) | o ferreiro do Lote 1, posado por script, do peito para cima, com um martelo de forja exagerado erguido e faíscas na cabeça do martelo | laranja da forja, claro no meio e com vinheta vinho na borda |
+| `icone_b_bigorna_fogo.png` | a bigorna da heráldica do jogo (o perfil `ANVIL` da moeda e do lingote, em 3D), a espada do jogo em brasa no tampo, a chama atrás e faíscas | pedra quente escura |
+| `icone_c_ferreiro_ouro.png` | o mesmo ferreiro com uma moeda do jogo erguida (1,6×) e uma pilha de moedas na frente | azul-real |
+| `icone_d_obra_prima.png` | o `item_espada` grande na diagonal, com halo e 4 brilhos de 4 pontas (a faísca dourada da obra-prima) | vinho com raios dourados |
+
+**Escolha (A, ferreiro + martelo):**
+1. **Leitura a 48 px.** As 2 maiores formas são o martelo em T (cerca de 14 × 8 px) e a cabeça com a bandana (cerca de 11 × 7 px), e uma não se confunde com a outra. A figura continua legível a 36 px e no círculo do adaptativo (folha abaixo).
+2. **Contraste.** A figura tem contorno escuro sobre o laranja da forja, com o miolo claro e a borda escura, e por isso destaca no lançador claro e no escuro. A C tem mais contraste de cor (ouro sobre azul), mas comunica "ouro" e não "forja".
+3. **Coerência.** É o personagem jogável, com a bandana vermelha (código distintivo da ART_BIBLE §1) e a luz quente da forja (§7): é o primeiro boneco que o jogador vê. B e D funcionam como ícone de RPG genérico e não mostram o personagem.
+
+**Folha de leitura:** `arte/marca/icone_leitura.png`, com cópia local em `client/Builds/marca/icone_leitura.png`. Cada variante aparece a 512, 192, 96, 48 e 36 px em fundo claro (`#F2F2F2`) e escuro (`#121212`), mais o adaptativo recortado em círculo a 96 e 48 px. As 4 leem a 48 px. A B perde a borda no lançador escuro, porque o fundo dela também é escuro.
+
+**No build** (`client/Assets/_FS/Art/Marca/`, PNG com `.meta` versionado e GUID novo, importados sem compressão e sem mipmap):
+- `icone.png` (512, RGB) é a variante A. Serve de ícone padrão (o `.exe` do PC) e de ícone legado e redondo do Android.
+- `icone_fundo.png` e `icone_frente.png` (432 = 108 dp a xxxhdpi) formam o ícone adaptativo (API 26+, que cobre todo aparelho do minSdk 26). A composição é a mesma com a janela de 72 dp (288 px) no meio. Cabeça e martelo ficam dentro do círculo seguro de 66 dp. O corpo e o fundo continuam até a borda (sangria para o parallax do lançador).
+- `Editor/Setup.cs`, em `Icones()`, chamado pelo `Apply()` e portanto por todo build: `PlayerSettings.SetIcons(NamedBuildTarget.Unknown, …)` define o padrão, e `GetSupportedIconKinds/GetPlatformIcons/SetPlatformIcons(NamedBuildTarget.Android, …)` preenche os slots. Slot de 2 camadas recebe (fundo, frente); os demais recebem `icone.png`. O `ProjectSettings.asset` não foi editado à mão: o Unity grava os slots na próxima vez que o `Apply` rodar.
+
+**Logo** (`arte/marca/logo.png`, 1024 × 835 RGBA): "FORGE" em Inter Black, em ouro (`#FFE08A`→`#B8862A`) com contorno `#1E1612` e extrusão bronze. "STREET" vem em aço claro sobre uma tábua de madeira da paleta (§2), com 2 rebites. O símbolo é a bigorna da heráldica com o martelo atravessado atrás e a chama de 3 línguas (vermelho, laranja e amarelo da brasa). A fonte é provisória até o A-UI-15 (Lilita One ou Fredoka, P11): para trocar, basta mudar `INTER` no `marca_compor.py`.
+
+**Feature graphic** (`arte/marca/feature_graphic.png`, 1024 × 500 RGB, sem alfa, como a Play pede): a cena é um quadro real do jogo, o criativo `fs_01_bigorna_rua.mp4` (build v0.6, `CRIATIVOS.md`) aos 22,5 s, com a oficina cheia. O recorte é 1000 × 488 a partir de y 290: rua com clientes, balcão com espadas, bigornas e a bancada de escudos, sem a HUD e sem a legenda. Por cima vão um véu escuro no meio e o logo na horizontal (símbolo à esquerda, letreiro à direita).
+
+**Reprovado:** a bigorna Tripo da estação (`arte/tripo/bigorna`) como figura de ícone. A bigorna é preta, fica sob o pilão de madeira e tem a lanterna; mesmo sem o pilão, o poste e o balde, ela vira uma mancha a 48 px. Por isso a variante B usa a bigorna da heráldica.
+
+**Fora desta leva:** o teste das 4 variantes na loja (G-UA-03, experimento da página da loja na Play Console, só com a página no ar), a fonte OFL definitiva (A-UI-15) e um logo animado ou uma splash dentro do jogo.

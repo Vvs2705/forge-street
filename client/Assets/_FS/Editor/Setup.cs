@@ -42,6 +42,7 @@ namespace FS.EditorTools
             PlayerSettings.defaultScreenWidth = 540;
             PlayerSettings.defaultScreenHeight = 960;
             PlayerSettings.resizableWindow = true;
+            Icones();
 
             // 2 = Input System + Input Manager legado (sem API publica; vale na proxima abertura do editor, como no COE). O legado e' so
             // para o voltar do Android: com o GameActivity o Input System nao recebe a tecla (testado no emulador API 35; forum Unity 1555368)
@@ -59,7 +60,31 @@ namespace FS.EditorTools
             Debug.Log("FS Setup: ok (" + AppId + ", retrato, Android ARM64 IL2CPP API 26+, Input System)");
         }
 
-        public static void BuildWindows() => Build(BuildTarget.StandaloneWindows64, "Builds/win/ForgeStreet.exe");
+        // C-ART-14: icone do app a partir dos PNG versionados (client/tools/marca_compor.py). icone.png (512) = icone padrao (PC) e
+        // legado/redondo do Android; o adaptativo (API 26+, todo aparelho do minSdk) leva icone_fundo.png + icone_frente.png (432,
+        // camada 0 = Background, 1 = Foreground). Import sem compressao e sem mipmap pelos .meta versionados.
+        const string Marca = "Assets/_FS/Art/Marca/";
+
+        static void Icones()
+        {
+            var icone = AssetDatabase.LoadAssetAtPath<Texture2D>(Marca + "icone.png");
+            var fundo = AssetDatabase.LoadAssetAtPath<Texture2D>(Marca + "icone_fundo.png");
+            var frente = AssetDatabase.LoadAssetAtPath<Texture2D>(Marca + "icone_frente.png");
+            if (icone == null || fundo == null || frente == null) { Debug.LogError("FS Setup: icone do app nao achado em " + Marca); return; }
+            PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { icone }, IconKind.Any);
+            int n = 0;
+            foreach (PlatformIconKind kind in PlayerSettings.GetSupportedIconKinds(NamedBuildTarget.Android))   // vazio sem o modulo Android
+            {
+                PlatformIcon[] icons = PlayerSettings.GetPlatformIcons(NamedBuildTarget.Android, kind);
+                foreach (PlatformIcon i in icons)
+                    if (i.maxLayerCount >= 2) i.SetTextures(fundo, frente); else i.SetTexture(icone, 0);
+                PlayerSettings.SetPlatformIcons(NamedBuildTarget.Android, kind, icons);
+                n += icons.Length;
+            }
+            Debug.Log("FS Setup: icone do app aplicado (padrao + " + n + " slots do Android)");
+        }
+
+        public static void BuildWindows() =>Build(BuildTarget.StandaloneWindows64, "Builds/win/ForgeStreet.exe");
         public static void BuildAndroidDev() => Build(BuildTarget.Android, "Builds/android/ForgeStreet-dev.apk");
         // Emulador do PC (x86_64): o berberis do Android 15 derruba o ARM64 traduzido do Unity/IL2CPP (signal 11, 2026-10-08).
         // ponytail: APK so de teste local; aparelho e Play recebem so ARM64 (BuildAndroidDev).

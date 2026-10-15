@@ -211,7 +211,7 @@ A legenda vai na faixa de cima (fora da HUD), curta para ler na miniatura, com a
 - `full_district` e `district_unlock` são **interinos** até a Wave C: mostram a oficina e a rua lateral, nunca um "distrito". A legenda não diz "distrito".
 - **en/es:** a HUD sai no idioma do quadro com `-lang en|es` junto do `-preset` (ex.: `-preset vip -lang es`); o `SHOT` do log grava `idioma=`.
 - A segunda sequência ("Ache o gargalo", `CRIATIVOS_BANCO_V1.md` §c) fica para o experimento de screenshots depois do de descrição curta.
-- Ícone, feature graphic e vídeo: G-UA-03 / C-ART-14, fora deste documento.
+- Ícone, feature graphic e vídeo: G-UA-03 / C-ART-14, fora deste documento. As 4 variantes de ícone, o logo e a feature graphic estão em `arte/marca/` (ASSETS §13, PROPOSTO). O vídeo ainda falta.
 
 ## 8. Decisões do Vinicius
 
