@@ -341,10 +341,28 @@ namespace FS.Tests
         // ------------------------------------------------------------------ eventos, bot e validator
 
         [Test]
-        public void LiveOps_MissaoContractComplete_ContaNoEventoAtivo_ARoyalWeekDeHojeSoTemOGancho()
+        public void LiveOps_MissaoContractComplete_ContaNoEventoAtivo_ARoyalWeekPagaPeloContrato()
         {
-            Assert.IsFalse(Array.Exists(LiveOpsDefs.Eventos, e => e.Missoes.Any(x => x.Evento == "contract_complete")), "o dado da Royal Week nao a usa: so o gancho (V16)");
             Assert.Contains("contract_complete", LiveOpsDefs.Gatilhos);
+            // raia H: a Royal Week de verdade tem a missao (no lugar dos 10 golpes de mestre; 8 linhas no cartao) e paga 100 pontos pelo contrato
+            EventDef rw = Array.Find(LiveOpsDefs.Eventos, e => e.Id == "ev_s1w1_royal_week");
+            MissaoEvento contrato = rw.Missoes.First(x => x.Id == "contrato1");
+            Assert.AreEqual(("contract_complete", 1L, 100), (contrato.Evento, contrato.Alvo, contrato.Pontos));
+            Assert.IsFalse(rw.Missoes.Any(x => x.Evento == "master_strike"));
+            Assert.IsNull(LiveOpsDefs.Falta(rw, Items.All));
+            Sim w = Oficina();
+            long tw = rw.Comeca + 3600;
+            w.Metas.Agora(tw, 0); w.LiveOps.Agora(tw);
+            Assert.AreSame(rw, w.LiveOps.Evento);
+            Assert.IsTrue(w.Contratos.Aceitar());
+            w.Contratos.Ativo.Etapa = 3;
+            w.Tick(Dt, 0f, 0f);
+            Assert.AreEqual(1L, w.LiveOps.Feito(contrato));
+            int antes = w.LiveOps.Pontos;
+            w.LiveOps.Agora(tw + 10);
+            Assert.IsTrue(w.LiveOps.Paga(contrato));
+            Assert.AreEqual(antes + 100, w.LiveOps.Pontos, "pontos de evento, nunca moeda (V16)");
+            // filtro pelo ID do contrato (evento injetado)
             var ev = new EventDef
             {
                 Id = "ev_teste_contrato", Template = Template.RoyalWeek, Temporada = "s1_teste", Inicio = 0, Renome = 1, Tema = "royal",

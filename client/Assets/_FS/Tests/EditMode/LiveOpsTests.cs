@@ -470,6 +470,49 @@ namespace FS.Tests
             Assert.IsTrue(evs.Select((e, i) => i).All(i => sessao[i] >= 1 && sessao[i] < 1000 && dia[i] >= 4 && dia[i] <= 5), tabela);
         }
 
+        /// <summary>
+        /// Raia H (LIVEOPS_V1 §4.5, LiveOps): trilha de evento fechada = o ultimo limiar pago (999 pontos nao bastam), eventos em que entrou (1 por
+        /// evento: reabrir o save no meio nao conta outra entrada) e a trilha free do Passe = o nivel 30 resgatado (alcancar nao basta; o fim da
+        /// temporada resgata sozinho). Cada uma paga 1x pelo ledger.
+        /// </summary>
+        [Test]
+        public void Conquistas_EventoEPasse_PeloLedger_UmaVez()
+        {
+            Sim s = Aberta();
+            MetaDef fim = MetasDefs.Achar("ach_evento1"), entra = MetasDefs.Achar("ach_eventos4"), passe = MetasDefs.Achar("ach_passe_free");
+            Agora(s, FF.Comeca + H);
+            Assert.AreSame(FF, s.LiveOps.Evento);
+            Assert.AreEqual(1L, s.Metas.Conquista(entra).Feito);
+            Sim r = Sim.Load(s.Save(FF.Comeca + H));
+            Agora(r, FF.Comeca + 2 * H);
+            Assert.AreSame(FF, r.LiveOps.Evento);
+            Assert.AreEqual(1L, r.Metas.Conquista(entra).Feito, "reabrir o mesmo evento nao conta outra entrada");
+            s.LiveOps.PontosEncomenda(FF.Id, 999);
+            Agora(s, FF.Comeca + H + 1);
+            Assert.AreEqual(0L, s.Metas.Conquista(fim).Feito, "999 pontos: falta o ultimo limiar");
+            s.LiveOps.PontosEncomenda(FF.Id, 1);
+            Agora(s, FF.Comeca + H + 2);
+            Assert.IsTrue(s.Metas.Conquista(fim).Pronta);
+            long xp = s.Metas.PassXp;
+            Assert.AreEqual(0L, s.Metas.ResgatarConquista(fim.Id), "XP 100, sem ouro");
+            Assert.AreEqual(-1L, s.Metas.ResgatarConquista(fim.Id));
+            Assert.AreEqual(xp + 100L, s.Metas.PassXp);
+            Agora(s, Armeiro.Comeca + H);
+            Assert.AreSame(Armeiro, s.LiveOps.Evento);
+            Assert.AreEqual(2L, s.Metas.Conquista(entra).Feito);
+            s.LiveOps.Ganha(S1.XpTotal);
+            Assert.AreEqual(30, s.LiveOps.Nivel);
+            for (int n = 1; n < 30; n++) s.LiveOps.Resgatar(n);
+            Assert.IsFalse(s.Metas.Conquista(passe).Pronta, "o nivel 30 ainda nao resgatado");
+            Assert.GreaterOrEqual(s.LiveOps.Resgatar(30), 0L);
+            Assert.IsTrue(s.Metas.Conquista(passe).Pronta);
+            Assert.AreEqual(0L, s.Metas.ResgatarConquista(passe.Id), "insignia: posse pelo ID");
+            Assert.AreEqual(-1L, s.Metas.ResgatarConquista(passe.Id));
+            Sim r2 = Sim.Load(s.Save(Armeiro.Comeca + 2 * H));
+            Assert.IsTrue(r2.Metas.Conquista(passe).Paga, "a insignia vai no save");
+            Assert.AreEqual(-1L, r2.Metas.ResgatarConquista(passe.Id));
+        }
+
         // ------------------------------------------------------------------ Pass
 
         [Test]
@@ -631,6 +674,7 @@ namespace FS.Tests
             Acusa(Valida(Troca(FF, Copia(FF, e => e.Encomenda = "ord_ev_royal_week"))), "nao e' a OrderDef Event deste evento");
             Acusa(Valida(Troca(FF, Copia(FF, e => e.Missoes = FF.Missoes.Where(x => x.Evento != "play_day").ToArray()))), "jogue em 3 dias");
             Acusa(Valida(Troca(FF, Copia(FF, e => e.Encomenda = "ord_common_old_forge"))), "nao e' a OrderDef Event deste evento");
+            Acusa(Valida(Troca(FF, Copia(FF, e => e.Missoes = FF.Missoes.Concat(new[] { M("ctr1", "contract_complete", 1, 10) }).ToArray()))), "9 missoes");   // raia H: 8 linhas
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.Premium[1] = new RewardDef(TipoPremio.Ouro, 30)), S2 }), "o pago nunca progride");
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.Premium[1] = new RewardDef(TipoPremio.Blueprint, 0, "bp_x", new RewardDef(TipoPremio.Ouro, 60))), S2 }), "o pago nunca progride");
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.Premium[1] = new RewardDef(TipoPremio.PassXp, 100)), S2 }), "o pago nunca progride");
@@ -695,8 +739,10 @@ namespace FS.Tests
                 Assert.AreEqual("Acerte 5 golpes em escudos", Textos.Missao(Armeiro.Missoes.First(x => x.Id == "golpe_escudos5")));
                 Assert.AreEqual("Suba 1 nível: Escudos", Textos.Missao(Armeiro.Missoes.First(x => x.Id == "nivel_escudos")));
                 Assert.AreEqual("6d 0h", Textos.Tempo(6 * Dia));
+                Assert.AreEqual("Cumpra 1 contrato real", Textos.Missao(Evt("_royal_week").Missoes.First(x => x.Id == "contrato1")));   // raia H
                 Loc.Atual = Idioma.En;
                 Assert.AreEqual("Craft 20 shields (Fine+)", Textos.Missao(Armeiro.Missoes.First(x => x.Id == "fina_escudos20")));
+                Assert.AreEqual("Fulfill 1 Royal Contract", Textos.Missao(Evt("_royal_week").Missoes.First(x => x.Id == "contrato1")));
             }
             finally { Loc.Atual = Idioma.Pt; }
         }

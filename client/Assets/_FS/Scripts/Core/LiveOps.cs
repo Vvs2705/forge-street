@@ -84,6 +84,7 @@ namespace FS.Core
         {
             Evento = e; _cont.Clear(); _dia = long.MinValue;
             Novidades.Add(("event_enter", e.Id, "", 0));
+            M.Registra("event_enter");   // raia H: ach_eventos4 (reentrar no mesmo evento depois do load nao passa por aqui)
         }
 
         void Sai()

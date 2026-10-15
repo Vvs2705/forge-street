@@ -90,6 +90,8 @@ namespace FS.Core
         public const bool PremiumLigado = false;
         /// <summary>Encomendas por dia de 20 min do F2P de referencia na conta estatica do Pass: o portao da Wave B (>= 25 em 60 min, LIVEOPS_V1 §3.3).</summary>
         public const double EncomendasDiaF2P = 8;
+        /// <summary>Raia H: linhas de missao do cartao do evento (PainelLiveOps); LIVEOPS_V1 §2.2 pede 7-8. Missao a mais nunca aparecia.</summary>
+        public const int MaxMissoes = 8;
 
         /// <summary>Gatilhos que o nucleo emite hoje para missao de evento (LiveOps.On; play_day = dias distintos com o evento aberto, o "jogar em 3
         /// dias" do LIVEOPS_V1 §2.4; quality_* pelo Ev.Graded; master_strike pelo golpe de mestre; worker_any = contratou ou subiu nivel de um
@@ -148,9 +150,11 @@ namespace FS.Core
                 Id = "ev_s1w1_royal_week", Template = Template.RoyalWeek, Temporada = S1, Inicio = 0, Renome = 1,
                 Missoes = new[]
                 {
+                    // raia H: o Royal Contract (D-CORE-04) no lugar dos 10 golpes de mestre (8 linhas no cartao). A referencia (D0, sem golpe)
+                    // so chega ao Renome 3 no dia 5 e cumpre o ronda na sessao em que a trilha ja fecharia sem ele (BALANCE §36)
                     M("vip5", "vip_served", 5, 100), M("royal2", "order_complete", 2, 120, "royal"), M("vende300", "product_sold", 300, 60),
                     M("fina40", "quality_crafted", 40, 100), M("escudos50", "product_sold", 50, 60, "escudo"), M("dias3", "play_day", 3, 100),
-                    M("cofre2", "offline_claim", 2, 60), M("golpe10", "master_strike", 10, 100),
+                    M("cofre2", "offline_claim", 2, 60), M("contrato1", "contract_complete", 1, 100),
                 },
                 Trilha = Trilha(Cos("cos_ev_s1w1_selo"), "cos_ev_s1w1_tapete"), Encomenda = "ord_ev_royal_week", Tema = "royal", Modificadores = Vip75(),
             },
@@ -451,6 +455,7 @@ namespace FS.Core
                 var especiais = new Dictionary<string, long>();
                 int pontos = 0;
                 if (e.Missoes == null || e.Missoes.Length == 0) yield return $"{at} sem missoes";
+                else if (e.Missoes.Length > MaxMissoes) yield return $"{at} {e.Missoes.Length} missoes (o cartao do evento mostra {MaxMissoes})";
                 foreach (MissaoEvento x in e.Missoes ?? new MissaoEvento[0])
                 {
                     string am = $"{at} missao {x.Id}:";
