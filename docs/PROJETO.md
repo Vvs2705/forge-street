@@ -26,7 +26,7 @@ Estados de um item: PROPOSTO → APROVADO → IMPLEMENTADO → INTEGRADO → TES
 - **Bot:** 2 perfis (humano e ideal); não usa VIP nem velocidade.
 - **Mutation testing:** só "prova vermelha" manual (mutações em cópias do núcleo, `BALANCE.md`); o script ficou fora do repo.
 - **View:** separada do núcleo, mas `WorldView.cs` (~1.700 linhas) e `Game.cs` (~1.080) concentram tudo. Fonte Arial (`Art.cs:378`), áudio de 11 senoides sintetizadas, sem música, ícone do app vazio, fornalha com 1 quadro só.
-- **Anúncios:** LevelPlay 9.5.1 com 2 rewarded (Chamar VIP, Velocidade); conta aguardando aprovação; build de teste usa anúncio simulado. Consentimento por idade na 1ª abertura (E-PLAT-01): o SDK só inicia depois da resposta.
+- **Anúncios:** LevelPlay 9.5.1 com 2 rewarded (Chamar VIP, Velocidade) na conta da V-STACK desde 2026-10-14 (#67; só a rede ironSource ligada até conectar o Unity Ads no painel); build de teste usa anúncio simulado. Consentimento por idade na 1ª abertura (E-PLAT-01): o SDK só inicia depois da resposta.
 - **Save:** chave=valor em PlayerPrefs (`fs.save`), autosave a cada 5 s; migração implícita pelo parser tolerante, bem testada.
 - **Analytics:** só local (`diario.csv` + `client/tools/diario_report.py`); cobre 12 dos 31 eventos do DM §86.
 - **Arte:** sprites pré-renderizados (Tripo → Mixamo → Blender Workbench → folhas PNG); proveniência em `PROVENIENCIA.md`; saldo Tripo 20.720 créditos.
@@ -121,7 +121,7 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 | Zona morta ~53% da curva até a produção completa; ouro sem destino depois dela | design | `BALANCE.md` §22 | Waves B (Orders 2.0, Blueprints) e C (distritos) |
 | ~~**Barulheira:** muitos sons ao mesmo tempo (Vinicius no POCO, 2026-10-13)~~ | — | `Som.cs` | resolvido no #59 (categorias, orçamento de vozes, distância, ducking); falta ouvir no POCO |
 | ~~**Mochila parece item solto** colado no ferreiro (Vinicius no POCO, 2026-10-13)~~ | — | `WorldView.cs` | resolvido no #62 (folha `ferreiro_mochila`, mochila presa às costas); falta ver no POCO |
-| Conta LevelPlay aguardando aprovação | — | `LEVELPLAY.md` | Vinicius |
+| ~~Conta LevelPlay aguardando aprovação~~ | — | `LEVELPLAY.md` | resolvido no #67 (conta da V-STACK); falta conectar o Unity Ads no painel e criar as ad units dos outros 4 placements (Vinicius) |
 | ~~Rua dos Armeiros: rótulo "Depósito" encosta no "Fornalha"~~ | — | `Distritos.cs` | resolvido no #66 (depósito 0,5 m mais baixo) |
 | Rua dos Armeiros sem obras-primas: sem a liga nenhuma peça chega a Superior, e o Charter dela (2 obras) fica travado | design | `BALANCE.md` §33 | raia de liga + níveis de estação + Blueprints da Row |
 | Row sem destino de ouro depois da produção completa (~340 mil aos 150 min); Rebitadeira 2 sem insumo; encomendas a 12,1% da venda com 3 vagas (portão 4–12%) | P2 | `BALANCE.md` §33 | próxima leva da Row |
@@ -149,7 +149,7 @@ Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-14, 
 | Daily / Weekly / Achievements | 85 | 32 diárias, 14 semanais, 75+6 conquistas (`ach_mw*`), login de 7 dias; gatilho `contract_complete` (#64); vendas de todo distrito contam (#65) | metas de contrato; modelos que esperam os distritos |
 | Events (LiveOps) | 70 | 10 `EventDef`, 9 rodando (Hunts no #63, encomenda Event no #60); pontos de todo distrito (#65) | V27 (Event disputa vagas); o 10º evento |
 | Pass | 50 | 30 níveis × 600 XP, temporada de 35 dias, trilha free com RESGATAR; premium no dado, desligado (#56) | premium na Wave E (preço = decisão) |
-| Ads | 70 | 6 placements por config, teto diário, ID de transação, intersticial atrás de flag, `ad_impression` (#52) | ad units novas no painel (Vinicius); A/B do intersticial no Limited Release |
+| Ads | 70 | 6 placements por config, teto diário, ID de transação, intersticial atrás de flag, `ad_impression` (#52) | conta da V-STACK com VIP e Velocidade (#67); ad units dos outros 4 placements e Unity Ads no painel (Vinicius); A/B do intersticial no Limited Release |
 | IAP | 35 | núcleo com estados e recibos, loja falsa, Pacote do Mestre, restaurar compras (#58) | pacote Unity IAP (aval de download) |
 | Analytics | 45 | `Telemetria` com fila até o consentimento, esquema v1, exceções (#53) | provedor remoto (P8) |
 | RemoteConfig | 47 | JSON local com travas no núcleo, chave mestra dos anúncios, cache, HTTP desligado (#53); trava do `QualidadeEvento` (#63) | provedor remoto (P8); `econsim --rc` |
