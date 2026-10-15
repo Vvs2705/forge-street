@@ -1706,6 +1706,9 @@ namespace FS
                 case WorkerRole.Smith:
                     Station st = _sim.Stations.Find(x => x.Unlocked && x.Produces && x.Recipe.Station == d.Station);
                     return st != null ? new V2(st.Pos.X, st.Pos.Y + 0.62f) : _sim.Counter.Pos;
+                case WorkerRole.Smelter:   // C-CORE-05: a Vulcana em cima da fornalha que ela opera (a do Requer)
+                    Station f = _sim.Stations.Find(x => x.Unlocked && x.Produces && x.Recipe.Family == d.Requer);
+                    return f != null ? new V2(f.Pos.X, f.Pos.Y + 0.62f) : _sim.Counter.Pos;
                 case WorkerRole.Clerk: return new V2(_sim.Counter.Pos.X + _sim.Counter.Half.X - 0.35f, _sim.Counter.Pos.Y - 0.62f);
                 case WorkerRole.Quartermaster: return new V2(3.2f, 2.0f);
                 default: return new V2(6.0f, 7.5f);

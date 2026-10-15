@@ -178,7 +178,7 @@ namespace FS.Tests
             Acusa(v, "receita: joia produzido sem comprador");
             Acusa(v, "receita: minerio produzido sem comprador");
             Acusa(v, "receita: espada usa lingote, que nenhuma estacao produz");
-            Acusa(v, "receita: espada pede 0 de lingote");
+            Acusa(v, "receita: espada com insumo opcional (0) fora da regra");   // C-CORE-05: 0 sozinho nao e' o slot de liga
         }
 
         [Test]

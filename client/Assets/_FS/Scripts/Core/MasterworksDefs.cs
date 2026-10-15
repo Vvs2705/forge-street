@@ -6,9 +6,9 @@ namespace FS.Core
     /// <summary>B-CORE-08 (CONTEUDO_V1 §10.1): o tipo da condicao especial de uma Masterwork, sempre de jogo. Vendidos = Counter:item (pecas
     /// vendidas); NivelEstacao = StationLevel:familia (RecipeDef.Family); Renome = ReputationTier; EncomendasItem = OrdersOfProduct:item;
     /// EncomendasTipo = OrdersOfType:tipo (OrderType; contador order_complete do Orders 2.0, B-CORE-05); NivelWorker = WorkerLevel:wk;
-    /// VendidosQualidade = QualitySold:item@nivel. Nenhum tipo fala de anuncio, compra ou Gem (GDD §13, V4); os do distrito 2 em diante
-    /// (liga, cotas, energizadas, exportacao...) entram com a mecanica deles (Wave C).</summary>
-    public enum CondicaoMw { Vendidos, NivelEstacao, Renome, EncomendasItem, EncomendasTipo, NivelWorker, VendidosQualidade }
+    /// VendidosQualidade = QualitySold:item@nivel; C-CORE-05: PecasComLiga = AlloyPieces:item (Sim.PecasComLiga). Nenhum tipo fala de anuncio,
+    /// compra ou Gem (GDD §13, V4); os dos distritos 3 em diante (cotas, energizadas, exportacao...) entram com a mecanica deles (Wave C).</summary>
+    public enum CondicaoMw { Vendidos, NivelEstacao, Renome, EncomendasItem, EncomendasTipo, NivelWorker, VendidosQualidade, PecasComLiga }
 
     /// <summary>Uma condicao: `Ref` = item, familia de estacao, tipo de encomenda ou worker (Renome: nenhum); `N` = o alvo; `MinQ` = nivel
     /// minimo da peca vendida (so VendidosQualidade).</summary>
@@ -45,8 +45,8 @@ namespace FS.Core
 
     /// <summary>
     /// B-CORE-08: as 10 Masterworks do Old Forge (ECONOMIA_WAVE_B §6 = CONTEUDO_V1 §10.1, sem mudanca) e os marcos da Collection que o build
-    /// alcanca. As 50 dos distritos 2-6 usam familias, estacoes e workers que ainda nao existem (o validator recusaria): entram com a Wave C,
-    /// no mesmo formato, como os Blueprints deles (ProjetosDefs). Os marcos da v1.0 acima do que o Old Forge tem (col_produtos_25 = 29 de 114,
+    /// alcanca. C-CORE-05: as 10 da Armorer's Row estao em RowDefs (o Hall da Row). As 40 dos distritos 3-6 usam familias, estacoes e workers
+    /// que ainda nao existem (o validator recusaria): entram com a Wave C, no mesmo formato, como os Blueprints deles (ProjetosDefs). Os marcos da v1.0 acima do que o Old Forge tem (col_produtos_25 = 29 de 114,
     /// col_bp_25 = 26 de 101...) tambem: so entra marco alcancavel (validator).
     /// </summary>
     public static class MasterworksDefs
@@ -103,6 +103,41 @@ namespace FS.Core
             new MarcoColecaoDef("col_bp_old_forge_100", AbaColecao.Blueprints, 19, 10),
         };
 
+        static CondicaoMasterwork Liga(string item, int n) => new CondicaoMasterwork(CondicaoMw.PecasComLiga, item, n);
+        static MasterworkDef R(string id, string familia, int renome, int pedestal, params CondicaoMasterwork[] c) =>
+            new MasterworkDef(id, Distritos.ArmorersRowId, familia, "bp_" + id, renome, pedestal, c);
+
+        /// <summary>C-CORE-05: as 10 da Armorer's Row (CONTEUDO_V1 §10.1), DistrictDef.Masterworks da Row. Superior alcancavel com a liga
+        /// (§10.2: montagem 60 + 20 + 30 + Vulcana 30 = 140; forja de armas 60 + 20 + 30 = 110). O Charter da Row pede 2: as essenciais sao o
+        /// elmo do vigia e o peitoral do bastiao (montagem nivel V).</summary>
+        public static readonly MasterworkDef[] RowDefs =
+        {
+            R("mw_elmo_vigia", "elmo", 30, 1),
+            R("mw_peitoral_bastiao", "peitoral", 35, 2, Nivel("montagem", 5)),
+            R("mw_grevas_marcha", "grevas", 35, 3, EncomendasTipo("bulk", 10)),
+            R("mw_manoplas_vivas", "manoplas", 35, 4, Liga("manoplas", 50)),
+            R("mw_lanca_milicia", "lanca", 40, 5, Vendidos("lanca", 1000)),
+            R("mw_machado_rei", "machado_guerra", 35, 6, Nivel("forja_armas", 5)),
+            R("mw_maca_juiz", "maca", 35, 7, Worker("wk_vulcana", 5)),
+            R("mw_elmo_liga", "elmo", 40, 8, Liga("elmo", 200)),
+            R("mw_peitoral_rival", "peitoral", 50, 9, Renome(6)),
+            R("mw_lanca_estandarte", "lanca", 55, 10, EncomendasTipo("royal", 10)),
+        };
+
+        /// <summary>C-CORE-05: os marcos da Collection da Row, os degraus do Old Forge com as contas dela (Produtos 21 = 7 x 3; Workers 10 = 5 x
+        /// contratado/nivel maximo; Blueprints 14; Masterworks 10 = o col_mw_distrito do CONTEUDO_V1 §10.3, so o estandarte). Renome 5/10 como
+        /// os do Old Forge (BALANCE §30.6).</summary>
+        public static readonly MarcoColecaoDef[] MarcosRow =
+        {
+            new MarcoColecaoDef("col_produtos_armorers_row_50", AbaColecao.Produtos, 11, 5),
+            new MarcoColecaoDef("col_produtos_armorers_row_100", AbaColecao.Produtos, 21, 10),
+            new MarcoColecaoDef("col_mw_distrito_armorers_row", AbaColecao.Masterworks, 10, 0, "cos_col_estandarte_armorers_row"),
+            new MarcoColecaoDef("col_workers_armorers_row_50", AbaColecao.Workers, 5, 5),
+            new MarcoColecaoDef("col_workers_armorers_row_100", AbaColecao.Workers, 10, 10),
+            new MarcoColecaoDef("col_bp_armorers_row_50", AbaColecao.Blueprints, 7, 5),
+            new MarcoColecaoDef("col_bp_armorers_row_100", AbaColecao.Blueprints, 14, 10),
+        };
+
         /// <summary>Posicao da Masterwork com este ID em `table` (null = All), ou -1.</summary>
         public static int IndexOf(string id, MasterworkDef[] table = null) => Array.FindIndex(table ?? All, d => d.Id == id);
 
@@ -113,15 +148,21 @@ namespace FS.Core
             Array.TrueForAll(id.ToCharArray(), c => c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '_');
 
         /// <summary>Pontos de qualidade maximos da familia de estacao `fam` neste conteudo: niveis (UpgradeDef.Station) + tecnica (algum Blueprint
-        /// Technique dela) + oficial no nivel 5 + mestre de obras (ECONOMIA_WAVE_B §1.2; CONTEUDO_V1 §10.2).</summary>
-        public static int QMaximo(string fam, Tuning t, UpgradeDef[] ups, BlueprintDef[] bps, WorkerDef[] wks)
+        /// Technique dela) + oficial no nivel 5 (ou, sem ele, o fundidor da familia no nivel 10) + mestre de obras + a liga quando a receita tem
+        /// o slot e o mundo faz a liga (`liga`; ECONOMIA_WAVE_B §1.2; CONTEUDO_V1 §10.2).</summary>
+        public static int QMaximo(string fam, Tuning t, UpgradeDef[] ups, BlueprintDef[] bps, WorkerDef[] wks, bool liga = false)
         {
             int niveis = Array.FindAll(ups, u => u.Station == fam).Length;
             return niveis * t.NivelEstacaoQ
                 + (Array.Exists(bps, b => b.Kind == BlueprintKind.Technique && Array.IndexOf(b.Targets, fam) >= 0) ? t.TecnicaQ : 0)
-                + (Array.Exists(wks, w => w.Papel == WorkerRole.Smith && w.Station == fam) ? WorkerDefs.SmithQ5 : 0)
-                + (Array.Exists(wks, w => w.Papel == WorkerRole.Foreman) ? WorkerDefs.ForemanQ : 0);
+                + (Array.Exists(wks, w => w.Papel == WorkerRole.Smith && w.Station == fam) ? WorkerDefs.SmithQ5
+                    : Array.Exists(wks, w => w.Papel == WorkerRole.Smelter && w.Station == fam) ? WorkerDefs.SmelterQ10 : 0)
+                + (Array.Exists(wks, w => w.Papel == WorkerRole.Foreman) ? WorkerDefs.ForemanQ : 0)
+                + (liga ? t.LigaQ : 0);
         }
+
+        /// <summary>C-CORE-05: a receita da estacao `s` tem o slot de liga e alguma estacao do mundo `w` faz a liga.</summary>
+        static bool LigaFeita(Station s, Sim w) => s.Liga >= 0 && w.Stations.Exists(o => o.Produces && o.OutItem == s.Recipe.Inputs[s.Liga].Item);
 
         /// <summary>
         /// B-CORE-08 (ECONOMIA_WAVE_B §8.6, GDD §23 #9-#10): ID mw_ unico num distrito que existe; familia de produto que alguma estacao do mundo
@@ -143,7 +184,7 @@ namespace FS.Core
                 // familia: estacoes do mundo que fazem um produto dela; Superior alcancavel em pelo menos uma (q maximo > 100)
                 List<Station> st = w.Stations.FindAll(s => s.Produces && w.IsProduct(s.OutItem) && w.ItemDefs[(int)s.OutItem].Family == d.Familia);
                 if (st.Count == 0) yield return $"{at} familia \"{d.Familia}\" sem produto feito no mundo";
-                else if (!st.Exists(s => QMaximo(s.Recipe.Family, w.T, ups, bps, w.Equipe.Defs) > 100)) yield return $"{at} Superior inalcancavel na familia {d.Familia} (q maximo <= 100)";
+                else if (!st.Exists(s => QMaximo(s.Recipe.Family, w.T, ups, bps, w.Equipe.Defs, LigaFeita(s, w)) > 100)) yield return $"{at} Superior inalcancavel na familia {d.Familia} (q maximo <= 100)";
                 int b = ProjetosDefs.IndexOf(d.Blueprint, bps);
                 if (b < 0) yield return $"{at} projeto \"{d.Blueprint}\" nao existe";
                 else if (bps[b].Kind != BlueprintKind.Masterwork || Array.IndexOf(bps[b].Targets, d.Id) < 0) yield return $"{at} projeto \"{d.Blueprint}\" nao e' o dela";
@@ -165,6 +206,7 @@ namespace FS.Core
                         case CondicaoMw.Renome: ok &= c.N < RenomeDefs.Niveis.Length; break;
                         case CondicaoMw.EncomendasTipo: ok &= Tipo(c.Ref) != null && Tipo(c.Ref) != OrderType.Event; break;   // evento e' temporario
                         case CondicaoMw.NivelWorker: int k = WorkerDefs.IndexOf(c.Ref, w.Equipe.Defs); ok &= k >= 0 && c.N >= 2 && c.N <= w.Equipe.Defs[k].MaxNivel; break;
+                        case CondicaoMw.PecasComLiga: int p = Produto(c.Ref); ok &= p >= 0 && w.Stations.Exists(s => s.Produces && (int)s.OutItem == p && LigaFeita(s, w)); break;   // C-CORE-05
                         default: ok = false; break;   // tipo que o nucleo nao conhece
                     }
                     if (!ok) yield return $"{ac} inalcancavel (alvo, nivel ou tipo que o build nao tem)";

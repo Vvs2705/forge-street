@@ -40,6 +40,9 @@ namespace FS.Core
         /// <summary>B-CORE-03: nivel da familia (1 + niveis comprados; Sim.Recompute), acumulador de qualidade em centesimos (0-99), golpe de mestre
         /// valendo para a proxima peca e quantas das `Out` sao Fina e Superior (OutQ[(int)Quality]; Normal = o resto, Sim.Fit).</summary>
         public int Level = 1, QAcc; public bool Strike;
+        /// <summary>C-CORE-05: posicao do insumo opcional (a liga, Qty 0) na receita; -1 = nenhum. O Ins dele e' o slot de liga.
+        /// ponytail: o slot usa o InCap da entrada (4-8), nao a capacidade 2 do CONTEUDO_V1 §2.2; so muda o estoque transitorio de liga.</summary>
+        public int Liga = -1;
         public readonly int[] OutQ = new int[Sim.Graus];
         public float StarveSeconds, StallSeconds;   // metricas de gargalo (GDD §14 bottleneck_seconds)
         /// <summary>Bocas (FASE5 §2b): ponto onde o personagem encosta para DEPOSITAR (InAt) e para RECOLHER (OutAt), em lados
@@ -217,6 +220,8 @@ namespace FS.Core
         public int Masterworks;
         /// <summary>Metricas do bot (fora do save, como o OrderGold): ouro de venda acima do preco Normal, valor que o golpe somou as pecas e golpes acertados.</summary>
         public long QualityGold, StrikeGold; public int Strikes;
+        /// <summary>C-CORE-05 (o AlloyPieces do CONTEUDO_V1 §2.2): pecas feitas com liga, por item. Vai no save (liga=, so com alguma).</summary>
+        public readonly int[] PecasComLiga;
 
         // metricas de playtest (GDD §14/§15)
         public float FirstSaleTime = -1f, WalkNoDecision;
@@ -286,7 +291,7 @@ namespace FS.Core
             Projetos = new Projetos(this, blueprints ?? Distrito.Projetos);
             Hall = new Hall(this, masterworks ?? Distrito.Masterworks); Colecao = new Colecao(this, Distrito.MarcosColecao);   // B-CORE-08 por distrito
             MasterworkPending = s => Hall.Pendente(s) >= 0;   // B-CORE-08: projeto e condicoes da 1a pendente da familia
-            Stock = new int[n]; SoldItems = new int[n]; Crafted = new int[n]; StockQ = Lotes(n);
+            Stock = new int[n]; SoldItems = new int[n]; Crafted = new int[n]; StockQ = Lotes(n); PecasComLiga = new int[n];
             Player = new Carrier(n) { Pos = Distrito.Inicio, Speed = Balance.PlayerSpeed, Cap = Balance.PlayerCap };
             VipIn = T.VipInterval(0);
             // 1o cliente: espada cedo (FirstClientAt); as outras linhas no intervalo delas (B-CORE-07: por item, a espada longa entrou)
@@ -355,6 +360,7 @@ namespace FS.Core
             if (s.Produces)
             {
                 s.Ins = new int[s.Recipe.Inputs.Length]; s.OutItem = s.Recipe.Output;
+                s.Liga = Array.FindIndex(s.Recipe.Inputs, x => x.Qty == 0);   // C-CORE-05
                 bool furnace = kind == Kind.Furnace;   // pilhas: geometria da estacao, nao da receita
                 // C-CORE-01: entrada de 2x o maior insumo da receita (montagem do peitoral: 4 rebites -> 8); no Old Forge da a de sempre (4 e 6)
                 int maxQ = 0;
@@ -1238,8 +1244,12 @@ namespace FS.Core
             b[(int)QualitySource.Buff] = Equipe.QualidadeMestre(s)       // B-CORE-04: mestre de obras
                 + ((int)s.OutItem < T.QualidadeEvento.Length ? T.QualidadeEvento[(int)s.OutItem] : 0);   // B-CORE-08: modificador do evento (Hunt)
             b[(int)QualitySource.Blueprint] = Projetos.Tecnica(s.Recipe.Family);   // B-CORE-07: tecnica da familia (posse do projeto)
+            b[(int)QualitySource.Material] = TemLiga(s) ? T.LigaQ : 0;   // C-CORE-05: liga no slot = a proxima peca leva uma
             return b;
         }
+
+        /// <summary>C-CORE-05: a estacao tem slot de liga com pelo menos 1 dentro.</summary>
+        public static bool TemLiga(Station s) => s.Liga >= 0 && s.Ins[s.Liga] > 0;
 
         /// <summary>q da estacao: soma do QualityBreakdown.</summary>
         public int QualityPoints(Station s)
@@ -1262,6 +1272,9 @@ namespace FS.Core
         {
             if (!IsProduct(s.OutItem)) return Quality.Normal;
             int q = QualityPoints(s), l = q / 100;
+            // C-CORE-05: a liga que somou no q sai do slot com a peca. ponytail: consome na SAIDA da peca, nao no inicio (CONTEUDO_V1 §2.2):
+            // assim a peca em andamento nao precisa de estado no save; o que o jogador ve na barra (QualityBreakdown) e' o que a peca leva
+            if (TemLiga(s)) { s.Ins[s.Liga]--; PecasComLiga[(int)s.OutItem]++; }
             s.QAcc += q % 100;
             if (s.QAcc >= 100) { l++; s.QAcc -= 100; }
             l = Math.Min(l, (int)Quality.Superior);
@@ -1622,6 +1635,7 @@ namespace FS.Core
                 sb.Append('\n');
             }
             sb.Append("golpe=").Append(StrikeCooldown.ToString("0.###", ci)).Append('\n');
+            if (Array.Exists(PecasComLiga, n => n > 0)) sb.Append("liga=").Append(IdCounts(PecasComLiga)).Append('\n');   // C-CORE-05: sem liga, o texto de antes
             sb.Append("stock=").Append(Stock[2]).Append(',').Append(Stock[3]).Append(',').Append(Stock[4]).Append(',').Append(Stock[5]).Append('\n');
             sb.Append("sold=").Append(SoldItems[2]).Append(',').Append(SoldItems[3]).Append(',').Append(SoldItems[4]).Append(',').Append(SoldItems[5]).Append('\n');
             var ms = new StringBuilder();
@@ -1739,6 +1753,7 @@ namespace FS.Core
                     case "holdsq": ReadIdQ(sim, parts, sim.Player.HeldQ); break;
                     case "wksq": wkq = val; break;
                     case "golpe": sim.StrikeCooldown = Math.Max(0f, Math.Min(T.GolpeRecarga, F(val, 0f))); break;
+                    case "liga": ReadIdCounts(sim, parts, sim.PecasComLiga); break;   // C-CORE-05; save sem liga= = nenhuma peca com liga
                     case "vip":   // FASE8; save antigo sem vip=: relogio novo (VipInterval(0)) e nenhum VIP pendente
                         if (parts.Length >= 4)
                         {
