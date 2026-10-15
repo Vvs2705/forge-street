@@ -181,7 +181,10 @@ namespace FS.Core
 
         /// <summary>CONTEUDO_V1 §5.2 na ordem do tier (= indice; o save grava o ID). C-CORE-05: a `fornalha_liga` (tier 11) voltou ao lugar
         /// dela; depois dos luxos, os niveis de estacao do §5.7 (Meta, menu): montagem e forja de armas II-V (IV-V com o projeto de mestre da
-        /// Row). O nivel II da montagem abre com a 1a compra (a montagem de elmos e' do kit; o validator pede um produtivo antes do II).</summary>
+        /// Row). Desvio do §5.7 (revisar; BALANCE.md §35): o nivel II das duas familias pede a Rebitadeira 2, o ultimo produtivo, e nao a 1a
+        /// estacao da familia. Com o Renome do Imperio na chegada (>= 500: 3 vagas e a encomenda Royal) o projeto de mestre vinha antes da
+        /// producao e o bot comprava os IV-V (205 mil) no meio dela: producao completa do F2P 56 -> 76 min (janela 55-70); assim, 59 min, e os
+        /// niveis viram o ralo do rabo da Row, com a Vulcana e o luxo.</summary>
         static readonly UpgradeDef[] UpgradesArmeiros =
         {
             U(0, "fole_couro", -1, "Fole de couro", "Fornalhas mais rápidas", menu: true, efeito: Upgrade.FurnaceSpeed1),
@@ -205,11 +208,11 @@ namespace FS.Core
             U(18, "estandartes_armeiro", 17, "Estandartes", "Bandeiras na rua", luxo: true),
             U(19, "rua_calcada", 18, "Rua calçada", "Pedras novas na rua", luxo: true),
             U(20, "manequins", 19, "Manequins", "Armaduras em exposição", luxo: true),
-            U(21, "nivel_montagem2", 0, "Montagens II", "Mais qualidade e velocidade", menu: true, station: "montagem"),
+            U(21, "nivel_montagem2", 17, "Montagens II", "Mais qualidade e velocidade", menu: true, station: "montagem"),
             U(22, "nivel_montagem3", 21, "Montagens III", "Mais qualidade e velocidade", menu: true, station: "montagem"),
             U(23, "nivel_montagem4", 22, "Montagens IV", "Mais qualidade e velocidade", menu: true, station: "montagem", blueprint: Mestra),
             U(24, "nivel_montagem5", 23, "Montagens V", "Mais qualidade e velocidade", menu: true, station: "montagem", blueprint: Mestra),
-            U(25, "nivel_forja_armas2", 3, "Forjas II", "Mais qualidade e velocidade", menu: true, station: "forja_armas"),
+            U(25, "nivel_forja_armas2", 17, "Forjas II", "Mais qualidade e velocidade", menu: true, station: "forja_armas"),
             U(26, "nivel_forja_armas3", 25, "Forjas III", "Mais qualidade e velocidade", menu: true, station: "forja_armas"),
             U(27, "nivel_forja_armas4", 26, "Forjas IV", "Mais qualidade e velocidade", menu: true, station: "forja_armas", blueprint: Mestra),
             U(28, "nivel_forja_armas5", 27, "Forjas V", "Mais qualidade e velocidade", menu: true, station: "forja_armas", blueprint: Mestra),

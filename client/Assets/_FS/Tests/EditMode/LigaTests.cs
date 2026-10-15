@@ -163,22 +163,22 @@ namespace FS.Tests
 
         // ------------------------------------------------------------------ niveis e projetos
 
-        /// <summary>§5.7: niveis da montagem (o II depois da 1a compra; a montagem de elmos e' do kit) e da forja de armas (o II com a 1a forja),
-        /// no menu, Meta (fora da producao completa), +15 por nivel na familia toda; IV-V so com o bp_mestra_armorers, que a producao completa
-        /// da (fonte gratis permanente; a fila Royal da Row e' a outra).</summary>
+        /// <summary>§5.7: niveis da montagem e da forja de armas no menu, Meta (fora da producao completa), +15 por nivel na familia toda; o II
+        /// pede a Rebitadeira 2, o ultimo produtivo (desvio, BALANCE.md §35: os niveis sao o ralo do rabo da Row); IV-V so com o
+        /// bp_mestra_armorers, que a producao completa da (fonte gratis permanente; a fila Royal da Row e' a outra).</summary>
         [Test]
         public void Niveis_DaRow_IIaVComOProjetoDeMestre()
         {
             Sim s = NovaRow();
             int l2 = U(s, "nivel_montagem2"), f2 = U(s, "nivel_forja_armas2"), l4 = U(s, "nivel_montagem4");
-            Assert.AreEqual((false, false), (s.MenuAvailable(l2), s.MenuAvailable(f2)));
             Assert.AreEqual((4300L, 13000L, 35000L, 78000L, 64000L), (s.T.Cost(l2), s.T.Cost(l2 + 1), s.T.Cost(l4), s.T.Cost(l4 + 1), s.T.Cost(U(s, "nivel_forja_armas5"))));
-            Compra(s, "fole_couro");
-            Assert.AreEqual((true, false, false), (s.MenuAvailable(l2), s.MenuAvailable(f2), s.IsProduction(l2)));
-            Compra(s, "nivel_montagem2", "nivel_montagem3", "bigorna_pesada");
+            Compra(s, "fole_couro", "bigorna_pesada", "fornalha_armeiro2", "fornalha_liga");
+            Assert.AreEqual((false, false, false), (s.MenuAvailable(l2), s.MenuAvailable(f2), s.IsProduction(l2)), "nada de nivel no meio da producao");
+            Compra(s, "rebitadeira2");
+            Assert.AreEqual((true, true), (s.MenuAvailable(l2), s.MenuAvailable(f2)));
+            Compra(s, "nivel_montagem2", "nivel_montagem3");
             Station m = s.Est("montagem_elmo"), g = s.Est("montagem_peitoral"), p = s.Est("bigorna_pesada");
             Assert.AreEqual((3, 3, 1, 30), (m.Level, g.Level, p.Level, Q(s, m, QualitySource.StationLevel)));
-            Assert.IsTrue(s.MenuAvailable(f2));
             Assert.IsFalse(s.Buy((Upgrade)l4), "IV sem o projeto de mestre");
             Producao(s);
             s.Tick(Dt, 0f, 0f);
