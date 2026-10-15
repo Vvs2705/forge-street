@@ -35,6 +35,9 @@ namespace FS.Core
                 new long[] { 32000, 64000, 130000, 260000 }, null),
             new WorkerDef("wk_gertrudes", "Dona Gertrudes", WorkerRole.Manager, Specialty.None, Distritos.ArmorersRowId, null, null, 0, 0, null,
                 new long[] { 96000, 190000, 380000, 770000 }, null),
+            // ---- artisan_quarter (C-CORE-06): CONTEUDO_V1 §6
+            new WorkerDef("wk_valentim", "Valentim", WorkerRole.Manager, Specialty.None, Distritos.ArtisanQuarterId, null, null, 0, 0, null,
+                new long[] { 290000, 580000, 1200000, 2300000 }, null),
         };
         /// <summary>Fundo por nivel do manager (1-5) sobre o DistrictDef.FundoFator (o nivel 1): 25% -> 30/33/36/40% da taxa (CONTEUDO_V1 §1).
         /// Sempre &lt; 1 vez a taxa: o distrito ativo rende mais que ele mesmo em fundo em todo nivel (ImperioTests).</summary>
@@ -63,9 +66,10 @@ namespace FS.Core
         }
 
         /// <summary>
-        /// Dev, teste e econsim: o Imperio como o jogador chega ao distrito `d` (o Old Forge = um Imperio novo): o Old Forge em producao
-        /// completa (Mochila e Botas do ferreiro) rendendo `rendaOF` ouro/min (a base do fundo; CONTEUDO_V1 §1: 2.400 no Charter), o Charter
-        /// de quem libera `d` (Forca: as condicoes nao sao medidas), a abertura paga e o foco em `d`.
+        /// Dev, teste e econsim: o Imperio como o jogador chega ao distrito `d` (o Old Forge = um Imperio novo): cada distrito da cadeia de
+        /// Charters ate ele (Old Forge -> Row -> ...) aberto, em producao completa e com o Charter (Forca: as condicoes nao sao medidas),
+        /// rendendo o do Charter no modelo do CONTEUDO_V1 §1 (`rendaOF` ouro/min no Old Forge, 2.400, x3 por distrito: a Row a 7.200; a base do
+        /// fundo), a abertura de `d` paga e o foco em `d`. Mochila e Botas do ferreiro valem (o Old Forge em producao completa).
         /// </summary>
         public static Imperio Chegada(DistrictDef d, Func<Tuning> tuning = null, double rendaOF = 2400)
         {
@@ -73,9 +77,18 @@ namespace FS.Core
             var raiz = new Sim(tuning());
             var imp = new Imperio(raiz, tuning);
             if (d == null || imp.Aberto(d.Id)) return imp;
-            for (int i = 0; i < raiz.UpgradeDefs.Length; i++) if (raiz.IsProduction(i)) raiz.Buy((Upgrade)i);
-            raiz.RateEma = rendaOF / 60.0;
-            foreach (DistrictDef x in Distritos.All) if (x.Charter?.Proximo == d.Id) imp.Forca(x.Id);
+            // C-CORE-06: a cadeia inteira (antes, so o Old Forge: a Row era a unica que chegava). Para a Row da o de antes, passo a passo
+            var cadeia = new List<DistrictDef>();
+            for (DistrictDef x = Array.Find(Distritos.All, o => o.Charter?.Proximo == d.Id); x != null; x = Array.Find(Distritos.All, o => o.Charter?.Proximo == x.Id))
+                cadeia.Insert(0, x);
+            foreach (DistrictDef x in cadeia)
+            {
+                if (!imp.Aberto(x.Id)) { raiz.Gold += x.Abertura; imp.Abrir(x.Id); }
+                Sim sx = imp.Distrito(x.Id);
+                for (int i = 0; i < sx.UpgradeDefs.Length; i++) if (sx.IsProduction(i)) sx.Buy((Upgrade)i);
+                sx.RateEma = rendaOF * Math.Pow(3, x.Indice) / 60.0;
+                imp.Forca(x.Id);
+            }
             raiz.Gold += d.Abertura;
             imp.Abrir(d.Id);
             imp.Trocar(d.Id);
