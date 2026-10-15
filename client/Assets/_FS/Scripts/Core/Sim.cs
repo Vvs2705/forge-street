@@ -11,7 +11,7 @@ namespace FS.Core
         public SimEvent(Ev kind, int a, int b, V2 pos) { Kind = kind; A = a; B = b; Pos = pos; }
     }
 
-    public sealed class Station
+    public sealed partial class Station
     {
         public int Index; public Kind Kind; public V2 Pos; public string Name;
         /// <summary>C-CORE-01: ID do StationDef (o texto est.&lt;id&gt; sai dele) e a folha de arte (null = pelo tipo e produto, View).</summary>
@@ -131,7 +131,7 @@ namespace FS.Core
     /// atende clientes e atualiza as metricas. A view le `Events` depois de cada tick. Nao ha aleatoriedade:
     /// mesma entrada, mesmo resultado (BalanceTests.Determinismo).
     /// </summary>
-    public sealed class Sim
+    public sealed partial class Sim
     {
         /// <summary>A-CORE-03: numeros de economia/ritmo e feature flags desta partida (RemoteConfig e eventos). Padrao = `new Tuning()`.</summary>
         public readonly Tuning T;
