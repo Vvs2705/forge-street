@@ -306,7 +306,7 @@ namespace FS.Tests
                 Def("bp_fila_repetida", false, new BlueprintSource(BlueprintSourceKind.OrderBlueprint, ProjetosDefs.OldForge, 3)),
                 Def("bp_renome_errado", false, new BlueprintSource(BlueprintSourceKind.Reputation, null, 11)),
                 Def("bp_conquista", false, new BlueprintSource(BlueprintSourceKind.Achievement, "ach_nao_existe")),
-                new BlueprintDef("bp_outro_distrito", "armorers_row", BlueprintKind.Variant, new[] { "espada" }, false, marco),
+                new BlueprintDef("bp_outro_distrito", "artisan_quarter", BlueprintKind.Variant, new[] { "espada" }, false, marco),
                 new BlueprintDef("bp_familia", ProjetosDefs.OldForge, BlueprintKind.Technique, new[] { "forja_runica" }, false, marco),
                 new BlueprintDef("bp_receita", ProjetosDefs.OldForge, BlueprintKind.Recipe, new[] { "espada" }, false, marco),
             };
@@ -322,7 +322,7 @@ namespace FS.Tests
             Acusa(v, "blueprint bp_fila_repetida: posicao #3 repetida na fila OrderBlueprint de old_forge");
             Acusa(v, "blueprint bp_renome_errado: Renome 11");
             Acusa(v, "blueprint bp_conquista: conquista \"ach_nao_existe\" nao existe");
-            Acusa(v, "blueprint bp_outro_distrito: distrito \"armorers_row\" nao existe");
+            Acusa(v, "blueprint bp_outro_distrito: distrito \"artisan_quarter\" nao existe");   // C-CORE-05: a Row tem projetos
             Acusa(v, "blueprint bp_familia: Technique \"forja_runica\" nao existe no jogo");
             Acusa(v, "blueprint bp_receita: Recipe \"espada\" nao existe no jogo (ou nenhum upgrade pede o projeto)");
 

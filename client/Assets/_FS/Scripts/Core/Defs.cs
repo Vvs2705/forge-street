@@ -64,7 +64,7 @@ namespace FS.Core
     public enum Quality { Normal, Fine, Superior, Masterwork }
 
     /// <summary>Fontes dos pontos de qualidade de uma estacao (DM §15, Sim.QualityBreakdown). Existem o nivel da estacao (B-CORE-03) e a tecnica
-    /// (Blueprint da familia, B-CORE-07); oficial (B-CORE-04), liga (Wave C) e buff (mestre de obras, evento) ficam com 0 ate existirem.</summary>
+    /// (Blueprint da familia, B-CORE-07); oficial e fundidor (B-CORE-04, C-CORE-05), liga (Material, C-CORE-05) e buff (mestre de obras, evento).</summary>
     public enum QualitySource { StationLevel, Worker, Blueprint, Material, Buff }
 
     /// <summary>Eventos de um tick, para a view (SFX, particulas, diario). A = item/upgrade/estacao, B = detalhe.
@@ -297,6 +297,7 @@ namespace FS.Core
         public int[] NivelEstacaoCusto = { 250, 750, 325, 950, 250, 750, 500, 1500, 800, 1500, 1000, 1835, 800, 1500, 1600, 3000 };
         public int BigornaLongaCusto = 6000;                    // B-CORE-07: linha Meta da espada longa (CONTEUDO_V1 §5.1)
         public int TecnicaQ = 20;                               // B-CORE-07: pontos de qualidade do Blueprint de tecnica da familia (ECONOMIA_WAVE_B §1.2)
+        public int LigaQ = 30;                                  // C-CORE-05: pontos da liga na peca (QualitySource.Material; CONTEUDO_V1 §2.2 regra 2)
         /// <summary>B-CORE-08: "modificador de evento 0-25" (ECONOMIA_WAVE_B §1.2, LIVEOPS_V1 §2.3): pontos de qualidade por item (indice = handle),
         /// 0 fora de evento; so o modificador do evento (Hunt: +15 na espada ou na joia) e o RemoteConfig (trava 0-25) mexem.</summary>
         public int[] QualidadeEvento = { 0, 0, 0, 0, 0, 0, 0 };
@@ -535,6 +536,8 @@ namespace FS.Core
         public readonly Item Output;
         /// <summary>C-CORE-01 (CONTEUDO_V1 §3.1, outputCount): pecas por ciclo (rebitadeira: 1 lingote -> 4 rebites). 1 em toda receita do Old Forge.</summary>
         public readonly int Qtd = 1;
+        /// <summary>C-CORE-05: Qty 0 = insumo opcional (a liga, CONTEUDO_V1 §2.2 regra 2): a peca nao espera por ele; com 1 na entrada quando a
+        /// peca sai, consome 1 e soma Tuning.LigaQ (Station.Liga, Sim.Grade). Um por receita, ao lado de um obrigatorio (ContentValidator).</summary>
         public readonly (Item Item, int Qty)[] Inputs;
         public readonly Func<Tuning, float> TimeMul;
         public RecipeDef(string station, Kind kind, Item output, Func<Tuning, float> timeMul, params (Item Item, int Qty)[] inputs)

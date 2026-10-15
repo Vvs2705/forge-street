@@ -401,11 +401,9 @@ namespace FS
         }
 
         /// <summary>Papel no singular, com maiuscula ("Oficial", "Mestre de obras").</summary>
-        public static string Papel(WorkerRole p)
-        {
-            string s = Loc.P("wk.papel." + (int)p, 1);
-            return s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
-        }
+        public static string Papel(WorkerRole p) => Maiuscula(Loc.P("wk.papel." + (int)p, 1));
+
+        static string Maiuscula(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
 
         /// <summary>O que a proxima compra de `k` faz (contratar ou o proximo nivel), em % ou pontos; cabe em 2 linhas do cartao (LocTests).</summary>
         public static string BeneficioWorker(Sim s, int k)
@@ -423,6 +421,11 @@ namespace FS
                         : Loc.T("card.velocidade", "+" + Pct(WorkerDefs.SmithVelNivel) + "%");
                 case WorkerRole.Clerk: return Loc.T("card.wk.paciencia", "+" + Pct(n == 1 ? WorkerDefs.ClerkPaciencia : WorkerDefs.ClerkPacienciaNivel) + "%");
                 case WorkerRole.Quartermaster: return n == 1 ? Loc.T("card.wk.saida", WorkerDefs.QmSaida) : Loc.T("card.wk.estoque", WorkerDefs.QmEstoqueNivel);
+                case WorkerRole.Smelter:   // C-CORE-05: q nas montagens (+15, +10 no 5, +5 no 10) e o ritmo da fornalha de liga
+                    if (n == 1 || n == 5 || n == 10)
+                        return Loc.T("card.qualidade", Pontos(n == 1 ? WorkerDefs.SmelterQ : n == 5 ? WorkerDefs.SmelterQ5 - WorkerDefs.SmelterQ : WorkerDefs.SmelterQ10 - WorkerDefs.SmelterQ5),
+                            Pct(n == 1 ? WorkerDefs.SmelterVel : WorkerDefs.SmelterVelNivel) + "%");
+                    return Loc.T("card.velocidade", "+" + Pct(WorkerDefs.SmelterVelNivel) + "%");
                 default:   // mestre de obras
                     return n == 1 ? Loc.T("card.qualidade", Pontos(WorkerDefs.ForemanQ), Pct(WorkerDefs.ForemanVel) + "%")
                         : Loc.T("card.velocidade", "+" + Pct(WorkerDefs.ForemanVelNivel) + "%");
@@ -464,18 +467,23 @@ namespace FS
 
         static string Alvos(Sim s, BlueprintDef d, long n) => string.Join(", ", Array.ConvertAll(d.Targets, t => Alvo(s, d.Kind, t, n)));
 
-        /// <summary>Familia (nivel, tecnica) = o produto da receita base dela no plural; Masterwork pelo nome; receita e visual = o item.</summary>
+        /// <summary>Familia (nivel, tecnica) = o nome dela (fam.*, C-CORE-05: as que juntam varios produtos, como as montagens) ou o produto
+        /// da receita base dela no plural; Masterwork pelo nome; receita e visual = o item.</summary>
         static string Alvo(Sim s, BlueprintKind k, string t, long n)
         {
             if (k == BlueprintKind.Masterwork) return Loc.T("mw." + t);
             if (k == BlueprintKind.StationLevel || k == BlueprintKind.Technique)
             {
-                RecipeDef r = Array.Find(s.RecipeDefs, x => x.Station == t);
-                return r != null && (int)r.Output < ItemId.Length ? ItemNomeOF((int)r.Output, 2) : t;
+                if (Loc.Tem("fam." + t)) return Loc.T("fam." + t);
+                RecipeDef r = Array.Find(s.RecipeDefs, x => x.Family == t);
+                return r != null ? ItemDe(s, (int)r.Output, 2) : t;
             }
             int i = Items.IndexOf(t, s.ItemDefs);
-            return i >= 0 && i < ItemId.Length ? ItemNomeOF(i, n) : t;
+            return i >= 0 ? ItemDe(s, i, n) : t;
         }
+
+        /// <summary>C-CORE-05: o item `i` da tabela do Sim `s` (o do distrito do painel), no singular ou plural. No Old Forge = o ItemNomeOF.</summary>
+        static string ItemDe(Sim s, int i, long n) => Loc.P("item." + s.ItemDefs[i].Id, n);
 
         static string Fonte(Sim s, BlueprintSource f)
         {
@@ -484,10 +492,10 @@ namespace FS
                 case BlueprintSourceKind.Milestone:
                     if (f.Ref == BlueprintSource.Producao) return Loc.T("proj.f.producao");
                     int i = Items.IndexOf(f.Ref, s.ItemDefs);
-                    if (i < 0 || i >= ItemId.Length) return f.Ref;
+                    if (i < 0) return f.Ref;
                     bool fina = f.MinQ >= Quality.Fine;
                     long feito = Math.Min(f.N, fina ? s.Projetos.Finas[i] : s.SoldItems[i]);
-                    return Loc.T(fina ? "proj.f.fina" : "proj.f.0", Qtd(f.N), ItemNomeOF(i, f.N), Qtd(feito));
+                    return Loc.T(fina ? "proj.f.fina" : "proj.f.0", Qtd(f.N), ItemDe(s, i, f.N), Qtd(feito));
                 case BlueprintSourceKind.Achievement:
                     MetaDef m = MetasDefs.Achar(f.Ref);
                     return Loc.T("proj.f.4", m != null ? Meta(m, m.Alvo) : f.Ref);
@@ -520,12 +528,13 @@ namespace FS
         {
             string n = Qtd(c.N), v = Qtd(Math.Min(c.N, s.Hall.Valor(c)));
             int i = Items.IndexOf(c.Ref, s.ItemDefs);
-            string item = i >= 0 && i < ItemId.Length ? ItemNome(i, c.N) : c.Ref;
+            string item = i >= 0 ? ItemDe(s, i, c.N) : c.Ref;
             switch (c.Kind)
             {
-                case CondicaoMw.NivelEstacao: return Loc.T("hall.c.1", Loc.Tem("est." + c.Ref) ? Loc.T("est." + c.Ref) : c.Ref, n, v);
+                case CondicaoMw.NivelEstacao: return Loc.T("hall.c.1", Loc.Tem("est." + c.Ref) ? Loc.T("est." + c.Ref) : Loc.Tem("fam." + c.Ref) ? Maiuscula(Loc.T("fam." + c.Ref)) : c.Ref, n, v);
                 case CondicaoMw.Renome: return Loc.T("hall.c.2", n, v);
-                case CondicaoMw.EncomendasItem: return Loc.T("hall.c.3", n, i >= 0 && i < ItemId.Length ? ItemNome(i, 1) : c.Ref, v);
+                case CondicaoMw.EncomendasItem: return Loc.T("hall.c.3", n, i >= 0 ? ItemDe(s, i, 1) : c.Ref, v);
+                case CondicaoMw.PecasComLiga: return Loc.T("hall.c.7", n, item, v);   // C-CORE-05
                 case CondicaoMw.EncomendasTipo: return Loc.T("hall.c.4", n, Loc.Tem("hall.tipo." + c.Ref) ? Loc.T("hall.tipo." + c.Ref) : c.Ref, v);
                 case CondicaoMw.NivelWorker:
                     int k = WorkerDefs.IndexOf(c.Ref, s.Equipe.Defs);

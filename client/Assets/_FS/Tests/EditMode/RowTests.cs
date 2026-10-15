@@ -9,7 +9,7 @@ namespace FS.Tests
     /// <summary>
     /// C-CORE-05 (CONTEUDO_V1 §7, §10; BALANCE.md §33): a Armorer's Row com as encomendas dela em dados (o Encomendas le as OrderDefs do
     /// Sim.Distrito; o Old Forge segue com as dele), uma Masterwork da Row pelo caminho de sempre (golpe numa Superior, Hall do distrito), o
-    /// validator com as obras da Row (as 10 do catalogo esperam a liga: Superior inalcancavel) e o layout sem rotulo encostado. A economia
+    /// validator com as obras da Row (C-CORE-05: passam com a liga; a mecanica esta no LigaTests) e o layout sem rotulo encostado. A economia
     /// afinada e a prova ao byte do Old Forge estao no BALANCE.md §33 (Row_Kit_BalcaoDe6EOsNumerosDoDistrito prende precos e custos).
     /// NUnit 3.5 do Unity: tipos exatos nas tuplas (long com L).
     /// </summary>
@@ -46,8 +46,8 @@ namespace FS.Tests
         // ------------------------------------------------------------------ encomendas
 
         /// <summary>CONTEUDO_V1 §7: na Row o rodizio e' o dela (Bulk x2, "equipar a milicia"), com as OrderDefs dela e os itens dela; Quality e
-        /// Royal (Fina) e Blueprint (sem fila) viram Common enquanto a Row nao tem qualidade nem projeto. A 7a Common e' o Sargento Brutus
-        /// (30 lancas). A vaga volta do save pelo ID.</summary>
+        /// Royal (Fina) viram Common enquanto nenhuma linha faz Fina (sem nivel, liga nem Vulcana); a Blueprint ja abre (C-CORE-05: a fila de
+        /// projetos da Row). A 7a Common e' o Sargento Brutus (30 lancas). A vaga volta do save pelo ID.</summary>
         [Test]
         public void Encomendas_DaRow_RodizioEItensDaRow()
         {
@@ -55,7 +55,8 @@ namespace FS.Tests
             Encomenda p = s.Encomendas.Vagas[0];
             Assert.AreEqual(("ord_common_armorers_row", I(s, "elmo"), 5, 75L), (p.Def.Id, p.Itens[0], p.Alvo[0], p.Premio), "a 1a: Common da Row, 5 da 1a linha, minimo 75");
             List<Encomenda> r = Rodizio(s);
-            CollectionAssert.AreEqual(new[] { Common, Bulk, Common, Common, Bulk, Mixed, Rush, Common, Common, Common }, r.Select(e => e.Tipo).ToArray());
+            CollectionAssert.AreEqual(new[] { Common, Bulk, Common, Common, Bulk, Mixed, Rush, OrderType.Blueprint, Common, Common }, r.Select(e => e.Tipo).ToArray());
+            Assert.AreEqual(("ord_blueprint_armorers_row", "bp_tecnica_montagem"), (r[7].Def.Id, r[7].Blueprint), "o #1 da fila de encomenda da Row");
             foreach (Encomenda e in r)
             {
                 Assert.AreEqual(Row.Id, e.Def.District, e.Def.Id);
@@ -143,51 +144,39 @@ namespace FS.Tests
 
         // ------------------------------------------------------------------ validator
 
-        /// <summary>A Row com a obra e o projeto `mws`/`bps` (o resto igual).</summary>
-        static DistrictDef ComObras(MasterworkDef[] mws, BlueprintDef[] bps) => new DistrictDef
+        /// <summary>A Row com a obra e o projeto `mws`/`bps`, o `ajuste` e os `workers` (null = os da Row; o resto igual).</summary>
+        internal static DistrictDef ComObras(MasterworkDef[] mws, BlueprintDef[] bps, Action<Tuning> ajuste = null, WorkerDef[] workers = null) => new DistrictDef
         {
-            Id = Row.Id, Nome = Row.Nome, Indice = Row.Indice, Itens = Row.Itens, Receitas = Row.Receitas, Upgrades = Row.Upgrades, Workers = Row.Workers,
+            Id = Row.Id, Nome = Row.Nome, Indice = Row.Indice, Itens = Row.Itens, Receitas = Row.Receitas, Upgrades = Row.Upgrades, Workers = workers ?? Row.Workers,
             Projetos = bps, Masterworks = mws, MarcosColecao = Row.MarcosColecao, Estacoes = Row.Estacoes, Pads = Row.Pads, Obstaculos = Row.Obstaculos,
             Marcos = Row.Marcos, Inicio = Row.Inicio, Contratacao = Row.Contratacao, Largura = Row.Largura, Parede = Row.Parede, EsteiraDe = Row.EsteiraDe,
-            EsteiraPara = Row.EsteiraPara, Ajuste = Row.Ajuste, Abertura = Row.Abertura, Charter = Row.Charter, FundoFator = Row.FundoFator,
+            EsteiraPara = Row.EsteiraPara, Ajuste = ajuste ?? Row.Ajuste, Abertura = Row.Abertura, Charter = Row.Charter, FundoFator = Row.FundoFator,
         };
 
-        static void Acusa(List<string> v, string trecho) =>
+        internal static void Acusa(List<string> v, string trecho) =>
             Assert.IsTrue(v.Exists(m => m.Contains(trecho)), $"esperava \"{trecho}\" em:\n{string.Join("\n", v)}");
 
         /// <summary>
-        /// Por que as obras da Row ficaram de fora (BALANCE.md §33): o validator do distrito confere as do Hall DELE no mundo dele, e as 8 do
-        /// CONTEUDO_V1 §10.1 que o nucleo consegue escrever (AlloyPieces, das 2 de liga, nem existe como condicao) caem em "Superior
-        /// inalcancavel": a Row nao tem fonte de qualidade (q maximo 0 na montagem e na forja de armas). Nivel de estacao e Vulcana tambem nao
-        /// existem. Obra declarada noutro distrito e' recusada no mundo da Row.
+        /// C-CORE-05 (CONTEUDO_V1 §10.2): com a liga, os niveis II-V e a Vulcana as 10 obras da Row passam no validator do distrito (q maximo
+        /// 140 na montagem, 110 na forja de armas). Sem a liga (knob 0) a forja de armas para em 80: as 4 obras dela voltam a "Superior
+        /// inalcancavel" e as montagens seguem (60 + 20 + Vulcana 30); sem a Vulcana, a Maca do Juiz (Vulcana nivel 5) e' inalcancavel. Obra
+        /// declarada noutro distrito e' recusada no mundo da Row.
         /// </summary>
         [Test]
-        public void Validator_ObrasDaRow_EsperamALiga()
+        public void Validator_ObrasDaRow_PassamComALiga()
         {
-            CollectionAssert.IsEmpty(ContentValidator.Distrito(Row).ToList(), "a Row real (sem obras) passa");
-            CondicaoMasterwork C(CondicaoMw k, string r, int n) => new CondicaoMasterwork(k, r, n);
-            MasterworkDef M(string id, string fam, int renome, int ped, params CondicaoMasterwork[] c) => new MasterworkDef(id, Row.Id, fam, "bp_" + id, renome, ped, c);
-            MasterworkDef[] mws =
-            {
-                ElmoVigia(),
-                M("mw_peitoral_bastiao", "peitoral", 35, 2, C(CondicaoMw.NivelEstacao, "montagem", 5)),
-                M("mw_grevas_marcha", "grevas", 35, 3, C(CondicaoMw.EncomendasTipo, "bulk", 10)),
-                M("mw_lanca_milicia", "lanca", 40, 5, C(CondicaoMw.Vendidos, "lanca", 1000)),
-                M("mw_machado_rei", "machado_guerra", 35, 6, C(CondicaoMw.NivelEstacao, "forja_armas", 5)),
-                M("mw_maca_juiz", "maca", 35, 7, C(CondicaoMw.NivelWorker, "wk_vulcana", 5)),
-                M("mw_peitoral_rival", "peitoral", 50, 9, C(CondicaoMw.Renome, null, 6)),
-                M("mw_lanca_estandarte", "lanca", 55, 10, C(CondicaoMw.EncomendasTipo, "royal", 10)),
-            };
-            BlueprintDef[] bps = mws.Select(m => Projeto(m.Id, Vendidos("elmo", 100))).ToArray();
-            List<string> v = ContentValidator.Distrito(ComObras(mws, bps)).ToList();
-            foreach (MasterworkDef m in mws) Acusa(v, $"masterwork {m.Id}: Superior inalcancavel na familia {m.Familia}");
-            Acusa(v, "mw_peitoral_bastiao: condicao NivelEstacao \"montagem\" >= 5: inalcancavel");
-            Acusa(v, "mw_machado_rei: condicao NivelEstacao \"forja_armas\" >= 5: inalcancavel");
-            Acusa(v, "mw_maca_juiz: condicao NivelWorker \"wk_vulcana\" >= 5: inalcancavel");
-            Assert.IsFalse(v.Exists(x => x.Contains("mw_grevas_marcha: condicao") || x.Contains("mw_lanca_milicia: condicao") || x.Contains("mw_peitoral_rival: condicao")),
-                "Bulk, lancas vendidas e Renome 6 a Row ja conta");
+            CollectionAssert.IsEmpty(ContentValidator.Distrito(Row).ToList(), "a Row real, com as 10 obras, os 14 projetos e os marcos, passa");
+            Assert.AreEqual((10, 14), (Row.Masterworks.Length, Row.Projetos.Length));
             Sim w = ContentValidator.Mundo(Row);
-            Assert.AreEqual((0, 0), (MasterworksDefs.QMaximo("montagem", w.T, Row.Upgrades, bps, w.Equipe.Defs), MasterworksDefs.QMaximo("forja_armas", w.T, Row.Upgrades, bps, w.Equipe.Defs)));
+            Assert.AreEqual((140, 110), (MasterworksDefs.QMaximo("montagem", w.T, Row.Upgrades, Row.Projetos, w.Equipe.Defs, true),
+                MasterworksDefs.QMaximo("forja_armas", w.T, Row.Upgrades, Row.Projetos, w.Equipe.Defs, true)), "§10.2: 60 + 20 + 30 (+ Vulcana 30)");
+
+            List<string> v = ContentValidator.Distrito(ComObras(Row.Masterworks, Row.Projetos, t => { Row.Ajuste(t); t.LigaQ = 0; })).ToList();
+            foreach (string m in new[] { "mw_lanca_milicia", "mw_machado_rei", "mw_maca_juiz", "mw_lanca_estandarte" }) Acusa(v, $"masterwork {m}: Superior inalcancavel");
+            Assert.IsFalse(v.Exists(x => x.Contains("elmo") || x.Contains("peitoral") || x.Contains("grevas") || x.Contains("manoplas")), "montagens: 110 sem a liga");
+
+            v = ContentValidator.Distrito(ComObras(Row.Masterworks, Row.Projetos, workers: Row.Workers.Where(k => k.Id != "wk_vulcana").ToArray())).ToList();
+            Acusa(v, "mw_maca_juiz: condicao NivelWorker \"wk_vulcana\" >= 5: inalcancavel");
 
             var deOutro = new MasterworkDef("mw_elmo_vigia", Distritos.OldForgeId, "elmo", "bp_mw_elmo_vigia", 30, 1);
             Acusa(ContentValidator.Distrito(ComObras(new[] { deOutro }, new[] { Projeto("mw_elmo_vigia", Vendidos("elmo", 100)) })).ToList(),

@@ -6,8 +6,8 @@ using System.Text;
 namespace FS.Core
 {
     /// <summary>B-CORE-04 (GDD §8, DM §22): os 8 papeis. Porter = os ajudantes que carregam (Sim.Workers, Carrier); os outros ficam no posto e
-    /// mudam um numero do Sim (Equipe). Smelter, Courier e Manager sao dos distritos 2-6 (Wave C): o formato aceita, o nucleo ainda nao tem a
-    /// regra deles (o ContentValidator.Workers recusa no build).</summary>
+    /// mudam um numero do Sim (Equipe). C-CORE-05: Smelter (a Vulcana da Row) tem regra; Courier e o Manager de distrito (Imperio) ainda nao
+    /// entram na Equipe (o ContentValidator.Workers recusa no build).</summary>
     public enum WorkerRole { Porter, Smith, Clerk, Quartermaster, Foreman, Smelter, Courier, Manager }
 
     /// <summary>Especialidade (ECONOMIA_WAVE_B §8.3; Arcane do CONTEUDO_V1 §6).</summary>
@@ -45,7 +45,7 @@ namespace FS.Core
     /// papel (ECONOMIA_WAVE_B §2.2-2.3). Os dos distritos 2-6 entram com os DistrictDef: o validator recusa distrito, estacao e upgrade que o
     /// build nao tem.
     /// </summary>
-    public static class WorkerDefs
+    public static partial class WorkerDefs
     {
         public const string OldForge = "old_forge";
         // Porter: +6% de passo por nivel acima do 1; +1 de carga em cada nivel desta lista (sobre os 2 -> 4 do "Ajudantes ageis")
@@ -62,6 +62,10 @@ namespace FS.Core
         // Foreman: q +10 em toda bancada do distrito; velocidade das bancadas +5% no nivel 1 e +2% por nivel acima (nivel 5: +13%)
         public const int ForemanQ = 10;
         public const float ForemanVel = 0.05f, ForemanVelNivel = 0.02f;
+        // C-CORE-05, Smelter (Vulcana, CONTEUDO_V1 §6): a fornalha que ele opera (a do WorkerDef.Requer, que tem o ID da estacao) 6 -> 4 s (ritmo
+        // x1,5) e +3% por nivel acima do 1; q +15 na familia do WorkerDef.Station (as montagens), +25 do nivel 5 e +30 do 10
+        public const float SmelterVel = 0.5f, SmelterVelNivel = 0.03f;
+        public const int SmelterQ = 15, SmelterQ5 = 25, SmelterQ10 = 30;
         /// <summary>Carga extra do Porter no nivel maximo: a View pre-aloca a pilha na cabeca.</summary>
         public static int CargaMax => PorterCargaEm.Length;
 
@@ -228,11 +232,23 @@ namespace FS.Core
             return c;
         }
 
-        /// <summary>QualitySource.Worker: o oficial da familia (+15; +25 no nivel 5).</summary>
+        /// <summary>C-CORE-05: o fundidor contratado, ou -1. ponytail: 1 por distrito (a Vulcana); 2 pedem somar, como o NivelPapel.</summary>
+        int Fundidor()
+        {
+            for (int k = 0; k < Defs.Length; k++) if (Defs[k].Papel == WorkerRole.Smelter && Nivel(k) > 0) return k;
+            return -1;
+        }
+
+        /// <summary>QualitySource.Worker: o oficial da familia (+15; +25 no nivel 5) ou, sem ele, o fundidor na familia dele (C-CORE-05: +15; +25
+        /// no nivel 5; +30 no 10).</summary>
         public int QualidadeOficial(Station s)
         {
             int k = Oficial(s);
-            return k < 0 ? 0 : Nivel(k) >= 5 ? WorkerDefs.SmithQ5 : WorkerDefs.SmithQ;
+            if (k >= 0) return Nivel(k) >= 5 ? WorkerDefs.SmithQ5 : WorkerDefs.SmithQ;
+            k = Fundidor();
+            if (k < 0 || !s.Produces || Defs[k].Station != s.Recipe.Family) return 0;
+            int n = Nivel(k);
+            return n >= 10 ? WorkerDefs.SmelterQ10 : n >= 5 ? WorkerDefs.SmelterQ5 : WorkerDefs.SmelterQ;
         }
 
         /// <summary>QualitySource.Buff: o mestre de obras em toda bancada (+10).</summary>
@@ -245,6 +261,8 @@ namespace FS.Core
             int k = Oficial(s), m = NivelPapel(WorkerRole.Foreman);
             if (k >= 0) r += WorkerDefs.SmithVel + WorkerDefs.SmithVelNivel * (Nivel(k) - 1);
             if (m > 0 && s.Kind == Kind.Crafter) r += WorkerDefs.ForemanVel + WorkerDefs.ForemanVelNivel * (m - 1);
+            int f = Fundidor();   // C-CORE-05: a fornalha de liga com a Vulcana
+            if (f >= 0 && s.Produces && s.Recipe.Family == Defs[f].Requer) r += WorkerDefs.SmelterVel + WorkerDefs.SmelterVelNivel * (Nivel(f) - 1);
             return r;
         }
 

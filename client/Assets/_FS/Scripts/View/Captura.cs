@@ -137,7 +137,9 @@ namespace FS
         /// </summary>
         public static void Equipe(Sim s)
         {
-            foreach (string id in new[] { "fole", "bigorna2", "ajudante1", "escudos", "mochila", "ajudante2", "esteira", "fole_duplo", "botas", "ferramentas",
+            if (s.UpgradeDefs != Upgrades.All)   // C-CORE-05: outro distrito (-distrito armorers_row): os produtivos dele (a fornalha de liga da Vulcana)
+                for (int u = 0; u < s.UpgradeDefs.Length; u++) { if (s.IsProduction(u)) s.Buy((Upgrade)u); }
+            else foreach (string id in new[] { "fole", "bigorna2", "ajudante1", "escudos", "mochila", "ajudante2", "esteira", "fole_duplo", "botas", "ferramentas",
                 "vitrine", "fornalha2", "ajudante3", "ajudantes_ageis", "martelo_veloz", "corredor", "joalheria", "joalheiro1", "mineiro", "joalheiro2",
                 "balcao5", "balcao6", "bigornas_nivel2", "escudos_nivel2", "ferramentas_nivel2", "joalheria_nivel2" })
                 s.Buy((Upgrade)Upgrades.IndexOf(id));

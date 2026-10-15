@@ -48,11 +48,11 @@ namespace FS.Core
     /// gratis permanente, o padrao dos bp_mestra_* dos distritos 2-6. Sem ele os niveis IV-V esperavam as filas de encomenda (B-CORE-05) e nenhum
     /// essencial do Old Forge era alcancavel no bot F2P (GDD §23 #8). Pago (Shop/PassPremium) nao aparece: o Pass premium nunca da Blueprint (V20).
     /// </summary>
-    public static class ProjetosDefs
+    public static partial class ProjetosDefs
     {
-        public const string OldForge = "old_forge";
-        /// <summary>Distritos que existem (as filas sao por distrito). ponytail: vira DistrictDef no C-CORE-01.</summary>
-        public static readonly string[] Distritos = { OldForge };
+        public const string OldForge = "old_forge", Row = FS.Core.Distritos.ArmorersRowId;
+        /// <summary>Distritos com projetos (as filas sao por distrito). ponytail: vira DistrictDef no C-CORE-01.</summary>
+        public static readonly string[] Distritos = { OldForge, Row };
         /// <summary>O catalogo da v1.0 inteiro (CONTEUDO_V1 §9): 101, 25 essenciais. Os que faltam aqui esperam a Wave C.</summary>
         public const int CatalogoV1 = 101, EssenciaisV1 = 25;
 
@@ -88,6 +88,35 @@ namespace FS.Core
             B("bp_mw_tenaz_eterna", BlueprintKind.Masterwork, "mw_tenaz_eterna", false, FilaEncomenda(6)),
             B("bp_mw_ember_crown", BlueprintKind.Masterwork, "mw_ember_crown", false, FilaRoyal(3), Evento("ev_s2w4_hunt_ember_crown")),
             B("bp_mw_anel_mercador", BlueprintKind.Masterwork, "mw_anel_mercador", false, Vendidos("joia", 100, Quality.Fine)),
+        };
+
+        static BlueprintDef R(string id, BlueprintKind kind, string alvo, bool essencial, params BlueprintSource[] fontes) =>
+            new BlueprintDef(id, Row, kind, alvo.Split(','), essencial, fontes);
+        static BlueprintSource FilaRow(int n) => new BlueprintSource(BlueprintSourceKind.OrderBlueprint, Row, n);
+        static BlueprintSource RoyalRow(int n) => new BlueprintSource(BlueprintSourceKind.OrderRoyal, Row, n);
+
+        /// <summary>
+        /// C-CORE-05: os 14 da Armorer's Row (CONTEUDO_V1 §9), na ordem do catalogo; DistrictDef.Projetos da Row (o Sim dela os guarda, como o
+        /// Hall). Essenciais com fonte gratis permanente: o de mestre (L4-L5) e os projetos das 2 obras que o Charter pede (elmo do vigia,
+        /// peitoral do bastiao). ponytail: a 2a fonte do bp_mw_peitoral_rival (Contract: ctr_vinte_guardas) fica de fora: o contrato e' do
+        /// Imperio e da o bp_var_guardas na raiz; entra quando o projeto subir ao Imperio ou o contrato puder dar 2.
+        /// </summary>
+        public static readonly BlueprintDef[] RowDefs =
+        {
+            R("bp_tecnica_montagem", BlueprintKind.Technique, "montagem", false, FilaRow(1)),
+            R("bp_tecnica_forja_armas", BlueprintKind.Technique, "forja_armas", false, FilaRow(2)),
+            R("bp_mestra_armorers", BlueprintKind.StationLevel, "montagem,forja_armas", true, RoyalRow(1), Producao()),
+            R("bp_var_elmo_crista", BlueprintKind.Variant, "elmo", false, Vendidos("elmo", 500)),
+            R("bp_mw_elmo_vigia", BlueprintKind.Masterwork, "mw_elmo_vigia", true, Vendidos("elmo", 100)),
+            R("bp_mw_peitoral_bastiao", BlueprintKind.Masterwork, "mw_peitoral_bastiao", true, FilaRow(3), Vendidos("peitoral", 150)),
+            R("bp_mw_grevas_marcha", BlueprintKind.Masterwork, "mw_grevas_marcha", false, FilaRow(4)),
+            R("bp_mw_manoplas_vivas", BlueprintKind.Masterwork, "mw_manoplas_vivas", false, Vendidos("manoplas", 200)),
+            R("bp_mw_lanca_milicia", BlueprintKind.Masterwork, "mw_lanca_milicia", false, RoyalRow(2)),
+            R("bp_mw_machado_rei", BlueprintKind.Masterwork, "mw_machado_rei", false, FilaRow(5)),
+            R("bp_mw_maca_juiz", BlueprintKind.Masterwork, "mw_maca_juiz", false, Vendidos("maca", 300)),
+            R("bp_mw_elmo_liga", BlueprintKind.Masterwork, "mw_elmo_liga", false, Renome(5)),
+            R("bp_mw_peitoral_rival", BlueprintKind.Masterwork, "mw_peitoral_rival", false, RoyalRow(3)),
+            R("bp_mw_lanca_estandarte", BlueprintKind.Masterwork, "mw_lanca_estandarte", false, Vendidos("lanca", 400)),
         };
 
         /// <summary>Posicao do Blueprint com este ID em `table` (null = All), ou -1.</summary>

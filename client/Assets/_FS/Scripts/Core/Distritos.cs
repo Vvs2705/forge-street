@@ -68,7 +68,7 @@ namespace FS.Core
     }
 
     /// <summary>C-CORE-01: os distritos do build, na ordem do mapa. Old Forge = as tabelas de sempre; Armorer's Row = CONTEUDO_V1 §2.2/§3/§5.2.</summary>
-    public static class Distritos
+    public static partial class Distritos
     {
         public const string OldForgeId = "old_forge", ArmorersRowId = "armorers_row";
 
@@ -130,8 +130,9 @@ namespace FS.Core
 
         // ---------------------------------------------------------------- Armorer's Row (CONTEUDO_V1 §2.2, §3, §3.1, §4, §5.2, §6)
         // Handles: 0 e 1 sao minerio e lingote como no Old Forge (deposito, papeis 0/1 dos ajudantes); produtos de 2 a 8; insumos depois
+        // (C-CORE-05: a liga anexada no fim, 12)
         const Item Minerio = Item.Ore, Lingote = Item.Ingot, Elmo = (Item)2, Maca = (Item)3, Grevas = (Item)4, Lanca = (Item)5, Manoplas = (Item)6,
-            Machado = (Item)7, Peitoral = (Item)8, Placa = (Item)9, Rebite = (Item)10, Couro = (Item)11;
+            Machado = (Item)7, Peitoral = (Item)8, Placa = (Item)9, Rebite = (Item)10, Couro = (Item)11, Liga = (Item)12;
 
         static readonly ItemDef[] ItensArmeiros =
         {
@@ -147,23 +148,25 @@ namespace FS.Core
             new ItemDef("placa", "placa", 2, false),
             new ItemDef("rebite", "rebite", 2, false),
             new ItemDef("couro", "couro", 2, false),
+            new ItemDef("liga", "liga", 2, false),   // C-CORE-05 (CONTEUDO_V1 §3: Intermediate, tier 2)
         };
 
         /// <summary>TimeMul = tempo base da tabela §3.1 / tempo inicial do tipo (fornalha 4 s, bancada 5 s). Montagem = bancada que so comeca com
-        /// todos os componentes (o Sim ja faz: Produce espera a receita inteira). ponytail: a liga (slot opcional, q +30) e a fornalha de liga
-        /// entram com a mecanica (C-CORE-05, proxima leva).</summary>
+        /// todos os componentes (o Sim ja faz: Produce espera a receita inteira). C-CORE-05 (§2.2 regra 2): toda montagem e forja tem o slot
+        /// opcional de liga (Qty 0, RecipeDef.Inputs): com liga, a peca soma q +30; a fornalha de liga faz 2 lingotes -> 1 liga em 6 s.</summary>
         static readonly RecipeDef[] ReceitasArmeiros =
         {
             new RecipeDef("fornalha", Kind.Furnace, Lingote, t => 1f, (Minerio, 1)),
             new RecipeDef("prensa", Kind.Furnace, Placa, t => 0.75f, (Lingote, 1)),
             new RecipeDef("rebitadeira", "rebitadeira", Kind.Furnace, Rebite, 4, t => 1f, (Lingote, 1)),
-            new RecipeDef("montagem_elmo", "montagem", Kind.Crafter, Elmo, t => 1.2f, (Placa, 2), (Rebite, 2)),
-            new RecipeDef("bigorna_pesada", "forja_armas", Kind.Crafter, Maca, t => 1.2f, (Lingote, 2), (Rebite, 2)),
-            new RecipeDef("montagem_grevas", "montagem", Kind.Crafter, Grevas, t => 1.2f, (Placa, 2), (Couro, 1)),
-            new RecipeDef("forja_hastes", "forja_armas", Kind.Crafter, Lanca, t => 0.8f, (Lingote, 1), (Couro, 1)),
-            new RecipeDef("montagem_manoplas", "montagem", Kind.Crafter, Manoplas, t => 1.4f, (Placa, 1), (Rebite, 2), (Couro, 1)),
-            new RecipeDef("forja_machados", "forja_armas", Kind.Crafter, Machado, t => 1.2f, (Lingote, 2), (Couro, 1)),
-            new RecipeDef("montagem_peitoral", "montagem", Kind.Crafter, Peitoral, t => 1.8f, (Placa, 3), (Rebite, 4), (Couro, 1)),
+            new RecipeDef("montagem_elmo", "montagem", Kind.Crafter, Elmo, t => 1.2f, (Placa, 2), (Rebite, 2), (Liga, 0)),
+            new RecipeDef("bigorna_pesada", "forja_armas", Kind.Crafter, Maca, t => 1.2f, (Lingote, 2), (Rebite, 2), (Liga, 0)),
+            new RecipeDef("montagem_grevas", "montagem", Kind.Crafter, Grevas, t => 1.2f, (Placa, 2), (Couro, 1), (Liga, 0)),
+            new RecipeDef("forja_hastes", "forja_armas", Kind.Crafter, Lanca, t => 0.8f, (Lingote, 1), (Couro, 1), (Liga, 0)),
+            new RecipeDef("montagem_manoplas", "montagem", Kind.Crafter, Manoplas, t => 1.4f, (Placa, 1), (Rebite, 2), (Couro, 1), (Liga, 0)),
+            new RecipeDef("forja_machados", "forja_armas", Kind.Crafter, Machado, t => 1.2f, (Lingote, 2), (Couro, 1), (Liga, 0)),
+            new RecipeDef("montagem_peitoral", "montagem", Kind.Crafter, Peitoral, t => 1.8f, (Placa, 3), (Rebite, 4), (Couro, 1), (Liga, 0)),
+            new RecipeDef("fornalha_liga", Kind.Furnace, Liga, t => 1.5f, (Lingote, 2)),
         };
 
         // ponytail: estacoes sem arte propria usam a da familia mais proxima: montagens = bancada de escudos (armadura), forjas = bigorna;
@@ -171,12 +174,17 @@ namespace FS.Core
         const string Escudos = "bancada_escudos", Bigorna = "bigorna";
 
         const Upgrade Nenhum = (Upgrade)(-1);
-        static UpgradeDef U(int i, string id, int requer, string nome, string desc, bool menu = false, bool luxo = false, Upgrade efeito = Nenhum) =>
-            new UpgradeDef((Upgrade)i, id, requer, nome, desc, luxo, menu, efeito: efeito);
+        static UpgradeDef U(int i, string id, int requer, string nome, string desc, bool menu = false, bool luxo = false, Upgrade efeito = Nenhum,
+            string station = null, string blueprint = null) =>
+            new UpgradeDef((Upgrade)i, id, requer, nome, desc, luxo, menu, station, blueprint: blueprint, efeito: efeito);
+        const string Mestra = "bp_mestra_armorers";
 
-        /// <summary>CONTEUDO_V1 §5.2 na ordem do tier (= indice). ponytail: a `fornalha_liga` (tier 11, 8.600) sai desta leva com a mecanica da
-        /// liga; o resto mantem o custo da tabela, entao o indice 11 em diante e' o tier do catalogo menos 1. Niveis de estacao (§5.7) e o Fundidor
-        /// (Vulcana) tambem entram com ela.</summary>
+        /// <summary>CONTEUDO_V1 §5.2 na ordem do tier (= indice; o save grava o ID). C-CORE-05: a `fornalha_liga` (tier 11) voltou ao lugar
+        /// dela; depois dos luxos, os niveis de estacao do §5.7 (Meta, menu): montagem e forja de armas II-V (IV-V com o projeto de mestre da
+        /// Row). Desvio do §5.7 (revisar; BALANCE.md §35): o nivel II das duas familias pede a Rebitadeira 2, o ultimo produtivo, e nao a 1a
+        /// estacao da familia. Com o Renome do Imperio na chegada (>= 500: 3 vagas e a encomenda Royal) o projeto de mestre vinha antes da
+        /// producao e o bot comprava os IV-V (205 mil) no meio dela: producao completa do F2P 56 -> 76 min (janela 55-70); assim, 59 min, e os
+        /// niveis viram o ralo do rabo da Row, com a Vulcana e o luxo.</summary>
         static readonly UpgradeDef[] UpgradesArmeiros =
         {
             U(0, "fole_couro", -1, "Fole de couro", "Fornalhas mais rápidas", menu: true, efeito: Upgrade.FurnaceSpeed1),
@@ -190,35 +198,54 @@ namespace FS.Core
             U(8, "fornalha_armeiro2", -1, "Fornalha 2", "Dobra os lingotes"),
             U(9, "ferraz3", 4, "Ferraz 3", "Leva produtos ao balcão"),
             U(10, "montagem_manoplas", 6, "Manoplas", "Nova linha: manoplas"),
-            U(11, "forja_machados", 6, "Machados", "Nova linha: machado bélico"),
-            U(12, "fole_couro_duplo", 0, "Fole duplo", "Fornalhas ainda mais rápidas", menu: true, efeito: Upgrade.FurnaceSpeed2),
-            U(13, "ferraz4", 9, "Ferraz 4", "Mais um leva minério e couro"),
-            U(14, "gabaritos", -1, "Gabaritos", "Montagens e forjas mais rápidas", menu: true, efeito: Upgrade.HammerSpeed),
-            U(15, "montagem_peitoral", 10, "Peitorais", "Nova linha: peitoral"),
-            U(16, "rebitadeira2", -1, "Rebitadeira 2", "Mais rebites por minuto"),
-            U(17, "estandartes_armeiro", 16, "Estandartes", "Bandeiras na rua", luxo: true),
-            U(18, "rua_calcada", 17, "Rua calçada", "Pedras novas na rua", luxo: true),
-            U(19, "manequins", 18, "Manequins", "Armaduras em exposição", luxo: true),
+            U(11, "fornalha_liga", 8, "Fornalha de liga", "Liga nas peças: qualidade +30"),
+            U(12, "forja_machados", 6, "Machados", "Nova linha: machado bélico"),
+            U(13, "fole_couro_duplo", 0, "Fole duplo", "Fornalhas ainda mais rápidas", menu: true, efeito: Upgrade.FurnaceSpeed2),
+            U(14, "ferraz4", 9, "Ferraz 4", "Mais um leva minério e couro"),
+            U(15, "gabaritos", -1, "Gabaritos", "Montagens e forjas mais rápidas", menu: true, efeito: Upgrade.HammerSpeed),
+            U(16, "montagem_peitoral", 10, "Peitorais", "Nova linha: peitoral"),
+            U(17, "rebitadeira2", -1, "Rebitadeira 2", "Mais rebites por minuto"),
+            U(18, "estandartes_armeiro", 17, "Estandartes", "Bandeiras na rua", luxo: true),
+            U(19, "rua_calcada", 18, "Rua calçada", "Pedras novas na rua", luxo: true),
+            U(20, "manequins", 19, "Manequins", "Armaduras em exposição", luxo: true),
+            U(21, "nivel_montagem2", 17, "Montagens II", "Mais qualidade e velocidade", menu: true, station: "montagem"),
+            U(22, "nivel_montagem3", 21, "Montagens III", "Mais qualidade e velocidade", menu: true, station: "montagem"),
+            U(23, "nivel_montagem4", 22, "Montagens IV", "Mais qualidade e velocidade", menu: true, station: "montagem", blueprint: Mestra),
+            U(24, "nivel_montagem5", 23, "Montagens V", "Mais qualidade e velocidade", menu: true, station: "montagem", blueprint: Mestra),
+            U(25, "nivel_forja_armas2", 17, "Forjas II", "Mais qualidade e velocidade", menu: true, station: "forja_armas"),
+            U(26, "nivel_forja_armas3", 25, "Forjas III", "Mais qualidade e velocidade", menu: true, station: "forja_armas"),
+            U(27, "nivel_forja_armas4", 26, "Forjas IV", "Mais qualidade e velocidade", menu: true, station: "forja_armas", blueprint: Mestra),
+            U(28, "nivel_forja_armas5", 27, "Forjas V", "Mais qualidade e velocidade", menu: true, station: "forja_armas", blueprint: Mestra),
         };
 
-        /// <summary>C-CORE-05 (BALANCE.md §33): os produtivos do §5.2 x 1,55 (multiplo de 5 ate 10 mil, 2 algarismos acima, regra do §1); o luxo
-        /// como no catalogo. Com o preco x 3,5 (Ajuste) a producao completa do F2P cai de 1:31 h para ~1 h e a renda sobe a ~4.800/min.</summary>
-        static readonly long[] CustosArmeiros = { 745, 970, 1255, 1635, 2125, 2760, 3590, 4665, 6070, 7890, 10000, 17000, 23000, 29000, 39000, 50000, 65000, 42000, 54000, 66000 };
+        /// <summary>C-CORE-05 (BALANCE.md §33): os produtivos do §5.2 x 1,55 (multiplo de 5 ate 10 mil, 2 algarismos acima, regra do §1; a fornalha
+        /// de liga 8.600 -> 13.000); o luxo e os niveis de estacao (§5.7: montagem 4.300/13.000/35.000/78.000, forja de armas 3.500/11.000/28.000/
+        /// 64.000) como no catalogo. Com o preco x 3,5 (Ajuste) a producao completa do F2P cai de 1:31 h para ~1 h e a renda sobe a ~4.800/min.</summary>
+        static readonly long[] CustosArmeiros =
+        {
+            745, 970, 1255, 1635, 2125, 2760, 3590, 4665, 6070, 7890, 10000, 13000, 17000, 23000, 29000, 39000, 50000, 65000,   // produtivos
+            42000, 54000, 66000,                                                                                                // luxo
+            4300, 13000, 35000, 78000, 3500, 11000, 28000, 64000,                                                               // niveis (Meta)
+        };
 
         static readonly long[] Turma = { 750, 1200, 1920, 3070 };   // §6: niveis 2-5 da turma Ferraz (6-10 com o resto do distrito)
         static WorkerDef Ferraz(int n, int rota) => new WorkerDef("wk_ferraz" + n, "Ferraz", WorkerRole.Porter, Specialty.Carrying, ArmorersRowId, null,
             "ferraz" + n, rota, 0, null, Turma, "ajudante", "velocidade", "carga");
 
+        /// <summary>C-CORE-05 (CONTEUDO_V1 §6): a Fundidora (Smelter) que opera a fornalha de liga (o Requer, Equipe.Ritmo: 6 -> 4 s, +3%/nivel) e
+        /// da q +15/+25/+30 nas montagens (Station = a familia). Contratacao e niveis do catalogo (1.800 x 1,6^(L-2)), em ouro, como a equipe do
+        /// Old Forge. ponytail: a folha do oficial ate a arte dela existir.</summary>
+        static readonly WorkerDef Vulcana = new WorkerDef("wk_vulcana", "Vulcana", WorkerRole.Smelter, Specialty.Armor, ArmorersRowId, "montagem", null, -1,
+            7200, "fornalha_liga", new long[] { 1800, 2880, 4610, 7375, 12000, 19000, 30000, 48000, 77000 }, "oficial", "liga", "qualidade");
+
         public static readonly DistrictDef ArmorersRow = new DistrictDef
         {
             Id = ArmorersRowId, Nome = "Armorer's Row", Indice = 1,
-            Itens = ItensArmeiros, Receitas = ReceitasArmeiros, Upgrades = UpgradesArmeiros, Projetos = new BlueprintDef[0],
-            // C-CORE-05: nenhuma das 10 obras da Row (CONTEUDO_V1 §10.1) passa no validator ainda: toda familia da Row tem q maximo 0 (Superior
-            // inalcancavel; o §10.2 chega a 140/110 com niveis 60 + tecnica 20 + liga 30, e sem a liga para em 80). Os marcos da Collection da
-            // Row tambem esperam: a Collection so abre com um projeto de Masterwork. Entram com a liga, os niveis e os Blueprints da Row (BALANCE.md §33)
-            Masterworks = new MasterworkDef[0], MarcosColecao = new MarcoColecaoDef[0],
+            Itens = ItensArmeiros, Receitas = ReceitasArmeiros, Upgrades = UpgradesArmeiros, Projetos = ProjetosDefs.RowDefs,
+            // C-CORE-05: as 10 obras da Row (CONTEUDO_V1 §10.1) e os marcos da Collection dela; Superior alcancavel com a liga (BALANCE.md §35)
+            Masterworks = MasterworksDefs.RowDefs, MarcosColecao = MasterworksDefs.MarcosRow,
             // ponytail: a turma Ferraz (§6, 1 WorkerDef com 4 corpos) sao 4 Porters ate o campo `crew` existir; o 4o leva o bruto (minerio ou couro)
-            Workers = new[] { Ferraz(1, 0), Ferraz(2, 1), Ferraz(3, 2), Ferraz(4, 0) },
+            Workers = new[] { Ferraz(1, 0), Ferraz(2, 1), Ferraz(3, 2), Ferraz(4, 0), Vulcana },
             // Fileiras (deposito 1 -> fornalhas 4 -> prensas 6,5 -> montagens 9 -> forjas 11 -> balcao 13), colunas de 3 m; entrada a esquerda.
             // C-CORE-05: deposito de 1,5 para 1 m: o rotulo dele (1,35 m acima) encostava no da Fornalha (1,04 m abaixo dela); descer as
             // fornalhas poria o pad da Fornalha 2 sob o rotulo da Prensa 2
@@ -240,6 +267,8 @@ namespace FS.Core
                 new StationDef("forja_machados", Kind.Crafter, 7.5f, 11.0f, "Forja machados", -1f, 0f, "forja_machados", "forja_machados", arte: Bigorna),
                 new StationDef("montagem_peitoral", Kind.Crafter, 10.5f, 9.0f, "Mont. peitoral", -1f, 0f, "montagem_peitoral", "montagem_peitoral", arte: Escudos),
                 new StationDef("rebitadeira2", Kind.Furnace, 10.5f, 6.5f, "Rebitadeira 2", -1f, 0f, "rebitadeira2", "rebitadeira"),
+                // C-CORE-05: na fileira das fornalhas, sobre a rebitadeira (como fornalha -> prensa na coluna 1); anexada no fim (indice do save)
+                new StationDef("fornalha_liga", Kind.Furnace, 7.5f, 4.0f, "Fornalha liga", -1f, 0f, "fornalha_liga", "fornalha_liga"),
             },
             Pads = new[]
             {
@@ -255,6 +284,7 @@ namespace FS.Core
                 new PadDef(10.5f, 9.0f, "montagem_peitoral"),
                 new PadDef(10.5f, 6.5f, "rebitadeira2"),
                 new PadDef(12.6f, 12.6f, "estandartes_armeiro", "rua_calcada", "manequins"),
+                new PadDef(7.5f, 4.0f, "fornalha_liga"),   // C-CORE-05: no lugar da estacao
             },
             Obstaculos = new ObstacleDef[0], Marcos = new MilestoneDef[0],
             Inicio = new V2(4.5f, 2.6f), Contratacao = new V2(8.3f, 1.5f), Largura = Balance.WorldW, Parede = false,
@@ -265,10 +295,10 @@ namespace FS.Core
                 // na producao completa); medida, a Row vende ~12 un/min, presa no transporte de lingote, placa, rebite e couro (4 Ferraz com carga
                 // 2, montagem de 2-3 componentes), nao na demanda nem nas bancadas. A relacao entre os produtos e' a do §3. §2.2 balcao de 6 vagas
                 // com estoque 10 (sem Vitrine no distrito)
-                t.Price = new[] { 0, 0, 490, 420, 455, 245, 420, 385, 805, 0, 0, 0 };
+                t.Price = new[] { 0, 0, 490, 420, 455, 245, 420, 385, 805, 0, 0, 0, 0 };
                 // s entre clientes no inicio = 60 / (un/min do modelo na producao completa, §1 "mix"); a demanda sobra (metade do intervalo, o dobro
                 // ou fila de 8 nao mudam a renda: BALANCE.md §33)
-                t.ClientInterval = new[] { 0f, 0f, 11.5f, 11.5f, 11.5f, 7.7f, 13.6f, 11.5f, 17.1f, 0f, 0f, 0f };
+                t.ClientInterval = new[] { 0f, 0f, 11.5f, 11.5f, 11.5f, 7.7f, 13.6f, 11.5f, 17.1f, 0f, 0f, 0f, 0f };
                 t.CustoTabela = CustosArmeiros;
                 t.QueueCap0 = 6; t.CounterCap0 = t.CounterCap1 = 10;
                 t.OrderRewardMin = 75;   // §7.2: Common da Row, 75 de minimo (x3 o do Old Forge)
@@ -277,7 +307,10 @@ namespace FS.Core
             Charter = new CharterDef(true, 750, 2, null),   // §2.2: producao completa + Renome 5 (750) + 2 Masterworks; proximo distrito fora do build
         };
 
-        public static readonly DistrictDef[] All = { OldForge, ArmorersRow };
+        // Propriedade (montada no 1o uso), nao campo: os distritos 3-6 moram em arquivos proprios (partial) e a ordem dos inicializadores
+        // estaticos entre arquivos de uma classe parcial nao e' garantida em C# (um campo aqui poderia capturar um distrito ainda nulo).
+        static DistrictDef[] _all;
+        public static DistrictDef[] All => _all ??= new[] { OldForge, ArmorersRow };
 
         /// <summary>Distrito com este ID, ou null.</summary>
         public static DistrictDef Find(string id) => Array.Find(All, d => d.Id == id);

@@ -227,8 +227,8 @@ namespace FS
             _cfg.SetAsLastSibling();     // configuracoes e painel modal cobrem a barra de melhorias
             _panel.SetAsLastSibling();
             _metas = new PainelMetas(_safe, _raiz, Pago, () => _projetos.Abrir(), () => _hall.Abrir(), Contrato);   // D-CORE-04: a aba de contratos le os da raiz
-            _projetos = new PainelProjetos(_safe, _raiz);
-            _hall = new PainelHall(_safe, _raiz);   // B-CORE-08: Hall e Colecao do Old Forge, como metas e projetos (C-CORE-02)
+            _projetos = new PainelProjetos(_safe, _sim);   // C-CORE-05: projetos, Hall e Colecao do distrito ativo (cada um tem os dele: a Row,
+            _hall = new PainelHall(_safe, _sim);           // o projeto de mestre e as 10 obras dela); no Old Forge e' a raiz, como antes
             if (_loja != null) _lojaUi = new PainelLoja(_safe, _raiz, _loja, Comprar, Restaurar);
             // E-PLAT-01: sem resposta (ou com texto novo) a tela de idade abre por cima de tudo e o SDK de anuncio espera (Ads.Responder).
             // Fotos e smoke (-testsession, -record, -autoplay) nao a veem, salvo com -privacidade [18]
@@ -489,7 +489,7 @@ namespace FS
                     // B-CORE-07: projeto novo (marco, Renome, conquista; encomenda e o resto quando existirem): som, aviso e diario
                     case Ev.Blueprint:
                         Notice(Loc.T("aviso.projeto"), _crown, Color.white);
-                        Log("blueprint_unlock", _raiz.Projetos.Defs[e.A].Id, ((BlueprintSourceKind)e.B).ToString());
+                        Log("blueprint_unlock", _sim.Projetos.Defs[e.A].Id, ((BlueprintSourceKind)e.B).ToString());   // C-CORE-05: A = indice no Sim que emitiu
                         break;
                     case Ev.ContractDone:   // D-CORE-04: pago 1x pelo nucleo (ledger das metas); aqui o aviso, o diario, a fonte e a vibracao
                         Notice(Loc.T("aviso.contrato", Textos.Qtd(e.B)), _coinIcon.sprite, _coinIcon.color);
@@ -1634,9 +1634,10 @@ namespace FS
             else if (Arg("-pass") != null) _relogioEv = LiveOpsDefs.T0 + 3600 - Now();
             if (Arg("-intersticial") != null) _sim.T.Interstitial = true;   // E-PLAT-03 (dev): antes do Ads.Init, que so carrega com a flag
             // B-CORE-07 (fotos): -projetos todos = todos os projetos do catalogo ANTES das compras (o -buy/-buyids alcanca os niveis IV-V e a bigorna longa)
-            if (Arg("-projetos") == "todos" || Arg("-projetos") == "dar") foreach (BlueprintDef d in _raiz.Projetos.Defs) _raiz.Projetos.Ganha(d.Id, d.Sources[0].Kind);
+            // C-CORE-05: os do distrito ativo (com -distrito armorers_row, os da Row), como os paineis
+            if (Arg("-projetos") == "todos" || Arg("-projetos") == "dar") foreach (BlueprintDef d in _sim.Projetos.Defs) _sim.Projetos.Ganha(d.Id, d.Sources[0].Kind);
             // B-CORE-08 (fotos): -masterwork [N] = os projetos de Masterwork e as N primeiras (padrao 3) no Hall, com o Renome delas
-            if (Arg("-masterwork") != null) Captura.Hall(_raiz, int.TryParse(Arg("-masterwork"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int mwn) ? mwn : 3);
+            if (Arg("-masterwork") != null) Captura.Hall(_sim, int.TryParse(Arg("-masterwork"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int mwn) ? mwn : 3);
             if (int.TryParse(Arg("-buy"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
                 for (int pass = 0; pass < 2; pass++)   // o Buy recusa luxo antes da producao completa, e ha produtivos (Mineiro, Joalheiro 2) depois dos luxos
                     for (int i = 0; i < Math.Min(n, _sim.UpgradeDefs.Length); i++)   // C-CORE-01: os do distrito ativo

@@ -116,6 +116,7 @@ namespace FS.Core
             e.AddRange(Pisaveis(w));
             e.AddRange(Qualidade(d.Upgrades, w));
             e.AddRange(Workers(d.Workers, w, new RenomeDef[0]));   // o wk_ que o Renome libera: o Validate confere contra os do Old Forge
+            e.AddRange(Blueprints(w.Projetos.Defs, d.Upgrades, w));   // C-CORE-05: os projetos dele (essencial nunca so pago; filas do distrito)
             e.AddRange(MasterworksDefs.Validar(w.Hall.Defs, w.Colecao.Marcos, w.Projetos.Defs, d.Upgrades, w));   // C-CORE-05: o Hall e a Collection que o Sim dele usa
             return e;
         }
@@ -275,12 +276,19 @@ namespace FS.Core
                 if (d.Contrata != null || d.Rota != -1) yield return $"{at} so o ajudante (Porter) e' contratado por upgrade e tem rota";
                 if (d.Contratacao <= 0 || d.Contratacao % 5 != 0) yield return $"{at} contratacao {d.Contratacao} (positiva e multipla de 5)";
                 if (d.Requer != null && Upgrades.IndexOf(d.Requer, w.UpgradeDefs) < 0) yield return $"{at} requisito \"{d.Requer}\", que nao e' upgrade do build";
-                if (d.Papel > WorkerRole.Foreman) yield return $"{at} papel {d.Papel} ainda sem regra no nucleo (Wave C)";
+                if (d.Papel > WorkerRole.Smelter) yield return $"{at} papel {d.Papel} ainda sem regra no nucleo (Wave C)";
                 if (d.Papel == WorkerRole.Smith)
                 {
                     if (!w.Stations.Exists(s => s.Produces && s.Recipe.Station == d.Station && w.IsProduct(s.OutItem)))
                         yield return $"{at} oficial da familia \"{d.Station}\", sem bancada de produto no mundo";
                     else if (!oficios.Add(d.Station)) yield return $"{at} segundo oficial da familia \"{d.Station}\"";
+                }
+                else if (d.Papel == WorkerRole.Smelter)   // C-CORE-05: q na familia (Station) e a fornalha que ele opera (Requer = o ID da estacao)
+                {
+                    if (!w.Stations.Exists(s => s.Produces && s.Recipe.Family == d.Station && w.IsProduct(s.OutItem)))
+                        yield return $"{at} fundidor da familia \"{d.Station}\", sem bancada de produto no mundo";
+                    if (!w.Stations.Exists(s => s.Produces && s.Kind == Kind.Furnace && s.Recipe.Family == d.Requer))
+                        yield return $"{at} fundidor sem a fornalha \"{d.Requer}\" no mundo (o Requer e' a estacao que ele opera)";
                 }
                 else if (d.Station != null) yield return $"{at} familia \"{d.Station}\" fora do oficial";
             }
@@ -705,9 +713,12 @@ namespace FS.Core
             {
                 if (!w.Stations.Exists(s => s.Recipe == r)) yield return $"receita: {Name(r.Output)} sem estacao da familia {r.Station}";
                 if (r.Inputs.Length == 0) yield return $"receita: {Name(r.Output)} sem insumo";
+                // C-CORE-05: Qty 0 = o slot opcional (liga): 1 por receita, so em produto (Sim.Grade) e ao lado de um insumo obrigatorio
+                if (Array.FindAll(r.Inputs, x => x.Qty == 0).Length > (w.IsProduct(r.Output) && Array.Exists(r.Inputs, x => x.Qty > 0) ? 1 : 0))
+                    yield return $"receita: {Name(r.Output)} com insumo opcional (0) fora da regra (1 por receita, so em produto, ao lado de um obrigatorio)";
                 foreach ((Item item, int qty) in r.Inputs)
                 {
-                    if (qty <= 0) yield return $"receita: {Name(r.Output)} pede {qty} de {Name(item)}";
+                    if (qty < 0) yield return $"receita: {Name(r.Output)} pede {qty} de {Name(item)}";
                     if (!Made(item)) yield return $"receita: {Name(r.Output)} usa {Name(item)}, que nenhuma estacao produz";
                     else if (!reach.Contains(item)) yield return $"receita: {Name(r.Output)} usa {Name(item)}, que nunca sai do minerio (ciclo)";
                 }

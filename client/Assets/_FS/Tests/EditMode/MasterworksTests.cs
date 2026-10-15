@@ -19,14 +19,15 @@ namespace FS.Tests
         static int Idx(string id) => MasterworksDefs.IndexOf(id);
         static int Count(Sim s, Ev kind) => s.Events.Count(e => e.Kind == kind);
 
-        /// <summary>C-CORE-02 x B-CORE-08: o Hall e a Collection sao do distrito; a Row (sem obras no catalogo ainda) nao herda as do Old Forge.</summary>
+        /// <summary>C-CORE-02 x B-CORE-08: o Hall e a Collection sao do distrito; a Row tem as dela (C-CORE-05) e nao herda as do Old Forge.</summary>
         [Test]
         public void Hall_PorDistrito_RowNaoHerdaAsDoOldForge()
         {
             Assert.AreEqual(MasterworksDefs.All.Length, new Sim().Hall.Defs.Length);
             var row = new Sim(distrito: Distritos.ArmorersRow);
-            Assert.AreEqual(0, row.Hall.Defs.Length);
-            Assert.AreEqual(0, row.Colecao.Marcos.Length);
+            Assert.AreSame(MasterworksDefs.RowDefs, row.Hall.Defs);
+            Assert.AreSame(MasterworksDefs.MarcosRow, row.Colecao.Marcos);
+            Assert.IsFalse(Array.Exists(row.Hall.Defs, d => MasterworksDefs.IndexOf(d.Id) >= 0), "nenhuma do Old Forge");
             foreach (Station st in row.Stations) Assert.IsFalse(row.MasterworkPending(st), st.Name);
         }
 

@@ -44,6 +44,7 @@ LIVEOPS, LIVEOPSDEFS = 'Assets/_FS/Scripts/Core/LiveOps.cs', 'Assets/_FS/Scripts
 MW, MWDEFS = 'Assets/_FS/Scripts/Core/Masterworks.cs', 'Assets/_FS/Scripts/Core/MasterworksDefs.cs'
 CTR, CTRD = 'Assets/_FS/Scripts/Core/Contratos.cs', 'Assets/_FS/Scripts/Core/ContratosDefs.cs'
 MIX = 'Assets/_FS/Scripts/View/Mixagem.cs'
+DIST, TEXTOS = 'Assets/_FS/Scripts/Core/Distritos.cs', 'Assets/_FS/Scripts/View/Textos.cs'
 
 
 def mut(id, arquivo, trecho, troca, descricao, esperado_vivo=None):
@@ -475,6 +476,42 @@ MUTACOES = [
         'contrato de outro distrito do Império é o próprio, não o da raiz (venda lá não conta)'),
     mut('ctr-validator-essencial', CTRD, "if (bps[b].Essential && !Array.Exists(bps[b].Sources, f => ProjetosDefs.Permanente(f.Kind)))", "if (false)",
         'validator aceita Blueprint essencial só por contrato'),
+    # C-CORE-05: a liga na Rua dos Armeiros (LigaTests, RowTests; BALANCE.md §35)
+    mut('liga-sem-q', SIM, 'b[(int)QualitySource.Material] = TemLiga(s) ? T.LigaQ : 0;', 'b[(int)QualitySource.Material] = 0;',
+        'a liga no slot não soma qualidade'),
+    mut('liga-nao-consome', SIM, 'if (TemLiga(s)) { s.Ins[s.Liga]--; PecasComLiga[(int)s.OutItem]++; }', 'if (TemLiga(s)) { PecasComLiga[(int)s.OutItem]++; }',
+        'a peça leva a qualidade da liga sem gastar a liga'),
+    mut('liga-sem-contador', SIM, 'if (TemLiga(s)) { s.Ins[s.Liga]--; PecasComLiga[(int)s.OutItem]++; }', 'if (TemLiga(s)) { s.Ins[s.Liga]--; }',
+        'peça com liga não conta em PecasComLiga (AlloyPieces)'),
+    mut('liga-sem-slot', SIM, 's.Liga = Array.FindIndex(s.Recipe.Inputs, x => x.Qty == 0);', 's.Liga = -1;',
+        'montagem e forja sem o slot de liga'),
+    mut('liga-save-sem-linha', SIM, 'if (Array.Exists(PecasComLiga, n => n > 0)) sb.Append("liga=")', 'if (false) sb.Append("liga=")',
+        'save sem as peças com liga'),
+    mut('liga-load-ignora', SIM, 'case "liga": ReadIdCounts(sim, parts, sim.PecasComLiga); break;', 'case "liga": break;',
+        'load ignora a linha liga='),
+    mut('liga-vulcana-sem-nivel', EQUIPE, 'return n >= 10 ? WorkerDefs.SmelterQ10 : n >= 5 ? WorkerDefs.SmelterQ5 : WorkerDefs.SmelterQ;', 'return WorkerDefs.SmelterQ;',
+        'a Vulcana não sobe a qualidade nos níveis 5 e 10'),
+    mut('liga-vulcana-sem-ritmo', EQUIPE, 'if (f >= 0 && s.Produces && s.Recipe.Family == Defs[f].Requer) r += ', 'if (false) r += ',
+        'a Vulcana não acelera a fornalha de liga'),
+    mut('liga-vulcana-toda-familia', EQUIPE, 'if (k < 0 || !s.Produces || Defs[k].Station != s.Recipe.Family) return 0;', 'if (k < 0 || !s.Produces) return 0;',
+        'a Vulcana dá qualidade em toda bancada (forjas também)'),
+    mut('liga-cond-sem-valor', MW, 'case CondicaoMw.PecasComLiga: return i < 0 ? 0 : _sim.PecasComLiga[i];', 'case CondicaoMw.PecasComLiga: return 0;',
+        'a condição AlloyPieces da obra-prima nunca anda'),
+    mut('liga-validator-slot', CV, 'if (Array.FindAll(r.Inputs, x => x.Qty == 0).Length > (w.IsProduct(r.Output) && Array.Exists(r.Inputs, x => x.Qty > 0) ? 1 : 0))', 'if (false)',
+        'validator aceita insumo opcional repetido ou em insumo'),
+    mut('liga-validator-fundidor', CV, 'if (!w.Stations.Exists(s => s.Produces && s.Kind == Kind.Furnace && s.Recipe.Family == d.Requer))', 'if (false)',
+        'validator aceita fundidor sem a fornalha que ele opera'),
+    mut('liga-qmax-sem-liga', MWDEFS, '+ (liga ? t.LigaQ : 0);', '+ 0;',
+        'o q máximo da família ignora a liga (as obras da Row voltam a Superior inalcançável)'),
+    mut('row-niveis-na-producao', DIST, 'U(21, "nivel_montagem2", 17, ', 'U(21, "nivel_montagem2", 0, ',
+        'o nível II da montagem no meio da produção (o desvio do §35 desfeito)'),
+    mut('row-sem-projetos', DIST, 'Projetos = ProjetosDefs.RowDefs,', 'Projetos = new BlueprintDef[0],',
+        'a Row sem os 14 projetos dela'),
+    mut('row-vulcana-sem-requisito', DIST, '7200, "fornalha_liga", new long[]', '7200, null, new long[]',
+        'a Vulcana à venda antes da fornalha de liga'),
+    mut('row-texto-item-do-oldforge', TEXTOS, 'static string ItemDe(Sim s, int i, long n) => Loc.P("item." + s.ItemDefs[i].Id, n);',
+        'static string ItemDe(Sim s, int i, long n) => Loc.P("item." + ItemId[Math.Min(i, ItemId.Length - 1)], n);',
+        'projeto e Hall da Row com o nome do item do Old Forge (o handle 8 virava espada longa)'),
 ]
 
 
