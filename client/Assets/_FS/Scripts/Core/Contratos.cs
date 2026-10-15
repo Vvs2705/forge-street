@@ -35,13 +35,18 @@ namespace FS.Core
     /// </summary>
     public sealed class Contratos
     {
-        /// <summary>ponytail: teto 1; a mesa_real (CONTEUDO_V1 §8, distrito 4) da a 2a vaga com o C-CORE-05.</summary>
+        /// <summary>1 vaga; a mesa_real (CONTEUDO_V1 §8, major unlock do distrito 4) da a 2a (MesaReal, Ativo2: C-CORE-07).</summary>
         public const int Vagas = 1;
+        /// <summary>C-CORE-07: a mesa_real foi comprada no Royal Arsenal (o Sim dele marca no Recompute, a cada load): 2 contratos ao mesmo tempo.
+        /// Nao vai no save (vem do upgrade).</summary>
+        public bool MesaReal;
+        public int VagasMax => Vagas + (MesaReal ? 1 : 0);
 
         readonly Sim _sim;
         /// <summary>Catalogo desta partida (padrao ContratosDefs.All; so o teste injeta outro). Ev.ContractDone.A = indice aqui.</summary>
         public ContractDef[] Defs = ContratosDefs.All;
-        public Contrato Ativo;
+        /// <summary>O ativo e o da 2a vaga (C-CORE-07, so com a mesa_real; null = vaga livre). Quando o 1o sai, o 2o passa a ser o 1o.</summary>
+        public Contrato Ativo, Ativo2;
         /// <summary>IDs concluidos, na ordem (o contador do Charter, C-CORE-03: Concluidos.Count). ID de um build mais novo fica.</summary>
         public readonly List<string> Concluidos = new List<string>();
         /// <summary>Metricas de sessao (fora do save, como o OrderGold).</summary>
@@ -52,10 +57,10 @@ namespace FS.Core
         public bool Concluido(string id) => Concluidos.Contains(id);
 
         /// <summary>O proximo da lista fixa (nao concluido, nao ativo), aberto ou nao; null = acabaram.</summary>
-        public ContractDef Proximo => Array.Find(Defs, d => !Concluido(d.Id) && (Ativo == null || Ativo.Def != d));
+        public ContractDef Proximo => Array.Find(Defs, d => !Concluido(d.Id) && (Ativo == null || Ativo.Def != d) && (Ativo2 == null || Ativo2.Def != d));
 
-        /// <summary>O contrato que da para aceitar agora: o Proximo, com a vaga livre e aberto.</summary>
-        public ContractDef Oferta { get { ContractDef d = Proximo; return d != null && Ativo == null && Aberto(d) ? d : null; } }
+        /// <summary>O contrato que da para aceitar agora: o Proximo, com uma vaga livre e aberto.</summary>
+        public ContractDef Oferta { get { ContractDef d = Proximo; return d != null && (Ativo == null || MesaReal && Ativo2 == null) && Aberto(d) ? d : null; } }
 
         /// <summary>Flag ligada, depois das Ferramentas, distrito no build, Renome que a tabela pede e todo item das etapas vendido neste build.</summary>
         public bool Aberto(ContractDef d)
@@ -70,15 +75,17 @@ namespace FS.Core
         {
             ContractDef d = Oferta;
             if (d == null) return false;
-            Ativo = new Contrato(d, d.BonusMin * 60f); Aceitos++;
+            if (Ativo == null) Ativo = new Contrato(d, d.BonusMin * 60f); else Ativo2 = new Contrato(d, d.BonusMin * 60f);   // C-CORE-07: a 2a vaga
+            Aceitos++;
             return true;
         }
 
-        /// <summary>Sem penalidade: nada foi pago; o contrato volta a lista e o progresso recomeca.</summary>
-        public bool Abandonar()
+        /// <summary>Sem penalidade: nada foi pago; o contrato volta a lista e o progresso recomeca. `segundo` = o da 2a vaga (C-CORE-07).</summary>
+        public bool Abandonar(bool segundo = false)
         {
-            if (Ativo == null) return false;
-            Ativo = null; Abandonados++;
+            if ((segundo ? Ativo2 : Ativo) == null) return false;
+            if (segundo) Ativo2 = null; else { Ativo = Ativo2; Ativo2 = null; }
+            Abandonados++;
             return true;
         }
 
@@ -95,28 +102,36 @@ namespace FS.Core
         /// conta); completo = paga.</summary>
         internal void Tick(float dt, Sim ativo)
         {
+            if (Ativo2 != null && Ativo2.Prazo > 0f) Ativo2.Prazo = Math.Max(0f, Ativo2.Prazo - dt);   // C-CORE-07: a 2a vaga
+            if (Ativo2 != null && Ativo2.Pronto) Concluir(ativo, true);
             if (Ativo == null) return;
             if (Ativo.Prazo > 0f) Ativo.Prazo = Math.Max(0f, Ativo.Prazo - dt);
             if (Ativo.Pronto) Concluir(ativo);
         }
 
         /// <summary>Do Sim.Sell de qualquer distrito: a peca `item` (ID do ItemDef: o handle muda de distrito para distrito) conta para a etapa
-        /// atual se e' o item dela no nivel minimo ou melhor.</summary>
+        /// atual se e' o item dela no nivel minimo ou melhor. C-CORE-07: so para um (o 1o que aceita; 1 peca conta 1).</summary>
         internal void OnVenda(string item, Quality q)
         {
-            if (Ativo == null || Ativo.Pronto) return;
-            ContractStage e = Ativo.Atual;
-            if (item != e.Item || q < e.MinQ) return;
-            if (++Ativo.Feito >= e.N) { Ativo.Etapa++; Ativo.Feito = 0; }
+            if (!Conta(Ativo, item, q)) Conta(Ativo2, item, q);
+        }
+
+        static bool Conta(Contrato c, string item, Quality q)
+        {
+            if (c == null || c.Pronto) return false;
+            ContractStage e = c.Atual;
+            if (item != e.Item || q < e.MinQ) return false;
+            if (++c.Feito >= e.N) { c.Etapa++; c.Feito = 0; }
+            return true;
         }
 
         /// <summary>Paga o ativo completo 1x: ouro (no prazo x1,5) e Renome (+5 no prazo) pelo ledger das metas (ID = Tx), o Blueprint pelo
         /// Projetos (so se o BlueprintDef lista o contrato). Ev.ContractDone na raiz (metas, eventos) e no distrito `ativo` (a View le os eventos
         /// dele: aviso e diario). Devolve o ouro; -1 = o ID ja estava no ledger (nada paga de novo).</summary>
-        long Concluir(Sim ativo)
+        long Concluir(Sim ativo, bool segundo = false)
         {
-            Contrato c = Ativo; ContractDef d = c.Def;
-            Ativo = null;
+            Contrato c = segundo ? Ativo2 : Ativo; ContractDef d = c.Def;
+            if (segundo) Ativo2 = null; else { Ativo = Ativo2; Ativo2 = null; }   // C-CORE-07: o 2o sobe para a 1a vaga
             if (!Concluido(d.Id)) Concluidos.Add(d.Id);
             bool prazo = c.Prazo > 0f;
             long g = _sim.Metas.Paga(c.Tx, prazo ? (int)Math.Round(d.OuroSeg * ContratosDefs.BonusOuro) : d.OuroSeg, 0, d.Reputacao + (prazo ? ContratosDefs.BonusRenome : 0));
@@ -134,16 +149,19 @@ namespace FS.Core
         public void Save(StringBuilder sb)
         {
             if (Concluidos.Count > 0) sb.Append("ctr=").Append(string.Join(",", Concluidos)).Append('\n');
-            if (Ativo != null)
-                sb.Append("ctr.v=").Append(Ativo.Def.Id).Append(',').Append(Ativo.Etapa).Append(',').Append(Ativo.Feito).Append(',')
-                  .Append(Ativo.Prazo.ToString("0.###", CultureInfo.InvariantCulture)).Append('\n');
+            if (Ativo != null) Linha(sb, "ctr.v=", Ativo);
+            if (Ativo2 != null) Linha(sb, "ctr.v2=", Ativo2);   // C-CORE-07: a 2a vaga (so com a mesa_real; o Load de antes ignora)
         }
+
+        static void Linha(StringBuilder sb, string chave, Contrato c) =>
+            sb.Append(chave).Append(c.Def.Id).Append(',').Append(c.Etapa).Append(',').Append(c.Feito).Append(',')
+              .Append(c.Prazo.ToString("0.###", CultureInfo.InvariantCulture)).Append('\n');
 
         /// <summary>Le ctr= e ctr.v= (lixo = padrao). Concluido que este build nao conhece fica (e conta em UnknownIds); ativo desconhecido ou ja
         /// concluido fica de fora; etapa, feito e prazo presos ao que o ContractDef permite.</summary>
         internal void Load(string text)
         {
-            string[] v = null;
+            string[] v = null, v2 = null;
             foreach (string raw in text.Split('\n'))
             {
                 if (raw.StartsWith("ctr=", StringComparison.Ordinal))
@@ -155,15 +173,23 @@ namespace FS.Core
                         if (ContratosDefs.IndexOf(id, Defs) < 0) _sim.UnknownIds++;
                     }
                 else if (raw.StartsWith("ctr.v=", StringComparison.Ordinal)) v = raw.Substring(6).Trim().Split(',');
+                else if (raw.StartsWith("ctr.v2=", StringComparison.Ordinal)) v2 = raw.Substring(7).Trim().Split(',');   // C-CORE-07
             }
-            if (v == null || v.Length < 4) return;
+            Ativo = Le(v);
+            Contrato b = Le(v2);
+            if (b != null && b.Def != Ativo?.Def) { if (Ativo == null) Ativo = b; else Ativo2 = b; }   // so a 2a sem a 1a: sobe
+        }
+
+        Contrato Le(string[] v)
+        {
+            if (v == null || v.Length < 4) return null;
             ContractDef d = Array.Find(Defs, x => x.Id == v[0].Trim());
-            if (d == null) { _sim.UnknownIds++; return; }
-            if (Concluido(d.Id)) return;
+            if (d == null) { _sim.UnknownIds++; return null; }
+            if (Concluido(d.Id)) return null;
             var c = new Contrato(d, Math.Max(0f, Math.Min(d.BonusMin * 60f, F(v[3], 0f))));
             c.Etapa = Clamp(I(v[1], 0), 0, d.Etapas.Length - 1);
             c.Feito = Clamp(I(v[2], 0), 0, c.Atual.N - 1);
-            Ativo = c;
+            return c;
         }
 
         static int Clamp(int v, int min, int max) => Math.Max(min, Math.Min(max, v));

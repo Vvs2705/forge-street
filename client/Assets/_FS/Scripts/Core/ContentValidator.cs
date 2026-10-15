@@ -324,7 +324,8 @@ namespace FS.Core
                     switch (f.Kind)
                     {
                         case BlueprintSourceKind.Milestone:
-                            if (f.Ref != BlueprintSource.Producao && (!Produto(f.Ref) || f.N <= 0)) yield return $"{at} marco \"{f.Ref}\" x{f.N} inalcancavel";
+                            if (f.Ref == BlueprintSource.Cotas ? w.Patio == null || f.N <= 0 : f.Ref != BlueprintSource.Producao && (!Produto(f.Ref) || f.N <= 0))
+                                yield return $"{at} marco \"{f.Ref}\" x{f.N} inalcancavel";   // C-CORE-07: blocos de cota so com o patio
                             break;
                         case BlueprintSourceKind.OrderBlueprint: case BlueprintSourceKind.OrderRoyal:
                             if (Array.IndexOf(ProjetosDefs.Distritos, f.Ref) < 0 || f.N <= 0) yield return $"{at} fila {f.Kind} \"{f.Ref}\" #{f.N} invalida";

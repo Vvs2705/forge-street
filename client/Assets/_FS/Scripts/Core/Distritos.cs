@@ -30,11 +30,16 @@ namespace FS.Core
 
     /// <summary>C-CORE-02/03 (V5, V15; CONTEUDO_V1 §2): o Royal Charter do distrito, 1x e sem reset. Condicoes: producao completa, Renome do
     /// Imperio >= `Renome` (o limiar do nivel que libera "charter_&lt;id&gt;", ContentValidator.Charters) e `Masterworks` obras-primas DESTE
-    /// distrito. Concede +100 de Renome (Renome.OnCharter), a renda de fundo do distrito e libera `Proximo` (null = o ultimo do build).</summary>
+    /// distrito. Concede +100 de Renome (Renome.OnCharter), a renda de fundo do distrito e libera `Proximo` (null = o ultimo do build).
+    /// C-CORE-07 (V25, CONTEUDO_V1 §2): `Contratos` = Royal Contracts concluidos no Imperio, OU 10 encomendas Royal entregues no distrito por
+    /// contrato pedido (contrato nunca bloqueia: Sim.RoyalEntregues); 0 = nao pede (distritos 1-3).</summary>
     public sealed class CharterDef
     {
-        public readonly bool Producao; public readonly long Renome; public readonly int Masterworks; public readonly string Proximo;
-        public CharterDef(bool producao, long renome, int masterworks, string proximo) { Producao = producao; Renome = renome; Masterworks = masterworks; Proximo = proximo; }
+        /// <summary>Encomendas Royal entregues no distrito que valem 1 contrato do Charter (CONTEUDO_V1 §2, regra comum).</summary>
+        public const int RoyalPorContrato = 10;
+        public readonly bool Producao; public readonly long Renome; public readonly int Masterworks, Contratos; public readonly string Proximo;
+        public CharterDef(bool producao, long renome, int masterworks, string proximo, int contratos = 0)
+        { Producao = producao; Renome = renome; Masterworks = masterworks; Proximo = proximo; Contratos = contratos; }
     }
 
     /// <summary>
@@ -65,6 +70,13 @@ namespace FS.Core
         public CharterDef Charter;
         /// <summary>Renda de fundo depois do Charter deste distrito: fracao da RateEma dele quando o jogador sai (manager nivel 1; CONTEUDO_V1 §1).</summary>
         public float FundoFator = 0.25f;
+        /// <summary>C-CORE-07 (CONTEUDO_V1 §5.4, §15 #9): ID do upgrade Meta que da q +Tuning.SeloQ em toda estacao que faz produto no distrito
+        /// (selo_arsenal), onde nao ha worker de qualidade; null = nenhum.</summary>
+        public string Selo;
+        /// <summary>C-CORE-07 (BALANCE.md §38): o carregador de insumo (papel 1) so busca o insumo que alguma estacao aberta ainda recebe; sem
+        /// isso ele segura lingote sem destino (as bancadas cheias de lingote esperando outro insumo) enquanto o ouro para no crisol. false =
+        /// a regra de sempre (Old Forge e Row ao byte; revisar para a Row, BALANCE.md §35 desvio 5).</summary>
+        public bool CargaComDestino;
     }
 
     /// <summary>C-CORE-01: os distritos do build, na ordem do mapa. Old Forge = as tabelas de sempre; Armorer's Row = CONTEUDO_V1 §2.2/§3/§5.2.</summary>
@@ -304,13 +316,14 @@ namespace FS.Core
                 t.OrderRewardMin = 75;   // §7.2: Common da Row, 75 de minimo (x3 o do Old Forge)
             },
             Abertura = 140000,
-            Charter = new CharterDef(true, 750, 2, null),   // §2.2: producao completa + Renome 5 (750) + 2 Masterworks; proximo distrito fora do build
+            Charter = new CharterDef(true, 750, 2, RoyalArsenalId),   // §2.2: producao completa + Renome 5 (750) + 2 Masterworks
+            // ---- royal_arsenal (C-CORE-07): provisorio ate o artisan_quarter (distrito 3) entrar na main; ai a Row volta a apontar para ele
         };
 
         // Propriedade (montada no 1o uso), nao campo: os distritos 3-6 moram em arquivos proprios (partial) e a ordem dos inicializadores
         // estaticos entre arquivos de uma classe parcial nao e' garantida em C# (um campo aqui poderia capturar um distrito ainda nulo).
         static DistrictDef[] _all;
-        public static DistrictDef[] All => _all ??= new[] { OldForge, ArmorersRow };
+        public static DistrictDef[] All => _all ??= new[] { OldForge, ArmorersRow, RoyalArsenal };   // ---- royal_arsenal (C-CORE-07)
 
         /// <summary>Distrito com este ID, ou null.</summary>
         public static DistrictDef Find(string id) => Array.Find(All, d => d.Id == id);

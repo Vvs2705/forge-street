@@ -38,7 +38,8 @@ namespace FS
     /// -renome N (forca o Renome total em N; so sobe) | -renomecard (abre o cartao do Renome; B-CORE-06) | -equipe (B-CORE-04: a oficina com os
     /// 6 ajudantes no nivel 3 e os 7 da Equipe contratados no posto; Captura.Equipe; com -menu e -gold, os cartoes de nivel) | -projetos [todos|dar] ("dar" = os 19 sem abrir; abre o painel de
     /// projetos; "todos" da os 19 do catalogo antes do -buy/-buyids; B-CORE-07) | -hall [colecao] (abre o Hall das obras-primas, ou a aba da
-    /// Collection; B-CORE-08) | -masterwork [N] (os projetos de Masterwork e as N primeiras do catalogo no Hall, padrao 3; Captura.Hall).
+    /// Collection; B-CORE-08) | -masterwork [N] (os projetos de Masterwork e as N primeiras do catalogo no Hall, padrao 3; Captura.Hall) |
+    /// -cotas (C-CORE-07, com -distrito royal_arsenal: as 3 faixas do patio de cotas com blocos em curso; Captura.Cotas).
     /// D-CORE-03/04: -evento id (relogio do LiveOps 1 h depois do inicio do evento, ex. forge_frenzy; entra sem esperar o requisito; evento que
     /// ainda nao roda neste build = Falha) | -eventocard (abre o cartao do evento) | -pass (abre o Passe; sem -evento o relogio vai ao T0 + 1 h) |
     /// -passxp N (N de XP no Passe). Os chips aparecem depois das Ferramentas (-buy 12).
@@ -240,7 +241,7 @@ namespace FS
             if (cfg != null) _cfg.gameObject.SetActive(true);
             _joy = new Joystick(_joyCanvas.transform);
             _joy.TopBand = HudBand;
-            _joy.Ignora = p => _view.NoAnel(p) || _view.BarraEm(p) != null;   // B-CORE-03: o toque no anel do golpe e na barra de qualidade e' deles
+            _joy.Ignora = p => _view.NoAnel(p) || _view.BarraEm(p) != null || _view.FaixaEm(p) >= 0;   // B-CORE-03: anel e barra de qualidade; C-CORE-07: faixa do patio
             Fit();
             FollowCamera(100f);
         }
@@ -496,6 +497,11 @@ namespace FS
                         Log("contract_complete", _raiz.Contratos.Defs[e.A].Id, e.B.ToString());
                         Source("contrato", e.B);
                         Ajustes.Pulso(40, 200);
+                        break;
+                    case Ev.QuotaBlock:   // C-CORE-07: a Coroa pagou o bloco (cada peca ja saiu como Sold: moedas e "+N")
+                        Notice(Textos.AvisoCota(e.B, _sim.CotaUltimaNoPrazo), _crown, Color.white);
+                        Ajustes.Pulso(40, 200);
+                        Log("quota_block", _sim.ItemDefs[e.A].Id, e.B.ToString());
                         break;
                     case Ev.Bought: Bought(e.A, e.B, e.Pos); break;
                     case Ev.ClientLeft:
@@ -1288,6 +1294,13 @@ namespace FS
                 Log("golpe", at != null ? at.Name : "", hit ? "1" : "0");
                 return;
             }
+            int fx = _view.FaixaEm(px);   // C-CORE-07: toque numa faixa do patio = o proximo produto dela (vale no proximo bloco se este ja tem peca)
+            if (fx >= 0)
+            {
+                int prod = Textos.ProximoDaFaixa(_sim, fx);
+                if (_sim.EscolheCota(fx, prod)) { Sfx.Play("click"); Log("quota_lane", (fx + 1).ToString(CultureInfo.InvariantCulture), prod >= 0 ? _sim.ItemDefs[prod].Id : "-"); }
+                return;
+            }
             Station st = _view.BarraEm(px);
             if (st == null) return;
             Sfx.Play("click");
@@ -1646,6 +1659,7 @@ namespace FS
             // sem fole); "id@t" compra quando o relogio do jogo passa de t s, na ordem dada, cobrando o preco (TimedBuys).
             _buyAt = Captura.Compras(_sim, Arg("-buyids"));
             if (Arg("-equipe") != null) Captura.Equipe(_sim);   // B-CORE-04 (fotos): a oficina com os 13 workers do Old Forge; o -gold vem depois
+            if (Arg("-cotas") != null) Captura.Cotas(_sim);   // C-CORE-07 (fotos, -distrito royal_arsenal): as 3 faixas do patio com blocos em curso
             if (long.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long g)) _sim.Gold = Math.Max(0, g);   // A-CORE-06: aceita > int (foto da HUD)
             if (long.TryParse(Arg("-renome"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long rn)) _raiz.Renome.Ganha(rn - _raiz.Renome.Total);   // B-CORE-06: so sobe
             // C-CORE-03 (fotos): -gerente N = o manager do Old Forge no nivel N (precisa do Charter: -distrito armorers_row), sem gastar o ouro

@@ -420,6 +420,9 @@ static class EconSim
         // o que falta para o Charter no fim
         public int SemDestinoEq, Niveis, Fundidor, Mw; public long NiveisGasto, Enc; public double Quali, EncPct; public float Fundidor1 = -1f, Mw1 = -1f, Mw2 = -1f;
         public string Charter;
+        // C-CORE-07 (patio de cotas): pecas vendidas no patio e no total, ouro do patio, blocos (no prazo), Royal entregues no distrito, a 3a
+        // obra e o Charter (relogio; -1 = nao saiu), contratos concluidos e o Renome do Imperio quando o Charter saiu
+        public long CotaUn, Un, CotaOuro; public int Blocos, NoPrazo, Royal, Contratos; public float Mw3 = -1f, Charter1 = -1f, ProdCota = -1f;
     }
 
     /// <summary>
@@ -479,6 +482,20 @@ static class EconSim
                               $"{g.Count(r => r.Fundidor > 0)}/{g.Length}; {g.Average(r => r.Fundidor):0.#}; {Media(g.Select(r => r.Fundidor1))} | " +
                               $"{g.Average(r => r.Mw):0.#} ({Media(g.Select(r => r.Mw1))}; {Media(g.Select(r => r.Mw2))}) | {falta} | {g.Average(r => r.SemDestinoEq):0.#} |");
         }
+        if (amostra.Patio == null) return 0;
+        // C-CORE-07 (CONTEUDO_V1 §16): quanto da producao passa pelo patio de cotas (portao 30-70% no bot), blocos, prazo e o Charter (3 obras e
+        // 1 contrato OU 10 Royal no distrito)
+        Console.WriteLine();
+        Console.WriteLine("| perfil | pecas pelo patio (% das vendidas) | ouro do patio (% da receita) | blocos (no prazo) | Royal entregues | contratos | obras (3a) | Charter (condicoes; relogio) |");
+        Console.WriteLine("|---|---|---|---|---|---|---|---|");
+        foreach (BotProfile p in perfis)
+        {
+            RunD[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            static string Media(IEnumerable<float> v) { float[] a = v.Where(t => t >= 0f).ToArray(); return a.Length == 0 ? "--:--" : Clock(a.Average()); }
+            Console.WriteLine($"| {p.Name} | {100.0 * g.Average(r => r.CotaUn) / Math.Max(1.0, g.Average(r => r.Un)):0.0}% | {100.0 * g.Average(r => r.CotaOuro) / Math.Max(1.0, g.Average(r => r.Earned)):0.0}% | " +
+                              $"{g.Average(r => r.Blocos):0.#} ({g.Average(r => r.NoPrazo):0.#}) | {g.Average(r => r.Royal):0.#} | {g.Average(r => r.Contratos):0.#} | {g.Average(r => r.Mw):0.#} ({Media(g.Select(r => r.Mw3))}) | " +
+                              $"{g.Count(r => r.Charter1 >= 0f)}/{g.Length}; {Media(g.Select(r => r.Charter1))} |");
+        }
         return 0;
     }
 
@@ -509,8 +526,13 @@ static class EconSim
                 pausa += (bot.AdsTotal - ads) * anuncioSeg; ads = bot.AdsTotal;
                 foreach (SimEvent e in s.Events)
                 {
-                    if (e.Kind == Ev.Sold) r.Vendas[e.A] += e.B;
-                    else if (e.Kind == Ev.Masterwork && e.B >= 0) { if (r.Mw1 < 0f) r.Mw1 = s.Time + pausa; else if (r.Mw2 < 0f) r.Mw2 = s.Time + pausa; }   // C-CORE-05
+                    if (e.Kind == Ev.Sold)
+                    {
+                        r.Vendas[e.A] += e.B; r.Un++;
+                        if (s.Patio != null && e.Pos.X == s.Patio.Pos.X && e.Pos.Y == s.Patio.Pos.Y) { r.CotaUn++; r.CotaOuro += e.B; }   // C-CORE-07: a peca do bloco
+                    }
+                    else if (e.Kind == Ev.Masterwork && e.B >= 0)   // C-CORE-05 (C-CORE-07: e a 3a)
+                    { if (r.Mw1 < 0f) r.Mw1 = s.Time + pausa; else if (r.Mw2 < 0f) r.Mw2 = s.Time + pausa; else if (r.Mw3 < 0f) r.Mw3 = s.Time + pausa; }
                     else if (e.Kind == Ev.Hired && e.B == (int)WorkerRole.Smelter && r.Fundidor1 < 0f) r.Fundidor1 = s.Time + pausa;
                 }
                 if (r.Venda1 < 0f && s.FirstSaleTime >= 0f) r.Venda1 = s.FirstSaleTime + pausa;
@@ -524,6 +546,7 @@ static class EconSim
             if (s.ProductionComplete && !aVenda) r.SemDestino++;
             if (s.ProductionComplete && !aVenda && !Enumerable.Range(0, s.Equipe.Defs.Length).Any(s.Equipe.AVenda)) r.SemDestinoEq++;   // C-CORE-05
             if (s.ProductionComplete && prodMin < 0) prodMin = m;
+            if (r.Charter1 < 0f && s.Patio != null && imp.CharterFalta(d.Id) == null) r.Charter1 = s.Time + pausa;   // C-CORE-07: as condicoes do Charter
             float tp = ProdD(s, rel);
             csv.AppendLine(string.Join(",", p.Name, hz.ToString("0.###"), m, s.Gold, s.GoldEarned - earned0, imp.FundoGanho - fundo0, compras, s.UpgradesBought, tp < 0f ? "" : tp.ToString("0.0")));
             earned0 = s.GoldEarned; fundo0 = imp.FundoGanho; bought0 = s.UpgradesBought;
@@ -538,6 +561,7 @@ static class EconSim
         for (int k = 0; k < s.Equipe.Defs.Length; k++) if (s.Equipe.Defs[k].Papel == WorkerRole.Smelter) r.Fundidor = s.Equipe.Nivel(k);
         r.Quali = 100.0 * s.QualityGold / Math.Max(1, s.GoldEarned); r.EncPct = 100.0 * s.OrderGold / Math.Max(1, s.GoldEarned); r.Enc = s.OrderGold;
         r.Mw = s.Hall.Count; r.Charter = imp.CharterFalta(d.Id);
+        r.Blocos = s.CotasFechadas; r.NoPrazo = s.CotaNoPrazo.Sum(); r.Royal = s.RoyalEntregues; r.Contratos = imp.Raiz.Contratos.Concluidos.Count;   // C-CORE-07
         r.Csv = csv.ToString(); r.Segundos = clock.Elapsed.TotalSeconds;
         return r;
     }

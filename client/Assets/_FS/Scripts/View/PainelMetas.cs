@@ -208,9 +208,10 @@ namespace FS
         void Contrato(Linha l)
         {
             Contratos c = _sim.Contratos;
-            string id = l.Slot == 0 ? c.Ativo?.Def.Id : c.Oferta?.Id;
-            if (id == null || !(l.Slot == 0 ? c.Abandonar() : c.Aceitar())) return;
-            _contrato(l.Slot == 0 ? "abandon" : "accept", id);
+            bool segundo = l.Slot == 1 && c.Ativo2 != null;   // C-CORE-07: com a mesa_real a linha 1 mostra o da 2a vaga (ABANDONAR)
+            string id = l.Slot == 0 ? c.Ativo?.Def.Id : segundo ? c.Ativo2.Def.Id : c.Oferta?.Id;
+            if (id == null || !(l.Slot == 0 || segundo ? c.Abandonar(segundo) : c.Aceitar())) return;
+            _contrato(l.Slot == 0 || segundo ? "abandon" : "accept", id);
             Refresh(0f);
         }
 
@@ -219,10 +220,11 @@ namespace FS
         void PintaContrato(Linha l)
         {
             Contratos c = _sim.Contratos;
-            Contrato a = c.Ativo;
-            ContractDef d = l.Slot == 0 ? a?.Def : c.Proximo;
-            bool aberto = l.Slot == 1 && c.Oferta == d;
-            string chave = d == null ? "-" : (l.Slot == 0 ? d.Id + ":" + a.Etapa + ":" + a.Feito + ":" + Mathf.CeilToInt(a.Prazo)
+            bool ativo = l.Slot == 0 || c.Ativo2 != null;   // C-CORE-07: a linha 1 vira o contrato da 2a vaga quando ele existe
+            Contrato a = l.Slot == 0 ? c.Ativo : c.Ativo2 ?? c.Ativo;
+            ContractDef d = ativo ? a?.Def : c.Proximo;
+            bool aberto = !ativo && c.Oferta == d;
+            string chave = d == null ? "-" : (ativo ? d.Id + ":" + a.Etapa + ":" + a.Feito + ":" + Mathf.CeilToInt(a.Prazo)
                 : d.Id + ":" + (aberto ? 1 : 0) + ":" + (a != null ? 1 : 0) + ":" + _sim.Renome.Nivel + ":" + (_sim.QualityRevealed ? 1 : 0)) + ":" + _sim.Metas.Ouro(d.OuroSeg);   // o ouro segue a taxa
             if (chave == l.Chave) return;
             l.Chave = chave;
@@ -230,8 +232,8 @@ namespace FS
             l.B.gameObject.SetActive(d != null);
             if (d == null) { l.Nome.text = Loc.T(l.Slot == 0 ? "ctr.nenhum" : "ctr.todos"); l.Premio.text = ""; return; }
             l.Nome.text = Textos.ContratoNome(d);
-            l.Premio.text = Textos.ContratoPremio(_sim, d, l.Slot == 0 && a.Prazo > 0f);
-            if (l.Slot == 0)
+            l.Premio.text = Textos.ContratoPremio(_sim, d, ativo && a.Prazo > 0f);
+            if (ativo)
             {
                 l.Conta.text = Textos.ContratoEtapa(_sim, a);
                 l.Cheio.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(a.Progresso / (float)d.Total), 1f);

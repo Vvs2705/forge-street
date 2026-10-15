@@ -8,7 +8,9 @@ namespace FS.Core
     /// EncomendasTipo = OrdersOfType:tipo (OrderType; contador order_complete do Orders 2.0, B-CORE-05); NivelWorker = WorkerLevel:wk;
     /// VendidosQualidade = QualitySold:item@nivel; C-CORE-05: PecasComLiga = AlloyPieces:item (Sim.PecasComLiga). Nenhum tipo fala de anuncio,
     /// compra ou Gem (GDD §13, V4); os dos distritos 3 em diante (cotas, energizadas, exportacao...) entram com a mecanica deles (Wave C).</summary>
-    public enum CondicaoMw { Vendidos, NivelEstacao, Renome, EncomendasItem, EncomendasTipo, NivelWorker, VendidosQualidade, PecasComLiga }
+    /// C-CORE-07 (anexados): CotaBlocos = QuotaBlocks:item e CotaNoPrazo = QuotaOnTime:item (Sim.CotaBlocos/CotaNoPrazo, §2.4); Contratos =
+    /// ContractsDone (Royal Contracts concluidos no Imperio).
+    public enum CondicaoMw { Vendidos, NivelEstacao, Renome, EncomendasItem, EncomendasTipo, NivelWorker, VendidosQualidade, PecasComLiga, CotaBlocos, CotaNoPrazo, Contratos }
 
     /// <summary>Uma condicao: `Ref` = item, familia de estacao, tipo de encomenda ou worker (Renome: nenhum); `N` = o alvo; `MinQ` = nivel
     /// minimo da peca vendida (so VendidosQualidade).</summary>
@@ -161,6 +163,9 @@ namespace FS.Core
                 + (liga ? t.LigaQ : 0);
         }
 
+        /// <summary>C-CORE-07: o selo do distrito do mundo `w` (DistrictDef.Selo, upgrade de `ups`) soma Tuning.SeloQ em toda familia; 0 sem ele.</summary>
+        static int SeloQ(Sim w, UpgradeDef[] ups) => w.Distrito.Selo != null && Upgrades.IndexOf(w.Distrito.Selo, ups) >= 0 ? w.T.SeloQ : 0;
+
         /// <summary>C-CORE-05: a receita da estacao `s` tem o slot de liga e alguma estacao do mundo `w` faz a liga.</summary>
         static bool LigaFeita(Station s, Sim w) => s.Liga >= 0 && w.Stations.Exists(o => o.Produces && o.OutItem == s.Recipe.Inputs[s.Liga].Item);
 
@@ -184,7 +189,7 @@ namespace FS.Core
                 // familia: estacoes do mundo que fazem um produto dela; Superior alcancavel em pelo menos uma (q maximo > 100)
                 List<Station> st = w.Stations.FindAll(s => s.Produces && w.IsProduct(s.OutItem) && w.ItemDefs[(int)s.OutItem].Family == d.Familia);
                 if (st.Count == 0) yield return $"{at} familia \"{d.Familia}\" sem produto feito no mundo";
-                else if (!st.Exists(s => QMaximo(s.Recipe.Family, w.T, ups, bps, w.Equipe.Defs, LigaFeita(s, w)) > 100)) yield return $"{at} Superior inalcancavel na familia {d.Familia} (q maximo <= 100)";
+                else if (!st.Exists(s => QMaximo(s.Recipe.Family, w.T, ups, bps, w.Equipe.Defs, LigaFeita(s, w)) + SeloQ(w, ups) > 100)) yield return $"{at} Superior inalcancavel na familia {d.Familia} (q maximo <= 100)";
                 int b = ProjetosDefs.IndexOf(d.Blueprint, bps);
                 if (b < 0) yield return $"{at} projeto \"{d.Blueprint}\" nao existe";
                 else if (bps[b].Kind != BlueprintKind.Masterwork || Array.IndexOf(bps[b].Targets, d.Id) < 0) yield return $"{at} projeto \"{d.Blueprint}\" nao e' o dela";
@@ -207,6 +212,8 @@ namespace FS.Core
                         case CondicaoMw.EncomendasTipo: ok &= Tipo(c.Ref) != null && Tipo(c.Ref) != OrderType.Event; break;   // evento e' temporario
                         case CondicaoMw.NivelWorker: int k = WorkerDefs.IndexOf(c.Ref, w.Equipe.Defs); ok &= k >= 0 && c.N >= 2 && c.N <= w.Equipe.Defs[k].MaxNivel; break;
                         case CondicaoMw.PecasComLiga: int p = Produto(c.Ref); ok &= p >= 0 && w.Stations.Exists(s => s.Produces && (int)s.OutItem == p && LigaFeita(s, w)); break;   // C-CORE-05
+                        case CondicaoMw.CotaBlocos: case CondicaoMw.CotaNoPrazo: ok &= Produto(c.Ref) >= 0 && w.Patio != null; break;   // C-CORE-07: so com o patio
+                        case CondicaoMw.Contratos: ok &= c.N <= ContratosDefs.CatalogoV1; break;
                         default: ok = false; break;   // tipo que o nucleo nao conhece
                     }
                     if (!ok) yield return $"{ac} inalcancavel (alvo, nivel ou tipo que o build nao tem)";

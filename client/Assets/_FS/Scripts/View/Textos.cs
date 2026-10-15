@@ -26,6 +26,7 @@ namespace FS
         // metas, missoes e projetos sao do Imperio (o Old Forge nesta leva): ItemId/NomeOF. Padrao = o Old Forge (os testes de sempre).
         static UpgradeDef[] _ups = Upgrades.All;
         static string[] _itens = ItemId, _est = EstacaoId;
+        static string _selo;   // C-CORE-07: o DistrictDef.Selo do distrito ativo (o cartao dele mostra os pontos)
 
         /// <summary>O Game chama ao montar a cena com o distrito ativo.</summary>
         public static void Distrito(DistrictDef d)
@@ -34,6 +35,7 @@ namespace FS
             _itens = Array.ConvertAll(d.Itens, x => x.Id);
             _est = Array.ConvertAll(d.Estacoes, x => x.Id);
             _nome = new string[_ups.Length];
+            _selo = d.Selo;
         }
 
         public static string Dica(Hint h, int arg, Sim s)
@@ -184,6 +186,7 @@ namespace FS
                     return Loc.T("card.vagas", Mais(n - 1, n));
                 default:   // B-CORE-03, GDD §19: "Qualidade +0,15 · vel. +5%"
                     return _ups[u].Station != null ? Loc.T("card.qualidade", Pontos(t.NivelEstacaoQ), Pct(t.NivelEstacaoVelocidade) + "%")
+                        : _ups[u].Id == _selo ? Loc.T("card.selo", Pontos(t.SeloQ))   // C-CORE-07
                         : Loc.T("up." + _ups[u].Id + ".desc");
             }
         }
@@ -491,6 +494,7 @@ namespace FS
             {
                 case BlueprintSourceKind.Milestone:
                     if (f.Ref == BlueprintSource.Producao) return Loc.T("proj.f.producao");
+                    if (f.Ref == BlueprintSource.Cotas) return Loc.T("proj.f.cotas", Qtd(f.N), Qtd(Math.Min(f.N, s.CotasFechadas)));   // C-CORE-07
                     int i = Items.IndexOf(f.Ref, s.ItemDefs);
                     if (i < 0) return f.Ref;
                     bool fina = f.MinQ >= Quality.Fine;
@@ -535,6 +539,9 @@ namespace FS
                 case CondicaoMw.Renome: return Loc.T("hall.c.2", n, v);
                 case CondicaoMw.EncomendasItem: return Loc.T("hall.c.3", n, i >= 0 ? ItemDe(s, i, 1) : c.Ref, v);
                 case CondicaoMw.PecasComLiga: return Loc.T("hall.c.7", n, item, v);   // C-CORE-05
+                case CondicaoMw.CotaBlocos: return Loc.T("hall.c.8", n, item, v);     // C-CORE-07
+                case CondicaoMw.CotaNoPrazo: return Loc.T("hall.c.9", n, item, v);
+                case CondicaoMw.Contratos: return Loc.T("hall.c.10", n, v);
                 case CondicaoMw.EncomendasTipo: return Loc.T("hall.c.4", n, Loc.Tem("hall.tipo." + c.Ref) ? Loc.T("hall.tipo." + c.Ref) : c.Ref, v);
                 case CondicaoMw.NivelWorker:
                     int k = WorkerDefs.IndexOf(c.Ref, s.Equipe.Defs);
@@ -596,13 +603,27 @@ namespace FS
         /// tem sai pelo ID, so no "proximo" de um distrito por vir).</summary>
         public static string ContratoPede(Sim s, ContractDef d)
         {
+            string t = Pede(d, false);
+            return t.Length <= PedeMax ? t : Pede(d, true);
+        }
+
+        /// <summary>C-CORE-07: a barra do pedido (22 px, ~60 colunas). Nao cabendo (a Coroacao do Arsenal: 3 itens "de gala" e Fina), o nome curto do
+        /// item (itemc.*, quando existe) e a qualidade minima 1x no fim: "Pede: 10 espadas + 10 alabardas + 5 armaduras · Fina+".</summary>
+        public const int PedeMax = 60;
+
+        static string Pede(ContractDef d, bool curto)
+        {
             var p = new string[d.Etapas.Length];
+            Quality q = Quality.Normal;
             for (int k = 0; k < p.Length; k++)
             {
                 ContractStage e = d.Etapas[k];
-                p[k] = Qtd(e.N) + " " + ItemOuId(e.Item, e.N) + (e.MinQ > Quality.Normal ? " " + Loc.T("enc.min", Qualidade(e.MinQ)) : "");
+                string nome = curto && Loc.Tem("itemc." + e.Item) ? Loc.P("itemc." + e.Item, e.N) : ItemOuId(e.Item, e.N);
+                p[k] = Qtd(e.N) + " " + nome + (!curto && e.MinQ > Quality.Normal ? " " + Loc.T("enc.min", Qualidade(e.MinQ)) : "");
+                if (e.MinQ > q) q = e.MinQ;
             }
-            return Loc.T("ctr.pede", string.Join(" + ", p));
+            string t = string.Join(" + ", p);
+            return Loc.T("ctr.pede", curto && q > Quality.Normal ? t + " · " + Loc.T("enc.min", Qualidade(q)) : t);
         }
 
         /// <summary>A barra do ativo: "Etapa 2/3: 7/20 escudos", com a qualidade minima e o prazo-bonus como na encomenda.</summary>
@@ -629,5 +650,38 @@ namespace FS
 
         /// <summary>Quantidade com separador de milhar do idioma ("1.500", "1,500"); de 1 milhao em diante, a escala do Ouro ("1,23 mi").</summary>
         public static string Qtd(long v) => v >= 1000000 ? Ouro(v) : v.ToString("#,0", CultureInfo.InvariantCulture).Replace(",", Loc.T("num.mil"));
+
+        // ---- royal_arsenal (C-CORE-07): o patio de cotas (rotulo do patio, uma linha por faixa; o toque troca o produto da faixa)
+
+        /// <summary>Linha da faixa `k`: "Faixa 1: 3/10 kits do batedor · 2:31 → insígnias reais"; sem produto, "Faixa 1: vazia (toque)". O prazo
+        /// (m:ss) so com peca no bloco e ainda dentro dele; a seta = o produto do proximo bloco quando o jogador trocou.</summary>
+        public static string Faixa(Sim s, int k)
+        {
+            FaixaCota f = s.Faixas[k];
+            if (f.Produto < 0) return Loc.T("cota.faixa", k + 1, f.Proximo >= 0 ? ItemNome(f.Proximo, 2) : Loc.T("cota.vazia"));
+            string t = Loc.T("cota.bloco", f.Pecas, f.Tamanho, ItemNome(f.Produto, f.Tamanho));
+            float resta = s.CotaPrazo - f.Decorrido;
+            if (f.Pecas > 0 && resta > 0f) t += Loc.T("cota.prazo", ((int)resta / 60).ToString(CultureInfo.InvariantCulture) + ":" + ((int)resta % 60).ToString("00", CultureInfo.InvariantCulture));
+            if (f.Proximo != f.Produto) t += Loc.T("cota.proximo", f.Proximo >= 0 ? ItemNome(f.Proximo, 2) : Loc.T("cota.vazia"));
+            return Loc.T("cota.faixa", k + 1, t);
+        }
+
+        /// <summary>O produto que o toque na faixa `k` escolhe: o proximo produto de linha aberta (na ordem dos itens) depois do escolhido agora
+        /// que nao esta noutra faixa; depois do ultimo, vazia (-1); vazia volta ao 1o.</summary>
+        public static int ProximoDaFaixa(Sim s, int k)
+        {
+            int atual = s.Faixas[k].Proximo, n = s.ItemDefs.Length;
+            for (int i = atual + 1; i < n; i++)
+            {
+                if (i < (int)Item.Sword || !s.IsProduct((Item)i) || !s.LineUnlocked((Item)i)) continue;
+                bool usado = false;
+                for (int j = 0; j < s.Faixas.Length; j++) if (j != k && (s.Faixas[j].Produto == i || s.Faixas[j].Proximo == i)) usado = true;
+                if (!usado) return i;
+            }
+            return -1;
+        }
+
+        /// <summary>Aviso do bloco pago (Ev.QuotaBlock): "Coroa pagou 1,2 mi!" (no prazo: "No prazo! ...").</summary>
+        public static string AvisoCota(long ouro, bool prazo) => Loc.T(prazo ? "aviso.cota_prazo" : "aviso.cota", Ouro(ouro));
     }
 }

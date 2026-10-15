@@ -24,16 +24,20 @@ namespace FS.Core
         public readonly float TargetSeconds, RewardSeconds, BonusDeadline, BonusRewardSeconds;
         public readonly int TargetMin, TargetMax, RewardMin, Reputation, BonusReputation, Products, MinLines, MinDelivered, FixedN, EventPoints;
         public readonly Quality MinQuality;
+        /// <summary>C-CORE-07: ID do upgrade do distrito que abre a encomenda (null = nenhum): a Royal do Arsenal que pede Normal com a mesa_real
+        /// (nunca vira Common, CONTEUDO_V1 §2.4 regra 6).</summary>
+        public readonly string Requer;
 
         public OrderDef(string id, OrderType type, string district, float targetSeconds, int targetMin, int targetMax, float rewardSeconds, int rewardMin,
             int reputation, Quality minQuality = Quality.Normal, int products = 1, float bonusDeadline = 0f, float bonusRewardSeconds = 0f,
             int bonusReputation = 0, string blueprintQueue = null, int minLines = 1, int minDelivered = 0, string item = null, int fixedN = 0,
-            string clientId = null, string eventId = null, int eventPoints = 0)
+            string clientId = null, string eventId = null, int eventPoints = 0, string requer = null)
         {
             Id = id; Type = type; District = district; TargetSeconds = targetSeconds; TargetMin = targetMin; TargetMax = targetMax;
             RewardSeconds = rewardSeconds; RewardMin = rewardMin; Reputation = reputation; MinQuality = minQuality; Products = products;
             BonusDeadline = bonusDeadline; BonusRewardSeconds = bonusRewardSeconds; BonusReputation = bonusReputation; BlueprintQueue = blueprintQueue;
             MinLines = minLines; MinDelivered = minDelivered; Item = item; FixedN = fixedN; ClientId = clientId; EventId = eventId; EventPoints = eventPoints;
+            Requer = requer;
         }
     }
 
@@ -139,6 +143,7 @@ namespace FS.Core
             int rn = e.Renome + (prazo ? e.Def.BonusReputation : 0);
             _sim.Gold += ouro; _sim.OrderGold += ouro; _sim.OrderCount++;
             _sim.Renome.Ganha(rn); RenomeGanho += rn; PorTipo[(int)e.Tipo]++; UltimaEntregue = e;
+            _sim.OnEncomendaEntregue(e);   // C-CORE-07: a Royal do distrito conta para o Charter (Sim.RoyalEntregues)
             if (e.Blueprint != null) _sim.Projetos.GanhaDaFila(Fila(e.Def), e.Def.District, e.Tx);   // B-CORE-07: o pendente da fila (o mostrado, se ninguem o deu antes)
             if (e.Def.EventId != null) _sim.LiveOps.PontosEncomenda(e.Def.EventId, e.Def.EventPoints);
             if (e.Def.ClientId != null) { Coracoes.TryGetValue(e.Def.ClientId, out int c); Coracoes[e.Def.ClientId] = c + 1; }
@@ -237,6 +242,7 @@ namespace FS.Core
         {
             if (d.Type != OrderType.Common && !_sim.QualityRevealed) return false;
             if (linhas.Count < d.MinLines || _sim.OrderCount < d.MinDelivered) return false;
+            if (d.Requer != null && !_sim.Comprado(d.Requer)) return false;   // C-CORE-07
             if (RenomeDefs.NivelQueLibera(d.Id) >= 0 && !_sim.Renome.Libera(d.Id)) return false;
             if (!linhas.Exists(it => Fracao(it, d.MinQuality) > 0.0)) return false;
             if (d.Type == OrderType.Blueprint && Pendente(d) == null) return false;

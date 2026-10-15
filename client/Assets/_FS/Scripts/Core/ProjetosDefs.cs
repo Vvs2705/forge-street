@@ -22,6 +22,8 @@ namespace FS.Core
     {
         /// <summary>Marco "producao completa" (Sim.ProductionComplete) no lugar do ID do item.</summary>
         public const string Producao = "producao";
+        /// <summary>C-CORE-07: marco "N blocos de cota fechados" (Sim.CotasFechadas) no lugar do ID do item.</summary>
+        public const string Cotas = "cotas";
         public readonly BlueprintSourceKind Kind; public readonly string Ref; public readonly int N; public readonly Quality MinQ;
         public BlueprintSource(BlueprintSourceKind kind, string reff, int n = 0, Quality minQ = Quality.Normal) { Kind = kind; Ref = reff; N = n; MinQ = minQ; }
     }
@@ -52,7 +54,7 @@ namespace FS.Core
     {
         public const string OldForge = "old_forge", Row = FS.Core.Distritos.ArmorersRowId;
         /// <summary>Distritos com projetos (as filas sao por distrito). ponytail: vira DistrictDef no C-CORE-01.</summary>
-        public static readonly string[] Distritos = { OldForge, Row };
+        public static readonly string[] Distritos = { OldForge, Row, FS.Core.Distritos.RoyalArsenalId };   // ---- royal_arsenal (C-CORE-07)
         /// <summary>O catalogo da v1.0 inteiro (CONTEUDO_V1 §9): 101, 25 essenciais. Os que faltam aqui esperam a Wave C.</summary>
         public const int CatalogoV1 = 101, EssenciaisV1 = 25;
 

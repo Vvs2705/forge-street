@@ -64,6 +64,9 @@ namespace FS.Core
                 case CondicaoMw.EncomendasTipo: OrderType? t = MasterworksDefs.Tipo(c.Ref); return t == null ? 0 : Contador("order_complete", (int)t.Value);
                 case CondicaoMw.NivelWorker: int k = WorkerDefs.IndexOf(c.Ref, _sim.Equipe.Defs); return k < 0 ? 0 : _sim.Equipe.Nivel(k);
                 case CondicaoMw.PecasComLiga: return i < 0 ? 0 : _sim.PecasComLiga[i];   // C-CORE-05
+                case CondicaoMw.CotaBlocos: return i < 0 ? 0 : _sim.CotaBlocos[i];       // C-CORE-07
+                case CondicaoMw.CotaNoPrazo: return i < 0 ? 0 : _sim.CotaNoPrazo[i];
+                case CondicaoMw.Contratos: return _sim.Contratos.Concluidos.Count;
                 default: return 0;
             }
         }

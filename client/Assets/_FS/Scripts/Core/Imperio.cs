@@ -35,6 +35,9 @@ namespace FS.Core
                 new long[] { 32000, 64000, 130000, 260000 }, null),
             new WorkerDef("wk_gertrudes", "Dona Gertrudes", WorkerRole.Manager, Specialty.None, Distritos.ArmorersRowId, null, null, 0, 0, null,
                 new long[] { 96000, 190000, 380000, 770000 }, null),
+            // ---- royal_arsenal (C-CORE-07): CONTEUDO_V1 §6
+            new WorkerDef("wk_leonor", "Capitã Leonor", WorkerRole.Manager, Specialty.None, Distritos.RoyalArsenalId, null, null, 0, 0, null,
+                new long[] { 860000, 1700000, 3400000, 6900000 }, null),
         };
         /// <summary>Fundo por nivel do manager (1-5) sobre o DistrictDef.FundoFator (o nivel 1): 25% -> 30/33/36/40% da taxa (CONTEUDO_V1 §1).
         /// Sempre &lt; 1 vez a taxa: o distrito ativo rende mais que ele mesmo em fundo em todo nivel (ImperioTests).</summary>
@@ -65,7 +68,9 @@ namespace FS.Core
         /// <summary>
         /// Dev, teste e econsim: o Imperio como o jogador chega ao distrito `d` (o Old Forge = um Imperio novo): o Old Forge em producao
         /// completa (Mochila e Botas do ferreiro) rendendo `rendaOF` ouro/min (a base do fundo; CONTEUDO_V1 §1: 2.400 no Charter), o Charter
-        /// de quem libera `d` (Forca: as condicoes nao sao medidas), a abertura paga e o foco em `d`.
+        /// de quem libera `d` (Forca: as condicoes nao sao medidas), a abertura paga e o foco em `d`. C-CORE-07: os distritos do caminho entre o
+        /// Old Forge e `d` tambem (abertos, em producao completa, com o Charter e a renda do Charter do §1: rendaOF x 3^indice, a escala do
+        /// catalogo), como o jogador chega ao 4o; para a Row, o de sempre (so o Old Forge antes dela).
         /// </summary>
         public static Imperio Chegada(DistrictDef d, Func<Tuning> tuning = null, double rendaOF = 2400)
         {
@@ -75,6 +80,18 @@ namespace FS.Core
             if (d == null || imp.Aberto(d.Id)) return imp;
             for (int i = 0; i < raiz.UpgradeDefs.Length; i++) if (raiz.IsProduction(i)) raiz.Buy((Upgrade)i);
             raiz.RateEma = rendaOF / 60.0;
+            var caminho = new List<DistrictDef>();   // ---- royal_arsenal (C-CORE-07): os do meio, do mais perto de d para tras
+            for (DistrictDef x = Array.Find(Distritos.All, o => o.Charter?.Proximo == d.Id); x != null && x != raiz.Distrito;
+                 x = Array.Find(Distritos.All, o => o.Charter?.Proximo == x.Id)) caminho.Insert(0, x);
+            foreach (DistrictDef x in caminho)
+            {
+                imp.Forca(Array.Find(Distritos.All, o => o.Charter?.Proximo == x.Id).Id);
+                raiz.Gold += x.Abertura;
+                imp.Abrir(x.Id);
+                Sim m = imp.Distrito(x.Id);
+                for (int i = 0; i < m.UpgradeDefs.Length; i++) if (m.IsProduction(i)) m.Buy((Upgrade)i);
+                m.RateEma = rendaOF * Math.Pow(3, x.Indice) / 60.0;   // ponytail: a escala x3 do §1 (HIPOTESE); a medida de cada um no BALANCE
+            }
             foreach (DistrictDef x in Distritos.All) if (x.Charter?.Proximo == d.Id) imp.Forca(x.Id);
             raiz.Gold += d.Abertura;
             imp.Abrir(d.Id);
@@ -97,6 +114,8 @@ namespace FS.Core
             if (c.Producao && !s.ProductionComplete) return "producao";
             if (Raiz.Renome.Total < c.Renome) return "renome";
             if (Math.Max(s.Masterworks, s.Hall.Count) < c.Masterworks) return "masterwork";   // C-CORE-03: o Hall vai no save (o contador nao)
+            if (c.Contratos > 0 && Raiz.Contratos.Concluidos.Count < c.Contratos && s.RoyalEntregues < c.Contratos * CharterDef.RoyalPorContrato)
+                return "contrato";   // ---- royal_arsenal (C-CORE-07): N contratos OU 10 x N encomendas Royal no distrito (V25: nunca bloqueia)
             return null;
         }
 
