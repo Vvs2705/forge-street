@@ -32,6 +32,9 @@ using FS.Core;
 /// C-CORE-05: com --distrito, --renome N = o Renome do Imperio na chegada (500 = o do Charter do Old Forge) e a 3a tabela: premio de qualidade,
 /// ouro de encomendas (% da venda), niveis de estacao, a Fundidora, as obras no Hall (relogio da 1a e da 2a), o que falta para o Charter no fim
 /// e os minutos sem destino contando a equipe (contratar ou subir worker). O CSV e o modo sem --distrito nao mudam.
+/// C-CORE-06: com --distrito, a chegada abre a cadeia inteira de Charters (Old Forge -> Row -> ...: Imperio.Chegada) e, no distrito com
+/// bancada configuravel, a 4a tabela: trocas de receita, clientes ricos (RichClients), clientes que deram meia-volta e a politica do bot nas
+/// bancadas (--bancadas regra|volume|margem; --histerese N = Bot.Histerese). Sem bancada, nada disso imprime.
 /// </summary>
 static class EconSim
 {
@@ -96,6 +99,7 @@ static class EconSim
         DistrictDef distrito = null; double fundoOF = 2400;   // C-CORE-01/02: --distrito id; --fundo-of = ouro/min do Old Forge no Charter (CONTEUDO_V1 §1)
         bool gerente = true;   // C-CORE-03: --gerente 0 = o bot nunca sobe manager
         long renome = 0;       // C-CORE-05: --renome N = o Renome do Imperio na chegada (500 = o do Charter do Old Forge: 400 + 100)
+        PoliticaBancada bancadas = PoliticaBancada.Regra; int? histerese = null;   // C-CORE-06
         for (int i = 0; i < args.Length; i += 2)
         {
             string v = i + 1 < args.Length ? args[i + 1] : null;
@@ -118,15 +122,17 @@ static class EconSim
                 case "--fundo-of" when ok: ok = double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out fundoOF) && fundoOF >= 0; break;
                 case "--gerente" when ok: ok = v == "0" || v == "1"; gerente = v == "1"; break;
                 case "--renome" when ok: ok = long.TryParse(v, out renome) && renome >= 0; break;
+                case "--bancadas" when ok: ok = Enum.TryParse(v, true, out bancadas) && Enum.IsDefined(typeof(PoliticaBancada), bancadas); break;
+                case "--histerese" when ok: ok = int.TryParse(v, out int h); histerese = h; break;
                 default: ok = false; break;
             }
             if (!ok || perfis.Any(p => p.Name == null))
             {
-                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400] [--gerente 0|1] [--renome 500]");
+                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400] [--gerente 0|1] [--renome 500] [--bancadas regra|volume|margem] [--histerese 3]");
                 return 2;
             }
         }
-        if (distrito != null && distrito.Indice > 0) return Distrito(distrito, perfis, minutos, partidas, anuncioSeg, knobs, workerSeg, fundoOF, gerente, saida, renome);
+        if (distrito != null && distrito.Indice > 0) return Distrito(distrito, perfis, minutos, partidas, anuncioSeg, knobs, workerSeg, fundoOF, gerente, saida, renome, bancadas, histerese);
 
         var jobs = new List<(BotProfile P, float Hz)>();
         foreach (BotProfile p in perfis) for (int i = 0; i < partidas; i++) jobs.Add((p, 30f + 30f * i / partidas));
@@ -420,6 +426,8 @@ static class EconSim
         // o que falta para o Charter no fim
         public int SemDestinoEq, Niveis, Fundidor, Mw; public long NiveisGasto, Enc; public double Quali, EncPct; public float Fundidor1 = -1f, Mw1 = -1f, Mw2 = -1f;
         public string Charter;
+        // C-CORE-06: trocas de receita nas bancadas, clientes ricos atendidos, clientes que deram meia-volta (fila cheia) e os que cansaram
+        public int Trocas, Ricos, MeiaVolta, Perdidos; public int CharterMin = -1;   // e o minuto em que o Charter ficou pronto (-1 = nao ficou)
     }
 
     /// <summary>
@@ -428,13 +436,13 @@ static class EconSim
     /// ouro da abertura pago. O bot joga o Sim do distrito; o Imperio credita o fundo a cada passo. Relogio = jogo + anuncios (V19).
     /// </summary>
     static int Distrito(DistrictDef d, BotProfile[] perfis, int minutos, int partidas, float anuncioSeg, string knobs, float? workerSeg, double fundoOF, bool gerente, string saida,
-        long renome = 0)
+        long renome = 0, PoliticaBancada bancadas = PoliticaBancada.Regra, int? histerese = null)
     {
         var jobs = new List<(BotProfile P, float Hz)>();
         foreach (BotProfile p in perfis) for (int i = 0; i < partidas; i++) jobs.Add((p, 30f + 30f * i / partidas));
         var runs = new RunD[jobs.Count];
         var wall = Stopwatch.StartNew();
-        Parallel.For(0, jobs.Count, k => runs[k] = PlayD(d, jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, () => Knobs(knobs, new Tuning()), workerSeg, fundoOF, gerente, renome));
+        Parallel.For(0, jobs.Count, k => runs[k] = PlayD(d, jobs[k].P, jobs[k].Hz, minutos, anuncioSeg, () => Knobs(knobs, new Tuning()), workerSeg, fundoOF, gerente, renome, bancadas, histerese));
         File.WriteAllText(saida, "perfil,ticks_s,min,ouro,renda_min,fundo_min,compras_min,upgrades,producao_completa_s" + Environment.NewLine + string.Concat(runs.Select(r => r.Csv)));
         Sim amostra = new Sim(Knobs(knobs, new Tuning()), distrito: d);
         int prod = Enumerable.Range(0, amostra.UpgradeDefs.Length).Count(amostra.IsProduction);
@@ -468,7 +476,7 @@ static class EconSim
         // C-CORE-05: qualidade, encomendas, niveis, Fundidora, obras e Charter (min sem destino com a equipe: contratar/subir worker conta como destino)
         Console.WriteLine();
         Console.WriteLine($"Renome do Imperio na chegada: {renome}.");
-        Console.WriteLine("| perfil | premio de qualidade (% da receita) | ouro de encomendas (% da venda) | niveis de estacao (comprados; gasto) | Fundidora (contratada; nivel; quando) | obras no Hall (1a; 2a) | Charter no fim (o que falta) | min sem destino (pads, menu e equipe) |");
+        Console.WriteLine("| perfil | premio de qualidade (% da receita) | ouro de encomendas (% da venda) | niveis de estacao (comprados; gasto) | Fundidora ou oficial (contratada; nivel; quando) | obras no Hall (1a; 2a) | Charter no fim (o que falta) | min sem destino (pads, menu e equipe) |");
         Console.WriteLine("|---|---|---|---|---|---|---|---|");
         foreach (BotProfile p in perfis)
         {
@@ -479,11 +487,24 @@ static class EconSim
                               $"{g.Count(r => r.Fundidor > 0)}/{g.Length}; {g.Average(r => r.Fundidor):0.#}; {Media(g.Select(r => r.Fundidor1))} | " +
                               $"{g.Average(r => r.Mw):0.#} ({Media(g.Select(r => r.Mw1))}; {Media(g.Select(r => r.Mw2))}) | {falta} | {g.Average(r => r.SemDestinoEq):0.#} |");
         }
+        if (!amostra.TemBancadas) return 0;
+        // C-CORE-06: bancada configuravel e clientes por familia
+        Console.WriteLine();
+        Console.WriteLine($"Bancadas: politica {bancadas}{(histerese.HasValue ? ", histerese " + histerese : "")}.");
+        Console.WriteLine("| perfil | trocas de receita (total; por hora) | clientes ricos atendidos | meia-volta (fila cheia) | cansaram na fila | Charter pronto (min; partidas) |");
+        Console.WriteLine("|---|---|---|---|---|---|");
+        foreach (BotProfile p in perfis)
+        {
+            RunD[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            int[] ch = g.Where(r => r.CharterMin >= 0).Select(r => r.CharterMin).ToArray();
+            Console.WriteLine($"| {p.Name} | {g.Average(r => r.Trocas):0}; {g.Average(r => r.Trocas) * 60.0 / minutos:0} | {g.Average(r => r.Ricos):0} | {g.Average(r => r.MeiaVolta):0} | {g.Average(r => r.Perdidos):0} | " +
+                              $"{(ch.Length == 0 ? "--" : $"{ch.Average():0} ({ch.Min()}-{ch.Max()})")}; {ch.Length}/{g.Length} |");
+        }
         return 0;
     }
 
     static RunD PlayD(DistrictDef d, BotProfile p, float hz, int minutos, float anuncioSeg, Func<Tuning> tuning, float? workerSeg, double fundoOF, bool gerente,
-        long renome = 0)
+        long renome = 0, PoliticaBancada bancadas = PoliticaBancada.Regra, int? histerese = null)
     {
         var clock = Stopwatch.StartNew();
         Imperio imp = Imperio.Chegada(d, tuning, fundoOF);
@@ -491,6 +512,7 @@ static class EconSim
         if (renome > 0) imp.Raiz.Renome.Ganha(renome);   // C-CORE-05: --renome (o Renome do Imperio sobe as vagas e libera o que o nivel libera)
         Sim s = imp.Ativo; Bot bot = Bot.From(p); float dt = 1f / hz;
         if (workerSeg.HasValue) bot.WorkerSegundos = workerSeg.Value;
+        bot.Bancadas = bancadas; if (histerese.HasValue) bot.Histerese = histerese.Value;   // C-CORE-06
         var r = new RunD { Perfil = p.Name, Vendas = new long[s.ItemDefs.Length] };
         var csv = new StringBuilder();
         var rel = new float[s.UpgradeDefs.Length];
@@ -511,13 +533,14 @@ static class EconSim
                 {
                     if (e.Kind == Ev.Sold) r.Vendas[e.A] += e.B;
                     else if (e.Kind == Ev.Masterwork && e.B >= 0) { if (r.Mw1 < 0f) r.Mw1 = s.Time + pausa; else if (r.Mw2 < 0f) r.Mw2 = s.Time + pausa; }   // C-CORE-05
-                    else if (e.Kind == Ev.Hired && e.B == (int)WorkerRole.Smelter && r.Fundidor1 < 0f) r.Fundidor1 = s.Time + pausa;
+                    else if (e.Kind == Ev.Hired && (e.B == (int)WorkerRole.Smelter || e.B == (int)WorkerRole.Smith) && r.Fundidor1 < 0f) r.Fundidor1 = s.Time + pausa;
                 }
                 if (r.Venda1 < 0f && s.FirstSaleTime >= 0f) r.Venda1 = s.FirstSaleTime + pausa;
                 if (s.UpgradesBought != before)
                     for (int i = 0; i < rel.Length; i++) if (s.Bought[i] && rel[i] < 0f) rel[i] = s.UpgradeTime[i] + pausa;
             }
             earnedMin[m] = s.GoldEarned;
+            if (r.CharterMin < 0 && imp.CharterFalta(d.Id) == null) r.CharterMin = m;   // C-CORE-06
             bool aVenda = s.Pads.Exists(pad => pad.Current(s) >= 0) || Enumerable.Range(0, s.UpgradeDefs.Length).Any(s.MenuAvailable);
             int compras = s.UpgradesBought - bought0;
             if (!s.ProductionComplete && compras == 0) { r.Morta++; if (++seq > r.MortaSeq) { r.MortaSeq = seq; r.MortaIni = m - seq; } } else seq = 0;
@@ -535,9 +558,10 @@ static class EconSim
         r.Renome = imp.Raiz.Renome.Total; r.Vendidas = s.Sales; r.MetaVendas = imp.Raiz.Metas.Cont.TryGetValue("product_sold", out long mv) ? mv : 0;
         for (int i = 0; i < s.UpgradeDefs.Length; i++) if (s.UpgradeDefs[i].Luxury && s.Bought[i]) r.Luxo++;
         for (int i = 0; i < s.UpgradeDefs.Length; i++) if (s.UpgradeDefs[i].Station != null && s.Bought[i]) { r.Niveis++; r.NiveisGasto += s.T.Cost(i); }   // C-CORE-05
-        for (int k = 0; k < s.Equipe.Defs.Length; k++) if (s.Equipe.Defs[k].Papel == WorkerRole.Smelter) r.Fundidor = s.Equipe.Nivel(k);
+        for (int k = 0; k < s.Equipe.Defs.Length; k++) if (s.Equipe.Defs[k].Papel == WorkerRole.Smelter || s.Equipe.Defs[k].Papel == WorkerRole.Smith) r.Fundidor = s.Equipe.Nivel(k);   // C-CORE-06: ou a oficial (Lucia)
         r.Quali = 100.0 * s.QualityGold / Math.Max(1, s.GoldEarned); r.EncPct = 100.0 * s.OrderGold / Math.Max(1, s.GoldEarned); r.Enc = s.OrderGold;
         r.Mw = s.Hall.Count; r.Charter = imp.CharterFalta(d.Id);
+        r.Trocas = s.TrocasReceita; r.Ricos = s.ClientesRicos; r.MeiaVolta = s.ClientsTurnedAway; r.Perdidos = s.ClientsLost;   // C-CORE-06
         r.Csv = csv.ToString(); r.Segundos = clock.Elapsed.TotalSeconds;
         return r;
     }
