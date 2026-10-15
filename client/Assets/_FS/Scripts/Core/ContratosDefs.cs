@@ -39,7 +39,7 @@ namespace FS.Core
     /// "imperio" (CONTEUDO_V1 §9) e entram no ProjetosDefs com a Wave C: ate la o Projetos.Ganha e' no-op (o validator so cobra o Blueprint que
     /// existe no build). Bau cosmetico (cos_ctr_*) fica de fora ate existir cosmetico de oficina (so o ID no catalogo).
     /// </summary>
-    public static class ContratosDefs
+    public static partial class ContratosDefs
     {
         public const int CatalogoV1 = 12;
         /// <summary>No prazo-bonus: ouro x1,5 e Renome +5 (CONTEUDO_V1 §8).</summary>

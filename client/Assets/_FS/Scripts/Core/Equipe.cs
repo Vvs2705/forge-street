@@ -45,7 +45,7 @@ namespace FS.Core
     /// papel (ECONOMIA_WAVE_B §2.2-2.3). Os dos distritos 2-6 entram com os DistrictDef: o validator recusa distrito, estacao e upgrade que o
     /// build nao tem.
     /// </summary>
-    public static class WorkerDefs
+    public static partial class WorkerDefs
     {
         public const string OldForge = "old_forge";
         // Porter: +6% de passo por nivel acima do 1; +1 de carga em cada nivel desta lista (sobre os 2 -> 4 do "Ajudantes ageis")

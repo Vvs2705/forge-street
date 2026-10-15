@@ -48,7 +48,7 @@ namespace FS.Core
     /// gratis permanente, o padrao dos bp_mestra_* dos distritos 2-6. Sem ele os niveis IV-V esperavam as filas de encomenda (B-CORE-05) e nenhum
     /// essencial do Old Forge era alcancavel no bot F2P (GDD §23 #8). Pago (Shop/PassPremium) nao aparece: o Pass premium nunca da Blueprint (V20).
     /// </summary>
-    public static class ProjetosDefs
+    public static partial class ProjetosDefs
     {
         public const string OldForge = "old_forge", Row = FS.Core.Distritos.ArmorersRowId;
         /// <summary>Distritos com projetos (as filas sao por distrito). ponytail: vira DistrictDef no C-CORE-01.</summary>

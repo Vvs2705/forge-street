@@ -68,7 +68,7 @@ namespace FS.Core
     }
 
     /// <summary>C-CORE-01: os distritos do build, na ordem do mapa. Old Forge = as tabelas de sempre; Armorer's Row = CONTEUDO_V1 §2.2/§3/§5.2.</summary>
-    public static class Distritos
+    public static partial class Distritos
     {
         public const string OldForgeId = "old_forge", ArmorersRowId = "armorers_row";
 
@@ -307,7 +307,10 @@ namespace FS.Core
             Charter = new CharterDef(true, 750, 2, null),   // §2.2: producao completa + Renome 5 (750) + 2 Masterworks; proximo distrito fora do build
         };
 
-        public static readonly DistrictDef[] All = { OldForge, ArmorersRow };
+        // Propriedade (montada no 1o uso), nao campo: os distritos 3-6 moram em arquivos proprios (partial) e a ordem dos inicializadores
+        // estaticos entre arquivos de uma classe parcial nao e' garantida em C# (um campo aqui poderia capturar um distrito ainda nulo).
+        static DistrictDef[] _all;
+        public static DistrictDef[] All => _all ??= new[] { OldForge, ArmorersRow };
 
         /// <summary>Distrito com este ID, ou null.</summary>
         public static DistrictDef Find(string id) => Array.Find(All, d => d.Id == id);

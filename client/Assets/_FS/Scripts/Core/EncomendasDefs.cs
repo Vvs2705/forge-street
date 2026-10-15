@@ -9,7 +9,7 @@ namespace FS.Core
     /// pontos), os 5 fregueses do Old Forge (FS-3: item e N fixos, +1 coracao) e, do C-CORE-05, os 7 da Armorer's Row e o freguês Brutus.
     /// Os dos distritos 3-6 entram com os itens deles (o ContentValidator recusa item, distrito ou fila que nao existem). IDs com prefixo ord_ (V22), nunca renomeados: o save grava o ID.
     /// </summary>
-    public static class OrderDefs
+    public static partial class OrderDefs
     {
         public const string OldForge = "old_forge", Row = FS.Core.Distritos.ArmorersRowId;
         /// <summary>Filas de Blueprint (BlueprintDef.sources, B-CORE-07): a do tipo Blueprint e a do Royal.</summary>

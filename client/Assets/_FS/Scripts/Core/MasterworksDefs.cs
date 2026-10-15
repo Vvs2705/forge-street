@@ -49,7 +49,7 @@ namespace FS.Core
     /// que ainda nao existem (o validator recusaria): entram com a Wave C, no mesmo formato, como os Blueprints deles (ProjetosDefs). Os marcos da v1.0 acima do que o Old Forge tem (col_produtos_25 = 29 de 114,
     /// col_bp_25 = 26 de 101...) tambem: so entra marco alcancavel (validator).
     /// </summary>
-    public static class MasterworksDefs
+    public static partial class MasterworksDefs
     {
         /// <summary>Familia completa no Hall: +5% fixo no preco de venda dela (GDD §13, FS-6; col_mw_familia do CONTEUDO_V1 §10.3). Revisar.</summary>
         public const int BonusFamiliaPct = 5;
