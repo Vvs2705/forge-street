@@ -396,4 +396,5 @@ def main():
     print("SPRITES_OK %s clipes=%d ppu=%.1f pivo=(%d,%d)px" % (out, len(clips), ppu, a.size / 2, round(pivot_y)))
 
 
-main()
+if __name__ == "__main__":   # importavel por marca_blender.py (import_file, retarget, toon)
+    main()
