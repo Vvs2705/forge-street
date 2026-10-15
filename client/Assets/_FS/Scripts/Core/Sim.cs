@@ -686,7 +686,8 @@ namespace FS.Core
             if (w.Role == 0) return s.Kind == Kind.Deposit && (w.Count == 0 || s.OutItem == w.Item);
             if (w.Count > 0 && s.OutItem != w.Item) return false;
             if (w.Role == 2 && !Fits(w, s)) return false;
-            return s.Produces && (w.Role == 1 ? Intermediario(s.OutItem) : IsProduct(s.OutItem)) && (s.Out > 0 || w.Target == s.Index);
+            return s.Produces && (w.Role == 1 ? Intermediario(s.OutItem) : IsProduct(s.OutItem)) && (s.Out > 0 || w.Target == s.Index)
+                && FonteDeInsumo(w, s);   // row-pendencias (Sim.Transporte.cs): so com 2+ insumos
         }
 
         /// <summary>Ajudante de produto: so busca o que ainda cabe na prateleira (sem a compra direta o estoque so desce com cliente
@@ -709,6 +710,7 @@ namespace FS.Core
                 if (w.Count > 0 && s.OutItem != w.Item) continue;
                 if (w.Role == 2 && !Fits(w, s)) continue;
                 if (s.Out == 0 && w.Count == 0 && !(s.Busy && s.Progress > 0.5f)) continue;   // vale esperar o que esta quase pronto
+                if (!FonteDeInsumo(w, s)) continue;   // row-pendencias (Sim.Transporte.cs): so com 2+ insumos
                 float score = s.Out * 10f - V2.Dist(w.Pos, s.Pos);
                 if (score > bestScore) { bestScore = score; best = s; }
             }
@@ -832,7 +834,7 @@ namespace FS.Core
                         if (c.Held[k] > 0 && Sells(s, (Item)k) && Stock[k] < CounterCap) { item = (Item)k; return 4; }
                     return 0;
                 default:
-                    if (outZone) return s.Out > 0 && CanPick(c, s.OutItem) ? 2 : 0;
+                    if (outZone) return s.Out > 0 && CanPick(c, s.OutItem) && PegaInsumo(c, s.OutItem) ? 2 : 0;   // row-pendencias: so o que cabe
                     for (int k = 0; k < s.Ins.Length && s.Produces; k++)
                         if (c.Has(s.Recipe.Inputs[k].Item) && s.Ins[k] < s.InCap) { item = s.Recipe.Inputs[k].Item; return 1; }
                     return 0;
