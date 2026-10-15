@@ -259,6 +259,18 @@ namespace FS.Tests
             Assert.AreEqual(5L, s.Hall.Valor(juiz.Condicoes[0]));
         }
 
+        /// <summary>Foto do coordenador (-distrito armorers_row -equipe): na Row, os produtivos dela (a fornalha de liga), a turma Ferraz no
+        /// nivel 3 e a Vulcana contratada; o ouro volta ao que era.</summary>
+        [Test]
+        public void Fotos_EquipeNaRow()
+        {
+            Sim s = Imperio.Chegada(Row).Ativo;
+            s.Gold = 123;
+            Captura.Equipe(s);
+            Assert.AreEqual((true, true, 123L), (s.ProductionComplete, s.Est("fornalha_liga").Unlocked, s.Gold));
+            Assert.AreEqual((1, 3), (s.Equipe.Nivel(K(s, "wk_vulcana")), s.Equipe.Nivel(K(s, "wk_ferraz4"))));
+        }
+
         // ------------------------------------------------------------------ validator e textos
 
         /// <summary>As regras novas do validator: o slot (Qty 0) so 1 por receita, so em produto e ao lado de um obrigatorio; o fundidor precisa
