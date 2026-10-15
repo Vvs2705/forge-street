@@ -567,7 +567,7 @@ Por categoria (DM §32 + Quality, Blueprints, Renome e LiveOps): Crafting 12 · 
 | `masterwork_unlock` | Masterwork, família | sim | B-CORE-08 | 8 conquistas |
 | `collection_milestone` | aba, marco | não | B-CORE-08 | 2 conquistas |
 | `district_unlock` | distrito, via (charter) | sim | C-CORE-01..03 | 3 conquistas |
-| `contract_complete` (+ `royal_contract_start`; o núcleo usa o nome curto, `BALANCE.md` §32) | contrato, distrito | sim | D-CORE-04 | 1 semanal, 2 conquistas, 1 missão da Royal Week |
+| `contract_complete` (+ `contract_accept`, `contract_abandon`; nome do código, #64) | contrato, distrito | sim | D-CORE-04 | 1 semanal, 2 conquistas, 1 missão da Royal Week |
 | `event_enter` / `event_complete` | evento, limiar | sim | D-CORE-03 | 2 conquistas; telemetria |
 | `event_points` | evento, total | não | D-CORE-03 | 1 diária, 1 semanal |
 | `login_claim` | dia do ciclo, ciclo | não | D-CORE-02 | 1 conquista, 2 eventos ("jogar em 3 dias") |
