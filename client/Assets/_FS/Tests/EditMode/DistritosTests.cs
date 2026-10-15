@@ -122,8 +122,8 @@ namespace FS.Tests
             Sim s = NovaRow();
             CollectionAssert.AreEqual(new[] { "deposito", "fornalha", "prensa", "rebitadeira", "montagem_elmo", "balcao" }, s.Stations.FindAll(x => x.Unlocked).ConvertAll(x => x.Id));
             Assert.AreEqual((6, 10, Balance.WorldW - 0.3f, true, false), (s.QueueCap, s.CounterCap, s.MaxX, s.QualityRevealed, s.HasConveyor));
-            Assert.AreEqual((480L, 42000L, 17), (s.T.Cost(0), s.T.Cost(U(s, "rebitadeira2")), Enumerable.Range(0, s.UpgradeDefs.Length).Count(s.IsProduction)));
-            Assert.AreEqual((140, 230, 0), (s.PriceOf(I(s, "elmo")), s.PriceOf(I(s, "peitoral")), s.T.Price[(int)I(s, "placa")]));
+            Assert.AreEqual((745L, 65000L, 17), (s.T.Cost(0), s.T.Cost(U(s, "rebitadeira2")), Enumerable.Range(0, s.UpgradeDefs.Length).Count(s.IsProduction)));
+            Assert.AreEqual((490, 805, 0), (s.PriceOf(I(s, "elmo")), s.PriceOf(I(s, "peitoral")), s.T.Price[(int)I(s, "placa")]));
             Assert.IsNull(s.JewelShop); Assert.IsNull(s.AnvilA);
             Assert.AreEqual(0, s.Workers.Count, "nenhum ajudante no kit");
             Assert.AreEqual(("bancada_escudos", "bigorna", "carroca", (string)null), (E(s, "montagem_elmo").Arte, E(s, "forja_hastes").Arte, E(s, "carroca_couro").Arte, E(s, "prensa").Arte),

@@ -139,7 +139,7 @@ namespace FS.Core
                 string at = $"masterwork {d.Id}:";
                 if (!IdOk(d.Id, "mw_")) yield return $"{at} ID fora do formato mw_[a-z0-9_]";
                 else if (!ids.Add(d.Id)) yield return $"{at} ID repetido";
-                if (Array.IndexOf(ProjetosDefs.Distritos, d.District) < 0) yield return $"{at} distrito \"{d.District}\" nao existe";
+                if (Array.IndexOf(ContentValidator.Distritos, d.District) < 0 || d.District != w.Distrito.Id) yield return $"{at} distrito \"{d.District}\" nao existe (ou nao e' o do mundo)";
                 // familia: estacoes do mundo que fazem um produto dela; Superior alcancavel em pelo menos uma (q maximo > 100)
                 List<Station> st = w.Stations.FindAll(s => s.Produces && w.IsProduct(s.OutItem) && w.ItemDefs[(int)s.OutItem].Family == d.Familia);
                 if (st.Count == 0) yield return $"{at} familia \"{d.Familia}\" sem produto feito no mundo";

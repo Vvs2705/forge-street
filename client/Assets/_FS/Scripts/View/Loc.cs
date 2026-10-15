@@ -442,6 +442,7 @@ namespace FS
             { "cli.cli_reg_grunk", L("Grunk", "Grunk", "Grunk") },
             { "cli.cli_reg_bento", L("Sir Bento", "Sir Bento", "Sir Bento") },
             { "cli.cli_reg_ines", L("Dona Inês", "Lady Inês", "Doña Inés") },
+            { "cli.cli_reg_brutus", L("Sgt. Brutus", "Sgt. Brutus", "Sgt. Brutus") },   // C-CORE-05: freguês da Row (lança; "Sgto." passa do cartão em es)
             // E-PLAT-04: avisos da loja (1 linha da faixa, LocTests)
             { "aviso.compra_ok", L("Compra concluída!", "Purchase complete!", "¡Compra completada!") },
             { "aviso.compra_falhou", L("Compra não concluída", "Purchase not completed", "Compra no completada") },

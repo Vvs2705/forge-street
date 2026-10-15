@@ -201,7 +201,9 @@ namespace FS.Core
             U(19, "manequins", 18, "Manequins", "Armaduras em exposição", luxo: true),
         };
 
-        static readonly long[] CustosArmeiros = { 480, 625, 810, 1055, 1370, 1780, 2315, 3010, 3915, 5090, 6615, 11000, 15000, 19000, 25000, 32000, 42000, 42000, 54000, 66000 };
+        /// <summary>C-CORE-05 (BALANCE.md §33): os produtivos do §5.2 x 1,55 (multiplo de 5 ate 10 mil, 2 algarismos acima, regra do §1); o luxo
+        /// como no catalogo. Com o preco x 3,5 (Ajuste) a producao completa do F2P cai de 1:31 h para ~1 h e a renda sobe a ~4.800/min.</summary>
+        static readonly long[] CustosArmeiros = { 745, 970, 1255, 1635, 2125, 2760, 3590, 4665, 6070, 7890, 10000, 17000, 23000, 29000, 39000, 50000, 65000, 42000, 54000, 66000 };
 
         static readonly long[] Turma = { 750, 1200, 1920, 3070 };   // §6: niveis 2-5 da turma Ferraz (6-10 com o resto do distrito)
         static WorkerDef Ferraz(int n, int rota) => new WorkerDef("wk_ferraz" + n, "Ferraz", WorkerRole.Porter, Specialty.Carrying, ArmorersRowId, null,
@@ -211,13 +213,18 @@ namespace FS.Core
         {
             Id = ArmorersRowId, Nome = "Armorer's Row", Indice = 1,
             Itens = ItensArmeiros, Receitas = ReceitasArmeiros, Upgrades = UpgradesArmeiros, Projetos = new BlueprintDef[0],
-            Masterworks = new MasterworkDef[0], MarcosColecao = new MarcoColecaoDef[0],   // ponytail: as obras da Row (CONTEUDO_V1 §10) entram no C-CORE-05
+            // C-CORE-05: nenhuma das 10 obras da Row (CONTEUDO_V1 §10.1) passa no validator ainda: toda familia da Row tem q maximo 0 (Superior
+            // inalcancavel; o §10.2 chega a 140/110 com niveis 60 + tecnica 20 + liga 30, e sem a liga para em 80). Os marcos da Collection da
+            // Row tambem esperam: a Collection so abre com um projeto de Masterwork. Entram com a liga, os niveis e os Blueprints da Row (BALANCE.md §33)
+            Masterworks = new MasterworkDef[0], MarcosColecao = new MarcoColecaoDef[0],
             // ponytail: a turma Ferraz (§6, 1 WorkerDef com 4 corpos) sao 4 Porters ate o campo `crew` existir; o 4o leva o bruto (minerio ou couro)
             Workers = new[] { Ferraz(1, 0), Ferraz(2, 1), Ferraz(3, 2), Ferraz(4, 0) },
-            // Fileiras de 2,5 m (deposito -> fornalhas -> prensas -> montagens -> forjas -> balcao), colunas de 3 m; entrada a esquerda
+            // Fileiras (deposito 1 -> fornalhas 4 -> prensas 6,5 -> montagens 9 -> forjas 11 -> balcao 13), colunas de 3 m; entrada a esquerda.
+            // C-CORE-05: deposito de 1,5 para 1 m: o rotulo dele (1,35 m acima) encostava no da Fornalha (1,04 m abaixo dela); descer as
+            // fornalhas poria o pad da Fornalha 2 sob o rotulo da Prensa 2
             Estacoes = new[]
             {
-                new StationDef("deposito", Kind.Deposit, 1.5f, 1.5f, "Depósito", 0f, 1f),
+                new StationDef("deposito", Kind.Deposit, 1.5f, 1.0f, "Depósito", 0f, 1f),
                 new StationDef("fornalha", Kind.Furnace, 1.5f, 4.0f, "Fornalha", -1f, 0f, null, "fornalha"),
                 new StationDef("prensa", Kind.Furnace, 1.5f, 6.5f, "Prensa", -1f, 0f, null, "prensa"),
                 new StationDef("rebitadeira", Kind.Furnace, 7.5f, 6.5f, "Rebitadeira", -1f, 0f, null, "rebitadeira"),
@@ -254,10 +261,13 @@ namespace FS.Core
             EsteiraDe = "prensa", EsteiraPara = "montagem_elmo",
             Ajuste = t =>
             {
-                // §3 precos (Normal); §2.2 balcao de 6 vagas com estoque 10 (sem Vitrine no distrito)
-                t.Price = new[] { 0, 0, 140, 120, 130, 70, 120, 110, 230, 0, 0, 0 };
-                // s entre clientes no inicio = 60 / (un/min do modelo na producao completa, §1 "mix"): a fama (ate x0,4) da a folga do fim,
-                // como no Old Forge (a producao e' o gargalo). HIPOTESE: BALANCE.md §31
+                // §3 precos (Normal) x 3,5, desvio do catalogo (revisar; BALANCE.md §33): o modelo do §1 supoe a vazao das estacoes (~38 un/min
+                // na producao completa); medida, a Row vende ~12 un/min, presa no transporte de lingote, placa, rebite e couro (4 Ferraz com carga
+                // 2, montagem de 2-3 componentes), nao na demanda nem nas bancadas. A relacao entre os produtos e' a do §3. §2.2 balcao de 6 vagas
+                // com estoque 10 (sem Vitrine no distrito)
+                t.Price = new[] { 0, 0, 490, 420, 455, 245, 420, 385, 805, 0, 0, 0 };
+                // s entre clientes no inicio = 60 / (un/min do modelo na producao completa, §1 "mix"); a demanda sobra (metade do intervalo, o dobro
+                // ou fila de 8 nao mudam a renda: BALANCE.md §33)
                 t.ClientInterval = new[] { 0f, 0f, 11.5f, 11.5f, 11.5f, 7.7f, 13.6f, 11.5f, 17.1f, 0f, 0f, 0f };
                 t.CustoTabela = CustosArmeiros;
                 t.QueueCap0 = 6; t.CounterCap0 = t.CounterCap1 = 10;

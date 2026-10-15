@@ -84,7 +84,7 @@ namespace FS.Tests
             Assert.AreEqual("ctr_vinte_guardas", s.Contratos.Proximo.Id, "o proximo da lista fixa");
             Assert.IsNull(s.Contratos.Oferta, "1 por vez");
             Assert.IsFalse(s.Contratos.Aceitar());
-            Assert.IsFalse(s.Contratos.Aberto(s.Contratos.Proximo), "a Rua dos Armeiros nao existe no build: dormente ate a Wave C");
+            Assert.IsTrue(s.Contratos.Aberto(s.Contratos.Proximo), "C-CORE-05: a Rua dos Armeiros entrou no build (o elmo e' dela): o vinte_guardas abre");
             Assert.IsFalse(s.Contratos.Forca("ctr_batedores"), "vaga ocupada nem forcado");
             s.Contratos.Abandonar();
             Assert.IsTrue(s.Contratos.Forca("ctr_batedores"), "dev: forca um fora do build (so para a foto)");
@@ -396,7 +396,7 @@ namespace FS.Tests
             ContractDef[] d =
             {
                 Def("Ctr-X", OrderDefs.OldForge, Quality.Normal, 0f, 10, 15, null, ("espada", 5)),
-                Def("ctr_lanca", OrderDefs.OldForge, Quality.Normal, 0f, 10, 15, null, ("lanca", 5)),
+                Def("ctr_lanca", OrderDefs.OldForge, Quality.Normal, 0f, 10, 15, null, ("cinzel", 5)),
                 Def("ctr_lanca", OrderDefs.OldForge, Quality.Normal, 0f, 10, 15, null, ("espada", 0)),
                 Def("ctr_mw", OrderDefs.OldForge, Quality.Masterwork, 0f, 10, 15, null, ("espada", 5)),
                 Def("ctr_sem_premio", OrderDefs.OldForge, Quality.Normal, -1f, 0, 0, null, ("espada", 5)),
@@ -419,7 +419,7 @@ namespace FS.Tests
             List<string> v = ContratosDefs.Validar(d, bps, renome, ups, ContentValidator.World()).ToList();
             Acusa(v, "contrato: 11 no catalogo (CONTEUDO_V1 §8: 12)");
             Acusa(v, "contrato Ctr-X: ID fora do formato ctr_[a-z0-9_]");
-            Acusa(v, "contrato ctr_lanca: item \"lanca\" que nao existe no jogo");
+            Acusa(v, "contrato ctr_lanca: item \"cinzel\" que nao existe no jogo");   // a lanca e' da Row (C-CORE-05); o cinzel, do distrito 3
             Acusa(v, "contrato ctr_lanca: ID repetido");
             Acusa(v, "contrato ctr_lanca: etapa \"espada\" x0");
             Acusa(v, "contrato ctr_mw: qualidade minima Masterwork");
