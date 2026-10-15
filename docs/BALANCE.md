@@ -2203,3 +2203,81 @@ Tabela **idêntica** à vigente da §30.6 (60 min seguidos / dia em que fecha): 
 `MetasTests` (+5): `ContratoEElmo_VendidosNaRua_ContamNaRaiz_PagamUmaVez` (contrato da raiz cumprido com elmos vendidos na Row pelo Império: `ach_contrato1` paga XP 150 sem ouro 1×, `ach_contratos12` 1/12, `ach_elmos100` pelo ID e sem virar espada, save do Império leva `product_sold.elmo`), `SemanalDeContrato_SoComUmACumprir_FechaPeloContrato_UmaVez` (25 semanas sem contrato a cumprir: nunca; com o ronda aberto entra, fecha pelo `Ev.ContractDone`, paga 1×, save/load), `QualidadeEGolpe_PeloCaminhoReal_PagamUmaVez_SemanaisSoComAQualityAberta` (Superior pela automação = `Ev.Graded`, golpe de verdade, Fina não é Superior, as semanais de Superior e golpe só com a Quality aberta), `Derivadas_ProjetosEstacaoRenomeColecaoECharter_RetroativasUmaVez` (9 projetos antes da 1ª abertura = retroativo; nível II não é o 3; Renome 4 fecha as 2 sem dar Renome; outro marco da Collection não conta; o Charter do Old Forge pelo `Imperio.Charter`) e `SaveAntigo_ContratoConcluido_ConquistaPeloRetroativo`; `Eventos_TodoGatilhoContaNoJogo` cobre os 11 gatilhos novos pelo caminho real (sonda em `Metas.Valor`); golden do rodízio semanal (20 modelos) e o validator com 14 defeitos novos. `LiveOpsTests`: `Conquistas_EventoEPasse_PeloLedger_UmaVez` (999 pontos não fecham; reabrir o evento não conta outra entrada; nível 30 alcançado sem resgatar não fecha) e o validator com 9 missões. `ContratosTests`: a Royal Week de verdade paga 100 pontos pelo contrato. `ImperioTests`: o golpe da Row conta nas metas da raiz. 478 testes no `coretests`.
 
 **Prova vermelha** (`python client/tools/mutantes/mutantes.py --so meta-…`, versionadas no `mutantes.py`): **20 mutações `meta-*`, todas mortas** (0 vivas, 0 inválidas, 3.333 s): Fina/Superior que não conta (`Ev.Graded`), Fina que conta como Superior, golpe que não conta, elmo da Row sem o ID, Charter lido no ledger errado, qualquer marco da Collection fecha Produtos 100%, projeto contado a mais, nível de Renome pelo total, qualquer nível de estação vale o pedido, trilha de evento "fechada" no 1º limiar, Passe "fechado" no nível 1, entrada em evento que não conta, semanal de contrato sem contrato a cumprir, semanais de Superior/golpe antes da Quality, save antigo sem o retroativo do contrato, validator sem o teto do conteúdo / sem a regra do laço de Renome / sem conferir o ID, a Royal Week de volta aos golpes e o validator sem o teto de 8 missões.
+
+## 39. Rua dos Armeiros: transporte de insumos, Ferraz 4 e Rebitadeira 2 (raia ROW-PENDÊNCIAS, fim do C-CORE-05, 2026-10-15)
+
+**Vigente** (`Core/Sim.Transporte.cs` novo, `Core/Sim.cs` — 3 ganchos de 1 linha —, `Core/Distritos.cs`, `View/Loc.cs`, `tools/econsim/Program.cs`; testes em `Tests/EditMode/RowPendenciasTests.cs`, `DistritosTests.cs`, `LigaTests.cs`; mutações `rowp-*` no `mutantes.py`; branch `feat/row-pendencias`). Só a Armorer's Row mudou; o Old Forge é o de sempre, ao byte (§39.5).
+
+- **O defeito** (medido com a tabela nova do econsim e um diagnóstico por ajudante, F2P, 150 min): o Ferraz do papel 1 passava **30–70% do tempo parado com placas na mão** — toda montagem aberta com a entrada de placas cheia, esperando rebite — e até **40 min seguidos na boca de uma estação parada** (a fornalha de liga sem lingote: o alvo continuava "válido" por ser o alvo). Por isso as fornalhas ficavam ~6.000 s travadas, a liga chegava a ~4% das peças (0% no Ideal) e um carregador a mais rendia pouco. Não é demanda nem capacidade das estações (§33.1): era o carregador preso.
+- **Transporte** (`Sim.Transporte.cs`, só em distrito com 2+ insumos feitos em estação; o Old Forge tem um, o lingote, e fica como estava): (1) o papel 1 só pega o que cabe nas entradas abertas que usam o insumo e não vai à fonte do que não cabe em lugar nenhum; (2) só espera na fonte alvo enquanto ela trabalha (parada e sem saída = escolhe outra).
+- **Ferraz 4 no papel 1** (lingote, placa, rebite e liga), com o Ferraz 2. Save de antes (o 4º no papel 0) carrega: os papéis saem do `WorkerDef`, a mão do 4º sem dono no papel novo fica de fora (no máximo 2–4 brutos).
+- **Rebitadeira: 4 rebites em 32 s** (o catálogo: 4 s). Com 4 s uma rebitadeira dá ~150 rebites/min com o Fole duplo e a Row pede ~12: a 2ª nunca fazia falta, com transporte consertado ou não. Com 32 s a 2ª (o último produtivo, a porta dos níveis II pela V29) faz ~1/3 dos ciclos depois da produção, sem ela a Row faz ~12% menos peças, e o lingote que sobra vai à fornalha de liga (liga em ~25% das peças).
+- **Preço da Row × 2,4 do catálogo** (era × 3,5; elmo 335, maça 290, grevas 310, lança 170, manoplas 290, machado 265, peitoral 550) e **produtivos × 1,1** (era × 1,55; 530 … 46.000, Σ 198.230; a fornalha de liga 9.460). Luxo, níveis de estação, Vulcana, intervalos de cliente e balcão como estavam.
+- **Textos**: "Nova linha: maça, paga N" das 5 linhas novas mostrava o preço do catálogo (1/3,5 do jogo desde o #66); agora o do jogo, nos 3 idiomas (teste). O Ferraz 4 "leva lingotes, placas e rebites".
+- **econsim** (`--distrito`): tabela nova no fim — ciclos, s com fome e s travada por estação, % das peças com liga e os minutos em que o Renome do Charter e o Charter ficam prontos. O CSV não muda.
+
+**Decisões e desvios (revisar):**
+1. **Ferraz 4 no papel 1, não "couro e liga → montagens e forjas"** (§5.2/§6). Medido (F2P × 16, `--renome 500`, preços de antes): papel 0 (o de antes) 5.146/min depois da produção e liga em 3,7% das peças; "couro e liga" (papel novo, só medição) 5.066 e 2,7% — o bruto sobra (fornalhas travadas), não falta; papel 1 6.666 e 4,2%; papel 1 + transporte 7.979 e 6,9%.
+2. **Regras de transporte só com 2+ insumos.** No Old Forge o mesmo defeito existe em tese (ajudante esperando na fornalha parada), mas lá esperar com lingote na mão não prende outro tipo e o jogo é o medido da Wave B: fica ao byte. Os distritos 3–6 que tiverem 2+ insumos ganham as regras de graça — **as raias do Artisan Quarter e do Royal Arsenal medem de novo depois do merge**.
+3. **Rebitadeira 2 útil pelo tempo do rebite (32 s), não por receita nova nem estação nova.** Medido (F2P × 16, transporte consertado, preços × 3,5; ciclos da Rebitadeira 2 / renda depois da produção / sem a Rebitadeira 2):
+
+| rebite | Rebitadeira 2 (% dos ciclos de rebite) | renda/min 10 min após a produção | sem a Rebitadeira 2 (peças em 150 min) | liga |
+|---|---|---|---|---|
+| 4 s (catálogo) | 52 (9%) | 7.979 | −3% | 6,9% |
+| 1 lingote → 2 rebites, 4 s | 135 (15%) | 6.775 | — | 16,5% |
+| 2ª fornalha de liga no lugar da Rebitadeira 2 (só medição) | 4 ciclos dela | 7.646 | — | 12,0% |
+| 16 s | 94 (18%) | 7.595 | −6% | 16,4% |
+| 24 s | 115 (22%) | 7.123 | −9% | 20,2% |
+| **32 s** | **127 (25%)** | 7.304 | **−12%** | **25,8%** |
+
+   A 2ª fornalha de liga não serve (a de liga passa fome de lingote, não de capacidade). Nenhum ID muda: `rebitadeira2` segue a 2ª rebitadeira, no mesmo lugar e com o mesmo efeito. Custo: a 1ª venda da Row sai ~10 s mais tarde (1:32 → 1:43 no F2P; o FTUE é do Old Forge) e, com o preço final, a Row faz ~11% menos peças em 300 min que com o rebite de 4 s (3.611 × 4.060 no Ideal), com a liga em 16% delas em vez de 2%.
+4. **Preço × 2,4 e custo × 1,1** pela grade (F2P × 16, `--renome 500`; produção completa / renda nos 10 min depois): 2,2/1,0 58:09 / 4.255; 2,3/1,0 57:26 / 4.398; 2,4/1,0 55:49 / 4.687; **2,4/1,1 58:58 / 4.636**; 2,4/1,2 63:14 / 4.762; 2,5/1,1 61:05 / 5.110; 2,6/1,1 56:27 / 5.135; 2,6/1,2 59:59 / 5.279 (e com Renome 0, × 8: 2,3/1,0 61:33 / 4.186; 2,4/1,1 62:09 / 4.847; 2,5/1,1 64:16 / 4.540). Ficou 2,4/1,1: as duas janelas no meio, com Renome 0 e 500. É a promessa da V28: com o transporte consertado o preço volta para perto do catálogo (× 3,5 → × 2,4) e o custo quase ao catálogo (× 1,55 → × 1,1).
+5. **Charter do Ideal abaixo da janela: 2:31 h de Row** (3–5 h no §1). Na `main` o Ideal fazia **0% de peças com liga** (o mesmo carregador preso) e o Charter caía às 3:36 h; com a liga chegando, o Renome 5 vem às 2:31 h (as encomendas e as Superiores sobem com as peças) junto com a 2ª obra (2:31). O F2P (que no bot não golpeia) chega ao Renome 5 às **3:24 h** (era 3:43) — a coluna "Charter (h no distrito)" do §1 é do F2P. Medidas as saídas (Ideal × 8, 300 min): Charter com 3 obras 2:43 h; Renome 6 (1.000) 4:31 h em 6/8 e 2/8 sem Charter em 5 h; rebite de 4 s (a liga volta a ~2% e a Rebitadeira 2 a não fazer falta) 2:55 h. Não troquei o catálogo (2 obras, Renome 5): decisão do coordenador.
+6. **Slow** com renda depois da produção de 3,3–3,9 mil/min (−19% a −31% do alvo; o portão é o F2P), maior sequência morta 12–14 (era 16–20).
+
+### 39.1 Antes → depois, Renome 0 na chegada: `--distrito armorers_row --perfis Ideal,F2P,Slow,AdWatcher --minutos 150 --partidas 2 --anuncio-seg 30`
+
+Antes = `main` fe195d6 (#72) com o econsim deste branch (as colunas novas). Peças = produtos feitos em 150 min.
+
+| perfil | 1ª venda | produção completa | zona morta (min; maior seq.) | renda/min 10 min após a produção | renda/min últimos 10 min | saldo final | prêmio de qualidade | encomendas (% da venda) | peças (com liga) | Rebitadeira 2 (ciclos) | fornalha travada (s) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Ideal | 1:14 → 1:32 | 70:43 → **58:42** | 55,5 (19) → 42 (10) | 4.339 → 4.564 | 5.130 → 6.175 | 28.738 → 30.977 | 27,4% → 30,0% | 2,9% → 5,1% | 1.031 (0,0%) → 1.428 (25,0%) | 0 → 103 | 6.602 → 4.031 |
+| F2P | 1:32 → 1:43 | 61:29 → **61:35** | 45,5 (11) → 46 (10) | 5.265 → 4.583 | 7.239 → 5.992 | 5.355 → 41.038 | 16,8% → 22,3% | 4,3% → 6,7% | 1.545 (2,8%) → 1.643 (24,2%) | 0 → 143 | 5.945 → 3.913 |
+| Slow | 1:00 → 1:27 | 72:39 → **67:02** | 56 (16) → 49,5 (12) | 4.498 → 3.324 | 4.290 → 5.530 | 52.757 → 28.747 | 14,2% → 19,6% | 4,4% → 6,6% | 1.060 (0,9%) → 1.474 (14,4%) | 0 → 129 | 6.828 → 5.137 |
+| AdWatcher | 1:56 → 2:00 | 60:33 → **58:50** | 45,5 (13) → 43,5 (10) | 4.147 → 4.533 | 7.579 → 6.688 | 33.956 → 27.981 | 15,3% → 22,3% | 4,7% → 6,2% | 1.284 (0,8%) → 1.614 (26,7%) | 0 → 134 | 6.440 → 3.575 |
+
+F2P, Slow e Ideal × 8 (`--perfis F2P,Slow,Ideal --minutos 150 --partidas 8`): produção completa 63:04 → **62:39** / 77:34 → 68:47 / 71:16 → 57:41; maior sequência morta 13 → 12 / 20 → 14 / 19 → 11; renda nos 10 min depois da produção 4.631 → **4.571** / 3.731 → 3.873 / 4.157 → 4.731; peças com liga 2,6% → **25,3%** / 2,0% → 16,2% / 0,0% → 20,9%; Rebitadeira 2 1 → 136 ciclos / 0 → 119 / 0 → 120.
+
+### 39.2 Chegada com o Renome do Império (`--renome 500`): F2P × 16 × 150 min
+
+| | produção completa | zona morta (maior seq.) | renda/min 10 min após / últimos 10 | saldo | min sem destino | ouro de encomendas (% da venda) | prêmio de qualidade | peças (com liga) | Rebitadeira 2 / Rebitadeira (ciclos) | fornalha travada (s) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| antes | 58:46 | 43 (15) | 5.146 / 7.441 | 50.883 | 3,8 | **11,3%** | 21,1% | 1.432 (3,7%) | 1 / 392 | 6.068 |
+| depois | **58:18** | 42,8 (**13**) | **4.710** / 6.303 | 31.904 | 0 | **11,0%** | 24,4% | 1.639 (**24,2%**) | 136 / 404 | 3.600 |
+
+### 39.3 O Charter da Row: Ideal e F2P × 8 × 300 min, `--renome 500`
+
+| perfil | obras no Hall (1ª; 2ª) | Renome 5 (relógio) | Charter pronto (relógio) | prêmio de qualidade | ouro de encomendas | peças (com liga) | saldo aos 300 min | min sem destino |
+|---|---|---|---|---|---|---|---|---|
+| Ideal | 2,9 (195:05; 210:19) → 4,5 (129:11; 150:44) | 207 → 151 min | 216 → **151 min** (8/8) | 38,1% → 37,0% | 8,0% → 10,3% | 2.048 (0,0%) → 3.611 (15,9%) | 540.159 → 971.688 | 122,3 → 152,3 |
+| F2P | 0 → 0 (não golpeia) | 223 → **204 min** | — (masterwork 8/8) | 28,7% → 31,5% | 10,8% → 11,5% | 3.062 (2,0%) → 3.651 (21,4%) | 1.036.417 → 824.220 | 152,6 → 143,3 |
+
+O Charter continua provado pelo caminho real no `LigaTests.Charter_DaRow_DuasObrasPeloCaminhoDeSempre` (verde, sem mudança). Depois de ~2 h 30 de Row tudo está comprado e o saldo acumula (~0,8–1 milhão aos 300 min): o ralo seguinte é a abertura do Artisan Quarter (430 mil), como no §35.3.
+
+**Portões (GDD §3, `CONTEUDO_V1.md` §16), na Row:** produção completa do F2P 58:18 (× 16, Renome 500), 62:39 (× 8, Renome 0) e 61:35 (× 2), janela 55–70 — ok; maior sequência morta do F2P 13 / 12 / 10 (≤ 15) — ok; renda nos 10 min depois da produção 4.710 / 4.571 / 4.583 contra 4.800 (−2% a −5%; aceite ±25%) — ok; ouro de encomendas 11,0% com Renome 500 (4–12%) — ok; Charter do Ideal 2:31 h de Row (3–5 h) — **fora, desvio 5**; F2P no Renome do Charter às 3:24 h. FTUE e os 10 primeiros minutos são do Old Forge: iguais (§39.5).
+
+### 39.4 Testes e prova vermelha
+
+`RowPendenciasTests` (5): `Transporte_PapelUm_SoPegaOQueCabe_OldForgeComoAntes` (montagens com placas cheias: o Ferraz 2 encostado na prensa com 4 placas não pega placa e vai ao rebite; com 1 vaga, pega 1; no Old Forge, bigorna cheia, a mão cheia de lingote como antes), `Transporte_PapelUm_NaoEsperaNaFonteParada_OldForgeComoAntes` (alvo na fornalha de liga parada: troca e leva o rebite; no Old Forge o alvo parado segura o ajudante, como antes), `Ferraz4_NosInsumos_SaveAntigoComPapel0Carrega` (papéis 0/1/2/1; save com o 4º no papel 0 e couro na mão carrega sem ID desconhecido), `Bot_F2P_Rebitadeira2FazFalta_ELigaChega` (bot chegando como o jogador: nos 30 min depois da produção a Rebitadeira 2 faz 40 ciclos e a 1ª 81; liga em 318 de 845 peças; o teste cobra ≥ 1/4 e ≥ 10%) e `Textos_NovaLinha_PagaOPrecoDoJogo` (as 5 linhas × 3 idiomas). Ajustados: `Row_Kit_BalcaoDe6EOsNumerosDoDistrito` (530 / 46.000; 335 / 550), `Row_Rebitadeira_QuatroRebitesPorLingote` (32 s), `FornalhaDeLiga_DoisLingotesUmaLigaEmSeisSegundos` (9.460). 494 testes no `coretests`; `verify.sh quick` verde.
+
+**Prova vermelha** (`python client/tools/mutantes/mutantes.py --so rowp-…`, versionadas no `mutantes.py`): **12 mutações `rowp-*`; rodadas até a pausa de 2026-10-15: 5, todas mortas** — `rowp-ferraz4-papel0` (o Ferraz 4 de volta ao bruto), `rowp-pega-a-mao-cheia`, `rowp-fonte-sem-destino` (2 testes caem), `rowp-espera-fonte-parada` (2), `rowp-regras-no-oldforge` (as regras no Old Forge: 5 testes, goldens dele). **Faltam rodar 7** (`rowp-sem-gancho-boca`, `rowp-sem-gancho-escolha`, `rowp-sem-gancho-alvo`, `rowp-rebite-catalogo`, `rowp-preco-x3-5`, `rowp-custo-x1-55`, `rowp-texto-preco-catalogo`).
+
+### 39.5 Old Forge idêntico ao byte (`main` fe195d6, #72 × este branch)
+
+| econsim | SHA-256 do CSV (os dois lados) |
+|---|---|
+| `--perfis F2P --minutos 60 --partidas 8 --anuncio-seg 30` | `9f3f548e…28da3fdb3` (idêntico, `cmp`) |
+| `--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 60 --partidas 2 --anuncio-seg 30` | `3acf0f6f…08d3a96` (idêntico, `cmp`) |
+| `--distrito armorers_row --perfis Ideal,F2P,Slow,AdWatcher --minutos 150 --partidas 2 --anuncio-seg 30 --gerente 0` | muda de propósito: `f7c3f5c2…2a0eca` (`main`) → `2590bba6…be815fd` (este branch); a 1ª diferença é no minuto 1 (o rebite de 32 s) |
+
+F2P × 8: produção completa 47:14, zona morta 19,6, saldo 619 — os do §35.5. A `main` foi extraída com `git archive origin/main client/Assets/_FS/Scripts/Core client/tools/econsim` num diretório temporário; cada `econsim.csv` foi movido para um nome próprio e comparado com `cmp`.
