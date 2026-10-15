@@ -420,6 +420,8 @@ static class EconSim
         // o que falta para o Charter no fim
         public int SemDestinoEq, Niveis, Fundidor, Mw; public long NiveisGasto, Enc; public double Quali, EncPct; public float Fundidor1 = -1f, Mw1 = -1f, Mw2 = -1f;
         public string Charter;
+        // row-pendencias: por estacao que produz (ID, ciclos, s com fome, s travada) e as pecas de produto com liga
+        public (string Id, int Ciclos, float Fome, float Travada)[] Est; public long Pecas, ComLiga; public int CharterMin = -1, RenomeMin = -1;
     }
 
     /// <summary>
@@ -479,6 +481,18 @@ static class EconSim
                               $"{g.Count(r => r.Fundidor > 0)}/{g.Length}; {g.Average(r => r.Fundidor):0.#}; {Media(g.Select(r => r.Fundidor1))} | " +
                               $"{g.Average(r => r.Mw):0.#} ({Media(g.Select(r => r.Mw1))}; {Media(g.Select(r => r.Mw2))}) | {falta} | {g.Average(r => r.SemDestinoEq):0.#} |");
         }
+        // row-pendencias: o gargalo por estacao (media das partidas): ciclos, s com fome (receita incompleta) e s travada (saida cheia)
+        Console.WriteLine();
+        Console.WriteLine($"| estacao (ciclos; fome s; travada s) | {string.Join(" | ", perfis.Select(p => p.Name))} |");
+        Console.WriteLine("|" + string.Concat(Enumerable.Repeat("---|", perfis.Length + 1)));
+        RunD[][] por = perfis.Select(p => runs.Where(r => r.Perfil == p.Name).ToArray()).ToArray();
+        for (int k = 0; k < runs[0].Est.Length; k++)
+            Console.WriteLine($"| {runs[0].Est[k].Id} | " + string.Join(" | ", por.Select(g =>
+                $"{g.Average(r => r.Est[k].Ciclos):0}; {g.Average(r => r.Est[k].Fome):0}; {g.Average(r => r.Est[k].Travada):0}")) + " |");
+        Console.WriteLine("| pecas com liga | " + string.Join(" | ", por.Select(g => $"{100.0 * g.Sum(r => r.ComLiga) / Math.Max(1, g.Sum(r => r.Pecas)):0.0}% de {g.Average(r => r.Pecas):0}")) + " |");
+        static string Min(RunD[] g, Func<RunD, int> f) { int[] v = g.Select(f).Where(x => x >= 0).ToArray(); return v.Length == 0 ? "--" : $"{v.Average():0} min ({v.Length}/{g.Length})"; }
+        Console.WriteLine("| Renome do Charter (relogio) | " + string.Join(" | ", por.Select(g => Min(g, r => r.RenomeMin))) + " |");
+        Console.WriteLine("| Charter pronto (relogio) | " + string.Join(" | ", por.Select(g => Min(g, r => r.CharterMin))) + " |");
         return 0;
     }
 
@@ -524,6 +538,8 @@ static class EconSim
             if (s.ProductionComplete && !aVenda) r.SemDestino++;
             if (s.ProductionComplete && !aVenda && !Enumerable.Range(0, s.Equipe.Defs.Length).Any(s.Equipe.AVenda)) r.SemDestinoEq++;   // C-CORE-05
             if (s.ProductionComplete && prodMin < 0) prodMin = m;
+            if (r.CharterMin < 0 && imp.CharterFalta(d.Id) == null) r.CharterMin = m;   // row-pendencias: o minuto em que o Charter fica pronto
+            if (r.RenomeMin < 0 && d.Charter != null && imp.Raiz.Renome.Total >= d.Charter.Renome) r.RenomeMin = m;
             float tp = ProdD(s, rel);
             csv.AppendLine(string.Join(",", p.Name, hz.ToString("0.###"), m, s.Gold, s.GoldEarned - earned0, imp.FundoGanho - fundo0, compras, s.UpgradesBought, tp < 0f ? "" : tp.ToString("0.0")));
             earned0 = s.GoldEarned; fundo0 = imp.FundoGanho; bought0 = s.UpgradesBought;
@@ -538,6 +554,8 @@ static class EconSim
         for (int k = 0; k < s.Equipe.Defs.Length; k++) if (s.Equipe.Defs[k].Papel == WorkerRole.Smelter) r.Fundidor = s.Equipe.Nivel(k);
         r.Quali = 100.0 * s.QualityGold / Math.Max(1, s.GoldEarned); r.EncPct = 100.0 * s.OrderGold / Math.Max(1, s.GoldEarned); r.Enc = s.OrderGold;
         r.Mw = s.Hall.Count; r.Charter = imp.CharterFalta(d.Id);
+        r.Est = s.Stations.Where(x => x.Produces).Select(x => (x.Id, x.Crafted, x.StarveSeconds, x.StallSeconds)).ToArray();
+        for (int i = 0; i < s.ItemDefs.Length; i++) if (s.ItemDefs[i].Product) { r.Pecas += s.Crafted[i]; r.ComLiga += s.PecasComLiga[i]; }
         r.Csv = csv.ToString(); r.Segundos = clock.Elapsed.TotalSeconds;
         return r;
     }
