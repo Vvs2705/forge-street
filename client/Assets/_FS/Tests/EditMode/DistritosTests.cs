@@ -122,8 +122,9 @@ namespace FS.Tests
             Sim s = NovaRow();
             CollectionAssert.AreEqual(new[] { "deposito", "fornalha", "prensa", "rebitadeira", "montagem_elmo", "balcao" }, s.Stations.FindAll(x => x.Unlocked).ConvertAll(x => x.Id));
             Assert.AreEqual((6, 10, Balance.WorldW - 0.3f, true, false), (s.QueueCap, s.CounterCap, s.MaxX, s.QualityRevealed, s.HasConveyor));
-            Assert.AreEqual((745L, 65000L, 18), (s.T.Cost(0), s.T.Cost(U(s, "rebitadeira2")), Enumerable.Range(0, s.UpgradeDefs.Length).Count(s.IsProduction)), "C-CORE-05: os 18 do §5.2 (a fornalha de liga)");
-            Assert.AreEqual((490, 805, 0), (s.PriceOf(I(s, "elmo")), s.PriceOf(I(s, "peitoral")), s.T.Price[(int)I(s, "placa")]));
+            // row-pendencias (BALANCE.md §39): custos do §5.2 x 1,1 e precos do §3 x 2,4 (eram x 1,55 e x 3,5)
+            Assert.AreEqual((530L, 46000L, 18), (s.T.Cost(0), s.T.Cost(U(s, "rebitadeira2")), Enumerable.Range(0, s.UpgradeDefs.Length).Count(s.IsProduction)), "C-CORE-05: os 18 do §5.2 (a fornalha de liga)");
+            Assert.AreEqual((335, 550, 0), (s.PriceOf(I(s, "elmo")), s.PriceOf(I(s, "peitoral")), s.T.Price[(int)I(s, "placa")]));
             Assert.IsNull(s.JewelShop); Assert.IsNull(s.AnvilA);
             Assert.AreEqual(0, s.Workers.Count, "nenhum ajudante no kit");
             Assert.AreEqual(("bancada_escudos", "bigorna", "carroca", (string)null), (E(s, "montagem_elmo").Arte, E(s, "forja_hastes").Arte, E(s, "carroca_couro").Arte, E(s, "prensa").Arte),
@@ -172,22 +173,25 @@ namespace FS.Tests
             Assert.AreEqual((4, 8), (m.InCap, E(s, "montagem_peitoral").InCap));
         }
 
-        /// <summary>Rebitadeira (outputCount 4): 1 lingote -> 4 rebites de uma vez; a saida guarda 2 ciclos (8) e o ciclo so comeca se os 4
-        /// cabem (senao trava, como saida cheia).</summary>
+        /// <summary>Rebitadeira (outputCount 4): 1 lingote -> 4 rebites de uma vez, em 32 s (row-pendencias, BALANCE.md §39: 8 x os 4 s do
+        /// catalogo, para a Rebitadeira 2 fazer falta); a saida guarda 2 ciclos (8) e o ciclo so comeca se os 4 cabem (senao trava, como saida
+        /// cheia).</summary>
         [Test]
         public void Row_Rebitadeira_QuatroRebitesPorLingote()
         {
             Sim s = NovaRow();
             Station r = E(s, "rebitadeira");
-            Assert.AreEqual((6, 8), (r.InCap, r.OutCap));
+            Assert.AreEqual((6, 8, 32f), (r.InCap, r.OutCap, r.Time));
             r.In = 1;
-            for (float t = 0f; t < 4.1f; t += Dt) s.Tick(Dt, 0f, 0f);
+            for (float t = 0f; t < 31.9f; t += Dt) s.Tick(Dt, 0f, 0f);
+            Assert.AreEqual((0, 0), (r.Out, r.Crafted), "32 s, nao 4");
+            for (float t = 0f; t < 0.2f; t += Dt) s.Tick(Dt, 0f, 0f);
             Assert.AreEqual((4, 1, 4), (r.Out, r.Crafted, s.Crafted[(int)I(s, "rebite")]));
             r.Out = 5; r.In = 1;
-            for (float t = 0f; t < 4.5f; t += Dt) s.Tick(Dt, 0f, 0f);
+            for (float t = 0f; t < 32.5f; t += Dt) s.Tick(Dt, 0f, 0f);
             Assert.AreEqual((5, 1, true, 1), (r.Out, r.Crafted, r.Blocked, r.In), "5 + 4 > 8: trava sem consumir o lingote");
             r.Out = 4;
-            for (float t = 0f; t < 4.1f; t += Dt) s.Tick(Dt, 0f, 0f);
+            for (float t = 0f; t < 32.1f; t += Dt) s.Tick(Dt, 0f, 0f);
             Assert.AreEqual((8, 2, 0), (r.Out, r.Crafted, r.In));
         }
 

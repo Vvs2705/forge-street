@@ -59,7 +59,7 @@ namespace FS.Tests
 
         // ------------------------------------------------------------------ liga
 
-        /// <summary>§5.2: a fornalha de liga e' produtiva (tier 11, 13.000 = 8.600 x 1,55), pede a Fornalha 2 e abre a estacao; 2 lingotes -> 1
+        /// <summary>§5.2: a fornalha de liga e' produtiva (tier 11, 9.460 = 8.600 x 1,1: BALANCE.md §39), pede a Fornalha 2 e abre a estacao; 2 lingotes -> 1
         /// liga em 6 s (1,5 x a fornalha); o Fole de couro tambem a acelera (e' fornalha).</summary>
         [Test]
         public void FornalhaDeLiga_DoisLingotesUmaLigaEmSeisSegundos()
@@ -67,7 +67,7 @@ namespace FS.Tests
             Sim s = NovaRow();
             Station f = s.Est("fornalha_liga");
             int u = U(s, "fornalha_liga");
-            Assert.AreEqual((11, 13000L, "fornalha_armeiro2", true), (u, s.T.Cost(u), s.UpgradeDefs[s.UpgradeDefs[u].Requires].Id, s.IsProduction(u)));
+            Assert.AreEqual((11, 9460L, "fornalha_armeiro2", true), (u, s.T.Cost(u), s.UpgradeDefs[s.UpgradeDefs[u].Requires].Id, s.IsProduction(u)));
             Assert.IsFalse(f.Unlocked);
             Pad pad = s.Pads.Find(x => Array.IndexOf(x.Chain, (Upgrade)u) >= 0);
             Assert.AreEqual((-1, f.Pos.X, f.Pos.Y), (pad.Current(s), pad.Pos.X, pad.Pos.Y), "pede a Fornalha 2; o pad e' no lugar da estacao");
