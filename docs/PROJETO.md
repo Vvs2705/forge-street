@@ -1,6 +1,6 @@
 # PROJETO — Forge Street (fonte única de verdade)
 
-Atualizado: 2026-10-09 · Dono: Vinicius · Direção: [`DOCUMENTO_MESTRE_PRODUCAO_V1.md`](DOCUMENTO_MESTRE_PRODUCAO_V1.md) (prevalece em conflito com documentos antigos, §186) · Mapa e tickets: [`PRODUCAO_V1_MAPA_TICKETS.md`](PRODUCAO_V1_MAPA_TICKETS.md).
+Atualizado: 2026-10-14 · Dono: Vinicius · Direção: [`DOCUMENTO_MESTRE_PRODUCAO_V1.md`](DOCUMENTO_MESTRE_PRODUCAO_V1.md) (prevalece em conflito com documentos antigos, §186) · Mapa e tickets: [`PRODUCAO_V1_MAPA_TICKETS.md`](PRODUCAO_V1_MAPA_TICKETS.md).
 
 > O `LEIA_PRIMEIRO_PRODUCAO_V1.md` cita `FORGE_STREET_AUDITORIA_COMPLETA_2026-10-09_v1_0.md`, que não foi encontrada no PC. Por decisão do Vinicius (2026-10-09), o mapeamento seguiu sem ela; o lugar dela é ocupado pelo mapa da Leva 1 (4 raias, só leitura).
 
@@ -66,6 +66,8 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | V24 | **IDs de item (decidido por padrão, B-CORE-01, revisar):** itens também sem prefixo (`espada`, `machado_guerra`, não `item_espada`), como as melhorias (V22); o sprite continua `item_<id>` e o texto `item.<id>.nome`. Vale para o save (schema 3: `stocks=`/`solds=`/`holds=`/`wks=`); nunca renomear. Os outros `*Def` da Wave B seguem a V22 (com prefixo). |
 | V25 | **Catálogo da v1.0 (decidido por padrão, revisar):** [`CONTEUDO_V1.md`](CONTEUDO_V1.md) é a fonte dos dados das Waves B–D (6 distritos, 38 vendáveis, 50 receitas, 29 workers, 61 encomendas, 12 contratos, 101 Blueprints, 60 Masterworks). Escala ×3 de renda por distrito ancorada no Old Forge medido; renda de fundo 25–40% da taxa; Charters 4–6 aceitam N contratos **ou** 10×N encomendas Royal (contrato nunca bloqueia); as demais em `CONTEUDO_V1.md` §15. Os números dos distritos 2–6 são modelo, o econsim confirma quando os `DistrictDef` existirem. |
 | V26 | **Qualidade (decidido por padrão, B-CORE-03, revisar):** custo dos níveis de estação = metade do `ECONOMIA_WAVE_B.md` §1.5 (bigornas 250/750, escudos 325/950, ferramentas 250/750, joalheria 500/1.500): com o §1.5 o retorno medido foi 39 min (portão ≤ 20) e a produção completa do F2P 57 min; com a metade, retorno 19,5 min e os 3 portões passam (`BALANCE.md` §23). Knob `Tuning.NivelEstacaoCusto`. "Com o insumo" do golpe = a bancada tem a próxima peça (trabalhando ou com a receita na entrada). Níveis IV–V entram com os projetos (B-CORE-07). |
+| V27 | **Collection e encomenda Event (decidido por padrão, B-CORE-08, revisar):** degraus da Collection a +5/+10 de Renome (o §7 pedia +10/+20, que furavam os pisos do Renome 3 e 4 junto com o Orders 2.0; `BALANCE.md` §30.6). A encomenda Event disputa as vagas com as normais e os pontos dela foram calibrados para o jogador com 3 vagas (Caravan 12, Royal Week-B 15, Hunts 17/20); a alternativa é contá-la à parte e reafinar os 9 eventos. Hall e Collection são por distrito (`DistrictDef`); os painéis leem o Old Forge. | padrão do time, 2026-10-14 — revisar |
+| V28 | **Rua dos Armeiros (decidido por padrão, C-CORE-05, revisar):** preços do catálogo × 3,5 e produtivos × 1,55, porque o gargalo da Row é o transporte (4 Ferraz com carga 2), não a demanda; se a turma ganhar carga maior, os preços voltam para perto do catálogo. Contratos de distrito abrem com o distrito no build (não "aberto pelo jogador"); nada bloqueia. Managers sobem a renda de fundo dos distritos fora de foco, não o cofre offline do distrito ativo; botão do mapa na ordem Charter → Abrir → Gerente → Viajar (`BALANCE.md` §33–§34). | padrão do time, 2026-10-14 — revisar |
 
 ## 5. Decisões pendentes (Vinicius)
 
@@ -117,71 +119,72 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 | Bandeja mostra o cartão travado primeiro; "Ajudantes ágeis" fora do padrão "Ajudantes rápidos" | P2 | `VALIDACAO_V05.md` | — |
 | Fome da Bigorna 2 (2.582 s em 60 min no bot) | P2 | `BACKLOG_V07.md` | — |
 | Zona morta ~53% da curva até a produção completa; ouro sem destino depois dela | design | `BALANCE.md` §22 | Waves B (Orders 2.0, Blueprints) e C (distritos) |
-| **Barulheira:** muitos sons ao mesmo tempo (Vinicius no POCO, 2026-10-13: "uma zona sonora", irritou em 5 min) | **P1** (sensação; retenção) | `Som.cs` (`Sfx`: 6 vozes sem prioridade, categoria nem distância) | raia `fix/mix-audio` (categorias, orçamento de vozes, distância, ducking, `-somlog`) |
-| **Mochila parece item solto** colado no ferreiro (Vinicius no POCO, 2026-10-13) | **P1** (sensação) | `WorldView.cs` (ícone do cartão sobreposto com deslocamento fixo) | raia `art/mochila-ferreiro` (mochila no rig, folhas `ferreiro_mochila`) |
+| ~~**Barulheira:** muitos sons ao mesmo tempo (Vinicius no POCO, 2026-10-13)~~ | — | `Som.cs` | resolvido no #59 (categorias, orçamento de vozes, distância, ducking); falta ouvir no POCO |
+| ~~**Mochila parece item solto** colado no ferreiro (Vinicius no POCO, 2026-10-13)~~ | — | `WorldView.cs` | resolvido no #62 (folha `ferreiro_mochila`, mochila presa às costas); falta ver no POCO |
 | Conta LevelPlay aguardando aprovação | — | `LEVELPLAY.md` | Vinicius |
+| ~~Rua dos Armeiros: rótulo "Depósito" encosta no "Fornalha"~~ | — | `Distritos.cs` | resolvido no #66 (depósito 0,5 m mais baixo) |
+| Rua dos Armeiros sem obras-primas: sem a liga nenhuma peça chega a Superior, e o Charter dela (2 obras) fica travado | design | `BALANCE.md` §33 | raia de liga + níveis de estação + Blueprints da Row |
+| Row sem destino de ouro depois da produção completa (~340 mil aos 150 min); Rebitadeira 2 sem insumo; encomendas a 12,1% da venda com 3 vagas (portão 4–12%) | P2 | `BALANCE.md` §33 | próxima leva da Row |
+| Encomenda Event disputa as vagas com as normais: a trilha do evento depende de quantas vagas o jogador tem (calibrada para 3) | design | `BALANCE.md` §30.6 | decisão: contar a Event à parte e reafinar os 9 eventos |
+| ~~Contrato EM BREVE da Row mostra o elmo pelo ID ("20 elmo")~~; em inglês o rótulo "Achievements" das abas de metas fica pequeno | P2 | `PainelMetas.cs` | elmo resolvido no #66; rótulo pendente |
+| Contrato conta a mesma peça para a encomenda e para o contrato (sem o seletor de cota do CONTEUDO_V1 §8) | design | `Contratos.cs` | decidir se a cota entra antes do Limited Release |
 
 ## 8. Progresso rumo ao 100% (definição de jogo completo, DM §164)
 
-Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-13, depois do #56). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
+Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-14, depois do #66). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
 
 | Item (§164) | % | Onde está | Próximo passo |
 |---|---|---|---|
-| Core polido | 65 | loop completo, Save 2.0 schema 3 por ID, itens/receitas em dados, exploits fechados, ouro long, validator, `Tuning`/flags, RemoteConfig com travas (#53) | `Sim` em partes; replay determinístico (§23 item 1); **mix de áudio e mochila (feedback do POCO)** |
-| 6 distritos | 18 | Old Forge + rua lateral; catálogo dos 6 em [`CONTEUDO_V1.md`](CONTEUDO_V1.md) | `DistrictDef` + Império (C-CORE-01/02) e distritos 2–6 |
-| 35–45 produtos | 22 | 5 vendáveis no jogo (espada longa, #55); 38 no catálogo; 41 ícones | `ItemDef`/`RecipeDef` dos distritos (Wave C) |
-| Workers | 55 | 13 `WorkerDef` do Old Forge, 8 papéis, níveis 1–5, sprites do Lote 5A no posto, cartões com retrato (#54) | workers dos distritos e managers (Wave C); retorno de ~90 min (revisar) |
-| Quality | 82 | 4 níveis, acumulador sem sorteio, níveis de estação II–V, golpe de mestre, técnica por Blueprint, oficiais (#48, #54, #55) | fonte material; Masterwork pelo B-CORE-08 |
-| Orders | 12 | Encomendas (1 tipo, 1 vaga); Orders 2.0 pronto no branch `feat/orders-2` | merge (8 tipos, vagas pelo Renome, filas de Blueprint) |
-| Royal Contracts | 5 | 12 no catálogo | D-CORE-04 (depois do Orders 2.0) |
-| Blueprints | 55 | 19 `BlueprintDef` do Old Forge (3 essenciais), posse com origem e transação, painel pela aba Projetos, validator "essencial nunca só pago" (#55) | os 82 dos distritos (Wave C); filas de encomenda com o Orders 2.0 |
-| Masterworks | 8 | 60 no catálogo; gancho `MasterworkPending` e campo do projeto no `BlueprintDef` | B-CORE-08 |
-| Collection | 5 | marcos no catálogo | B-CORE-08 |
-| Reputation | 70 | Renome 10 níveis (#49) | limiares 2–4 recalibrados no Orders 2.0 (1:03 / 2:12 / 3:46 h) |
-| Daily / Weekly / Achievements | 82 | 32 diárias, 14 semanais, 75 conquistas, login de 7 dias; metas de worker (#54) | modelos que esperam Masterworks e distritos |
-| Events (LiveOps) | 50 | 10 `EventDef` em dados, 5 rodando, modificadores pelas travas do RemoteConfig, chips e cartão (#56) | encomenda Event (Orders 2.0), Hunts (B-CORE-08), knobs que faltam |
+| Core polido | 68 | loop completo, Save 2.0 schema 3 por ID, itens/receitas em dados, exploits fechados, ouro long, validator, `Tuning`/flags, RemoteConfig com travas; feedback do POCO resolvido no código: mix de áudio (#59) e mochila presa ao corpo (#62) | ouvir e ver no POCO; `Sim` em partes; replay determinístico (§23 item 1) |
+| 6 distritos | 36 | `DistrictDef` + Império + mapa (#61); Rua dos Armeiros afinada perto do alvo, com encomendas e contratos (#66); managers e Império contando todos os distritos (#65) | liga e obras-primas da Row (Charter); distritos 3–6 |
+| 35–45 produtos | 27 | Old Forge com 5 vendáveis + os da Rua dos Armeiros (#61); 38 no catálogo | `ItemDef`/`RecipeDef` dos distritos 3–6 |
+| Workers | 60 | 13 `WorkerDef` do Old Forge, turma Ferraz na Row (#61), managers níveis 2–5 com renda de fundo 25–40% (#65) | workers dos distritos (Vulcana etc.) |
+| Quality | 85 | 4 níveis, níveis de estação II–V, golpe de mestre, técnica, oficiais; Masterwork pelo golpe com projeto e condição (#63) | fonte material |
+| Orders | 73 | Orders 2.0: 8 tipos, vagas pelo Renome, filas de Blueprint, encomenda Event no LiveOps (#60); encomendas da Row em dados (#66) | encomendas dos distritos 3–6; V27 (Event e vagas) |
+| Royal Contracts | 58 | 12 em dados, 3 rodam (o Ronda e os 2 da Row, #66), aba Contratos, prêmio 1× por ID (#64) | os 9 dos distritos 3–6; cota por linha; `wkl_contrato1`/`ach_contrato*` |
+| Blueprints | 58 | 19 do Old Forge, posse com origem; Hunt (#63) e contrato (#64) como fontes | os 82 dos distritos (Wave C) |
+| Masterworks | 55 | 10 do Old Forge no Hall, só pelo golpe numa Superior com projeto e condição, família completa +5% (#63) | as 50 dos distritos; bot F2P que golpeia (portão "1ª em até 4 h") |
+| Collection | 60 | 9 marcos do Old Forge, degraus +5/+10 (#63, V27) | marcos dos distritos |
+| Reputation | 80 | Renome 10 níveis do Império (todo distrito conta, #65); F2P chega ao 2/3/4 em 0:51 / 1:41 / 3:11 (`BALANCE.md` §30.6) | conferir com jogador real |
+| Daily / Weekly / Achievements | 85 | 32 diárias, 14 semanais, 75+6 conquistas (`ach_mw*`), login de 7 dias; gatilho `contract_complete` (#64); vendas de todo distrito contam (#65) | metas de contrato; modelos que esperam os distritos |
+| Events (LiveOps) | 70 | 10 `EventDef`, 9 rodando (Hunts no #63, encomenda Event no #60); pontos de todo distrito (#65) | V27 (Event disputa vagas); o 10º evento |
 | Pass | 50 | 30 níveis × 600 XP, temporada de 35 dias, trilha free com RESGATAR; premium no dado, desligado (#56) | premium na Wave E (preço = decisão) |
 | Ads | 70 | 6 placements por config, teto diário, ID de transação, intersticial atrás de flag, `ad_impression` (#52) | ad units novas no painel (Vinicius); A/B do intersticial no Limited Release |
-| IAP | 0 | núcleo + loja falsa no branch `feat/iap-core` (sem SDK) | pacote Unity IAP (aval de download) |
+| IAP | 35 | núcleo com estados e recibos, loja falsa, Pacote do Mestre, restaurar compras (#58) | pacote Unity IAP (aval de download) |
 | Analytics | 45 | `Telemetria` com fila até o consentimento, esquema v1, exceções (#53) | provedor remoto (P8) |
-| RemoteConfig | 45 | JSON local com travas no núcleo, chave mestra dos anúncios, cache, HTTP desligado (#53) | provedor remoto (P8); `econsim --rc` |
-| Save | 85 | Save 2.0 + schema 3; migração da 0.5.1 provada no POCO | cloud save (opcional) |
+| RemoteConfig | 47 | JSON local com travas no núcleo, chave mestra dos anúncios, cache, HTTP desligado (#53); trava do `QualidadeEvento` (#63) | provedor remoto (P8); `econsim --rc` |
+| Save | 89 | Save 2.0 + schema 3; migração da 0.5.1 provada no POCO; save multi-distrito (#61), Hall, contratos e managers com linhas opcionais | cloud save (opcional) |
 | Release pipeline | 55 | AAB assinado por env, `verify release`, 16 KB, API 36 | chave real (aval), Unity no CI, release automatizada |
-| Arte final | 42 | estações, HUD, cartões, 41 ícones, elenco do Lote 5A ligado (#51, #54) | mochila no rig, estações dos distritos, herói, logo |
-| Áudio final | 30 | 3 grupos, 15 efeitos sintetizados, ambiente que cresce — **mix reprovado no POCO (barulheira)** | mix (`fix/mix-audio`), depois banco de sons real + 5 músicas |
+| Arte final | 45 | estações, HUD, cartões, 41 ícones, elenco do Lote 5A, mochila no corpo (#62) | estações da Row (hoje usa a arte do Old Forge), herói, logo |
+| Áudio final | 38 | 3 grupos, 15 efeitos sintetizados, mix com prioridade, orçamento de vozes e distância (#59) | ouvir no POCO; banco de sons real + 5 músicas |
 | Store assets | 25 | 37 criativos, 9 presets; ASO pt/en/es; política e Data Safety em rascunho | ícone/logo, screenshots, vídeo |
-| **Média** | **~42** | | |
+| **Média** | **~57** | | |
 
-## 9. Retomada (handoff 2026-10-13)
+## 9. Retomada (handoff 2026-10-14)
 
-Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões V9–V26 (§4).
+Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões V9–V28 (§4).
 
 **Meta e autorização (Vinicius, 2026-10-13):** levar o GDD a ≥ 90% (placar do §8) antes de qualquer teste no POCO ou publicação; "tudo autorizado": commit, push, PR e merge sem perguntar (sempre depois do `verify.sh full`), Tripo3D para o que for preciso (saldo visto: **16 570** créditos; registrar no `PROVENIENCIA.md`), créditos de IA. Seguem com aval explícito: tag/Release, publicação na loja, chave de assinatura real, criação de conta, pagamento. POCO F4 só no fim (30–60 fps basta).
 
-**Feito na retomada de 2026-10-13:** #51 Lote 5A, #52 anúncios por config, #53 RemoteConfig/Analytics, #54 WorkerDef, #55 Blueprints, #56 Eventos+Pass.
+**Vinicius, 2026-10-15:** seguir com programação e desenvolvimento até a etapa de criar a conta no Google Play (já em andamento em outro projeto); o coordenador pede o POCO quando precisar dele.
 
-**Feedback do Vinicius no POCO (2026-10-13), prioridade máxima:** "barulheira, muitos sons ao mesmo tempo" e "a mochila parece um item solto mal colado"; irritou em 5 min. Perguntar o que mais incomodou nos primeiros 5 min.
+**Feito em 2026-10-13/14:** #51 Lote 5A, #52 anúncios por config, #53 RemoteConfig/Analytics, #54 WorkerDef, #55 Blueprints, #56 Eventos+Pass, #58 IAP no núcleo, #59 mix de áudio, #60 Orders 2.0, #61 distritos e Império, #62 mochila, #63 Masterworks/Hall/Collection, #64 Royal Contracts, #65 managers e Império, #66 Rua dos Armeiros afinada.
 
-**Branches em andamento:**
+**Feedback do Vinicius no POCO (2026-10-13):** "barulheira" (#59) e "mochila solta" (#62) corrigidos no código; falta ouvir e ver no aparelho. Perguntar o que mais incomodou nos primeiros 5 min.
 
-| Branch | Estado | Próximo passo |
-|---|---|---|
-| `fix/mix-audio` | raia de mix: categorias, orçamento de vozes, distância/fora da tela, ducking, `-somlog`, métrica antes/depois no `docs/AUDIO.md` | `verify.sh full`, medir com `-bot -somlog` no build, PR |
-| `art/mochila-ferreiro` | mochila modelada e presa ao osso das costas, folhas `ferreiro_mochila` (Blender headless com `C:/fsv_blender.lock`) | conferir folha antes × depois, `verify.sh full`, foto com `-buyids …,mochila`, PR |
-| `feat/orders-2` | B-CORE-05 pronto sobre o #55; ligando a encomenda Event ao LiveOps (#56) | `verify.sh full`, fotos `-buy 37 -renome 180 -warmup 600 -encomendas`, PR (BALANCE §28) |
-| `feat/iap-core` | E-PLAT-04/05/07 só núcleo + loja falsa (sem SDK) | terminar, `verify.sh full`, PR; pacote Unity IAP depende do aval de download |
+**Branches em andamento:** nenhum (a leva de 2026-10-14 fechou com o #66).
 
 **Fila das próximas levas (ordem):**
-1. Fechar os 4 branches acima (mix e mochila primeiro).
-2. Masterworks + Collection (B-CORE-08) sobre o gancho `MasterworkPending` e o campo de projeto do `BlueprintDef`; ligar os Hunts do LiveOps.
-3. Royal Contracts (D-CORE-04, depois do Orders 2.0).
-4. Wave C: `DistrictDef` + Império (C-CORE-01/02), Charter, distritos 2–6 do `CONTEUDO_V1.md` (itens, receitas, estações, upgrades, workers, os 82 Blueprints restantes), mapa de distritos (C-UI-20); Lote 5B no Tripo.
-5. Áudio real (banco de efeitos + 5 músicas; licença registrada) e store assets (ícone/logo, 2 × 8 screenshots pelos presets, vídeo).
-6. Só então: `POCO_RELEASE_GATE` (`docs/ROTEIRO_TESTE_POCO.md`) e loja.
+1. Liga na Rua dos Armeiros (`fornalha_liga`, Fundidor/Vulcana), níveis de estação e Blueprints da Row, e as obras-primas dela: destrava o Charter da Row. Na mesma raia: destino de ouro depois da produção, Rebitadeira 2 sem insumo, remedir as encomendas a 3 vagas.
+2. Distritos 3–6 (C-CORE-05 um por leva, CONTEUDO_V1 §2–§10), arte das estações por distrito (C-ART-13) e Lote 5B no Tripo.
+3. Metas de contrato (`wkl_contrato1`, `ach_contrato1`, `ach_contratos12`), cota por linha dos contratos, V27 (encomenda Event à parte?).
+4. Áudio real (banco de efeitos + 5 músicas; licença registrada) e store assets (ícone/logo, 2 × 8 screenshots pelos presets, vídeo).
+5. Só então: `POCO_RELEASE_GATE` (`docs/ROTEIRO_TESTE_POCO.md`) e loja.
 
 **Como o coordenador trabalha (o que funcionou):**
-- Levas de até 4 agentes em worktree isolada, só `dotnet` (sem Unity/emulador; Blender só headless e conferindo `tasklist` antes). Cada prompt: copiar as 3 DLLs para `client/Library/ScriptAssemblies`, NUnit 3.5 com tuplas de tipo exato, `.meta` com GUID novo, sem CHANGELOG, sem push; ao fim, `git merge origin/main`.
-- Integração na worktree `C:/fsv` (tem `client/Library` próprio): `git checkout -q -- .` (o Unity reescreve `ProjectSettings`), `git switch <branch>`, `git merge origin/main`, CHANGELOG (entrada no topo de `### Adicionado`), `client/tools/verify.sh full`, fotos com `-testsession` e `-shot` de caminho ABSOLUTO, PR, CI "testes do nucleo (dotnet)", `gh pr merge --squash -R Vvs2705/forge-street` rodado FORA do repositório (o `main` local fica em uso por outra worktree), apagar o branch remoto, `git checkout --detach origin/main` em `C:/fsv` e `git worktree remove -f -f` na worktree do agente.
-- Fotos e presets SEMPRE com `-testsession` (sem ele o `-preset` usa o save real).
-- PC de 7,7 GB: um processo pesado por vez (Unity, Blender, emulador). Raia com Blender cria `C:/fsv_blender.lock` enquanto roda; o coordenador espera o lock e `^blender\.exe` no `tasklist` antes do Unity (o `mcp-for-blender.exe` fica sempre aberto: não confundir). Disco C: apertado (~9–11 GB livres): remover worktrees de agente depois de integrar.
+- Levas de até 4 agentes em worktree isolada (`isolation: worktree`), só `dotnet` (sem Unity/emulador; Blender só headless). Cada prompt aponta o brief comum, diz qual arquivo a raia é DONA, o número da seção do `BALANCE.md`, copiar as 3 DLLs para `client/Library/ScriptAssemblies`, NUnit 3.5 com tuplas de tipo exato, `.meta` com GUID novo, sem CHANGELOG, sem push; ao fim, `git merge origin/main` ANTES das mutações e do econsim (a `main` muda no meio da raia).
+- Agente de raia não consegue usar Edit/Write fora da worktree da sessão: editar por Bash/python. Prova ao byte do Old Forge: `git archive origin/main client/Assets/_FS/Scripts/Core client/tools/econsim` num diretório temporário + `cmp` dos CSVs.
+- Integração na worktree `C:/fsv` (tem `client/Library` próprio): `git checkout -q -- .` (o Unity reescreve `ProjectSettings`), remover a worktree do agente (o branch não pode estar em duas), `git switch <branch>`, CHANGELOG (entrada no topo de `### Adicionado`), `client/tools/verify.sh full`, fotos com `-testsession` e `-shot` de caminho ABSOLUTO (idioma: `-lang en|es`), PR no modelo do repo, CI "testes do nucleo (dotnet)", `gh pr merge --squash --delete-branch -R Vvs2705/forge-street` rodado FORA do repositório, `git checkout --detach origin/main` em `C:/fsv`.
+- Olhar as fotos antes do PR: nesta leva elas mostraram o texto do painel do mapa ilegível, o bônus do Hall em 4 linhas minúsculas e a mochila sumindo na Row (`Bought` por enum em vez de `Sim.Has`).
+- PC de 7,7 GB: um processo pesado por vez (Unity, Blender, emulador). Raia com Blender cria `C:/fsv_blender.lock` (vira PASTA: a raiz do C: não aceita arquivo sem elevação) e o coordenador espera `^blender\.exe` sair do `tasklist` antes do Unity (o `mcp-for-blender.exe` fica sempre aberto: não confundir). Disco C: ~22 GB livres em 2026-10-14; remover worktrees de agente depois de integrar.
 - AVD `fs_playstore` sem boot (precisa de `-wipe-data`); não é necessário até o gate final no POCO.
