@@ -1291,6 +1291,13 @@ namespace FS
             Station st = _view.BarraEm(px);
             if (st == null) return;
             Sfx.Play("click");
+            RecipeDef prox = Textos.ProximaReceita(_sim, st);   // C-CORE-06: bancada configuravel: o botao troca a receita (em rodizio)
+            if (prox != null)
+            {
+                ShowPanel(Loc.T("qual.titulo", Textos.Estacao(st.Index)), Textos.Bancada(_sim, st) + "\n" + Textos.Detalhe(_sim, st),
+                    Loc.T("bancada.fazer", Textos.ItemNome((int)prox.Output, 1)), () => { _sim.Configura(st, prox.Output); ClosePanel(); Log("recipe_swap", st.Name, _sim.ItemDefs[(int)prox.Output].Id); });
+                return;
+            }
             ShowPanel(Loc.T("qual.titulo", Textos.Estacao(st.Index)), Textos.Detalhe(_sim, st), Loc.T("ui.ok"), ClosePanel);
             Log("quality_breakdown", st.Name, _sim.QualityPoints(st).ToString(CultureInfo.InvariantCulture));
         }
@@ -1645,6 +1652,9 @@ namespace FS
             // -buyids 1,5,0@300 (criativos): compra estes upgrades (indice do enum ou ID estavel, A-CORE-04) fora da ordem do -buy (ex.: 4 bancadas e 1 fornalha
             // sem fole); "id@t" compra quando o relogio do jogo passa de t s, na ordem dada, cobrando o preco (TimedBuys).
             _buyAt = Captura.Compras(_sim, Arg("-buyids"));
+            // C-CORE-06 (fotos): -receitas fivela,colar,caixa_joias = a receita de cada bancada configuravel (com -distrito artisan_quarter e o -buy)
+            string rec = Arg("-receitas") != null ? Captura.Receitas(_sim, Arg("-receitas")) : null;
+            if (rec != null) { Falha($"RECEITAS: '{rec}' nao e' receita liberada de uma bancada configuravel"); return; }
             if (Arg("-equipe") != null) Captura.Equipe(_sim);   // B-CORE-04 (fotos): a oficina com os 13 workers do Old Forge; o -gold vem depois
             if (long.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long g)) _sim.Gold = Math.Max(0, g);   // A-CORE-06: aceita > int (foto da HUD)
             if (long.TryParse(Arg("-renome"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long rn)) _raiz.Renome.Ganha(rn - _raiz.Renome.Total);   // B-CORE-06: so sobe
