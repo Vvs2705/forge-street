@@ -1180,6 +1180,7 @@ namespace FS.Core
             {
                 int r = kind == Ev.Offline ? a : NaRaiz(a);
                 Heroi.Metas.On(kind, r, b);
+                if (r < 0 && kind == Ev.Sold) Heroi.Metas.RegistraItem("product_sold", ItemDefs[a].Id);   // raia H: o elmo conta pelo ID (ach_elmos100)
                 Heroi.LiveOps.On(kind, r, b);
             }
         }
@@ -1302,6 +1303,8 @@ namespace FS.Core
             Strikes++;
             LiveOps.OnGolpe((int)s.OutItem);   // D-CORE-03: master_strike das missoes de evento
             Heroi?.LiveOps.OnGolpe(NaRaiz((int)s.OutItem));   // C-CORE-03: e no evento do Imperio
+            Metas.Registra("master_strike", (int)s.OutItem);   // raia H: e nas metas (as do Imperio tambem, como a venda)
+            Heroi?.Metas.Registra("master_strike", NaRaiz((int)s.OutItem));
             return true;
         }
 

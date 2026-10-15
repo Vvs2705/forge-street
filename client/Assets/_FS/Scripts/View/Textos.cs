@@ -284,8 +284,9 @@ namespace FS
             string n = Qtd(alvo);
             switch (d.Evento)
             {
-                case "product_sold":
-                    return d.Conta == Conta.Distintos ? Loc.T("meta.linhas", n) : Loc.T("meta.vende", n, d.Filtro < 0 ? Loc.P("meta.produto", alvo) : ItemNomeOF(d.Filtro, alvo));
+                case "product_sold":   // raia H: Ref = item de outro distrito pelo ID ("Venda 100 elmos")
+                    return d.Conta == Conta.Distintos ? Loc.T("meta.linhas", n) : Loc.T("meta.vende", n, d.Ref != null ? Loc.P("item." + d.Ref, alvo)
+                        : d.Filtro < 0 ? Loc.P("meta.produto", alvo) : ItemNomeOF(d.Filtro, alvo));
                 case "product_crafted": return Loc.T("meta.fabrica", n, ItemNomeOF(d.Filtro, alvo));
                 case "upgrade_buy": return d.Filtro >= 0 ? Loc.T("meta.compra_um", NomeOF(d.Filtro)) : Loc.P("meta.compra", alvo, n);
                 case "currency_source": return Loc.T("meta.ganha", n);
@@ -299,7 +300,17 @@ namespace FS
                 // B-CORE-08: "Obra-prima: Lamina Solar do Rei" (filtro = indice no Hall); "Faca 3 obras-primas de espada" (filtro = item da familia)
                 case "masterwork_unlock" when d.Filtro >= 0: return Loc.T("meta.masterwork_um", Loc.T("mw." + MasterworksDefs.All[d.Filtro].Id));
                 case "masterwork_family": return Loc.T("meta.masterwork_familia", n, ItemNome(d.Filtro, 1));
-                default: return Loc.P("meta." + d.Evento, alvo, n);   // order_done, offline_claim, vip_served, worker_hired, worker_upgrade, chest_opened, login_claim
+                // metas de sistemas (raia H): as frases das missoes de evento (qualidade, golpe), o Charter pelo distrito, a Collection pela aba
+                case "quality_crafted": case "quality_superior":
+                    return Loc.T(d.Evento == "quality_crafted" ? "missao.fina" : "missao.superior", n, d.Filtro >= 0 ? ItemNomeOF(d.Filtro, alvo) : Loc.P("missao.peca", alvo));
+                case "master_strike": return Loc.P("missao.golpe", alvo, n);
+                case "district_unlock": return Loc.T("meta.district_unlock", Loc.T("distrito." + d.Ref));
+                case "collection_milestone":
+                    MarcoColecaoDef m = Array.Find(MasterworksDefs.Marcos, x => x.Id == d.Ref);
+                    return Loc.T("meta.collection_milestone", m != null ? Loc.T("col.aba." + (int)m.Aba) : d.Ref);
+                case "station_level": return Loc.P("meta.station_level", alvo, n, d.Filtro);
+                default: return Loc.P("meta." + d.Evento, alvo, n);   // order_done, offline_claim, vip_served, worker_hired, worker_upgrade, chest_opened, login_claim,
+                                                                     // contract_complete, blueprint_unlock, reputation_level, event_complete, event_enter, pass_level
             }
         }
 

@@ -546,6 +546,26 @@ namespace FS
             { "meta.worker_nivel", L("Leve {0} ajudante ao nível {1}|Leve {0} ajudantes ao nível {1}", "Get {0} helper to level {1}|Get {0} helpers to level {1}",
                 "Lleva {0} ayudante al nivel {1}|Lleva {0} ayudantes al nivel {1}") },
             { "meta.worker_papel", L("Contrate {0} {1}", "Hire {0} {1}", "Contrata {0} {1}") },
+            // metas de sistemas (raia H): contrato, Charter ({0} = distrito), Collection ({0} = aba), projetos, Renome, nivel de estacao ({1} = nivel),
+            // evento e Passe ({0} = quantas; <= 32) e as insignias novas
+            { "meta.contract_complete", L("Cumpra {0} contrato real|Cumpra {0} contratos reais", "Fulfill {0} Royal Contract|Fulfill {0} Royal Contracts",
+                "Cumple {0} contrato real|Cumple {0} contratos reales") },
+            { "meta.district_unlock", L("Charter: {0}", "Royal Charter: {0}", "Carta Real: {0}") },
+            { "meta.collection_milestone", L("Coleção completa: {0}", "Full collection: {0}", "Colección completa: {0}") },
+            { "meta.blueprint_unlock", L("Ganhe {0} projeto|Ganhe {0} projetos", "Get {0} blueprint|Get {0} blueprints", "Consigue {0} plano|Consigue {0} planos") },
+            { "meta.reputation_level", L("Chegue ao Renome {0}", "Reach Renown {0}", "Alcanza Renombre {0}") },
+            { "meta.station_level", L("Leve {0} estação ao nível {1}|Leve {0} estações ao nível {1}", "Get {0} station to level {1}|Get {0} stations to level {1}",
+                "Lleva {0} estación al nivel {1}|Lleva {0} estaciones al nivel {1}") },
+            { "meta.event_complete", L("Feche a trilha de {0} evento|Feche a trilha de {0} eventos", "Complete {0} event track|Complete {0} event tracks",
+                "Completa la ruta de {0} evento|Completa la ruta de {0} eventos") },
+            { "meta.event_enter", L("Entre em {0} evento|Entre em {0} eventos", "Join {0} event|Join {0} events", "Entra en {0} evento|Entra en {0} eventos") },
+            { "meta.pass_level", L("Feche a trilha grátis do Passe", "Complete the free Pass track", "Completa el Pase gratis") },
+            { "ins.arsenal_do_reino", L("Arsenal do Reino", "Kingdom's Arsenal", "Arsenal del Reino") },
+            { "ins.olho_de_mestre", L("Olho de Mestre", "Master's Eye", "Ojo de Maestro") },
+            { "ins.arquivista", L("Arquivista", "Archivist", "Archivista") },
+            { "ins.oficina_de_ferro", L("Oficina de Ferro", "Iron Workshop", "Taller de Hierro") },
+            { "ins.fornecedor_do_reino", L("Fornecedor do Reino", "Royal Supplier", "Proveedor del Reino") },
+            { "ins.veterano_de_temporada", L("Veterano de Temporada", "Season Veteran", "Veterano de Temporada") },
 
             // ---------- workers (B-CORE-04): papel (singular|plural), cartao de contratar/subir (<= 28 / 16 / 18) e aviso (<= 30) ----------
             // nome proprio (Bruna, Tomé...) e' igual nos 3 idiomas (CONTEUDO_V1 §0.9): vem do WorkerDef
