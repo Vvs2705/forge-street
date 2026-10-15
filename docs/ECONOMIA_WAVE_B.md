@@ -208,7 +208,7 @@ Blueprint = posse permanente que libera uma coisa. Nada pago na Wave B; a regra 
 | Baú de marco aberto | +5 | B |
 | Peças Superiores vendidas | +1 a cada 10 | B |
 | Masterwork registrada | +25 a +50 (§6) | B |
-| Marco de coleção | +10 / +20 / +50 (§7) | B |
+| Marco de coleção | +5 / +10 / +50 (§7; era +10 / +20, ver `BALANCE.md` §30.6) | B |
 | Royal Charter | +100 | C |
 | Royal Contract | +15 a +40 | D |
 | Evento | por limiar do `EventDef` | D |
@@ -251,11 +251,11 @@ Derivada dos contadores; o save guarda só os marcos resgatados (ID de transaç�
 
 | Aba | Entrada | Total no Old Forge | Marcos |
 |---|---|---|---|
-| Produtos | produto × qualidade vendida (Normal, Fina, Superior) | 4 × 3 = 12 | 50%: +10 Renome · 100%: +20 Renome |
+| Produtos | produto × qualidade vendida (Normal, Fina, Superior) | 4 × 3 = 12 | 50%: +5 Renome · 100%: +10 Renome |
 | Masterworks | Masterwork registrada | 10 | 1ª: abre o Hall · 5: +20 Renome · 10: +50 Renome + estandarte; família completa: +5% no preço dela |
-| Workers | contratado; nível 5 | 13 workers (6 Carregadores + 4 oficiais + balconista, almoxarife, mestre de obras) × 2 = 26 | 50%: +10 · 100%: +20 e insígnia |
+| Workers | contratado; nível 5 | 13 workers (6 Carregadores + 4 oficiais + balconista, almoxarife, mestre de obras) × 2 = 26 | 50%: +5 · 100%: +10 e insígnia |
 | Clientes | família atendida ≥ 1 vez (viajante, guarda, aventureiro, mercador, nobre, VIP, colecionador) | 7 (+5 fregueses se o FS-3 entrar) | 100%: +10 |
-| Blueprints | Blueprint obtido | 18 | 50%: +10 · 100%: +20 |
+| Blueprints | Blueprint obtido | 18 | 50%: +5 · 100%: +10 |
 | Distritos | Charter obtido | Wave C | — |
 
 Marcos dão Renome e cosmético, nunca ouro direto (DM §34). A aba abre no 1º projeto de Masterwork (`bp_mw_primeira_lamina`, ~100 espadas).
