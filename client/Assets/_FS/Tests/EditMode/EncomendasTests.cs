@@ -564,7 +564,7 @@ namespace FS.Tests
                 new OrderDef("ord_ev_ouro", OrderType.Event, null, 150f, 3, 30, 10f, 25, 0, eventId: "ev_x", eventPoints: 20),
                 new OrderDef("ord_bp_sem_fila", OrderType.Blueprint, OrderDefs.OldForge, 150f, 3, 30, 5f, 25, 2),
                 new OrderDef("ord_fila_x", OrderType.Royal, OrderDefs.OldForge, 200f, 5, 40, 32f, 150, 10, blueprintQueue: "loja"),
-                new OrderDef("ord_bulk_artisan_quarter", OrderType.Bulk, "artisan_quarter", 400f, 8, 80, 32f, 540, 3),
+                new OrderDef("ord_bulk_bairro_fantasma", OrderType.Bulk, "bairro_fantasma", 400f, 8, 80, 32f, 540, 3),
                 new OrderDef("ord_n_invertido", OrderType.Common, OrderDefs.OldForge, 150f, 30, 3, 10f, 22, 1),
                 new OrderDef("ord_n_invertido", OrderType.Common, OrderDefs.OldForge, 150f, 3, 30, 10f, 25, 1),
             };
@@ -578,7 +578,7 @@ namespace FS.Tests
             Acusa("encomenda ord_ev_ouro: Event da so pontos");
             Acusa("encomenda ord_bp_sem_fila: Blueprint sem fila");
             Acusa("encomenda ord_fila_x: fila de Blueprint \"loja\"");
-            Acusa("encomenda ord_bulk_artisan_quarter: distrito \"artisan_quarter\" que nao existe");
+            Acusa("encomenda ord_bulk_bairro_fantasma: distrito \"bairro_fantasma\" que nao existe");   // C-CORE-06: o Quarter entrou
             Acusa("encomenda ord_n_invertido: N 30-3");
             Acusa("encomenda ord_n_invertido: premio 10 s; 22");
             Acusa("encomenda ord_n_invertido: ID repetido");
