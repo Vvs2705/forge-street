@@ -66,8 +66,9 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | V24 | **IDs de item (decidido por padrão, B-CORE-01, revisar):** itens também sem prefixo (`espada`, `machado_guerra`, não `item_espada`), como as melhorias (V22); o sprite continua `item_<id>` e o texto `item.<id>.nome`. Vale para o save (schema 3: `stocks=`/`solds=`/`holds=`/`wks=`); nunca renomear. Os outros `*Def` da Wave B seguem a V22 (com prefixo). |
 | V25 | **Catálogo da v1.0 (decidido por padrão, revisar):** [`CONTEUDO_V1.md`](CONTEUDO_V1.md) é a fonte dos dados das Waves B–D (6 distritos, 38 vendáveis, 50 receitas, 29 workers, 61 encomendas, 12 contratos, 101 Blueprints, 60 Masterworks). Escala ×3 de renda por distrito ancorada no Old Forge medido; renda de fundo 25–40% da taxa; Charters 4–6 aceitam N contratos **ou** 10×N encomendas Royal (contrato nunca bloqueia); as demais em `CONTEUDO_V1.md` §15. Os números dos distritos 2–6 são modelo, o econsim confirma quando os `DistrictDef` existirem. |
 | V26 | **Qualidade (decidido por padrão, B-CORE-03, revisar):** custo dos níveis de estação = metade do `ECONOMIA_WAVE_B.md` §1.5 (bigornas 250/750, escudos 325/950, ferramentas 250/750, joalheria 500/1.500): com o §1.5 o retorno medido foi 39 min (portão ≤ 20) e a produção completa do F2P 57 min; com a metade, retorno 19,5 min e os 3 portões passam (`BALANCE.md` §23). Knob `Tuning.NivelEstacaoCusto`. "Com o insumo" do golpe = a bancada tem a próxima peça (trabalhando ou com a receita na entrada). Níveis IV–V entram com os projetos (B-CORE-07). |
-| V27 | **Collection e encomenda Event (decidido por padrão, B-CORE-08, revisar):** degraus da Collection a +5/+10 de Renome (o §7 pedia +10/+20, que furavam os pisos do Renome 3 e 4 junto com o Orders 2.0; `BALANCE.md` §30.6). A encomenda Event disputa as vagas com as normais e os pontos dela foram calibrados para o jogador com 3 vagas (Caravan 12, Royal Week-B 15, Hunts 17/20); a alternativa é contá-la à parte e reafinar os 9 eventos. Hall e Collection são por distrito (`DistrictDef`); os painéis leem o Old Forge. | padrão do time, 2026-10-14 — revisar |
+| V27 | **Collection e encomenda Event (decidido por padrão, B-CORE-08, revisar):** degraus da Collection a +5/+10 de Renome (o §7 pedia +10/+20, que furavam os pisos do Renome 3 e 4 junto com o Orders 2.0; `BALANCE.md` §30.6). A encomenda Event disputa as vagas com as normais e os pontos dela foram calibrados para o jogador com 3 vagas (Caravan 12, Royal Week-B 15, Hunts 17/20); a alternativa é contá-la à parte e reafinar os 9 eventos. Hall e Collection são por distrito (`DistrictDef`); desde o #71 os painéis do Hall e de projetos mostram o distrito ativo. | padrão do time, 2026-10-14 — revisar |
 | V28 | **Rua dos Armeiros (decidido por padrão, C-CORE-05, revisar):** preços do catálogo × 3,5 e produtivos × 1,55, porque o gargalo da Row é o transporte (4 Ferraz com carga 2), não a demanda; se a turma ganhar carga maior, os preços voltam para perto do catálogo. Contratos de distrito abrem com o distrito no build (não "aberto pelo jogador"); nada bloqueia. Managers sobem a renda de fundo dos distritos fora de foco, não o cofre offline do distrito ativo; botão do mapa na ordem Charter → Abrir → Gerente → Viajar (`BALANCE.md` §33–§34). | padrão do time, 2026-10-14 — revisar |
+| V29 | **Marca e liga (decidido por padrão, C-ART-14 e C-CORE-05, revisar):** ícone do app = variante A (ferreiro + martelo), a que melhor lê a 48 px em fundo claro e escuro (`arte/marca/icone_leitura.png`; trocar = `ESCOLHIDA` no `marca_compor.py`); logo em Inter Black (OFL) até a fonte da UI. Na Row, o nível II das montagens/forjas pede a Rebitadeira 2 (o §5.7 pedia a 1ª estação da família; com ele a produção completa do F2P ia a 76 min) e a liga entra por slot opcional (a peça não espera por ela). | padrão do time, 2026-10-15 — revisar |
 
 ## 5. Decisões pendentes (Vinicius)
 
@@ -123,31 +124,31 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 | ~~**Mochila parece item solto** colado no ferreiro (Vinicius no POCO, 2026-10-13)~~ | — | `WorldView.cs` | resolvido no #62 (folha `ferreiro_mochila`, mochila presa às costas); falta ver no POCO |
 | ~~Conta LevelPlay aguardando aprovação~~ | — | `LEVELPLAY.md` | resolvido no #67 (conta da V-STACK); falta conectar o Unity Ads no painel e criar as ad units dos outros 4 placements (Vinicius) |
 | ~~Rua dos Armeiros: rótulo "Depósito" encosta no "Fornalha"~~ | — | `Distritos.cs` | resolvido no #66 (depósito 0,5 m mais baixo) |
-| Rua dos Armeiros sem obras-primas: sem a liga nenhuma peça chega a Superior, e o Charter dela (2 obras) fica travado | design | `BALANCE.md` §33 | raia de liga + níveis de estação + Blueprints da Row |
-| Row sem destino de ouro depois da produção completa (~340 mil aos 150 min); Rebitadeira 2 sem insumo; encomendas a 12,1% da venda com 3 vagas (portão 4–12%) | P2 | `BALANCE.md` §33 | próxima leva da Row |
+| ~~Rua dos Armeiros sem obras-primas; Charter dela travado~~ | — | `BALANCE.md` §35 | resolvido no #71 (liga, Vulcana, 10 obras; bot Ideal faz o Charter em ~3:30 h de Row) |
+| Row: a liga chega a só ~5% das peças (um Ferraz leva todos os intermediários); Rebitadeira 2 quase sem demanda; Vulcana e fornalha de liga com arte emprestada | P2 | `BALANCE.md` §35 | Ferraz 4 nos intermediários (+32% de renda, reafinar o preço × 3,5); arte da Row (C-ART-13) |
 | Encomenda Event disputa as vagas com as normais: a trilha do evento depende de quantas vagas o jogador tem (calibrada para 3) | design | `BALANCE.md` §30.6 | decisão: contar a Event à parte e reafinar os 9 eventos |
-| ~~Contrato EM BREVE da Row mostra o elmo pelo ID ("20 elmo")~~; em inglês o rótulo "Achievements" das abas de metas fica pequeno | P2 | `PainelMetas.cs` | elmo resolvido no #66; rótulo pendente |
+| ~~Contrato EM BREVE da Row mostra o elmo pelo ID; rótulo "Achievements" pequeno~~ | — | `PainelMetas.cs` | resolvidos no #66 e no #70 (abas largas, Projetos e Hall no rodapé) |
 | Contrato conta a mesma peça para a encomenda e para o contrato (sem o seletor de cota do CONTEUDO_V1 §8) | design | `Contratos.cs` | decidir se a cota entra antes do Limited Release |
 
 ## 8. Progresso rumo ao 100% (definição de jogo completo, DM §164)
 
-Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-14, depois do #66). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
+Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-15, depois do #71). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
 
 | Item (§164) | % | Onde está | Próximo passo |
 |---|---|---|---|
 | Core polido | 68 | loop completo, Save 2.0 schema 3 por ID, itens/receitas em dados, exploits fechados, ouro long, validator, `Tuning`/flags, RemoteConfig com travas; feedback do POCO resolvido no código: mix de áudio (#59) e mochila presa ao corpo (#62) | ouvir e ver no POCO; `Sim` em partes; replay determinístico (§23 item 1) |
-| 6 distritos | 36 | `DistrictDef` + Império + mapa (#61); Rua dos Armeiros afinada perto do alvo, com encomendas e contratos (#66); managers e Império contando todos os distritos (#65) | liga e obras-primas da Row (Charter); distritos 3–6 |
+| 6 distritos | 42 | `DistrictDef` + Império + mapa (#61); Rua dos Armeiros completa no núcleo: afinada (#66), liga, Vulcana, obras-primas e Charter alcançável (#71); managers e Império (#65); classes parciais prontas para os distritos 3–6 (#71) | distritos 3–6 (Artisan Quarter e Royal Arsenal primeiro); arte da Row |
 | 35–45 produtos | 27 | Old Forge com 5 vendáveis + os da Rua dos Armeiros (#61); 38 no catálogo | `ItemDef`/`RecipeDef` dos distritos 3–6 |
-| Workers | 60 | 13 `WorkerDef` do Old Forge, turma Ferraz na Row (#61), managers níveis 2–5 com renda de fundo 25–40% (#65) | workers dos distritos (Vulcana etc.) |
-| Quality | 85 | 4 níveis, níveis de estação II–V, golpe de mestre, técnica, oficiais; Masterwork pelo golpe com projeto e condição (#63) | fonte material |
+| Workers | 62 | 13 `WorkerDef` do Old Forge, turma Ferraz e Vulcana (Fundidora) na Row (#61, #71), managers 2–5 (#65) | workers dos distritos 3–6 |
+| Quality | 87 | 4 níveis, níveis de estação II–V, golpe de mestre, técnica, oficiais, Masterwork pelo golpe (#63); fonte material: liga +30 na Row (#71) | fonte material dos distritos 3–6 |
 | Orders | 73 | Orders 2.0: 8 tipos, vagas pelo Renome, filas de Blueprint, encomenda Event no LiveOps (#60); encomendas da Row em dados (#66) | encomendas dos distritos 3–6; V27 (Event e vagas) |
-| Royal Contracts | 58 | 12 em dados, 3 rodam (o Ronda e os 2 da Row, #66), aba Contratos, prêmio 1× por ID (#64) | os 9 dos distritos 3–6; cota por linha; `wkl_contrato1`/`ach_contrato*` |
-| Blueprints | 58 | 19 do Old Forge, posse com origem; Hunt (#63) e contrato (#64) como fontes | os 82 dos distritos (Wave C) |
-| Masterworks | 55 | 10 do Old Forge no Hall, só pelo golpe numa Superior com projeto e condição, família completa +5% (#63) | as 50 dos distritos; bot F2P que golpeia (portão "1ª em até 4 h") |
-| Collection | 60 | 9 marcos do Old Forge, degraus +5/+10 (#63, V27) | marcos dos distritos |
+| Royal Contracts | 60 | 12 em dados, 3 rodam (o Ronda e os 2 da Row), aba Contratos, prêmio 1× por ID (#64, #66); semanal, conquistas e missão da Royal Week de contrato (#70) | os 9 dos distritos 3–6; cota por linha |
+| Blueprints | 64 | 19 do Old Forge + 14 da Row (#71), posse com origem; Hunt, contrato e filas da Row como fontes | os dos distritos 3–6 |
+| Masterworks | 62 | 20 de 60: 10 do Old Forge (#63) e 10 da Row com a condição de peças com liga (#71), Hall por distrito | as 40 dos distritos 3–6; bot F2P que golpeia (portão "1ª em até 4 h") |
+| Collection | 63 | marcos do Old Forge e da Row, degraus +5/+10 (#63, #71, V27) | marcos dos distritos 3–6 |
 | Reputation | 80 | Renome 10 níveis do Império (todo distrito conta, #65); F2P chega ao 2/3/4 em 0:51 / 1:41 / 3:11 (`BALANCE.md` §30.6) | conferir com jogador real |
-| Daily / Weekly / Achievements | 85 | 32 diárias, 14 semanais, 75+6 conquistas (`ach_mw*`), login de 7 dias; gatilho `contract_complete` (#64); vendas de todo distrito contam (#65) | metas de contrato; modelos que esperam os distritos |
-| Events (LiveOps) | 70 | 10 `EventDef`, 9 rodando (Hunts no #63, encomenda Event no #60); pontos de todo distrito (#65) | V27 (Event disputa vagas); o 10º evento |
+| Daily / Weekly / Achievements | 90 | 32 diárias, 17 semanais, 102 conquistas, login de 7 dias; derivadas do estado com retroativo (#70) | pool C das diárias, conquistas de 3/6 distritos e 30/60 obras (esperam conteúdo) |
+| Events (LiveOps) | 72 | 10 `EventDef`, 9 rodando; pontos de todo distrito (#65); missão de contrato na Royal Week (#70) | V27 (Event disputa vagas); o 10º evento |
 | Pass | 50 | 30 níveis × 600 XP, temporada de 35 dias, trilha free com RESGATAR; premium no dado, desligado (#56) | premium na Wave E (preço = decisão) |
 | Ads | 70 | 6 placements por config, teto diário, ID de transação, intersticial atrás de flag, `ad_impression` (#52) | conta da V-STACK com VIP e Velocidade (#67); ad units dos outros 4 placements e Unity Ads no painel (Vinicius); A/B do intersticial no Limited Release |
 | IAP | 35 | núcleo com estados e recibos, loja falsa, Pacote do Mestre, restaurar compras (#58) | pacote Unity IAP (aval de download) |
@@ -155,31 +156,32 @@ Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-14, 
 | RemoteConfig | 47 | JSON local com travas no núcleo, chave mestra dos anúncios, cache, HTTP desligado (#53); trava do `QualidadeEvento` (#63) | provedor remoto (P8); `econsim --rc` |
 | Save | 89 | Save 2.0 + schema 3; migração da 0.5.1 provada no POCO; save multi-distrito (#61), Hall, contratos e managers com linhas opcionais | cloud save (opcional) |
 | Release pipeline | 55 | AAB assinado por env, `verify release`, 16 KB, API 36 | chave real (aval), Unity no CI, release automatizada |
-| Arte final | 45 | estações, HUD, cartões, 41 ícones, elenco do Lote 5A, mochila no corpo (#62) | estações da Row (hoje usa a arte do Old Forge), herói, logo |
+| Arte final | 47 | estações, HUD, cartões, 41 ícones, elenco do Lote 5A, mochila no corpo (#62), ícone do app (#69) | estações da Row e dos distritos (C-ART-13), Vulcana, herói |
 | Áudio final | 38 | 3 grupos, 15 efeitos sintetizados, mix com prioridade, orçamento de vozes e distância (#59) | ouvir no POCO; banco de sons real + 5 músicas |
-| Store assets | 25 | 37 criativos, 9 presets; ASO pt/en/es; política e Data Safety em rascunho | ícone/logo, screenshots, vídeo |
-| **Média** | **~57** | | |
+| Store assets | 38 | ícone (4 variantes, adaptativo no APK), logo e feature graphic (#69); 37 criativos, 9 presets; ASO pt/en/es; política e Data Safety em rascunho | 2 × 8 screenshots pelos presets, vídeo, feature graphic com quadro novo |
+| **Média** | **~59** | | |
 
-## 9. Retomada (handoff 2026-10-14)
+## 9. Retomada (handoff 2026-10-15, pausa pedida pelo Vinicius)
 
-Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões V9–V28 (§4).
+Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões V9–V29 (§4).
 
 **Meta e autorização (Vinicius, 2026-10-13):** levar o GDD a ≥ 90% (placar do §8) antes de qualquer teste no POCO ou publicação; "tudo autorizado": commit, push, PR e merge sem perguntar (sempre depois do `verify.sh full`), Tripo3D para o que for preciso (saldo visto: **16 570** créditos; registrar no `PROVENIENCIA.md`), créditos de IA. Seguem com aval explícito: tag/Release, publicação na loja, chave de assinatura real, criação de conta, pagamento. POCO F4 só no fim (30–60 fps basta).
 
 **Vinicius, 2026-10-15:** seguir com programação e desenvolvimento até a etapa de criar a conta no Google Play (já em andamento em outro projeto); o coordenador pede o POCO quando precisar dele.
 
-**Feito em 2026-10-13/14:** #51 Lote 5A, #52 anúncios por config, #53 RemoteConfig/Analytics, #54 WorkerDef, #55 Blueprints, #56 Eventos+Pass, #58 IAP no núcleo, #59 mix de áudio, #60 Orders 2.0, #61 distritos e Império, #62 mochila, #63 Masterworks/Hall/Collection, #64 Royal Contracts, #65 managers e Império, #66 Rua dos Armeiros afinada.
+**Feito em 2026-10-13/15:** #51 Lote 5A, #52 anúncios por config, #53 RemoteConfig/Analytics, #54 WorkerDef, #55 Blueprints, #56 Eventos+Pass, #58 IAP no núcleo, #59 mix de áudio, #60 Orders 2.0, #61 distritos e Império, #62 mochila, #63 Masterworks/Hall/Collection, #64 Royal Contracts, #65 managers e Império, #66 Rua dos Armeiros afinada, #67 LevelPlay na conta da V-STACK (outra sessão), #68 docs, #69 marca e ícone, #70 metas de sistemas, #71 liga na Rua dos Armeiros.
 
 **Feedback do Vinicius no POCO (2026-10-13):** "barulheira" (#59) e "mochila solta" (#62) corrigidos no código; falta ouvir e ver no aparelho. Perguntar o que mais incomodou nos primeiros 5 min.
 
-**Branches em andamento:** nenhum (a leva de 2026-10-14 fechou com o #66).
+**Branches em andamento:** nenhum (pausa em 2026-10-15 com a `main` depois do #71; worktrees de agente removidas).
 
 **Fila das próximas levas (ordem):**
-1. Liga na Rua dos Armeiros (`fornalha_liga`, Fundidor/Vulcana), níveis de estação e Blueprints da Row, e as obras-primas dela: destrava o Charter da Row. Na mesma raia: destino de ouro depois da produção, Rebitadeira 2 sem insumo, remedir as encomendas a 3 vagas.
-2. Distritos 3–6 (C-CORE-05 um por leva, CONTEUDO_V1 §2–§10), arte das estações por distrito (C-ART-13) e Lote 5B no Tripo.
-3. Metas de contrato (`wkl_contrato1`, `ach_contrato1`, `ach_contratos12`), cota por linha dos contratos, V27 (encomenda Event à parte?).
-4. Áudio real (banco de efeitos + 5 músicas; licença registrada) e store assets (ícone/logo, 2 × 8 screenshots pelos presets, vídeo).
-5. Só então: `POCO_RELEASE_GATE` (`docs/ROTEIRO_TESTE_POCO.md`) e loja.
+1. Distritos 3 e 4 em paralelo: Artisan Quarter e Royal Arsenal (CONTEUDO_V1 §2.3–§2.4 e §3–§10), cada um em arquivos próprios (`static partial class Distritos`/`OrderDefs`/`ProjetosDefs`/`MasterworksDefs`/`WorkerDefs`/`ContratosDefs`; acrescentar o distrito em `Distritos.All`, `OrderDefs.Distritos` e `ProjetosDefs.Distritos`). Uma raia por distrito no padrão da Row (dados, economia no alvo, encomendas, projetos, obras, Charter; Old Forge idêntico ao byte), seções §37/§38 do `BALANCE.md`.
+2. Arte da Row e dos distritos (C-ART-13: estações, Vulcana, fornalha de liga) e Lote 5B no Tripo.
+3. Pendências da Row: Ferraz 4 nos intermediários (+32% de renda, reafinar o preço) e Rebitadeira 2.
+4. Áudio real: decidir a fonte com o Vinicius (gerado por IA com licença comercial do plano, ou banco CC0); depois 5 músicas + banco de efeitos.
+5. Store: 2 × 8 screenshots pelos presets, vídeo, feature graphic com quadro novo; IAP com o pacote Unity IAP (aval de download).
+6. POCO (o coordenador pede ao Vinicius quando precisar) e loja: a conta Google Play está em andamento em outro projeto.
 
 **Como o coordenador trabalha (o que funcionou):**
 - Levas de até 4 agentes em worktree isolada (`isolation: worktree`), só `dotnet` (sem Unity/emulador; Blender só headless). Cada prompt aponta o brief comum, diz qual arquivo a raia é DONA, o número da seção do `BALANCE.md`, copiar as 3 DLLs para `client/Library/ScriptAssemblies`, NUnit 3.5 com tuplas de tipo exato, `.meta` com GUID novo, sem CHANGELOG, sem push; ao fim, `git merge origin/main` ANTES das mutações e do econsim (a `main` muda no meio da raia).
