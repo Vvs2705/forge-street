@@ -294,6 +294,13 @@ namespace FS
             vin.sprite = Vignette(); vin.color = new Color(0f, 0f, 0f, 0.5f); vin.raycastTarget = false;
         }
 
+        /// <summary>Etapa 6 (recompensa com vida): 12 raios de luz saindo do centro e sumindo na borda; gira atras do premio.</summary>
+        public static Sprite Raios() => Soft("raios", (x, y) =>
+        {
+            float r = Mathf.Sqrt(x * x + y * y), w = 0.5f + 0.5f * Mathf.Cos(12f * Mathf.Atan2(y, x));
+            return w * w * w * Mathf.Clamp01(1f - r) * Mathf.Clamp01(r * 4f);
+        });
+
         /// <summary>Vinheta: escurece so as bordas (alfa 0 no centro, ~1 nos cantos); Image por cima do mundo e abaixo da HUD.</summary>
         public static Sprite Vignette() => Soft("vignette", (x, y) => Mathf.Clamp01((x * x + y * y - 0.55f) / 1.2f));
 

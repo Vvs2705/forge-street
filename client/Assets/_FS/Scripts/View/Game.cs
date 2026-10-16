@@ -108,6 +108,7 @@ namespace FS
         Canvas _joyCanvas;
         RectTransform _canvas, _labels, _safe, _panel, _fx;
         Text _gold, _hint, _panelTitle, _panelBody, _panelBtn, _panelGold;
+        RectTransform _panelBox; Image _festaRaios; Image[] _festaFaiscas; float _festaT = -1f; long _festaOuro;   // etapa 6: o cofre com vida
         RectTransform _panelRow;   // v0.6d: moeda + "+N" do cofre no painel
         Hint _hintH; int _hintArg = -1, _hintU;   // v0.6d: a dica so e' remontada quando muda (sem string nova a cada 0,25 s)
         RectTransform _cfg;   // v0.6b: cartao de configuracoes (Som, Vibracao, versao)
@@ -374,7 +375,33 @@ namespace FS
         }
 
         /// <summary>v0.6d: cartao creme do cofre: titulo, "+N" grande com a moeda, uma linha e PEGAR (saiu a frase dos 25% e do teto).</summary>
-        void ShowVault(long gold) => ShowPanel(Loc.T("cofre.titulo"), Loc.T("cofre.corpo"), Loc.T("cofre.pegar"), ClosePanel, gold);
+        void ShowVault(long gold) => ShowPanel(Loc.T("cofre.titulo"), Loc.T("cofre.corpo"), Loc.T("cofre.pegar"), () =>
+        {
+            FlyCoins(_panelRow.position, 0, 10);   // etapa 6: o ouro ja entrou; as 10 moedas voam ate a HUD (so visual) e o numero pulsa
+            ClosePanel();
+        }, gold);
+
+        /// <summary>Etapa 6: cartao do cofre com vida: pop do cartao, numero contando ate o premio em 0,8 s, raios girando e 10 faiscas em leque.</summary>
+        void TickFesta(float dt)
+        {
+            if (_festaT < 0f || !_panel.gameObject.activeSelf) return;
+            _festaT += dt;
+            _panelBox.localScale = Vector3.one * Pop(_festaT);
+            _festaRaios.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -40f * _festaT);
+            float k = Mathf.Clamp01(_festaT / 0.8f);
+            _panelGold.text = "+" + (long)Math.Round(_festaOuro * (1.0 - (1.0 - k) * (1.0 - k)));
+            for (int i = 0; i < _festaFaiscas.Length; i++)
+            {
+                float t = (_festaT - 0.1f - i * 0.03f) / 0.7f;   // saem uma atras da outra
+                Image f = _festaFaiscas[i];
+                f.enabled = t > 0f && t < 1f;
+                if (!f.enabled) continue;
+                float a = i * Mathf.PI * 2f / _festaFaiscas.Length + 0.3f, e = 1f - (1f - t) * (1f - t);
+                f.rectTransform.anchoredPosition = new Vector2(Mathf.Cos(a), Mathf.Sin(a) * 0.7f) * Mathf.Lerp(60f, 340f, e);
+                f.rectTransform.localScale = Vector3.one * Mathf.Lerp(1.3f, 0.4f, t);
+                f.color = Art.ComAlfa(Art.Accent, 1f - t);
+            }
+        }
 
         void Update()
         {
@@ -913,6 +940,11 @@ namespace FS
             card.raycastTarget = false;
             _panelTitle = Art.NewText(card.transform, "Titulo", 56, new Vector2(0.05f, 0.76f), new Vector2(0.95f, 0.96f));
             _panelTitle.fontStyle = FontStyle.Bold; _panelTitle.color = MenuBar.Brown;
+            _panelBox = (RectTransform)box.transform;
+            // etapa 6 (recompensa com vida): raios girando atras do "+N" e faiscas saindo dele; so no cofre (TickFesta)
+            _festaRaios = Art.Node(card.transform, "Raios", new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.6f)).gameObject.AddComponent<Image>();
+            _festaRaios.rectTransform.sizeDelta = new Vector2(600f, 600f);
+            _festaRaios.sprite = Art.Raios(); _festaRaios.color = new Color(1f, 0.78f, 0.3f, 0.6f); _festaRaios.raycastTarget = false;
             _panelRow = Art.Node(card.transform, "Ouro", new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.6f));
             _panelRow.sizeDelta = new Vector2(300f, 90f);
             Image coin = Art.Node(_panelRow, "Moeda", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f)).gameObject.AddComponent<Image>();
@@ -921,6 +953,14 @@ namespace FS
             _panelGold = Art.Outlined(Art.NewText(_panelRow, "Valor", 64, Vector2.zero, Vector2.one, TextAnchor.MiddleLeft), 3f);
             _panelGold.rectTransform.offsetMin = new Vector2(96f, 0f);
             _panelGold.fontStyle = FontStyle.Bold; _panelGold.color = Art.Accent; _panelGold.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _festaFaiscas = new Image[10];
+            for (int i = 0; i < _festaFaiscas.Length; i++)
+            {
+                Image f = Art.Node(card.transform, "Faisca", new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.6f)).gameObject.AddComponent<Image>();
+                f.sprite = Art.Sparkle(); f.raycastTarget = false; f.enabled = false;
+                f.rectTransform.sizeDelta = new Vector2(44f, 44f);
+                _festaFaiscas[i] = f;
+            }
             _panelBody = Art.NewText(card.transform, "Corpo", 26, new Vector2(0.06f, 0.33f), new Vector2(0.94f, 0.46f));
             _panelBody.color = Art.ComAlfa(MenuBar.Brown, 0.8f);
             _panelBody.resizeTextForBestFit = true; _panelBody.resizeTextMinSize = 22; _panelBody.resizeTextMaxSize = 40;   // mapa e qualidade: legivel no aparelho
@@ -1004,6 +1044,7 @@ namespace FS
         void RefreshHud()
         {
             TickCoins(Time.deltaTime);
+            TickFesta(Mathf.Min(Captura.Passo, 0.1f));   // tempo real, como o resto da HUD (gravando, o do quadro)
             RefreshAdUi();
             float real = Mathf.Min(Captura.Passo, 0.1f);   // tempo real (o simulado zera o timeScale; gravando, o do quadro), sem o salto do 1o quadro
             _cards?.Refresh(_sim, real);   // B-CORE-05
@@ -1611,6 +1652,9 @@ namespace FS
             _panelBtn.text = button;
             _panelAction = action;
             _panelRow.gameObject.SetActive(gold > 0);
+            _festaRaios.enabled = gold > 0;
+            _festaT = gold > 0 ? 0f : -1f; _festaOuro = gold;
+            _panelBox.localScale = Vector3.one;
             _panelBody.rectTransform.anchorMax = new Vector2(0.94f, gold > 0 ? 0.46f : 0.74f);   // sem o "+N" do cofre, o texto usa o vao abaixo do titulo
             if (gold <= 0) return;
             _panelGold.text = "+" + gold;

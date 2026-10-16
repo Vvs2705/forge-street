@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Recompensa com vida (programa de arte, etapa 6):** o cofre offline entra com pop, raios girando e faíscas atrás do "+N", o número conta até o prêmio e, no PEGAR, 10 moedas voam até a HUD; o baú de marco abre de verdade (agacha, pula com brilho e raios, faíscas) antes de sumir. Só código, 0 crédito.
 - **Interface v2 (programa de arte, etapa 4):** fontes com personalidade (Lilita One nos títulos e botões, Nunito no texto; Google Fonts, OFL), painéis e cartões com moldura em relevo, botões com lábio, brilho e efeito de apertar, barras de progresso com moldura, fundo dos menus com brasa e vinheta, abertura opaca e ícones pintados por tipo de prêmio no login e no Passe. 0 crédito; `docs/ASSETS.md` §18.
 - **Marca v2 (programa de arte, etapas 2–3):** ícone do app novo (emblema A3: escudo com bigorna, martelo, chama e a fita do nome), com o adaptativo do Android, o legado, o redondo e o 512 da loja; logo de título novo (C2: letras 3D de ouro) numa abertura dentro do jogo (2,4 s ou um toque) e na feature graphic. Imagens do Tripo (Nano Banana 2, 0 crédito); `docs/ASSETS.md` §17.
 - **Arte do Royal Arsenal (C-ART-13, parte 2):** forja de lâminas, bancadas de kits e da guarda, mesa do gravador, forjas cerimonial e de alabardas, montagem de gala e pátio de cotas com os modelos próprios do Tripo (Lote 5B); a prensa, o crisol e o depósito de ouro usam as folhas da Row e do Quarter. Antes, emprestavam a bancada de escudos, a bigorna e um caixote.
