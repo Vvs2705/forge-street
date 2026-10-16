@@ -193,7 +193,9 @@ Q="$(cygpath -m "$TEMP")/fs_loja"; W="-screen-fullscreen 0 -screen-width 540 -sc
 grep -E "RECORD OK|PRESET <nome> ok" "$Q/<nome>.log"
 ```
 
-A legenda vai na faixa de cima (fora da HUD), curta para ler na miniatura, com a fonte da marca (decisão P11; hoje o jogo usa Arial). A peça passa pelo gate §73 e lê a 48 px (G-UA-03).
+A legenda vai na faixa de cima (fora da HUD), curta para ler na miniatura, com a fonte da marca (decisão P11: **Lilita One**, a dos títulos da interface v2, #87). A peça passa pelo gate §73 e lê a 48 px (G-UA-03).
+
+**Feitas (2026-10-16): `arte/loja/screenshots/<pt|en|es>/<n>_<preset>.jpg`**, 8 × 3 idiomas, 1080 × 1920 JPG. Saem de um build **sem a marca "Development Build"** (`Setup.BuildWindowsLoja`, em `client/Builds/win_loja`) e do `client/tools/loja_screenshots.py`: `capturar` roda cada preset com `-lang` e guarda só o quadro escolhido (os outros ~0,7 MB por quadro são apagados), `compor` põe a legenda na faixa de cima (Lilita One creme com contorno, sobre a ardósia e a brasa do ícone A3) e o quadro do jogo a 86% da largura com aro dourado. Quadros conferidos numa folha de candidatos (1 a cada 2 s): os da tabela, com o VIP em `f00240` (VIP de coroa no balcão com o "×3") e a esteira em `f00180` (lingote na esteira e a venda "+10").
 
 | # | Preset | Quadro sugerido (conferir na revisão) | Legenda pt-BR | en | es |
 |---|---|---|---|---|---|
