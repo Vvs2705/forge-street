@@ -85,13 +85,15 @@ namespace FS.Core
         };
 
         /// <summary>C-CORE-06 (BALANCE.md §37): os produtivos do §5.3 x 1,5 (o catalogo: 1.440 x 1,30^tier = 1.440 ... 120.000; aqui 2.160 ...
-        /// 180.000, multiplo de 5 ate 10 mil e 2 algarismos acima, a regra do §1); o luxo e os niveis do §5.7 (ourivesaria 24.000/71.000/190.000/
-        /// 420.000) como no catalogo. Com o preco x 3 (Ajuste) a producao completa do F2P sai de 1:34 h para ~1 h e a renda sobe a ~14 mil/min.</summary>
+        /// 180.000, multiplo de 5 ate 10 mil e 2 algarismos acima, a regra do §1); o luxo como no catalogo; os niveis do §5.7 x 1,5 tambem
+        /// (ourivesaria 36.000/105.000/290.000/630.000; o catalogo: 24.000/71.000/190.000/420.000): com a regra de transporte da main (#76) a
+        /// renda subiu e o Charter do Ideal caia para 3:54 h (janela 4-6 h). Com o preco x 3 (Ajuste) a producao completa do F2P sai de 1:34 h
+        /// para ~1 h e a renda sobe a ~16 mil/min.</summary>
         static readonly long[] CustosArtisan =
         {
             2160, 2805, 3655, 4750, 6175, 8020, 10000, 14000, 18000, 23000, 30000, 39000, 51000, 66000, 86000, 110000, 140000, 180000,   // produtivos
             130000, 160000, 200000,                                                                                                 // luxo
-            24000, 71000, 190000, 420000,                                                                                           // niveis (Meta)
+            36000, 105000, 290000, 630000,                                                                                          // niveis (Meta)
         };
 
         /// <summary>§6: niveis 2-10 da familia Dourado (2.250 x 1,6^(L-2); a turma inteira sobe junto no catalogo, aqui cada corpo).</summary>
@@ -171,8 +173,9 @@ namespace FS.Core
                 t.ClientInterval = new[] { 0f, 0f, 12f, 12f, 12f, 12f, 12f, 12f, 12f, 0f, 0f, 0f, 0f };
                 t.CustoTabela = CustosArtisan;
                 // §7.2 x 0,85 no premio de toda encomenda do Quarter (alem dos 70% de Bulk/Quality/Mixed/Royal/freguesa): com 7 linhas o N cai no
-                // minimo e o ouro de encomendas ia a 12,9% da venda (portao 4-12%; BALANCE.md §37)
-                t.OrderRewardSeconds = 8.5f;
+                // minimo e o ouro de encomendas ia a 12,9% da venda (portao 4-12%); e o alvo x 1,2 (180 s de renda na Common): com o transporte da
+                // main (#76) o Renome 6 chegava aos 224 min no Ideal (o Charter abaixo das 4 h; BALANCE.md §37)
+                t.OrderRewardSeconds = 8.5f; t.OrderSeconds = 180f;
                 t.QueueCap0 = 3; t.CounterCap0 = t.CounterCap1 = 10;
                 t.OrderRewardMin = 225;   // §7.2: Common do Quarter, 225 de minimo (x9 o do Old Forge)
             },

@@ -57,7 +57,8 @@ namespace FS.Tests
             Assert.AreEqual((I(s, "minerio_cobre"), I(s, "lingote_cobre"), I(s, "fivela")), (s.Deposit.OutItem, s.FurnaceA.OutItem, s.Est("bancada_ourives").OutItem));
             Assert.AreEqual((3, 10), (s.QueueCap, s.CounterCap));
             Assert.AreEqual((18, 794565L), (Enumerable.Range(0, s.UpgradeDefs.Length).Count(s.IsProduction), Enumerable.Range(0, s.UpgradeDefs.Length).Where(s.IsProduction).Sum(u => s.T.Cost(u))));
-            Assert.AreEqual((2160L, 180000L, 130000L, 24000L, 420000L), (s.T.Cost(0), s.T.Cost(17), s.T.Cost(18), s.T.Cost(21), s.T.Cost(24)));
+            Assert.AreEqual((2160L, 180000L, 130000L, 36000L, 630000L), (s.T.Cost(0), s.T.Cost(17), s.T.Cost(18), s.T.Cost(21), s.T.Cost(24)));
+            Assert.AreEqual((8.5f, 180f), (s.T.OrderRewardSeconds, s.T.OrderSeconds), "encomendas do Quarter: premio x 0,85 e alvo x 1,2");
             Assert.AreEqual((330, 1350, 12f), (s.T.Price[(int)I(s, "fivela")], s.T.Price[(int)I(s, "caixa_joias")], s.T.ClientInterval[(int)I(s, "colar")]));
             Compra(s, "vitrine_luxo");
             Assert.AreEqual(5, s.QueueCap, "a loja fina 3 -> 5");
