@@ -118,7 +118,7 @@ namespace FS.Core
         };
 
         // ponytail: arte emprestada (como a Row): a bancada de ourives = a joalheria do Old Forge; crisois e lapidario pelo tipo (fornalha)
-        const string ArteOurives = "joalheria";
+        const string ArteOurives = "bancada_ourives";   // C-ART-13 parte 2: folhas do Tripo (ASSETS.md §15)
 
         public static readonly DistrictDef ArtisanQuarter = new DistrictDef
         {
@@ -132,19 +132,19 @@ namespace FS.Core
             // deposito/fornalha/balcao sao os papeis fixos do Sim; o rotulo deles vem de est.artisan_quarter.* (Textos.Distrito)
             Estacoes = new[]
             {
-                new StationDef("deposito", Kind.Deposit, 1.5f, 1.0f, "Minério cobre", 0f, 1f, null, null, AqMinCobre),
-                new StationDef("fornalha", Kind.Furnace, 1.5f, 4.0f, "Crisol cobre", -1f, 0f, null, "crisol_cobre"),
+                new StationDef("deposito", Kind.Deposit, 1.5f, 1.0f, "Minério cobre", 0f, 1f, null, null, AqMinCobre, arte: "deposito_cobre"),
+                new StationDef("fornalha", Kind.Furnace, 1.5f, 4.0f, "Crisol cobre", -1f, 0f, null, "crisol_cobre", arte: "crisol"),
                 new StationDef("bancada_ourives", Kind.Crafter, 1.5f, 9.0f, "Bancada ourives", -1f, 0f, null, Ourivesaria, arte: ArteOurives),
                 new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Loja fina", 0f, -1f),
                 new StationDef("bancada_ourives2", Kind.Crafter, 4.5f, 9.0f, "Bancada 2", -1f, 0f, "bancada_ourives2", Ourivesaria, arte: ArteOurives),
-                new StationDef("deposito_ouro", Kind.Deposit, 7.5f, 1.0f, "Minério ouro", 0f, 1f, "veio_ouro", null, AqMinOuro),
-                new StationDef("crisol_ouro", Kind.Furnace, 7.5f, 4.0f, "Crisol ouro", -1f, 0f, "veio_ouro", "crisol_ouro"),
-                new StationDef("crisol_cobre2", Kind.Furnace, 4.5f, 4.0f, "Crisol cobre 2", -1f, 0f, "crisol_cobre2", "crisol_cobre"),
-                new StationDef("deposito_gemas", Kind.Deposit, 13.5f, 1.0f, "Gemas brutas", 0f, 1f, "lapidario", null, AqGemaBruta),
-                new StationDef("lapidario", Kind.Furnace, 10.5f, 6.5f, "Lapidário", -1f, 0f, "lapidario", "lapidario"),
+                new StationDef("deposito_ouro", Kind.Deposit, 7.5f, 1.0f, "Minério ouro", 0f, 1f, "veio_ouro", null, AqMinOuro, arte: "deposito_ouro"),
+                new StationDef("crisol_ouro", Kind.Furnace, 7.5f, 4.0f, "Crisol ouro", -1f, 0f, "veio_ouro", "crisol_ouro", arte: "crisol"),
+                new StationDef("crisol_cobre2", Kind.Furnace, 4.5f, 4.0f, "Crisol cobre 2", -1f, 0f, "crisol_cobre2", "crisol_cobre", arte: "crisol"),
+                new StationDef("deposito_gemas", Kind.Deposit, 13.5f, 1.0f, "Gemas brutas", 0f, 1f, "lapidario", null, AqGemaBruta, arte: "deposito_gemas"),
+                new StationDef("lapidario", Kind.Furnace, 10.5f, 6.5f, "Lapidário", -1f, 0f, "lapidario", "lapidario", arte: "lapidario"),
                 new StationDef("bancada_ourives3", Kind.Crafter, 7.5f, 9.0f, "Bancada 3", -1f, 0f, "bancada_ourives3", Ourivesaria, arte: ArteOurives),
-                new StationDef("lapidario2", Kind.Furnace, 13.5f, 6.5f, "Lapidário 2", -1f, 0f, "lapidario2", "lapidario"),
-                new StationDef("crisol_ouro2", Kind.Furnace, 10.5f, 4.0f, "Crisol ouro 2", -1f, 0f, "crisol_ouro2", "crisol_ouro"),
+                new StationDef("lapidario2", Kind.Furnace, 13.5f, 6.5f, "Lapidário 2", -1f, 0f, "lapidario2", "lapidario", arte: "lapidario"),
+                new StationDef("crisol_ouro2", Kind.Furnace, 10.5f, 4.0f, "Crisol ouro 2", -1f, 0f, "crisol_ouro2", "crisol_ouro", arte: "crisol"),
             },
             Pads = new[]
             {

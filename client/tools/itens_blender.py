@@ -740,6 +740,48 @@ def cristal(p):
         p.add(cyl(r, r * 1.7, 0.0, segs=6), "cristal", m=T(*(base + n * (ln + r * 0.85))) @ mira(n), bevel=0)
 
 
+# ------------------------------------------------------------------ C-ART-13 parte 2 (2026-10-16): insumos do Artisan Quarter e do Royal Arsenal
+A.TONS.update({"patina": (0x2E8A6E, 0x4FBF95, 0x8AE6C2), "cobre_topo": (0xE08A50, 0xF4B07A, 0xFFD2A8)})
+
+
+def minerio_cobre(p):
+    """Minerio de cobre: a pedra do minerio com o veio e os cristais em patina verde sobre rocha cobre."""
+    A.minerio(p)
+    tinge(p, {"rocha": "cobre", "veio": "patina", "nucleo": "patina"})
+
+
+def minerio_ouro(p):
+    """Minerio de ouro: a pedra do minerio (marrom) com veio e pepitas de ouro no lugar da brasa."""
+    A.minerio(p)
+    tinge(p, {"veio": "ouro", "nucleo": "ouro"})
+
+
+def lingote_cobre(p):
+    """Lingote de cobre: a barra do lingote em cobre, tampo claro alaranjado."""
+    A.lingote(p)
+    tinge(p, {"lingote": "cobre", "lingote_topo": "cobre_topo"})
+
+
+def lingote_ouro(p):
+    """Lingote de ouro: a barra do lingote em ouro, tampo amarelo claro."""
+    A.lingote(p)
+    tinge(p, {"lingote": "ouro_esc", "lingote_topo": "ouro"})
+
+
+def gema_bruta_cristal(p):
+    """Gema bruta: o aglomerado de cristais em roxo (a gema lapidada e' a pedra facetada do item_gema)."""
+    cristal(p)
+    tinge(p, {"cristal": "gema"})
+
+
+def lamina_bruta(p):
+    """Lamina (insumo do Arsenal): a lamina da espada em aco cru, sem guarda nem punho, com a espiga curta."""
+    p.add(box(0.026, 0.012, 0.09), "aco_esc", at=(0, 0, -0.045), bevel=0.003)
+    bm, fams = A.lamina(0.072, 0.062, 0.0, 0.31, 0.41, 0.02, 0.015)
+    p.add(bm, "lamina", bevel=0, facefam=fams)
+    tinge(p, {"lamina": "aco", "sulco": "aco_esc"})
+
+
 # ------------------------------------------------------------------ catalogo: id -> (construtor, pose do icone, pose deitada)
 
 ITENS = {
@@ -789,6 +831,13 @@ ITENS = {
     "item_rebite": (rebite, R("X", 15) @ R("Z", 15), EM_PE),
     "item_gema": (gema_bruta, R("X", 25) @ R("Z", 20), R("X", 40)),
     "item_liga": (liga, R("X", 32) @ R("Z", -24), R("Z", -8)),
+    # C-ART-13 parte 2: insumos do Artisan Quarter e do Royal Arsenal
+    "item_minerio_cobre": (minerio_cobre, R("X", 22) @ R("Z", 18), Matrix()),
+    "item_minerio_ouro": (minerio_ouro, R("X", 22) @ R("Z", 18), Matrix()),
+    "item_lingote_cobre": (lingote_cobre, R("X", 32) @ R("Z", -24), R("Z", -8)),
+    "item_lingote_ouro": (lingote_ouro, R("X", 32) @ R("Z", -24), R("Z", -8)),
+    "item_gema_bruta": (gema_bruta_cristal, R("X", 15) @ R("Z", 20), Matrix()),
+    "item_lamina": (lamina_bruta, R("Y", 45) @ R("Z", 18), DEITA_X),
     "item_minerio_runico": (minerio_runico, R("X", 15) @ R("Z", 18), EM_PE),
     "item_cristal": (cristal, R("X", 10) @ R("Z", 15), EM_PE),
 }

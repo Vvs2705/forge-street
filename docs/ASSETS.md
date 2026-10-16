@@ -376,3 +376,8 @@ Pendente (parte 2, com os distritos 3–4 na `main`): estações do Artisan Quar
 | forja_alabardas | forja de alabardas | halberd forge station: dark iron anvil on a stone block with a tall wooden rack holding three ornate halberds with gold trim and small blue pennants, a sledgehammer leaning on the anvil, small red lantern on the top-right corner | #2 | 0 |
 | montagem_gala | montagem de gala | gala armor assembly station: wooden armor stand holding a shiny polished plate armor with gold trim and a short royal blue cape, a low workbench beside it with rivets, a small hammer and gold buckles, small red lantern on the top-right corner | #4 | 0 |
 | patio_cotas | pátio de cotas | royal quota yard station: low wide wooden loading platform with three painted delivery lanes, stacked wooden crates with royal blue and gold wax seals, a tall royal blue and gold banner on a pole, a small wooden ledger stand | #3 | 0 |
+
+**Ligação no jogo (2026-10-16):** Artisan Quarter com as folhas `deposito_cobre`, `deposito_ouro`, `deposito_gemas`, `crisol` (os 4 crisóis), `lapidario` (os 2) e `bancada_ourives` (as 3 configuráveis; antes apontavam para uma folha `joalheria` que não existe e caíam no desenho procedural). A `loja_rica` fica guardada: o balcão principal do distrito usa o estande modular por vaga. Royal Arsenal liga as dele junto com o distrito.
+
+**Ícones dos insumos novos** (0 crédito, `client/tools/itens_blender.py`, mesma pipeline da Leva 9): `item_minerio_cobre` (veio em pátina verde), `item_minerio_ouro` (pepitas), `item_lingote_cobre`, `item_lingote_ouro`, `item_gema_bruta` (cristais roxos; a lapidada é o `item_gema`) e `item_lamina` (lâmina crua em aço, sem guarda: separa da espada azul). Antes saíam como blocos coloridos procedurais.
+
