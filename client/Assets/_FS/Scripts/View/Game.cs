@@ -320,8 +320,12 @@ namespace FS
             Texture2D tex = Resources.Load<Texture2D>("UI/logo");
             if (tex == null) yield break;
             Image veu = Art.Node(_canvas, "Abertura", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
-            veu.color = new Color(0.06f, 0.045f, 0.04f, 0.92f);
+            veu.color = new Color(0.07f, 0.06f, 0.07f, 1f);   // opaco: a tela de idade (que abre junto) nao aparece por tras
             CanvasGroup g = veu.gameObject.AddComponent<CanvasGroup>();
+            Image brasa = Art.Node(veu.transform, "Brasa", new Vector2(-0.3f, 0.2f), new Vector2(1.3f, 0.88f)).gameObject.AddComponent<Image>();
+            brasa.sprite = Art.Glow(); brasa.color = new Color(1f, 0.45f, 0.12f, 0.55f); brasa.raycastTarget = false;
+            Image vin = Art.Node(veu.transform, "Vinheta", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            vin.sprite = Art.Vignette(); vin.color = new Color(0f, 0f, 0f, 0.7f); vin.raycastTarget = false;
             Image logo = Art.Node(veu.transform, "Logo", new Vector2(0.06f, 0.36f), new Vector2(0.94f, 0.72f)).gameObject.AddComponent<Image>();
             logo.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
             logo.preserveAspect = true; logo.raycastTarget = false;
