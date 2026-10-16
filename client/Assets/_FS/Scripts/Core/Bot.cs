@@ -27,7 +27,7 @@ namespace FS.Core
     /// carrega > pegar produto pronto > pegar lingote pronto > buscar minerio). Serve para balancear a §3 do GDD
     /// (BalanceTests) e para o smoke `-autoplay` do build. Nao e' IA de jogo: e' um jogador mediano previsivel.
     /// </summary>
-    public sealed class Bot
+    public sealed partial class Bot
     {
         public const float Reach = 0.35f, ChestDetour = 3f;   // m: bau mais perto que isso desvia o caminho
 
