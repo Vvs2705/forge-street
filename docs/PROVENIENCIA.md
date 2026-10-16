@@ -483,3 +483,10 @@ Arquivos (SHA-256): `Idle.png` 1 550 650 B · `c92489c93f0260b5b89571c99d7f976d4
 | fornalha_liga | Fornalha de liga | #2 de 4 (cadinho azul-prateado no centro: separa da fornalha laranja) | `db187795-c6c5-4735-8f12-c50ac0193341` | 45 | `arte/tripo/fornalha_liga/fornalha_liga.zip` 2 742 978 · `777c536ad51de9e9ad91d44535febe5ed710a09a7be87b179a6c411239ddda6f` | `tripo_convert_179b2c60-48b0-4612-871a-a0c5dc67ac3c.fbx` 234 492 · `39a7c6018e87858b264c5a89d93cdccd46e3244910a2b5056c9568d3107988b5` | `b0d49282ea4e52f0b8438561ad158c6b7a5542026a4df16bbf923440d0fd2cef` |
 
 Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita para o papel; 0 crédito.
+
+## 14. Elenco mais nítido — programa de arte, etapa 5 (2026-10-16, Blender — 0 crédito)
+
+- Pedido do Vinicius (2026-10-16): "personagens e objetos mais nítidos: re-render com mais pixels por metro (teto de 4096 px por folha) e uma escala de exibição no meta".
+- Os 32 personagens do jogo (ferreiro, ferreiro_mochila, ajudante, anão, 7 workers e 21 clientes) re-renderizados com `render_sprites.py --size 192 --max-frames 21`, o resto dos parâmetros como nos lotes de origem (§2, §3, §7, §9, §10): mesmos FBX de `arte/tripo/<id>/` e mesmos clipes de `client/Builds/anims_sets/<ferreiro|ajudante|anao|guerreira>/`. A mochila regenerada por `props_blender.py mochila_ferreiro` e presa ao `mixamorig:Spine2` com o ppu e o pivô do ferreiro novo (`--scale 164.8 --pivot-y 53`).
+- Resultado: célula 128 → 192 px e ppu ~110–130 → ~145–200 (1,5× os pixels por metro); maior folha 4 032 px (teto 4 096). A "escala de exibição" é o próprio `ppu` do `meta.json`: o `SpriteSheet` cria o sprite com `ppu × célula real / size`, então o personagem fica do mesmo tamanho no mundo. Clipes longos (Idle, LookingAround) passam de 32 para 21 quadros (o script distribui os quadros pelo clipe e grava o fps por clipe); Walking continua com 16.
+- Licenças: as dos modelos de origem (tripo_pago + Mixamo, §2/§3/§7/§9); nada novo gerado por IA.

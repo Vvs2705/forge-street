@@ -1,5 +1,5 @@
 {
- "size": 128,
+ "size": 192,
  "fps": 12.0,
  "dirs": 4,
  "dir_order": [
@@ -11,14 +11,14 @@
  "row0": "top",
  "elev": 60.0,
  "yaw": 0.0,
- "ppu": 109.87,
+ "ppu": 164.82,
  "pivot_px": [
-  64.0,
-  35.6
+  96.0,
+  53.4
  ],
  "pivot": [
   0.5,
-  0.278
+  0.2781
  ],
  "light": "flat",
  "src_fps": 30,
@@ -26,18 +26,18 @@
   {
    "name": "Cheering",
    "file": "Cheering.png",
-   "frames": 32,
+   "frames": 21,
    "loop": false,
-   "fps": 11.034,
+   "fps": 7.241,
    "duration_s": 2.9,
    "src_frames": 87
   },
   {
    "name": "Idle",
    "file": "Idle.png",
-   "frames": 32,
+   "frames": 21,
    "loop": true,
-   "fps": 3.221,
+   "fps": 2.114,
    "duration_s": 9.933,
    "src_frames": 298
   },

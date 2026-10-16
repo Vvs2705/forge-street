@@ -353,3 +353,7 @@ O 1º grava as camadas RGBA em `client/Builds/marca/camadas/` (2048 px, EEVEE co
 | fornalha_liga | fornalha_liga | alloy smelting furnace station: round squat dark stone furnace with iron bands, open top holding a glowing crucible of molten silver-blue metal, short chimney, small leather bellows on the side, iron tongs hanging, two stacked steel ingots beside it, small red lantern on the top-right corner | #2 | 0 |
 
 Pendente (parte 2, com os distritos 3–4 na `main`): estações do Artisan Quarter (crisol, lapidário, bancada de ourives, loja fina, depósitos de cobre/ouro/gemas) e do Royal Arsenal (forja de lâminas, bancadas de kits, mesa do gravador, forjas cerimonial e de alabardas, montagem de gala, pátio de cotas).
+
+## 16. Elenco mais nítido (programa de arte, etapa 5, 2026-10-16)
+
+Re-render dos 32 personagens com célula de 192 px (era 128) e teto de 21 quadros por clipe, para caber em 4 096 px de largura: 1,5× os pixels por metro, mesmo tamanho no mundo (o `ppu` do `meta.json` é a escala de exibição). Comando e detalhes: `PROVENIENCIA.md` §14. Comparação antes/depois na mesma escala: `arte/auditoria/2026-10-16/nitidez_antes_depois.png`.
