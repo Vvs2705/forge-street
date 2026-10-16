@@ -339,3 +339,17 @@ O 1º grava as camadas RGBA em `client/Builds/marca/camadas/` (2048 px, EEVEE co
 **Reprovado:** a bigorna Tripo da estação (`arte/tripo/bigorna`) como figura de ícone. A bigorna é preta, fica sob o pilão de madeira e tem a lanterna; mesmo sem o pilão, o poste e o balde, ela vira uma mancha a 48 px. Por isso a variante B usa a bigorna da heráldica.
 
 **Fora desta leva:** o teste das 4 variantes na loja (G-UA-03, experimento da página da loja na Play Console, só com a página no ar), a fonte OFL definitiva (A-UI-15) e um logo animado ou uma splash dentro do jogo.
+
+## 14. Lote 5B, parte 1 — estações da Rua dos Armeiros (C-ART-13, Tripo, 2026-10-16)
+
+5 estações × 45 = **225 créditos** (saldo 16 570 → 16 345). Ledger e SHA: `PROVENIENCIA.md` §12. Receita dos Lotes 2–3 (imagem grátis Nano Banana 2 1:1, HD H3.1 8 000 tris 2K, Privado, FBX Blender 2K) e render `--dirs 1 --size 256`. A carroça do couro continua com a `carroca` do Lote 3; a Vulcana usa o `fundidor` do Lote 5A.
+
+| id | estações da Row | assunto do prompt (+ `[P]` + `[I]`) | imagem | yaw |
+|---|---|---|---|---|
+| prensa | prensa, prensa2 | blacksmith plate press station: sturdy dark iron screw press frame on a thick wooden base, big spoked iron handwheel on top, a neat stack of flat steel plates beside it, leather strap details, small red lantern on the top-right corner | #3 | 0 |
+| rebitadeira | rebitadeira, rebitadeira2 | blacksmith rivet maker station: small dark iron lever press bolted on a sturdy wooden workbench, long lever handle raised, a wooden bucket overflowing with shiny steel rivets on the bench, coil of iron rod, small red lantern on the top-right corner | #2 | 90 |
+| montagem | montagem_elmo/grevas/manoplas/peitoral | armorer assembly workbench: sturdy dark wooden workbench with a steel knight helmet and a breastplate resting on a wooden armor stand at one end, small riveting hammer, coiled brown leather straps and a few rivets on the bench, iron vise, teal blue cloth, small red lantern on the top-right corner | #3 | 270 |
+| forja_armas | bigorna_pesada, forja_hastes, forja_machados | heavy weapon forge station: big dark iron anvil on a squat stone block, wooden weapon rack behind it holding a spiked mace, a war axe and a long spear, heavy sledgehammer leaning on the anvil, small water bucket, small red lantern on the top-right corner | #4 | 0 |
+| fornalha_liga | fornalha_liga | alloy smelting furnace station: round squat dark stone furnace with iron bands, open top holding a glowing crucible of molten silver-blue metal, short chimney, small leather bellows on the side, iron tongs hanging, two stacked steel ingots beside it, small red lantern on the top-right corner | #2 | 0 |
+
+Pendente (parte 2, com os distritos 3–4 na `main`): estações do Artisan Quarter (crisol, lapidário, bancada de ourives, loja fina, depósitos de cobre/ouro/gemas) e do Royal Arsenal (forja de lâminas, bancadas de kits, mesa do gravador, forjas cerimonial e de alabardas, montagem de gala, pátio de cotas).

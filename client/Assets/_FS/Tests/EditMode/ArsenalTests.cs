@@ -226,13 +226,13 @@ namespace FS.Tests
 
         // ------------------------------------------------------------------ transporte, bot e selo
 
-        /// <summary>BALANCE.md §38 (DistrictDef.CargaComDestino): o cadete de insumo nao busca o lingote que ninguem recebe e vai ao ouro que a
-        /// mesa do gravador espera (sem a regra, a fornalha cheia ganhava pela pilha).</summary>
+        /// <summary>BALANCE.md §38: o cadete de insumo nao busca o lingote que nao cabe em lugar nenhum (a regra do Sim.Transporte.cs, todo
+        /// distrito com 2+ insumos) e, com os dois cabendo, leva o que mais estacoes esperam (DistrictDef.InsumoPorEspera, so o Arsenal).</summary>
         [Test]
         public void Transporte_InsumoSoComDestino()
         {
-            Assert.IsTrue(RA.CargaComDestino);
-            Assert.IsFalse(Distritos.OldForge.CargaComDestino || Distritos.ArmorersRow.CargaComDestino, "Old Forge e Row: a regra de sempre");
+            Assert.IsTrue(RA.InsumoPorEspera);
+            Assert.IsFalse(Distritos.OldForge.InsumoPorEspera || Distritos.ArmorersRow.InsumoPorEspera, "Old Forge e Row: o placar de sempre");
             Sim s = Novo();
             Compra(s, "cadete1", "cadete2", "crisol_real");
             Station forja = s.Est("forja_laminas"), crisol = s.Est("crisol_ouro");
@@ -416,7 +416,7 @@ namespace FS.Tests
                 Projetos = d.Projetos, Masterworks = d.Masterworks, MarcosColecao = d.MarcosColecao, Estacoes = d.Estacoes, Pads = d.Pads,
                 Obstaculos = d.Obstaculos, Marcos = d.Marcos, Inicio = d.Inicio, Contratacao = d.Contratacao, Largura = d.Largura, Parede = d.Parede,
                 EsteiraDe = d.EsteiraDe, EsteiraPara = d.EsteiraPara, Ajuste = d.Ajuste, Abertura = d.Abertura, Charter = d.Charter,
-                FundoFator = d.FundoFator, Selo = d.Selo, CargaComDestino = d.CargaComDestino,
+                FundoFator = d.FundoFator, Selo = d.Selo, InsumoPorEspera = d.InsumoPorEspera,
             };
             f(c);
             return c;

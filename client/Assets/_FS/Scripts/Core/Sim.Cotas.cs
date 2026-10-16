@@ -198,11 +198,8 @@ namespace FS.Core
             return _uSelo >= 0 && Bought[_uSelo] ? T.SeloQ : 0;
         }
 
-        /// <summary>Alguma estacao aberta recebe mais um `i` agora (DistrictDef.CargaComDestino: o papel 1 so busca o insumo que tem para onde ir).</summary>
-        bool Recebe(Item i) { foreach (Station d in Stations) if (d.Unlocked && d.Accepts(i)) return true; return false; }
-
         /// <summary>Estacoes abertas paradas por falta de `i` (a receita pede mais do que ha na entrada): o papel 1 leva primeiro o que mais falta
-        /// (DistrictDef.CargaComDestino).</summary>
+        /// (DistrictDef.InsumoPorEspera; o "so o que cabe" e' a regra do Sim.Transporte.cs).</summary>
         int Esperam(Item i)
         {
             int n = 0;

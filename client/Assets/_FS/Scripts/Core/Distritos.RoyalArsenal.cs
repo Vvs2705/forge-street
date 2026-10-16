@@ -171,7 +171,7 @@ namespace FS.Core
             // §2.4: producao completa + Renome 7 (2.000) + 3 Masterworks + (1 Royal Contract OU 10 encomendas Royal no distrito); o ultimo do build
             Charter = new CharterDef(true, 2000, 3, null, contratos: 1),
             Selo = "selo_arsenal",
-            CargaComDestino = true,   // BALANCE.md §38: sem isso o cadete do insumo segura lingote sem destino e o ouro para no crisol
+            InsumoPorEspera = true,   // BALANCE.md §38: o cadete do insumo leva primeiro o que as bancadas esperam (sem isso o ouro para no crisol)
         };
     }
 

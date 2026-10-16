@@ -422,7 +422,9 @@ static class EconSim
         public string Charter;
         // C-CORE-07 (patio de cotas): pecas vendidas no patio e no total, ouro do patio, blocos (no prazo), Royal entregues no distrito, a 3a
         // obra e o Charter (relogio; -1 = nao saiu), contratos concluidos e o Renome do Imperio quando o Charter saiu
-        public long CotaUn, Un, CotaOuro; public int Blocos, NoPrazo, Royal, Contratos; public float Mw3 = -1f, Charter1 = -1f, ProdCota = -1f;
+        public long CotaUn, Un, CotaOuro; public int Blocos, NoPrazo, Royal, Contratos; public float Mw3 = -1f;
+        // row-pendencias: por estacao que produz (ID, ciclos, s com fome, s travada) e as pecas de produto com liga
+        public (string Id, int Ciclos, float Fome, float Travada)[] Est; public long Pecas, ComLiga; public int CharterMin = -1, RenomeMin = -1;
     }
 
     /// <summary>
@@ -482,11 +484,23 @@ static class EconSim
                               $"{g.Count(r => r.Fundidor > 0)}/{g.Length}; {g.Average(r => r.Fundidor):0.#}; {Media(g.Select(r => r.Fundidor1))} | " +
                               $"{g.Average(r => r.Mw):0.#} ({Media(g.Select(r => r.Mw1))}; {Media(g.Select(r => r.Mw2))}) | {falta} | {g.Average(r => r.SemDestinoEq):0.#} |");
         }
+        // row-pendencias: o gargalo por estacao (media das partidas): ciclos, s com fome (receita incompleta) e s travada (saida cheia)
+        Console.WriteLine();
+        Console.WriteLine($"| estacao (ciclos; fome s; travada s) | {string.Join(" | ", perfis.Select(p => p.Name))} |");
+        Console.WriteLine("|" + string.Concat(Enumerable.Repeat("---|", perfis.Length + 1)));
+        RunD[][] por = perfis.Select(p => runs.Where(r => r.Perfil == p.Name).ToArray()).ToArray();
+        for (int k = 0; k < runs[0].Est.Length; k++)
+            Console.WriteLine($"| {runs[0].Est[k].Id} | " + string.Join(" | ", por.Select(g =>
+                $"{g.Average(r => r.Est[k].Ciclos):0}; {g.Average(r => r.Est[k].Fome):0}; {g.Average(r => r.Est[k].Travada):0}")) + " |");
+        Console.WriteLine("| pecas com liga | " + string.Join(" | ", por.Select(g => $"{100.0 * g.Sum(r => r.ComLiga) / Math.Max(1, g.Sum(r => r.Pecas)):0.0}% de {g.Average(r => r.Pecas):0}")) + " |");
+        static string Min(RunD[] g, Func<RunD, int> f) { int[] v = g.Select(f).Where(x => x >= 0).ToArray(); return v.Length == 0 ? "--" : $"{v.Average():0} min ({v.Length}/{g.Length})"; }
+        Console.WriteLine("| Renome do Charter (relogio) | " + string.Join(" | ", por.Select(g => Min(g, r => r.RenomeMin))) + " |");
+        Console.WriteLine("| Charter pronto (relogio) | " + string.Join(" | ", por.Select(g => Min(g, r => r.CharterMin))) + " |");
         if (amostra.Patio == null) return 0;
         // C-CORE-07 (CONTEUDO_V1 §16): quanto da producao passa pelo patio de cotas (portao 30-70% no bot), blocos, prazo e o Charter (3 obras e
         // 1 contrato OU 10 Royal no distrito)
         Console.WriteLine();
-        Console.WriteLine("| perfil | pecas pelo patio (% das vendidas) | ouro do patio (% da receita) | blocos (no prazo) | Royal entregues | contratos | obras (3a) | Charter (condicoes; relogio) |");
+        Console.WriteLine("| perfil | pecas pelo patio (% das vendidas) | ouro do patio (% da receita) | blocos (no prazo) | Royal entregues | contratos | obras (3a) | Charter (condicoes; minuto) |");
         Console.WriteLine("|---|---|---|---|---|---|---|---|");
         foreach (BotProfile p in perfis)
         {
@@ -494,7 +508,7 @@ static class EconSim
             static string Media(IEnumerable<float> v) { float[] a = v.Where(t => t >= 0f).ToArray(); return a.Length == 0 ? "--:--" : Clock(a.Average()); }
             Console.WriteLine($"| {p.Name} | {100.0 * g.Average(r => r.CotaUn) / Math.Max(1.0, g.Average(r => r.Un)):0.0}% | {100.0 * g.Average(r => r.CotaOuro) / Math.Max(1.0, g.Average(r => r.Earned)):0.0}% | " +
                               $"{g.Average(r => r.Blocos):0.#} ({g.Average(r => r.NoPrazo):0.#}) | {g.Average(r => r.Royal):0.#} | {g.Average(r => r.Contratos):0.#} | {g.Average(r => r.Mw):0.#} ({Media(g.Select(r => r.Mw3))}) | " +
-                              $"{g.Count(r => r.Charter1 >= 0f)}/{g.Length}; {Media(g.Select(r => r.Charter1))} |");
+                              $"{g.Count(r => r.CharterMin >= 0)}/{g.Length}; {(g.Any(r => r.CharterMin >= 0) ? g.Where(r => r.CharterMin >= 0).Average(r => r.CharterMin).ToString("0") + " min" : "--")} |");
         }
         return 0;
     }
@@ -546,7 +560,8 @@ static class EconSim
             if (s.ProductionComplete && !aVenda) r.SemDestino++;
             if (s.ProductionComplete && !aVenda && !Enumerable.Range(0, s.Equipe.Defs.Length).Any(s.Equipe.AVenda)) r.SemDestinoEq++;   // C-CORE-05
             if (s.ProductionComplete && prodMin < 0) prodMin = m;
-            if (r.Charter1 < 0f && s.Patio != null && imp.CharterFalta(d.Id) == null) r.Charter1 = s.Time + pausa;   // C-CORE-07: as condicoes do Charter
+            if (r.CharterMin < 0 && imp.CharterFalta(d.Id) == null) r.CharterMin = m;   // row-pendencias: o minuto em que o Charter fica pronto
+            if (r.RenomeMin < 0 && d.Charter != null && imp.Raiz.Renome.Total >= d.Charter.Renome) r.RenomeMin = m;
             float tp = ProdD(s, rel);
             csv.AppendLine(string.Join(",", p.Name, hz.ToString("0.###"), m, s.Gold, s.GoldEarned - earned0, imp.FundoGanho - fundo0, compras, s.UpgradesBought, tp < 0f ? "" : tp.ToString("0.0")));
             earned0 = s.GoldEarned; fundo0 = imp.FundoGanho; bought0 = s.UpgradesBought;
@@ -562,6 +577,8 @@ static class EconSim
         r.Quali = 100.0 * s.QualityGold / Math.Max(1, s.GoldEarned); r.EncPct = 100.0 * s.OrderGold / Math.Max(1, s.GoldEarned); r.Enc = s.OrderGold;
         r.Mw = s.Hall.Count; r.Charter = imp.CharterFalta(d.Id);
         r.Blocos = s.CotasFechadas; r.NoPrazo = s.CotaNoPrazo.Sum(); r.Royal = s.RoyalEntregues; r.Contratos = imp.Raiz.Contratos.Concluidos.Count;   // C-CORE-07
+        r.Est = s.Stations.Where(x => x.Produces).Select(x => (x.Id, x.Crafted, x.StarveSeconds, x.StallSeconds)).ToArray();
+        for (int i = 0; i < s.ItemDefs.Length; i++) if (s.ItemDefs[i].Product) { r.Pecas += s.Crafted[i]; r.ComLiga += s.PecasComLiga[i]; }
         r.Csv = csv.ToString(); r.Segundos = clock.Elapsed.TotalSeconds;
         return r;
     }
