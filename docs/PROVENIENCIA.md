@@ -530,9 +530,9 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 | `client/Assets/_FS/Art/Marca/icone_frente.png` | 432 × 432 RGBA | 112 288 | `508c12d43b106ceb9d529d9efa5d2354124884d1a94f1d6f6f2a5bba2a4ca7bd` |
 | `arte/marca/icone_loja_512.png` (= `icone.png`) | 512 × 512 RGB | 305 206 | `8b44d592a6fa12a9b45fa175ff99f99f9c26b69c96c29141c511ebdfdc984c07` |
 | `arte/marca/logo.png` e `client/Assets/_FS/Resources/Textures/logo.png` | 1024 × 636 RGBA | 895 496 | `61eaa1e6d4af91fca4b53ef99df96b222b1bc2be5d75fb1d3b4daffb34f9ba6d` |
-| `arte/marca/feature_graphic.png` | 1024 × 500 RGB | 535 418 | `142ed2cbad7b86dff18dba759395a32a1a36c46683911cf2be723f37c85a77bf` |
+| `arte/marca/feature_graphic.png` | 1024 × 500 RGB | 627 584 | `9a84b341d02b73a9f508d54702eac590e6458ee4d68bccddfd6f640545a172ca` |
 | `arte/marca/v2/emblema.png` (recorte do A3) | 784 × 780 RGBA | 943 619 | `628e2edbab85ebd6dc1c218ebd328d6f2894c3783cbfa5d16725edfaaf287ada` |
 | `arte/marca/v2/icone_leitura.png` (folha de QA) | 2732 × 652 RGB | 461 869 | `177df08035bc485e5a75d7c55a151f76d7d89cf0b6775eab0b94ff9e6793527f` |
 | `arte/marca/v2/fonte_emblema_a3.png` (imagem do Tripo) | 1024 × 1024 RGB | 1 341 698 | `a20b80b0ee7fd7f3c701fad8bb8b006650ba6cc8d4f35a31affa9eed6f324a74` |
 | `arte/marca/v2/fonte_logo_c2.png` (imagem do Tripo) | 1376 × 768 RGB | 1 317 606 | `fe54f2c39ba056ff2317ae49de541f8c00ad70051a0dff21bc30901335d32161` |
-| `client/tools/marca_v2.py` | — | 7 257 | `535f8c84cd49e716646df5d6f10a6ed98641dd0d608542de82db6b70f3b9a370` |
+| `client/tools/marca_v2.py` | — | 7 125 | `8c4cc520ace981503215254240a2410b44206a9a9dc7b2e86d7ac8c4fccf3fe4` |

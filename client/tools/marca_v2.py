@@ -105,7 +105,7 @@ def feature_graphic(logo):
     veu = Image.new("RGBA", (w, h), (16, 12, 10, 0))
     veu.putalpha(Image.fromarray((a * 255).astype(np.uint8)))
     jogo.alpha_composite(veu)
-    lg = caber(logo, 430)
+    lg = caber(logo, 620)
     jogo.alpha_composite(lg, ((w - lg.width) // 2, (h - lg.height) // 2))
     return jogo.convert("RGB")
 
