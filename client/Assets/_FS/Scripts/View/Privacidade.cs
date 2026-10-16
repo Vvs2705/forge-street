@@ -92,7 +92,7 @@ namespace FS
         {
             _done = done;
             _root = Art.Node(safe, "Privacidade", Vector2.zero, Vector2.one);
-            _root.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.8f);   // escurece e segura os toques do resto
+            Art.Veu(_root.gameObject, 0.8f);   // escurece e segura os toques do resto
             Image edge = Art.Panel(_root, "Cartao", Art.HudEdge, new Vector2(0.06f, 0.15f), new Vector2(0.94f, 0.85f));
             Image face = Art.Panel(edge.transform, "Face", Art.HudFace, Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(6f, 6f); face.rectTransform.offsetMax = new Vector2(-6f, -6f);

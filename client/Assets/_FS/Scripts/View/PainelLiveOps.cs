@@ -73,6 +73,7 @@ namespace FS
             // painel do Passe
             _ps = Modal(safe, "Passe", new Vector2(0.04f, 0.07f), new Vector2(0.96f, 0.93f), out Transform g);
             _psTitulo = Texto(g, "Titulo", 46, 0.04f, 0.925f, 0.96f, 0.995f, TextAnchor.MiddleCenter, true);
+            Art.Cabecalho(_psTitulo);
             _psNivel = Texto(g, "Nivel", 36, 0.04f, 0.87f, 0.5f, 0.925f, TextAnchor.MiddleLeft, true);
             _psTempo = Texto(g, "Tempo", 26, 0.5f, 0.87f, 0.96f, 0.925f, TextAnchor.MiddleRight);
             _psCheio = Barra(g, 0.04f, 0.825f, 0.96f, 0.865f, Art.Gold, out _psConta);
@@ -103,6 +104,7 @@ namespace FS
             face.rectTransform.offsetMin = new Vector2(4f, 4f); face.rectTransform.offsetMax = new Vector2(-4f, -4f);
             face.raycastTarget = false;
             Button b = edge.gameObject.AddComponent<Button>();
+            Art.Apertar(edge.gameObject);
             b.targetGraphic = edge;
             b.onClick.AddListener(() => { Sfx.Play("click"); toque(); });
             Image star = Art.Node(r, "Estrela", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f)).gameObject.AddComponent<Image>();
@@ -120,7 +122,7 @@ namespace FS
         static RectTransform Modal(RectTransform safe, string nome, Vector2 min, Vector2 max, out Transform face)
         {
             RectTransform root = Art.Node(safe, nome, Vector2.zero, Vector2.one);
-            root.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);   // escurece e segura os toques
+            Art.Veu(root.gameObject);   // escurece e segura os toques
             Image edge = Art.Panel(root, "Cartao", MenuBar.Leather, min, max);
             Image card = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             card.rectTransform.offsetMin = new Vector2(6f, 14f); card.rectTransform.offsetMax = new Vector2(-6f, -6f);   // chanfro de couro embaixo
@@ -142,13 +144,7 @@ namespace FS
 
         static Image Barra(Transform f, float x0, float y0, float x1, float y1, Color cor, out Text conta)
         {
-            Image bar = Art.Node(f, "Barra", new Vector2(x0, y0), new Vector2(x1, y1)).gameObject.AddComponent<Image>();
-            bar.color = new Color(0f, 0f, 0f, 0.55f); bar.raycastTarget = false;
-            Image cheio = Art.Node(bar.transform, "Cheio", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
-            cheio.color = cor; cheio.raycastTarget = false;
-            conta = Art.Outlined(Art.NewText(bar.transform, "Conta", 24, Vector2.zero, Vector2.one), 2f);
-            conta.fontStyle = FontStyle.Bold; conta.horizontalOverflow = HorizontalWrapMode.Overflow;
-            return cheio;
+            return Art.Barra(f, new Vector2(x0, y0), new Vector2(x1, y1), cor, 24, out conta);
         }
 
         public void AbrirEvento()
@@ -232,9 +228,13 @@ namespace FS
             bg.raycastTarget = false;
             bg.gameObject.AddComponent<LayoutElement>().preferredHeight = LinhaPx;
             l.Go = bg.gameObject;
-            l.Nome = Texto(bg.transform, "Nome", 32, 0.03f, 0.5f, 0.68f, 0.95f, TextAnchor.MiddleLeft, true);
+            // interface v2: o icone do premio a esquerda (moeda, Renome, XP, cosmetico, projeto)
+            Image ic = Art.Node(bg.transform, "Icone", new Vector2(0.02f, 0.14f), new Vector2(0.13f, 0.86f)).gameObject.AddComponent<Image>();
+            ic.sprite = Art.IconePremio(premio.Tipo, out Color cor);
+            ic.color = cor; ic.preserveAspect = true; ic.raycastTarget = false;
+            l.Nome = Texto(bg.transform, "Nome", 32, 0.15f, 0.5f, 0.68f, 0.95f, TextAnchor.MiddleLeft, true);
             l.Nome.text = Loc.T("liveops.passe.nivel", n);
-            l.Texto = Texto(bg.transform, "Premio", 26, 0.03f, 0.06f, 0.68f, 0.5f, TextAnchor.MiddleLeft);
+            l.Texto = Texto(bg.transform, "Premio", 26, 0.15f, 0.06f, 0.68f, 0.5f, TextAnchor.MiddleLeft);
             l.Texto.color = MenuBar.Leather;
             l.B = Art.NewButton(bg.transform, Loc.T("metas.resgatar"), 30, MenuBar.Green, new Vector2(0.71f, 0.15f), new Vector2(0.97f, 0.85f), () => Resgata(n));
             l.BFace = l.B.GetComponent<Image>();

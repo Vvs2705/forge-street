@@ -41,7 +41,7 @@ namespace FS
         {
             _sim = sim;
             _root = Art.Node(safe, "Hall", Vector2.zero, Vector2.one);
-            _root.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);
+            Art.Veu(_root.gameObject);
             Image edge = Art.Panel(_root, "Cartao", MenuBar.Leather, new Vector2(0.04f, 0.07f), new Vector2(0.96f, 0.93f));
             Image face = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(6f, 14f); face.rectTransform.offsetMax = new Vector2(-6f, -6f);
@@ -51,8 +51,10 @@ namespace FS
             Text title = Art.NewText(f, "Titulo", 58, new Vector2(0.05f, 0.925f), new Vector2(0.65f, 0.995f), TextAnchor.MiddleLeft);
             title.text = Loc.T("hall.titulo");
             title.fontStyle = FontStyle.Bold; title.color = Tinta;
+            Art.Cabecalho(title);
             _conta = Art.NewText(f, "Conta", 40, new Vector2(0.65f, 0.925f), new Vector2(0.95f, 0.995f), TextAnchor.MiddleRight);
-            _conta.fontStyle = FontStyle.Bold; _conta.color = MenuBar.Leather;
+            _conta.fontStyle = FontStyle.Bold; _conta.color = Art.Accent;   // na faixa de couro do cabecalho
+            Art.Outlined(_conta, 2f);
 
             string[] nomes = { "hall.aba", "hall.colecao" };
             for (int k = 0; k < 2; k++)
