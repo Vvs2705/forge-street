@@ -109,6 +109,7 @@ namespace FS
         Canvas _joyCanvas;
         RectTransform _canvas, _labels, _safe, _panel, _fx;
         Text _gold, _hint, _panelTitle, _panelBody, _panelBtn, _panelGold;
+        RectTransform _panelBox; Image _festaRaios; Image[] _festaFaiscas; float _festaT = -1f; long _festaOuro;   // etapa 6: o cofre com vida
         RectTransform _panelRow;   // v0.6d: moeda + "+N" do cofre no painel
         Hint _hintH; int _hintArg = -1, _hintU;   // v0.6d: a dica so e' remontada quando muda (sem string nova a cada 0,25 s)
         RectTransform _cfg;   // v0.6b: cartao de configuracoes (Som, Vibracao, versao)
@@ -321,8 +322,12 @@ namespace FS
             Texture2D tex = Resources.Load<Texture2D>("UI/logo");
             if (tex == null) yield break;
             Image veu = Art.Node(_canvas, "Abertura", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
-            veu.color = new Color(0.06f, 0.045f, 0.04f, 0.92f);
+            veu.color = new Color(0.07f, 0.06f, 0.07f, 1f);   // opaco: a tela de idade (que abre junto) nao aparece por tras
             CanvasGroup g = veu.gameObject.AddComponent<CanvasGroup>();
+            Image brasa = Art.Node(veu.transform, "Brasa", new Vector2(-0.3f, 0.2f), new Vector2(1.3f, 0.88f)).gameObject.AddComponent<Image>();
+            brasa.sprite = Art.Glow(); brasa.color = new Color(1f, 0.45f, 0.12f, 0.55f); brasa.raycastTarget = false;
+            Image vin = Art.Node(veu.transform, "Vinheta", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            vin.sprite = Art.Vignette(); vin.color = new Color(0f, 0f, 0f, 0.7f); vin.raycastTarget = false;
             Image logo = Art.Node(veu.transform, "Logo", new Vector2(0.06f, 0.36f), new Vector2(0.94f, 0.72f)).gameObject.AddComponent<Image>();
             logo.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
             logo.preserveAspect = true; logo.raycastTarget = false;
@@ -371,7 +376,33 @@ namespace FS
         }
 
         /// <summary>v0.6d: cartao creme do cofre: titulo, "+N" grande com a moeda, uma linha e PEGAR (saiu a frase dos 25% e do teto).</summary>
-        void ShowVault(long gold) => ShowPanel(Loc.T("cofre.titulo"), Loc.T("cofre.corpo"), Loc.T("cofre.pegar"), ClosePanel, gold);
+        void ShowVault(long gold) => ShowPanel(Loc.T("cofre.titulo"), Loc.T("cofre.corpo"), Loc.T("cofre.pegar"), () =>
+        {
+            FlyCoins(_panelRow.position, 0, 10);   // etapa 6: o ouro ja entrou; as 10 moedas voam ate a HUD (so visual) e o numero pulsa
+            ClosePanel();
+        }, gold);
+
+        /// <summary>Etapa 6: cartao do cofre com vida: pop do cartao, numero contando ate o premio em 0,8 s, raios girando e 10 faiscas em leque.</summary>
+        void TickFesta(float dt)
+        {
+            if (_festaT < 0f || !_panel.gameObject.activeSelf) return;
+            _festaT += dt;
+            _panelBox.localScale = Vector3.one * Pop(_festaT);
+            _festaRaios.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -40f * _festaT);
+            float k = Mathf.Clamp01(_festaT / 0.8f);
+            _panelGold.text = "+" + (long)Math.Round(_festaOuro * (1.0 - (1.0 - k) * (1.0 - k)));
+            for (int i = 0; i < _festaFaiscas.Length; i++)
+            {
+                float t = (_festaT - 0.1f - i * 0.03f) / 0.7f;   // saem uma atras da outra
+                Image f = _festaFaiscas[i];
+                f.enabled = t > 0f && t < 1f;
+                if (!f.enabled) continue;
+                float a = i * Mathf.PI * 2f / _festaFaiscas.Length + 0.3f, e = 1f - (1f - t) * (1f - t);
+                f.rectTransform.anchoredPosition = new Vector2(Mathf.Cos(a), Mathf.Sin(a) * 0.7f) * Mathf.Lerp(60f, 340f, e);
+                f.rectTransform.localScale = Vector3.one * Mathf.Lerp(1.3f, 0.4f, t);
+                f.color = Art.ComAlfa(Art.Accent, 1f - t);
+            }
+        }
 
         void Update()
         {
@@ -903,13 +934,19 @@ namespace FS
 
             // painel modal (cofre; no dev tambem o -adtest). v0.6d: cartao creme das configuracoes; "+N" grande com a moeda so no cofre
             _panel = Art.Node(_safe, "Painel", Vector2.zero, Vector2.one);
-            _panel.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);
+            Art.Veu(_panel.gameObject);
             Image box = Art.Panel(_panel, "Caixa", MenuBar.Leather, new Vector2(0.08f, 0.35f), new Vector2(0.92f, 0.65f));
             Image card = Art.Panel(box.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             card.rectTransform.offsetMin = new Vector2(6f, 14f); card.rectTransform.offsetMax = new Vector2(-6f, -6f);   // chanfro de couro embaixo
             card.raycastTarget = false;
             _panelTitle = Art.NewText(card.transform, "Titulo", 56, new Vector2(0.05f, 0.76f), new Vector2(0.95f, 0.96f));
             _panelTitle.fontStyle = FontStyle.Bold; _panelTitle.color = MenuBar.Brown;
+            Art.Cabecalho(_panelTitle);
+            _panelBox = (RectTransform)box.transform;
+            // etapa 6 (recompensa com vida): raios girando atras do "+N" e faiscas saindo dele; so no cofre (TickFesta)
+            _festaRaios = Art.Node(card.transform, "Raios", new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.6f)).gameObject.AddComponent<Image>();
+            _festaRaios.rectTransform.sizeDelta = new Vector2(600f, 600f);
+            _festaRaios.sprite = Art.Raios(); _festaRaios.color = new Color(1f, 0.78f, 0.3f, 0.6f); _festaRaios.raycastTarget = false;
             _panelRow = Art.Node(card.transform, "Ouro", new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.6f));
             _panelRow.sizeDelta = new Vector2(300f, 90f);
             Image coin = Art.Node(_panelRow, "Moeda", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f)).gameObject.AddComponent<Image>();
@@ -918,6 +955,14 @@ namespace FS
             _panelGold = Art.Outlined(Art.NewText(_panelRow, "Valor", 64, Vector2.zero, Vector2.one, TextAnchor.MiddleLeft), 3f);
             _panelGold.rectTransform.offsetMin = new Vector2(96f, 0f);
             _panelGold.fontStyle = FontStyle.Bold; _panelGold.color = Art.Accent; _panelGold.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _festaFaiscas = new Image[10];
+            for (int i = 0; i < _festaFaiscas.Length; i++)
+            {
+                Image f = Art.Node(card.transform, "Faisca", new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.6f)).gameObject.AddComponent<Image>();
+                f.sprite = Art.Sparkle(); f.raycastTarget = false; f.enabled = false;
+                f.rectTransform.sizeDelta = new Vector2(44f, 44f);
+                _festaFaiscas[i] = f;
+            }
             _panelBody = Art.NewText(card.transform, "Corpo", 26, new Vector2(0.06f, 0.33f), new Vector2(0.94f, 0.46f));
             _panelBody.color = Art.ComAlfa(MenuBar.Brown, 0.8f);
             _panelBody.resizeTextForBestFit = true; _panelBody.resizeTextMinSize = 22; _panelBody.resizeTextMaxSize = 40;   // mapa e qualidade: legivel no aparelho
@@ -1001,6 +1046,7 @@ namespace FS
         void RefreshHud()
         {
             TickCoins(Time.deltaTime);
+            TickFesta(Mathf.Min(Captura.Passo, 0.1f));   // tempo real, como o resto da HUD (gravando, o do quadro)
             RefreshAdUi();
             float real = Mathf.Min(Captura.Passo, 0.1f);   // tempo real (o simulado zera o timeScale; gravando, o do quadro), sem o salto do 1o quadro
             _cards?.Refresh(_sim, real);   // B-CORE-05
@@ -1086,6 +1132,7 @@ namespace FS
             var a = new AdBtn();
             Image edge = Art.Panel(parent, name, Art.Gold, Vector2.zero, Vector2.zero);
             a.B = edge.gameObject.AddComponent<Button>();
+            Art.Apertar(edge.gameObject);
             a.B.targetGraphic = edge;
             a.B.onClick.AddListener(() => onClick());
             a.Face = Art.Panel(edge.transform, "Face", AdFace, Vector2.zero, Vector2.one);
@@ -1124,6 +1171,7 @@ namespace FS
             RectTransform r = edge.rectTransform;
             r.pivot = Vector2.zero; r.sizeDelta = new Vector2(ChipW, ChipH); r.anchoredPosition = new Vector2(Edge + x, 24f + OrderH + 8f);
             a.B = edge.gameObject.AddComponent<Button>();
+            Art.Apertar(edge.gameObject);
             a.B.targetGraphic = edge;
             a.B.onClick.AddListener(() => onClick());
             a.Face = Art.Panel(edge.transform, "Face", AdFace, Vector2.zero, Vector2.one);
@@ -1455,12 +1503,13 @@ namespace FS
                 Image icon = Art.Node(gear.transform, "Icone", new Vector2(0.17f, 0.17f), new Vector2(0.83f, 0.83f)).gameObject.AddComponent<Image>();
                 icon.sprite = Art.Gear(); icon.color = Art.HudEdge; icon.preserveAspect = true; icon.raycastTarget = false;
                 Button gb = gear.gameObject.AddComponent<Button>();
+                Art.Apertar(gear.gameObject);
                 gb.targetGraphic = gear;
                 gb.onClick.AddListener(() => { Sfx.Play("click"); _cfg.gameObject.SetActive(true); });
             }
 
             _cfg = Art.Node(_safe, "Configuracoes", Vector2.zero, Vector2.one);
-            _cfg.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);   // escurece e segura os toques do resto
+            Art.Veu(_cfg.gameObject);   // escurece e segura os toques do resto
             // DM §109: 4 linhas (o Idioma entrou): 0,40 -> 0,46 da tela, com linhas, titulo e botoes do mesmo tamanho em px
             Image edge = Art.Panel(_cfg, "Cartao", MenuBar.Leather, new Vector2(0.1f, 0.27f), new Vector2(0.9f, 0.73f));
             Image face = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
@@ -1468,6 +1517,7 @@ namespace FS
             face.raycastTarget = false;
             Text title = Art.NewText(face.transform, "Titulo", 60, new Vector2(0.05f, 0.875f), new Vector2(0.95f, 0.985f));
             title.text = Loc.T("cfg.titulo"); title.fontStyle = FontStyle.Bold; title.color = MenuBar.Brown;
+            Art.Cabecalho(title);
             Chave(face.transform, "Musica", Loc.T("cfg.musica"), 0.74f, () => Ajustes.Musica, v => SetSom("musica", v), true);
             Chave(face.transform, "Efeitos", Loc.T("cfg.efeitos"), 0.605f, () => Ajustes.Efeitos, v => SetSom("efeitos", v), true);
             Chave(face.transform, "Vibracao", Loc.T("cfg.vibracao"), 0.47f, () => Ajustes.Vibra, v => { SetVibra(v); if (v) Ajustes.Confirmar(); }, Ajustes.TemVibra);
@@ -1546,6 +1596,7 @@ namespace FS
             Text state = Art.NewText(face.transform, "Estado", 30, Vector2.zero, Vector2.one);
             state.fontStyle = FontStyle.Bold;
             Button b = edge.gameObject.AddComponent<Button>();
+            Art.Apertar(edge.gameObject);
             b.targetGraphic = edge;
             void Paint()
             {
@@ -1611,6 +1662,9 @@ namespace FS
             _panelBtn.text = button;
             _panelAction = action;
             _panelRow.gameObject.SetActive(gold > 0);
+            _festaRaios.enabled = gold > 0;
+            _festaT = gold > 0 ? 0f : -1f; _festaOuro = gold;
+            _panelBox.localScale = Vector3.one;
             _panelBody.rectTransform.anchorMax = new Vector2(0.94f, gold > 0 ? 0.46f : 0.74f);   // sem o "+N" do cofre, o texto usa o vao abaixo do titulo
             if (gold <= 0) return;
             _panelGold.text = "+" + gold;

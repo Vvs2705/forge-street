@@ -57,13 +57,9 @@ namespace FS
             c.Titulo.fontStyle = FontStyle.Bold;
             c.Titulo.resizeTextForBestFit = true; c.Titulo.resizeTextMinSize = 18; c.Titulo.resizeTextMaxSize = 34;
             c.Titulo.verticalOverflow = VerticalWrapMode.Truncate;
-            Image bar = Art.Node(edge.transform, "Barra", new Vector2(0.25f, 0.29f), new Vector2(0.64f, 0.29f)).gameObject.AddComponent<Image>();
-            bar.rectTransform.offsetMin = new Vector2(0f, -10f); bar.rectTransform.offsetMax = new Vector2(0f, 10f);   // 20 px de altura
-            bar.color = new Color(0f, 0f, 0f, 0.6f); bar.raycastTarget = false;
-            c.Fill = Art.Node(bar.transform, "Cheio", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
-            c.Fill.color = Art.Good; c.Fill.raycastTarget = false;
-            c.Barra = Art.Outlined(Art.NewText(bar.transform, "Conta", 24, Vector2.zero, Vector2.one), 2f);
-            c.Barra.fontStyle = FontStyle.Bold; c.Barra.horizontalOverflow = HorizontalWrapMode.Overflow;
+            c.Fill = Art.Barra(edge.transform, new Vector2(0.25f, 0.29f), new Vector2(0.64f, 0.29f), Art.Good, 24, out c.Barra);
+            var bar = (RectTransform)c.Fill.transform.parent;
+            bar.offsetMin = new Vector2(0f, -10f); bar.offsetMax = new Vector2(0f, 10f);   // 20 px de altura
             c.Coin = Art.Node(edge.transform, "Moeda", new Vector2(0.67f, 0.08f), new Vector2(0.77f, 0.5f)).gameObject.AddComponent<Image>();
             c.Coin.sprite = coin; c.Coin.color = coinTint; c.Coin.preserveAspect = true; c.Coin.raycastTarget = false;
             c.Premio = Art.Outlined(Art.NewText(edge.transform, "Premio", 32, new Vector2(0.78f, 0.04f), new Vector2(0.99f, 0.54f), TextAnchor.MiddleLeft), 2f);

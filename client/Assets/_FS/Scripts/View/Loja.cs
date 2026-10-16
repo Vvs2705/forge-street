@@ -169,7 +169,7 @@ namespace FS
         {
             _sim = sim; _loja = loja;
             _root = Art.Node(safe, "Loja", Vector2.zero, Vector2.one);
-            _root.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);
+            Art.Veu(_root.gameObject);
             Image edge = Art.Panel(_root, "Cartao", MenuBar.Leather, new Vector2(0.06f, 0.2f), new Vector2(0.94f, 0.8f));
             Image face = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(6f, 14f); face.rectTransform.offsetMax = new Vector2(-6f, -6f);
@@ -177,6 +177,7 @@ namespace FS
             Transform f = face.transform;
             Text title = Art.NewText(f, "Titulo", 58, new Vector2(0.05f, 0.88f), new Vector2(0.95f, 0.98f));
             title.text = Loc.T("loja.titulo"); title.fontStyle = FontStyle.Bold; title.color = MenuBar.Brown;
+            Art.Cabecalho(title);
             float h = 0.5f / Compras.Catalogo.Length;
             for (int i = 0; i < Compras.Catalogo.Length; i++)
             {

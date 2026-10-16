@@ -210,6 +210,113 @@ namespace FS
             return s;
         }
 
+        /// <summary>
+        /// Interface v2 (programa de arte, etapa 4): o 9-fatias do Box com relevo em cinza, que a cor do Image tinge: aro escuro de 3 px,
+        /// filete claro em cima e sombra embaixo (3 px), corpo a 94%. Painel, cartao e botao ganham moldura sem asset.
+        /// </summary>
+        public static Sprite Moldura()
+        {
+            if (Cache.TryGetValue("moldura9", out Sprite s) && s != null) return s;
+            const float r = 20f, h = Side * 0.5f;
+            var tex = new Texture2D(Side, Side, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var px = new Color32[Side * Side];
+            for (int y = 0; y < Side; y++)
+                for (int x = 0; x < Side; x++)
+                {
+                    // distancia com sinal ao retangulo arredondado (negativa dentro), em px
+                    float qx = Mathf.Abs(x + 0.5f - h) - (h - r), qy = Mathf.Abs(y + 0.5f - h) - (h - r);
+                    float sd = new Vector2(Mathf.Max(qx, 0f), Mathf.Max(qy, 0f)).magnitude + Mathf.Min(Mathf.Max(qx, qy), 0f) - r;
+                    float fundo = -sd, cima = y + 0.5f > h ? 1f : 0.72f;
+                    float v = Mathf.Lerp(0.5f, Mathf.Lerp(cima, 0.94f, Mathf.Clamp01(fundo - 5.5f)), Mathf.Clamp01(fundo - 2.5f));
+                    byte c = (byte)(255f * v);
+                    px[y * Side + x] = new Color32(c, c, c, (byte)(255f * Mathf.Clamp01(0.5f - sd)));
+                }
+            tex.SetPixels32(px);
+            tex.Apply(false, true);
+            s = Sprite.Create(tex, new Rect(0, 0, Side, Side), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(22, 22, 22, 22));
+            Cache["moldura9"] = s;
+            return s;
+        }
+
+        /// <summary>
+        /// Interface v2: barra de progresso com moldura (trilho escuro com aro; cheio com relevo e brilho na metade de cima). O chamador
+        /// enche mexendo no anchorMax.x do cheio que volta; o trilho e' o pai dele.
+        /// </summary>
+        public static Image Barra(Transform parent, Vector2 anchorMin, Vector2 anchorMax, Color cor, int tamConta, out Text conta)
+        {
+            Image bar = Panel(parent, "Barra", new Color(0.12f, 0.08f, 0.06f, 0.8f), anchorMin, anchorMax);
+            bar.pixelsPerUnitMultiplier = 2f;   // barra baixa: canto e aro pela metade
+            bar.raycastTarget = false;
+            Image cheio = Panel(bar.transform, "Cheio", cor, Vector2.zero, Vector2.one);
+            cheio.pixelsPerUnitMultiplier = 2f; cheio.raycastTarget = false;
+            Image brilho = Panel(cheio.transform, "Brilho", new Color(1f, 1f, 1f, 0.25f), new Vector2(0f, 0.55f), new Vector2(1f, 0.9f));
+            brilho.sprite = Box(); brilho.pixelsPerUnitMultiplier = 3f; brilho.raycastTarget = false;
+            conta = Outlined(NewText(bar.transform, "Conta", tamConta, Vector2.zero, Vector2.one), 2f);
+            conta.fontStyle = FontStyle.Bold; conta.horizontalOverflow = HorizontalWrapMode.Overflow;
+            return cheio;
+        }
+
+        /// <summary>Arte pintada de interface: Resources/UI/&lt;nome&gt;.png como Sprite (cache); null sem o arquivo.</summary>
+        public static Sprite UI(string nome)
+        {
+            string key = "ui:" + nome;
+            if (Cache.TryGetValue(key, out Sprite s)) return s;
+            Texture2D tex = Resources.Load<Texture2D>("UI/" + nome);
+            s = tex == null ? null : Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
+            Cache[key] = s;
+            return s;
+        }
+
+        /// <summary>Icone por tipo de premio (login, Passe, evento): a arte pintada (Resources/UI/premio_*) ou a moeda renderizada; sem elas,
+        /// a forma de sempre na cor do tipo. A cor volta branca quando a arte existe.</summary>
+        public static Sprite IconePremio(TipoPremio t, out Color cor)
+        {
+            Sprite arte = t == TipoPremio.Ouro ? Icon("moeda", "icone") : UI("premio_" + t.ToString().ToLowerInvariant());
+            Sprite forma = t == TipoPremio.Ouro ? Disc() : t == TipoPremio.Renome ? Star() : t == TipoPremio.PassXp ? Diamond()
+                : t == TipoPremio.Cosmetico ? Sparkle() : t == TipoPremio.Blueprint ? Plus() : Jewel();
+            cor = arte != null ? Color.white : t == TipoPremio.PassXp ? Hex(0x5AA9E6) : t == TipoPremio.Blueprint ? Hex(0x4A7FC1) : Gold;
+            return arte ?? forma;
+        }
+
+        /// <summary>
+        /// Sobra da auditoria (itens 2 e 3): faixa de couro de ponta a ponta do cartao atras do titulo do painel, com o titulo em creme e
+        /// contorno. Chamar depois de pintar o titulo; o que fica na mesma faixa (ouro, contagem) vem depois na hierarquia e fica por cima.
+        /// </summary>
+        public static Image Cabecalho(Text titulo)
+        {
+            RectTransform tr = titulo.rectTransform;
+            Image f = Panel(tr.parent, "Cabecalho", MenuBar.Leather, new Vector2(0.012f, tr.anchorMin.y - 0.004f),
+                new Vector2(0.988f, Mathf.Min(0.996f, tr.anchorMax.y + 0.002f)));
+            f.raycastTarget = false;
+            f.transform.SetSiblingIndex(tr.GetSiblingIndex());
+            titulo.color = MenuBar.Cream;
+            Outlined(titulo, 3f);
+            return f;
+        }
+
+        /// <summary>Escala 0,94 enquanto o dedo aperta (botao de verdade); solta ou sai = 1.</summary>
+        public static void Apertar(GameObject g) { if (g.GetComponent<Aperta>() == null) g.AddComponent<Aperta>(); }
+
+        /// <summary>
+        /// Interface v2, fundo tematico dos modais: veu escuro quente (segura os toques do resto), brasa laranja no meio e vinheta nas bordas,
+        /// como a abertura e o icone. Chamar logo depois de criar o no do modal: a brasa e a vinheta ficam atras do cartao.
+        /// </summary>
+        public static void Veu(GameObject root, float alfa = 0.65f)
+        {
+            root.AddComponent<Image>().color = new Color(0.05f, 0.03f, 0.02f, alfa);
+            Image brasa = Node(root.transform, "Brasa", new Vector2(-0.35f, 0.1f), new Vector2(1.35f, 0.9f)).gameObject.AddComponent<Image>();
+            brasa.sprite = Glow(); brasa.color = new Color(1f, 0.45f, 0.12f, 0.16f); brasa.raycastTarget = false;
+            Image vin = Node(root.transform, "Vinheta", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            vin.sprite = Vignette(); vin.color = new Color(0f, 0f, 0f, 0.5f); vin.raycastTarget = false;
+        }
+
+        /// <summary>Etapa 6 (recompensa com vida): 12 raios de luz saindo do centro e sumindo na borda; gira atras do premio.</summary>
+        public static Sprite Raios() => Soft("raios", (x, y) =>
+        {
+            float r = Mathf.Sqrt(x * x + y * y), w = 0.5f + 0.5f * Mathf.Cos(12f * Mathf.Atan2(y, x));
+            return w * w * w * Mathf.Clamp01(1f - r) * Mathf.Clamp01(r * 4f);
+        });
+
         /// <summary>Vinheta: escurece so as bordas (alfa 0 no centro, ~1 nos cantos); Image por cima do mundo e abaixo da HUD.</summary>
         public static Sprite Vignette() => Soft("vignette", (x, y) => Mathf.Clamp01((x * x + y * y - 0.55f) / 1.2f));
 
@@ -392,8 +499,12 @@ namespace FS
         }
 
         // ---------- uGUI por codigo (fonte embutida, sem TextMeshPro) ----------
-        static Font _font;
-        public static Font Font() => _font != null ? _font : (_font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"));
+        // Interface v2: Nunito Bold no texto e Lilita One em titulo, numero grande e botao (Google Fonts, SIL OFL 1.1, Resources/Fonts);
+        // sem o arquivo, a fonte embutida do Unity
+        static Font _font, _titulo;
+        public static Font Font() => _font != null ? _font : (_font = Resources.Load<Font>("Fonts/Nunito-Bold") ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"));
+        public static Font Titulo() => _titulo != null ? _titulo : (_titulo = Resources.Load<Font>("Fonts/LilitaOne-Regular") ?? Font());
+        public const int TamTitulo = 40;   // NewText de 40 px ou mais (titulos, ouro, precos) usa a Lilita One
 
         public static RectTransform Node(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax)
         {
@@ -407,7 +518,8 @@ namespace FS
         public static Text NewText(Transform parent, string name, int size, Vector2 anchorMin, Vector2 anchorMax, TextAnchor align = TextAnchor.MiddleCenter)
         {
             var t = Node(parent, name, anchorMin, anchorMax).gameObject.AddComponent<Text>();
-            t.font = Font();
+            t.font = size >= TamTitulo ? Titulo() : Font();
+            if (size >= TamTitulo) t.gameObject.AddComponent<SemNegrito>();
             t.fontSize = size;
             t.color = Ink;
             t.alignment = align;
@@ -429,7 +541,7 @@ namespace FS
         public static Image Panel(Transform parent, string name, Color color, Vector2 anchorMin, Vector2 anchorMax)
         {
             var img = Node(parent, name, anchorMin, anchorMax).gameObject.AddComponent<Image>();
-            img.sprite = Box();   // v0.5b: 9-fatias, canto redondo de verdade (o Rounded esticado achatava os cantos)
+            img.sprite = Moldura();   // v0.5b: 9-fatias, canto redondo de verdade; interface v2: com aro e relevo
             img.type = Image.Type.Sliced;
             img.color = color;
             return img;
@@ -441,10 +553,17 @@ namespace FS
             var b = img.gameObject.AddComponent<Button>();
             b.targetGraphic = img;
             b.onClick.AddListener(() => { Sfx.Play("click"); onClick(); });
+            // interface v2: labio embaixo (a mesma forma 8 px abaixo, mais escura), brilho na metade de cima e escala ao apertar
+            var labio = img.gameObject.AddComponent<Shadow>();
+            labio.effectColor = Color.Lerp(color, Color.black, 0.55f);
+            labio.effectDistance = new Vector2(0f, -8f);
+            Image brilho = Panel(img.transform, "Brilho", new Color(1f, 1f, 1f, 0.11f), new Vector2(0.05f, 0.55f), new Vector2(0.95f, 0.88f));
+            brilho.sprite = Box(); brilho.raycastTarget = false;
+            Apertar(img.gameObject);
             Text t = NewText(img.transform, "Label", size, Vector2.zero, Vector2.one);
+            t.font = Titulo();
             t.text = label;
             t.color = HudFace;
-            t.fontStyle = FontStyle.Bold;
             return b;
         }
     }
@@ -456,6 +575,21 @@ namespace FS
     /// Pulso = VibrationEffect.createOneShot(ms, forca) do Android; no PC e no editor nao faz nada. A-AUD-22 (Documento Mestre s72, "nao vibrar a cada pequena venda"): quem chama escolhe ms e forca por importancia
     /// (Game.HandleEvents/Bought) e o teto e' de 4 pulsos por segundo (so um pulso mais forte fura a espera).
     /// </summary>
+    /// <summary>Interface v2: a Lilita One nao tem negrito e o Bold sintetico do Unity a borra; tira o Bold que o chamador poe depois do NewText.</summary>
+    public sealed class SemNegrito : MonoBehaviour
+    {
+        void Start() { var t = GetComponent<Text>(); if (t != null && t.font == Art.Titulo()) t.fontStyle = FontStyle.Normal; }
+    }
+
+    /// <summary>Interface v2: o botao afunda (escala 0,94) enquanto apertado.</summary>
+    public sealed class Aperta : MonoBehaviour, UnityEngine.EventSystems.IPointerDownHandler, UnityEngine.EventSystems.IPointerUpHandler,
+        UnityEngine.EventSystems.IPointerExitHandler
+    {
+        public void OnPointerDown(UnityEngine.EventSystems.PointerEventData e) => transform.localScale = Vector3.one * 0.94f;
+        public void OnPointerUp(UnityEngine.EventSystems.PointerEventData e) => transform.localScale = Vector3.one;
+        public void OnPointerExit(UnityEngine.EventSystems.PointerEventData e) => transform.localScale = Vector3.one;
+    }
+
     public static class Ajustes
     {
         const string SomKey = "fs_som", MusicaKey = "fs_musica", EfeitosKey = "fs_efeitos", VibraKey = "fs_vibra";
