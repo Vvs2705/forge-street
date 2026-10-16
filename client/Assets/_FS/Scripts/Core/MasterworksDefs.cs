@@ -8,7 +8,10 @@ namespace FS.Core
     /// EncomendasTipo = OrdersOfType:tipo (OrderType; contador order_complete do Orders 2.0, B-CORE-05); NivelWorker = WorkerLevel:wk;
     /// VendidosQualidade = QualitySold:item@nivel; C-CORE-05: PecasComLiga = AlloyPieces:item (Sim.PecasComLiga). Nenhum tipo fala de anuncio,
     /// compra ou Gem (GDD §13, V4); os dos distritos 3 em diante (cotas, energizadas, exportacao...) entram com a mecanica deles (Wave C).</summary>
-    public enum CondicaoMw { Vendidos, NivelEstacao, Renome, EncomendasItem, EncomendasTipo, NivelWorker, VendidosQualidade, PecasComLiga }
+    public enum CondicaoMw { Vendidos, NivelEstacao, Renome, EncomendasItem, EncomendasTipo, NivelWorker, VendidosQualidade, PecasComLiga,
+        /// <summary>C-CORE-06: RichClients (Sim.ClientesRicos: nobres e colecionadores atendidos no distrito; sem Ref) e GemsCut (Feitos: pecas de
+        /// `Ref` feitas pelas estacoes fixas, Station.Crafted, no save).</summary>
+        ClientesRicos, Feitos }
 
     /// <summary>Uma condicao: `Ref` = item, familia de estacao, tipo de encomenda ou worker (Renome: nenhum); `N` = o alvo; `MinQ` = nivel
     /// minimo da peca vendida (so VendidosQualidade).</summary>
@@ -182,7 +185,7 @@ namespace FS.Core
                 else if (!ids.Add(d.Id)) yield return $"{at} ID repetido";
                 if (Array.IndexOf(ContentValidator.Distritos, d.District) < 0 || d.District != w.Distrito.Id) yield return $"{at} distrito \"{d.District}\" nao existe (ou nao e' o do mundo)";
                 // familia: estacoes do mundo que fazem um produto dela; Superior alcancavel em pelo menos uma (q maximo > 100)
-                List<Station> st = w.Stations.FindAll(s => s.Produces && w.IsProduct(s.OutItem) && w.ItemDefs[(int)s.OutItem].Family == d.Familia);
+                List<Station> st = w.Stations.FindAll(s => w.FazFamilia(s, d.Familia));   // C-CORE-06: a bancada configuravel por toda receita dela
                 if (st.Count == 0) yield return $"{at} familia \"{d.Familia}\" sem produto feito no mundo";
                 else if (!st.Exists(s => QMaximo(s.Recipe.Family, w.T, ups, bps, w.Equipe.Defs, LigaFeita(s, w)) > 100)) yield return $"{at} Superior inalcancavel na familia {d.Familia} (q maximo <= 100)";
                 int b = ProjetosDefs.IndexOf(d.Blueprint, bps);
@@ -207,6 +210,8 @@ namespace FS.Core
                         case CondicaoMw.EncomendasTipo: ok &= Tipo(c.Ref) != null && Tipo(c.Ref) != OrderType.Event; break;   // evento e' temporario
                         case CondicaoMw.NivelWorker: int k = WorkerDefs.IndexOf(c.Ref, w.Equipe.Defs); ok &= k >= 0 && c.N >= 2 && c.N <= w.Equipe.Defs[k].MaxNivel; break;
                         case CondicaoMw.PecasComLiga: int p = Produto(c.Ref); ok &= p >= 0 && w.Stations.Exists(s => s.Produces && (int)s.OutItem == p && LigaFeita(s, w)); break;   // C-CORE-05
+                        case CondicaoMw.ClientesRicos: ok &= c.Ref == null && w.Distrito.Clientes != null && Array.Exists(w.Distrito.Clientes, f => f.Rico); break;   // C-CORE-06
+                        case CondicaoMw.Feitos: int fi = Items.IndexOf(c.Ref, w.ItemDefs); ok &= fi >= 0 && w.Stations.Exists(s => s.Produces && s.Receitas == null && (int)s.OutItem == fi); break;
                         default: ok = false; break;   // tipo que o nucleo nao conhece
                     }
                     if (!ok) yield return $"{ac} inalcancavel (alvo, nivel ou tipo que o build nao tem)";
