@@ -266,6 +266,9 @@ namespace FS.Tests
                 Compra(s, "estrela1", "estrela2", "estrela3", Sim.Mensageiro);
                 int sino = I(s, "sino_catedral");
                 if (!lote) s.Lote[sino] = s.TamanhoLote;   // cheio
+                s.Stock[sino] = s.CounterCap; s.Player.Held[sino] = 1;   // balcao cheio: o ferreiro so entrega se o lote aceita
+                Assert.AreEqual(lote ? (Item)sino : Item.Ore, s.Deliverable(s.Player), "ferreiro com o balcao cheio");
+                s.Stock[sino] = 0; s.Player.Held[sino] = 0;
                 s.Est("fundicao_sinos").Out = 3;
                 Roda(s, 40f);
                 Assert.AreEqual(lote ? 3 : s.TamanhoLote, s.Lote[sino], "pecas no lote");
@@ -291,6 +294,10 @@ namespace FS.Tests
             Assert.AreEqual((est, 7, 4, 3.5f, 61.25f), (l.LoteProduto, l.ImportedUnits, l.ExportLots, l.ImportT, l.ExportT));
             Assert.AreEqual((3, 1, 2), (l.Lote[sino], l.LoteQ[sino][(int)Quality.Superior], l.Lote[est]));
             Assert.AreEqual(t, l.Save(100), "regrava igual");
+            Sim so = Novo();
+            Compra(so, Sim.Mensageiro, "cratera_estelar");
+            so.EscolheLote(est);
+            Assert.AreEqual(est, Sim.Load(so.Save(100), distrito: GF).LoteProduto, "so o produto do lote escolhido tambem grava");
             string sem = string.Join("\n", t.Split('\n').Where(x => !x.StartsWith("gf", StringComparison.Ordinal)));
             Sim v = Sim.Load(sem, distrito: GF);
             Assert.AreEqual((-1, 0, 0, 0), (v.LoteProduto, v.ImportedUnits, v.ExportLots, v.LoteTotal), "save sem as linhas: o padrao");
