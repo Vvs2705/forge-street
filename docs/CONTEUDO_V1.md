@@ -180,6 +180,7 @@ Bairro de ourives; ouro, cobre, vitrines, lanternas. Família: fivela, cinzel, c
 
 - **Major unlock:** `lapidario` (lapidação de gemas: colar e caixa de joias).
 - **Charter:** produção completa + Renome 6 (1.250) + 3 Masterworks do distrito.
+- **Medido (C-CORE-06, `BALANCE.md` §37, revisar):** no jogo os preços do §3 valem × 3 e os produtivos do §5.3 × 1,5 (transporte, como a Row); o intervalo da linha é 12 s nas 7 (as famílias do §12 multiplicam); a troca espera a saída esvaziar; o fole de ourives também acelera o lapidário; a ourivesaria II pede o fole de ourives; a técnica da lapidação dá +15 só no colar e na caixa. Produção completa do F2P 58 min, renda ~14–16 mil/min, Charter do Ideal em 4:27 h.
 
 ### 2.4 Royal Arsenal (`royal_arsenal`) — cotas reais
 
@@ -540,6 +541,8 @@ Categoria (`ECONOMIA_WAVE_B.md` §8.7): `Production` (conta na produção comple
 
 
 ### 5.3 Artisan Quarter (CostBase 1.440; 1º produtivo 1.440; fundo ao chegar 2.400/min)
+
+Medido (C-CORE-06, `BALANCE.md` §37): no jogo os 18 produtivos valem × 1,5 (2.160 … 180.000; 794.565 no total) com os preços × 3; luxo e níveis como abaixo.
 
 <!-- tabela: upgrades -->
 | id | categoria | tier | pt | en | es | efeito | requer | custo |
