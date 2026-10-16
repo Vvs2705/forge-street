@@ -309,7 +309,7 @@ MUTACOES = [
         'o ajudante no nível 1 já anda 6% mais rápido (o jogo deixa de ser o de antes)'),
     mut('wk-carga-nivel', EQUIPE, 'foreach (int l in WorkerDefs.PorterCargaEm) if (n >= l) c++;', 'foreach (int l in WorkerDefs.PorterCargaEm) if (n > l) c++;',
         'a carga extra do ajudante chega um nível depois'),
-    mut('wk-oficial-outra-familia', EQUIPE, 'Defs[k].Station == s.Recipe.Family && Nivel(k) > 0', 'Nivel(k) > 0',
+    mut('wk-oficial-outra-familia', EQUIPE, '(Defs[k].Station == s.Recipe.Family || Defs[k].Especialidade == Specialty.Arcane && _sim.Arcana(s)) && Nivel(k) > 0', 'Nivel(k) > 0',
         'o oficial vale em toda bancada, não só na da família dele'),
     mut('wk-mestre-na-fornalha', EQUIPE, 'if (m > 0 && s.Kind == Kind.Crafter) r +=', 'if (m > 0) r +=',
         'o mestre de obras acelera também a fornalha'),
