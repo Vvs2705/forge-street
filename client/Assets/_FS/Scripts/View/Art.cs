@@ -278,6 +278,22 @@ namespace FS
             return arte ?? forma;
         }
 
+        /// <summary>
+        /// Sobra da auditoria (itens 2 e 3): faixa de couro de ponta a ponta do cartao atras do titulo do painel, com o titulo em creme e
+        /// contorno. Chamar depois de pintar o titulo; o que fica na mesma faixa (ouro, contagem) vem depois na hierarquia e fica por cima.
+        /// </summary>
+        public static Image Cabecalho(Text titulo)
+        {
+            RectTransform tr = titulo.rectTransform;
+            Image f = Panel(tr.parent, "Cabecalho", MenuBar.Leather, new Vector2(0.012f, tr.anchorMin.y - 0.004f),
+                new Vector2(0.988f, Mathf.Min(0.996f, tr.anchorMax.y + 0.002f)));
+            f.raycastTarget = false;
+            f.transform.SetSiblingIndex(tr.GetSiblingIndex());
+            titulo.color = MenuBar.Cream;
+            Outlined(titulo, 3f);
+            return f;
+        }
+
         /// <summary>Escala 0,94 enquanto o dedo aperta (botao de verdade); solta ou sai = 1.</summary>
         public static void Apertar(GameObject g) { if (g.GetComponent<Aperta>() == null) g.AddComponent<Aperta>(); }
 

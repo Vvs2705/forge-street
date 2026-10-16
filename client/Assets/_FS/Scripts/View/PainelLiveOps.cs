@@ -73,6 +73,7 @@ namespace FS
             // painel do Passe
             _ps = Modal(safe, "Passe", new Vector2(0.04f, 0.07f), new Vector2(0.96f, 0.93f), out Transform g);
             _psTitulo = Texto(g, "Titulo", 46, 0.04f, 0.925f, 0.96f, 0.995f, TextAnchor.MiddleCenter, true);
+            Art.Cabecalho(_psTitulo);
             _psNivel = Texto(g, "Nivel", 36, 0.04f, 0.87f, 0.5f, 0.925f, TextAnchor.MiddleLeft, true);
             _psTempo = Texto(g, "Tempo", 26, 0.5f, 0.87f, 0.96f, 0.925f, TextAnchor.MiddleRight);
             _psCheio = Barra(g, 0.04f, 0.825f, 0.96f, 0.865f, Art.Gold, out _psConta);

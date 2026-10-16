@@ -45,8 +45,10 @@ namespace FS
             Text title = Art.NewText(f, "Titulo", 58, new Vector2(0.05f, 0.925f), new Vector2(0.65f, 0.995f), TextAnchor.MiddleLeft);
             title.text = Loc.T("proj.titulo");
             title.fontStyle = FontStyle.Bold; title.color = Tinta;
+            Art.Cabecalho(title);
             _conta = Art.NewText(f, "Conta", 40, new Vector2(0.65f, 0.925f), new Vector2(0.95f, 0.995f), TextAnchor.MiddleRight);
-            _conta.fontStyle = FontStyle.Bold; _conta.color = MenuBar.Leather;
+            _conta.fontStyle = FontStyle.Bold; _conta.color = Art.Accent;   // na faixa de couro do cabecalho
+            Art.Outlined(_conta, 2f);
 
             RectTransform box = Art.Node(f, "Lista", new Vector2(0.03f, 0.12f), new Vector2(0.97f, 0.91f));
             var scroll = box.gameObject.AddComponent<ScrollRect>();

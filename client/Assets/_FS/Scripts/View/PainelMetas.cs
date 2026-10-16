@@ -59,6 +59,7 @@ namespace FS
             Text title = Art.NewText(f, "Titulo", 58, new Vector2(0.05f, 0.925f), new Vector2(0.6f, 0.995f), TextAnchor.MiddleLeft);
             title.text = Loc.T("metas.titulo");
             title.fontStyle = FontStyle.Bold; title.color = Tinta;
+            Art.Cabecalho(title);
             Image coin = Art.Node(f, "Moeda", new Vector2(0.6f, 0.935f), new Vector2(0.68f, 0.985f)).gameObject.AddComponent<Image>();
             Sprite moeda = Art.Icon("moeda", "icone");
             coin.sprite = moeda != null ? moeda : Art.Disc(); coin.color = moeda != null ? Color.white : Art.Accent;

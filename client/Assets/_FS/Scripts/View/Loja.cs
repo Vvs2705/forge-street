@@ -177,6 +177,7 @@ namespace FS
             Transform f = face.transform;
             Text title = Art.NewText(f, "Titulo", 58, new Vector2(0.05f, 0.88f), new Vector2(0.95f, 0.98f));
             title.text = Loc.T("loja.titulo"); title.fontStyle = FontStyle.Bold; title.color = MenuBar.Brown;
+            Art.Cabecalho(title);
             float h = 0.5f / Compras.Catalogo.Length;
             for (int i = 0; i < Compras.Catalogo.Length; i++)
             {
