@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Marca v2 (programa de arte, etapas 2–3):** ícone do app novo (emblema A3: escudo com bigorna, martelo, chama e a fita do nome), com o adaptativo do Android, o legado, o redondo e o 512 da loja; logo de título novo (C2: letras 3D de ouro) numa abertura dentro do jogo (2,4 s ou um toque) e na feature graphic. Imagens do Tripo (Nano Banana 2, 0 crédito); `docs/ASSETS.md` §17.
 - **Arte do Royal Arsenal (C-ART-13, parte 2):** forja de lâminas, bancadas de kits e da guarda, mesa do gravador, forjas cerimonial e de alabardas, montagem de gala e pátio de cotas com os modelos próprios do Tripo (Lote 5B); a prensa, o crisol e o depósito de ouro usam as folhas da Row e do Quarter. Antes, emprestavam a bancada de escudos, a bigorna e um caixote.
 - **Arte do Artisan Quarter (C-ART-13, parte 2):** depósitos de cobre, ouro e gemas, crisóis, lapidários e as bancadas de ourives com modelos próprios do Tripo (Lote 5B, 15 estações do Quarter e do Arsenal = 675 créditos; as do Arsenal entram com ele), e 6 ícones novos dos insumos (minério e lingote de cobre e de ouro, gema bruta, lâmina) no lugar dos blocos procedurais. Ledger em `docs/PROVENIENCIA.md` §13.
 - **Personagens mais nítidos (programa de arte, etapa 5):** os 32 personagens re-renderizados com 1,5× os pixels por metro (célula 192 px, folhas até 4 032 px), mesmo tamanho na tela; clipes longos com 21 quadros. 0 crédito; `docs/PROVENIENCIA.md` §14.

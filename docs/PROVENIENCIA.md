@@ -514,3 +514,25 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 - Os 32 personagens do jogo (ferreiro, ferreiro_mochila, ajudante, anão, 7 workers e 21 clientes) re-renderizados com `render_sprites.py --size 192 --max-frames 21`, o resto dos parâmetros como nos lotes de origem (§2, §3, §7, §9, §10): mesmos FBX de `arte/tripo/<id>/` e mesmos clipes de `client/Builds/anims_sets/<ferreiro|ajudante|anao|guerreira>/`. A mochila regenerada por `props_blender.py mochila_ferreiro` e presa ao `mixamorig:Spine2` com o ppu e o pivô do ferreiro novo (`--scale 164.8 --pivot-y 53`).
 - Resultado: célula 128 → 192 px e ppu ~110–130 → ~145–200 (1,5× os pixels por metro); maior folha 4 032 px (teto 4 096). A "escala de exibição" é o próprio `ppu` do `meta.json`: o `SpriteSheet` cria o sprite com `ppu × célula real / size`, então o personagem fica do mesmo tamanho no mundo. Clipes longos (Idle, LookingAround) passam de 32 para 21 quadros (o script distribui os quadros pelo clipe e grava o fps por clipe); Walking continua com 16.
 - Licenças: as dos modelos de origem (tripo_pago + Mixamo, §2/§3/§7/§9); nada novo gerado por IA.
+
+
+## 15. Marca v2 — emblema A3 e logo C2 (programa de arte, etapas 2–3, 2026-10-16)
+
+- **Origem:** Tripo Studio, gerador de imagem **Nano Banana 2** (grátis, 0 crédito; saldo do Tripo intocado), no Chrome do Vinicius, conta do estúdio, 12 opções (3 famílias × 4). Prompts em `ASSETS.md` §17. Escolha do Vinicius: A3 (emblema/ícone) e C2 (logo de título).
+- **Licença:** saída do Tripo na conta paga do estúdio (mesmos termos das estações, §12); composição própria do estúdio. Sem fonte tipográfica: as letras vêm da imagem gerada.
+- **Ferramentas:** Python 3.14 + Pillow 12.2 + numpy 2.4 + OpenCV (GrabCut), `client/tools/marca_v2.py` (usa `marca_compor.py` da §11 para os degradês, a vinheta, a folha de leitura e o quadro do jogo); ffmpeg 9.0.1 para o quadro da feature graphic (o mesmo de §11).
+- **Determinístico:** 2 rodadas seguidas dão os mesmos SHA-256 (conferido em emblema, logo e frente do adaptativo).
+
+| Arquivo | Tamanho | Bytes | SHA-256 |
+|---|---|---|---|
+| `client/Assets/_FS/Art/Marca/icone.png` (legado, redondo, PC) | 512 × 512 RGB | 305 206 | `8b44d592a6fa12a9b45fa175ff99f99f9c26b69c96c29141c511ebdfdc984c07` |
+| `client/Assets/_FS/Art/Marca/icone_fundo.png` | 432 × 432 RGB | 38 957 | `1f1ded38ebff994828c83201bfc0b8fa5d86f27dbccc68d16f58e36cc6bc6b4c` |
+| `client/Assets/_FS/Art/Marca/icone_frente.png` | 432 × 432 RGBA | 112 288 | `508c12d43b106ceb9d529d9efa5d2354124884d1a94f1d6f6f2a5bba2a4ca7bd` |
+| `arte/marca/icone_loja_512.png` (= `icone.png`) | 512 × 512 RGB | 305 206 | `8b44d592a6fa12a9b45fa175ff99f99f9c26b69c96c29141c511ebdfdc984c07` |
+| `arte/marca/logo.png` e `client/Assets/_FS/Resources/UI/logo.png` | 1024 × 636 RGBA | 895 496 | `61eaa1e6d4af91fca4b53ef99df96b222b1bc2be5d75fb1d3b4daffb34f9ba6d` |
+| `arte/marca/feature_graphic.png` | 1024 × 500 RGB | 627 584 | `9a84b341d02b73a9f508d54702eac590e6458ee4d68bccddfd6f640545a172ca` |
+| `arte/marca/v2/emblema.png` (recorte do A3) | 784 × 780 RGBA | 943 619 | `628e2edbab85ebd6dc1c218ebd328d6f2894c3783cbfa5d16725edfaaf287ada` |
+| `arte/marca/v2/icone_leitura.png` (folha de QA) | 2732 × 652 RGB | 461 869 | `177df08035bc485e5a75d7c55a151f76d7d89cf0b6775eab0b94ff9e6793527f` |
+| `arte/marca/v2/fonte_emblema_a3.png` (imagem do Tripo) | 1024 × 1024 RGB | 1 341 698 | `a20b80b0ee7fd7f3c701fad8bb8b006650ba6cc8d4f35a31affa9eed6f324a74` |
+| `arte/marca/v2/fonte_logo_c2.png` (imagem do Tripo) | 1376 × 768 RGB | 1 317 606 | `fe54f2c39ba056ff2317ae49de541f8c00ad70051a0dff21bc30901335d32161` |
+| `client/tools/marca_v2.py` | — | 7 125 | `8c4cc520ace981503215254240a2410b44206a9a9dc7b2e86d7ac8c4fccf3fe4` |
