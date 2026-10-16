@@ -241,6 +241,16 @@ namespace FS.Tests
             s.Tick(Dt, 0f, 0f);
             Carrier c = s.Workers.Find(w => w.Role == 1);
             Assert.AreEqual(crisol.Index, c.Target, "o ouro, que a mesa espera");
+
+            // os dois tem destino: vai o que mais estacoes esperam (o ouro: mesa, forja cerimonial, alabardas e montagem de gala), nao a pilha maior
+            Sim p = Novo();
+            Compra(p, "cadete1", "cadete2", "crisol_real", "bancada_guarda", "forja_cerimonial", "forja_alabardas", "montagem_gala");
+            p.Est("forja_laminas").Ins[0] = 1; p.Est("prensa").Ins[0] = 1;
+            Station alab = p.Est("forja_alabardas");
+            alab.Ins[alab.InIndex(Item.Ingot)] = 2;
+            p.Est("fornalha").Out = 4; p.Est("crisol_ouro").Out = 1;
+            p.Tick(Dt, 0f, 0f);
+            Assert.AreEqual(p.Est("crisol_ouro").Index, p.Workers.Find(w => w.Role == 1).Target, "4 estacoes esperam o ouro; o lingote, nenhuma");
         }
 
         /// <summary>A regra fixa do bot (Bot.Cotas.cs): as faixas ficam com as linhas de menor procura no balcao (maior intervalo de cliente),
