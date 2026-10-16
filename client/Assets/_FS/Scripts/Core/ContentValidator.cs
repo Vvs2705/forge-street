@@ -148,6 +148,8 @@ namespace FS.Core
             }
             foreach (string req in new[] { "deposito", "fornalha", "balcao" })
                 if (!ids.Contains(req)) yield return $"{at} sem a estacao \"{req}\"";
+            int patios = Array.FindAll(d.Estacoes, s => s.Kind == Kind.Quota).Length;   // C-CORE-07: o Sim le um patio so (Sim.Patio)
+            if (patios > 1) yield return $"{at} {patios} patios de cotas (no maximo 1)";
             foreach (PadDef p in d.Pads)
                 foreach (string c in p.Cadeia)
                     if (Upgrades.IndexOf(c, d.Upgrades) < 0) yield return $"{at} pad ({p.Pos}) vende \"{c}\", que nao e' upgrade do distrito";
