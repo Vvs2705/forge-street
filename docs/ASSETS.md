@@ -386,3 +386,24 @@ Pendente (parte 2, com os distritos 3–4 na `main`): estações do Artisan Quar
 Re-render dos 32 personagens com célula de 192 px (era 128) e teto de 21 quadros por clipe, para caber em 4 096 px de largura: 1,5× os pixels por metro, mesmo tamanho no mundo (o `ppu` do `meta.json` é a escala de exibição). Comando e detalhes: `PROVENIENCIA.md` §14. Comparação antes/depois na mesma escala: `arte/auditoria/2026-10-16/nitidez_antes_depois.png`.
 
 **Custo medido (2026-10-16, `Setup.BuildAndroidDev`, ARM64):** APK de desenvolvimento 91,5 MB (`main` 2e6f6a9+) → **121,7 MB** (+30 MB, 61% do limite de 200 MB do módulo base do Google Play); texturas no build 116 → 181 MB descomprimidas (Build Report). Decidido por padrão (revisar): aceitar. Se os distritos 5–6 apertarem o limite, a saída é ASTC 8×8 nas folhas de clientes (−~40% nelas) ou células de 160 px.
+
+
+## 17. Marca v2 — emblema A3 (ícone) e logo C2 (título) (programa de arte, etapas 2–3, 2026-10-16, 0 crédito)
+
+Substitui o ícone e o logo da §13 (C-ART-14). O Vinicius viu 3 famílias × 4 opções geradas no Tripo (gerador de imagem Nano Banana 2, grátis; folha `arte/tripo/logo_opcoes/opcoes_logo.png` na pasta principal, fora do git) e escolheu **A3 como emblema/ícone** e **C2 como logo de título** ("Aplica a A3 como emblema/ícone e a C2 como logo de título.").
+
+| Família | Prompt (Nano Banana 2) | Escolha |
+|---|---|---|
+| A — emblema | emblem logo for a blacksmith tycoon game named FORGE STREET: a sturdy shield-shaped badge with a dark iron anvil, a smithing hammer and a bright orange flame in the center, a curved gold ribbon banner across the bottom reading FORGE STREET, warm orange, gold and dark slate colors, stylized polished mobile game art, centered, plain dark background, no other text | **A3** → ícone |
+| B — placa | placa de madeira e ferro com o nome (reprovada) | — |
+| C — ouro 3D | game title logo for a cozy blacksmith tycoon mobile game, the words FORGE STREET in bold chunky 3D letters made of warm gold and hot orange metal with a thick dark iron outline, a glowing anvil with a crossed smithing hammer emblem behind the text, a few flying sparks, stylized polished mobile game art, centered, plain dark charcoal background, no other text | **C2** → logo |
+
+Regenerar (raiz do projeto, Python 3 + Pillow + numpy + OpenCV, ffmpeg no PATH): `python client/tools/marca_v2.py`. As 2 imagens-fonte ficam versionadas em `arte/marca/v2/`. O recorte é GrabCut (OpenCV) num retângulo + o brilho acima da cor do fundo (glow das letras e faíscas viram alfa), com a sombra projetada da imagem tirada na faixa externa.
+
+- **Ícone (A3):** o escudo com bigorna, martelo, chama e a fita "FORGE STREET", sobre o fundo ardósia do próprio A3 com uma brasa laranja atrás e vinheta. `icone.png` (512, legado/redondo/PC) e `icone_loja_512.png` (a loja) são o mesmo arquivo; o emblema ocupa 84% do quadrado.
+- **Adaptativo:** `icone_fundo.png` (ardósia + brasa, sangra até a borda) e `icone_frente.png` (o emblema numa caixa de 236 px em 432): as pontas da fita ficam dentro do círculo seguro de 66 dp (132 px de raio). Mesmo `Setup.Icones()` da §13, sem mudar código.
+- **Folha de leitura:** `arte/marca/v2/icone_leitura.png` (512 → 36 px, fundo claro e escuro, adaptativo no círculo). Lê a 48 px: escudo + chama; a fita vira uma faixa dourada (o nome não se lê a 48 px, como em qualquer ícone com texto).
+- **Logo (C2):** "FORGE STREET" em letras 3D de ouro e laranja com contorno de ferro, bigorna e martelos cruzados atrás, faíscas; recorte RGBA 1024 × 636.
+- **No jogo:** `Resources/UI/logo.png` (fora do `SpriteImport`, que trata `Resources/Textures` como chão repetido; sem compressão, ~2,6 MB de RAM) abre o jogo (`Game.Abertura`): véu escuro sobre o mundo e o logo crescendo de leve, some em 2,4 s ou num toque. Fotos e smoke (`-testsession`, `-autoplay`, `-record`) não a veem; `-abertura` a mostra e segura (foto).
+- **Feature graphic:** o mesmo quadro do jogo da §13 sob o véu, com o logo C2 no centro.
+- Ledger e SHA: `PROVENIENCIA.md` §15.

@@ -238,6 +238,8 @@ namespace FS
             string priv = Arg("-privacidade");
             if (priv != null || (!_testSession && !Ads.Resposta(out _, out _))) _priv.Abrir(null, priv == "18");
             if (Ads.Resposta(out Faixa rf, out bool ra)) Liberar(rf, ra);   // A-PLAT-08/09: respondida numa abertura anterior = rede liberada ja
+            // Programa de arte, etapa 2: o logo (C2) por cima de tudo ao abrir; fotos e smoke nao o veem, salvo -abertura (que o segura na tela)
+            if (!_testSession || Arg("-abertura") != null) StartCoroutine(Abertura(Arg("-abertura") != null));
             if (Arg("-menu") != null) _menu.Toggle();   // foto com a fileira aberta
             if (cfg != null) _cfg.gameObject.SetActive(true);
             _joy = new Joystick(_joyCanvas.transform);
@@ -311,6 +313,30 @@ namespace FS
             if (!string.IsNullOrEmpty(rec)) StartCoroutine(Record(rec));
             string ad = Ads.Arg("-adtest");   // Ads.Arg tambem le o extra "unity" do intent no Android
             if (!string.IsNullOrEmpty(ad)) StartCoroutine(AdTest(ad));
+        }
+
+        /// <summary>Abertura: veu escuro sobre o mundo e o logo crescendo de leve; some sozinha em 2,4 s ou num toque.</summary>
+        IEnumerator Abertura(bool segura)
+        {
+            Texture2D tex = Resources.Load<Texture2D>("UI/logo");
+            if (tex == null) yield break;
+            Image veu = Art.Node(_canvas, "Abertura", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            veu.color = new Color(0.06f, 0.045f, 0.04f, 0.92f);
+            CanvasGroup g = veu.gameObject.AddComponent<CanvasGroup>();
+            Image logo = Art.Node(veu.transform, "Logo", new Vector2(0.06f, 0.36f), new Vector2(0.94f, 0.72f)).gameObject.AddComponent<Image>();
+            logo.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+            logo.preserveAspect = true; logo.raycastTarget = false;
+            bool toque = false;
+            Button b = veu.gameObject.AddComponent<Button>();
+            b.transition = Selectable.Transition.None;
+            b.onClick.AddListener(() => toque = true);
+            for (float t = 0f; segura || (t < 2.4f && !toque); t += Time.unscaledDeltaTime)
+            {
+                logo.rectTransform.localScale = Vector3.one * (0.94f + 0.06f * Mathf.SmoothStep(0f, 1f, t / 0.6f));
+                yield return null;
+            }
+            for (float t = 0f; t < 0.35f; t += Time.unscaledDeltaTime) { g.alpha = 1f - t / 0.35f; yield return null; }
+            Destroy(veu.gameObject);
         }
 
         /// <summary>-adtest vip|velocidade (dev): mostra o anuncio no inicio; no aparelho espera ate 15 s o real carregar.</summary>
