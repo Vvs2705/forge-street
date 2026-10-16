@@ -24,6 +24,8 @@ namespace FS.Core
         public const string Producao = "producao";
         /// <summary>C-CORE-07: marco "N blocos de cota fechados" (Sim.CotasFechadas) no lugar do ID do item.</summary>
         public const string Cotas = "cotas";
+        /// <summary>C-CORE-08: marco "N pecas energizadas feitas" (Sim.EnergizadasTotal) no lugar do ID do item.</summary>
+        public const string Energizadas = "energizadas";
         public readonly BlueprintSourceKind Kind; public readonly string Ref; public readonly int N; public readonly Quality MinQ;
         public BlueprintSource(BlueprintSourceKind kind, string reff, int n = 0, Quality minQ = Quality.Normal) { Kind = kind; Ref = reff; N = n; MinQ = minQ; }
     }
@@ -61,6 +63,8 @@ namespace FS.Core
             FS.Core.Distritos.ArtisanQuarterId,
             // ---- royal_arsenal (C-CORE-07)
             FS.Core.Distritos.RoyalArsenalId,
+            // ---- arcane_foundry (C-CORE-08)
+            FS.Core.Distritos.ArcaneFoundryId,
         };
         /// <summary>O catalogo da v1.0 inteiro (CONTEUDO_V1 §9): 101, 25 essenciais. Os que faltam aqui esperam a Wave C.</summary>
         public const int CatalogoV1 = 101, EssenciaisV1 = 25;
