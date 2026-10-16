@@ -1085,6 +1085,7 @@ namespace FS
             var a = new AdBtn();
             Image edge = Art.Panel(parent, name, Art.Gold, Vector2.zero, Vector2.zero);
             a.B = edge.gameObject.AddComponent<Button>();
+            Art.Apertar(edge.gameObject);
             a.B.targetGraphic = edge;
             a.B.onClick.AddListener(() => onClick());
             a.Face = Art.Panel(edge.transform, "Face", AdFace, Vector2.zero, Vector2.one);
@@ -1123,6 +1124,7 @@ namespace FS
             RectTransform r = edge.rectTransform;
             r.pivot = Vector2.zero; r.sizeDelta = new Vector2(ChipW, ChipH); r.anchoredPosition = new Vector2(Edge + x, 24f + OrderH + 8f);
             a.B = edge.gameObject.AddComponent<Button>();
+            Art.Apertar(edge.gameObject);
             a.B.targetGraphic = edge;
             a.B.onClick.AddListener(() => onClick());
             a.Face = Art.Panel(edge.transform, "Face", AdFace, Vector2.zero, Vector2.one);
@@ -1447,6 +1449,7 @@ namespace FS
                 Image icon = Art.Node(gear.transform, "Icone", new Vector2(0.17f, 0.17f), new Vector2(0.83f, 0.83f)).gameObject.AddComponent<Image>();
                 icon.sprite = Art.Gear(); icon.color = Art.HudEdge; icon.preserveAspect = true; icon.raycastTarget = false;
                 Button gb = gear.gameObject.AddComponent<Button>();
+                Art.Apertar(gear.gameObject);
                 gb.targetGraphic = gear;
                 gb.onClick.AddListener(() => { Sfx.Play("click"); _cfg.gameObject.SetActive(true); });
             }
@@ -1538,6 +1541,7 @@ namespace FS
             Text state = Art.NewText(face.transform, "Estado", 30, Vector2.zero, Vector2.one);
             state.fontStyle = FontStyle.Bold;
             Button b = edge.gameObject.AddComponent<Button>();
+            Art.Apertar(edge.gameObject);
             b.targetGraphic = edge;
             void Paint()
             {

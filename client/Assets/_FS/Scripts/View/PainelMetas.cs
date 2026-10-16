@@ -87,6 +87,7 @@ namespace FS
                 d.Premio.resizeTextForBestFit = true; d.Premio.resizeTextMinSize = 12; d.Premio.resizeTextMaxSize = 22;
                 d.Premio.verticalOverflow = VerticalWrapMode.Truncate;
                 Button b = e.gameObject.AddComponent<Button>();
+                Art.Apertar(e.gameObject);
                 b.targetGraphic = e;
                 b.onClick.AddListener(Login);
                 _dias[i] = d;

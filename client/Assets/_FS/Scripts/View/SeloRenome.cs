@@ -40,6 +40,7 @@ namespace FS
             face.rectTransform.offsetMin = new Vector2(4f, 4f); face.rectTransform.offsetMax = new Vector2(-4f, -4f);
             face.raycastTarget = false;
             Button b = edge.gameObject.AddComponent<Button>();
+            Art.Apertar(edge.gameObject);
             b.targetGraphic = edge;
             b.onClick.AddListener(() => { Sfx.Play("click"); Abrir(); });
             Image star = Art.Node(_selo, "Estrela", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f)).gameObject.AddComponent<Image>();
