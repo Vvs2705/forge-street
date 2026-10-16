@@ -132,20 +132,20 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 
 ## 8. Progresso rumo ao 100% (definição de jogo completo, DM §164)
 
-Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-16, depois do #81). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
+Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-16, depois do #84). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
 
 | Item (§164) | % | Onde está | Próximo passo |
 |---|---|---|---|
 | Core polido | 70 | loop completo, Save 2.0 schema 3 por ID, itens/receitas em dados, exploits fechados, ouro long, validator, `Tuning`/flags, RemoteConfig com travas; feedback do POCO resolvido no código (#59, #62); regra de transporte de insumos para distritos com 2+ insumos (#76) | ouvir e ver no POCO; `Sim` em partes; replay determinístico (§23 item 1) |
-| 6 distritos | 54 | Old Forge; Rua dos Armeiros completa e afinada (#66, #71, #76); **Artisan Quarter** completo com bancada configurável e clientes por família (#78); managers e Império (#65) | distritos 3–6 (Artisan Quarter e Royal Arsenal primeiro); arte da Row |
-| 35–45 produtos | 43 | 19 de 38 vendáveis do catálogo em jogo: Old Forge 5, Row 7, Artisan Quarter 7 (#78) | `ItemDef`/`RecipeDef` dos distritos 3–6 |
-| Workers | 68 | Old Forge (13), turma Ferraz e Vulcana na Row, Dourado ×3 e Lúcia no Quarter (#78), managers 2–5 e Valentim | workers dos distritos 3–6 |
+| 6 distritos | 66 | Old Forge; Rua dos Armeiros (#66, #71, #76); **Artisan Quarter** (#78) e **Royal Arsenal** com o pátio de cotas (#83), cada um com arte própria (#75, #79, #84); managers e Império (#65) | distritos 3–6 (Artisan Quarter e Royal Arsenal primeiro); arte da Row |
+| 35–45 produtos | 55 | 25 de 38 vendáveis do catálogo em jogo: Old Forge 5, Row 7, Quarter 7, Arsenal 6 (#83) | `ItemDef`/`RecipeDef` dos distritos 3–6 |
+| Workers | 72 | Old Forge (13), Ferraz e Vulcana (Row), Dourado e Lúcia (Quarter), Cadetes e Matias (Arsenal), managers 2–5 com Valentim e Leonor | workers dos distritos 3–6 |
 | Quality | 88 | 4 níveis, níveis II–V, golpe, técnica, oficiais, Masterwork; liga na Row e técnica da lapidação no Quarter (#78) | fonte material dos distritos 3–6 |
-| Orders | 77 | Orders 2.0 (#60); encomendas da Row e do Quarter em dados, Condessa Amara (#78) | encomendas dos distritos 3–6; V27 (Event e vagas) |
-| Royal Contracts | 66 | 12 em dados; abrem o Ronda, os 2 da Row e os 2 do Quarter (#78); semanal, conquistas e missão (#70) | os 9 dos distritos 3–6; cota por linha |
-| Blueprints | 70 | 19 do Old Forge + 14 da Row + 14 do Quarter (#78) | os dos distritos 3–6 |
-| Masterworks | 68 | 30 de 60: Old Forge, Row e Quarter (#78), Hall por distrito | as 40 dos distritos 3–6; bot F2P que golpeia (portão "1ª em até 4 h") |
-| Collection | 67 | marcos do Old Forge, da Row e do Quarter (#78) | marcos dos distritos 3–6 |
+| Orders | 80 | Orders 2.0 (#60); encomendas da Row, do Quarter (Condessa Amara) e do Arsenal (Arauto Tibério; a Royal nunca vira Common) | encomendas dos distritos 3–6; V27 (Event e vagas) |
+| Royal Contracts | 74 | 12 em dados; abrem os do Old Forge, da Row, do Quarter e do Arsenal (#83); 2ª vaga pela `mesa_real`; Charter do Arsenal aceita 1 contrato ou 10 Royal | os 9 dos distritos 3–6; cota por linha |
+| Blueprints | 76 | 19 do Old Forge + 14 da Row + 14 do Quarter + 14 do Arsenal (#83) | os dos distritos 3–6 |
+| Masterworks | 74 | 40 de 60: Old Forge, Row, Quarter e Arsenal (#83), Hall por distrito | as 40 dos distritos 3–6; bot F2P que golpeia (portão "1ª em até 4 h") |
+| Collection | 71 | marcos do Old Forge, da Row, do Quarter e do Arsenal | marcos dos distritos 3–6 |
 | Reputation | 80 | Renome 10 níveis do Império (todo distrito conta, #65); F2P chega ao 2/3/4 em 0:51 / 1:41 / 3:11 (`BALANCE.md` §30.6) | conferir com jogador real |
 | Daily / Weekly / Achievements | 90 | 32 diárias, 17 semanais, 102 conquistas, login de 7 dias; derivadas do estado com retroativo (#70) | pool C das diárias, conquistas de 3/6 distritos e 30/60 obras (esperam conteúdo) |
 | Events (LiveOps) | 72 | 10 `EventDef`, 9 rodando; pontos de todo distrito (#65); missão de contrato na Royal Week (#70) | V27 (Event disputa vagas); o 10º evento |
@@ -156,10 +156,10 @@ Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-16, 
 | RemoteConfig | 47 | JSON local com travas no núcleo, chave mestra dos anúncios, cache, HTTP desligado (#53); trava do `QualidadeEvento` (#63) | provedor remoto (P8); `econsim --rc` |
 | Save | 90 | Save 2.0 + schema 3; multi-distrito; linhas opcionais da bancada configurável e das famílias de cliente (#78) | cloud save (opcional) |
 | Release pipeline | 55 | AAB assinado por env, `verify release`, 16 KB, API 36 | chave real (aval), Unity no CI, release automatizada |
-| Arte final | 60 | estações do Old Forge, da Row (#75) e do Quarter (#79), 6 ícones de insumo (#79), elenco 1,5× mais nítido (#81), Vulcana com a folha do Fundidor; folhas do Arsenal prontas | estações da Row e dos distritos (C-ART-13), Vulcana, herói |
+| Arte final | 64 | estações do Old Forge, da Row (#75), do Quarter (#79) e do Arsenal (#84), ícones de insumo (#79), elenco 1,5× mais nítido (#81) | estações da Row e dos distritos (C-ART-13), Vulcana, herói |
 | Áudio final | 38 | 3 grupos, 15 efeitos sintetizados, mix com prioridade, orçamento de vozes e distância (#59) | ouvir no POCO; banco de sons real + 5 músicas |
 | Store assets | 40 | ícone (#69); 12 opções de logo novo geradas (esperando a escolha do Vinicius); 37 criativos, ASO pt/en/es | 2 × 8 screenshots pelos presets, vídeo, feature graphic com quadro novo |
-| **Média** | **~63** | | |
+| **Média** | **~65** | | |
 
 ## 9. Retomada (handoff 2026-10-15, pausa pedida pelo Vinicius)
 
@@ -176,7 +176,7 @@ Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões
 **Retomada de 2026-10-16 (madrugada, Vinicius dormindo; parada por limite de uso ~06:10).** Na `main`: #75 arte das estações da Row, #76 Row-pendências (transporte de insumos, Ferraz 4, Rebitadeira 2, preço ×2,4), #77 auditoria visual, #78 **Artisan Quarter** (bancada configurável, clientes por família), #79 arte do Quarter + 6 ícones de insumo. Tripo: saldo 15 670 (900 gastos: 20 estações).
 
 **Pendente (branches no GitHub):**
-- `feat/royal-arsenal`: a raia (agente) estava fechando contra a `main` com o Quarter (índice 3, Quarter → Arsenal, famílias do Arsenal, remedição, mutações `ra-`, §38). Conferir o último commit e o relatório; depois CHANGELOG, `verify.sh full` em `C:/fsv`, fotos, PR, merge. Em seguida ligar os `arte:` das 8 estações do Arsenal (folhas já na `main`: forja_laminas, bancada_kits, bancada_guarda, mesa_gravador, forja_cerimonial, forja_alabardas, montagem_gala, patio_cotas; deposito_ouro e crisol para o ouro).
+- ~~`feat/royal-arsenal`~~: na `main` pelo #83 (pátio de cotas, famílias, índice 3) e a arte das estações pelo #84.
 - ~~`art/nitidez-personagens`~~ (etapa 5): na `main` pelo #81 depois de medir o APK (91,5 → 121,7 MB, 61% do limite de 200 MB; alternativa registrada no `ASSETS.md` §16).
 
 **Programa de arte (pedido de 2026-10-16, `docs/AUDITORIA_VISUAL.md`):** etapa 1 feita (#77); etapa 2: 12 opções de logo enviadas ao Vinicius (`arte/tripo/logo_opcoes/`), **esperar a escolha** antes de aplicar; etapa 5 feita (#81); etapas 3 (ícone), 4 (interface v2) e 6 (recompensas com vida) não começaram; etapa 7: POCO só com "pode testar".
