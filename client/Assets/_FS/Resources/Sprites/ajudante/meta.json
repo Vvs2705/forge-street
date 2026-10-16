@@ -1,5 +1,5 @@
 {
- "size": 128,
+ "size": 192,
  "fps": 12.0,
  "dirs": 4,
  "dir_order": [
@@ -11,10 +11,10 @@
  "row0": "top",
  "elev": 60.0,
  "yaw": 0.0,
- "ppu": 117.42,
+ "ppu": 176.12,
  "pivot_px": [
-  64.0,
-  41.2
+  96.0,
+  61.8
  ],
  "pivot": [
   0.5,
@@ -26,18 +26,18 @@
   {
    "name": "Idle",
    "file": "Idle.png",
-   "frames": 32,
+   "frames": 21,
    "loop": true,
-   "fps": 3.221,
+   "fps": 2.114,
    "duration_s": 9.933,
    "src_frames": 298
   },
   {
    "name": "LookingAround",
    "file": "LookingAround.png",
-   "frames": 32,
+   "frames": 21,
    "loop": false,
-   "fps": 5.053,
+   "fps": 3.316,
    "duration_s": 6.333,
    "src_frames": 190
   },

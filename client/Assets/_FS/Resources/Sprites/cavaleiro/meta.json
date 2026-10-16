@@ -1,5 +1,5 @@
 {
- "size": 128,
+ "size": 192,
  "fps": 12.0,
  "dirs": 4,
  "dir_order": [
@@ -11,14 +11,14 @@
  "row0": "top",
  "elev": 60.0,
  "yaw": 0.0,
- "ppu": 120.41,
+ "ppu": 180.73,
  "pivot_px": [
-  64.0,
-  38.1
+  96.0,
+  57.1
  ],
  "pivot": [
   0.5,
-  0.2974
+  0.2975
  ],
  "light": "flat",
  "src_fps": 30,
@@ -26,36 +26,36 @@
   {
    "name": "Angry",
    "file": "Angry.png",
-   "frames": 32,
+   "frames": 21,
    "loop": false,
-   "fps": 1.67,
+   "fps": 1.096,
    "duration_s": 19.167,
    "src_frames": 575
   },
   {
    "name": "Idle",
    "file": "Idle.png",
-   "frames": 32,
+   "frames": 21,
    "loop": true,
-   "fps": 3.221,
+   "fps": 2.114,
    "duration_s": 9.933,
    "src_frames": 298
   },
   {
    "name": "LookingAround",
    "file": "LookingAround.png",
-   "frames": 32,
+   "frames": 21,
    "loop": false,
-   "fps": 5.053,
+   "fps": 3.316,
    "duration_s": 6.333,
    "src_frames": 190
   },
   {
    "name": "Thankful",
    "file": "Thankful.png",
-   "frames": 32,
+   "frames": 21,
    "loop": false,
-   "fps": 10.667,
+   "fps": 7.0,
    "duration_s": 3.0,
    "src_frames": 90
   },
