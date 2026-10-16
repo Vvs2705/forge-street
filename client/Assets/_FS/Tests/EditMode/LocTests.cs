@@ -196,6 +196,17 @@ namespace FS.Tests
                 foreach (OrderDef d in OrderDefs.All)
                 {
                     if (d.Type == OrderType.Mixed) continue;   // 2-3 itens: o best-fit encolhe (conferir na foto -encomendas)
+                    if (d.Item != null && d.District != OrderDefs.OldForge)   // C-CORE-06: o freguês de outro distrito pede sempre o item dele, no distrito dele
+                    {
+                        DistrictDef dd = Distritos.Find(d.District);
+                        Textos.Distrito(dd);
+                        var e = new Encomenda(d, 0, new[] { (Item)Items.IndexOf(d.Item, dd.Itens) }, new[] { d.FixedN }, 99999, 0, d.BonusDeadline, null);
+                        string t = Textos.Encomenda(e);
+                        Textos.Distrito(Distritos.OldForge);
+                        StringAssert.DoesNotContain("[", t, $"{i}: {d.Id}");
+                        Assert.LessOrEqual(t.Length, 28, $"{i}: {d.Id} \"{t}\"");
+                        continue;
+                    }
                     for (int it = (int)Item.Sword; it <= (int)Item.Jewel; it++)
                     {
                         var e = new Encomenda(d, 0, new[] { (Item)it }, new[] { Math.Max(d.TargetMax, d.FixedN) }, 99999, 0, d.BonusDeadline, null);
