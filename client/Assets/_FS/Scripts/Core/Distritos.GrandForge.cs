@@ -199,9 +199,9 @@ namespace FS.Core
                 t.OrderSeconds = 50f; t.OrderRewardSeconds = 3.5f;
             },
             Abertura = 12000000,
-            // §2.6: a Carta da Grande Forja = producao completa + Renome 9 (4.500) + 5 Masterworks + (3 Royal Contracts OU 30 encomendas Royal no
+            // §2.6: a Carta da Grande Forja = producao completa + Renome 9 (4.200, BALANCE.md §41; o catalogo: 4.500) + 5 Masterworks + (3 Royal Contracts OU 30 encomendas Royal no
             // distrito); o ultimo distrito (sem proximo)
-            Charter = new CharterDef(true, 4500, 5, null, contratos: 3),
+            Charter = new CharterDef(true, 4200, 5, null, contratos: 3),
             Selo = "bencao_forja",
             InsumoPorEspera = true,   // como o Arsenal: o carregador de insumo leva primeiro o que as estacoes esperam (BALANCE.md §41)            // §3.1 (a ordem e' o desempate): o peitoral da Row, colar e caixa de joias do Quarter, insignia e espada de gala do Arsenal
             Importados = new[]
