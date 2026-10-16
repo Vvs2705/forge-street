@@ -116,8 +116,8 @@ namespace FS.Core
             new ClientDef("colecionador", 1, 2f, 3f, Quality.Fine, true),
         };
 
-        // ponytail: arte emprestada (como a Row): kits e montagem = bancada de escudos, mesa e forjas = bigorna, patio = caixote, carroca = a do Old Forge
-        const string Caixote = "caixote";
+        // C-ART-13 parte 2: estacoes com folhas proprias do Tripo (ASSETS.md §15); a prensa usa a da Row, o crisol e o deposito de ouro os do
+        // Quarter; o deposito de minerio e a fornalha seguem pelo tipo, e a carroca do couro e' a do Old Forge
 
         public static readonly DistrictDef RoyalArsenal = new DistrictDef
         {
@@ -133,21 +133,21 @@ namespace FS.Core
             {
                 new StationDef("deposito", Kind.Deposit, 1.5f, 1.0f, "Depósito", 0f, 1f),
                 new StationDef("fornalha", Kind.Furnace, 1.5f, 4.0f, "Fornalha", -1f, 0f, null, "fornalha"),
-                new StationDef("forja_laminas", Kind.Furnace, 1.5f, 6.5f, "Forja lâminas", -1f, 0f, null, "forja_laminas"),
-                new StationDef("bancada_kits", Kind.Crafter, 1.5f, 9.0f, "Bancada kits", -1f, 0f, null, "bancada_kits", arte: Escudos),
+                new StationDef("forja_laminas", Kind.Furnace, 1.5f, 6.5f, "Forja lâminas", -1f, 0f, null, "forja_laminas", arte: "forja_laminas"),
+                new StationDef("bancada_kits", Kind.Crafter, 1.5f, 9.0f, "Bancada kits", -1f, 0f, null, "bancada_kits", arte: "bancada_kits"),
                 new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f),
-                new StationDef("patio_cotas", Kind.Quota, 10.5f, 13f, "Pátio de cotas", 0f, -1f, arte: Caixote),
+                new StationDef("patio_cotas", Kind.Quota, 10.5f, 13f, "Pátio de cotas", 0f, -1f, arte: "patio_cotas"),
                 new StationDef("carroca_couro", Kind.Deposit, 4.5f, 1.0f, "Carroça couro", 0f, 1f, null, null, CouroRA, "carroca"),
-                new StationDef("bancada_kits2", Kind.Crafter, 4.5f, 9.0f, "Bancada kits 2", -1f, 0f, "bancada_kits2", "bancada_kits", arte: Escudos),
-                new StationDef("prensa", Kind.Furnace, 4.5f, 6.5f, "Prensa", -1f, 0f, "bancada_guarda", "prensa"),
-                new StationDef("bancada_guarda", Kind.Crafter, 7.5f, 9.0f, "Bancada guarda", -1f, 0f, "bancada_guarda", "bancada_guarda", arte: Escudos),
-                new StationDef("deposito_ouro", Kind.Deposit, 10.5f, 1.0f, "Minério ouro", 0f, 1f, "crisol_real", null, MinerioOuro),
-                new StationDef("crisol_ouro", Kind.Furnace, 10.5f, 4.0f, "Crisol ouro", -1f, 0f, "crisol_real", "crisol_ouro"),
-                new StationDef("mesa_gravador", Kind.Crafter, 10.5f, 11.0f, "Mesa gravador", -1f, 0f, "crisol_real", "mesa_gravador", arte: Bigorna),
-                new StationDef("forja_cerimonial", Kind.Crafter, 1.5f, 11.0f, "Forja cerimonial", -1f, 0f, "forja_cerimonial", "forja_cerimonial", arte: Bigorna),
+                new StationDef("bancada_kits2", Kind.Crafter, 4.5f, 9.0f, "Bancada kits 2", -1f, 0f, "bancada_kits2", "bancada_kits", arte: "bancada_kits"),
+                new StationDef("prensa", Kind.Furnace, 4.5f, 6.5f, "Prensa", -1f, 0f, "bancada_guarda", "prensa", arte: "prensa"),
+                new StationDef("bancada_guarda", Kind.Crafter, 7.5f, 9.0f, "Bancada guarda", -1f, 0f, "bancada_guarda", "bancada_guarda", arte: "bancada_guarda"),
+                new StationDef("deposito_ouro", Kind.Deposit, 10.5f, 1.0f, "Minério ouro", 0f, 1f, "crisol_real", null, MinerioOuro, arte: "deposito_ouro"),
+                new StationDef("crisol_ouro", Kind.Furnace, 10.5f, 4.0f, "Crisol ouro", -1f, 0f, "crisol_real", "crisol_ouro", arte: "crisol"),
+                new StationDef("mesa_gravador", Kind.Crafter, 10.5f, 11.0f, "Mesa gravador", -1f, 0f, "crisol_real", "mesa_gravador", arte: "mesa_gravador"),
+                new StationDef("forja_cerimonial", Kind.Crafter, 1.5f, 11.0f, "Forja cerimonial", -1f, 0f, "forja_cerimonial", "forja_cerimonial", arte: "forja_cerimonial"),
                 new StationDef("fornalha2", Kind.Furnace, 4.5f, 4.0f, "Fornalha 2", -1f, 0f, "fornalha_real2", "fornalha"),
-                new StationDef("forja_alabardas", Kind.Crafter, 4.5f, 11.0f, "Forja alabardas", -1f, 0f, "forja_alabardas", "forja_alabardas", arte: Bigorna),
-                new StationDef("montagem_gala", Kind.Crafter, 7.5f, 11.0f, "Montagem gala", -1f, 0f, "montagem_gala", "montagem_gala", arte: Escudos),
+                new StationDef("forja_alabardas", Kind.Crafter, 4.5f, 11.0f, "Forja alabardas", -1f, 0f, "forja_alabardas", "forja_alabardas", arte: "forja_alabardas"),
+                new StationDef("montagem_gala", Kind.Crafter, 7.5f, 11.0f, "Montagem gala", -1f, 0f, "montagem_gala", "montagem_gala", arte: "montagem_gala"),
                 new StationDef("fornalha3", Kind.Furnace, 7.5f, 4.0f, "Fornalha 3", -1f, 0f, "fornalha_real3", "fornalha"),
             },
             Pads = new[]
