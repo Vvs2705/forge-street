@@ -353,3 +353,31 @@ O 1º grava as camadas RGBA em `client/Builds/marca/camadas/` (2048 px, EEVEE co
 | fornalha_liga | fornalha_liga | alloy smelting furnace station: round squat dark stone furnace with iron bands, open top holding a glowing crucible of molten silver-blue metal, short chimney, small leather bellows on the side, iron tongs hanging, two stacked steel ingots beside it, small red lantern on the top-right corner | #2 | 0 |
 
 Pendente (parte 2, com os distritos 3–4 na `main`): estações do Artisan Quarter (crisol, lapidário, bancada de ourives, loja fina, depósitos de cobre/ouro/gemas) e do Royal Arsenal (forja de lâminas, bancadas de kits, mesa do gravador, forjas cerimonial e de alabardas, montagem de gala, pátio de cotas).
+
+
+## 15. Lote 5B, parte 2 — estações do Artisan Quarter e do Royal Arsenal (C-ART-13, Tripo, 2026-10-16)
+
+15 estações × 45 = **675 créditos** (saldo 16 345 → 15 670). Ledger e SHA: `PROVENIENCIA.md` §13. Mesma receita da §14. As cores seguem a família: Quarter em roxo e ouro (joia, ART_BIBLE §3), Arsenal em azul real e ouro.
+
+| id | uso | assunto do prompt (+ `[P]` + `[I]`) | imagem | yaw |
+|---|---|---|---|---|
+| crisol | crisol de cobre e de ouro | goldsmith crucible furnace station: small round brick kiln with a glowing orange clay crucible of molten copper on top, short copper chimney pipe, small leather bellows, a neat stack of copper ingots beside it, small red lantern on the top-right corner | #4 | 0 |
+| lapidario | lapidário | gem cutter station: sturdy wooden bench with a big foot-pedal grinding wheel, a tray of sparkling purple and blue cut gems, a brass magnifying lens on a swing arm, small red lantern on the top-right corner | #3 | 0 |
+| bancada_ourives | bancadas de ourives (configuráveis) | goldsmith workbench station: elegant dark wood jeweler bench with a curved front cut-out and a leather catch apron, tiny hammers and pliers on a small rack, gold rings and a small necklace on a purple velvet tray, small brass oil lamp, small red lantern on the top-right corner | #3 | 0 |
+| loja_rica | loja fina (balcão do distrito) | fine jewelry shop stall: wide wooden counter with a glass display case showing gold necklaces and rings on purple velvet, striped purple and gold awning on two carved posts, small brass bell on the counter | #4 | 0 |
+| deposito_cobre | depósito de cobre | small wooden mine cart full of chunky orange-brown copper ore rocks with green patina specks, sitting on a short rail segment | #2 | 0 |
+| deposito_ouro | depósito de ouro | small wooden mine cart full of grey rocks with big shiny yellow gold ore nuggets, sitting on a short rail segment | #2 | 0 |
+| deposito_gemas | gemas brutas | open wooden crate overflowing with rough uncut purple and blue gem crystals, a small pickaxe leaning on the crate | #1 | 0 |
+| forja_laminas | forja de lâminas | royal blade forge station: long low stone forge with a glowing orange coal bed, a wooden rack of unfinished steel sword blades, a quenching water trough, a royal blue cloth banner with gold trim, small red lantern on the top-right corner | #1 | 270 |
+| bancada_kits | bancadas de kits | scout kit workbench station: sturdy wooden workbench with a leather backpack, a rolled bedroll, a water flask and a short dagger neatly laid out, royal blue cloth, small red lantern on the top-right corner | #3 | 0 |
+| bancada_guarda | bancada da guarda | royal guard kit workbench station: sturdy dark wood workbench with a round royal blue and gold shield propped up, a steel kettle helmet and a folded blue tabard with gold trim on the bench, small red lantern on the top-right corner | #2 | 0 |
+| mesa_gravador | mesa do gravador | royal engraver desk station: small carved wooden desk with a big gold royal insignia medallion under a brass magnifying lens, fine engraving chisels in a cup, a few small gold bars, blue velvet cloth, small red lantern on the top-right corner | #3 | 0 |
+| forja_cerimonial | forja cerimonial | ceremonial sword forge station: polished steel anvil on a carved stone pedestal, an ornate gold-hilted ceremonial sword lying on top, a tall royal blue and gold banner on a pole behind, small red lantern on the top-right corner | #3 | 0 |
+| forja_alabardas | forja de alabardas | halberd forge station: dark iron anvil on a stone block with a tall wooden rack holding three ornate halberds with gold trim and small blue pennants, a sledgehammer leaning on the anvil, small red lantern on the top-right corner | #2 | 0 |
+| montagem_gala | montagem de gala | gala armor assembly station: wooden armor stand holding a shiny polished plate armor with gold trim and a short royal blue cape, a low workbench beside it with rivets, a small hammer and gold buckles, small red lantern on the top-right corner | #4 | 0 |
+| patio_cotas | pátio de cotas | royal quota yard station: low wide wooden loading platform with three painted delivery lanes, stacked wooden crates with royal blue and gold wax seals, a tall royal blue and gold banner on a pole, a small wooden ledger stand | #3 | 0 |
+
+**Ligação no jogo (2026-10-16):** Artisan Quarter com as folhas `deposito_cobre`, `deposito_ouro`, `deposito_gemas`, `crisol` (os 4 crisóis), `lapidario` (os 2) e `bancada_ourives` (as 3 configuráveis; antes apontavam para uma folha `joalheria` que não existe e caíam no desenho procedural). A `loja_rica` fica guardada: o balcão principal do distrito usa o estande modular por vaga. Royal Arsenal liga as dele junto com o distrito.
+
+**Ícones dos insumos novos** (0 crédito, `client/tools/itens_blender.py`, mesma pipeline da Leva 9): `item_minerio_cobre` (veio em pátina verde), `item_minerio_ouro` (pepitas), `item_lingote_cobre`, `item_lingote_ouro`, `item_gema_bruta` (cristais roxos; a lapidada é o `item_gema`) e `item_lamina` (lâmina crua em aço, sem guarda: separa da espada azul). Antes saíam como blocos coloridos procedurais.
+
