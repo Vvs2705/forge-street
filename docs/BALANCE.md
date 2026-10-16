@@ -2481,7 +2481,9 @@ Produção completa do F2P 62:18 (55–70) — ok; maior sequência morta 12 (�
 
 `ArcaneTests` (17): kit, números, carga por peça, encadeamento Arsenal → Foundry e as famílias do §12; os outros distritos sem altar; dreno (base, condensadores, Ísis por nível); empate no kit (uma lanterna a cada 5 s, sem esperar o medidor); **Estável nunca sobrecarrega** e só começa com espaço; **Forçado sobrecarregado não perde peça** (pausa, E = 40); energizada q +20, EnergizedPieces, StableStreak (a Estável não conta nem zera; a sobrecarga zera), troca de modo na próxima peça e o marco das 500; **sem sorteio** e o offline sem mexer no medidor; save de ida e volta (linhas opcionais, lixo, peça em curso); Ísis em todo altar; regra do bot (e 20 min sem sobrecarga); encomendas (rodízio, Royal 240 s, Zélia, Royal no Charter); contratos no build; **Charter pelo caminho real**; validator com defeitos; layout; textos nos 3 idiomas. `ArsenalTests.Kit_…` espera Arsenal → Foundry; `DistritosTests.Validator_MapaReal_SemViolacao` confere o mapa pela cadeia dos Charters (sem fixar posição); `EquipeTests.Validator_…` troca o distrito inexistente para `fundicao_fantasma`. 547 no `coretests`. Prova vermelha (`python client/tools/mutantes/mutantes.py --so af-…`, versionadas): RESULTADO_MUTANTES.
 
-### 40.6 Old Forge, Row, Quarter e Arsenal idênticos ao byte (`main` e6ee033 × este branch)
+### 40.6 Old Forge, Row, Quarter e Arsenal idênticos ao byte (`main` 33e1bd6 × este branch; o mesmo com a e6ee033)
+
+A Foundry dá os mesmos CSVs antes e depois do merge de #87–#91 (interface v2, só View e `mutantes.py`): os números de 40.1–40.3 valem para a `main` 33e1bd6.
 
 | econsim | SHA-256 do CSV (os dois lados) |
 |---|---|

@@ -36,6 +36,13 @@ namespace FS.Tests
             return st.OutQ[(int)Quality.Superior] > 0 ? Quality.Superior : st.OutQ[(int)Quality.Fine] > 0 ? Quality.Fine : Quality.Normal;
         }
 
+        /// <summary>Roda ate o altar passar de `feitas` pecas (no maximo 1.000 s de jogo).</summary>
+        static void Termina(Sim s, Station st, int feitas)
+        {
+            for (int i = 0; i < 4000 && st.Crafted == feitas; i++) s.Tick(Q, 0f, 0f);
+            Assert.Greater(st.Crafted, feitas, "a peca terminou");
+        }
+
         static int Isis(Sim s, int nivel)
         {
             int k = WorkerDefs.IndexOf("wk_isis", s.Equipe.Defs);
@@ -150,6 +157,7 @@ namespace FS.Tests
             int espera = 0;
             for (; !l.Busy; espera++)
             {
+                Assert.Less(espera, 400, "o medidor cai (3/s: 100 s no maximo)");
                 bool cabe = l.Medidor + s.CargaPeca(l) <= s.T.ArcanoTeto;
                 s.Tick(Q, 0f, 0f);
                 Assert.AreEqual(cabe, l.Busy, $"comeca so com espaco (E {l.Medidor})");
@@ -183,7 +191,7 @@ namespace FS.Tests
             s.Tick(Q, 0f, 0f);
             Assert.AreEqual((true, true, true), (l.Busy, l.Energizada, l.Sobrecarrega), "comecou, energizada, vai sobrecarregar");
             Assert.AreEqual(9000 + 2 * 1500 - 75, l.Medidor, "2 x carga (e 1 passo de dreno)");
-            while (l.Crafted == 0) s.Tick(Q, 0f, 0f);
+            Termina(s, l, 0);
             Assert.AreEqual((1, 1, 1, 0), (l.Out, s.PecasEnergizadas[lanterna], s.Sobrecargas, l.Sequencia), "a peca saiu");
             Assert.AreEqual(1, l.Ins[0], "o insumo da 2a peca segue na entrada");
             Assert.Greater(l.Pausa, 9f);
@@ -191,7 +199,7 @@ namespace FS.Tests
             Assert.AreEqual((0f, 4000), (l.Pausa, l.Medidor), "depois da pausa, E = 40");
             s.Tick(Q, 0f, 0f);
             Assert.AreEqual((true, false, 0, 7000 - 75), (l.Busy, l.Sobrecarrega, l.Ins[0], l.Medidor), "a 2a peca: 40 + 30, sem sobrecarga");
-            while (l.Crafted == 1) s.Tick(Q, 0f, 0f);
+            Termina(s, l, 1);
             Assert.AreEqual((2, 2, 1), (l.Out, s.PecasEnergizadas[lanterna], l.Sequencia), "2 insumos, 2 pecas");
         }
 
@@ -220,7 +228,7 @@ namespace FS.Tests
             Assert.IsTrue(l.Busy && !l.Energizada);
             s.ModoArcano(l, true);   // no meio da peca Estavel: ela termina Estavel
             Assert.IsFalse(l.Energizada);
-            while (l.Crafted == 6) s.Tick(Q, 0f, 0f);
+            Termina(s, l, 6);
             Assert.AreEqual((5, true), (s.PecasEnergizadas[lanterna], l.Energizada), "a de agora saiu Estavel; a proxima vem energizada");
 
             l.Medidor = 9000;
