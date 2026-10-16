@@ -169,9 +169,10 @@ namespace FS.Core
             new RecipeDef("fornalha_liga", Kind.Furnace, Liga, t => 1.5f, (Lingote, 2)),
         };
 
-        // ponytail: estacoes sem arte propria usam a da familia mais proxima: montagens = bancada de escudos (armadura), forjas = bigorna;
-        // prensa e rebitadeira = fornalha (pelo tipo); carroca do couro = a carroca da rua lateral do Old Forge
+        // ponytail: estacoes sem arte propria usam a da familia mais proxima (Escudos, Bigorna); a carroca do couro = a carroca da rua lateral
+        // do Old Forge. C-ART-13: a Row tem folhas proprias (Tripo, ASSETS.md §14): prensa, rebitadeira, montagem, forja de armas e fornalha de liga
         const string Escudos = "bancada_escudos", Bigorna = "bigorna";
+        const string Prensa = "prensa", Rebitadeira = "rebitadeira", Montagem = "montagem", ForjaArmas = "forja_armas", FornalhaLiga = "fornalha_liga";
 
         const Upgrade Nenhum = (Upgrade)(-1);
         static UpgradeDef U(int i, string id, int requer, string nome, string desc, bool menu = false, bool luxo = false, Upgrade efeito = Nenhum,
@@ -234,9 +235,9 @@ namespace FS.Core
 
         /// <summary>C-CORE-05 (CONTEUDO_V1 §6): a Fundidora (Smelter) que opera a fornalha de liga (o Requer, Equipe.Ritmo: 6 -> 4 s, +3%/nivel) e
         /// da q +15/+25/+30 nas montagens (Station = a familia). Contratacao e niveis do catalogo (1.800 x 1,6^(L-2)), em ouro, como a equipe do
-        /// Old Forge. ponytail: a folha do oficial ate a arte dela existir.</summary>
+        /// Old Forge. C-ART-13: a folha do Fundidor (Lote 5A).</summary>
         static readonly WorkerDef Vulcana = new WorkerDef("wk_vulcana", "Vulcana", WorkerRole.Smelter, Specialty.Armor, ArmorersRowId, "montagem", null, -1,
-            7200, "fornalha_liga", new long[] { 1800, 2880, 4610, 7375, 12000, 19000, 30000, 48000, 77000 }, "oficial", "liga", "qualidade");
+            7200, "fornalha_liga", new long[] { 1800, 2880, 4610, 7375, 12000, 19000, 30000, 48000, 77000 }, "fundidor", "liga", "qualidade");
 
         public static readonly DistrictDef ArmorersRow = new DistrictDef
         {
@@ -253,22 +254,22 @@ namespace FS.Core
             {
                 new StationDef("deposito", Kind.Deposit, 1.5f, 1.0f, "Depósito", 0f, 1f),
                 new StationDef("fornalha", Kind.Furnace, 1.5f, 4.0f, "Fornalha", -1f, 0f, null, "fornalha"),
-                new StationDef("prensa", Kind.Furnace, 1.5f, 6.5f, "Prensa", -1f, 0f, null, "prensa"),
-                new StationDef("rebitadeira", Kind.Furnace, 7.5f, 6.5f, "Rebitadeira", -1f, 0f, null, "rebitadeira"),
-                new StationDef("montagem_elmo", Kind.Crafter, 1.5f, 9.0f, "Montagem elmo", -1f, 0f, null, "montagem_elmo", arte: Escudos),
+                new StationDef("prensa", Kind.Furnace, 1.5f, 6.5f, "Prensa", -1f, 0f, null, "prensa", arte: Prensa),
+                new StationDef("rebitadeira", Kind.Furnace, 7.5f, 6.5f, "Rebitadeira", -1f, 0f, null, "rebitadeira", arte: Rebitadeira),
+                new StationDef("montagem_elmo", Kind.Crafter, 1.5f, 9.0f, "Montagem elmo", -1f, 0f, null, "montagem_elmo", arte: Montagem),
                 new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f),
-                new StationDef("prensa2", Kind.Furnace, 4.5f, 6.5f, "Prensa 2", -1f, 0f, "prensa2", "prensa"),
-                new StationDef("bigorna_pesada", Kind.Crafter, 1.5f, 11.0f, "Bigorna pesada", -1f, 0f, "bigorna_pesada", "bigorna_pesada", arte: Bigorna),
+                new StationDef("prensa2", Kind.Furnace, 4.5f, 6.5f, "Prensa 2", -1f, 0f, "prensa2", "prensa", arte: Prensa),
+                new StationDef("bigorna_pesada", Kind.Crafter, 1.5f, 11.0f, "Bigorna pesada", -1f, 0f, "bigorna_pesada", "bigorna_pesada", arte: ForjaArmas),
                 new StationDef("carroca_couro", Kind.Deposit, 13.5f, 1.5f, "Carroça couro", 0f, 1f, "carroca_curtidor", null, Couro, "carroca"),
-                new StationDef("montagem_grevas", Kind.Crafter, 4.5f, 9.0f, "Montagem grevas", -1f, 0f, "carroca_curtidor", "montagem_grevas", arte: Escudos),
-                new StationDef("forja_hastes", Kind.Crafter, 4.5f, 11.0f, "Forja de hastes", -1f, 0f, "forja_hastes", "forja_hastes", arte: Bigorna),
+                new StationDef("montagem_grevas", Kind.Crafter, 4.5f, 9.0f, "Montagem grevas", -1f, 0f, "carroca_curtidor", "montagem_grevas", arte: Montagem),
+                new StationDef("forja_hastes", Kind.Crafter, 4.5f, 11.0f, "Forja de hastes", -1f, 0f, "forja_hastes", "forja_hastes", arte: ForjaArmas),
                 new StationDef("fornalha2", Kind.Furnace, 4.5f, 4.0f, "Fornalha 2", -1f, 0f, "fornalha_armeiro2", "fornalha"),
-                new StationDef("montagem_manoplas", Kind.Crafter, 7.5f, 9.0f, "Mont. manoplas", -1f, 0f, "montagem_manoplas", "montagem_manoplas", arte: Escudos),
-                new StationDef("forja_machados", Kind.Crafter, 7.5f, 11.0f, "Forja machados", -1f, 0f, "forja_machados", "forja_machados", arte: Bigorna),
-                new StationDef("montagem_peitoral", Kind.Crafter, 10.5f, 9.0f, "Mont. peitoral", -1f, 0f, "montagem_peitoral", "montagem_peitoral", arte: Escudos),
-                new StationDef("rebitadeira2", Kind.Furnace, 10.5f, 6.5f, "Rebitadeira 2", -1f, 0f, "rebitadeira2", "rebitadeira"),
+                new StationDef("montagem_manoplas", Kind.Crafter, 7.5f, 9.0f, "Mont. manoplas", -1f, 0f, "montagem_manoplas", "montagem_manoplas", arte: Montagem),
+                new StationDef("forja_machados", Kind.Crafter, 7.5f, 11.0f, "Forja machados", -1f, 0f, "forja_machados", "forja_machados", arte: ForjaArmas),
+                new StationDef("montagem_peitoral", Kind.Crafter, 10.5f, 9.0f, "Mont. peitoral", -1f, 0f, "montagem_peitoral", "montagem_peitoral", arte: Montagem),
+                new StationDef("rebitadeira2", Kind.Furnace, 10.5f, 6.5f, "Rebitadeira 2", -1f, 0f, "rebitadeira2", "rebitadeira", arte: Rebitadeira),
                 // C-CORE-05: na fileira das fornalhas, sobre a rebitadeira (como fornalha -> prensa na coluna 1); anexada no fim (indice do save)
-                new StationDef("fornalha_liga", Kind.Furnace, 7.5f, 4.0f, "Fornalha liga", -1f, 0f, "fornalha_liga", "fornalha_liga"),
+                new StationDef("fornalha_liga", Kind.Furnace, 7.5f, 4.0f, "Fornalha liga", -1f, 0f, "fornalha_liga", "fornalha_liga", arte: FornalhaLiga),
             },
             Pads = new[]
             {
