@@ -297,6 +297,7 @@ namespace FS.Core
         public int[] NivelEstacaoCusto = { 250, 750, 325, 950, 250, 750, 500, 1500, 800, 1500, 1000, 1835, 800, 1500, 1600, 3000 };
         public int BigornaLongaCusto = 6000;                    // B-CORE-07: linha Meta da espada longa (CONTEUDO_V1 §5.1)
         public int TecnicaQ = 20;                               // B-CORE-07: pontos de qualidade do Blueprint de tecnica da familia (ECONOMIA_WAVE_B §1.2)
+        public int TecnicaItemQ = 15;                           // C-CORE-06: a tecnica de um produto (bp_tecnica_lapidacao: colar e caixa de joias, CONTEUDO_V1 §9)
         public int LigaQ = 30;                                  // C-CORE-05: pontos da liga na peca (QualitySource.Material; CONTEUDO_V1 §2.2 regra 2)
         /// <summary>B-CORE-08: "modificador de evento 0-25" (ECONOMIA_WAVE_B §1.2, LIVEOPS_V1 §2.3): pontos de qualidade por item (indice = handle),
         /// 0 fora de evento; so o modificador do evento (Hunt: +15 na espada ou na joia) e o RemoteConfig (trava 0-25) mexem.</summary>
@@ -540,6 +541,9 @@ namespace FS.Core
         /// peca sai, consome 1 e soma Tuning.LigaQ (Station.Liga, Sim.Grade). Um por receita, ao lado de um obrigatorio (ContentValidator).</summary>
         public readonly (Item Item, int Qty)[] Inputs;
         public readonly Func<Tuning, float> TimeMul;
+        /// <summary>C-CORE-06: ID do upgrade que libera esta receita numa bancada configuravel (Sim.Bancada; null = do kit). Fora dela, sem uso:
+        /// a estacao fixa abre pelo StationDef.Abre.</summary>
+        public string Abre;
         public RecipeDef(string station, Kind kind, Item output, Func<Tuning, float> timeMul, params (Item Item, int Qty)[] inputs)
             : this(station, station, kind, output, timeMul, inputs) { }
         public RecipeDef(string station, string family, Kind kind, Item output, Func<Tuning, float> timeMul, params (Item Item, int Qty)[] inputs)

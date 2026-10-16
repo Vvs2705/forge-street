@@ -41,6 +41,7 @@ namespace FS
             public StationView Bancada; // A-ART-07: martelo no compasso da bigorna/bancada (StationView)
             // B-CORE-03: brilho de cada peca (Fina = estrela de 4 pontas prata, Superior = estrela de 5 pontas ouro), barra do acumulador e "Fina em 7"
             public SpriteRenderer[] OutGlint, StockGlint; public SpriteRenderer QBarBg, QBarFill; public Text QLabel; public float QT;
+            public RecipeDef Receita;   // C-CORE-06: a receita com que as pilhas foram montadas (a bancada configuravel troca: a estacao e' refeita)
         }
         /// <summary>Placa de obra: fundo escuro, enchimento de ouro, borda tracejada, icone do que constroi; preco (moeda + valor) e nome na HUD.</summary>
         sealed class PadV
@@ -568,9 +569,19 @@ namespace FS
         // cor do papel: o que ele carrega (3 = joalheiro, roxo #B07CF2 da joia; AREA2_FASE2 s4)
         static Item RoleItem(int role) => role == 0 ? Item.Ore : role == 1 ? Item.Ingot : role == 3 ? Item.Jewel : Item.Sword;
 
+        /// <summary>C-CORE-06: a bancada configuravel trocou de receita: pilhas, bocas e barra mostram o item novo (a estacao toda e' refeita, uma
+        /// vez por troca; ponytail: so as pilhas bastariam, mas o icone da barra e as bocas tambem sao do item).</summary>
+        StationV Refaz(StationV v)
+        {
+            Destroy(v.Root.gameObject);
+            if (v.Label != null) Destroy(v.Label.gameObject);
+            if (v.QLabel != null) Destroy(v.QLabel.gameObject);
+            return BuildStation(v.S);
+        }
+
         StationV BuildStation(Station s)
         {
-            var v = new StationV { S = s, Root = new GameObject(s.Name).transform, Stand = s == _sim.Counter && _hasStand };
+            var v = new StationV { S = s, Root = new GameObject(s.Name).transform, Stand = s == _sim.Counter && _hasStand, Receita = s.Recipe };
             v.Root.SetParent(transform, false);
             v.Root.localPosition = W(s.Pos);
             Sprite art = StaticArt(StationArt(s), StationCell);
@@ -1134,7 +1145,11 @@ namespace FS
             for (int i = 0; i < _glows.Count; i++)   // tochas tremulam: 2 senos fora de fase por tocha
                 _glows[i].color = Art.ComAlfa(GlowColor, GlowAlpha + 0.05f * Mathf.Sin(Time.time * 9f + i * 2.1f) + 0.03f * Mathf.Sin(Time.time * 23f + i));
             _esteira.Refresh();   // antes das estacoes: a pilha da Bigorna desconta o lingote em cima da faixa ja neste quadro
-            foreach (StationV v in _stations) RefreshStation(v, pulse, dt);
+            for (int i = 0; i < _stations.Count; i++)
+            {
+                if (_stations[i].Receita != _stations[i].S.Recipe) _stations[i] = Refaz(_stations[i]);   // C-CORE-06: trocou a receita
+                RefreshStation(_stations[i], pulse, dt);
+            }
             RefreshStand(dt);
             foreach (PadV v in _pads) RefreshPad(v, dt);
             foreach (ChestV v in _chests) RefreshChest(v);

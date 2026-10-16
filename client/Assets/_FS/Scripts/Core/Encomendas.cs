@@ -264,7 +264,7 @@ namespace FS.Core
         {
             if (min == Quality.Normal) return 1.0;
             int q = 0;
-            foreach (Station s in _sim.Stations) if (s.Unlocked && s.Produces && s.OutItem == item) q = Math.Max(q, _sim.QualityPoints(s));
+            foreach (Station s in _sim.Stations) if (s.Unlocked && _sim.Faz(s, item)) q = Math.Max(q, _sim.QualityPoints(s));   // C-CORE-06: a bancada configuravel conta por toda receita liberada
             return Math.Max(0.0, Math.Min(1.0, (q - ((int)min - 1) * 100) / 100.0));
         }
 

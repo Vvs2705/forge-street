@@ -118,6 +118,7 @@ namespace FS.Core
             e.AddRange(Workers(d.Workers, w, new RenomeDef[0]));   // o wk_ que o Renome libera: o Validate confere contra os do Old Forge
             e.AddRange(Blueprints(w.Projetos.Defs, d.Upgrades, w));   // C-CORE-05: os projetos dele (essencial nunca so pago; filas do distrito)
             e.AddRange(MasterworksDefs.Validar(w.Hall.Defs, w.Colecao.Marcos, w.Projetos.Defs, d.Upgrades, w));   // C-CORE-05: o Hall e a Collection que o Sim dele usa
+            e.AddRange(Sim.ValidarBancadas(d, w)); e.AddRange(Sim.ValidarFamilias(d, w));   // C-CORE-06: bancada configuravel e familias de cliente
             return e;
         }
 
@@ -151,8 +152,10 @@ namespace FS.Core
             foreach (PadDef p in d.Pads)
                 foreach (string c in p.Cadeia)
                     if (Upgrades.IndexOf(c, d.Upgrades) < 0) yield return $"{at} pad ({p.Pos}) vende \"{c}\", que nao e' upgrade do distrito";
-            if (d.Itens.Length < 3 || d.Itens[0].Id != "minerio" || d.Itens[1].Id != "lingote" || !d.Itens[2].Product)
-                yield return $"{at} itens 0, 1 e 2 tem de ser minerio, lingote e um produto (papeis dos ajudantes, 1o cliente)";
+            // C-CORE-06: o Quarter nao tem minerio de ferro; 0 e 1 sao o bruto do deposito do kit e o que a fornalha do kit faz dele (cobre)
+            if (d.Itens.Length < 3 || !d.Itens[2].Product || !Array.Exists(d.Estacoes, s => s.Abre == null && s.Kind == Kind.Deposit && s.Bruto == (Item)0)
+                || !Array.Exists(d.Receitas, r => r.Output == (Item)1 && r.Kind == Kind.Furnace && Array.Exists(r.Inputs, x => x.Item == (Item)0)))
+                yield return $"{at} itens 0, 1 e 2 tem de ser o bruto do deposito do kit, o lingote que a fornalha faz dele e um produto (papeis dos ajudantes, dica, 1o cliente)";
             else if (!Array.Exists(d.Estacoes, s => s.Abre == null && s.Familia != null && Recipes.Making((Item)2, d.Receitas)?.Station == s.Familia))
                 yield return $"{at} o produto {d.Itens[2].Id} (1o cliente) nao sai de uma estacao do kit";
             if (d.Largura <= 0f || d.Largura > Balance.WorldW) yield return $"{at} largura {d.Largura.ToString(System.Globalization.CultureInfo.InvariantCulture)} fora do mapa";
@@ -346,7 +349,7 @@ namespace FS.Core
                     bool ok = d.Kind switch
                     {
                         BlueprintKind.StationLevel => Familia(t) && Array.Exists(upgrades, u => u.Blueprint == d.Id && u.Station == t),
-                        BlueprintKind.Technique => Familia(t),
+                        BlueprintKind.Technique => Familia(t) || Produto(t),   // C-CORE-06: tecnica de produto (lapidacao: colar e caixa)
                         BlueprintKind.Recipe => Produto(t) && Array.Exists(upgrades, u => u.Blueprint == d.Id
                             && w.Stations.Exists(s => s.UnlockBy == (int)u.Up && s.Produces && w.ItemDefs[(int)s.OutItem].Id == t)),
                         BlueprintKind.Masterwork => t.StartsWith("mw_", StringComparison.Ordinal) && IdOk(t),
@@ -687,8 +690,9 @@ namespace FS.Core
         public static IEnumerable<string> Receitas(int[] price, Sim w)
         {
             string Name(Item i) => (uint)i < (uint)w.ItemDefs.Length ? w.ItemDefs[(int)i].Id : ((int)i).ToString();
-            bool Made(Item i) => w.Stations.Exists(s => s.Kind == Kind.Deposit ? s.OutItem == i : s.Produces && s.OutItem == i);   // C-CORE-01: o bruto de cada deposito
-            bool Used(Item i) => w.Stations.Exists(s => s.InIndex(i) >= 0);
+            // C-CORE-06: a bancada configuravel faz e usa o de todas as receitas dela (w.ReceitasDe; estacao fixa = a dela, como antes)
+            bool Made(Item i) => w.Stations.Exists(s => s.Kind == Kind.Deposit ? s.OutItem == i : Array.Exists(w.ReceitasDe(s), r => r.Output == i));   // C-CORE-01: o bruto de cada deposito
+            bool Used(Item i) => w.Stations.Exists(s => Array.Exists(w.ReceitasDe(s), r => Array.Exists(r.Inputs, x => x.Item == i)));
             bool Sold(Item i) => w.Stations.Exists(s => w.Sells(s, i));
             for (int k = 0; k < w.ItemDefs.Length; k++)
             {
@@ -699,7 +703,7 @@ namespace FS.Core
             }
             foreach (Station s in w.Stations)
                 if (!s.Produces && (s.Kind == Kind.Furnace || s.Kind == Kind.Crafter)) yield return $"receita: {s.Name} sem receita (nenhuma da familia dela)";
-                else if (s.Produces && s.Recipe.Kind != s.Kind) yield return $"receita: {s.Name} ({s.Kind}) com receita de {s.Recipe.Kind}";
+                else if (s.Produces && Array.Exists(w.ReceitasDe(s), r => r.Kind != s.Kind)) yield return $"receita: {s.Name} ({s.Kind}) com receita de {s.Recipe.Kind}";
             // fecho a partir do minerio: o que as estacoes fazem quando todos os insumos ja sao alcancaveis (pega o ciclo)
             var reach = new HashSet<Item>();
             foreach (Station s in w.Stations) if (s.Kind == Kind.Deposit) reach.Add(s.OutItem);
@@ -707,11 +711,12 @@ namespace FS.Core
             {
                 grew = false;
                 foreach (Station s in w.Stations)
-                    if (s.Produces && !reach.Contains(s.OutItem) && Array.TrueForAll(s.Recipe.Inputs, x => reach.Contains(x.Item))) { reach.Add(s.OutItem); grew = true; }
+                    foreach (RecipeDef r in w.ReceitasDe(s))
+                        if (!reach.Contains(r.Output) && Array.TrueForAll(r.Inputs, x => reach.Contains(x.Item))) { reach.Add(r.Output); grew = true; }
             }
             foreach (RecipeDef r in w.RecipeDefs)
             {
-                if (!w.Stations.Exists(s => s.Recipe == r)) yield return $"receita: {Name(r.Output)} sem estacao da familia {r.Station}";
+                if (!w.Stations.Exists(s => Array.IndexOf(w.ReceitasDe(s), r) >= 0)) yield return $"receita: {Name(r.Output)} sem estacao da familia {r.Station}";
                 if (r.Inputs.Length == 0) yield return $"receita: {Name(r.Output)} sem insumo";
                 // C-CORE-05: Qty 0 = o slot opcional (liga): 1 por receita, so em produto (Sim.Grade) e ao lado de um insumo obrigatorio
                 if (Array.FindAll(r.Inputs, x => x.Qty == 0).Length > (w.IsProduct(r.Output) && Array.Exists(r.Inputs, x => x.Qty > 0) ? 1 : 0))

@@ -52,7 +52,12 @@ namespace FS.Core
     {
         public const string OldForge = "old_forge", Row = FS.Core.Distritos.ArmorersRowId;
         /// <summary>Distritos com projetos (as filas sao por distrito). ponytail: vira DistrictDef no C-CORE-01.</summary>
-        public static readonly string[] Distritos = { OldForge, Row };
+        public static readonly string[] Distritos =
+        {
+            OldForge, Row,
+            // ---- artisan_quarter (C-CORE-06)
+            FS.Core.Distritos.ArtisanQuarterId,
+        };
         /// <summary>O catalogo da v1.0 inteiro (CONTEUDO_V1 §9): 101, 25 essenciais. Os que faltam aqui esperam a Wave C.</summary>
         public const int CatalogoV1 = 101, EssenciaisV1 = 25;
 
