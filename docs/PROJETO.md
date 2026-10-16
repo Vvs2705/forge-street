@@ -68,7 +68,7 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | V26 | **Qualidade (decidido por padrão, B-CORE-03, revisar):** custo dos níveis de estação = metade do `ECONOMIA_WAVE_B.md` §1.5 (bigornas 250/750, escudos 325/950, ferramentas 250/750, joalheria 500/1.500): com o §1.5 o retorno medido foi 39 min (portão ≤ 20) e a produção completa do F2P 57 min; com a metade, retorno 19,5 min e os 3 portões passam (`BALANCE.md` §23). Knob `Tuning.NivelEstacaoCusto`. "Com o insumo" do golpe = a bancada tem a próxima peça (trabalhando ou com a receita na entrada). Níveis IV–V entram com os projetos (B-CORE-07). |
 | V27 | **Collection e encomenda Event (decidido por padrão, B-CORE-08, revisar):** degraus da Collection a +5/+10 de Renome (o §7 pedia +10/+20, que furavam os pisos do Renome 3 e 4 junto com o Orders 2.0; `BALANCE.md` §30.6). A encomenda Event disputa as vagas com as normais e os pontos dela foram calibrados para o jogador com 3 vagas (Caravan 12, Royal Week-B 15, Hunts 17/20); a alternativa é contá-la à parte e reafinar os 9 eventos. Hall e Collection são por distrito (`DistrictDef`); desde o #71 os painéis do Hall e de projetos mostram o distrito ativo. | padrão do time, 2026-10-14 — revisar |
 | V28 | **Rua dos Armeiros (decidido por padrão, C-CORE-05, revisar):** preços do catálogo × 3,5 e produtivos × 1,55, porque o gargalo da Row é o transporte (4 Ferraz com carga 2), não a demanda; se a turma ganhar carga maior, os preços voltam para perto do catálogo. Contratos de distrito abrem com o distrito no build (não "aberto pelo jogador"); nada bloqueia. Managers sobem a renda de fundo dos distritos fora de foco, não o cofre offline do distrito ativo; botão do mapa na ordem Charter → Abrir → Gerente → Viajar (`BALANCE.md` §33–§34). | padrão do time, 2026-10-14 — revisar |
-| V29 | **Marca e liga (decidido por padrão, C-ART-14 e C-CORE-05, revisar):** ícone do app = variante A (ferreiro + martelo), a que melhor lê a 48 px em fundo claro e escuro (`arte/marca/icone_leitura.png`; trocar = `ESCOLHIDA` no `marca_compor.py`); logo em Inter Black (OFL) até a fonte da UI. Na Row, o nível II das montagens/forjas pede a Rebitadeira 2 (o §5.7 pedia a 1ª estação da família; com ele a produção completa do F2P ia a 76 min) e a liga entra por slot opcional (a peça não espera por ela). | padrão do time, 2026-10-15 — revisar |
+| V29 | **Marca e liga (decidido por padrão, C-ART-14 e C-CORE-05, revisar):** ~~ícone do app = variante A (ferreiro + martelo); logo em Inter Black~~ — **substituído pela escolha do Vinicius (2026-10-16, #86): ícone = emblema A3, logo de título = C2** (`client/tools/marca_v2.py`; fontes da UI = Lilita One + Nunito, #87). Na Row, o nível II das montagens/forjas pede a Rebitadeira 2 (o §5.7 pedia a 1ª estação da família; com ele a produção completa do F2P ia a 76 min) e a liga entra por slot opcional (a peça não espera por ela). | padrão do time, 2026-10-15 — revisar |
 
 ## 5. Decisões pendentes (Vinicius)
 
@@ -132,7 +132,7 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 
 ## 8. Progresso rumo ao 100% (definição de jogo completo, DM §164)
 
-Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-16, depois do #84). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
+Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-16, depois do #88). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
 
 | Item (§164) | % | Onde está | Próximo passo |
 |---|---|---|---|
@@ -156,10 +156,10 @@ Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-16, 
 | RemoteConfig | 47 | JSON local com travas no núcleo, chave mestra dos anúncios, cache, HTTP desligado (#53); trava do `QualidadeEvento` (#63) | provedor remoto (P8); `econsim --rc` |
 | Save | 90 | Save 2.0 + schema 3; multi-distrito; linhas opcionais da bancada configurável e das famílias de cliente (#78) | cloud save (opcional) |
 | Release pipeline | 55 | AAB assinado por env, `verify release`, 16 KB, API 36 | chave real (aval), Unity no CI, release automatizada |
-| Arte final | 64 | estações do Old Forge, da Row (#75), do Quarter (#79) e do Arsenal (#84), ícones de insumo (#79), elenco 1,5× mais nítido (#81) | estações da Row e dos distritos (C-ART-13), Vulcana, herói |
+| Arte final | 72 | estações do Old Forge, da Row (#75), do Quarter (#79) e do Arsenal (#84), ícones de insumo (#79), elenco 1,5× mais nítido (#81); **programa de arte** (`AUDITORIA_VISUAL.md`): interface v2 com fontes OFL, molduras, botões com relevo, barras, fundo dos menus e ícones de prêmio pintados (#87), cofre e baú com vida (#88) | Vulcana e herói; HUD de cima e barra de baixo no estilo novo, fita nos títulos, selos de estado (itens 10–13 da auditoria); chão menos repetitivo |
 | Áudio final | 38 | 3 grupos, 15 efeitos sintetizados, mix com prioridade, orçamento de vozes e distância (#59) | ouvir no POCO; banco de sons real + 5 músicas |
-| Store assets | 40 | ícone (#69); 12 opções de logo novo geradas (esperando a escolha do Vinicius); 37 criativos, ASO pt/en/es | 2 × 8 screenshots pelos presets, vídeo, feature graphic com quadro novo |
-| **Média** | **~65** | | |
+| Store assets | 52 | marca v2 (#86): ícone = emblema A3 (adaptativo, legado, redondo, 512 da loja), logo de título C2 na abertura do jogo e na feature graphic; 37 criativos, ASO pt/en/es | 2 × 8 screenshots pelos presets com a interface v2, vídeo |
+| **Média** | **~66** | | |
 
 ## 9. Retomada (handoff 2026-10-15, pausa pedida pelo Vinicius)
 
@@ -179,12 +179,14 @@ Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões
 - ~~`feat/royal-arsenal`~~: na `main` pelo #83 (pátio de cotas, famílias, índice 3) e a arte das estações pelo #84.
 - ~~`art/nitidez-personagens`~~ (etapa 5): na `main` pelo #81 depois de medir o APK (91,5 → 121,7 MB, 61% do limite de 200 MB; alternativa registrada no `ASSETS.md` §16).
 
-**Programa de arte (pedido de 2026-10-16, `docs/AUDITORIA_VISUAL.md`):** etapa 1 feita (#77); etapa 2: 12 opções de logo enviadas ao Vinicius (`arte/tripo/logo_opcoes/`), **esperar a escolha** antes de aplicar; etapa 5 feita (#81); etapas 3 (ícone), 4 (interface v2) e 6 (recompensas com vida) não começaram; etapa 7: POCO só com "pode testar".
+**Programa de arte (pedido de 2026-10-16, `docs/AUDITORIA_VISUAL.md`):** etapas 1–6 feitas: auditoria (#77), nitidez (#81), marca v2 com a escolha do Vinicius, A3 no ícone e C2 no logo (#86), interface v2 (#87) e recompensa com vida (#88), sempre com build Windows e fotos antes/depois. Sobra da auditoria para uma leva de arte: HUD de cima e barra de baixo, fita nos títulos, selos de estado, rótulos do mundo, chão. Etapa 7: POCO **só com "pode testar"**, depois PR final.
+
+**Leva dos distritos 5 e 6 (em andamento, 2026-10-16):** raias `feat/arcane-foundry` (C-CORE-08, `Sim.Arcano.cs`, BALANCE §40, mutações af-) e `feat/grand-forge` (C-CORE-09, `Sim.Exportacao.cs`, BALANCE §41, mutações gf-), brief no scratchpad do coordenador com as lições da leva 3–4 (transporte, Charter cedo, chaves de texto duplicadas, merge da `main` no fim). Integrar a Foundry primeiro (índice 4) e a Grand Forge depois (índice 5); depois a arte das estações deles no Tripo. Fora delas: 4 mutações antigas quebradas no `mutantes.py` (`enc-rodizio-repete-produto`, `enc-validator-item`, `ad-inter-tutorial`, `liveops-limiar-2x`) num PR à parte.
 
 **Fila das próximas levas (ordem):**
-1. Terminar e integrar os 3 branches acima (distritos 3 e 4 + pendências da Row).
-2. Arte da Row e dos distritos (C-ART-13: estações, Vulcana, fornalha de liga) e Lote 5B no Tripo.
-3. Distritos 5 e 6 (Arcane Foundry e Grand Forge) no mesmo padrão.
+1. ~~Distritos 3 e 4 + pendências da Row~~ (#76, #78, #83) e ~~a arte deles~~ (#75, #79, #84).
+2. Integrar os distritos 5 e 6 (acima) e a arte das estações deles (Tripo); Vulcana e herói.
+3. Leva de arte da HUD (sobras da auditoria) e as 4 mutações quebradas.
 4. Áudio real: decidir a fonte com o Vinicius (gerado por IA com licença comercial do plano, ou banco CC0); depois 5 músicas + banco de efeitos.
 5. Store: 2 × 8 screenshots pelos presets, vídeo, feature graphic com quadro novo; IAP com o pacote Unity IAP (aval de download).
 6. POCO (o coordenador pede ao Vinicius quando precisar) e loja: a conta Google Play está em andamento em outro projeto.
