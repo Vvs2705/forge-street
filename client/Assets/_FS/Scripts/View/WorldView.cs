@@ -67,7 +67,7 @@ namespace FS
             public SpriteRenderer Crown; public Text Tag;   // v0.5c: coroa do VIP e "xN" do pacote (ou "VIP" esperando vaga)
             public bool Waiting;                             // VIP esperando ao lado da fila cheia (sem Client ainda)
         }
-        sealed class ChestV { public Chest C; public Transform Root; public Text Label; }
+        sealed class ChestV { public Chest C; public Transform Root, Fx; public Text Label; public SpriteRenderer Brilho, Raios; public float OpenT = -1f; }
         sealed class Floater { public Text T; public Vector3 World; public float Age; public bool Live; }
         /// <summary>Decoracao de uma compra de luxo: raiz ligada pela flag `Bought`; PopT >= 0 = pop em andamento.</summary>
         sealed class LuxV { public Upgrade U; public Transform Root; public float PopT = -1f; public int Off = -1; }   // Off: apaga quando esta compra existe (Fole -> Fole duplo)
@@ -789,6 +789,13 @@ namespace FS
             Sprite art = StaticArt("bau", ChestCell);
             if (art != null) Art.NewSprite(v.Root, "Arte", art, Color.white, Depth(c.Pos.Y), Vector2.zero, Vector2.one);
             else Art.NewSprite(v.Root, "Arte", Art.Rounded(), Art.CounterC, Depth(c.Pos.Y), new Vector2(0f, 0.2f), new Vector2(0.7f, 0.5f));
+            // etapa 6: brilho e raios atras do bau, so na abertura (AbreBau); fora do Root para nao encolher junto
+            v.Fx = new GameObject("BauFx " + c.Index).transform;
+            v.Fx.SetParent(transform, false);
+            v.Fx.localPosition = W(c.Pos) + new Vector3(0f, 0.35f, 0f);
+            v.Brilho = Art.NewSprite(v.Fx, "Brilho", Art.Glow(), BauLuz, Depth(c.Pos.Y) - 2, Vector2.zero, Vector2.one);
+            v.Raios = Art.NewSprite(v.Fx, "Raios", Art.Raios(), BauLuz, Depth(c.Pos.Y) - 1, Vector2.zero, Vector2.one);
+            v.Brilho.enabled = v.Raios.enabled = false;
             v.Label = Art.FreeText(_labels, "Marco", 26, new Vector2(300f, 40f));
             v.Label.text = Textos.Bau(c.Index);
             v.Label.color = Art.Accent;
@@ -1646,15 +1653,53 @@ namespace FS
             PlaceLabel(v.Label, W(v.P.Pos) + new Vector3(0f, PadSize / 2f + 0.22f, 0f), Vector2.zero);
         }
 
-        /// <summary>So o bau disponivel aparece; aberto some (as moedas e o "+ouro" saem do Ev.ChestOpened no Game).</summary>
+        /// <summary>So o bau disponivel aparece; aberto, abre de verdade (AbreBau) e some (as moedas e o "+ouro" saem do Ev.ChestOpened no Game).</summary>
         void RefreshChest(ChestV v)
         {
+            if (v.OpenT < 0f && v.C.State == 2 && v.Root.gameObject.activeSelf) { v.OpenT = 0f; Faiscas(v.Fx.position, 1.4f); }   // abriu agora
+            if (v.OpenT >= 0f) { AbreBau(v); return; }
             bool on = v.C.State == 1;
             if (v.Root.gameObject.activeSelf != on) v.Root.gameObject.SetActive(on);
             v.Label.enabled = on;
             if (!on) return;
             v.Root.localScale = Vector3.one * (1.04f + 0.04f * Mathf.Sin(Time.time * 4f));   // 1 <-> 1,08
             PlaceLabel(v.Label, W(v.C.Pos) + new Vector3(0f, ChestLabelY, 0f), Vector2.zero);
+        }
+
+        static readonly Color BauLuz = new Color(1f, 0.8f, 0.35f, 0f);
+        const float BauAbre = 0.7f;
+
+        /// <summary>
+        /// Etapa 6 (recompensa com vida): o bau agacha (0-0,15 s), pula esticado com o brilho e os raios crescendo atras (0,15-0,45 s) e some
+        /// encolhendo (ate 0,7 s); as faiscas saem no 1o quadro (RefreshChest).
+        /// </summary>
+        void AbreBau(ChestV v)
+        {
+            float t = v.OpenT += Time.deltaTime, y = 0f;
+            Vector3 sc;
+            if (t < 0.15f) { float k = t / 0.15f; sc = new Vector3(1f + 0.2f * k, 1f - 0.2f * k, 1f); }
+            else if (t < 0.45f)
+            {
+                float k = (t - 0.15f) / 0.3f;
+                sc = new Vector3(Mathf.Lerp(1.2f, 0.95f, k), Mathf.Lerp(0.8f, 1.15f, k), 1f);
+                y = 0.25f * Mathf.Sin(k * Mathf.PI);
+            }
+            else sc = Vector3.one * (1.1f * (1f - Mathf.Clamp01((t - 0.45f) / (BauAbre - 0.45f))));
+            v.Root.localScale = sc;
+            v.Root.localPosition = W(v.C.Pos) + new Vector3(0f, y, 0f);
+            float g = Mathf.Clamp01((t - 0.1f) / 0.35f), a = 1f - Mathf.Clamp01((t - 0.4f) / (BauAbre - 0.4f));
+            v.Brilho.enabled = v.Raios.enabled = true;
+            v.Brilho.transform.localScale = Vector3.one * (0.6f + 1.8f * g);
+            v.Raios.transform.localScale = Vector3.one * (0.5f + 2.6f * g);
+            v.Raios.transform.localRotation = Quaternion.Euler(0f, 0f, -70f * t);
+            v.Brilho.color = Art.ComAlfa(BauLuz, 0.9f * g * a);
+            v.Raios.color = Art.ComAlfa(BauLuz, 0.75f * g * a);
+            v.Label.enabled = false;
+            if (t < BauAbre) return;
+            v.OpenT = -1f;
+            v.Brilho.enabled = v.Raios.enabled = false;
+            v.Root.localScale = Vector3.one; v.Root.localPosition = W(v.C.Pos);
+            v.Root.gameObject.SetActive(false);
         }
 
         /// <summary>
@@ -1822,17 +1867,23 @@ namespace FS
         public void VipBurst(V2 at, bool served)
         {
             Vector3 c = W(at) + new Vector3(0f, ClientTop + 0.2f, 0f);
-            for (int i = 0; i < 10; i++)
-            {
-                float a = i * Mathf.PI / 5f;
-                Vector3 d = new Vector3(Mathf.Cos(a), Mathf.Sin(a) * 0.8f, 0f) * (served ? 1.3f : 1f);
-                Spawn(Art.Sparkle(), Art.Accent, c, c + d * 0.6f, c + d, 0.5f, 0.4f, 0.06f, true, 200f);
-            }
+            Faiscas(c, served ? 1.3f : 1f);
             if (!served) return;
             for (int k = -1; k <= 1; k += 2)
             {
                 Vector3 h = c + new Vector3(k * 0.35f, 0.2f, 0f);
                 Spawn(Art.Heart(), HeartC, h, h + new Vector3(k * 0.2f, 0.6f, 0f), h + new Vector3(k * 0.3f, 1.3f, 0f), 0.9f, 0.4f, 0.6f, true);
+            }
+        }
+
+        /// <summary>10 faiscas douradas em roda saindo de `c` ate `alcance` m (VIP e abertura do bau).</summary>
+        void Faiscas(Vector3 c, float alcance)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                float a = i * Mathf.PI / 5f;
+                Vector3 d = new Vector3(Mathf.Cos(a), Mathf.Sin(a) * 0.8f, 0f) * alcance;
+                Spawn(Art.Sparkle(), Art.Accent, c, c + d * 0.6f, c + d, 0.5f, 0.4f, 0.06f, true, 200f);
             }
         }
 
