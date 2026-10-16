@@ -424,7 +424,11 @@ namespace FS.Tests
         public void Validator_MapaReal_SemViolacao()
         {
             CollectionAssert.IsEmpty(ContentValidator.Mapa(Distritos.All).ToList());
-            CollectionAssert.AreEqual(new[] { "old_forge", "armorers_row", "artisan_quarter", "royal_arsenal" }, ContentValidator.Distritos);
+            // C-CORE-08: o mapa e' a cadeia dos Charters a partir do Old Forge (sem fixar posicao: as raias dos distritos 5 e 6 entram em paralelo)
+            var cadeia = new List<string>();
+            for (DistrictDef d = Distritos.OldForge; d != null; d = Distritos.Find(d.Charter?.Proximo)) cadeia.Add(d.Id);
+            CollectionAssert.AreEqual(ContentValidator.Distritos, cadeia);
+            CollectionAssert.IsSubsetOf(new[] { "old_forge", "armorers_row", "artisan_quarter", "royal_arsenal", "arcane_foundry" }, cadeia);
         }
 
         [Test]
