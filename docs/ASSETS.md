@@ -404,6 +404,6 @@ Regenerar (raiz do projeto, Python 3 + Pillow + numpy + OpenCV, ffmpeg no PATH):
 - **Adaptativo:** `icone_fundo.png` (ardósia + brasa, sangra até a borda) e `icone_frente.png` (o emblema numa caixa de 236 px em 432): as pontas da fita ficam dentro do círculo seguro de 66 dp (132 px de raio). Mesmo `Setup.Icones()` da §13, sem mudar código.
 - **Folha de leitura:** `arte/marca/v2/icone_leitura.png` (512 → 36 px, fundo claro e escuro, adaptativo no círculo). Lê a 48 px: escudo + chama; a fita vira uma faixa dourada (o nome não se lê a 48 px, como em qualquer ícone com texto).
 - **Logo (C2):** "FORGE STREET" em letras 3D de ouro e laranja com contorno de ferro, bigorna e martelos cruzados atrás, faíscas; recorte RGBA 1024 × 636.
-- **No jogo:** `Resources/Textures/logo.png` abre o jogo (`Game.Abertura`): véu escuro sobre o mundo e o logo crescendo de leve, some em 2,4 s ou num toque. Fotos e smoke (`-testsession`, `-autoplay`, `-record`) não a veem; `-abertura` a mostra e segura (foto).
+- **No jogo:** `Resources/UI/logo.png` (fora do `SpriteImport`, que trata `Resources/Textures` como chão repetido; sem compressão, ~2,6 MB de RAM) abre o jogo (`Game.Abertura`): véu escuro sobre o mundo e o logo crescendo de leve, some em 2,4 s ou num toque. Fotos e smoke (`-testsession`, `-autoplay`, `-record`) não a veem; `-abertura` a mostra e segura (foto).
 - **Feature graphic:** o mesmo quadro do jogo da §13 sob o véu, com o logo C2 no centro.
 - Ledger e SHA: `PROVENIENCIA.md` §15.

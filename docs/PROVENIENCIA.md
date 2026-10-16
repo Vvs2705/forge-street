@@ -529,7 +529,7 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 | `client/Assets/_FS/Art/Marca/icone_fundo.png` | 432 × 432 RGB | 38 957 | `1f1ded38ebff994828c83201bfc0b8fa5d86f27dbccc68d16f58e36cc6bc6b4c` |
 | `client/Assets/_FS/Art/Marca/icone_frente.png` | 432 × 432 RGBA | 112 288 | `508c12d43b106ceb9d529d9efa5d2354124884d1a94f1d6f6f2a5bba2a4ca7bd` |
 | `arte/marca/icone_loja_512.png` (= `icone.png`) | 512 × 512 RGB | 305 206 | `8b44d592a6fa12a9b45fa175ff99f99f9c26b69c96c29141c511ebdfdc984c07` |
-| `arte/marca/logo.png` e `client/Assets/_FS/Resources/Textures/logo.png` | 1024 × 636 RGBA | 895 496 | `61eaa1e6d4af91fca4b53ef99df96b222b1bc2be5d75fb1d3b4daffb34f9ba6d` |
+| `arte/marca/logo.png` e `client/Assets/_FS/Resources/UI/logo.png` | 1024 × 636 RGBA | 895 496 | `61eaa1e6d4af91fca4b53ef99df96b222b1bc2be5d75fb1d3b4daffb34f9ba6d` |
 | `arte/marca/feature_graphic.png` | 1024 × 500 RGB | 627 584 | `9a84b341d02b73a9f508d54702eac590e6458ee4d68bccddfd6f640545a172ca` |
 | `arte/marca/v2/emblema.png` (recorte do A3) | 784 × 780 RGBA | 943 619 | `628e2edbab85ebd6dc1c218ebd328d6f2894c3783cbfa5d16725edfaaf287ada` |
 | `arte/marca/v2/icone_leitura.png` (folha de QA) | 2732 × 652 RGB | 461 869 | `177df08035bc485e5a75d7c55a151f76d7d89cf0b6775eab0b94ff9e6793527f` |

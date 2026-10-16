@@ -317,7 +317,7 @@ namespace FS
         /// <summary>Abertura: veu escuro sobre o mundo e o logo crescendo de leve; some sozinha em 2,4 s ou num toque.</summary>
         IEnumerator Abertura(bool segura)
         {
-            Texture2D tex = Resources.Load<Texture2D>("Textures/logo");
+            Texture2D tex = Resources.Load<Texture2D>("UI/logo");
             if (tex == null) yield break;
             Image veu = Art.Node(_canvas, "Abertura", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
             veu.color = new Color(0.06f, 0.045f, 0.04f, 0.92f);
