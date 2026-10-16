@@ -230,6 +230,7 @@ Fundição arcana; roxo, ciano, runas, cristal, zumbido grave. Família: lantern
 
 - **Major unlock:** `veio_runico` (minério rúnico; o cristal já vem no kit para a mecânica existir desde o início — revisar com o GDD, que lista "minério rúnico e cristal").
 - **Charter:** produção completa + Renome 8 (3.000) + 4 Masterworks + (2 Royal Contracts **ou** 20 encomendas Royal no distrito).
+- **Medido (C-CORE-08, `BALANCE.md` §40, revisar):** no jogo os preços do §3 valem × 2,6 (transporte, como a Row e o Arsenal); produtivos, luxo, níveis, cargas, dreno, pausa e q +20 como no catálogo; o rodízio de encomendas da Foundry tem **Royal × 2** (a 2ª posição: Common → Royal; com Royal × 1 as 20 Royal do Charter levavam ~10 h) e a Royal pede 240 s de renda (catálogo 200); Bulk, Mixed, Royal e a Zélia pagam 70% dos segundos do §7.2 e o Quality 13 s (o do Old Forge; catálogo 25); balcão de 4 vagas com estoque 10 (decidido por padrão). Produção completa do F2P ~1 h, renda ~127 mil/min, Charter do Ideal em ~5 h. Os altares passam a maior parte do tempo com fome (presos no transporte): o medidor quase não segura a vazão e o Forçado rende 5–10% mais que o Estável (portão 0,9–1,15×).
 
 ### 2.6 Grand Forge (`grand_forge`) — síntese e exportação
 
