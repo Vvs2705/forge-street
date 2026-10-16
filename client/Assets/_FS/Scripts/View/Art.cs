@@ -281,6 +281,19 @@ namespace FS
         /// <summary>Escala 0,94 enquanto o dedo aperta (botao de verdade); solta ou sai = 1.</summary>
         public static void Apertar(GameObject g) { if (g.GetComponent<Aperta>() == null) g.AddComponent<Aperta>(); }
 
+        /// <summary>
+        /// Interface v2, fundo tematico dos modais: veu escuro quente (segura os toques do resto), brasa laranja no meio e vinheta nas bordas,
+        /// como a abertura e o icone. Chamar logo depois de criar o no do modal: a brasa e a vinheta ficam atras do cartao.
+        /// </summary>
+        public static void Veu(GameObject root, float alfa = 0.65f)
+        {
+            root.AddComponent<Image>().color = new Color(0.05f, 0.03f, 0.02f, alfa);
+            Image brasa = Node(root.transform, "Brasa", new Vector2(-0.35f, 0.1f), new Vector2(1.35f, 0.9f)).gameObject.AddComponent<Image>();
+            brasa.sprite = Glow(); brasa.color = new Color(1f, 0.45f, 0.12f, 0.16f); brasa.raycastTarget = false;
+            Image vin = Node(root.transform, "Vinheta", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            vin.sprite = Vignette(); vin.color = new Color(0f, 0f, 0f, 0.5f); vin.raycastTarget = false;
+        }
+
         /// <summary>Vinheta: escurece so as bordas (alfa 0 no centro, ~1 nos cantos); Image por cima do mundo e abaixo da HUD.</summary>
         public static Sprite Vignette() => Soft("vignette", (x, y) => Mathf.Clamp01((x * x + y * y - 0.55f) / 1.2f));
 

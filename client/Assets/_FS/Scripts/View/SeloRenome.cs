@@ -57,7 +57,7 @@ namespace FS
 
             // cartao modal: escurece e segura os toques (a oficina segue, o joystick trava: Game.Update)
             _root = Art.Node(safe, "Renome", Vector2.zero, Vector2.one);
-            _root.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);
+            Art.Veu(_root.gameObject);
             Image box = Art.Panel(_root, "Cartao", MenuBar.Leather, new Vector2(0.08f, 0.28f), new Vector2(0.92f, 0.72f));
             Image card = Art.Panel(box.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             card.rectTransform.offsetMin = new Vector2(6f, 14f); card.rectTransform.offsetMax = new Vector2(-6f, -6f);

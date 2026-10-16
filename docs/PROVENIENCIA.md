@@ -536,3 +536,26 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 | `arte/marca/v2/fonte_emblema_a3.png` (imagem do Tripo) | 1024 × 1024 RGB | 1 341 698 | `a20b80b0ee7fd7f3c701fad8bb8b006650ba6cc8d4f35a31affa9eed6f324a74` |
 | `arte/marca/v2/fonte_logo_c2.png` (imagem do Tripo) | 1376 × 768 RGB | 1 317 606 | `fe54f2c39ba056ff2317ae49de541f8c00ad70051a0dff21bc30901335d32161` |
 | `client/tools/marca_v2.py` | — | 7 125 | `8c4cc520ace981503215254240a2410b44206a9a9dc7b2e86d7ac8c4fccf3fe4` |
+
+
+## 16. Interface v2 — fontes OFL e ícones de prêmio (programa de arte, etapa 4, 2026-10-16)
+
+- **Fontes:** Lilita One ("Copyright (c) 2011 Juan Montoreano", nome reservado "Lilita": usada sem modificar; `github.com/google/fonts/ofl/lilitaone`) e Nunito Bold ("Copyright 2014 The Nunito Project Authors"; instância estática de peso 700 servida pela API do Google Fonts, `fonts.gstatic.com/s/nunito/v32/…`), as duas sob a **SIL Open Font License 1.1**, que permite embutir em jogo comercial; o texto da licença vai junto (`OFL_*.txt`, também no build, por estar em `Resources`). Download autorizado pelo Vinicius no pedido do programa de arte ("fontes com personalidade (Google Fonts, licença OFL)").
+- **Ícones:** Tripo Studio, gerador de imagem **Nano Banana 2** (grátis, 0 crédito; saldo 15 670 intocado), 4 gerações × 4 imagens, no Chrome do Vinicius; folha das 16 em `arte/ui/premios/opcoes.jpg`. Licença: saída do Tripo na conta paga do estúdio (como a §12). Recorte e redução por `client/tools/icones_premio.py` (determinístico, mesmo GrabCut da §15).
+
+| Arquivo | Tamanho | Bytes | SHA-256 |
+|---|---|---|---|
+| `client/Assets/_FS/Resources/Fonts/LilitaOne-Regular.ttf` | — | 28 092 | `f5b641c45c69d772ee4eda687bc9fda411d5cad6b0b45371491da4580cbc8d59` |
+| `client/Assets/_FS/Resources/Fonts/Nunito-Bold.ttf` | — | 125 440 | `c4ee3c72ba7b147e5386f71fe18f7c076016c947b8956a7affcd338101f9ddcd` |
+| `client/Assets/_FS/Resources/Fonts/OFL_LilitaOne.txt` | — | 4 486 | `b259ab3fc10bf0efa43610d9fde3618c834525eb8001185dde9058f3dfb37e70` |
+| `client/Assets/_FS/Resources/Fonts/OFL_Nunito.txt` | — | 4 478 | `656f26016ddc144bc5f77951bc9c3dd4e3b4fc3dcf1c37ac1c4d6f7bf75e3cee` |
+| `client/Assets/_FS/Resources/UI/premio_renome.png` | 256 × 256 RGBA | 106 664 | `5861aaf660d79ab8f21cb1e7c8c17582a63577d75d2868189266d357b831d992` |
+| `client/Assets/_FS/Resources/UI/premio_passxp.png` | 256 × 256 RGBA | 86 593 | `831e059063c405ac48d406bdd5607b8fd2e75c05b380a41278c3981dc4175f7f` |
+| `client/Assets/_FS/Resources/UI/premio_cosmetico.png` | 256 × 256 RGBA | 58 479 | `33b4b9f54fb4424273a7a1b3109ed7e6daceab0758b8574d62c256a4ed3a5393` |
+| `client/Assets/_FS/Resources/UI/premio_blueprint.png` | 256 × 256 RGBA | 106 178 | `0057bc9c8163c419496e69049700a9093b254944fff694f142b32a39afe0abc5` |
+| `arte/ui/premios/fonte_renome.png` | 1024 × 1024 RGB | 1 300 124 | `b829f3f65ec14d26c7f03d2d7628f3242467cdaf6b89cb3d41d1c41ac31ac874` |
+| `arte/ui/premios/fonte_passxp.png` | 1024 × 1024 RGB | 1 022 378 | `d9447b2ea5a425303432daff3b39e797264e350c639ce1a37650df9c27555101` |
+| `arte/ui/premios/fonte_cosmetico.png` | 1024 × 1024 RGB | 1 041 312 | `7915f09fa8ba0ab4189d12dab50b7882468f21d372afa0e4928aecf66bd9c45a` |
+| `arte/ui/premios/fonte_blueprint.png` | 1024 × 1024 RGB | 1 206 961 | `d07d985d74d0fe1b263b435da2d2f805759c1e091f6779b811401f35cfade7c4` |
+| `arte/ui/premios/opcoes.jpg` | 1420 × 1200 RGB | 241 886 | `0da10526fa3693f3e691c1d7abd5fdec772568dd15e2deafc7450db32d6f81a4` |
+| `client/tools/icones_premio.py` | — | 2 359 | `046f59df231eb79fc8843c9e687f4ba5f099876d6652b1115f2a8fbab79a0646` |

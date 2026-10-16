@@ -41,7 +41,7 @@ namespace FS
         {
             _sim = sim;
             _root = Art.Node(safe, "Hall", Vector2.zero, Vector2.one);
-            _root.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);
+            Art.Veu(_root.gameObject);
             Image edge = Art.Panel(_root, "Cartao", MenuBar.Leather, new Vector2(0.04f, 0.07f), new Vector2(0.96f, 0.93f));
             Image face = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(6f, 14f); face.rectTransform.offsetMax = new Vector2(-6f, -6f);

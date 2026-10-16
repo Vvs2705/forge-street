@@ -407,3 +407,24 @@ Regenerar (raiz do projeto, Python 3 + Pillow + numpy + OpenCV, ffmpeg no PATH):
 - **No jogo:** `Resources/UI/logo.png` (fora do `SpriteImport`, que trata `Resources/Textures` como chão repetido; sem compressão, ~2,6 MB de RAM) abre o jogo (`Game.Abertura`): véu escuro sobre o mundo e o logo crescendo de leve, some em 2,4 s ou num toque. Fotos e smoke (`-testsession`, `-autoplay`, `-record`) não a veem; `-abertura` a mostra e segura (foto).
 - **Feature graphic:** o mesmo quadro do jogo da §13 sob o véu, com o logo C2 no centro.
 - Ledger e SHA: `PROVENIENCIA.md` §15.
+
+
+## 18. Interface v2 (programa de arte, etapa 4, 2026-10-16, 0 crédito)
+
+Resolve os itens 2, 3, 4, 7 e 8 da `AUDITORIA_VISUAL.md` (painéis chapados, fonte do sistema, botões planos, recompensa só em texto, barra plana) sem asset pesado: quase tudo é gerado por código em `Art.cs` e vale para todo painel que já usa `Art.Panel`, `Art.NewButton` e `Art.NewText`.
+
+- **Fontes** (Google Fonts, SIL OFL 1.1, em `Resources/Fonts` com a licença ao lado): **Nunito Bold** no texto e **Lilita One** em título, número grande (≥ 40 px, `Art.TamTitulo`) e todo botão. A Lilita não tem negrito; o `SemNegrito` tira o Bold sintético que o chamador põe depois. Sem os arquivos, volta a fonte embutida. Cobrem pt/en/es; a seta → cai no fallback do sistema.
+- **Moldura** (`Art.Moldura`, 9-fatias 64 px gerado por código): aro escuro de 3 px, filete claro em cima e sombra embaixo, em cinza que a cor do `Image` tinge. É o sprite de todo `Art.Panel`.
+- **Botão** (`Art.NewButton`): lábio 8 px abaixo (`Shadow` na cor 55% mais escura), brilho na metade de cima e escala 0,94 ao apertar (`Aperta`, também nos botões montados à mão: ações da HUD, engrenagem, selo do Renome, login, evento).
+- **Barra de progresso** (`Art.Barra`): trilho escuro com aro e cheio com relevo e brilho; substitui as 4 cópias (metas, evento/Passe, encomendas, Renome).
+- **Fundo dos modais** (`Art.Veu`): véu escuro quente, brasa laranja no meio e vinheta, o mesmo clima da abertura e do ícone; substitui o preto 65% de 9 painéis.
+- **Ícones pintados por tipo de prêmio** (`Art.IconePremio`): moeda renderizada para o ouro e 4 ícones do Tripo (Nano Banana 2, grátis) em `Resources/UI/premio_*.png`, no login de 7 dias (ícone + número) e em cada nível do Passe. Sem o arquivo, a forma procedural de sempre. Regenerar: `python client/tools/icones_premio.py` (GrabCut da marca v2; o XP tira o halo escuro do brilho). Ledger: `PROVENIENCIA.md` §16.
+
+| arquivo | assunto do prompt (+ ", stylized polished hand-painted mobile game art, thick dark outline, soft highlights, single centered object filling most of the frame, plain flat dark charcoal background, no text", prefixo "mobile game UI reward icon: ") | escolhida (de 4) |
+|---|---|---|
+| `premio_renome` | a shiny gold star medal with a green laurel wreath around it and a short red ribbon | 3 |
+| `premio_passxp` | a glowing bright blue faceted crystal gem shaped like a star with small white sparkles around it, experience points reward | 2 |
+| `premio_cosmetico` | a small decorative shop banner flag on a short wooden pole, purple and gold striped cloth with a tiny golden anvil emblem, cosmetic decoration reward | 4 |
+| `premio_blueprint` | a half-unrolled blue blueprint paper scroll with a white technical drawing of a sword on it, tied with a brown leather string, crafting blueprint reward | 3 |
+
+**Fora desta etapa:** cabeçalho em fita nos títulos, selos de estado desenhados (item 10) e a barra de baixo com destaque de botão principal (item 12).

@@ -121,7 +121,7 @@ namespace FS
         static RectTransform Modal(RectTransform safe, string nome, Vector2 min, Vector2 max, out Transform face)
         {
             RectTransform root = Art.Node(safe, nome, Vector2.zero, Vector2.one);
-            root.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);   // escurece e segura os toques
+            Art.Veu(root.gameObject);   // escurece e segura os toques
             Image edge = Art.Panel(root, "Cartao", MenuBar.Leather, min, max);
             Image card = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             card.rectTransform.offsetMin = new Vector2(6f, 14f); card.rectTransform.offsetMax = new Vector2(-6f, -6f);   // chanfro de couro embaixo

@@ -906,7 +906,7 @@ namespace FS
 
             // painel modal (cofre; no dev tambem o -adtest). v0.6d: cartao creme das configuracoes; "+N" grande com a moeda so no cofre
             _panel = Art.Node(_safe, "Painel", Vector2.zero, Vector2.one);
-            _panel.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);
+            Art.Veu(_panel.gameObject);
             Image box = Art.Panel(_panel, "Caixa", MenuBar.Leather, new Vector2(0.08f, 0.35f), new Vector2(0.92f, 0.65f));
             Image card = Art.Panel(box.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             card.rectTransform.offsetMin = new Vector2(6f, 14f); card.rectTransform.offsetMax = new Vector2(-6f, -6f);   // chanfro de couro embaixo
@@ -1459,7 +1459,7 @@ namespace FS
             }
 
             _cfg = Art.Node(_safe, "Configuracoes", Vector2.zero, Vector2.one);
-            _cfg.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);   // escurece e segura os toques do resto
+            Art.Veu(_cfg.gameObject);   // escurece e segura os toques do resto
             // DM §109: 4 linhas (o Idioma entrou): 0,40 -> 0,46 da tela, com linhas, titulo e botoes do mesmo tamanho em px
             Image edge = Art.Panel(_cfg, "Cartao", MenuBar.Leather, new Vector2(0.1f, 0.27f), new Vector2(0.9f, 0.73f));
             Image face = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
