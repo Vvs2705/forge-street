@@ -10,7 +10,8 @@ namespace FS.Core
     /// deterministicos (V7). Nada aqui le relogio: as duas coisas andam com o dt do Tick, entao o offline e o cofre nunca importam nem exportam.
     /// - Rotas (Kind.Import, o cais; abre com o mensageiro): capacidade Tuning.ImportCap un/min (+ImportCais2 com o cais2, +ImportNivel por nivel
     ///   do Felix acima do 1, ate ImportMax); uma unidade a cada 60/capacidade s, sempre para a rota (DistrictDef.Importados) cuja bancada de
-    ///   destino tem menos daquele importado na entrada (empate: a ordem da tabela do §3.1). ponytail: o Mensageiro entrega direto na entrada
+    ///   destino tem menos daquele importado na entrada (empate em rodizio pela ordem do §3.1, a partir da rota seguinte a ultima: desvio, BALANCE.md
+    ///   §41; com a ordem fixa o colar ganhava todo empate). ponytail: o Mensageiro entrega direto na entrada
     ///   da bancada (o cais e' o ponto de chegada, sem pilha nem carregador; revisar: o catalogo poe a estrela4 levando os importados do cais);
     ///   sem entrada com espaco, ele espera (nao importa a toa). Cada unidade chama o Imperio.Importou: PriceOf(item, Normal) x ImportCustoPct%
     ///   sai da renda de fundo do distrito de origem no minuto, nunca abaixo de 0. Contador ImportedUnits (na entrega: a entrada so tem uso).
@@ -154,8 +155,8 @@ namespace FS.Core
             return _impH[r];
         }
 
-        /// <summary>Uma unidade chega pela rota cuja bancada de destino (aberta, com espaco) tem menos daquele importado na entrada; empate pela
-        /// ordem da tabela. false = nenhuma rota tem para onde entregar.</summary>
+        /// <summary>Uma unidade chega pela rota cuja bancada de destino (aberta, com espaco) tem menos daquele importado na entrada; empate em
+        /// rodizio (a partir de ImportedUnits % rotas, na ordem da tabela). false = nenhuma rota tem para onde entregar.</summary>
         bool Importa()
         {
             var rotas = Distrito.Importados;
