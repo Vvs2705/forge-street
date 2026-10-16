@@ -40,6 +40,7 @@ namespace FS
             face.rectTransform.offsetMin = new Vector2(4f, 4f); face.rectTransform.offsetMax = new Vector2(-4f, -4f);
             face.raycastTarget = false;
             Button b = edge.gameObject.AddComponent<Button>();
+            Art.Apertar(edge.gameObject);
             b.targetGraphic = edge;
             b.onClick.AddListener(() => { Sfx.Play("click"); Abrir(); });
             Image star = Art.Node(_selo, "Estrela", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f)).gameObject.AddComponent<Image>();
@@ -56,7 +57,7 @@ namespace FS
 
             // cartao modal: escurece e segura os toques (a oficina segue, o joystick trava: Game.Update)
             _root = Art.Node(safe, "Renome", Vector2.zero, Vector2.one);
-            _root.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);
+            Art.Veu(_root.gameObject);
             Image box = Art.Panel(_root, "Cartao", MenuBar.Leather, new Vector2(0.08f, 0.28f), new Vector2(0.92f, 0.72f));
             Image card = Art.Panel(box.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             card.rectTransform.offsetMin = new Vector2(6f, 14f); card.rectTransform.offsetMax = new Vector2(-6f, -6f);
@@ -77,12 +78,7 @@ namespace FS
             _proximo.color = Tinta;
             _proximo.resizeTextForBestFit = true; _proximo.resizeTextMinSize = 20; _proximo.resizeTextMaxSize = 30;
             _proximo.verticalOverflow = VerticalWrapMode.Truncate;
-            Image bar = Art.Node(f, "Barra", new Vector2(0.06f, 0.41f), new Vector2(0.94f, 0.48f)).gameObject.AddComponent<Image>();
-            bar.color = new Color(0f, 0f, 0f, 0.55f); bar.raycastTarget = false;
-            _cheio = Art.Node(bar.transform, "Cheio", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
-            _cheio.color = Art.Gold; _cheio.raycastTarget = false;
-            _conta = Art.Outlined(Art.NewText(bar.transform, "Conta", 28, Vector2.zero, Vector2.one), 2f);
-            _conta.fontStyle = FontStyle.Bold; _conta.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _cheio = Art.Barra(f, new Vector2(0.06f, 0.41f), new Vector2(0.94f, 0.48f), Art.Gold, 28, out _conta);
             _libera = Art.NewText(f, "Libera", 30, new Vector2(0.06f, 0.21f), new Vector2(0.94f, 0.39f), TextAnchor.UpperLeft);
             _libera.color = Tinta;
             _libera.resizeTextForBestFit = true; _libera.resizeTextMinSize = 20; _libera.resizeTextMaxSize = 30;

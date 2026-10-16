@@ -320,8 +320,12 @@ namespace FS
             Texture2D tex = Resources.Load<Texture2D>("UI/logo");
             if (tex == null) yield break;
             Image veu = Art.Node(_canvas, "Abertura", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
-            veu.color = new Color(0.06f, 0.045f, 0.04f, 0.92f);
+            veu.color = new Color(0.07f, 0.06f, 0.07f, 1f);   // opaco: a tela de idade (que abre junto) nao aparece por tras
             CanvasGroup g = veu.gameObject.AddComponent<CanvasGroup>();
+            Image brasa = Art.Node(veu.transform, "Brasa", new Vector2(-0.3f, 0.2f), new Vector2(1.3f, 0.88f)).gameObject.AddComponent<Image>();
+            brasa.sprite = Art.Glow(); brasa.color = new Color(1f, 0.45f, 0.12f, 0.55f); brasa.raycastTarget = false;
+            Image vin = Art.Node(veu.transform, "Vinheta", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            vin.sprite = Art.Vignette(); vin.color = new Color(0f, 0f, 0f, 0.7f); vin.raycastTarget = false;
             Image logo = Art.Node(veu.transform, "Logo", new Vector2(0.06f, 0.36f), new Vector2(0.94f, 0.72f)).gameObject.AddComponent<Image>();
             logo.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
             logo.preserveAspect = true; logo.raycastTarget = false;
@@ -902,7 +906,7 @@ namespace FS
 
             // painel modal (cofre; no dev tambem o -adtest). v0.6d: cartao creme das configuracoes; "+N" grande com a moeda so no cofre
             _panel = Art.Node(_safe, "Painel", Vector2.zero, Vector2.one);
-            _panel.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);
+            Art.Veu(_panel.gameObject);
             Image box = Art.Panel(_panel, "Caixa", MenuBar.Leather, new Vector2(0.08f, 0.35f), new Vector2(0.92f, 0.65f));
             Image card = Art.Panel(box.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             card.rectTransform.offsetMin = new Vector2(6f, 14f); card.rectTransform.offsetMax = new Vector2(-6f, -6f);   // chanfro de couro embaixo
@@ -1085,6 +1089,7 @@ namespace FS
             var a = new AdBtn();
             Image edge = Art.Panel(parent, name, Art.Gold, Vector2.zero, Vector2.zero);
             a.B = edge.gameObject.AddComponent<Button>();
+            Art.Apertar(edge.gameObject);
             a.B.targetGraphic = edge;
             a.B.onClick.AddListener(() => onClick());
             a.Face = Art.Panel(edge.transform, "Face", AdFace, Vector2.zero, Vector2.one);
@@ -1123,6 +1128,7 @@ namespace FS
             RectTransform r = edge.rectTransform;
             r.pivot = Vector2.zero; r.sizeDelta = new Vector2(ChipW, ChipH); r.anchoredPosition = new Vector2(Edge + x, 24f + OrderH + 8f);
             a.B = edge.gameObject.AddComponent<Button>();
+            Art.Apertar(edge.gameObject);
             a.B.targetGraphic = edge;
             a.B.onClick.AddListener(() => onClick());
             a.Face = Art.Panel(edge.transform, "Face", AdFace, Vector2.zero, Vector2.one);
@@ -1447,12 +1453,13 @@ namespace FS
                 Image icon = Art.Node(gear.transform, "Icone", new Vector2(0.17f, 0.17f), new Vector2(0.83f, 0.83f)).gameObject.AddComponent<Image>();
                 icon.sprite = Art.Gear(); icon.color = Art.HudEdge; icon.preserveAspect = true; icon.raycastTarget = false;
                 Button gb = gear.gameObject.AddComponent<Button>();
+                Art.Apertar(gear.gameObject);
                 gb.targetGraphic = gear;
                 gb.onClick.AddListener(() => { Sfx.Play("click"); _cfg.gameObject.SetActive(true); });
             }
 
             _cfg = Art.Node(_safe, "Configuracoes", Vector2.zero, Vector2.one);
-            _cfg.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.65f);   // escurece e segura os toques do resto
+            Art.Veu(_cfg.gameObject);   // escurece e segura os toques do resto
             // DM §109: 4 linhas (o Idioma entrou): 0,40 -> 0,46 da tela, com linhas, titulo e botoes do mesmo tamanho em px
             Image edge = Art.Panel(_cfg, "Cartao", MenuBar.Leather, new Vector2(0.1f, 0.27f), new Vector2(0.9f, 0.73f));
             Image face = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
@@ -1538,6 +1545,7 @@ namespace FS
             Text state = Art.NewText(face.transform, "Estado", 30, Vector2.zero, Vector2.one);
             state.fontStyle = FontStyle.Bold;
             Button b = edge.gameObject.AddComponent<Button>();
+            Art.Apertar(edge.gameObject);
             b.targetGraphic = edge;
             void Paint()
             {
