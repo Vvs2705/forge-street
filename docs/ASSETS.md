@@ -381,3 +381,8 @@ Pendente (parte 2, com os distritos 3–4 na `main`): estações do Artisan Quar
 
 **Ícones dos insumos novos** (0 crédito, `client/tools/itens_blender.py`, mesma pipeline da Leva 9): `item_minerio_cobre` (veio em pátina verde), `item_minerio_ouro` (pepitas), `item_lingote_cobre`, `item_lingote_ouro`, `item_gema_bruta` (cristais roxos; a lapidada é o `item_gema`) e `item_lamina` (lâmina crua em aço, sem guarda: separa da espada azul). Antes saíam como blocos coloridos procedurais.
 
+## 16. Elenco mais nítido (programa de arte, etapa 5, 2026-10-16)
+
+Re-render dos 32 personagens com célula de 192 px (era 128) e teto de 21 quadros por clipe, para caber em 4 096 px de largura: 1,5× os pixels por metro, mesmo tamanho no mundo (o `ppu` do `meta.json` é a escala de exibição). Comando e detalhes: `PROVENIENCIA.md` §14. Comparação antes/depois na mesma escala: `arte/auditoria/2026-10-16/nitidez_antes_depois.png`.
+
+**Custo medido (2026-10-16, `Setup.BuildAndroidDev`, ARM64):** APK de desenvolvimento 91,5 MB (`main` 2e6f6a9+) → **121,7 MB** (+30 MB, 61% do limite de 200 MB do módulo base do Google Play); texturas no build 116 → 181 MB descomprimidas (Build Report). Decidido por padrão (revisar): aceitar. Se os distritos 5–6 apertarem o limite, a saída é ASTC 8×8 nas folhas de clientes (−~40% nelas) ou células de 160 px.
