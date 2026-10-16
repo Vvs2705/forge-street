@@ -170,6 +170,20 @@ namespace FS
             s.Player.Pos = new V2(s.Patio.InAt.X, s.Patio.InAt.Y - 0.6f);
         }
 
+        /// <summary>C-CORE-08 -arcano (fotos, -distrito arcane_foundry): os produtivos do distrito e os altares nos 4 estados do medidor: lanternas
+        /// Estavel (E 30), aneis estabilizando (E 95), amuletos Forcado (E 70) e laminas em sobrecarga (7 s); o ferreiro na frente dos altares
+        /// de cristal. Sem altar no distrito: nada.</summary>
+        public static void Arcano(Sim s)
+        {
+            if (!s.TemArcano) return;
+            for (int u = 0; u < s.UpgradeDefs.Length; u++) if (s.IsProduction(u)) s.Buy((Upgrade)u);
+            Station l = s.Est("altar_lanternas"), a = s.Est("altar_aneis"), m = s.Est("altar_amuletos"), b = s.Est("altar_laminas");
+            l.Medidor = 3000; a.Medidor = 9500; m.Medidor = 7000; b.Medidor = 4000; b.Pausa = 7f;
+            s.ModoArcano(m, true); s.ModoArcano(b, true);
+            for (int k = 0; k < a.Ins.Length; k++) a.Ins[k] = a.Recipe.Inputs[k].Qty;   // a receita na entrada: o altar espera o medidor
+            s.Player.Pos = new V2(4.5f, 7.6f);
+        }
+
         static void Enche(Sim s, int k, int n, float t)
         {
             FaixaCota f = s.Faixas[k];

@@ -43,6 +43,7 @@ namespace FS
             public SpriteRenderer[] OutGlint, StockGlint; public SpriteRenderer QBarBg, QBarFill; public Text QLabel; public float QT;
             public RecipeDef Receita;   // C-CORE-06: a receita com que as pilhas foram montadas (a bancada configuravel troca: a estacao e' refeita)
             public Text[] Faixas;   // C-CORE-07: uma linha por faixa do patio de cotas (o toque troca o produto dela, Game.Toque)
+            public Text Medidor;    // C-CORE-08: o medidor do altar ("Estável · 45/100"; o toque na barra de qualidade troca o modo, Game.Toque)
         }
         /// <summary>Placa de obra: fundo escuro, enchimento de ouro, borda tracejada, icone do que constroi; preco (moeda + valor) e nome na HUD.</summary>
         sealed class PadV
@@ -614,6 +615,12 @@ namespace FS
                     v.Faixas[k].fontStyle = FontStyle.Bold;
                     v.Faixas[k].enabled = false;
                 }
+            }
+            if (_sim.Arcana(s))   // C-CORE-08: o medidor do altar, sempre visivel embaixo dele (ponytail: texto; a arte do medidor vem com o C-ART-13)
+            {
+                v.Medidor = Art.Outlined(Art.FreeText(_labels, "Medidor", 24, new Vector2(360f, 34f)), 2.5f, Edge);
+                v.Medidor.fontStyle = FontStyle.Bold;
+                v.Medidor.enabled = false;
             }
             // bocas no chao (FASE5 s2b): deposito so entrega, balcoes so recebem, quem produz tem as duas. v0.5b: placa no chao
             if (s.Kind == Kind.Deposit) Mouth(v.Root, s.OutAt - s.Pos, false, (int)s.OutItem);   // o bruto do deposito (minerio; couro na Row)
@@ -1351,7 +1358,14 @@ namespace FS
                 v.Root.gameObject.SetActive(s.Unlocked);
                 if (s.Unlocked) { v.PopT = 0f; Poof(s.Pos, 1.6f); }   // comprou agora: nasce com pop e poeira (o save liga no Build, sem pop)
             }
-            if (!s.Unlocked) { v.Label.enabled = false; return; }
+            if (!s.Unlocked) { v.Label.enabled = false; if (v.Medidor != null) v.Medidor.enabled = false; return; }
+            if (v.Medidor != null)   // C-CORE-08: azul estabilizando, vermelho em sobrecarga, ouro no Forcado, claro no Estavel
+            {
+                v.Medidor.enabled = true;
+                v.Medidor.text = Textos.Medidor(_sim, s);
+                v.Medidor.color = s.Pausa > 0f ? Art.Bad : Textos.Estabilizando(_sim, s) ? Art.Worker : s.Forcado ? Art.Accent : Art.Ink;
+                PlaceLabel(v.Medidor, W(s.Pos) + new Vector3(0f, -0.9f, 0f), Vector2.zero);
+            }
             if (v.Faixas != null)   // C-CORE-07: "Faixa 1: 3/10 kits do batedor · 2:31", 0,32 m entre linhas, de cima para baixo
                 for (int k = 0; k < v.Faixas.Length; k++)
                 {
