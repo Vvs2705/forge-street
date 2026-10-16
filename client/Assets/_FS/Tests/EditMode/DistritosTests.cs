@@ -127,7 +127,7 @@ namespace FS.Tests
             Assert.AreEqual((335, 550, 0), (s.PriceOf(I(s, "elmo")), s.PriceOf(I(s, "peitoral")), s.T.Price[(int)I(s, "placa")]));
             Assert.IsNull(s.JewelShop); Assert.IsNull(s.AnvilA);
             Assert.AreEqual(0, s.Workers.Count, "nenhum ajudante no kit");
-            Assert.AreEqual(("bancada_escudos", "bigorna", "carroca", (string)null), (E(s, "montagem_elmo").Arte, E(s, "forja_hastes").Arte, E(s, "carroca_couro").Arte, E(s, "prensa").Arte),
+            Assert.AreEqual(("montagem", "forja_armas", "carroca", "prensa"), (E(s, "montagem_elmo").Arte, E(s, "forja_hastes").Arte, E(s, "carroca_couro").Arte, E(s, "prensa").Arte),
                 "StationDef.Arte chega ao Station (a View desenha por ela; null = pelo tipo e produto)");
             Assert.IsTrue(Tuning.Padrao.CustoTabela == null, "o Ajuste da Row nao vaza para o Tuning de outro Sim");
         }
