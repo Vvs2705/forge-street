@@ -34,7 +34,7 @@ Tickets: **C-CORE-01..05** (distritos), **B-CORE-01..08** (Defs), **D-CORE-04** 
 | distrito | M | CostBase | Σ produtivos | produção completa (F2P) | renda/min na produção completa | renda/min no Charter (×1,5) | renda de fundo (manager L1) | abertura | Charter (h no distrito) | h acumuladas | missionScale |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `old_forge` | 1 | 50 (fórmula + tabela) | 33.425 | 41:31 F2P / 47:03 bot humano (medido) | 1.600 | 2.400 | 600 | — | 3–6 | 4,5 | 1,00 |
-| `armorers_row` | 3 | 480 | 179.665 | ~61 min (modelo) | 4.800 | 7.200 | 1.800 | 140.000 | 3–5 | 8,5 | 0,65 |
+| `armorers_row` | 3 | 480 | 179.665 | ~61 min (modelo); 58–63 min F2P (medido, `BALANCE.md` §39) | 4.800 | 7.200 | 1.800 | 140.000 | 3–5 | 8,5 | 0,65 |
 | `artisan_quarter` | 9 | 1.440 | 532.355 | ~57 min (modelo) | 14.400 | 21.600 | 5.400 | 430.000 | 4–6 | 13,5 | 1,00 |
 | `royal_arsenal` | 27 | 4.320 | 1.600.725 | ~56 min (modelo) | 43.200 | 64.800 | 16.200 | 1.300.000 | 4–6 | 18,5 | 0,83 |
 | `arcane_foundry` | 81 | 12.960 | 4.789.000 | ~56 min (modelo) | 129.600 | 194.400 | 48.600 | 3.900.000 | 5–7 | 24,5 | 1,09 |
@@ -144,7 +144,7 @@ Rua de armeiros; ferro escuro, couro, rebites, faíscas azuladas da prensa. Fam�
 1. Estação `Assembly`: uma entrada por componente da receita, com capacidade de 2× a quantidade da receita (elmo: placas 4, rebites 4). A peça **só começa quando todos os componentes estão na entrada** na quantidade da receita; consome tudo no início; o tempo corre como numa bancada.
 2. **Liga** (depois de `fornalha_liga`): toda estação `Assembly` ganha um slot opcional de liga (capacidade 2). Se há ≥ 1 liga no slot quando a peça começa, consome 1 e a peça soma **q +30** (fonte "liga" no `QualityBreakdown()`); sem liga, nada muda. O contador `AlloyPieces` (por produto) conta as peças feitas com liga.
 3. Carregadores entregam primeiro o componente com a **menor razão estoque/necessário** na estação de destino; empate pela ordem da receita. Determinístico, e o jogador lê o gargalo (o componente que falta pisca na estação, como a "fome" cinza).
-4. A rebitadeira produz **4 rebites por lingote** (`outputCount` 4); a prensa, 1 placa por lingote.
+4. A rebitadeira produz **4 rebites por lingote** (`outputCount` 4) em 32 s (medido, `BALANCE.md` §39: com 4 s uma rebitadeira fazia todos os rebites e a 2ª não fazia falta); a prensa, 1 placa por lingote.
 
 ```
 [depósito minério]                 [carroça do curtidor*]
@@ -337,7 +337,7 @@ Uma receita por item produzido; a mesma receita vale em todos os distritos da co
 | `rec_joia` | `joia` | 1 | lingote×2 | joalheria | 10,0 | 1 | upgrade joalheria |
 | `rec_espada_longa` | `espada_longa` | 1 | lingote×2 | bigorna_longa | 7,5 | 1 | bp_rec_espada_longa + upgrade bigorna_longa |
 | `rec_placa` | `placa` | 1 | lingote×1 | prensa | 3,0 | 2,4 | inicio (d2) / upgrade bancada_guarda (d4) |
-| `rec_rebite` | `rebite` | 4 | lingote×1 | rebitadeira | 4,0 | 2 | inicio |
+| `rec_rebite` | `rebite` | 4 | lingote×1 | rebitadeira | 32,0 (medido, `BALANCE.md` §39; era 4,0) | 2 | inicio |
 | `rec_liga` | `liga` | 1 | lingote×2 | fornalha_liga | 6,0 | 2,5 | upgrade fornalha_liga (d2) / fornalha_liga_arcana (d5) |
 | `rec_elmo` | `elmo` | 1 | placa×2 + rebite×2 | montagem_elmo | 6,0 | 2 | inicio |
 | `rec_maca` | `maca` | 1 | lingote×2 + rebite×2 | bigorna_pesada | 6,0 | 2 | upgrade bigorna_pesada |
@@ -531,7 +531,7 @@ Categoria (`ECONOMIA_WAVE_B.md` §8.7): `Production` (conta na produção comple
 | `fornalha_liga` | Production | 11 | Fornalha de liga | Alloy Furnace | Horno aleación | MAJOR: Fundidor — 2 lingotes → liga; libera contratar wk_vulcana; slot de liga em montagens e forjas | fornalha_armeiro2 | 8.600 |
 | `forja_machados` | Production | 12 | Machados | War Axes | Hachas | nova linha: machado bélico | carroca_curtidor | 11.000 |
 | `fole_couro_duplo` | Production | 13 | Fole duplo | Twin Bellows | Fuelle doble | fornalhas 2,5 → 1,6 s (menu) | fole_couro | 15.000 |
-| `ferraz4` | Production | 14 | Ferraz 4 | Ferraz 4 | Ferraz 4 | 4º corpo: couro e liga → montagens e forjas | ferraz3 | 19.000 |
+| `ferraz4` | Production | 14 | Ferraz 4 | Ferraz 4 | Ferraz 4 | 4º corpo: insumos (lingote, placa, rebite e liga) com o Ferraz 2 (medido, `BALANCE.md` §39; era "couro e liga → montagens e forjas") | ferraz3 | 19.000 |
 | `gabaritos` | Production | 15 | Gabaritos | Jigs | Plantillas | montagens e forjas ×0,6 (menu) | - | 25.000 |
 | `montagem_peitoral` | Production | 16 | Peitorais | Breastplates | Petos | nova linha: peitoral | montagem_manoplas | 32.000 |
 | `rebitadeira2` | Production | 17 | Rebitadeira 2 | Riveter 2 | Remachadora 2 | 2ª rebitadeira | - | 42.000 |

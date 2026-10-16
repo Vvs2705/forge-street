@@ -175,7 +175,7 @@ namespace FS.Tests
             Assert.AreEqual(s.Est("bancada_ourives").Parada, lb.Parada, 1e-3f);
         }
 
-        /// <summary>Regra 2: os carregadores so entregam insumos da receita ativa: com as bancadas no cobre, o Dourado dos lingotes nao busca o
+        /// <summary>Regra 2: os carregadores so entregam insumos da receita ativa: com as bancadas no cobre, o Dourado dos lingotes (a regra 1 do transporte, Sim.Transporte e BALANCE.md §39) nao busca o
         /// lingote de ouro (ficaria parado com ele na mao); a bancada no broche (ouro + cobre) passa a recebe-lo.</summary>
         [Test]
         public void Carregadores_SoEntregamOInsumoDaReceitaAtiva()

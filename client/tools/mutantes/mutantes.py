@@ -48,6 +48,7 @@ DIST, TEXTOS = 'Assets/_FS/Scripts/Core/Distritos.cs', 'Assets/_FS/Scripts/View/
 # ---- artisan_quarter (C-CORE-06)
 BANC, CLI, BOTB = 'Assets/_FS/Scripts/Core/Sim.Bancada.cs', 'Assets/_FS/Scripts/Core/Sim.Clientes.cs', 'Assets/_FS/Scripts/Core/Bot.Bancada.cs'
 AQ, IMP = 'Assets/_FS/Scripts/Core/Distritos.ArtisanQuarter.cs', 'Assets/_FS/Scripts/Core/Imperio.cs'
+TRANSP, LOC = 'Assets/_FS/Scripts/Core/Sim.Transporte.cs', 'Assets/_FS/Scripts/View/Loc.cs'
 
 
 def mut(id, arquivo, trecho, troca, descricao, esperado_vivo=None):
@@ -532,8 +533,6 @@ MUTACOES = [
         'public bool Liberada(Station s, int k) => true;', 'toda receita da bancada liberada desde o kit'),
     mut('aq-linha-so-ativa', SIM, 'if (s.Unlocked && Faz(s, product)) return true;', 'if (s.Unlocked && s.Produces && s.OutItem == product) return true;',
         'a linha so abre com a receita ativa (cliente e encomenda nao veem as outras)'),
-    mut('aq-carregador-sem-destino', SIM, 'if (TemBancadas && w.Role == 1 && !TemDestino(s.OutItem)) continue;', ';',
-        'o carregador de lingote pega o que nenhuma receita ativa usa'),
     mut('aq-entrada-pequena', BANC, 's.InCap = Math.Max(Balance.CrafterIn, 2 * maxQ);', 's.InCap = Balance.CrafterIn;',
         'a entrada da bancada fica em 4 (o castical pede 3; o catalogo diz ate 6 por tipo)'),
     mut('aq-save-sem-bancada', BANC, 'sb.Append("ofc").Append(s.Index)', 'if (false) sb.Append("ofc").Append(s.Index)',
@@ -587,6 +586,33 @@ MUTACOES = [
         'o Charter da Row nao libera o Quarter'),
     mut('aq-rotulo-sem-distrito', TEXTOS, '_est = Array.ConvertAll(d.Estacoes, x => Loc.Tem("est." + d.Id + "." + x.Id) ? d.Id + "." + x.Id : x.Id);',
         '_est = Array.ConvertAll(d.Estacoes, x => x.Id);', 'o deposito do Quarter com o rotulo do Old Forge'),
+    # ---- armorers_row: pendências (row-pendencias, BALANCE.md §39)
+    mut('rowp-ferraz4-papel0', DIST, 'Ferraz(4, 1), Vulcana', 'Ferraz(4, 0), Vulcana',
+        'o Ferraz 4 de volta ao bruto (papel 0)'),
+    mut('rowp-pega-a-mao-cheia', TRANSP, '|| c.Held[(int)i] < Cabe(i);', '|| true;',
+        'o papel 1 pega a mão cheia mesmo sem vaga nas entradas'),
+    mut('rowp-fonte-sem-destino', TRANSP, '((w.Count > 0 || Cabe(s.OutItem) > 0) && (s.Out > 0 || s.Busy))', '(s.Out > 0 || s.Busy)',
+        'o papel 1 vai à fonte do insumo que não cabe em lugar nenhum (fica com a placa na mão)'),
+    mut('rowp-espera-fonte-parada', TRANSP, '((w.Count > 0 || Cabe(s.OutItem) > 0) && (s.Out > 0 || s.Busy))', '(w.Count > 0 || Cabe(s.OutItem) > 0)',
+        'o papel 1 espera na boca da estação parada (a fornalha de liga sem lingote)'),
+    mut('rowp-regras-no-oldforge', TRANSP, 'return _insumos >= 2;', 'return _insumos >= 1;',
+        'as regras novas valem no Old Forge (um insumo): muda o jogo de lá'),
+    mut('rowp-sem-gancho-boca', SIM, '&& CanPick(c, s.OutItem) && PegaInsumo(c, s.OutItem) ? 2 : 0;', '&& CanPick(c, s.OutItem) ? 2 : 0;',
+        'a boca de saída ignora o que cabe'),
+    mut('rowp-sem-gancho-escolha', SIM, 'if (!FonteDeInsumo(w, s)) continue;', ';',
+        'a escolha de fonte ignora as regras do papel 1'),
+    mut('rowp-sem-gancho-alvo', SIM, '(s.Out > 0 || w.Target == s.Index)\n                && FonteDeInsumo(w, s);', '(s.Out > 0 || w.Target == s.Index);',
+        'o alvo do papel 1 segue valendo na estação parada'),
+    mut('rowp-rebite-catalogo', DIST, 'Rebite, 4, t => 8f,', 'Rebite, 4, t => 1f,',
+        'rebite em 4 s (o catálogo): uma rebitadeira dá conta e a 2ª não faz falta'),
+    mut('rowp-preco-x3-5', DIST, 't.Price = new[] { 0, 0, 335, 290, 310, 170, 290, 265, 550, 0, 0, 0, 0 };',
+        't.Price = new[] { 0, 0, 490, 420, 455, 245, 420, 385, 805, 0, 0, 0, 0 };',
+        'o preço da Row de antes (x 3,5)'),
+    mut('rowp-custo-x1-55', DIST, '530, 690, 890, 1160, 1505, 1960, 2545, 3310, 4305, 5600, 7275, 9460, 12000, 17000, 21000, 28000, 35000, 46000,',
+        '745, 970, 1255, 1635, 2125, 2760, 3590, 4665, 6070, 7890, 10000, 13000, 17000, 23000, 29000, 39000, 50000, 65000,',
+        'o custo da Row de antes (x 1,55)'),
+    mut('rowp-texto-preco-catalogo', LOC, '"Nova linha: peitoral, paga 550"', '"Nova linha: peitoral, paga 230"',
+        'o texto da linha nova com o preço do catálogo (o de antes)'),
 ]
 
 

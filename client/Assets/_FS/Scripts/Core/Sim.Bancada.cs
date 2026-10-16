@@ -131,14 +131,6 @@ namespace FS.Core
             s.Liga = Array.FindIndex(r.Inputs, x => x.Qty == 0);
         }
 
-        /// <summary>Insumo `i` tem para onde ir agora (alguma entrada aberta aceita): o carregador de intermediario so busca o que alguma receita
-        /// ativa usa (sem isso ele pegava o lingote de ouro com as bancadas no cobre e ficava parado com ele na mao).</summary>
-        bool TemDestino(Item i)
-        {
-            foreach (Station d in Stations) if (d.Unlocked && d.Accepts(i)) return true;
-            return false;
-        }
-
         // ------------------------------------------------------------------ save (linha ofcN=receita,proxima,parada,guardados; so fora do padrao)
 
         void SalvaBancadas(StringBuilder sb)
