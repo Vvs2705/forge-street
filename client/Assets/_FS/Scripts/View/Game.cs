@@ -940,6 +940,7 @@ namespace FS
             card.raycastTarget = false;
             _panelTitle = Art.NewText(card.transform, "Titulo", 56, new Vector2(0.05f, 0.76f), new Vector2(0.95f, 0.96f));
             _panelTitle.fontStyle = FontStyle.Bold; _panelTitle.color = MenuBar.Brown;
+            Art.Cabecalho(_panelTitle);
             _panelBox = (RectTransform)box.transform;
             // etapa 6 (recompensa com vida): raios girando atras do "+N" e faiscas saindo dele; so no cofre (TickFesta)
             _festaRaios = Art.Node(card.transform, "Raios", new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.6f)).gameObject.AddComponent<Image>();
@@ -1508,6 +1509,7 @@ namespace FS
             face.raycastTarget = false;
             Text title = Art.NewText(face.transform, "Titulo", 60, new Vector2(0.05f, 0.875f), new Vector2(0.95f, 0.985f));
             title.text = Loc.T("cfg.titulo"); title.fontStyle = FontStyle.Bold; title.color = MenuBar.Brown;
+            Art.Cabecalho(title);
             Chave(face.transform, "Musica", Loc.T("cfg.musica"), 0.74f, () => Ajustes.Musica, v => SetSom("musica", v), true);
             Chave(face.transform, "Efeitos", Loc.T("cfg.efeitos"), 0.605f, () => Ajustes.Efeitos, v => SetSom("efeitos", v), true);
             Chave(face.transform, "Vibracao", Loc.T("cfg.vibracao"), 0.47f, () => Ajustes.Vibra, v => { SetVibra(v); if (v) Ajustes.Confirmar(); }, Ajustes.TemVibra);

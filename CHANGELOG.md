@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Cabeçalho nos painéis (sobra da auditoria visual):** configurações, loja, metas, Hall, projetos, Passe e o cartão do cofre/mapa ganham uma faixa de couro de ponta a ponta com o título em creme e contorno (`Art.Cabecalho`).
 - **Recompensa com vida (programa de arte, etapa 6):** o cofre offline entra com pop, raios girando e faíscas atrás do "+N", o número conta até o prêmio e, no PEGAR, 10 moedas voam até a HUD; o baú de marco abre de verdade (agacha, pula com brilho e raios, faíscas) antes de sumir. Só código, 0 crédito.
 - **Interface v2 (programa de arte, etapa 4):** fontes com personalidade (Lilita One nos títulos e botões, Nunito no texto; Google Fonts, OFL), painéis e cartões com moldura em relevo, botões com lábio, brilho e efeito de apertar, barras de progresso com moldura, fundo dos menus com brasa e vinheta, abertura opaca e ícones pintados por tipo de prêmio no login e no Passe. 0 crédito; `docs/ASSETS.md` §18.
 - **Marca v2 (programa de arte, etapas 2–3):** ícone do app novo (emblema A3: escudo com bigorna, martelo, chama e a fita do nome), com o adaptativo do Android, o legado, o redondo e o 512 da loja; logo de título novo (C2: letras 3D de ouro) numa abertura dentro do jogo (2,4 s ou um toque) e na feature graphic. Imagens do Tripo (Nano Banana 2, 0 crédito); `docs/ASSETS.md` §17.
