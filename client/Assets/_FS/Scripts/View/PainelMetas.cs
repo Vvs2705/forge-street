@@ -79,10 +79,15 @@ namespace FS
                 var d = new Dia { Face = Art.Panel(e.transform, "Face", Fundo, Vector2.zero, Vector2.one) };
                 d.Face.rectTransform.offsetMin = new Vector2(4f, 6f); d.Face.rectTransform.offsetMax = new Vector2(-4f, -4f);
                 d.Face.raycastTarget = false;
-                d.Rotulo = Art.NewText(e.transform, "Rotulo", 22, new Vector2(0.04f, 0.5f), new Vector2(0.96f, 0.95f));
+                d.Rotulo = Art.NewText(e.transform, "Rotulo", 22, new Vector2(0.04f, 0.66f), new Vector2(0.96f, 0.96f));
                 d.Rotulo.text = Loc.T("metas.login.dia", i + 1);
                 d.Rotulo.fontStyle = FontStyle.Bold;
-                d.Premio = Art.NewText(e.transform, "Premio", 22, new Vector2(0.04f, 0.06f), new Vector2(0.96f, 0.5f));
+                // interface v2: o icone do premio (moeda ou Renome) no meio e so o numero embaixo
+                LoginDia r = MetasDefs.LoginDias[i];
+                Image ic = Art.Node(e.transform, "Icone", new Vector2(0.2f, 0.32f), new Vector2(0.8f, 0.68f)).gameObject.AddComponent<Image>();
+                ic.sprite = Art.IconePremio(r.OuroS > 0 ? TipoPremio.Ouro : TipoPremio.Renome, out Color cor);
+                ic.color = cor; ic.preserveAspect = true; ic.raycastTarget = false;
+                d.Premio = Art.NewText(e.transform, "Premio", 22, new Vector2(0.04f, 0.05f), new Vector2(0.96f, 0.34f));
                 d.Premio.fontStyle = FontStyle.Bold;
                 d.Premio.resizeTextForBestFit = true; d.Premio.resizeTextMinSize = 12; d.Premio.resizeTextMaxSize = 22;
                 d.Premio.verticalOverflow = VerticalWrapMode.Truncate;
@@ -186,13 +191,8 @@ namespace FS
             l.Premio.color = MenuBar.Leather;
             l.Premio.resizeTextForBestFit = true; l.Premio.resizeTextMinSize = 16; l.Premio.resizeTextMaxSize = 24;
             l.Premio.verticalOverflow = VerticalWrapMode.Truncate;
-            Image bar = Art.Node(t, "Barra", new Vector2(0.03f, 0.08f), new Vector2(0.68f, 0.28f)).gameObject.AddComponent<Image>();
-            bar.color = new Color(0f, 0f, 0f, 0.55f); bar.raycastTarget = false;
-            l.Barra = bar.gameObject;
-            l.Cheio = Art.Node(bar.transform, "Cheio", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
-            l.Cheio.color = Art.Good; l.Cheio.raycastTarget = false;
-            l.Conta = Art.Outlined(Art.NewText(bar.transform, "Conta", 22, Vector2.zero, Vector2.one), 2f);
-            l.Conta.fontStyle = FontStyle.Bold; l.Conta.horizontalOverflow = HorizontalWrapMode.Overflow;
+            l.Cheio = Art.Barra(t, new Vector2(0.03f, 0.08f), new Vector2(0.68f, 0.28f), Art.Good, 22, out l.Conta);
+            l.Barra = l.Cheio.transform.parent.gameObject;
             l.B = Art.NewButton(t, Loc.T("metas.resgatar"), 30, MenuBar.Green, new Vector2(0.71f, 0.2f), new Vector2(0.97f, 0.8f), () => Resgata(l));
             l.BFace = l.B.GetComponent<Image>();
             l.BText = l.B.GetComponentInChildren<Text>();
@@ -309,7 +309,7 @@ namespace FS
         {
             int estado = i < _loginDias ? 2 : i == _loginDias && _loginPronto ? 1 : 0;
             LoginDia r = MetasDefs.LoginDias[i];
-            d.Premio.text = r.OuroS > 0 ? "+" + Textos.Qtd(_sim.Metas.Ouro(r.OuroS)) : Loc.T("meta.premio.renome", r.Renome);
+            d.Premio.text = "+" + (r.OuroS > 0 ? Textos.Qtd(_sim.Metas.Ouro(r.OuroS)) : r.Renome.ToString());   // o icone diz se e' ouro ou Renome
             if (estado == d.Estado) return;
             d.Estado = estado;
             d.Face.color = estado == 2 ? MenuBar.Gray : estado == 1 ? MenuBar.Green : Fundo;

@@ -78,12 +78,7 @@ namespace FS
             _proximo.color = Tinta;
             _proximo.resizeTextForBestFit = true; _proximo.resizeTextMinSize = 20; _proximo.resizeTextMaxSize = 30;
             _proximo.verticalOverflow = VerticalWrapMode.Truncate;
-            Image bar = Art.Node(f, "Barra", new Vector2(0.06f, 0.41f), new Vector2(0.94f, 0.48f)).gameObject.AddComponent<Image>();
-            bar.color = new Color(0f, 0f, 0f, 0.55f); bar.raycastTarget = false;
-            _cheio = Art.Node(bar.transform, "Cheio", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
-            _cheio.color = Art.Gold; _cheio.raycastTarget = false;
-            _conta = Art.Outlined(Art.NewText(bar.transform, "Conta", 28, Vector2.zero, Vector2.one), 2f);
-            _conta.fontStyle = FontStyle.Bold; _conta.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _cheio = Art.Barra(f, new Vector2(0.06f, 0.41f), new Vector2(0.94f, 0.48f), Art.Gold, 28, out _conta);
             _libera = Art.NewText(f, "Libera", 30, new Vector2(0.06f, 0.21f), new Vector2(0.94f, 0.39f), TextAnchor.UpperLeft);
             _libera.color = Tinta;
             _libera.resizeTextForBestFit = true; _libera.resizeTextMinSize = 20; _libera.resizeTextMaxSize = 30;
