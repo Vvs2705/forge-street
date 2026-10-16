@@ -69,6 +69,9 @@ namespace FS.Core
                     long f = 0;
                     foreach (Station s in _sim.Stations) if (s.Produces && s.Receitas == null && (int)s.OutItem == i) f += (long)s.Crafted * s.Recipe.Qtd;
                     return f;
+                case CondicaoMw.CotaBlocos: return i < 0 ? 0 : _sim.CotaBlocos[i];       // C-CORE-07
+                case CondicaoMw.CotaNoPrazo: return i < 0 ? 0 : _sim.CotaNoPrazo[i];
+                case CondicaoMw.Contratos: return _sim.Contratos.Concluidos.Count;
                 default: return 0;
             }
         }

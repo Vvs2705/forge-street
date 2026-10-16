@@ -395,7 +395,7 @@ namespace FS.Core
         /// <summary>Produto na mao de `c` que o balcao dele aceita agora (estoque com espaco), o mais adiantado primeiro; Item.Ore = nenhum.</summary>
         public Item Deliverable(Carrier c)
         {
-            for (int k = ItemDefs.Length - 1; k >= (int)Item.Sword; k--) if (IsProduct((Item)k) && c.Held[k] > 0 && Stock[k] < CounterCap) return (Item)k;
+            for (int k = ItemDefs.Length - 1; k >= (int)Item.Sword; k--) if (IsProduct((Item)k) && c.Held[k] > 0 && (Stock[k] < CounterCap || CotaAceita((Item)k))) return (Item)k;   // C-CORE-07: ou o patio
             return Item.Ore;
         }
         /// <summary>B-CORE-07: a linha tem cliente (produto com intervalo no Tuning.ClientInterval). Produto sem intervalo (so o teste injeta) nao.</summary>
@@ -483,6 +483,7 @@ namespace FS.Core
             foreach (Carrier w in Workers) Interact(w, fast);
             foreach (Station s in Stations) Produce(s, fast);
             Conveyor(fast);
+            TickCotas(dt);   // C-CORE-07: prazo dos blocos do patio de cotas (Sim.Cotas.cs; sem patio, nada)
             Anuncios.Tick(dt);   // E-PLAT-02: recargas e o Supply Drop entrando nas fornalhas
             VipCooldown = Math.Max(0f, VipCooldown - dt);   // P14: no tempo de jogo; o Serve recarrega quando o chamado sai
             StrikeCooldown = Math.Max(0f, StrikeCooldown - dt);   // B-CORE-03: golpe de mestre, no tempo de jogo (o boost nao encurta)
@@ -695,11 +696,12 @@ namespace FS.Core
 
         /// <summary>Ajudante de produto: so busca o que ainda cabe na prateleira (sem a compra direta o estoque so desce com cliente
         /// na vaga; com a prateleira cheia ele parava no balcao e escudo/ferramenta encalhavam). Mesma regra do JewelerSource.</summary>
-        bool Fits(Carrier w, Station s) => Stock[(int)s.OutItem] + w.Count < CounterCap;
+        bool Fits(Carrier w, Station s) => Stock[(int)s.OutItem] + w.Count < CounterCap || CabeNaCota(s.OutItem, w.Count);   // C-CORE-07: ou o patio
 
         bool IsDestFor(Carrier w, Station s)
         {
-            if (w.Role == 2) return Sells(s, w.Item) && Stock[(int)w.Item] < CounterCap;
+            // C-CORE-07 (CONTEUDO_V1 §2.4 regra 2): o produto vai ao patio quando ha faixa dele com vaga; senao ao balcao
+            if (w.Role == 2) return s.Kind == Kind.Quota ? CotaAceita(w.Item) : Sells(s, w.Item) && Stock[(int)w.Item] < CounterCap && !CotaAceita(w.Item);
             return s.Accepts(w.Item);
         }
 
@@ -714,7 +716,7 @@ namespace FS.Core
                 if (w.Role == 2 && !Fits(w, s)) continue;
                 if (s.Out == 0 && w.Count == 0 && !(s.Busy && s.Progress > 0.5f)) continue;   // vale esperar o que esta quase pronto
                 if (!FonteDeInsumo(w, s)) continue;   // row-pendencias (Sim.Transporte.cs): so com 2+ insumos
-                float score = s.Out * 10f - V2.Dist(w.Pos, s.Pos);
+                float score = s.Out * 10f - V2.Dist(w.Pos, s.Pos) + (w.Role == 1 && Distrito.InsumoPorEspera ? 10f * Esperam(s.OutItem) : 0f);   // C-CORE-07
                 if (score > bestScore) { bestScore = score; best = s; }
             }
             return best;
@@ -739,7 +741,7 @@ namespace FS.Core
 
         Station PickDest(Carrier w)
         {
-            if (w.Role == 2) return CounterFor(w.Item);
+            if (w.Role == 2) return Destino(w.Item);   // C-CORE-07: o patio ou o balcao
             Station best = null; float bestScore = float.MinValue;
             foreach (Station s in Stations)
             {
@@ -832,6 +834,7 @@ namespace FS.Core
             switch (s.Kind)
             {
                 case Kind.Deposit: return CanPick(c, s.OutItem) ? 3 : 0;
+                case Kind.Quota: return AcaoCota(c, out item);   // C-CORE-07: 5 = entrega no patio de cotas
                 case Kind.Counter:
                     for (int k = (int)Item.Sword; k < ItemDefs.Length; k++)   // B-CORE-07: todo produto (a espada longa entrou)
                         if (c.Held[k] > 0 && Sells(s, (Item)k) && Stock[k] < CounterCap) { item = (Item)k; return 4; }
@@ -874,6 +877,7 @@ namespace FS.Core
                     case 2: Put(ref c.Held[(int)it], c.HeldQ[(int)it], Take(ref s.Out, s.OutQ)); break;
                     case 3: c.Held[(int)it]++; break;
                     case 4: Put(ref Stock[(int)it], StockQ[(int)it], Take(ref c.Held[(int)it], c.HeldQ[(int)it])); break;
+                    case 5: EntregaCota(c, it); break;   // C-CORE-07: patio (bloco cheio fecha e paga)
                 }
                 Emit(act == 2 || act == 3 ? Ev.Picked : Ev.Deposited, (int)it, c.Role, s.Pos);
                 if (Action(c, s, outZone, out it) != act) { c.ActT = 0f; break; }   // balcao: o proximo produto da mao segue no mesmo ritmo
@@ -988,6 +992,7 @@ namespace FS.Core
                 w.Speed = (fast ? Balance.WorkerSpeedUp : Balance.WorkerSpeed) * Equipe.Passo(w);
                 w.Cap = (fast ? Balance.WorkerCapUp : Balance.WorkerCap) + Equipe.Carga(w);
             }
+            RecomputeCotas();   // C-CORE-07: a mesa_real da a 2a vaga de contrato do Imperio
         }
 
         // ------------------------------------------------------------------ producao, esteira, clientes
@@ -1253,7 +1258,8 @@ namespace FS.Core
             b[(int)QualitySource.StationLevel] = (s.Level - 1) * T.NivelEstacaoQ;
             b[(int)QualitySource.Worker] = Equipe.QualidadeOficial(s);   // B-CORE-04: oficial da familia
             b[(int)QualitySource.Buff] = Equipe.QualidadeMestre(s)       // B-CORE-04: mestre de obras
-                + ((int)s.OutItem < T.QualidadeEvento.Length ? T.QualidadeEvento[(int)s.OutItem] : 0);   // B-CORE-08: modificador do evento (Hunt)
+                + ((int)s.OutItem < T.QualidadeEvento.Length ? T.QualidadeEvento[(int)s.OutItem] : 0)   // B-CORE-08: modificador do evento (Hunt)
+                + QualidadeSelo(s);   // C-CORE-07: o selo do distrito (selo_arsenal, q +25)
             b[(int)QualitySource.Blueprint] = Projetos.Tecnica(s.Recipe.Family)   // B-CORE-07: tecnica da familia (posse do projeto)
                 + Projetos.TecnicaItem(ItemDefs[(int)s.OutItem].Id);   // C-CORE-06: e a de produto (lapidacao: colar e caixa)
             b[(int)QualitySource.Material] = TemLiga(s) ? T.LigaQ : 0;   // C-CORE-05: liga no slot = a proxima peca leva uma
@@ -1651,6 +1657,7 @@ namespace FS.Core
             sb.Append("golpe=").Append(StrikeCooldown.ToString("0.###", ci)).Append('\n');
             if (Array.Exists(PecasComLiga, n => n > 0)) sb.Append("liga=").Append(IdCounts(PecasComLiga)).Append('\n');   // C-CORE-05: sem liga, o texto de antes
             SalvaBancadas(sb); SalvaFamilias(sb);   // C-CORE-06: ofcN=, fam= e ricos= (so no distrito que tem e fora do padrao)
+            SaveCotas(sb);   // C-CORE-07: cota=/cotab=/cotap=/cotar= (so no distrito com patio e fora do padrao)
             sb.Append("stock=").Append(Stock[2]).Append(',').Append(Stock[3]).Append(',').Append(Stock[4]).Append(',').Append(Stock[5]).Append('\n');
             sb.Append("sold=").Append(SoldItems[2]).Append(',').Append(SoldItems[3]).Append(',').Append(SoldItems[4]).Append(',').Append(SoldItems[5]).Append('\n');
             var ms = new StringBuilder();
@@ -1814,6 +1821,7 @@ namespace FS.Core
             }
             sim.Projetos.Load(text);   // B-CORE-07: antes do pad (o parcial da bigorna longa so fica com o projeto); sem bp= o 1o Tick da o retroativo dos marcos
             sim.Colecao.Load(text);    // B-CORE-08: colq= (Superiores por item; Normal e Fina saem do solds= e do bpq=)
+            sim.LoadCotas(text);       // C-CORE-07: o patio de cotas (save sem as linhas = patio vazio)
             sim.Gold += refund;
             sim.UpgradesBought = 0;
             foreach (bool b in sim.Bought) if (b) sim.UpgradesBought++;

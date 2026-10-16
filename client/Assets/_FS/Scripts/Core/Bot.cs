@@ -75,6 +75,7 @@ namespace FS.Core
             if (Strike && !EsperaSuperior(s)) s.Strike(true);   // o Sim recusa fora de StrikeStation (parado na boca, recarga zerada); acerto perfeito, sem tempo de anel
             if (s.Contratos.Oferta != null) s.Contratos.Aceitar();   // D-CORE-04: aceita o contrato oferecido (ja tem o Renome) e vende como sempre
             ConfiguraBancadas(s);   // C-CORE-06: receita das bancadas configuraveis (Bot.Bancada; sem elas, nada)
+            Cotas(s);   // C-CORE-07: a regra fixa das faixas do patio (Bot.Cotas.cs; sem patio, nada)
             int menu = s.CheapestAffordableMenu(), wk = Worker(s, menu);
             bool buy = menu >= 0 || wk >= 0;   // B-CORE-04: o worker se compra como o menu (para, le a tela, toca)
             V2 t = buy ? s.Player.Pos : Target(s);
@@ -158,7 +159,7 @@ namespace FS.Core
             // FASE7 §3: sem a compra direta, esperar no balcao com o estoque daquele produto cheio trava (a fila enche de quem quer outro
             // produto); produto que o balcao nao aceita fica na mao e o bot vai buscar o que a fila pede
             Item deliver = s.Deliverable(p);
-            if (deliver != Item.Ore) return s.CounterFor(deliver).InAt;
+            if (deliver != Item.Ore) return s.Destino(deliver).InAt;   // C-CORE-07: o patio quando ele aceita
             // C-CORE-01: todo insumo na mao, o mais adiantado (maior handle) primeiro; no Old Forge sao so lingote e minerio, nessa ordem
             for (int k = p.Held.Length - 1; k >= 0; k--)
             {
@@ -222,7 +223,7 @@ namespace FS.Core
             foreach (Station st in s.Stations)
             {
                 if (!st.Unlocked || st.Kind != kind || st.Out <= 0 || !s.CanPick(p, st.OutItem)) continue;   // teto daquele tipo na mao
-                if (kind == Kind.Crafter && s.Stock[(int)st.OutItem] >= s.CounterCap && st.Out < st.OutCap) continue; // balcao cheio desse produto: deixa na bancada
+                if (kind == Kind.Crafter && s.Stock[(int)st.OutItem] >= s.CounterCap && st.Out < st.OutCap && !s.CotaAceita(st.OutItem)) continue; // balcao cheio desse produto (e o patio nao o quer): deixa na bancada
                 if (!s.IsProduct(st.OutItem) && BestInput(s, st.OutItem, st.Pos) == null) continue;   // insumo sem entrada com espaco: fica (C-CORE-01)
                 float score = st.Out * 5f - V2.Dist(p.Pos, st.OutAt) + (kind == Kind.Crafter && s.Wanted(st.OutItem) ? 12f : 0f);   // a fila pede e o estoque nao tem
                 if (score > bestScore) { bestScore = score; best = st; }

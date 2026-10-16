@@ -30,11 +30,16 @@ namespace FS.Core
 
     /// <summary>C-CORE-02/03 (V5, V15; CONTEUDO_V1 §2): o Royal Charter do distrito, 1x e sem reset. Condicoes: producao completa, Renome do
     /// Imperio >= `Renome` (o limiar do nivel que libera "charter_&lt;id&gt;", ContentValidator.Charters) e `Masterworks` obras-primas DESTE
-    /// distrito. Concede +100 de Renome (Renome.OnCharter), a renda de fundo do distrito e libera `Proximo` (null = o ultimo do build).</summary>
+    /// distrito. Concede +100 de Renome (Renome.OnCharter), a renda de fundo do distrito e libera `Proximo` (null = o ultimo do build).
+    /// C-CORE-07 (V25, CONTEUDO_V1 §2): `Contratos` = Royal Contracts concluidos no Imperio, OU 10 encomendas Royal entregues no distrito por
+    /// contrato pedido (contrato nunca bloqueia: Sim.RoyalEntregues); 0 = nao pede (distritos 1-3).</summary>
     public sealed class CharterDef
     {
-        public readonly bool Producao; public readonly long Renome; public readonly int Masterworks; public readonly string Proximo;
-        public CharterDef(bool producao, long renome, int masterworks, string proximo) { Producao = producao; Renome = renome; Masterworks = masterworks; Proximo = proximo; }
+        /// <summary>Encomendas Royal entregues no distrito que valem 1 contrato do Charter (CONTEUDO_V1 §2, regra comum).</summary>
+        public const int RoyalPorContrato = 10;
+        public readonly bool Producao; public readonly long Renome; public readonly int Masterworks, Contratos; public readonly string Proximo;
+        public CharterDef(bool producao, long renome, int masterworks, string proximo, int contratos = 0)
+        { Producao = producao; Renome = renome; Masterworks = masterworks; Proximo = proximo; Contratos = contratos; }
     }
 
     /// <summary>
@@ -65,6 +70,13 @@ namespace FS.Core
         public CharterDef Charter;
         /// <summary>Renda de fundo depois do Charter deste distrito: fracao da RateEma dele quando o jogador sai (manager nivel 1; CONTEUDO_V1 §1).</summary>
         public float FundoFator = 0.25f;
+        /// <summary>C-CORE-07 (CONTEUDO_V1 §5.4, §15 #9): ID do upgrade Meta que da q +Tuning.SeloQ em toda estacao que faz produto no distrito
+        /// (selo_arsenal), onde nao ha worker de qualidade; null = nenhum.</summary>
+        public string Selo;
+        /// <summary>C-CORE-07 (BALANCE.md §38): o carregador de insumo (papel 1) leva primeiro o insumo que mais estacoes abertas esperam (+10 no
+        /// placar da fonte por estacao parada sem ele), em cima da regra do Sim.Transporte.cs (so busca o que cabe). Sem isso, no Arsenal, o
+        /// lingote ganhava sempre pela pilha e o ouro parava no crisol. false = o placar de sempre (Old Forge e Row ao byte).</summary>
+        public bool InsumoPorEspera;
         /// <summary>C-CORE-06 (CONTEUDO_V1 §12): familias de cliente do distrito (Sim.Clientes: rodizio fixo de pedidos, unidades, paciencia,
         /// intervalo e qualidade minima por familia). null = um relogio por produto, o de sempre (Old Forge e Row).</summary>
         public ClientDef[] Clientes;
@@ -325,6 +337,8 @@ namespace FS.Core
             OldForge, ArmorersRow,
             // ---- artisan_quarter (C-CORE-06)
             ArtisanQuarter,
+            // ---- royal_arsenal (C-CORE-07)
+            RoyalArsenal,
         };
 
         /// <summary>Distrito com este ID, ou null.</summary>

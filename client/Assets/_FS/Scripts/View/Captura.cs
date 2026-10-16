@@ -155,6 +155,27 @@ namespace FS
             s.Player.Pos = new V2(4.5f, 7.5f);   // no meio da oficina: oficiais, balconista e mestre de obras na tela
         }
 
+        /// <summary>C-CORE-07 -cotas (fotos, -distrito royal_arsenal): os produtivos do distrito (3 faixas, as 6 linhas), as faixas com o kit do
+        /// batedor (7/10, 40 s de prazo gastos), o kit da guarda (3/12, ja com um bloco fechado) e a insignia trocando para a espada de gala no
+        /// proximo bloco; o ferreiro em frente ao patio. Sem patio no distrito: nada.</summary>
+        public static void Cotas(Sim s)
+        {
+            if (s.Patio == null) return;
+            for (int u = 0; u < s.UpgradeDefs.Length; u++) if (s.IsProduction(u)) s.Buy((Upgrade)u);
+            int kb = Items.IndexOf("kit_batedor", s.ItemDefs), kg = Items.IndexOf("kit_guarda", s.ItemDefs), ins = Items.IndexOf("insignia_real", s.ItemDefs);
+            s.CotaBlocos[kg] = 1;
+            s.EscolheCota(0, kb); s.EscolheCota(1, kg); s.EscolheCota(2, ins);
+            Enche(s, 0, 7, 40f); Enche(s, 1, 3, 15f); Enche(s, 2, 2, 5f);
+            s.EscolheCota(2, Items.IndexOf("espada_gala", s.ItemDefs));
+            s.Player.Pos = new V2(s.Patio.InAt.X, s.Patio.InAt.Y - 0.6f);
+        }
+
+        static void Enche(Sim s, int k, int n, float t)
+        {
+            FaixaCota f = s.Faixas[k];
+            f.Pecas = n; f.PorQ[0] = n; f.Soma = (long)n * s.PriceOf((Item)f.Produto, Quality.Normal); f.Decorrido = t;
+        }
+
         /// <summary>B-CORE-08 -masterwork N (fotos): os projetos de Masterwork do catalogo e as `n` primeiras no Hall (data 0), com o Renome
         /// delas pelo ID (como a de verdade), entao o painel do Hall e a Collection tem conteudo. ponytail: sem o golpe; a foto do aviso
         /// "Obra-prima!" sai do jogo (bot ou toque).</summary>

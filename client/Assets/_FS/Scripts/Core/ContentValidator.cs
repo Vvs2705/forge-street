@@ -149,6 +149,8 @@ namespace FS.Core
             }
             foreach (string req in new[] { "deposito", "fornalha", "balcao" })
                 if (!ids.Contains(req)) yield return $"{at} sem a estacao \"{req}\"";
+            int patios = Array.FindAll(d.Estacoes, s => s.Kind == Kind.Quota).Length;   // C-CORE-07: o Sim le um patio so (Sim.Patio)
+            if (patios > 1) yield return $"{at} {patios} patios de cotas (no maximo 1)";
             foreach (PadDef p in d.Pads)
                 foreach (string c in p.Cadeia)
                     if (Upgrades.IndexOf(c, d.Upgrades) < 0) yield return $"{at} pad ({p.Pos}) vende \"{c}\", que nao e' upgrade do distrito";
@@ -327,7 +329,8 @@ namespace FS.Core
                     switch (f.Kind)
                     {
                         case BlueprintSourceKind.Milestone:
-                            if (f.Ref != BlueprintSource.Producao && (!Produto(f.Ref) || f.N <= 0)) yield return $"{at} marco \"{f.Ref}\" x{f.N} inalcancavel";
+                            if (f.Ref == BlueprintSource.Cotas ? w.Patio == null || f.N <= 0 : f.Ref != BlueprintSource.Producao && (!Produto(f.Ref) || f.N <= 0))
+                                yield return $"{at} marco \"{f.Ref}\" x{f.N} inalcancavel";   // C-CORE-07: blocos de cota so com o patio
                             break;
                         case BlueprintSourceKind.OrderBlueprint: case BlueprintSourceKind.OrderRoyal:
                             if (Array.IndexOf(ProjetosDefs.Distritos, f.Ref) < 0 || f.N <= 0) yield return $"{at} fila {f.Kind} \"{f.Ref}\" #{f.N} invalida";

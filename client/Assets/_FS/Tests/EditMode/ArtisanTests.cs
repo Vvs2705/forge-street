@@ -62,7 +62,7 @@ namespace FS.Tests
             Assert.AreEqual((330, 1350, 12f), (s.T.Price[(int)I(s, "fivela")], s.T.Price[(int)I(s, "caixa_joias")], s.T.ClientInterval[(int)I(s, "colar")]));
             Compra(s, "vitrine_luxo");
             Assert.AreEqual(5, s.QueueCap, "a loja fina 3 -> 5");
-            Assert.AreEqual((true, 1250L, 3, (string)null), (Aq.Charter.Producao, Aq.Charter.Renome, Aq.Charter.Masterworks, Aq.Charter.Proximo));
+            Assert.AreEqual((true, 1250L, 3, Distritos.RoyalArsenalId), (Aq.Charter.Producao, Aq.Charter.Renome, Aq.Charter.Masterworks, Aq.Charter.Proximo));
             Assert.AreEqual((Distritos.ArtisanQuarterId, 430000L), (Distritos.ArmorersRow.Charter.Proximo, Aq.Abertura));
             WorkerDef m = Imperio.ManagerDe(Aq.Id);
             Assert.AreEqual(("wk_valentim", 290000L, 5), (m.Id, m.Niveis[0], m.MaxNivel));

@@ -11,7 +11,7 @@ namespace FS.Core
     /// </summary>
     public static partial class OrderDefs
     {
-        public const string OldForge = "old_forge", Row = FS.Core.Distritos.ArmorersRowId;
+        public const string OldForge = "old_forge", Row = FS.Core.Distritos.ArmorersRowId, Arsenal = FS.Core.Distritos.RoyalArsenalId;
         /// <summary>Filas de Blueprint (BlueprintDef.sources, B-CORE-07): a do tipo Blueprint e a do Royal.</summary>
         public const string FilaEncomenda = "encomenda", FilaRoyal = "royal";
         public static readonly string[] Filas = { FilaEncomenda, FilaRoyal };
@@ -21,6 +21,8 @@ namespace FS.Core
             OldForge, Row,
             // ---- artisan_quarter (C-CORE-06)
             FS.Core.Distritos.ArtisanQuarterId,
+            // ---- royal_arsenal (C-CORE-07)
+            FS.Core.Distritos.RoyalArsenalId,
         };
         /// <summary>Base da escala dos knobs (a Common do catalogo): alvo x Tuning.OrderSeconds / 150 e premio x Tuning.OrderRewardSeconds / 10.</summary>
         public const float AlvoBase = 150f, PremioBase = 10f;
@@ -83,7 +85,9 @@ namespace FS.Core
             new OrderDef("ord_reg_brutus", Bulk, Row, 0f, 30, 30, 22f, 180, 3, item: "lanca", fixedN: 30, clientId: "cli_reg_brutus"),
         },
             // ---- artisan_quarter (C-CORE-06): Distritos.ArtisanQuarter.cs
-            OrdensArtisan());
+            OrdensArtisan(),
+            // ---- royal_arsenal (C-CORE-07): Distritos.RoyalArsenal.cs
+            OrdensArsenal());
 
         /// <summary>As OrderDefs do build, na ordem dos distritos: cada distrito novo traz as dele num metodo do arquivo dele (classe parcial).</summary>
         static OrderDef[] Junta(params OrderDef[][] partes)
@@ -100,6 +104,7 @@ namespace FS.Core
             (Row, new[] { Common, Bulk, Qual, Common, Bulk, Mixed, Rush, Blueprint, Common, Royal }),   // §7.1: Bulk x2 ("equipar a milicia")
             // ---- artisan_quarter (C-CORE-06)
             (FS.Core.Distritos.ArtisanQuarterId, CicloArtisan()),
+            (Arsenal, new[] { Royal, Common, Bulk, Royal, Qual, Mixed, Royal, Blueprint, Rush, Common }),   // ---- royal_arsenal (C-CORE-07): Royal x3
         };
 
         public static OrderType[] Ciclo(string district) => Array.Find(Ciclos, c => c.District == district).Cycle;
@@ -139,6 +144,7 @@ namespace FS.Core
                     if (Array.IndexOf(Distritos, d.District) < 0) yield return $"{at} distrito \"{d.District}\" que nao existe no jogo";
                     if (d.EventId != null) yield return $"{at} evento fora do tipo Event";
                     if (d.RewardSeconds <= 0f || d.RewardMin <= 0 || d.RewardMin % 5 != 0) yield return $"{at} premio {d.RewardSeconds} s; {d.RewardMin} (positivo, minimo x5)";
+                    if (d.Requer != null && Upgrades.IndexOf(d.Requer, MundoDe(d.District).UpgradeDefs) < 0) yield return $"{at} requer \"{d.Requer}\", que nao e' upgrade do distrito";   // C-CORE-07
                 }
                 if (d.TargetMin < 1 || d.TargetMin > d.TargetMax) yield return $"{at} N {d.TargetMin}-{d.TargetMax}";
                 if (d.FixedN > 0 ? d.FixedN < d.TargetMin || d.FixedN > d.TargetMax : d.TargetSeconds <= 0f) yield return $"{at} alvo sem segundos de renda nem N fixo dentro do intervalo";

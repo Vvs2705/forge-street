@@ -42,6 +42,7 @@ namespace FS
             // B-CORE-03: brilho de cada peca (Fina = estrela de 4 pontas prata, Superior = estrela de 5 pontas ouro), barra do acumulador e "Fina em 7"
             public SpriteRenderer[] OutGlint, StockGlint; public SpriteRenderer QBarBg, QBarFill; public Text QLabel; public float QT;
             public RecipeDef Receita;   // C-CORE-06: a receita com que as pilhas foram montadas (a bancada configuravel troca: a estacao e' refeita)
+            public Text[] Faixas;   // C-CORE-07: uma linha por faixa do patio de cotas (o toque troca o produto dela, Game.Toque)
         }
         /// <summary>Placa de obra: fundo escuro, enchimento de ouro, borda tracejada, icone do que constroi; preco (moeda + valor) e nome na HUD.</summary>
         sealed class PadV
@@ -604,6 +605,16 @@ namespace FS
             v.Label = Art.Outlined(Art.FreeText(_labels, s.Name, 30, new Vector2(320f, 44f)), 3f, Edge);   // v0.6d: 28 -> 30 px, contorno 3 px
             v.Label.text = Textos.Estacao(s.Index);
             v.Label.fontStyle = FontStyle.Bold;
+            if (s.Kind == Kind.Quota)   // C-CORE-07: as faixas do patio, sempre visiveis embaixo dele (ponytail: texto; a arte das faixas vem com o C-ART-13)
+            {
+                v.Faixas = new Text[_sim.Faixas.Length];
+                for (int k = 0; k < v.Faixas.Length; k++)
+                {
+                    v.Faixas[k] = Art.Outlined(Art.FreeText(_labels, "Faixa", 24, new Vector2(460f, 34f)), 2.5f, Edge);
+                    v.Faixas[k].fontStyle = FontStyle.Bold;
+                    v.Faixas[k].enabled = false;
+                }
+            }
             // bocas no chao (FASE5 s2b): deposito so entrega, balcoes so recebem, quem produz tem as duas. v0.5b: placa no chao
             if (s.Kind == Kind.Deposit) Mouth(v.Root, s.OutAt - s.Pos, false, (int)s.OutItem);   // o bruto do deposito (minerio; couro na Row)
             else Mouth(v.Root, s.InAt - s.Pos, true, s.Produces ? (int)s.InItem : s == _sim.JewelShop ? (int)Item.Jewel : -1);
@@ -1341,6 +1352,15 @@ namespace FS
                 if (s.Unlocked) { v.PopT = 0f; Poof(s.Pos, 1.6f); }   // comprou agora: nasce com pop e poeira (o save liga no Build, sem pop)
             }
             if (!s.Unlocked) { v.Label.enabled = false; return; }
+            if (v.Faixas != null)   // C-CORE-07: "Faixa 1: 3/10 kits do batedor · 2:31", 0,32 m entre linhas, de cima para baixo
+                for (int k = 0; k < v.Faixas.Length; k++)
+                {
+                    v.Faixas[k].enabled = k < _sim.FaixasAbertas;
+                    if (!v.Faixas[k].enabled) continue;
+                    v.Faixas[k].text = Textos.Faixa(_sim, k);
+                    v.Faixas[k].color = _sim.Faixas[k].Produto >= 0 ? Art.Ink : Art.Accent;
+                    PlaceLabel(v.Faixas[k], W(s.Pos) + new Vector3(0f, -0.9f - 0.32f * k, 0f), Vector2.zero);
+                }
             if (v.PopT >= 0f)
             {
                 v.PopT += dt;
@@ -1449,6 +1469,16 @@ namespace FS
 
         /// <summary>Um toque agora acertaria a janela do anel (Tuning.GolpeJanela).</summary>
         public bool AcertoAgora => QualidadeView.Acerto(_ringT, _sim.T.GolpeJanela);
+
+        /// <summary>C-CORE-07: faixa do patio de cotas cuja linha visivel contem o ponto de tela (px), ou -1.</summary>
+        public int FaixaEm(Vector2 px)
+        {
+            foreach (StationV v in _stations)
+                if (v.Faixas != null)
+                    for (int k = 0; k < v.Faixas.Length; k++)
+                        if (v.Faixas[k].enabled && RectTransformUtility.RectangleContainsScreenPoint(v.Faixas[k].rectTransform, px, null)) return k;
+            return -1;
+        }
 
         /// <summary>Estacao cuja "Fina em N" visivel contem o ponto de tela (px), ou null.</summary>
         public Station BarraEm(Vector2 px)

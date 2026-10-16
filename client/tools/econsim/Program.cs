@@ -426,6 +426,9 @@ static class EconSim
         // o que falta para o Charter no fim
         public int SemDestinoEq, Niveis, Fundidor, Mw; public long NiveisGasto, Enc; public double Quali, EncPct; public float Fundidor1 = -1f, Mw1 = -1f, Mw2 = -1f;
         public string Charter;
+        // C-CORE-07 (patio de cotas): pecas vendidas no patio e no total, ouro do patio, blocos (no prazo), Royal entregues no distrito, a 3a
+        // obra e o Charter (relogio; -1 = nao saiu), contratos concluidos e o Renome do Imperio quando o Charter saiu
+        public long CotaUn, Un, CotaOuro; public int Blocos, NoPrazo, Royal, Contratos; public float Mw3 = -1f;
         // row-pendencias: por estacao que produz (ID, ciclos, s com fome, s travada) e as pecas de produto com liga
         public (string Id, int Ciclos, float Fome, float Travada)[] Est; public long Pecas, ComLiga; public int CharterMin = -1, RenomeMin = -1;
         // C-CORE-06: trocas de receita nas bancadas, clientes ricos atendidos, clientes que deram meia-volta (fila cheia) e os que cansaram
@@ -501,16 +504,32 @@ static class EconSim
         static string Min(RunD[] g, Func<RunD, int> f) { int[] v = g.Select(f).Where(x => x >= 0).ToArray(); return v.Length == 0 ? "--" : $"{v.Average():0} min ({v.Length}/{g.Length})"; }
         Console.WriteLine("| Renome do Charter (relogio) | " + string.Join(" | ", por.Select(g => Min(g, r => r.RenomeMin))) + " |");
         Console.WriteLine("| Charter pronto (relogio) | " + string.Join(" | ", por.Select(g => Min(g, r => r.CharterMin))) + " |");
-        if (!amostra.TemBancadas) return 0;
-        // C-CORE-06: bancada configuravel e clientes por familia
+        if (amostra.TemBancadas)
+        {
+            // C-CORE-06: bancada configuravel e clientes por familia
+            Console.WriteLine();
+            Console.WriteLine($"Bancadas: politica {bancadas}{(histerese.HasValue ? ", histerese " + histerese : "")}.");
+            Console.WriteLine("| perfil | trocas de receita (total; por hora) | clientes ricos atendidos | meia-volta (fila cheia) | cansaram na fila |");
+            Console.WriteLine("|---|---|---|---|---|");
+            foreach (BotProfile p in perfis)
+            {
+                RunD[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+                Console.WriteLine($"| {p.Name} | {g.Average(r => r.Trocas):0}; {g.Average(r => r.Trocas) * 60.0 / minutos:0} | {g.Average(r => r.Ricos):0} | {g.Average(r => r.MeiaVolta):0} | {g.Average(r => r.Perdidos):0} |");
+            }
+        }
+        if (amostra.Patio == null) return 0;
+        // C-CORE-07 (CONTEUDO_V1 §16): quanto da producao passa pelo patio de cotas (portao 30-70% no bot), blocos, prazo e o Charter (3 obras e
+        // 1 contrato OU 10 Royal no distrito)
         Console.WriteLine();
-        Console.WriteLine($"Bancadas: politica {bancadas}{(histerese.HasValue ? ", histerese " + histerese : "")}.");
-        Console.WriteLine("| perfil | trocas de receita (total; por hora) | clientes ricos atendidos | meia-volta (fila cheia) | cansaram na fila |");
-        Console.WriteLine("|---|---|---|---|---|");
+        Console.WriteLine("| perfil | pecas pelo patio (% das vendidas) | ouro do patio (% da receita) | blocos (no prazo) | Royal entregues | contratos | obras (3a) | Charter (condicoes; minuto) |");
+        Console.WriteLine("|---|---|---|---|---|---|---|---|");
         foreach (BotProfile p in perfis)
         {
             RunD[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
-            Console.WriteLine($"| {p.Name} | {g.Average(r => r.Trocas):0}; {g.Average(r => r.Trocas) * 60.0 / minutos:0} | {g.Average(r => r.Ricos):0} | {g.Average(r => r.MeiaVolta):0} | {g.Average(r => r.Perdidos):0} |");
+            static string Media(IEnumerable<float> v) { float[] a = v.Where(t => t >= 0f).ToArray(); return a.Length == 0 ? "--:--" : Clock(a.Average()); }
+            Console.WriteLine($"| {p.Name} | {100.0 * g.Average(r => r.CotaUn) / Math.Max(1.0, g.Average(r => r.Un)):0.0}% | {100.0 * g.Average(r => r.CotaOuro) / Math.Max(1.0, g.Average(r => r.Earned)):0.0}% | " +
+                              $"{g.Average(r => r.Blocos):0.#} ({g.Average(r => r.NoPrazo):0.#}) | {g.Average(r => r.Royal):0.#} | {g.Average(r => r.Contratos):0.#} | {g.Average(r => r.Mw):0.#} ({Media(g.Select(r => r.Mw3))}) | " +
+                              $"{g.Count(r => r.CharterMin >= 0)}/{g.Length}; {(g.Any(r => r.CharterMin >= 0) ? g.Where(r => r.CharterMin >= 0).Average(r => r.CharterMin).ToString("0") + " min" : "--")} |");
         }
         return 0;
     }
@@ -543,8 +562,13 @@ static class EconSim
                 pausa += (bot.AdsTotal - ads) * anuncioSeg; ads = bot.AdsTotal;
                 foreach (SimEvent e in s.Events)
                 {
-                    if (e.Kind == Ev.Sold) r.Vendas[e.A] += e.B;
-                    else if (e.Kind == Ev.Masterwork && e.B >= 0) { if (r.Mw1 < 0f) r.Mw1 = s.Time + pausa; else if (r.Mw2 < 0f) r.Mw2 = s.Time + pausa; }   // C-CORE-05
+                    if (e.Kind == Ev.Sold)
+                    {
+                        r.Vendas[e.A] += e.B; r.Un++;
+                        if (s.Patio != null && e.Pos.X == s.Patio.Pos.X && e.Pos.Y == s.Patio.Pos.Y) { r.CotaUn++; r.CotaOuro += e.B; }   // C-CORE-07: a peca do bloco
+                    }
+                    else if (e.Kind == Ev.Masterwork && e.B >= 0)   // C-CORE-05 (C-CORE-07: e a 3a)
+                    { if (r.Mw1 < 0f) r.Mw1 = s.Time + pausa; else if (r.Mw2 < 0f) r.Mw2 = s.Time + pausa; else if (r.Mw3 < 0f) r.Mw3 = s.Time + pausa; }
                     else if (e.Kind == Ev.Hired && (e.B == (int)WorkerRole.Smelter || e.B == (int)WorkerRole.Smith) && r.Fundidor1 < 0f) r.Fundidor1 = s.Time + pausa;
                 }
                 if (r.Venda1 < 0f && s.FirstSaleTime >= 0f) r.Venda1 = s.FirstSaleTime + pausa;
@@ -574,6 +598,7 @@ static class EconSim
         for (int k = 0; k < s.Equipe.Defs.Length; k++) if (s.Equipe.Defs[k].Papel == WorkerRole.Smelter || s.Equipe.Defs[k].Papel == WorkerRole.Smith) r.Fundidor = s.Equipe.Nivel(k);   // C-CORE-06: ou a oficial (Lucia)
         r.Quali = 100.0 * s.QualityGold / Math.Max(1, s.GoldEarned); r.EncPct = 100.0 * s.OrderGold / Math.Max(1, s.GoldEarned); r.Enc = s.OrderGold;
         r.Mw = s.Hall.Count; r.Charter = imp.CharterFalta(d.Id);
+        r.Blocos = s.CotasFechadas; r.NoPrazo = s.CotaNoPrazo.Sum(); r.Royal = s.RoyalEntregues; r.Contratos = imp.Raiz.Contratos.Concluidos.Count;   // C-CORE-07
         r.Est = s.Stations.Where(x => x.Produces).Select(x => (x.Id, x.Crafted, x.StarveSeconds, x.StallSeconds)).ToArray();
         for (int i = 0; i < s.ItemDefs.Length; i++) if (s.ItemDefs[i].Product) { r.Pecas += s.Crafted[i]; r.ComLiga += s.PecasComLiga[i]; }
         r.Trocas = s.TrocasReceita; r.Ricos = s.ClientesRicos; r.MeiaVolta = s.ClientsTurnedAway; r.Perdidos = s.ClientsLost;   // C-CORE-06

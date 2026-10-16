@@ -38,6 +38,9 @@ namespace FS.Core
             // ---- artisan_quarter (C-CORE-06): CONTEUDO_V1 §6
             new WorkerDef("wk_valentim", "Valentim", WorkerRole.Manager, Specialty.None, Distritos.ArtisanQuarterId, null, null, 0, 0, null,
                 new long[] { 290000, 580000, 1200000, 2300000 }, null),
+            // ---- royal_arsenal (C-CORE-07): CONTEUDO_V1 §6
+            new WorkerDef("wk_leonor", "Capitã Leonor", WorkerRole.Manager, Specialty.None, Distritos.RoyalArsenalId, null, null, 0, 0, null,
+                new long[] { 860000, 1700000, 3400000, 6900000 }, null),
         };
         /// <summary>Fundo por nivel do manager (1-5) sobre o DistrictDef.FundoFator (o nivel 1): 25% -> 30/33/36/40% da taxa (CONTEUDO_V1 §1).
         /// Sempre &lt; 1 vez a taxa: o distrito ativo rende mais que ele mesmo em fundo em todo nivel (ImperioTests).</summary>
@@ -110,6 +113,8 @@ namespace FS.Core
             if (c.Producao && !s.ProductionComplete) return "producao";
             if (Raiz.Renome.Total < c.Renome) return "renome";
             if (Math.Max(s.Masterworks, s.Hall.Count) < c.Masterworks) return "masterwork";   // C-CORE-03: o Hall vai no save (o contador nao)
+            if (c.Contratos > 0 && Raiz.Contratos.Concluidos.Count < c.Contratos && s.RoyalEntregues < c.Contratos * CharterDef.RoyalPorContrato)
+                return "contrato";   // ---- royal_arsenal (C-CORE-07): N contratos OU 10 x N encomendas Royal no distrito (V25: nunca bloqueia)
             return null;
         }
 
