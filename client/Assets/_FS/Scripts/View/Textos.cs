@@ -33,9 +33,31 @@ namespace FS
         {
             _ups = d.Upgrades;
             _itens = Array.ConvertAll(d.Itens, x => x.Id);
-            _est = Array.ConvertAll(d.Estacoes, x => x.Id);
+            // C-CORE-06: o deposito, a fornalha e o balcao do Quarter (IDs fixos do Sim) com o rotulo dele: est.artisan_quarter.deposito = "Minério cobre"
+            _est = Array.ConvertAll(d.Estacoes, x => Loc.Tem("est." + d.Id + "." + x.Id) ? d.Id + "." + x.Id : x.Id);
             _nome = new string[_ups.Length];
             _selo = d.Selo;
+        }
+
+        /// <summary>C-CORE-06: o painel da bancada configuravel: a receita ativa e a troca em curso ou pendente (a linha de cima do toque).</summary>
+        public static string Bancada(Sim s, Station st)
+        {
+            string r = Loc.T("bancada.receita", ItemNome((int)st.OutItem, 1));
+            if (st.Proxima != null) return r + "\n" + Loc.T("bancada.pendente", ItemNome((int)st.Proxima.Output, 1), N(s.TempoTroca(st)));
+            return st.Parada > 0f ? r + "\n" + Loc.T("bancada.parada", N((float)Math.Ceiling(st.Parada))) : r;
+        }
+
+        /// <summary>C-CORE-06: o botao do painel: a proxima receita liberada depois da ativa (ou da pendente), em rodizio; null = so uma.</summary>
+        public static RecipeDef ProximaReceita(Sim s, Station st)
+        {
+            if (st.Receitas == null) return null;
+            int a = Array.IndexOf(st.Receitas, st.Proxima ?? st.Recipe);
+            for (int k = 1; k < st.Receitas.Length; k++)
+            {
+                int i = (a + k) % st.Receitas.Length;
+                if (s.Liberada(st, i) && st.Receitas[i] != (st.Proxima ?? st.Recipe)) return st.Receitas[i];
+            }
+            return null;
         }
 
         public static string Dica(Hint h, int arg, Sim s)
@@ -180,11 +202,13 @@ namespace FS
                 case Upgrade.PlayerSpeed: return Loc.T("card.velocidade", Mais(Balance.PlayerSpeed, Balance.PlayerSpeedUp));
                 case Upgrade.HelperSpeed: return Loc.T("card.velocidade", Mais(Balance.WorkerSpeed, Balance.WorkerSpeedUp));   // VALIDACAO_V05 #4: a carga vai no AntesDepois
                 case Upgrade.CounterCapacity: return Loc.T("card.clientes", Mais(t.VitrineClientMul, 1f));   // intervalo x0,7 = ritmo x1,43
-                case Upgrade.JewelVitrine: return Loc.T("card.joia", Mais(t.Price[(int)Item.Jewel], t.JewelPriceUp));
+                case Upgrade.JewelVitrine: return _ups == Upgrades.All ? Loc.T("card.joia", Mais(t.Price[(int)Item.Jewel], t.JewelPriceUp))
+                    : Loc.T("card.ricos", Mais(t.JewelVitrineClientMul, 1f));   // C-CORE-06: a vitrine de luxo do Quarter (ricos x0,7 no intervalo)
                 case Upgrade.Counter5: case Upgrade.Counter6: case Upgrade.Counter7: case Upgrade.Counter8:
                     int n = (int)_ups[u].Efeito - (int)Upgrade.Counter5 + t.QueueCap0 + 1;
                     return Loc.T("card.vagas", Mais(n - 1, n));
                 default:   // B-CORE-03, GDD §19: "Qualidade +0,15 · vel. +5%"
+                    if (_ups[u].Id == Sim.TrocaRapidaId) return Loc.T("card.troca", Menos(Sim.TrocaSeg, Sim.TrocaRapidaSeg));   // C-CORE-06
                     return _ups[u].Station != null ? Loc.T("card.qualidade", Pontos(t.NivelEstacaoQ), Pct(t.NivelEstacaoVelocidade) + "%")
                         : _ups[u].Id == _selo ? Loc.T("card.selo", Pontos(t.SeloQ))   // C-CORE-07
                         : Loc.T("up." + _ups[u].Id + ".desc");
@@ -243,6 +267,7 @@ namespace FS
                 default:
                     // B-CORE-03: depois da compra, so pelo nivel da estacao (as outras fontes ainda nao existem): L2 = 1 em 7, L3 = 1 em 3.
                     // ponytail: a frase vale para q < 100; o nivel que passar de 1,00 (L4-L5 com oficial, B-CORE-04/07) pede outra
+                    if (_ups[u].Id == Sim.TrocaRapidaId) return Loc.T("card.ad.s", N(Sim.TrocaSeg), N(Sim.TrocaRapidaSeg));   // C-CORE-06: troca de receita
                     if (_ups[u].Station == null) return "";   // ponytail: Lupa = x0,6 sobre o tempo que o Martelo veloz ja mudou; o % basta
                     int q = (NivelEstacao(u) - 1) * t.NivelEstacaoQ;
                     return Loc.T("card.ad.fina", (long)Math.Round(100.0 / q, MidpointRounding.AwayFromZero));
@@ -462,7 +487,8 @@ namespace FS
         public static string ProjetoNome(Sim s, BlueprintDef d) => Loc.T("proj.k." + (int)d.Kind, Alvos(s, d, 1));
 
         /// <summary>O que a posse libera: a linha, os niveis IV-V, os pontos da tecnica, o projeto da obra-prima ou o visual.</summary>
-        public static string ProjetoLibera(Sim s, BlueprintDef d) => d.Kind == BlueprintKind.Technique ? Loc.T("proj.libera.2", Pontos(s.T.TecnicaQ))
+        public static string ProjetoLibera(Sim s, BlueprintDef d) => d.Kind == BlueprintKind.Technique
+            ? (Items.IndexOf(d.Targets[0], s.ItemDefs) >= 0 ? Loc.T("proj.libera.2i", Pontos(s.T.TecnicaItemQ)) : Loc.T("proj.libera.2", Pontos(s.T.TecnicaQ)))   // C-CORE-06: tecnica de produto
             : d.Kind == BlueprintKind.Recipe ? Loc.T("proj.libera.0", Alvos(s, d, 2)) : Loc.T("proj.libera." + (int)d.Kind);
 
         /// <summary>De onde vem: as fontes na ordem do BlueprintDef ("Venda 100 espadas (37/100) ou Encomenda de projeto nº 7").</summary>
@@ -478,6 +504,8 @@ namespace FS
             if (k == BlueprintKind.StationLevel || k == BlueprintKind.Technique)
             {
                 if (Loc.Tem("fam." + t)) return Loc.T("fam." + t);
+                int it = Items.IndexOf(t, s.ItemDefs);
+                if (it >= 0) return ItemDe(s, it, 2);   // C-CORE-06: tecnica de produto (lapidacao: colares, caixas de joias)
                 RecipeDef r = Array.Find(s.RecipeDefs, x => x.Family == t);
                 return r != null ? ItemDe(s, (int)r.Output, 2) : t;
             }
@@ -539,14 +567,16 @@ namespace FS
                 case CondicaoMw.Renome: return Loc.T("hall.c.2", n, v);
                 case CondicaoMw.EncomendasItem: return Loc.T("hall.c.3", n, i >= 0 ? ItemDe(s, i, 1) : c.Ref, v);
                 case CondicaoMw.PecasComLiga: return Loc.T("hall.c.7", n, item, v);   // C-CORE-05
-                case CondicaoMw.CotaBlocos: return Loc.T("hall.c.8", n, item, v);     // C-CORE-07
-                case CondicaoMw.CotaNoPrazo: return Loc.T("hall.c.9", n, item, v);
-                case CondicaoMw.Contratos: return Loc.T("hall.c.10", n, v);
+                case CondicaoMw.CotaBlocos: return Loc.T("hall.c.10", n, item, v);     // C-CORE-07
+                case CondicaoMw.CotaNoPrazo: return Loc.T("hall.c.11", n, item, v);
+                case CondicaoMw.Contratos: return Loc.T("hall.c.12", n, v);
                 case CondicaoMw.EncomendasTipo: return Loc.T("hall.c.4", n, Loc.Tem("hall.tipo." + c.Ref) ? Loc.T("hall.tipo." + c.Ref) : c.Ref, v);
                 case CondicaoMw.NivelWorker:
                     int k = WorkerDefs.IndexOf(c.Ref, s.Equipe.Defs);
                     return Loc.T("hall.c.5", k >= 0 ? s.Equipe.Defs[k].Nome : c.Ref, n, v);
                 case CondicaoMw.VendidosQualidade: return Loc.T("hall.c.6", n, item + " " + Qualidade(c.MinQ), v);
+                case CondicaoMw.ClientesRicos: return Loc.T("hall.c.8", n, v);   // C-CORE-06: RichClients
+                case CondicaoMw.Feitos: return Loc.T("hall.c.9", n, item, v);    // C-CORE-06: GemsCut
                 default: return Loc.T("hall.c.0", n, item, v);
             }
         }
@@ -614,16 +644,18 @@ namespace FS
         static string Pede(ContractDef d, bool curto)
         {
             var p = new string[d.Etapas.Length];
+            // C-CORE-06: a mesma qualidade minima em todas as etapas sai 1x no fim (o dote da princesa passava da linha com "Fina+" em cada item);
+            // C-CORE-07: no curto (nao coube), o nome curto do item e a maior qualidade minima 1x no fim
+            bool uma = Array.TrueForAll(d.Etapas, e => e.MinQ == d.Etapas[0].MinQ) && d.Etapas[0].MinQ > Quality.Normal;
             Quality q = Quality.Normal;
             for (int k = 0; k < p.Length; k++)
             {
                 ContractStage e = d.Etapas[k];
                 string nome = curto && Loc.Tem("itemc." + e.Item) ? Loc.P("itemc." + e.Item, e.N) : ItemOuId(e.Item, e.N);
-                p[k] = Qtd(e.N) + " " + nome + (!curto && e.MinQ > Quality.Normal ? " " + Loc.T("enc.min", Qualidade(e.MinQ)) : "");
+                p[k] = Qtd(e.N) + " " + nome + (e.MinQ > Quality.Normal && !uma && !curto ? " " + Loc.T("enc.min", Qualidade(e.MinQ)) : "");
                 if (e.MinQ > q) q = e.MinQ;
             }
-            string t = string.Join(" + ", p);
-            return Loc.T("ctr.pede", curto && q > Quality.Normal ? t + " · " + Loc.T("enc.min", Qualidade(q)) : t);
+            return Loc.T("ctr.pede", string.Join(" + ", p)) + (uma || curto && q > Quality.Normal ? " · " + Loc.T("enc.min", Qualidade(q)) : "");
         }
 
         /// <summary>A barra do ativo: "Etapa 2/3: 7/20 escudos", com a qualidade minima e o prazo-bonus como na encomenda.</summary>

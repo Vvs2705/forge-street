@@ -220,6 +220,9 @@ namespace FS.Core
             return -1;
         }
 
+        /// <summary>C-CORE-06: a estacao tem o oficial da familia contratado (Lucia tira 1 s da troca de receita, Sim.TempoTroca).</summary>
+        public bool TemOficial(Station s) => Oficial(s) >= 0;
+
         /// <summary>Multiplicador do passo do ajudante `w` (1 no nivel 1).</summary>
         public float Passo(Carrier w) => w.Wk < 0 ? 1f : 1f + WorkerDefs.PorterVel * (Nivel(w.Wk) - 1);
 

@@ -50,13 +50,18 @@ namespace FS.Tests
             CollectionAssert.AreEquivalent(new[] { "deposito", "carroca_couro", "fornalha", "forja_laminas", "bancada_kits", "patio_cotas", "balcao" },
                 s.Stations.Where(x => x.Unlocked).Select(x => x.Id).ToArray());
             Assert.AreEqual((1, 4, 10), (s.FaixasAbertas, s.QueueCap, s.CounterCap));
-            Assert.AreEqual((1990, 5320), (s.PriceOf((Item)I(s, "kit_batedor")), s.PriceOf((Item)I(s, "armadura_gala"))));
+            Assert.AreEqual((1705, 4560), (s.PriceOf((Item)I(s, "kit_batedor")), s.PriceOf((Item)I(s, "armadura_gala"))));
             Assert.AreEqual((5830L, 500000L, 110000L), (s.T.Cost(U(s, "fole_real")), s.T.Cost(U(s, "fornalha_real3")), s.T.Cost(U(s, "selo_arsenal"))));
             Assert.AreEqual(18, Enumerable.Range(0, s.UpgradeDefs.Length).Count(s.IsProduction));
             Assert.AreEqual((1300000L, 2000L, 3, 1), (RA.Abertura, RA.Charter.Renome, RA.Charter.Masterworks, RA.Charter.Contratos));
             Assert.IsNull(RA.Charter.Proximo, "o ultimo distrito deste build");
-            Assert.IsTrue(Array.Exists(Distritos.All, d => d.Charter?.Proximo == RA.Id), "algum Charter libera o Arsenal");
-            Assert.AreEqual(Array.IndexOf(Distritos.All, RA), RA.Indice, "indice = posicao no mapa");
+            Assert.AreEqual(RA.Id, Distritos.ArtisanQuarter.Charter.Proximo, "o Charter do Quarter libera o Arsenal (Row -> Quarter -> Arsenal)");
+            Assert.AreEqual((3, 3), (Array.IndexOf(Distritos.All, RA), RA.Indice), "indice = posicao no mapa (o 4o)");
+            CollectionAssert.AreEqual(new[] { "guarda", "nobre", "emissario", "colecionador" }, RA.Clientes.Select(c => c.Id).ToArray(), "§12");
+            ClientDef em = RA.Clientes[2];
+            Assert.AreEqual((2, 2f, 2f, Quality.Fine, false), (em.Unidades, em.Paciencia, em.Intervalo, em.Minima, em.Rico), "emissario: 2 un, x2,0, x2,0, Fina");
+            CollectionAssert.AreEqual(new[] { "espada_gala", "armadura_gala", "insignia_real" }, em.Pede);
+            Assert.AreEqual((1.8f, 2.5f, true), (RA.Clientes[1].Paciencia, RA.Clientes[1].Intervalo, RA.Clientes[1].Rico), "nobre");
             Assert.AreEqual("wk_leonor", Imperio.ManagerDe(RA.Id).Id);
             CollectionAssert.IsEmpty(ContentValidator.Distrito(RA).ToList(), "o validator do distrito passa");
         }
@@ -89,7 +94,7 @@ namespace FS.Tests
             s.Encomendas.Vagas.Add(enc);
             long ouro = s.Gold, ganho = s.GoldEarned, renome = s.Renome.Total;
             List<SimEvent> ev = Entrega(s, kb, 10);
-            long esperado = Teto(Teto(10L * 1990 * s.T.CotaPct, 100) * (100 + s.T.CotaBonusPct), 100);   // no prazo
+            long esperado = Teto(Teto(10L * 1705 * s.T.CotaPct, 100) * (100 + s.T.CotaBonusPct), 100);   // no prazo
             Assert.AreEqual((esperado + 675, esperado, 1), (s.Gold - ouro, s.GoldEarned - ganho, s.OrderCount), "a venda e a encomenda (fora do GoldEarned)");
             Assert.AreEqual(4L, s.Renome.Total - renome, "+2 do bloco, +1 do prazo e +1 da Common entregue");
             Assert.AreEqual((1, 1, 10, 10), (s.CotaBlocos[kb], s.CotaNoPrazo[kb], s.SoldItems[kb], s.Sales));
@@ -110,7 +115,7 @@ namespace FS.Tests
             int kb = I(s, "kit_batedor");
             s.EscolheCota(0, kb);
             Entrega(s, kb, 9);
-            Entrega(s, kb, 1, Quality.Fine);   // 9 x 1990 + 2985: x1,3 = 27.163,5
+            Entrega(s, kb, 1, Quality.Fine);   // 9 x 1705 + a Fina: x1,3 nao e' inteiro
             Assert.AreEqual(1, s.CotaBlocos[kb], "o 1o (no prazo) fechou");
             for (int k = 0; k < 11; k++) Entrega(s, kb, 1, k == 0 ? Quality.Fine : Quality.Normal);   // 2o bloco: 12 pecas, a Fina primeiro
             Assert.AreEqual((11, 1), (s.Faixas[0].Pecas, s.CotaBlocos[kb]));
@@ -134,7 +139,7 @@ namespace FS.Tests
             s.Faixas[0].Decorrido = 200f;   // fora dos 180, dentro dos 240
             ouro = s.GoldEarned;
             Entrega(s, kb, 1);
-            Assert.AreEqual((2, Teto(Teto(14L * 1990 * 130, 100) * 125, 100)), (s.CotaNoPrazo[kb], s.GoldEarned - ouro), "no prazo do Matias");
+            Assert.AreEqual((2, Teto(Teto(14L * 1705 * 130, 100) * 125, 100)), (s.CotaNoPrazo[kb], s.GoldEarned - ouro), "no prazo do Matias");
         }
 
         /// <summary>CONTEUDO_V1 §0.4 e §14 (negativo): o offline nunca fecha bloco nem anda o prazo (o cofre paga pela taxa, como sempre).</summary>
@@ -232,7 +237,7 @@ namespace FS.Tests
         public void Transporte_InsumoSoComDestino()
         {
             Assert.IsTrue(RA.InsumoPorEspera);
-            Assert.IsFalse(Distritos.OldForge.InsumoPorEspera || Distritos.ArmorersRow.InsumoPorEspera, "Old Forge e Row: o placar de sempre");
+            Assert.IsFalse(Distritos.OldForge.InsumoPorEspera || Distritos.ArmorersRow.InsumoPorEspera || Distritos.ArtisanQuarter.InsumoPorEspera, "Old Forge, Row e Quarter: o placar de sempre");
             Sim s = Novo();
             Compra(s, "cadete1", "cadete2", "crisol_real");
             Station forja = s.Est("forja_laminas"), crisol = s.Est("crisol_ouro");
@@ -253,15 +258,20 @@ namespace FS.Tests
             Assert.AreEqual(p.Est("crisol_ouro").Index, p.Workers.Find(w => w.Role == 1).Target, "4 estacoes esperam o ouro; o lingote, nenhuma");
         }
 
-        /// <summary>A regra fixa do bot (Bot.Cotas.cs): as faixas ficam com as linhas de menor procura no balcao (maior intervalo de cliente),
-        /// deixando uma linha so para o balcao.</summary>
+        /// <summary>A regra fixa do bot (Bot.Cotas.cs): as faixas ficam com as linhas de menor procura no balcao (Sim.Procura, pelas familias do
+        /// §12: o rodizio divide o relogio da familia pelos produtos que ela pede), deixando uma linha so para o balcao. Sem Fina nem Renome 2,
+        /// emissario e colecionador nao chegam: espada e armadura de gala ficam sem procura; insignia e alabarda so com o nobre (empate: a
+        /// ordem dos itens), abaixo dos kits do guarda.</summary>
         [Test]
         public void Bot_FaixasNasLinhasDeMenorProcura()
         {
             Sim s = Novo();
             Producao(s);
+            Item kb = (Item)I(s, "kit_batedor"), kg = (Item)I(s, "kit_guarda"), ins = (Item)I(s, "insignia_real"), al = (Item)I(s, "alabarda_cerimonial");
+            float guarda = 1f / (s.ClientInterval(kb) + s.ClientInterval(kg)), nobre = 1f / (2.5f * (s.ClientInterval(ins) + s.ClientInterval(al)));
+            Assert.AreEqual((guarda, guarda, nobre, nobre, 0f), (s.Procura(kb), s.Procura(kg), s.Procura(ins), s.Procura(al), s.Procura((Item)I(s, "espada_gala"))));
             Bot.From(BotProfile.F2P).Step(s, Dt);
-            int[] quer = { I(s, "armadura_gala"), I(s, "kit_guarda"), I(s, "espada_gala") };
+            int[] quer = { I(s, "espada_gala"), I(s, "armadura_gala"), I(s, "insignia_real") };
             CollectionAssert.AreEquivalent(quer, s.Faixas.Select(f => f.Proximo).ToArray());
             Sim um = Novo();
             Bot.From(BotProfile.F2P).Step(um, Dt);

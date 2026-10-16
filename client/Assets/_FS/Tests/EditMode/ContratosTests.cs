@@ -414,7 +414,7 @@ namespace FS.Tests
             ContractDef[] d =
             {
                 Def("Ctr-X", OrderDefs.OldForge, Quality.Normal, 0f, 10, 15, null, ("espada", 5)),
-                Def("ctr_lanca", OrderDefs.OldForge, Quality.Normal, 0f, 10, 15, null, ("cinzel", 5)),
+                Def("ctr_lanca", OrderDefs.OldForge, Quality.Normal, 0f, 10, 15, null, ("item_fantasma", 5)),
                 Def("ctr_lanca", OrderDefs.OldForge, Quality.Normal, 0f, 10, 15, null, ("espada", 0)),
                 Def("ctr_mw", OrderDefs.OldForge, Quality.Masterwork, 0f, 10, 15, null, ("espada", 5)),
                 Def("ctr_sem_premio", OrderDefs.OldForge, Quality.Normal, -1f, 0, 0, null, ("espada", 5)),
@@ -437,7 +437,7 @@ namespace FS.Tests
             List<string> v = ContratosDefs.Validar(d, bps, renome, ups, ContentValidator.World()).ToList();
             Acusa(v, "contrato: 11 no catalogo (CONTEUDO_V1 §8: 12)");
             Acusa(v, "contrato Ctr-X: ID fora do formato ctr_[a-z0-9_]");
-            Acusa(v, "contrato ctr_lanca: item \"cinzel\" que nao existe no jogo");   // a lanca e' da Row (C-CORE-05); o cinzel, do distrito 3
+            Acusa(v, "contrato ctr_lanca: item \"item_fantasma\" que nao existe no jogo");   // a lanca e' da Row (C-CORE-05); o cinzel, do Quarter (C-CORE-06)
             Acusa(v, "contrato ctr_lanca: ID repetido");
             Acusa(v, "contrato ctr_lanca: etapa \"espada\" x0");
             Acusa(v, "contrato ctr_mw: qualidade minima Masterwork");

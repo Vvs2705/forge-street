@@ -74,6 +74,7 @@ namespace FS.Core
             }
             if (Strike && !EsperaSuperior(s)) s.Strike(true);   // o Sim recusa fora de StrikeStation (parado na boca, recarga zerada); acerto perfeito, sem tempo de anel
             if (s.Contratos.Oferta != null) s.Contratos.Aceitar();   // D-CORE-04: aceita o contrato oferecido (ja tem o Renome) e vende como sempre
+            ConfiguraBancadas(s);   // C-CORE-06: receita das bancadas configuraveis (Bot.Bancada; sem elas, nada)
             Cotas(s);   // C-CORE-07: a regra fixa das faixas do patio (Bot.Cotas.cs; sem patio, nada)
             int menu = s.CheapestAffordableMenu(), wk = Worker(s, menu);
             bool buy = menu >= 0 || wk >= 0;   // B-CORE-04: o worker se compra como o menu (para, le a tela, toca)

@@ -95,6 +95,8 @@ namespace FS.Core
         /// <summary>FASE8: VIP = pacote de `Pack` unidades (o que ainda falta) a 3x o preco; `Paid` = ouro que ja pagou nesta vaga. P14: `Summoned` =
         /// chamado por anuncio (quando ele sai, comeca a recarga do botao).</summary>
         public bool Vip, Summoned; public int Pack, Paid;
+        /// <summary>C-CORE-06 (Sim.Clientes): qualidade minima da peca que ele leva e a familia dele (DistrictDef.Clientes; -1 = cliente de sempre).</summary>
+        public Quality MinQ; public int Familia = -1;
     }
 
     /// <summary>Bau de marco (um por Balance.Milestones, mesmo Index). State: 0 nao batido, 1 disponivel, 2 aberto.</summary>
@@ -323,6 +325,7 @@ namespace FS.Core
             foreach (PadDef p in Distrito.Pads)
                 Pads.Add(new Pad { Slot = Pads.Count, Pos = p.Pos, Chain = Array.ConvertAll(p.Cadeia, id => (Upgrade)Upgrades.IndexOf(id, UpgradeDefs)) });
             foreach (MilestoneDef m in Distrito.Marcos) Chests.Add(new Chest { Index = Chests.Count, Pos = m.Pos, Gold = m.Gold, Label = m.Label });
+            PreparaBancadas(); PreparaFamilias();   // C-CORE-06 (Sim.Bancada, Sim.Clientes): sem bancada configuravel nem familia, nada muda
             Recompute();
         }
 
@@ -382,7 +385,7 @@ namespace FS.Core
         public bool LineUnlocked(Item product)
         {
             if (!IsProduct(product)) return false;
-            foreach (Station s in Stations) if (s.Unlocked && s.Produces && s.OutItem == product) return true;
+            foreach (Station s in Stations) if (s.Unlocked && Faz(s, product)) return true;   // C-CORE-06: a bancada configuravel abre todas as receitas liberadas
             return false;
         }
         /// <summary>O balcao `counter` vende `i`? O principal vende espada/escudo/ferramenta; a loja de joias, so joia.</summary>
@@ -961,6 +964,7 @@ namespace FS.Core
             // balcao evolutivo (FASE7 §2): +1 vaga por evolucao comprada; o corpo alarga junto (antes dos Solids)
             QueueCap = T.QueueCap0;
             for (int u = (int)Upgrade.Counter5; u <= (int)Upgrade.Counter8; u++) if (Has((Upgrade)u)) QueueCap++;
+            if (JewelShop == null && Has(Upgrade.JewelVitrine)) QueueCap += Balance.JewelQueueCapUp - Balance.JewelQueueCap;   // C-CORE-06: a loja fina 3 -> 5 (vitrine de luxo)
             QueueCap = Math.Min(QueueCap, Balance.QueueCapMax);   // trava de geometria: um QueueCap0 maior no Tuning nao tira o balcao da oficina
             Counter.Half = new V2(Balance.CounterHalfX(QueueCap), Balance.StationHalf.Y);
             // corpos: estacao travada nao e' solida (o pad de compra fica no lugar dela); loja de joias sim (a view desenha a fachada fechada)
@@ -1018,6 +1022,7 @@ namespace FS.Core
                 }
             }
             if (s.Busy) return;
+            if (Trocando(s, dt)) return;   // C-CORE-06: bancada configuravel trocando de receita (Sim.Bancada)
             for (int k = 0; k < s.Ins.Length; k++) if (s.Ins[k] < s.Recipe.Inputs[k].Qty) { s.StarveSeconds += dt; return; }   // so com a receita inteira
             if (s.Out + s.Recipe.Qtd > s.OutCap) { Stall(s, dt); return; }
             for (int k = 0; k < s.Ins.Length; k++) s.Ins[k] -= s.Recipe.Inputs[k].Qty;
@@ -1063,7 +1068,8 @@ namespace FS.Core
                 if (!_vipQuiet) Emit(Ev.VipArrived, _vipWant, _vipPack, ClientSlot(Queue.Count - 1));
                 _vipWant = -1; _vipPaid = 0; _vipQuiet = false; _vipSummoned = false;
             }
-            for (int k = (int)Item.Sword; k < ItemDefs.Length; k++)   // B-CORE-07: toda linha aberta com cliente (a espada longa entrou)
+            if (Distrito.Clientes != null) ChegamFamilias(dt);   // C-CORE-06: um relogio por familia (Sim.Clientes) no lugar do por produto
+            else for (int k = (int)Item.Sword; k < ItemDefs.Length; k++)   // B-CORE-07: toda linha aberta com cliente (a espada longa entrou)
             {
                 Item p = (Item)k;
                 if (!LineUnlocked(p) || !HasClients(p)) continue;
@@ -1152,7 +1158,7 @@ namespace FS.Core
                 for (int i = 0; i < q.Count; i++)
                 {
                     Client c = q[i];
-                    if (Stock[(int)c.Want] <= 0) continue;
+                    if (Stock[(int)c.Want] <= 0 || !TemParaCliente(c)) continue;   // C-CORE-06: o colecionador so leva Fina ou melhor
                     serveT = jewel ? Balance.ServeTime : Equipe.Atendimento;   // B-CORE-04: balconista no balcao principal
                     if (c.Vip)   // FASE8: uma unidade por atendimento a 3x o preco; fica na vaga ate levar o pacote todo
                     {
@@ -1163,8 +1169,10 @@ namespace FS.Core
                         Emit(Ev.VipServed, (int)c.Want, c.Paid, Slot(jewel, i));
                         break;
                     }
+                    if (c.Pack > 1) { Sell(c.Want, Slot(jewel, i)); c.Pack--; break; }   // C-CORE-06: o mercador leva 2, 1 por atendimento
                     q.RemoveAt(i);
                     Sell(c.Want, Slot(jewel, i));
+                    Atendido(c);   // C-CORE-06: RichClients
                     break;
                 }
             }
@@ -1252,7 +1260,8 @@ namespace FS.Core
             b[(int)QualitySource.Buff] = Equipe.QualidadeMestre(s)       // B-CORE-04: mestre de obras
                 + ((int)s.OutItem < T.QualidadeEvento.Length ? T.QualidadeEvento[(int)s.OutItem] : 0)   // B-CORE-08: modificador do evento (Hunt)
                 + QualidadeSelo(s);   // C-CORE-07: o selo do distrito (selo_arsenal, q +25)
-            b[(int)QualitySource.Blueprint] = Projetos.Tecnica(s.Recipe.Family);   // B-CORE-07: tecnica da familia (posse do projeto)
+            b[(int)QualitySource.Blueprint] = Projetos.Tecnica(s.Recipe.Family)   // B-CORE-07: tecnica da familia (posse do projeto)
+                + Projetos.TecnicaItem(ItemDefs[(int)s.OutItem].Id);   // C-CORE-06: e a de produto (lapidacao: colar e caixa)
             b[(int)QualitySource.Material] = TemLiga(s) ? T.LigaQ : 0;   // C-CORE-05: liga no slot = a proxima peca leva uma
             return b;
         }
@@ -1647,6 +1656,7 @@ namespace FS.Core
             }
             sb.Append("golpe=").Append(StrikeCooldown.ToString("0.###", ci)).Append('\n');
             if (Array.Exists(PecasComLiga, n => n > 0)) sb.Append("liga=").Append(IdCounts(PecasComLiga)).Append('\n');   // C-CORE-05: sem liga, o texto de antes
+            SalvaBancadas(sb); SalvaFamilias(sb);   // C-CORE-06: ofcN=, fam= e ricos= (so no distrito que tem e fora do padrao)
             SaveCotas(sb);   // C-CORE-07: cota=/cotab=/cotap=/cotar= (so no distrito com patio e fora do padrao)
             sb.Append("stock=").Append(Stock[2]).Append(',').Append(Stock[3]).Append(',').Append(Stock[4]).Append(',').Append(Stock[5]).Append('\n');
             sb.Append("sold=").Append(SoldItems[2]).Append(',').Append(SoldItems[3]).Append(',').Append(SoldItems[4]).Append(',').Append(SoldItems[5]).Append('\n');
@@ -1704,6 +1714,7 @@ namespace FS.Core
             foreach (string raw in text.Split('\n')) if (raw.StartsWith("v=", StringComparison.Ordinal)) { v = Math.Max(1, I(raw.Substring(2), 1)); break; }
             for (; v < Schema; v++) text = Migrations[v - 1](text);
             sim.Equipe.Load(text);   // B-CORE-04: antes das pilhas (stN=): o teto da saida depende do almoxarife
+            sim.CarregaBancadas(text);   // C-CORE-06: antes das pilhas (stN= e' a entrada da receita ativa)
             sim.Recompute();
             var ci = CultureInfo.InvariantCulture;
             string wk = "", wkq = "";   // carga dos ajudantes (e a qualidade dela): aplicada depois do Recompute (eles nascem dos flags)
@@ -1766,6 +1777,7 @@ namespace FS.Core
                     case "wksq": wkq = val; break;
                     case "golpe": sim.StrikeCooldown = Math.Max(0f, Math.Min(T.GolpeRecarga, F(val, 0f))); break;
                     case "liga": ReadIdCounts(sim, parts, sim.PecasComLiga); break;   // C-CORE-05; save sem liga= = nenhuma peca com liga
+                    case "fam": case "ricos": sim.CarregaFamilias(key, val); break;   // C-CORE-06; save sem elas = rodizio do zero e nenhum rico
                     case "vip":   // FASE8; save antigo sem vip=: relogio novo (VipInterval(0)) e nenhum VIP pendente
                         if (parts.Length >= 4)
                         {

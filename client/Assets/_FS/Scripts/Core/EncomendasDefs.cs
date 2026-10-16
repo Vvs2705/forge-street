@@ -16,7 +16,14 @@ namespace FS.Core
         public const string FilaEncomenda = "encomenda", FilaRoyal = "royal";
         public static readonly string[] Filas = { FilaEncomenda, FilaRoyal };
         /// <summary>Distritos com encomendas no build (C-CORE-05: a Row entrou; o Encomendas le as do Sim.Distrito).</summary>
-        public static readonly string[] Distritos = { OldForge, Row, FS.Core.Distritos.RoyalArsenalId };   // ---- royal_arsenal (C-CORE-07)
+        public static readonly string[] Distritos =
+        {
+            OldForge, Row,
+            // ---- artisan_quarter (C-CORE-06)
+            FS.Core.Distritos.ArtisanQuarterId,
+            // ---- royal_arsenal (C-CORE-07)
+            FS.Core.Distritos.RoyalArsenalId,
+        };
         /// <summary>Base da escala dos knobs (a Common do catalogo): alvo x Tuning.OrderSeconds / 150 e premio x Tuning.OrderRewardSeconds / 10.</summary>
         public const float AlvoBase = 150f, PremioBase = 10f;
         /// <summary>A cada tantas Commons do distrito, a vaga vira a encomenda pessoal do proximo freguês (CONTEUDO_V1 §7.2).</summary>
@@ -28,7 +35,7 @@ namespace FS.Core
 
         static OrderDef Evento(string id, string evento, int pontos = 15) => new OrderDef(id, Event, null, 150f, 3, 30, 0f, 0, 0, eventId: evento, eventPoints: pontos);
 
-        public static readonly OrderDef[] All =
+        public static readonly OrderDef[] All = Junta(new[]
         {
             // Old Forge: alvo (s de renda), N min-max, premio (s; min), Renome. Desvio do catalogo (revisar): Bulk, Quality, Mixed e Royal pagam 70%
             // dos segundos do CONTEUDO_V1 §7.2 (32/18/30/25/45 -> 22/13/21/18/32): com o catalogo o ouro de encomendas ia a 13,6% da venda aos
@@ -76,26 +83,27 @@ namespace FS.Core
             new OrderDef("ord_royal_armorers_row", Royal, Row, 200f, 5, 40, 32f, 450, 10, minQuality: Fina, blueprintQueue: FilaRoyal),
             new OrderDef("ord_blueprint_armorers_row", Blueprint, Row, 150f, 3, 30, 5f, 75, 2, blueprintQueue: FilaEncomenda),
             new OrderDef("ord_reg_brutus", Bulk, Row, 0f, 30, 30, 22f, 180, 3, item: "lanca", fixedN: 30, clientId: "cli_reg_brutus"),
-            // ---- royal_arsenal (C-CORE-07): CONTEUDO_V1 §7.2, "abre: distrito aberto". Mesmo desvio do Old Forge e da Row (revisar): Bulk,
-            // Quality, Mixed, Royal e o Tiberio pagam 70% dos segundos do §7.2 (32/18/25/50/18 -> 22/13/18/35/13); com o catalogo o ouro de
-            // encomendas ia a ~12,8% da venda (portao 4-12%; BALANCE.md §38). A Royal que pede Normal com a mesa_real vem ANTES da Fina (o rodizio
-            // pega a ultima aberta do tipo): com Fina na linha, a Fina; sem, a Normal, nunca a Common (§2.4 regra 6)
-            new OrderDef("ord_common_royal_arsenal", Common, Arsenal, 150f, 3, 30, 10f, 675, 1),
-            new OrderDef("ord_bulk_royal_arsenal", Bulk, Arsenal, 400f, 8, 80, 22f, 1620, 3),
-            new OrderDef("ord_quality_royal_arsenal", Qual, Arsenal, 90f, 3, 20, 13f, 1080, 3, minQuality: Fina),
-            new OrderDef("ord_rush_royal_arsenal", Rush, Arsenal, 150f, 3, 30, 10f, 675, 1, bonusDeadline: 240f, bonusRewardSeconds: 10f, bonusReputation: 1),
-            new OrderDef("ord_mixed_royal_arsenal", Mixed, Arsenal, 70f, 2, 15, 18f, 1620, 3, products: 3, minLines: 3),
-            new OrderDef("ord_royal_royal_arsenal_mesa", Royal, Arsenal, 250f, 6, 50, 35f, 4050, 12, blueprintQueue: FilaRoyal, requer: Sim.MesaReal),
-            new OrderDef("ord_royal_royal_arsenal", Royal, Arsenal, 250f, 6, 50, 35f, 4050, 12, minQuality: Fina, blueprintQueue: FilaRoyal),
-            new OrderDef("ord_blueprint_royal_arsenal", Blueprint, Arsenal, 150f, 3, 30, 5f, 675, 2, blueprintQueue: FilaEncomenda),
-            new OrderDef("ord_reg_tiberio", Qual, Arsenal, 0f, 6, 6, 13f, 1080, 3, minQuality: Fina, item: "insignia_real", fixedN: 6, clientId: "cli_reg_tiberio"),
-        };
+        },
+            // ---- artisan_quarter (C-CORE-06): Distritos.ArtisanQuarter.cs
+            OrdensArtisan(),
+            // ---- royal_arsenal (C-CORE-07): Distritos.RoyalArsenal.cs
+            OrdensArsenal());
+
+        /// <summary>As OrderDefs do build, na ordem dos distritos: cada distrito novo traz as dele num metodo do arquivo dele (classe parcial).</summary>
+        static OrderDef[] Junta(params OrderDef[][] partes)
+        {
+            var l = new List<OrderDef>();
+            foreach (OrderDef[] p in partes) l.AddRange(p);
+            return l.ToArray();
+        }
 
         /// <summary>Rodizio de cada distrito (posicao = Encomendas.Abertas % 10; sem peso, sem sorteio). Event fica fora (vaga propria).</summary>
         public static readonly (string District, OrderType[] Cycle)[] Ciclos =
         {
             (OldForge, new[] { Common, Common, Bulk, Qual, Common, Mixed, Rush, Blueprint, Common, Royal }),
             (Row, new[] { Common, Bulk, Qual, Common, Bulk, Mixed, Rush, Blueprint, Common, Royal }),   // §7.1: Bulk x2 ("equipar a milicia")
+            // ---- artisan_quarter (C-CORE-06)
+            (FS.Core.Distritos.ArtisanQuarterId, CicloArtisan()),
             (Arsenal, new[] { Royal, Common, Bulk, Royal, Qual, Mixed, Royal, Blueprint, Rush, Common }),   // ---- royal_arsenal (C-CORE-07): Royal x3
         };
 
@@ -150,7 +158,7 @@ namespace FS.Core
                 {
                     Sim wd = MundoDe(d.District);   // C-CORE-05: a lanca do Brutus e' item da Row
                     int i = Items.IndexOf(d.Item, wd.ItemDefs);
-                    if (i < 0 || !wd.IsProduct((Item)i) || !wd.Stations.Exists(s => s.Produces && s.OutItem == (Item)i)) yield return $"{at} item \"{d.Item}\" que nao existe no jogo (ou nao e' vendido)";
+                    if (i < 0 || !wd.IsProduct((Item)i) || !wd.Stations.Exists(s => wd.Faz(s, (Item)i))) yield return $"{at} item \"{d.Item}\" que nao existe no jogo (ou nao e' vendido)";
                     if (d.FixedN <= 0) yield return $"{at} item fixo sem N fixo";
                 }
                 if (d.ClientId != null && (d.Item == null || !d.ClientId.StartsWith("cli_", StringComparison.Ordinal))) yield return $"{at} freguês \"{d.ClientId}\" sem item fixo ou fora de cli_";

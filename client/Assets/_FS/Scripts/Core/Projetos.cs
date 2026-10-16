@@ -45,6 +45,8 @@ namespace FS.Core
 
         /// <summary>Pontos de qualidade da tecnica da familia (QualitySource.Blueprint): Tuning.TecnicaQ com o projeto, 0 sem.</summary>
         public int Tecnica(string familia) => familia != null && Libera(BlueprintKind.Technique, familia) ? _sim.T.TecnicaQ : 0;
+        /// <summary>C-CORE-06: a tecnica de um produto (alvo = ID do item: bp_tecnica_lapidacao no colar e na caixa), Tuning.TecnicaItemQ; 0 sem.</summary>
+        public int TecnicaItem(string item) => Libera(BlueprintKind.Technique, item) ? _sim.T.TecnicaItemQ : 0;
 
         /// <summary>Peca vendida (Sim.Sell): conta as Fina ou melhor.</summary>
         public void OnVenda(int item, Quality l)

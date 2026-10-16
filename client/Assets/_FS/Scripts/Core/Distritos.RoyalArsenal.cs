@@ -105,14 +105,26 @@ namespace FS.Core
         static readonly WorkerDef Matias = new WorkerDef("wk_matias", "Matias", WorkerRole.Quartermaster, Specialty.None, RoyalArsenalId, null, null, -1,
             68000, "patio_faixa2", new long[] { 17000, 27000, 44000, 70000, 110000, 180000, 290000, 460000, 730000 }, "almoxarife", "prazo", "saida");
 
+        /// <summary>§12: as familias do Arsenal (Sim.Clientes, as do Quarter). Guarda pede os kits (1 un, x1,0); nobre a insignia e a alabarda
+        /// (rico, x1,8 de paciencia, x2,5 de intervalo); o emissario real as pecas de gala na Fina ou melhor (2 un, x2,0, x2,0) e o
+        /// colecionador (todo distrito, Renome 2) qualquer produto na Fina.</summary>
+        static readonly ClientDef[] ClientesArsenal =
+        {
+            new ClientDef("guarda", 1, 1f, 1f, Quality.Normal, false, "kit_batedor", "kit_guarda"),
+            new ClientDef("nobre", 1, 1.8f, 2.5f, Quality.Normal, true, "insignia_real", "alabarda_cerimonial"),
+            new ClientDef("emissario", 2, 2f, 2f, Quality.Fine, false, "espada_gala", "armadura_gala", "insignia_real"),
+            new ClientDef("colecionador", 1, 2f, 3f, Quality.Fine, true),
+        };
+
         // ponytail: arte emprestada (como a Row): kits e montagem = bancada de escudos, mesa e forjas = bigorna, patio = caixote, carroca = a do Old Forge
         const string Caixote = "caixote";
 
         public static readonly DistrictDef RoyalArsenal = new DistrictDef
         {
-            Id = RoyalArsenalId, Nome = "Royal Arsenal", Indice = 2,
+            Id = RoyalArsenalId, Nome = "Royal Arsenal", Indice = 3,
             Itens = ItensArsenal, Receitas = ReceitasArsenal, Upgrades = UpgradesArsenal, Projetos = ProjetosDefs.ArsenalDefs,
             Masterworks = MasterworksDefs.ArsenalDefs, MarcosColecao = MasterworksDefs.MarcosArsenal,
+            Clientes = ClientesArsenal,
             // ponytail: a turma Cadetes (§6) sao 4 Porters, como a Ferraz; o 4o leva o bruto (minerio, couro, ouro)
             Workers = new[] { Cadete(1, 0), Cadete(2, 1), Cadete(3, 2), Cadete(4, 0), Matias },
             // Fileiras (§2.4; entrada -> saida de baixo para cima, colunas de 3 m, a grade da Row): depositos 1 -> fornalhas 4 -> lamina e placa
@@ -157,10 +169,11 @@ namespace FS.Core
             Inicio = new V2(4.5f, 2.6f), Contratacao = new V2(7.5f, 1.4f), Largura = Balance.WorldW, Parede = false,
             Ajuste = t =>
             {
-                // §3 precos (Normal) x 2,8, o desvio da Row (x 3,5, V28; BALANCE.md §38): o Arsenal tambem e' preso no transporte (1 cadete para
-                // lingote, lamina, placa e ouro), nao na demanda; o patio paga x1,3 em ~80% do ouro, entao o fator fica abaixo do da Row. A relacao
-                // entre os produtos e' a do §3. §2.4 balcao de 4 vagas com estoque 10 (sem Vitrine no distrito)
-                t.Price = new[] { 0, 0, 1990, 3360, 1540, 2295, 2715, 5320, 0, 0, 0, 0, 0 };
+                // §3 precos (Normal) x 2,4, o desvio da Row (V28; BALANCE.md §38): o Arsenal e' preso no transporte (1 cadete para lingote, lamina,
+                // placa e ouro), nao na demanda; com as familias do §12 (o rodizio divide o relogio de cada uma) e o bot pela procura delas, o x 2,8
+                // de antes fazia a producao completa do F2P em 54 min (portao 55-70). A relacao entre os produtos e' a do §3. §2.4 balcao de 4
+                // vagas com estoque 10 (sem Vitrine no distrito)
+                t.Price = new[] { 0, 0, 1705, 2880, 1320, 1970, 2330, 4560, 0, 0, 0, 0, 0 };
                 // s entre clientes no inicio = 60 / (un/min do modelo na producao completa, §1 "mix"), como a Row
                 t.ClientInterval = new[] { 0f, 0f, 5.4f, 14.3f, 4.3f, 12.5f, 6.8f, 15.8f, 0f, 0f, 0f, 0f, 0f };
                 t.CustoTabela = CustosArsenal;
@@ -172,6 +185,27 @@ namespace FS.Core
             Charter = new CharterDef(true, 2000, 3, null, contratos: 1),
             Selo = "selo_arsenal",
             InsumoPorEspera = true,   // BALANCE.md §38: o cadete do insumo leva primeiro o que as bancadas esperam (sem isso o ouro para no crisol)
+        };
+    }
+
+    public static partial class OrderDefs
+    {
+        /// <summary>C-CORE-07 (CONTEUDO_V1 §7.2): "abre: distrito aberto". Mesmo desvio do Old Forge e da Row (revisar): Bulk, Quality, Mixed,
+        /// Royal e o Tiberio pagam 70% dos segundos do §7.2 (32/18/25/50/18 -> 22/13/18/35/13); com o catalogo o ouro de encomendas ia a ~12,8% da
+        /// venda (portao 4-12%; BALANCE.md §38). A Royal que pede Normal com a mesa_real vem ANTES da Fina (o rodizio pega a ultima aberta do
+        /// tipo): com Fina na linha, a Fina; sem, a Normal, nunca a Common (§2.4 regra 6). Metodo, nao campo (como o OrdensArtisan): o All le
+        /// daqui e a ordem dos inicializadores entre arquivos de uma classe parcial nao e' garantida.</summary>
+        static OrderDef[] OrdensArsenal() => new[]
+        {
+            new OrderDef("ord_common_royal_arsenal", Common, Arsenal, 150f, 3, 30, 10f, 675, 1),
+            new OrderDef("ord_bulk_royal_arsenal", Bulk, Arsenal, 400f, 8, 80, 22f, 1620, 3),
+            new OrderDef("ord_quality_royal_arsenal", Qual, Arsenal, 90f, 3, 20, 13f, 1080, 3, minQuality: Fina),
+            new OrderDef("ord_rush_royal_arsenal", Rush, Arsenal, 150f, 3, 30, 10f, 675, 1, bonusDeadline: 240f, bonusRewardSeconds: 10f, bonusReputation: 1),
+            new OrderDef("ord_mixed_royal_arsenal", Mixed, Arsenal, 70f, 2, 15, 18f, 1620, 3, products: 3, minLines: 3),
+            new OrderDef("ord_royal_royal_arsenal_mesa", Royal, Arsenal, 250f, 6, 50, 35f, 4050, 12, blueprintQueue: FilaRoyal, requer: Sim.MesaReal),
+            new OrderDef("ord_royal_royal_arsenal", Royal, Arsenal, 250f, 6, 50, 35f, 4050, 12, minQuality: Fina, blueprintQueue: FilaRoyal),
+            new OrderDef("ord_blueprint_royal_arsenal", Blueprint, Arsenal, 150f, 3, 30, 5f, 675, 2, blueprintQueue: FilaEncomenda),
+            new OrderDef("ord_reg_tiberio", Qual, Arsenal, 0f, 6, 6, 13f, 1080, 3, minQuality: Fina, item: "insignia_real", fixedN: 6, clientId: "cli_reg_tiberio"),
         };
     }
 

@@ -190,6 +190,23 @@ namespace FS
             }
         }
 
+        /// <summary>C-CORE-06 -receitas fivela,colar,caixa_joias (fotos, com -distrito artisan_quarter -testsession e o -buy que libera): pede a
+        /// receita de cada bancada configuravel, na ordem das estacoes (a troca de 4 s acontece nos primeiros ticks; com -warmup/-botwarmup ja
+        /// passou). Devolve o ID que nao deu (receita que a bancada nao tem ou ainda travada), ou null.</summary>
+        public static string Receitas(Sim s, string ids)
+        {
+            string[] p = ids.Split(',');
+            int k = 0;
+            foreach (Station b in s.Stations)
+            {
+                if (b.Receitas == null || k >= p.Length) continue;
+                string id = p[k++].Trim();
+                int i = Items.IndexOf(id, s.ItemDefs);
+                if (i < 0 || (b.OutItem != (Item)i && !s.Configura(b, (Item)i))) return id;
+            }
+            return null;
+        }
+
         /// <summary>-offline S: s fora para o cofre real (Sim.ApplyOffline); -1 = fora de 60 s (abaixo o jogo nao paga) ao teto de 2 h.</summary>
         public static long OfflineSegundos(string v) =>
             long.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out long s) && s >= 60 && s <= Balance.OfflineCapSeconds ? s : -1;

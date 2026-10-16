@@ -77,6 +77,9 @@ namespace FS.Core
         /// placar da fonte por estacao parada sem ele), em cima da regra do Sim.Transporte.cs (so busca o que cabe). Sem isso, no Arsenal, o
         /// lingote ganhava sempre pela pilha e o ouro parava no crisol. false = o placar de sempre (Old Forge e Row ao byte).</summary>
         public bool InsumoPorEspera;
+        /// <summary>C-CORE-06 (CONTEUDO_V1 §12): familias de cliente do distrito (Sim.Clientes: rodizio fixo de pedidos, unidades, paciencia,
+        /// intervalo e qualidade minima por familia). null = um relogio por produto, o de sempre (Old Forge e Row).</summary>
+        public ClientDef[] Clientes;
     }
 
     /// <summary>C-CORE-01: os distritos do build, na ordem do mapa. Old Forge = as tabelas de sempre; Armorer's Row = CONTEUDO_V1 §2.2/§3/§5.2.</summary>
@@ -323,14 +326,20 @@ namespace FS.Core
                 t.OrderRewardMin = 75;   // §7.2: Common da Row, 75 de minimo (x3 o do Old Forge)
             },
             Abertura = 140000,
-            Charter = new CharterDef(true, 750, 2, RoyalArsenalId),   // §2.2: producao completa + Renome 5 (750) + 2 Masterworks
-            // ---- royal_arsenal (C-CORE-07): provisorio ate o artisan_quarter (distrito 3) entrar na main; ai a Row volta a apontar para ele
+            Charter = new CharterDef(true, 750, 2, ArtisanQuarterId),   // §2.2: producao completa + Renome 5 (750) + 2 Masterworks; C-CORE-06: libera o Quarter
         };
 
         // Propriedade (montada no 1o uso), nao campo: os distritos 3-6 moram em arquivos proprios (partial) e a ordem dos inicializadores
         // estaticos entre arquivos de uma classe parcial nao e' garantida em C# (um campo aqui poderia capturar um distrito ainda nulo).
         static DistrictDef[] _all;
-        public static DistrictDef[] All => _all ??= new[] { OldForge, ArmorersRow, RoyalArsenal };   // ---- royal_arsenal (C-CORE-07)
+        public static DistrictDef[] All => _all ??= new[]
+        {
+            OldForge, ArmorersRow,
+            // ---- artisan_quarter (C-CORE-06)
+            ArtisanQuarter,
+            // ---- royal_arsenal (C-CORE-07)
+            RoyalArsenal,
+        };
 
         /// <summary>Distrito com este ID, ou null.</summary>
         public static DistrictDef Find(string id) => Array.Find(All, d => d.Id == id);

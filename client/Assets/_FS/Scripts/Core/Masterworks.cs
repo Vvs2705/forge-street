@@ -64,6 +64,11 @@ namespace FS.Core
                 case CondicaoMw.EncomendasTipo: OrderType? t = MasterworksDefs.Tipo(c.Ref); return t == null ? 0 : Contador("order_complete", (int)t.Value);
                 case CondicaoMw.NivelWorker: int k = WorkerDefs.IndexOf(c.Ref, _sim.Equipe.Defs); return k < 0 ? 0 : _sim.Equipe.Nivel(k);
                 case CondicaoMw.PecasComLiga: return i < 0 ? 0 : _sim.PecasComLiga[i];   // C-CORE-05
+                case CondicaoMw.ClientesRicos: return _sim.ClientesRicos;   // C-CORE-06: RichClients
+                case CondicaoMw.Feitos:   // C-CORE-06: GemsCut (as gemas que os lapidarios fizeram; o contador da estacao vai no save)
+                    long f = 0;
+                    foreach (Station s in _sim.Stations) if (s.Produces && s.Receitas == null && (int)s.OutItem == i) f += (long)s.Crafted * s.Recipe.Qtd;
+                    return f;
                 case CondicaoMw.CotaBlocos: return i < 0 ? 0 : _sim.CotaBlocos[i];       // C-CORE-07
                 case CondicaoMw.CotaNoPrazo: return i < 0 ? 0 : _sim.CotaNoPrazo[i];
                 case CondicaoMw.Contratos: return _sim.Contratos.Concluidos.Count;

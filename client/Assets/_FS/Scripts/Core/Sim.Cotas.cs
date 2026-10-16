@@ -77,6 +77,25 @@ namespace FS.Core
         /// <summary>s do prazo-bonus: CotaPrazo, ou CotaPrazoQm com o almoxarife do distrito contratado (wk_matias, CONTEUDO_V1 §6).</summary>
         public float CotaPrazo => Equipe.Contratados(WorkerRole.Quartermaster) > 0 ? T.CotaPrazoQm : T.CotaPrazo;
 
+        /// <summary>A regra do bot (Bot.Cotas): clientes/s que pedem `i` no balcao. Sem familias, 1 / intervalo do produto; com familias
+        /// (Sim.Clientes), o rodizio de cada familia aberta passa pelos produtos que ela pede agora, e cada um leva Unidades / (intervalo da
+        /// familia x soma dos intervalos desses produtos). Linha fechada ou sem cliente: 0.</summary>
+        public float Procura(Item i)
+        {
+            if (!LineUnlocked(i) || !HasClients(i)) return 0f;
+            ClientDef[] fs = Distrito.Clientes;
+            if (fs == null) return 1f / ClientInterval(i);
+            float r = 0f;
+            for (int f = 0; f < fs.Length; f++)
+            {
+                if (!FamiliaAberta(f) || Array.IndexOf(_famPede[f], (int)i) < 0 || !PedeAgora(f, (int)i)) continue;
+                float soma = 0f;
+                foreach (int j in _famPede[f]) if (PedeAgora(f, j)) soma += ClientInterval((Item)j);
+                r += fs[f].Unidades / (fs[f].Intervalo * soma);
+            }
+            return r;
+        }
+
         /// <summary>Tamanho do proximo bloco do produto `p`: CotaBloco0 + CotaBlocoPasso por bloco ja fechado dele, ate CotaBlocoMax.</summary>
         public int TamanhoCota(int p) => Math.Min(T.CotaBlocoMax, T.CotaBloco0 + T.CotaBlocoPasso * CotaBlocos[p]);
 

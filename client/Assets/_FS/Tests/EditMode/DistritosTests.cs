@@ -424,8 +424,7 @@ namespace FS.Tests
         public void Validator_MapaReal_SemViolacao()
         {
             CollectionAssert.IsEmpty(ContentValidator.Mapa(Distritos.All).ToList());
-            CollectionAssert.AreEqual(Distritos.All.Select(d => d.Id).ToArray(), ContentValidator.Distritos);   // C-CORE-07: os do build, na ordem do mapa
-            CollectionAssert.IsSubsetOf(new[] { "old_forge", "armorers_row", "royal_arsenal" }, ContentValidator.Distritos);
+            CollectionAssert.AreEqual(new[] { "old_forge", "armorers_row", "artisan_quarter", "royal_arsenal" }, ContentValidator.Distritos);
         }
 
         [Test]
