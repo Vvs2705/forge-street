@@ -454,6 +454,7 @@ namespace FS
                         return Loc.T("card.qualidade", Pontos(n == 1 ? WorkerDefs.SmelterQ : n == 5 ? WorkerDefs.SmelterQ5 - WorkerDefs.SmelterQ : WorkerDefs.SmelterQ10 - WorkerDefs.SmelterQ5),
                             Pct(n == 1 ? WorkerDefs.SmelterVel : WorkerDefs.SmelterVelNivel) + "%");
                     return Loc.T("card.velocidade", "+" + Pct(WorkerDefs.SmelterVelNivel) + "%");
+                case WorkerRole.Courier: return Loc.T("card.wk.mensageiro", s.T.ImportNivel, s.T.ExportNivel);   // C-CORE-09: o Felix, por nivel
                 default:   // mestre de obras
                     return n == 1 ? Loc.T("card.qualidade", Pontos(WorkerDefs.ForemanQ), Pct(WorkerDefs.ForemanVel) + "%")
                         : Loc.T("card.velocidade", "+" + Pct(WorkerDefs.ForemanVelNivel) + "%");
@@ -523,6 +524,7 @@ namespace FS
                 case BlueprintSourceKind.Milestone:
                     if (f.Ref == BlueprintSource.Producao) return Loc.T("proj.f.producao");
                     if (f.Ref == BlueprintSource.Cotas) return Loc.T("proj.f.cotas", Qtd(f.N), Qtd(Math.Min(f.N, s.CotasFechadas)));   // C-CORE-07
+                    if (f.Ref == BlueprintSource.Lotes) return Loc.T("proj.f.lotes", Qtd(f.N), Qtd(Math.Min(f.N, s.ExportLots)));     // C-CORE-09
                     int i = Items.IndexOf(f.Ref, s.ItemDefs);
                     if (i < 0) return f.Ref;
                     bool fina = f.MinQ >= Quality.Fine;
@@ -570,6 +572,9 @@ namespace FS
                 case CondicaoMw.CotaBlocos: return Loc.T("hall.c.10", n, item, v);     // C-CORE-07
                 case CondicaoMw.CotaNoPrazo: return Loc.T("hall.c.11", n, item, v);
                 case CondicaoMw.Contratos: return Loc.T("hall.c.12", n, v);
+                case CondicaoMw.Importados: return Loc.T("hall.c.13", n, v);   // C-CORE-09
+                case CondicaoMw.Lotes: return Loc.T("hall.c.14", n, v);
+                case CondicaoMw.Charters: return Loc.T("hall.c.15", n, v);
                 case CondicaoMw.EncomendasTipo: return Loc.T("hall.c.4", n, Loc.Tem("hall.tipo." + c.Ref) ? Loc.T("hall.tipo." + c.Ref) : c.Ref, v);
                 case CondicaoMw.NivelWorker:
                     int k = WorkerDefs.IndexOf(c.Ref, s.Equipe.Defs);
@@ -715,5 +720,32 @@ namespace FS
 
         /// <summary>Aviso do bloco pago (Ev.QuotaBlock): "Coroa pagou 1,2 mi!" (no prazo: "No prazo! ...").</summary>
         public static string AvisoCota(long ouro, bool prazo) => Loc.T(prazo ? "aviso.cota_prazo" : "aviso.cota", Ouro(ouro));
+
+        // ---- grand_forge (C-CORE-09): as rotas (linha embaixo do cais) e o lote do Mensageiro (embaixo do patio de exportacao; o toque troca o produto)
+
+        /// <summary>"Rotas: 6/min · 123 chegaram".</summary>
+        public static string Rotas(Sim s) => Loc.T("rotas.linha", s.CapacidadeRotas, Qtd(s.ImportedUnits));
+
+        /// <summary>"Lote: 7/10 sinos da catedral · 0:42" (o que falta para o Mensageiro partir); no automatico "auto: " antes do produto (o mais
+        /// estocado agora).</summary>
+        public static string Lote(Sim s)
+        {
+            int alvo = s.AlvoLote, n = s.TamanhoLote;
+            string p = alvo >= 0 ? ItemNome(alvo, n) : "-";
+            if (s.LoteProduto < 0) p = Loc.T("lote.auto", p);
+            int resta = Math.Max(0, (int)Math.Ceiling(s.PeriodoLote - s.ExportT));
+            return Loc.T("lote.linha", s.LoteTotal + "/" + n, p, (resta / 60).ToString(CultureInfo.InvariantCulture) + ":" + (resta % 60).ToString("00", CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>O produto que o toque no lote escolhe: automatico -> o 1o produto de linha aberta -> ... -> o ultimo -> automatico (-1).</summary>
+        public static int ProximoLote(Sim s)
+        {
+            for (int i = s.LoteProduto + 1; i < s.ItemDefs.Length; i++)
+                if (i >= (int)Item.Sword && s.IsProduct((Item)i) && s.LineUnlocked((Item)i)) return i;
+            return -1;
+        }
+
+        /// <summary>Aviso da partida (Ev.ExportLot): "Mensageiro levou 1,2 mi!".</summary>
+        public static string AvisoLote(long ouro) => Loc.T("aviso.lote", Ouro(ouro));
     }
 }

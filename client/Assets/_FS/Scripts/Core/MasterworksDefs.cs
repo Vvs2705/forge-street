@@ -14,7 +14,10 @@ namespace FS.Core
         ClientesRicos, Feitos,
         /// <summary>C-CORE-07: CotaBlocos = QuotaBlocks:item e CotaNoPrazo = QuotaOnTime:item (Sim.CotaBlocos/CotaNoPrazo, §2.4); Contratos =
         /// ContractsDone (Royal Contracts concluidos no Imperio).</summary>
-        CotaBlocos, CotaNoPrazo, Contratos }
+        CotaBlocos, CotaNoPrazo, Contratos,
+        /// <summary>C-CORE-09 (§2.6): Importados = ImportedUnits e Lotes = ExportLots (Sim.Exportacao.cs); Charters = DistrictCharters (os Charters
+        /// do Imperio; sem Ref).</summary>
+        Importados, Lotes, Charters }
 
     /// <summary>Uma condicao: `Ref` = item, familia de estacao, tipo de encomenda ou worker (Renome: nenhum); `N` = o alvo; `MinQ` = nivel
     /// minimo da peca vendida (so VendidosQualidade).</summary>
@@ -220,6 +223,9 @@ namespace FS.Core
                         case CondicaoMw.Feitos: int fi = Items.IndexOf(c.Ref, w.ItemDefs); ok &= fi >= 0 && w.Stations.Exists(s => s.Produces && s.Receitas == null && (int)s.OutItem == fi); break;
                         case CondicaoMw.CotaBlocos: case CondicaoMw.CotaNoPrazo: ok &= Produto(c.Ref) >= 0 && w.Patio != null; break;   // C-CORE-07: so com o patio
                         case CondicaoMw.Contratos: ok &= c.N <= ContratosDefs.CatalogoV1; break;
+                        case CondicaoMw.Importados: ok &= w.Cais != null; break;              // C-CORE-09: so com o cais
+                        case CondicaoMw.Lotes: ok &= w.Exportacao != null; break;            // e o patio de exportacao
+                        case CondicaoMw.Charters: ok &= c.N < FS.Core.Distritos.All.Length; break;   // os outros distritos do build
                         default: ok = false; break;   // tipo que o nucleo nao conhece
                     }
                     if (!ok) yield return $"{ac} inalcancavel (alvo, nivel ou tipo que o build nao tem)";

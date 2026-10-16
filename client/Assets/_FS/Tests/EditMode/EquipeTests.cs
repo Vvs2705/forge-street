@@ -361,7 +361,7 @@ namespace FS.Tests
             Acusa(Valida(Novo("wk_vulcana", WorkerRole.Smith, "arcane_foundry", "fornalha_liga", "fornalha_liga")), "distrito \"arcane_foundry\"");
             Acusa(Valida(Novo("wk_vulcana", WorkerRole.Smith, "arcane_foundry", "fornalha_liga", "fornalha_liga")), "familia \"fornalha_liga\", sem bancada");
             Acusa(Valida(Novo("wk_vulcana", WorkerRole.Smith, "arcane_foundry", "fornalha_liga", "fornalha_liga")), "requisito \"fornalha_liga\"");
-            Acusa(Valida(Novo("wk_felix", WorkerRole.Courier)), "sem regra no nucleo");
+            Acusa(Valida(Novo("wk_aurelio", WorkerRole.Manager)), "sem regra no nucleo");   // C-CORE-09: o Courier (Felix) ganhou regra
             Acusa(Valida(Novo("wk_bruna2", WorkerRole.Smith, station: "bigorna")), "segundo oficial da familia \"bigorna\"");
             Acusa(Valida(Novo("wk_pipo2", WorkerRole.Porter, contratacao: 0, contrata: "ajudante1", rota: 0)), "ja contrata outro worker");
             Acusa(Valida(Novo("wk_sem", WorkerRole.Porter, contratacao: 0, contrata: "nenhum", rota: 0)), "sem upgrade que contrata");

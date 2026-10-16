@@ -304,7 +304,7 @@ namespace FS.Core
             for (int e = 0; e < _ef.Length; e++) _ef[e] = Array.FindIndex(UpgradeDefs, d => (int)d.Efeito == e);
             // B-CORE-04: os ajudantes do upgrade, na ordem da tabela de workers do distrito
             var hire = new List<int>();
-            for (int k = 0; k < Equipe.Defs.Length; k++) if (Equipe.Defs[k].Contrata != null) hire.Add(k);
+            for (int k = 0; k < Equipe.Defs.Length; k++) if (Equipe.Defs[k].Contrata != null && Equipe.Defs[k].Papel == WorkerRole.Porter) hire.Add(k);   // C-CORE-09: o Mensageiro (Courier) nao carrega
             _hireDef = hire.ToArray();
             _hireBy = Array.ConvertAll(_hireDef, k => Upgrades.IndexOf(Equipe.Defs[k].Contrata, UpgradeDefs));
             _hireRole = Array.ConvertAll(_hireDef, k => Equipe.Defs[k].Rota);
@@ -484,6 +484,7 @@ namespace FS.Core
             foreach (Station s in Stations) Produce(s, fast);
             Conveyor(fast);
             TickCotas(dt);   // C-CORE-07: prazo dos blocos do patio de cotas (Sim.Cotas.cs; sem patio, nada)
+            TickRotas(dt);   // C-CORE-09: rotas e lote do Mensageiro (Sim.Exportacao.cs; sem cais nem patio, nada)
             Anuncios.Tick(dt);   // E-PLAT-02: recargas e o Supply Drop entrando nas fornalhas
             VipCooldown = Math.Max(0f, VipCooldown - dt);   // P14: no tempo de jogo; o Serve recarrega quando o chamado sai
             StrikeCooldown = Math.Max(0f, StrikeCooldown - dt);   // B-CORE-03: golpe de mestre, no tempo de jogo (o boost nao encurta)
@@ -701,7 +702,7 @@ namespace FS.Core
         bool IsDestFor(Carrier w, Station s)
         {
             // C-CORE-07 (CONTEUDO_V1 §2.4 regra 2): o produto vai ao patio quando ha faixa dele com vaga; senao ao balcao
-            if (w.Role == 2) return s.Kind == Kind.Quota ? CotaAceita(w.Item) : Sells(s, w.Item) && Stock[(int)w.Item] < CounterCap && !CotaAceita(w.Item);
+            if (w.Role == 2) return s.Kind == Kind.Quota || s.Kind == Kind.Export ? Destino(w.Item) == s : Sells(s, w.Item) && Stock[(int)w.Item] < CounterCap && !CotaAceita(w.Item);   // C-CORE-09: ou o de exportacao
             return s.Accepts(w.Item);
         }
 
@@ -835,6 +836,7 @@ namespace FS.Core
             {
                 case Kind.Deposit: return CanPick(c, s.OutItem) ? 3 : 0;
                 case Kind.Quota: return AcaoCota(c, out item);   // C-CORE-07: 5 = entrega no patio de cotas
+                case Kind.Export: return AcaoExporta(c, out item);   // C-CORE-09: 6 = entrega no lote do Mensageiro
                 case Kind.Counter:
                     for (int k = (int)Item.Sword; k < ItemDefs.Length; k++)   // B-CORE-07: todo produto (a espada longa entrou)
                         if (c.Held[k] > 0 && Sells(s, (Item)k) && Stock[k] < CounterCap) { item = (Item)k; return 4; }
@@ -878,6 +880,7 @@ namespace FS.Core
                     case 3: c.Held[(int)it]++; break;
                     case 4: Put(ref Stock[(int)it], StockQ[(int)it], Take(ref c.Held[(int)it], c.HeldQ[(int)it])); break;
                     case 5: EntregaCota(c, it); break;   // C-CORE-07: patio (bloco cheio fecha e paga)
+                    case 6: EntregaExporta(c, it); break;   // C-CORE-09: lote do Mensageiro
                 }
                 Emit(act == 2 || act == 3 ? Ev.Picked : Ev.Deposited, (int)it, c.Role, s.Pos);
                 if (Action(c, s, outZone, out it) != act) { c.ActT = 0f; break; }   // balcao: o proximo produto da mao segue no mesmo ritmo
@@ -1658,6 +1661,7 @@ namespace FS.Core
             if (Array.Exists(PecasComLiga, n => n > 0)) sb.Append("liga=").Append(IdCounts(PecasComLiga)).Append('\n');   // C-CORE-05: sem liga, o texto de antes
             SalvaBancadas(sb); SalvaFamilias(sb);   // C-CORE-06: ofcN=, fam= e ricos= (so no distrito que tem e fora do padrao)
             SaveCotas(sb);   // C-CORE-07: cota=/cotab=/cotap=/cotar= (so no distrito com patio e fora do padrao)
+            SaveRotas(sb);   // C-CORE-09: gf=/gfl=/gflq= (so no distrito com cais ou patio de exportacao e fora do padrao)
             sb.Append("stock=").Append(Stock[2]).Append(',').Append(Stock[3]).Append(',').Append(Stock[4]).Append(',').Append(Stock[5]).Append('\n');
             sb.Append("sold=").Append(SoldItems[2]).Append(',').Append(SoldItems[3]).Append(',').Append(SoldItems[4]).Append(',').Append(SoldItems[5]).Append('\n');
             var ms = new StringBuilder();
@@ -1822,6 +1826,7 @@ namespace FS.Core
             sim.Projetos.Load(text);   // B-CORE-07: antes do pad (o parcial da bigorna longa so fica com o projeto); sem bp= o 1o Tick da o retroativo dos marcos
             sim.Colecao.Load(text);    // B-CORE-08: colq= (Superiores por item; Normal e Fina saem do solds= e do bpq=)
             sim.LoadCotas(text);       // C-CORE-07: o patio de cotas (save sem as linhas = patio vazio)
+            sim.LoadRotas(text);       // C-CORE-09: rotas e lote (save sem as linhas = rotas paradas e patio vazio)
             sim.Gold += refund;
             sim.UpgradesBought = 0;
             foreach (bool b in sim.Bought) if (b) sim.UpgradesBought++;

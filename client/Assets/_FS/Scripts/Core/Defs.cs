@@ -7,8 +7,9 @@ namespace FS.Core
     /// espada longa (linha Meta da bigorna longa, desbloqueada por projeto) e' a 7a.</summary>
     public enum Item { Ore = 0, Ingot = 1, Sword = 2, Shield = 3, Tool = 4, Jewel = 5, LongSword = 6 }
 
-    /// <summary>C-CORE-07 (anexado): Quota = o patio de cotas do Royal Arsenal (CONTEUDO_V1 §2.4; Sim.Cotas.cs): recebe produto, nao produz.</summary>
-    public enum Kind { Deposit, Furnace, Crafter, Counter, Quota }
+    /// <summary>C-CORE-07 (anexado): Quota = o patio de cotas do Royal Arsenal (CONTEUDO_V1 §2.4; Sim.Cotas.cs): recebe produto, nao produz.
+    /// C-CORE-09 (anexados): Import = o cais das rotas do Mensageiro e Export = o patio de exportacao da Grand Forge (§2.6; Sim.Exportacao.cs).</summary>
+    public enum Kind { Deposit, Furnace, Crafter, Counter, Quota, Import, Export }
 
     /// <summary>
     /// Os 15 upgrades do MVP (GDD §18/§19) + 2 da 2a area (v0.2) + 3 da joalheria (fase 2). A ORDEM do enum e' a ordem de compra pretendida (tier): o custo sai de
@@ -80,8 +81,9 @@ namespace FS.Core
     /// B-CORE-08: Masterwork ganhou o B = indice em Hall.Defs (-1 = obra-prima sem MasterworkDef, so o gancho de teste); Colecao (anexado) =
     /// marco da colecao pago, 1x por ID (A = indice em Colecao.Marcos, B = Renome). D-CORE-04 (anexado): ContractDone = Royal Contract
     /// concluido, 1x por ID (A = indice em Contratos.Defs, B = ouro pago). C-CORE-07 (anexado): QuotaBlock = bloco do patio de cotas fechado e
-    /// pago (A = item, B = ouro; cada peca sai tambem como Sold).</summary>
-    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone, Graded, Masterwork, WorkerUp, Blueprint, Colecao, ContractDone, QuotaBlock }
+    /// pago (A = item, B = ouro; cada peca sai tambem como Sold). C-CORE-09 (anexado): ExportLot = o Mensageiro partiu com o lote (A = pecas,
+    /// B = ouro; cada peca sai tambem como Sold).</summary>
+    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone, Graded, Masterwork, WorkerUp, Blueprint, Colecao, ContractDone, QuotaBlock, ExportLot }
 
     /// <summary>Dica contextual da HUD (a view so traduz). Arg = indice do pad (BuyPad), do item, do bau (OpenChest) ou do upgrade (BuyMenu).
     /// BuyMenu ANEXADO no fim (FASE6): a compra mais barata pagavel agora e' um upgrade do menu inferior.</summary>
@@ -310,6 +312,14 @@ namespace FS.Core
         public float CotaPrazo = 180f, CotaPrazoQm = 240f;
         /// <summary>DistrictDef.Selo comprado: q +SeloQ em toda estacao que faz produto no distrito (QualitySource.Buff; selo_arsenal, §5.4).</summary>
         public int SeloQ = 25;
+        // ---- grand_forge (C-CORE-09): rotas de importacao e lotes de exportacao do Mensageiro (CONTEUDO_V1 §2.6, Sim.Exportacao.cs)
+        /// <summary>Rotas: ImportCap un/min com o mensageiro, +ImportCais2 com o cais2, +ImportNivel por nivel do Felix acima do 1, ate ImportMax;
+        /// cada importado custa ImportCustoPct% do PriceOf Normal dele na renda de fundo da origem (Imperio.Importou).</summary>
+        public int ImportCap = 6, ImportCais2 = 6, ImportNivel = 2, ImportMax = 30, ImportCustoPct = 25;
+        /// <summary>Lote: parte a cada ExportPeriodo s (ExportPeriodo2 com o patio_exportacao2) com ate ExportLote pecas (ExportLote2), +ExportNivel
+        /// por nivel do Felix acima do 1, e paga ExportPct% da soma dos PriceOf (venda).</summary>
+        public float ExportPeriodo = 90f, ExportPeriodo2 = 60f;
+        public int ExportLote = 10, ExportLote2 = 20, ExportNivel = 2, ExportPct = 125;
         /// <summary>B-CORE-08: "modificador de evento 0-25" (ECONOMIA_WAVE_B §1.2, LIVEOPS_V1 §2.3): pontos de qualidade por item (indice = handle),
         /// 0 fora de evento; so o modificador do evento (Hunt: +15 na espada ou na joia) e o RemoteConfig (trava 0-25) mexem.</summary>
         public int[] QualidadeEvento = { 0, 0, 0, 0, 0, 0, 0 };

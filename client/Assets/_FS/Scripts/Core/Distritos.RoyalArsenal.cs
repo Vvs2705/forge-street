@@ -181,8 +181,9 @@ namespace FS.Core
                 t.OrderRewardMin = 675;   // §7.2: Common do Arsenal, 675 de minimo (x27 o do Old Forge)
             },
             Abertura = 1300000,
-            // §2.4: producao completa + Renome 7 (2.000) + 3 Masterworks + (1 Royal Contract OU 10 encomendas Royal no distrito); o ultimo do build
-            Charter = new CharterDef(true, 2000, 3, null, contratos: 1),
+            // §2.4: producao completa + Renome 7 (2.000) + 3 Masterworks + (1 Royal Contract OU 10 encomendas Royal no distrito); C-CORE-09: o
+            // proximo e' a Grand Forge (provisorio: com a Arcane Foundry na main, o Arsenal libera a Foundry e ela a Grand Forge)
+            Charter = new CharterDef(true, 2000, 3, GrandForgeId, contratos: 1),
             Selo = "selo_arsenal",
             InsumoPorEspera = true,   // BALANCE.md §38: o cadete do insumo leva primeiro o que as bancadas esperam (sem isso o ouro para no crisol)
         };

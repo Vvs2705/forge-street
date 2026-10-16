@@ -54,7 +54,7 @@ namespace FS.Tests
             Assert.AreEqual((5830L, 500000L, 110000L), (s.T.Cost(U(s, "fole_real")), s.T.Cost(U(s, "fornalha_real3")), s.T.Cost(U(s, "selo_arsenal"))));
             Assert.AreEqual(18, Enumerable.Range(0, s.UpgradeDefs.Length).Count(s.IsProduction));
             Assert.AreEqual((1300000L, 2000L, 3, 1), (RA.Abertura, RA.Charter.Renome, RA.Charter.Masterworks, RA.Charter.Contratos));
-            Assert.IsNull(RA.Charter.Proximo, "o ultimo distrito deste build");
+            Assert.AreEqual(Distritos.All[Array.IndexOf(Distritos.All, RA) + 1].Id, RA.Charter.Proximo, "libera o proximo do mapa (C-CORE-09: a Grand Forge ou a Foundry)");
             Assert.AreEqual(RA.Id, Distritos.ArtisanQuarter.Charter.Proximo, "o Charter do Quarter libera o Arsenal (Row -> Quarter -> Arsenal)");
             Assert.AreEqual((3, 3), (Array.IndexOf(Distritos.All, RA), RA.Indice), "indice = posicao no mapa (o 4o)");
             CollectionAssert.AreEqual(new[] { "guarda", "nobre", "emissario", "colecionador" }, RA.Clientes.Select(c => c.Id).ToArray(), "§12");
