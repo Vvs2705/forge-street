@@ -2,17 +2,15 @@
 
 Este repositório é **só do Forge Street** (GitHub `Vvs2705/forge-street`). Cada chat aberto aqui cuida **apenas deste jogo**.
 
-## Escopo
-- Leia e altere apenas arquivos deste repositório. Não mexa nos outros jogos do estúdio, na pasta raiz `JOGOS NOVOS` nem em outros repositórios, a não ser que o Vinicius peça explicitamente neste chat.
-- Se o pedido for sobre outro jogo, avise e sugira abrir o chat no grupo daquele jogo no menu lateral.
-- Os documentos deste repositório descrevem só o Forge Street (nada de portfólio com os outros jogos).
+Regras comuns dos jogos do estúdio (escopo, git, guardrails, processo, arte, testes), editadas num lugar só:
+@~/.claude/estudio/REGRAS_JOGOS_ESTUDIO.md
 
-## Como trabalhar
-- Português brasileiro. Código do jogo em `client/Assets/_FS/` (núcleo em C# puro em `Scripts/Core`, testável fora do Unity).
+Se o arquivo acima não carregar (outro PC), o mínimo é: só este jogo; mudança entra por PR na `main`; nada de item aleatório pago; anúncio sem `AD_ID`; um processo pesado por vez.
+
+## Deste jogo
+- Código do jogo em `client/Assets/_FS/` (núcleo em C# puro em `Scripts/Core`, testável fora do Unity).
 - Git: trabalho em branch (`feat/`, `fix/`, `docs/`, `art/`), commits em português com escopo (ver `CONTRIBUTING.md`), entra por Pull Request na `main`. **Regra (Vinicius, 2026-10-12): commit, push, PR e merge estão sempre autorizados — não pergunte, faça**, depois que o PR passar no `client/tools/verify.sh full` (a `main` só aceita mudança por PR: crie o PR e faça o merge você mesmo). Continuam só com aval dele neste chat: tags e Releases, publicação em loja, crédito de IA, download externo, criação de conta, pagamento e chave de assinatura real.
-- PC com 7,7 GB de RAM: um processo pesado por vez (Unity **ou** emulador **ou** Blender).
 - Guardrails do estúdio: só o ouro ativo até a Wave E (carteira com IDs de moeda; Blueprint é desbloqueio, não token; Gems entram na Wave E com mapa fonte → ralo no `BALANCE.md`) — decisão P1 de 2026-10-12; offline com teto de 2 h (managers e premium mexem na taxa, não no tempo); nada de item aleatório pago (ECA Digital, Lei 15.211/2025: baú com conteúdo fixo e visível, reroll mostra a próxima opção); interstitial só atrás de feature flag **desligada** por padrão, ligada depois de A/B no Limited Release (P3); "Chamar VIP" com recarga de 5 min (P14); criativos gravados do jogo real; créditos de IA (Tripo etc.) só com aval explícito.
-- Memória do estúdio (leitura; atualize só a parte deste jogo): `C:\Users\VINICIUS\Videos\MEUS PROJETOS\Agentes\_memoria\` — `STATUS_jogos-novos-validacao.md` e, se existir, o arquivo deste projeto.
 
 ## Situação
 - Estado: 0.5.1 lançada (Release `v0.5.1`); `main` com a Wave A, itens/receitas em dados, qualidade e golpe de mestre, Renome, metas diárias/conquistas, localização pt/en/es, Orders 2.0, Blueprints, Masterworks/Collection, Royal Contracts, eventos e Pass, IAP no núcleo, distritos com Império (Old Forge + Rua dos Armeiros) e o catálogo `CONTEUDO_V1.md`. Meta do Vinicius (2026-10-13): GDD ≥ 90% antes de POCO e loja (placar em `docs/PROJETO.md` §8, ~59% depois do #71). **Retomada de chat: `docs/PROJETO.md` §9** (branches pendentes, fila de levas, como o coordenador trabalha). POCO só no fim.
