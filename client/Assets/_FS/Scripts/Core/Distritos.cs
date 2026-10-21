@@ -339,6 +339,8 @@ namespace FS.Core
             ArtisanQuarter,
             // ---- royal_arsenal (C-CORE-07)
             RoyalArsenal,
+            // ---- arcane_foundry (C-CORE-08)
+            ArcaneFoundry,
         };
 
         /// <summary>Distrito com este ID, ou null.</summary>

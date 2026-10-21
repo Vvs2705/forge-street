@@ -41,6 +41,9 @@ namespace FS.Core
             // ---- royal_arsenal (C-CORE-07): CONTEUDO_V1 §6
             new WorkerDef("wk_leonor", "Capitã Leonor", WorkerRole.Manager, Specialty.None, Distritos.RoyalArsenalId, null, null, 0, 0, null,
                 new long[] { 860000, 1700000, 3400000, 6900000 }, null),
+            // ---- arcane_foundry (C-CORE-08): CONTEUDO_V1 §6
+            new WorkerDef("wk_sibila", "Mestra Sibila", WorkerRole.Manager, Specialty.None, Distritos.ArcaneFoundryId, null, null, 0, 0, null,
+                new long[] { 2600000, 5200000, 10000000, 21000000 }, null),
         };
         /// <summary>Fundo por nivel do manager (1-5) sobre o DistrictDef.FundoFator (o nivel 1): 25% -> 30/33/36/40% da taxa (CONTEUDO_V1 §1).
         /// Sempre &lt; 1 vez a taxa: o distrito ativo rende mais que ele mesmo em fundo em todo nivel (ImperioTests).</summary>

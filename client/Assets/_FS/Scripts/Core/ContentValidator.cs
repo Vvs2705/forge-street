@@ -119,6 +119,7 @@ namespace FS.Core
             e.AddRange(Blueprints(w.Projetos.Defs, d.Upgrades, w));   // C-CORE-05: os projetos dele (essencial nunca so pago; filas do distrito)
             e.AddRange(MasterworksDefs.Validar(w.Hall.Defs, w.Colecao.Marcos, w.Projetos.Defs, d.Upgrades, w));   // C-CORE-05: o Hall e a Collection que o Sim dele usa
             e.AddRange(Sim.ValidarBancadas(d, w)); e.AddRange(Sim.ValidarFamilias(d, w));   // C-CORE-06: bancada configuravel e familias de cliente
+            e.AddRange(Sim.ValidarArcano(d, w));   // C-CORE-08: o medidor dos altares
             return e;
         }
 
@@ -282,7 +283,12 @@ namespace FS.Core
                 if (d.Contratacao <= 0 || d.Contratacao % 5 != 0) yield return $"{at} contratacao {d.Contratacao} (positiva e multipla de 5)";
                 if (d.Requer != null && Upgrades.IndexOf(d.Requer, w.UpgradeDefs) < 0) yield return $"{at} requisito \"{d.Requer}\", que nao e' upgrade do build";
                 if (d.Papel > WorkerRole.Smelter) yield return $"{at} papel {d.Papel} ainda sem regra no nucleo (Wave C)";
-                if (d.Papel == WorkerRole.Smith)
+                if (d.Papel == WorkerRole.Smith && d.Especialidade == Specialty.Arcane)   // C-CORE-08: a oficial arcana vale em todo altar (Equipe.Oficial)
+                {
+                    if (d.Station != null || !w.TemArcano) yield return $"{at} oficial arcana com familia \"{d.Station}\" ou sem altar no mundo";
+                    else if (!oficios.Add("arcano")) yield return $"{at} segunda oficial arcana";
+                }
+                else if (d.Papel == WorkerRole.Smith)
                 {
                     if (!w.Stations.Exists(s => s.Produces && s.Recipe.Station == d.Station && w.IsProduct(s.OutItem)))
                         yield return $"{at} oficial da familia \"{d.Station}\", sem bancada de produto no mundo";
@@ -329,7 +335,9 @@ namespace FS.Core
                     switch (f.Kind)
                     {
                         case BlueprintSourceKind.Milestone:
-                            if (f.Ref == BlueprintSource.Cotas ? w.Patio == null || f.N <= 0 : f.Ref != BlueprintSource.Producao && (!Produto(f.Ref) || f.N <= 0))
+                            if (f.Ref == BlueprintSource.Cotas ? w.Patio == null || f.N <= 0
+                                : f.Ref == BlueprintSource.Energizadas ? !w.TemArcano || f.N <= 0   // C-CORE-08: pecas energizadas so com altar
+                                : f.Ref != BlueprintSource.Producao && (!Produto(f.Ref) || f.N <= 0))
                                 yield return $"{at} marco \"{f.Ref}\" x{f.N} inalcancavel";   // C-CORE-07: blocos de cota so com o patio
                             break;
                         case BlueprintSourceKind.OrderBlueprint: case BlueprintSourceKind.OrderRoyal:

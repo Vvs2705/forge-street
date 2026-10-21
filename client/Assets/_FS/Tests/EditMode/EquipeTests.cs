@@ -358,9 +358,9 @@ namespace FS.Tests
             Acusa(Valida(Novo("wk_tres", tracos: new[] { "a", "b", "c" })), "3 tracos");
             Acusa(Valida(Novo("wk_caro", niveis: new long[] { 300, 300 })), "nao sobe");
             Acusa(Valida(Novo("wk_quebrado", niveis: new long[] { 102 })), "multiplo de 5");
-            Acusa(Valida(Novo("wk_vulcana", WorkerRole.Smith, "arcane_foundry", "fornalha_liga", "fornalha_liga")), "distrito \"arcane_foundry\"");
-            Acusa(Valida(Novo("wk_vulcana", WorkerRole.Smith, "arcane_foundry", "fornalha_liga", "fornalha_liga")), "familia \"fornalha_liga\", sem bancada");
-            Acusa(Valida(Novo("wk_vulcana", WorkerRole.Smith, "arcane_foundry", "fornalha_liga", "fornalha_liga")), "requisito \"fornalha_liga\"");
+            Acusa(Valida(Novo("wk_vulcana", WorkerRole.Smith, "fundicao_fantasma", "fornalha_liga", "fornalha_liga")), "distrito \"fundicao_fantasma\"");
+            Acusa(Valida(Novo("wk_vulcana", WorkerRole.Smith, "fundicao_fantasma", "fornalha_liga", "fornalha_liga")), "familia \"fornalha_liga\", sem bancada");
+            Acusa(Valida(Novo("wk_vulcana", WorkerRole.Smith, "fundicao_fantasma", "fornalha_liga", "fornalha_liga")), "requisito \"fornalha_liga\"");
             Acusa(Valida(Novo("wk_felix", WorkerRole.Courier)), "sem regra no nucleo");
             Acusa(Valida(Novo("wk_bruna2", WorkerRole.Smith, station: "bigorna")), "segundo oficial da familia \"bigorna\"");
             Acusa(Valida(Novo("wk_pipo2", WorkerRole.Porter, contratacao: 0, contrata: "ajudante1", rota: 0)), "ja contrata outro worker");
