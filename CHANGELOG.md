@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Screenshots da loja (G-UA-03):** as 8 peças do `ASO.md` §7 em pt, en e es, tiradas do jogo real com a interface v2, sem a marca de desenvolvimento (`Setup.BuildWindowsLoja`) e com a legenda na fonte da marca (`client/tools/loja_screenshots.py`; `arte/loja/screenshots/`).
 - **Cabeçalho nos painéis (sobra da auditoria visual):** configurações, loja, metas, Hall, projetos, Passe e o cartão do cofre/mapa ganham uma faixa de couro de ponta a ponta com o título em creme e contorno (`Art.Cabecalho`).
 - **Recompensa com vida (programa de arte, etapa 6):** o cofre offline entra com pop, raios girando e faíscas atrás do "+N", o número conta até o prêmio e, no PEGAR, 10 moedas voam até a HUD; o baú de marco abre de verdade (agacha, pula com brilho e raios, faíscas) antes de sumir. Só código, 0 crédito.
 - **Interface v2 (programa de arte, etapa 4):** fontes com personalidade (Lilita One nos títulos e botões, Nunito no texto; Google Fonts, OFL), painéis e cartões com moldura em relevo, botões com lábio, brilho e efeito de apertar, barras de progresso com moldura, fundo dos menus com brasa e vinheta, abertura opaca e ícones pintados por tipo de prêmio no login e no Passe. 0 crédito; `docs/ASSETS.md` §18.

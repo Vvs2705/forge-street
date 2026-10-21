@@ -85,6 +85,8 @@ namespace FS.EditorTools
         }
 
         public static void BuildWindows() =>Build(BuildTarget.StandaloneWindows64, "Builds/win/ForgeStreet.exe");
+        // G-UA-03: screenshots da loja sem a marca "Development Build" (os presets de captura nao dependem do Development)
+        public static void BuildWindowsLoja() => Build(BuildTarget.StandaloneWindows64, "Builds/win_loja/ForgeStreet.exe", limpo: true);
         public static void BuildAndroidDev() => Build(BuildTarget.Android, "Builds/android/ForgeStreet-dev.apk");
         // Emulador do PC (x86_64): o berberis do Android 15 derruba o ARM64 traduzido do Unity/IL2CPP (signal 11, 2026-10-08).
         // ponytail: APK so de teste local; aparelho e Play recebem so ARM64 (BuildAndroidDev).
@@ -111,7 +113,7 @@ namespace FS.EditorTools
             return v;
         }
 
-        static void Build(BuildTarget target, string path, AndroidArchitecture arch = AndroidArchitecture.None, bool release = false)
+        static void Build(BuildTarget target, string path, AndroidArchitecture arch = AndroidArchitecture.None, bool release = false, bool limpo = false)
         {
             Apply();
             const string tpl = "Assets/Plugins/Android/mainTemplate.gradle";
@@ -154,7 +156,7 @@ namespace FS.EditorTools
                     scenes = new[] { Scene },
                     locationPathName = path,
                     target = target,
-                    options = release ? BuildOptions.None : BuildOptions.Development,
+                    options = release || limpo ? BuildOptions.None : BuildOptions.Development,
                 });
                 Debug.Log($"BuildSummary({target}): result={r.summary.result} errors={r.summary.totalErrors} size={r.summary.totalSize} path={path}");
             }

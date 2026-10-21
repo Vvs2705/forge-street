@@ -579,3 +579,170 @@ Forge Street está **completo** (DM §164) quando os 23 itens abaixo cumprem o c
 | 21 | **Arte final** | auditoria do No Placeholder Gate (DM §178) com 0 item; Visual Robustness Gate (DM §73) 8/8 em cada tela; brand system (logo, tipografia, cores, iconografia); proveniência completa |
 | 22 | **Áudio final** | nenhuma senoide sintetizada no release; mixer Music/SFX/Ambience; 5 músicas; ambiente em camadas que cresce com o negócio; vibração só nos eventos importantes; ajustes de som/vibração |
 | 23 | **Store assets** | 4 ícones testados, 2 × 8 screenshots, feature graphic e vídeo, cada peça aprovada no gate §73; ASO em pt-BR/en/es; criativos dos presets de captura (DM §78) |
+
+---
+
+## Lições do estúdio aplicadas a Forge Street (do Dungeon Courier, 2026-10-16)
+
+Estado: PROPOSTO · nada desta seção foi implementado nem medido · não altera as seções 0–23 (os pontos em que o GDD diverge estão em "Conflitos", para decisão).
+
+O Dungeon Courier (DC, repositório `Vvs2705/dungeon-courier`) chegou à 1.4.1-beta com o GDD inteiro feito e juntou o que funcionou e o que custou caro no playbook [`LICOES_PARA_O_ESTUDIO.md`](https://github.com/Vvs2705/dungeon-courier/blob/main/docs/LICOES_PARA_O_ESTUDIO.md). A cópia fica na memória do estúdio, `C:\Users\VINICIUS\Videos\MEUS PROJETOS\Agentes\_memoria\PLAYBOOK_ESTUDIO_DUNGEON_COURIER.md`, ao lado de `forge-street.md` e `STATUS_forge-producao-v1.md`. Boa parte da base do DC **veio do Forge**: `Setup.cs`, núcleo com bot e `-autoplay`, `render_sprites.py`, `Joystick`, LevelPlay e `-record`. Por isso esta seção trata só do que o DC **acrescentou** e o Forge ainda não tem. Cada item segue o formato **o que fazer neste jogo** · **por quê** (o que aconteceu no DC) · **reaproveitar** (caminho no repositório do DC, salvo indicação).
+
+**O Forge já tem (conferido no repositório em 2026-10-16; não refazer):**
+- **Processo e portão:** placar GDD × feito (`PROJETO.md` §8 e §23 daqui) e retomada (`PROJETO.md` §9); núcleo C# puro, bot, `econsim`, `-autoplay`, mutantes e `verify.sh full`.
+- **Ferramentas de teste e captura:** `-testsession`, `-shot`, `-record`/`-preset` (`Captura.cs`), `-lang` e `-bot`; diário com `diario_report.py`.
+- **Interface e marca:** textos em pt/en/es; interface v2 com fontes OFL (Lilita One e Nunito), molduras e botões com relevo (#87); marca v2 pelo gerador grátis (#86) e ícones de prêmio pintados; ícone adaptativo (`Setup.cs`, `icone_fundo`/`icone_frente`); 20:9 preenchido pelo exterior (`Enquadramento.cs`); `AreaSegura` e `Dp`.
+- **Loja e criativos:** screenshots da loja tiradas do jogo real (`loja_screenshots.py`, #92); criativos por `-record` + ffmpeg (`CRIATIVOS.md`).
+- **Build e Android:** elenco a 1,5× px/m (#81, APK medido); AAB assinado com a chave lida de variável de ambiente; worktree de integração em caminho curto (`C:/fsv`, que faz o papel do `subst R:` do DC).
+- **Privacidade:** regras do LevelPlay aplicadas antes do `Init`, com tela de idade (E-PLAT-01).
+
+### Processo
+- **O que fazer:** nada novo de estrutura. Só um acréscimo: a cada pausa, um bloco curto **"CONTINUAR DAQUI"** no topo do `PROJETO.md` §9, com o estado, o que falta e os comandos exatos, e o histórico abaixo dele. Tire também fotos de cada passo do tour guiado (abaixo) antes do PR.
+- **Por quê:** no DC, o Vinicius retoma com um "vamos continuar" e um bloco curto basta. As fotos acharam um passo do tutorial preso sem alvo e o controle tampando o personagem, coisas que nenhum dos 169 testes verdes via. **Reaproveitar:** rotina, sem arquivo.
+
+### Código e testes
+1. **Tour sem matar cliente.** Nos passos de explicação do tour (§Onboarding), o núcleo pausa, como o `Hud.Blocking` do DC: a paciência dos clientes, o relógio do VIP e o prazo das encomendas Rush param. **Por quê:** no Forge, cliente que cansa é perda visível (§3.1), e um tutorial que congela só a tela gera `client_left` no FTUE. Teste no `coretests`: N segundos bloqueado não mudam `client_left` nem o relógio do VIP. **Reaproveitar:** `client/Assets/_DC/Scripts/View/Tour.cs` (o `Game` segura a `Sim` enquanto o cartão está aberto).
+2. **Flag `-tutorial`.** Liga o tour no `-testsession` sem gravar os passos vistos; com o `-bot`, o ENTENDI se aperta sozinho em 2 s, para fotografar e gravar cada passo. **Reaproveitar:** a mesma lógica em `Tour.cs`.
+3. **Unity IAP de verdade.** O Forge tem a interface `Loja` e a loja falsa, mas não o pacote. O DC já integrou o Unity IAP 5.4.3 com a mesma regra do §17 (concede, grava o save, só então confirma) e restaurar compras. **Reaproveitar:** `client/Assets/_DC/Scripts/View/LojaIap.cs` e `docs/MONETIZACAO.md`. O download do pacote continua pedindo o aval do Vinicius.
+
+### Arte e animação
+Hoje o ferreiro tem só `Idle`, `Walking` e `Cheering`; workers têm `Idle`, `LookingAround` e `Walking`; clientes têm 6 clipes. O §18 pede *carry*, *work*, *hammer*, *smelt* e *counter*. Todos saem de clipes já no disco (esqueleto `mixamorig:`, 0 crédito):
+
+| Quem (GDD) | Falta | Clipe a reaproveitar | Item separado, preso ao osso |
+|---|---|---|---|
+| Ferreiro: golpe de mestre (§9) | martelar | DC `arte/mixamo/_blender/SkelAttack.fbx` (golpe de cima para baixo, impacto no quadro 6 de 12 = 0,5 s, cabe no anel de 0,8 s) ou `_blender/Smash.fbx` | martelo de mão = a função `martelo()` do `arte_v05_blender.py` (a mesma do `item_ferramenta`) em `mixamorig:RightHand`; o martelo do cinto continua decoração |
+| Ferreiro e Porters (Pipo, Lia, Caio, Brás, Turmas) | carregar a pilha, pegar da saída | DC `arte/mixamo/Hold.fbx` com `--hold` (braços da carga sobre o `Walking.fbx` do Forge); pegar: ARKANA `mixamo-pegar.fbx` ou DC `_blender/Grab.fbx` (0,5 s, termina no Hold) | a pilha é o sprite do item na âncora da mão (o `meta.json` do `--hold` grava a âncora por quadro) |
+| Ferreiro na fornalha; Vulcana (Smelter) | jogar minério, despejar liga | DC `_blender/PickThrow.fbx` (solta no quadro 7 de 12) | tenaz da Vulcana em `mixamorig:RightHand` (primitivas no Blender) |
+| Worker com a estação em "fome" | sinal de forma, não só cor (§18) | DC `_blender/Sleep.fbx` (cochila sentado, laço) + `_blender/Wake.fbx` (acorda em 0,4 s) quando o insumo chega | — |
+| Celeste (Clerk) | chamar o próximo, anunciar o VIP | DC `_blender/Call.fbx` (mão na boca e aceno) | o livro fundido atrapalha (ver Conflitos) |
+| Ísis, Aprendizes de Runa, Mestra Sibila (Arcane Foundry) | energizar o altar | ARKANA `mixamo-standing-2h-cast-spell-01.fbx` e `mixamo-standing-1h-cast-spell-01.fbx` | cajado separado; se o cajado deitar na mão, faça o clipe no Blender como o `NecroCast` do DC |
+| Félix (Courier, distrito 6) | levar o lote de exportação | os do courier do DC: `arte/mixamo/courier/CarryRun.fbx` (sprint do ARKANA) e `CarryIdle.fbx`, com o `Hold.fbx` | caixote na âncora da mão |
+| Clientes (todas as famílias) | "cansou e foi embora" legível | DC `_blender/Shrug.fbx` (dá de ombros de frente) antes do `Walking` de saída; `Cheering.fbx` para o VIP satisfeito | — |
+| Guarda real (cliente), Cadetes da Guarda | sentinela no pátio de cotas | DC `_blender/GuardIdle.fbx` (pé no chão, laço) | lança e escudo separados |
+| 29 workers parados ao mesmo tempo | todos respiram em sincronia | ARKANA `mixamo-standing-idle-02.fbx`, `-03`, `-04` alternados com o Breathing Idle | — |
+
+Caminhos de origem: DC = `06_DUNGEON_COURIER/arte/mixamo/` (tabela e SHA em `docs/PROVENIENCIA.md` §3 do DC); ARKANA = `ARKANA/mobile-unity/Assets/_Arkana/Resources/`. São cópias, sem mudar a origem (aval do Vinicius de 2026-10-09). O retarget é por delta de rotação sobre o repouso, nunca uma action crua entre esqueletos.
+
+- **Trocar o `render_sprites.py` pelo do DC.** **Por quê:** o do Forge (400 linhas, um `--attach`) não tem o que o elenco acima pede. O do DC tem:
+  - `--hold`, com a âncora da mão por quadro;
+  - `--attach item:Osso:pos:rot:escala` repetível;
+  - `--align-arms`, para o orc e o fundidor, que vieram em pose A;
+  - `--mirror`, `--outline`, `--hd` e `--escala`;
+  - `.blend` como cache do FBX (o import leva mais de 10 min);
+  - `timeout` em todo render (no DC, um render travou 15 h com o PC suspenso).
+
+  **Reaproveitar:** `client/tools/render_sprites.py`, `render_sprites.ps1`, `folhas.py`, e `client/tools/anim_blender.py` para o que nem o disco tem: martelada com o tempo do anel, "despejar liga". Atualize o `RENDER_SPRITES.md`.
+- **Variantes por troca de cor, 0 crédito.** Os 29 `WorkerDef` (`CONTEUDO_V1.md` §6) cabem em uns 10 modelos:
+  - os 6 managers (Anselmo, Gertrudes, Valentim, Leonor, Sibila, Aurélio) saem do `gerente`;
+  - os Smiths Bruna, Tomé, Iara, Joaquim e Lúcia saem do `oficial`;
+  - as Turmas (Ferraz, Dourado, Cadetes, Aprendizes, Estrela) saem do `ajudante`, cada uma na cor do seu distrito (§6);
+  - o rival do FS-4 é o ferreiro com bandana e avental de outra cor;
+  - os 3 estágios do herói (B-ART-05): o estágio 3 é o uniforme de mestre recolorido, com o martelo de cabeça de ouro (o `martelo_ouro` do `ui_v05b_blender.py`) na mão.
+
+  A silhueta continua dizendo o papel (teste ≥ 5/7, B-ART-09) e a cor diz quem é. **Por quê:** o DC fez roupas e variantes sem gastar crédito. Com a luz chapada do render, troca-se direto na folha, sem Blender. **Reaproveitar:** `client/tools/roupas_cor.py` (`recolor`, por faixa de matiz, saturação e brilho) e `roupas_2d.py`.
+- **Retratos pintados, 0 crédito.** Para:
+  - o cartão do worker (hoje `MenuBar.Retrato` é o 1º quadro do Idle);
+  - os 5 fregueses do FS-3 (mago, elfa, goblin, cavaleiro, nobre);
+  - o mercador mentor, o capitão real e o rival (falas de marco do §4).
+
+  **Como:** gerador grátis (Nano Banana 2), no estilo do logo, sobre azul-marinho liso, recortados por `client/tools/ui_assets.py`. **Por quê:** no DC, o retrato pintado ficou muito mais vistoso que o render 3D recortado. Personagem que só fala em marco precisa só do retrato, sem modelo 3D.
+- **Custo estimado no Tripo** (saldo visto: 15 670, `PROJETO.md` §9; no DC: modelo HD 45, Auto Rig 20, imagem grátis):
+
+  | Lote | Créditos |
+  |---|---|
+  | Elenco por cor + clipes do disco | 0 |
+  | Itens de mão (martelo, tenaz, cajado, lança) por primitivas no Blender, como os 41 itens do `itens_blender.py` | 0 (45 cada se for pelo Tripo) |
+  | Vulcana e Ísis, se o recolor do `fundidor` e do `oficial` não passar no teste de silhueta | 2 × 65 = 130 |
+  | Retratos e ícones | 0 |
+
+  **Teto previsto:** 130 a 310 créditos. Confira o saldo antes e depois de cada geração e registre no `PROVENIENCIA.md`.
+
+### Interface e marca
+- **O que fazer:** o Forge já tem quase tudo (ver lista acima). Faltam três pontos:
+  - **Medalhão claro atrás do ícone pintado** (ícones de prêmio, retratos novos). O disco escuro fica só para silhueta procedural.
+  - **Conferir o ícone adaptativo nas máscaras** círculo, squircle e quadrado com `tools/icone_app.py`, e no AAB com `aapt2 dump badging` (o ícone tem de ser o `.xml` adaptativo).
+  - **Conferir o ícone 512 da loja:** deve ser o mesmo do aparelho.
+- **Por quê:** no DC, o ícone pintado ficou legível sobre o medalhão claro; o disco escuro só funciona para silhueta procedural. Além disso, o launcher mostra só o meio 2/3 do ícone e corta em círculo.
+- **Reaproveitar:** `client/Assets/_DC/Scripts/View/Art.cs` (medalhão, `Letreiro`) e `client/tools/icone_app.py`.
+
+### Onboarding
+**Tour guiado (obrigatório, pedido do Vinicius no DC).**
+- **Como funciona:** a tela congela e só o alvo fica aceso (véu com buraco, contorno dourado e seta). Um cartão diz o que é, quando usar e por quê. Nos passos de ação, só o alvo responde. Cada passo aparece uma vez; há "Pular tutorial", e "REVER TUTORIAL" nas Configurações. Fica desligado no `-testsession`. Passo de botão se cancela se a tela mudar.
+- **Relação com a dica:** a pílula de dica de 1 linha continua como lembrete depois do tour.
+- **Revelação progressiva:** os gatilhos seguem o §19 e a regra da Wave B (nada novo nos primeiros 10 min).
+- **Telemetria:** o `tutorial_step` do diário passa a contar os passos do tour.
+
+| # | Passo (tipo) | Quando | O que diz · por quê |
+|---|---|---|---|
+| 0 | cartão de contexto (retrato + balão) | 1ª abertura, antes do 1º toque | ver abaixo · contexto em 1 balão, sem cutscene (§4) |
+| 1 | ação: alvo = Depósito | logo depois | "Arraste para andar. Pegue minério." · o verbo (andar e carregar) vem antes de qualquer menu |
+| 2 | ação: alvo = Fornalha | ferreiro com minério | "3 minérios viram 1 lingote." · 1º lingote antes de 0:45 (§3.3) |
+| 3 | ação: alvo = Bigorna | 1º lingote pronto | "Na bigorna, o lingote vira espada." |
+| 4 | ação: alvo = Balcão | 1ª espada pronta | "O cliente paga no balcão." · 1ª venda < 90 s |
+| 5 | ação: alvo = pad do Fole (anel de ouro) | ouro ≥ custo do Fole | "Anel de ouro = melhoria. Pise para comprar." |
+| 6 | explicação: alvo = a estação parada | 1ª vez que uma estação fica cinza ("fome") ou vermelha ("travada") | "Cinza: falta insumo. Vermelho: saída cheia. Invista onde trava." · é a decisão central do §3.1; ensina no 1º gargalo real, não antes |
+| 7 | explicação: alvo = cartão da encomenda | 1ª Order (~0:45) | "Encomenda nunca falha; o prêmio é extra." (§10) |
+| 8 | ação: alvo = pad do 1º ajudante | 3:30–4:30 | "O ajudante carrega por você." · 1º degrau da automação (§4) |
+| 9 | explicação: alvo = botão Chamar VIP | quando o 1º botão de anúncio aparece (depois da 1ª melhoria, D6) | "Opcional: traz um VIP extra; volta em 5 min." · o rewarded nunca é necessário (§17) |
+| 10 | ação: alvo = anel do golpe | 1ª peça na bigorna depois das Ferramentas (~10:46) | "Parado na bigorna, acerte o anel: a peça sobe 1 nível. Errar não pune." (§9) |
+| 11 | explicação | Renome 1; 1º projeto de Masterwork; 1º Charter | um passo para cada sistema no momento em que ele abre: selo de Renome (não se gasta), Hall/Collection, mapa de distritos |
+
+- **Cartão de contexto no lugar da cutscene.** Quem fala é o mercador mentor do §4, com o retrato pintado e um balão no 1º cartão do tour. Fala proposta: *"Esta forja era do seu avô. A rua precisa de espadas: acenda a fornalha."*
+  - **Por quê:** no DC, uma cutscene somada ao tutorial virou parede de texto e atrasou o 1º toque. O cartão do personagem que pede a missão resolveu e fecha um ciclo com a cena de entrega. No Forge, a cena de fecho é o Charter: o mesmo mentor volta e entrega o distrito. Se o mentor for o Mestre Anselmo, ele vira o manager do Old Forge.
+  - **Reaproveitar:** `Tour.cs` (campo `Fala`: retrato + balão acima do cartão).
+- **Joystick invisível por padrão.** Hoje o `Joystick.cs` do Forge desenha uma base de 132 dp e um miolo de 50 dp onde o dedo toca. O ferreiro tem cerca de 9,9% da largura da tela (`Enquadramento.cs`), e a base cobre ele e a pilha que ele carrega. O controle continua o mesmo, sem desenho, e "Controle na tela" nas Configurações traz o desenho de volta. O anel do golpe já fica num lugar fixo (§19).
+  - **Por quê:** no DC, o joystick desenhado tampava o courier (1.4.1-beta).
+  - **Reaproveitar:** campo `Visivel` do `client/Assets/_DC/Scripts/View/Joystick.cs` (`_base.gameObject.SetActive(Visivel)`).
+
+### Monetização e compliance
+Confronto do §17 com os guardrails:
+- **Nada aleatório pago:** cumpre. Baú com conteúdo fixo, "trocar" mostra a próxima, sem "chance" (V4, P5).
+- **Rewarded opcional:** cumpre. O kill criterion já existe e o bot F2P fecha tudo sem anúncio.
+- **Interstitial:** cumpre. Fica atrás de flag desligada (V10).
+- **Offline:** cumpre. O teto de 2 h é trava no núcleo.
+- **1 moeda:** cumpre até a Wave E, e lá entram as Gems (ver Conflitos).
+- **Anúncio não personalizado e sem `AD_ID`:** **diverge** do DC (ver Conflitos).
+
+O que acrescentar:
+- **Política de privacidade pública.** No Forge ainda está `<<PREENCHER>>` (`PRIVACIDADE.md` §6). O DC resolveu em uma página: GitHub Pages, branch `gh-pages`, um `index.html` com todos os idiomas, citando exatamente as redes usadas (LevelPlay, Unity Ads, ironSource Ads). **Reaproveitar:** o `index.html` da branch `gh-pages` do DC (https://vvs2705.github.io/dungeon-courier/) como modelo, com 3 idiomas, mais o link em Configurações > Privacidade.
+- **Unity Ads no LevelPlay.** O painel pede a chave da Monetization Stats API e o core ID da organização Unity. Para o DC isso já foi feito na conta da V-STACK; conferir no painel se ligar o Unity Ads no app do Forge é só ativar. **Reaproveitar:** `docs/MONETIZACAO.md` §4 do DC.
+
+### Play e lançamento
+- **Conta de organização desde já.**
+  - **O que fazer:** publicar na conta de **organização** da V-STACK, a mesma do DC, que espera o D-U-N-S (previsão 2026-11-25; `docs/LOJA.md` §1 do DC). Não abrir conta pessoal.
+  - **Por quê:** o `PROJETO.md` P9 planeja o Closed com 12 testadores por 14 dias "em conta pessoal". Essa exigência é das contas pessoais novas; confirmar na conta de organização quando ela abrir. No DC, tudo ficou pronto e só a conta falta, por isso o D-U-N-S tem de ser pedido cedo, e ele já foi.
+- **Chave de upload.** O `FS_KEYSTORE` lido de variável de ambiente está certo. Falta o **backup fora do PC** do `.jks` e das senhas: perder a chave obriga a pedir reset ao suporte.
+- **Criativos automáticos.**
+  - **O que fazer:** trocar a receita manual de ffmpeg do `CRIATIVOS.md` pelo `criativos.py` do DC, que monta os vídeos 9:16 com legenda e CTA em cada idioma (no DC, 13 vídeos × 4 idiomas, refeitos a cada mudança de arte). O `loja_assets.py` do DC gera a feature graphic 1024×500 de um quadro real, que é o item 5 da fila do `PROJETO.md` §9.
+  - **Reaproveitar:** `client/tools/criativos.py` e `client/tools/loja_assets.py`.
+
+### Android
+- **vSync desligado.**
+  - **O que fazer:** acrescentar `QualitySettings.vSyncCount = 0;` ao lado do `Application.targetFrameRate = 60;` no `Game.Awake` (`Game.cs`).
+  - **Por quê:** no Forge, a qualidade padrão do Android é Medium (`QualitySettings.asset`: `m_PerPlatformDefaultQuality` Android 2, `vSyncCount: 1`), a mesma situação do DC antes do ajuste, quando o POCO F4 foi de 28–36 para 55 fps. Medir no gate do POCO.
+- **Memória do aparelho.** O APK foi a 121,7 MB com as folhas a 1,5×, e o DC subiu de 67,7 para 83 MiB pelo mesmo motivo. Meça a memória (PSS) no aparelho, não só o tamanho do arquivo.
+- **adb no Git Bash:** `adb shell "am start -n <pkg>/<act> -e unity '-a -b'"`, com aspas por dentro; sem elas, só o 1º argumento chega ao jogo.
+- **Aparelho:** pergunte "pode testar?" antes de usar o POCO e tire foto só com o jogo em primeiro plano. Meça o desempenho também num aparelho original: o POCO de 4 anos se limita depois de 1 min.
+
+### Conflitos com o GDD atual
+1. **§17 e E-PLAT-01: tela de idade na 1ª abertura, anúncio personalizado para 18+ que aceitar, `AD_ID` mantido.** No DC, o anúncio é não personalizado para todos, sem `AD_ID` e sem tela.
+   - **A favor do Forge:** eCPM maior com adultos.
+   - **Contra:** é uma tela antes do 1º toque (contra a "1ª venda < 90 s" do §3.3); a declaração de ID de publicidade fica = sim; o consentimento tem de ser versionado; a verificação no POCO ainda está pendente (`PRIVACIDADE.md` §7).
+   - **Recomendação (decisão do Vinicius):** se a tela ficar, mova-a para o momento em que o 1º botão de anúncio aparece (depois da 1ª melhoria). Se não, copie o modelo do DC (`AnunciosLevelPlay.cs` + `Setup.SemIdDePublicidade`) e apague a tela.
+2. **§5.1 e §17.3: Gems na Wave E** (Gem Packs, Starter com Gems, Master Blacksmith Bundle) criam a 2ª moeda. O DC fechou o GDD inteiro com 1 moeda e IAP de conteúdo fixo (remover anúncios, pacote inicial, roupas, pacote de evento). **Recomendação:** v1.0 só com ouro e venda de conteúdo fixo (Pacote do Mestre, skins, Pass). Gems só se o `econsim` mostrar um ralo de conveniência que o ouro não cobre.
+3. **§18 / `ASSETS.md`: item fundido na mão** do balconista (livro), do gerente (livro), do mensageiro e do emissário (pergaminho). A regra do estúdio é item separado preso ao osso. **Recomendação:**
+   - nos já gerados, usar só clipes que não giram a mão (Idle, Walking, LookingAround);
+   - para `Call`, martelada etc., apagar o item fundido no Blender pela cor da textura (como o `saco_ladrao.py` do DC, 0 crédito) e prender o item separado;
+   - gerar os personagens novos (Vulcana, Ísis) já sem item na mão.
+4. **§3.3 e §19: o FTUE é só a pílula de dica de 1 linha.** O estúdio agora exige tour guiado. **Recomendação:** o tour do §Onboarding complementa a dica, com os mesmos gatilhos e sem explicar sistema futuro cedo.
+5. **§18, "nenhuma senoide sintetizada no release":** não é conflito. O Forge decidiu áudio real, e a lição do `audio_gen.py` do DC não se aplica aqui.
+
+### Primeiros passos recomendados
+1. `QualitySettings.vSyncCount = 0` no `Game.Awake` (1 linha; medir no gate do POCO).
+2. Joystick invisível por padrão + "Controle na tela" nas Configurações (campo `Visivel` do DC).
+3. Tour guiado: copiar `Tour.cs`, trocar os passos pela tabela acima, pausar a paciência no passo de explicação, criar o `-tutorial` e fotografar cada passo.
+4. Cartão de contexto com o retrato pintado do mentor, no lugar do 1º passo.
+5. Trazer `render_sprites.py` e `anim_blender.py` do DC e renderizar a martelada do golpe de mestre, o carry e o cochilo da "fome" com clipes do disco (0 crédito).
+6. Elenco por cor (managers, Smiths, Turmas, rival) com `roupas_cor.recolor` antes de qualquer lote no Tripo.
+7. Política pública no `gh-pages` e backup da chave de upload.
+8. Levar ao Vinicius as decisões dos Conflitos 1 (tela de idade × não personalizado para todos) e 2 (Gems na Wave E).
