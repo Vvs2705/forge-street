@@ -209,6 +209,7 @@ namespace FS
                     return Loc.T("card.vagas", Mais(n - 1, n));
                 default:   // B-CORE-03, GDD §19: "Qualidade +0,15 · vel. +5%"
                     if (_ups[u].Id == Sim.TrocaRapidaId) return Loc.T("card.troca", Menos(Sim.TrocaSeg, Sim.TrocaRapidaSeg));   // C-CORE-06
+                    if (_ups[u].Id == Sim.Condensador || _ups[u].Id == Sim.Condensador2) return Loc.T("card.dreno", N(t.DrenoCondensador / 100f));   // C-CORE-08
                     return _ups[u].Station != null ? Loc.T("card.qualidade", Pontos(t.NivelEstacaoQ), Pct(t.NivelEstacaoVelocidade) + "%")
                         : _ups[u].Id == _selo ? Loc.T("card.selo", Pontos(t.SeloQ))   // C-CORE-07
                         : Loc.T("up." + _ups[u].Id + ".desc");
@@ -268,6 +269,11 @@ namespace FS
                     // B-CORE-03: depois da compra, so pelo nivel da estacao (as outras fontes ainda nao existem): L2 = 1 em 7, L3 = 1 em 3.
                     // ponytail: a frase vale para q < 100; o nivel que passar de 1,00 (L4-L5 com oficial, B-CORE-04/07) pede outra
                     if (_ups[u].Id == Sim.TrocaRapidaId) return Loc.T("card.ad.s", N(Sim.TrocaSeg), N(Sim.TrocaRapidaSeg));   // C-CORE-06: troca de receita
+                    if (_ups[u].Id == Sim.Condensador || _ups[u].Id == Sim.Condensador2)   // C-CORE-08: o dreno base, +2 por condensador ja comprado antes
+                    {
+                        float d0 = (t.DrenoBase + (_ups[u].Id == Sim.Condensador2 ? t.DrenoCondensador : 0)) / 100f;
+                        return Loc.T("card.ad.dreno", N(d0), N(d0 + t.DrenoCondensador / 100f));
+                    }
                     if (_ups[u].Station == null) return "";   // ponytail: Lupa = x0,6 sobre o tempo que o Martelo veloz ja mudou; o % basta
                     int q = (NivelEstacao(u) - 1) * t.NivelEstacaoQ;
                     return Loc.T("card.ad.fina", (long)Math.Round(100.0 / q, MidpointRounding.AwayFromZero));
@@ -524,6 +530,7 @@ namespace FS
                 case BlueprintSourceKind.Milestone:
                     if (f.Ref == BlueprintSource.Producao) return Loc.T("proj.f.producao");
                     if (f.Ref == BlueprintSource.Cotas) return Loc.T("proj.f.cotas", Qtd(f.N), Qtd(Math.Min(f.N, s.CotasFechadas)));   // C-CORE-07
+                    if (f.Ref == BlueprintSource.Energizadas) return Loc.T("proj.f.energizadas", Qtd(f.N), Qtd(Math.Min(f.N, s.EnergizadasTotal)));   // C-CORE-08
                     if (f.Ref == BlueprintSource.Lotes) return Loc.T("proj.f.lotes", Qtd(f.N), Qtd(Math.Min(f.N, s.ExportLots)));     // C-CORE-09
                     int i = Items.IndexOf(f.Ref, s.ItemDefs);
                     if (i < 0) return f.Ref;
@@ -572,6 +579,8 @@ namespace FS
                 case CondicaoMw.CotaBlocos: return Loc.T("hall.c.10", n, item, v);     // C-CORE-07
                 case CondicaoMw.CotaNoPrazo: return Loc.T("hall.c.11", n, item, v);
                 case CondicaoMw.Contratos: return Loc.T("hall.c.12", n, v);
+                case CondicaoMw.PecasEnergizadas: return Loc.T("hall.c.energizadas", n, item, v);   // C-CORE-08
+                case CondicaoMw.SequenciaEstavel: return Loc.T("hall.c.sequencia", Loc.Tem("est." + c.Ref) ? Loc.T("est." + c.Ref) : c.Ref, n, v);
                 case CondicaoMw.Importados: return Loc.T("hall.c.13", n, v);   // C-CORE-09
                 case CondicaoMw.Lotes: return Loc.T("hall.c.14", n, v);
                 case CondicaoMw.Charters: return Loc.T("hall.c.15", n, v);
@@ -720,6 +729,24 @@ namespace FS
 
         /// <summary>Aviso do bloco pago (Ev.QuotaBlock): "Coroa pagou 1,2 mi!" (no prazo: "No prazo! ...").</summary>
         public static string AvisoCota(long ouro, bool prazo) => Loc.T(prazo ? "aviso.cota_prazo" : "aviso.cota", Ouro(ouro));
+
+        // ---- arcane_foundry (C-CORE-08): o medidor do altar (a linha embaixo dele e o painel do toque, que troca o modo)
+
+        /// <summary>O altar Estavel com a receita inteira na entrada esperando o medidor cair ("estabilizando", azul).</summary>
+        public static bool Estabilizando(Sim s, Station st)
+        {
+            if (st.Forcado || st.Busy || st.Pausa > 0f || st.Medidor + s.CargaPeca(st) <= s.T.ArcanoTeto) return false;
+            for (int k = 0; k < st.Ins.Length; k++) if (st.Ins[k] < st.Recipe.Inputs[k].Qty) return false;
+            return true;
+        }
+
+        /// <summary>"Estável · 45/100", "Forçado · 82/100", "Estabilizando · 95/100" ou "Sobrecarga! 7 s" (o E inteiro, de 0 a 100+).</summary>
+        public static string Medidor(Sim s, Station st)
+        {
+            if (st.Pausa > 0f) return Loc.T("arc.sobrecarga", N((float)Math.Ceiling(st.Pausa)));
+            string e = (st.Medidor / 100).ToString(CultureInfo.InvariantCulture);
+            return Estabilizando(s, st) ? Loc.T("arc.estabilizando", e) : Loc.T("arc.medidor", Loc.T(st.Forcado ? "arc.forcado" : "arc.estavel"), e);
+        }
 
         // ---- grand_forge (C-CORE-09): as rotas (linha embaixo do cais) e o lote do Mensageiro (embaixo do patio de exportacao; o toque troca o produto)
 

@@ -342,6 +342,8 @@ namespace FS.Core
             ArtisanQuarter,
             // ---- royal_arsenal (C-CORE-07)
             RoyalArsenal,
+            // ---- arcane_foundry (C-CORE-08)
+            ArcaneFoundry,
             // ---- grand_forge (C-CORE-09)
             GrandForge,
         };

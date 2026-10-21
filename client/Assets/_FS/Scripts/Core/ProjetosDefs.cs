@@ -24,6 +24,8 @@ namespace FS.Core
         public const string Producao = "producao";
         /// <summary>C-CORE-07: marco "N blocos de cota fechados" (Sim.CotasFechadas) no lugar do ID do item.</summary>
         public const string Cotas = "cotas";
+        /// <summary>C-CORE-08: marco "N pecas energizadas feitas" (Sim.EnergizadasTotal) no lugar do ID do item.</summary>
+        public const string Energizadas = "energizadas";
         /// <summary>C-CORE-09: marco "N lotes de exportacao" (Sim.ExportLots) no lugar do ID do item.</summary>
         public const string Lotes = "lotes";
         public readonly BlueprintSourceKind Kind; public readonly string Ref; public readonly int N; public readonly Quality MinQ;
@@ -63,6 +65,8 @@ namespace FS.Core
             FS.Core.Distritos.ArtisanQuarterId,
             // ---- royal_arsenal (C-CORE-07)
             FS.Core.Distritos.RoyalArsenalId,
+            // ---- arcane_foundry (C-CORE-08)
+            FS.Core.Distritos.ArcaneFoundryId,
             // ---- grand_forge (C-CORE-09)
             FS.Core.Distritos.GrandForgeId,
         };

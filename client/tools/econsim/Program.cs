@@ -124,12 +124,12 @@ static class EconSim
                 case "--renome" when ok: ok = long.TryParse(v, out renome) && renome >= 0; break;
                 case "--bancadas" when ok: ok = Enum.TryParse(v, true, out bancadas) && Enum.IsDefined(typeof(PoliticaBancada), bancadas); break;
                 case "--histerese" when ok: ok = int.TryParse(v, out int h); histerese = h; break;
-                case "--fundo-extra" when ok: ok = double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out FundoExtra) && FundoExtra >= 0; break;   // C-CORE-09
+                case "--arcano" when ok: ok = Enum.TryParse(v, true, out _altares) && Enum.IsDefined(typeof(PoliticaArcana), _altares); break;   // C-CORE-08
                 default: ok = false; break;
             }
             if (!ok || perfis.Any(p => p.Name == null))
             {
-                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400] [--gerente 0|1] [--renome 500] [--bancadas regra|volume|margem] [--histerese 3]");
+                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400] [--gerente 0|1] [--renome 500] [--bancadas regra|volume|margem] [--histerese 3] [--arcano regra|estavel|forcado]");
                 return 2;
             }
         }
@@ -434,14 +434,15 @@ static class EconSim
         public (string Id, int Ciclos, float Fome, float Travada)[] Est; public long Pecas, ComLiga; public int CharterMin = -1, RenomeMin = -1;
         // C-CORE-06: trocas de receita nas bancadas, clientes ricos atendidos, clientes que deram meia-volta (fila cheia) e os que cansaram
         public int Trocas, Ricos, MeiaVolta, Perdidos;
-        // C-CORE-09 (rotas e lotes): pecas e ouro do patio de exportacao, lotes, importados (por rota), o fundo que as rotas tiraram, a maior fracao
-        // do fundo de cada origem pedida num minuto (portao: < 1) e o fundo extra do --fundo-extra
-        public long ExpUn, ExpOuro, Extra; public int Lotes, Importados; public int[] PorRota; public double Descontado; public double[] DescMax; public float Mw5 = -1f;
+        // C-CORE-08: pecas energizadas, sobrecargas, a maior StableStreak dos altares no fim e as encomendas entregues
+        public int Energ, Sobre, SeqMax, Pedidos;
+        // C-CORE-09 (rotas e lotes): pecas e ouro do patio de exportacao, lotes, importados (por rota), o fundo que as rotas tiraram e a maior
+        // fracao do fundo de cada origem pedida num minuto (portao: < 1)
+        public long ExpUn, ExpOuro; public int Lotes, Importados; public int[] PorRota; public double Descontado; public double[] DescMax; public float Mw5 = -1f;
     }
 
-    /// <summary>C-CORE-09: --fundo-extra N = N ouro/min a mais na carteira (o fundo de um distrito que o build ainda nao tem: a Arcane Foundry
-    /// antes da Grand Forge, 48.600/min no modelo do §1).</summary>
-    static double FundoExtra;
+    /// <summary>C-CORE-08: --arcano regra|estavel|forcado = a politica do bot nos altares (Bot.Altares; o portao "nenhum modo domina").</summary>
+    static PoliticaArcana _altares = PoliticaArcana.Regra;
 
     /// <summary>
     /// O distrito `d` do jeito que o jogador chega: Imperio com o Old Forge em producao completa (Mochila e Botas do ferreiro valem) e o Charter
@@ -525,12 +526,28 @@ static class EconSim
                 Console.WriteLine($"| {p.Name} | {g.Average(r => r.Trocas):0}; {g.Average(r => r.Trocas) * 60.0 / minutos:0} | {g.Average(r => r.Ricos):0} | {g.Average(r => r.MeiaVolta):0} | {g.Average(r => r.Perdidos):0} |");
             }
         }
+        if (amostra.TemArcano)
+        {
+            // C-CORE-08 (CONTEUDO_V1 §16): o medidor dos altares; o portao "nenhum modo domina" compara --arcano estavel e forcado
+            Console.WriteLine();
+            Console.WriteLine($"Altares: politica {_altares}.");
+            Console.WriteLine("| perfil | pecas energizadas (% das feitas) | sobrecargas (por hora) | maior StableStreak no fim | encomendas (Royal) | contratos | obras (3a) | Charter (condicoes; minuto) |");
+            Console.WriteLine("|---|---|---|---|---|---|---|---|");
+            foreach (BotProfile p in perfis)
+            {
+                RunD[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+                static string Media(IEnumerable<float> v) { float[] a = v.Where(t => t >= 0f).ToArray(); return a.Length == 0 ? "--:--" : Clock(a.Average()); }
+                Console.WriteLine($"| {p.Name} | {g.Average(r => r.Energ):0} ({100.0 * g.Sum(r => r.Energ) / Math.Max(1, g.Sum(r => r.Pecas)):0.0}%) | {g.Average(r => r.Sobre):0.#} ({g.Average(r => r.Sobre) * 60.0 / minutos:0.#}) | " +
+                                  $"{g.Average(r => r.SeqMax):0} | {g.Average(r => r.Pedidos):0.#} ({g.Average(r => r.Royal):0.#}) | {g.Average(r => r.Contratos):0.#} | {g.Average(r => r.Mw):0.#} ({Media(g.Select(r => r.Mw3))}) | " +
+                                  $"{g.Count(r => r.CharterMin >= 0)}/{g.Length}; {(g.Any(r => r.CharterMin >= 0) ? g.Where(r => r.CharterMin >= 0).Average(r => r.CharterMin).ToString("0") + " min" : "--")} |");
+            }
+        }
         if (amostra.Cais != null)
         {
             // C-CORE-09 (CONTEUDO_V1 §16): rotas e lotes do Mensageiro; portao: o fundo da origem nunca chega a 0 (fracao pedida num minuto < 1)
             string[] org = d.Importados.Select(x => x.Origem).Distinct().ToArray();
             Console.WriteLine();
-            Console.WriteLine($"Rotas e lotes{(FundoExtra > 0 ? $" (fundo extra {FundoExtra:0}/min)" : "")}.");
+            Console.WriteLine("Rotas e lotes.");
             Console.WriteLine($"| perfil | pecas pelo lote (% das vendidas) | ouro do lote (% da receita) | lotes | importados ({string.Join(", ", d.Importados.Select(x => x.Item))}) | fundo tirado das origens | maior fracao do fundo pedida num minuto ({string.Join(", ", org)}) | Royal entregues; contratos | obras (3a; 5a) | Charter (condicoes; minuto) |");
             Console.WriteLine("|---|---|---|---|---|---|---|---|---|---|");
             foreach (BotProfile p in perfis)
@@ -572,6 +589,7 @@ static class EconSim
         Sim s = imp.Ativo; Bot bot = Bot.From(p); float dt = 1f / hz;
         if (workerSeg.HasValue) bot.WorkerSegundos = workerSeg.Value;
         bot.Bancadas = bancadas; if (histerese.HasValue) bot.Histerese = histerese.Value;   // C-CORE-06
+        bot.Altares = _altares;   // C-CORE-08
         var r = new RunD { Perfil = p.Name, Vendas = new long[s.ItemDefs.Length] };
         var csv = new StringBuilder();
         var rel = new float[s.UpgradeDefs.Length];
@@ -583,7 +601,6 @@ static class EconSim
         string[] origens = (d.Importados ?? new (string, string)[0]).Select(x => x.Origem).Distinct().ToArray();
         r.DescMax = new double[origens.Length];
         var rota0 = new int[d.Importados?.Length ?? 0];
-        double extra = 0;
         for (int m = 1; m <= minutos; m++)
         {
             while (s.Time + pausa < m * 60f)
@@ -592,7 +609,6 @@ static class EconSim
                 bot.Step(s, dt);
                 if (gerente && Bot.Manager(imp) && r.Gerente1 < 0) r.Gerente1 = m;   // C-CORE-03
                 imp.Fundo(dt);
-                if (FundoExtra > 0) { extra += FundoExtra / 60.0 * dt; long w = (long)extra; extra -= w; s.Gold += w; r.Extra += w; }   // C-CORE-09
                 pausa += (bot.AdsTotal - ads) * anuncioSeg; ads = bot.AdsTotal;
                 foreach (SimEvent e in s.Events)
                 {
@@ -653,7 +669,9 @@ static class EconSim
         r.Est = s.Stations.Where(x => x.Produces).Select(x => (x.Id, x.Crafted, x.StarveSeconds, x.StallSeconds)).ToArray();
         for (int i = 0; i < s.ItemDefs.Length; i++) if (s.ItemDefs[i].Product) { r.Pecas += s.Crafted[i]; r.ComLiga += s.PecasComLiga[i]; }
         r.Trocas = s.TrocasReceita; r.Ricos = s.ClientesRicos; r.MeiaVolta = s.ClientsTurnedAway; r.Perdidos = s.ClientsLost;   // C-CORE-06
-        r.Lotes = s.ExportLots; r.Importados = s.ImportedUnits; r.PorRota = (int[])s.PorRota.Clone(); r.Descontado = imp.FundoDescontado; r.Fundo += r.Extra;   // C-CORE-09
+        r.Energ = s.EnergizadasTotal; r.Sobre = s.Sobrecargas; r.Pedidos = s.OrderCount;   // C-CORE-08
+        r.SeqMax = s.Stations.Where(s.Arcana).Select(x => x.Sequencia).DefaultIfEmpty(0).Max();
+        r.Lotes = s.ExportLots; r.Importados = s.ImportedUnits; r.PorRota = (int[])s.PorRota.Clone(); r.Descontado = imp.FundoDescontado;   // C-CORE-09
         r.Csv = csv.ToString(); r.Segundos = clock.Elapsed.TotalSeconds;
         return r;
     }

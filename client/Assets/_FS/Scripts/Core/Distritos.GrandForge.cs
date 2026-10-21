@@ -5,8 +5,8 @@ namespace FS.Core
     /// as rotas de importacao e os lotes de exportacao do Mensageiro (Sim.Exportacao.cs). Handles: 0 e 1 = minerio de cobre e barra de bronze (o
     /// bruto do kit e o que o crisol do kit faz dele, como o Quarter), produtos de 2 a 7 (o 2, sino, sai do kit: 1o cliente e VIP), os insumos
     /// do ferro e da cratera depois e os importados no fim (insumo aqui; produto no distrito de origem).
-    /// Desvio do §3.1 (revisar): os 4 importados da Arcane Foundry (lanterna arcana, anel de cristal, lamina e escudo runicos) esperam o
-    /// distrito 5 na main; ate la a lamina estelar e' so aco (sem rota) e relicario, coroa e panoplia pedem os importados que ja existem.
+    /// Desvio do §3.1 (revisar): sem os 4 importados da Arcane Foundry (lanterna arcana, anel de cristal, lamina e escudo runicos): a raia
+    /// fechou antes da Foundry entrar no build; a lamina estelar e' so aco (sem rota) e relicario, coroa e panoplia pedem os importados de antes.
     /// </summary>
     public static partial class Distritos
     {
@@ -128,8 +128,8 @@ namespace FS.Core
 
         public static readonly DistrictDef GrandForge = new DistrictDef
         {
-            // Indice provisorio: 4 enquanto a Arcane Foundry (o 5o) nao esta na main; com ela, 5 (e a Foundry libera a Grand Forge)
-            Id = GrandForgeId, Nome = "Grand Forge", Indice = 4,
+            // o 6o e ultimo do mapa: a Arcane Foundry libera a Grand Forge
+            Id = GrandForgeId, Nome = "Grand Forge", Indice = 5,
             Itens = ItensGrandForge, Receitas = ReceitasGrandForge, Upgrades = UpgradesGrandForge, Projetos = ProjetosDefs.GrandForgeDefs,
             Masterworks = MasterworksDefs.GrandForgeDefs, MarcosColecao = MasterworksDefs.MarcosGrandForge,
             Clientes = ClientesGrandForge,
@@ -274,8 +274,8 @@ namespace FS.Core
             new MasterworkDef(id, Distritos.GrandForgeId, familia, "bp_" + id, renome, pedestal, c);
 
         /// <summary>Charters dos outros distritos que a Coroa dos Seis Distritos pede (DistrictCharters, §10.1: 5 = todos os anteriores).
-        /// Provisorio = 4 enquanto a Arcane Foundry nao esta na main (o teste confere contra o indice da Grand Forge).</summary>
-        public const int ChartersCoroaSeis = 4;
+        /// = o indice da Grand Forge (o teste confere).</summary>
+        public const int ChartersCoroaSeis = 5;
 
         /// <summary>C-CORE-09: as 10 da Grand Forge (CONTEUDO_V1 §10.1), DistrictDef.Masterworks dela. Superior alcancavel pelo §10.2: sintese e
         /// fundicao = niveis 60 + tecnica 20 + bencao_forja 25 = 105 (ponytail: sem o +30 do aco estelar do §10.2, que nao e' regra do §2.6). A

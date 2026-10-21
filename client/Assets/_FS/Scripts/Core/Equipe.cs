@@ -217,7 +217,9 @@ namespace FS.Core
         int Oficial(Station s)
         {
             if (!s.Produces) return -1;
-            for (int k = 0; k < Defs.Length; k++) if (Defs[k].Papel == WorkerRole.Smith && Defs[k].Station == s.Recipe.Family && Nivel(k) > 0) return k;   // B-CORE-07: pela familia (a bigorna longa tem o oficial das bigornas)
+            for (int k = 0; k < Defs.Length; k++)
+                if (Defs[k].Papel == WorkerRole.Smith && (Defs[k].Station == s.Recipe.Family || Defs[k].Especialidade == Specialty.Arcane && _sim.Arcana(s)) && Nivel(k) > 0)
+                    return k;   // B-CORE-07: pela familia (a bigorna longa tem o oficial das bigornas); C-CORE-08: a oficial arcana (Isis) em todo altar
             return -1;
         }
 

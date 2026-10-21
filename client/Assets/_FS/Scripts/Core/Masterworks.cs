@@ -72,6 +72,8 @@ namespace FS.Core
                 case CondicaoMw.CotaBlocos: return i < 0 ? 0 : _sim.CotaBlocos[i];       // C-CORE-07
                 case CondicaoMw.CotaNoPrazo: return i < 0 ? 0 : _sim.CotaNoPrazo[i];
                 case CondicaoMw.Contratos: return _sim.Contratos.Concluidos.Count;
+                case CondicaoMw.PecasEnergizadas: return i < 0 ? 0 : _sim.PecasEnergizadas[i];   // C-CORE-08
+                case CondicaoMw.SequenciaEstavel: Station a = _sim.Est(c.Ref); return a == null ? 0 : a.Sequencia;
                 case CondicaoMw.Importados: return _sim.ImportedUnits;   // C-CORE-09
                 case CondicaoMw.Lotes: return _sim.ExportLots;
                 case CondicaoMw.Charters: return _sim.Imp?.Charters.Count ?? 0;

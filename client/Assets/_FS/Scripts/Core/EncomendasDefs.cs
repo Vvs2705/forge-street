@@ -23,6 +23,8 @@ namespace FS.Core
             FS.Core.Distritos.ArtisanQuarterId,
             // ---- royal_arsenal (C-CORE-07)
             FS.Core.Distritos.RoyalArsenalId,
+            // ---- arcane_foundry (C-CORE-08)
+            FS.Core.Distritos.ArcaneFoundryId,
             // ---- grand_forge (C-CORE-09)
             FS.Core.Distritos.GrandForgeId,
         };
@@ -90,6 +92,8 @@ namespace FS.Core
             OrdensArtisan(),
             // ---- royal_arsenal (C-CORE-07): Distritos.RoyalArsenal.cs
             OrdensArsenal(),
+            // ---- arcane_foundry (C-CORE-08): Distritos.ArcaneFoundry.cs
+            OrdensArcane(),
             // ---- grand_forge (C-CORE-09): Distritos.GrandForge.cs
             OrdensGrandForge());
 
@@ -109,6 +113,7 @@ namespace FS.Core
             // ---- artisan_quarter (C-CORE-06)
             (FS.Core.Distritos.ArtisanQuarterId, CicloArtisan()),
             (Arsenal, new[] { Royal, Common, Bulk, Royal, Qual, Mixed, Royal, Blueprint, Rush, Common }),   // ---- royal_arsenal (C-CORE-07): Royal x3
+            (FS.Core.Distritos.ArcaneFoundryId, CicloArcane()),   // ---- arcane_foundry (C-CORE-08): Quality x3
             (FS.Core.Distritos.GrandForgeId, CicloGrandForge()),   // ---- grand_forge (C-CORE-09): Royal x3 e Mixed x2
         };
 

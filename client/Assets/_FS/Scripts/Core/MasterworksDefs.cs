@@ -15,6 +15,9 @@ namespace FS.Core
         /// <summary>C-CORE-07: CotaBlocos = QuotaBlocks:item e CotaNoPrazo = QuotaOnTime:item (Sim.CotaBlocos/CotaNoPrazo, §2.4); Contratos =
         /// ContractsDone (Royal Contracts concluidos no Imperio).</summary>
         CotaBlocos, CotaNoPrazo, Contratos,
+        /// <summary>C-CORE-08: PecasEnergizadas = EnergizedPieces:item (Sim.PecasEnergizadas) e SequenciaEstavel = StableStreak:estacao (o ID do
+        /// altar, Station.Sequencia; §2.5 regra 6).</summary>
+        PecasEnergizadas, SequenciaEstavel,
         /// <summary>C-CORE-09 (§2.6): Importados = ImportedUnits e Lotes = ExportLots (Sim.Exportacao.cs); Charters = DistrictCharters (os Charters
         /// do Imperio; sem Ref).</summary>
         Importados, Lotes, Charters }
@@ -196,7 +199,7 @@ namespace FS.Core
                 // familia: estacoes do mundo que fazem um produto dela; Superior alcancavel em pelo menos uma (q maximo > 100)
                 List<Station> st = w.Stations.FindAll(s => w.FazFamilia(s, d.Familia));   // C-CORE-06: a bancada configuravel por toda receita dela
                 if (st.Count == 0) yield return $"{at} familia \"{d.Familia}\" sem produto feito no mundo";
-                else if (!st.Exists(s => QMaximo(s.Recipe.Family, w.T, ups, bps, w.Equipe.Defs, LigaFeita(s, w)) + SeloQ(w, ups) > 100)) yield return $"{at} Superior inalcancavel na familia {d.Familia} (q maximo <= 100)";
+                else if (!st.Exists(s => QMaximo(s.Recipe.Family, w.T, ups, bps, w.Equipe.Defs, LigaFeita(s, w)) + SeloQ(w, ups) + w.QMaxArcano(s) > 100)) yield return $"{at} Superior inalcancavel na familia {d.Familia} (q maximo <= 100)";
                 int b = ProjetosDefs.IndexOf(d.Blueprint, bps);
                 if (b < 0) yield return $"{at} projeto \"{d.Blueprint}\" nao existe";
                 else if (bps[b].Kind != BlueprintKind.Masterwork || Array.IndexOf(bps[b].Targets, d.Id) < 0) yield return $"{at} projeto \"{d.Blueprint}\" nao e' o dela";
@@ -223,6 +226,8 @@ namespace FS.Core
                         case CondicaoMw.Feitos: int fi = Items.IndexOf(c.Ref, w.ItemDefs); ok &= fi >= 0 && w.Stations.Exists(s => s.Produces && s.Receitas == null && (int)s.OutItem == fi); break;
                         case CondicaoMw.CotaBlocos: case CondicaoMw.CotaNoPrazo: ok &= Produto(c.Ref) >= 0 && w.Patio != null; break;   // C-CORE-07: so com o patio
                         case CondicaoMw.Contratos: ok &= c.N <= ContratosDefs.CatalogoV1; break;
+                        case CondicaoMw.PecasEnergizadas: int pe = Produto(c.Ref); ok &= pe >= 0 && w.Stations.Exists(s => w.Arcana(s) && (int)s.OutItem == pe); break;   // C-CORE-08
+                        case CondicaoMw.SequenciaEstavel: ok &= w.Stations.Exists(s => s.Id == c.Ref && w.Arcana(s)); break;
                         case CondicaoMw.Importados: ok &= w.Cais != null; break;              // C-CORE-09: so com o cais
                         case CondicaoMw.Lotes: ok &= w.Exportacao != null; break;            // e o patio de exportacao
                         case CondicaoMw.Charters: ok &= c.N < FS.Core.Distritos.All.Length; break;   // os outros distritos do build

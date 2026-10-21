@@ -39,7 +39,8 @@ namespace FS
     /// 6 ajudantes no nivel 3 e os 7 da Equipe contratados no posto; Captura.Equipe; com -menu e -gold, os cartoes de nivel) | -projetos [todos|dar] ("dar" = os 19 sem abrir; abre o painel de
     /// projetos; "todos" da os 19 do catalogo antes do -buy/-buyids; B-CORE-07) | -hall [colecao] (abre o Hall das obras-primas, ou a aba da
     /// Collection; B-CORE-08) | -masterwork [N] (os projetos de Masterwork e as N primeiras do catalogo no Hall, padrao 3; Captura.Hall) |
-    /// -cotas (C-CORE-07, com -distrito royal_arsenal: as 3 faixas do patio de cotas com blocos em curso; Captura.Cotas) | -exportacao (C-CORE-09,
+    /// -cotas (C-CORE-07, com -distrito royal_arsenal: as 3 faixas do patio de cotas com blocos em curso; Captura.Cotas) | -arcano (C-CORE-08,
+    /// com -distrito arcane_foundry: os altares Estavel, estabilizando, Forcado e em sobrecarga; Captura.Arcano) | -exportacao (C-CORE-09,
     /// com -distrito grand_forge: a producao completa, o Felix no nivel 3, as rotas e um lote de 7 sinos a meio caminho; Captura.Exportacao).
     /// D-CORE-03/04: -evento id (relogio do LiveOps 1 h depois do inicio do evento, ex. forge_frenzy; entra sem esperar o requisito; evento que
     /// ainda nao roda neste build = Falha) | -eventocard (abre o cartao do evento) | -pass (abre o Passe; sem -evento o relogio vai ao T0 + 1 h) |
@@ -1397,6 +1398,13 @@ namespace FS
                     Loc.T("bancada.fazer", Textos.ItemNome((int)prox.Output, 1)), () => { _sim.Configura(st, prox.Output); ClosePanel(); Log("recipe_swap", st.Name, _sim.ItemDefs[(int)prox.Output].Id); });
                 return;
             }
+            if (_sim.Arcana(st))   // C-CORE-08: altar: o painel mostra o medidor e o botao troca o modo da proxima peca (Estavel <-> Forcado)
+            {
+                ShowPanel(Loc.T("qual.titulo", Textos.Estacao(st.Index)), Textos.Medidor(_sim, st) + "\n" + Textos.Detalhe(_sim, st),
+                    Loc.T(st.Forcado ? "arc.botao_estavel" : "arc.botao_forcado"),
+                    () => { _sim.ModoArcano(st, !st.Forcado); ClosePanel(); Log("arcane_mode", st.Name, st.Forcado ? "forcado" : "estavel"); });
+                return;
+            }
             ShowPanel(Loc.T("qual.titulo", Textos.Estacao(st.Index)), Textos.Detalhe(_sim, st), Loc.T("ui.ok"), ClosePanel);
             Log("quality_breakdown", st.Name, _sim.QualityPoints(st).ToString(CultureInfo.InvariantCulture));
         }
@@ -1762,6 +1770,7 @@ namespace FS
             if (rec != null) { Falha($"RECEITAS: '{rec}' nao e' receita liberada de uma bancada configuravel"); return; }
             if (Arg("-equipe") != null) Captura.Equipe(_sim);   // B-CORE-04 (fotos): a oficina com os 13 workers do Old Forge; o -gold vem depois
             if (Arg("-cotas") != null) Captura.Cotas(_sim);   // C-CORE-07 (fotos, -distrito royal_arsenal): as 3 faixas do patio com blocos em curso
+            if (Arg("-arcano") != null) Captura.Arcano(_sim);   // C-CORE-08 (fotos, -distrito arcane_foundry): os altares nos 4 estados do medidor
             if (Arg("-exportacao") != null) Captura.Exportacao(_sim);   // C-CORE-09 (fotos, -distrito grand_forge): as rotas e o lote do Mensageiro
             if (long.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long g)) _sim.Gold = Math.Max(0, g);   // A-CORE-06: aceita > int (foto da HUD)
             if (long.TryParse(Arg("-renome"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long rn)) _raiz.Renome.Ganha(rn - _raiz.Renome.Total);   // B-CORE-06: so sobe

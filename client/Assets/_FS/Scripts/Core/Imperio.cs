@@ -41,6 +41,9 @@ namespace FS.Core
             // ---- royal_arsenal (C-CORE-07): CONTEUDO_V1 §6
             new WorkerDef("wk_leonor", "Capitã Leonor", WorkerRole.Manager, Specialty.None, Distritos.RoyalArsenalId, null, null, 0, 0, null,
                 new long[] { 860000, 1700000, 3400000, 6900000 }, null),
+            // ---- arcane_foundry (C-CORE-08): CONTEUDO_V1 §6
+            new WorkerDef("wk_sibila", "Mestra Sibila", WorkerRole.Manager, Specialty.None, Distritos.ArcaneFoundryId, null, null, 0, 0, null,
+                new long[] { 2600000, 5200000, 10000000, 21000000 }, null),
             // ---- grand_forge (C-CORE-09): CONTEUDO_V1 §6 (o Grão-mestre Aurélio; "Aurélio" no cartao, o nome passa de 16)
             new WorkerDef("wk_aurelio", "Aurélio", WorkerRole.Manager, Specialty.None, Distritos.GrandForgeId, null, null, 0, 0, null,
                 new long[] { 7800000, 16000000, 31000000, 62000000 }, null),

@@ -483,6 +483,7 @@ namespace FS.Core
             foreach (Carrier w in Workers) Interact(w, fast);
             foreach (Station s in Stations) Produce(s, fast);
             Conveyor(fast);
+            TickArcano(fast);   // C-CORE-08: dreno e sobrecarga dos altares, no tempo das estacoes (Sim.Arcano.cs; sem altar, nada)
             TickCotas(dt);   // C-CORE-07: prazo dos blocos do patio de cotas (Sim.Cotas.cs; sem patio, nada)
             TickRotas(dt);   // C-CORE-09: rotas e lote do Mensageiro (Sim.Exportacao.cs; sem cais nem patio, nada)
             Anuncios.Tick(dt);   // E-PLAT-02: recargas e o Supply Drop entrando nas fornalhas
@@ -1020,6 +1021,7 @@ namespace FS.Core
                             if (l > Quality.Normal) Emit(Ev.Graded, s.Index, (int)l, s.Pos);
                         }
                         Emit(Ev.Crafted, (int)s.OutItem, s.Index, s.Pos);
+                        TerminaArcano(s);   // C-CORE-08: energizada, sequencia e sobrecarga do altar (Sim.Arcano.cs; fora de altar, nada)
                     }
                     else Stall(s, dt);
                 }
@@ -1028,8 +1030,10 @@ namespace FS.Core
             if (Trocando(s, dt)) return;   // C-CORE-06: bancada configuravel trocando de receita (Sim.Bancada)
             for (int k = 0; k < s.Ins.Length; k++) if (s.Ins[k] < s.Recipe.Inputs[k].Qty) { s.StarveSeconds += dt; return; }   // so com a receita inteira
             if (s.Out + s.Recipe.Qtd > s.OutCap) { Stall(s, dt); return; }
+            if (EsperaArcano(s)) return;   // C-CORE-08: altar Estavel sem espaco no medidor, ou em sobrecarga (Sim.Arcano.cs)
             for (int k = 0; k < s.Ins.Length; k++) s.Ins[k] -= s.Recipe.Inputs[k].Qty;
             s.Busy = true; s.Progress = 0f;
+            ComecaArcano(s);   // C-CORE-08: a carga entra no medidor
         }
 
         void Stall(Station s, float dt)
@@ -1256,7 +1260,7 @@ namespace FS.Core
         /// esta aqui explica 100% das pecas. Fornalha, deposito e balcao: tudo 0 (lingote e' intermediario).</summary>
         public int[] QualityBreakdown(Station s)
         {
-            var b = new int[(int)QualitySource.Buff + 1];   // uma por fonte (a ultima do enum)
+            var b = new int[(int)QualitySource.Energizada + 1];   // uma por fonte (a ultima do enum)
             if (!s.Produces || !IsProduct(s.OutItem)) return b;
             b[(int)QualitySource.StationLevel] = (s.Level - 1) * T.NivelEstacaoQ;
             b[(int)QualitySource.Worker] = Equipe.QualidadeOficial(s);   // B-CORE-04: oficial da familia
@@ -1266,6 +1270,7 @@ namespace FS.Core
             b[(int)QualitySource.Blueprint] = Projetos.Tecnica(s.Recipe.Family)   // B-CORE-07: tecnica da familia (posse do projeto)
                 + Projetos.TecnicaItem(ItemDefs[(int)s.OutItem].Id);   // C-CORE-06: e a de produto (lapidacao: colar e caixa)
             b[(int)QualitySource.Material] = TemLiga(s) ? T.LigaQ : 0;   // C-CORE-05: liga no slot = a proxima peca leva uma
+            b[(int)QualitySource.Energizada] = QualidadeEnergizada(s);   // C-CORE-08: a peca do altar no Forcado
             return b;
         }
 
@@ -1661,6 +1666,7 @@ namespace FS.Core
             if (Array.Exists(PecasComLiga, n => n > 0)) sb.Append("liga=").Append(IdCounts(PecasComLiga)).Append('\n');   // C-CORE-05: sem liga, o texto de antes
             SalvaBancadas(sb); SalvaFamilias(sb);   // C-CORE-06: ofcN=, fam= e ricos= (so no distrito que tem e fora do padrao)
             SaveCotas(sb);   // C-CORE-07: cota=/cotab=/cotap=/cotar= (so no distrito com patio e fora do padrao)
+            SaveArcano(sb);  // C-CORE-08: arcN=/arce= (so no distrito com altar e fora do padrao)
             SaveRotas(sb);   // C-CORE-09: gf=/gfl=/gflq= (so no distrito com cais ou patio de exportacao e fora do padrao)
             sb.Append("stock=").Append(Stock[2]).Append(',').Append(Stock[3]).Append(',').Append(Stock[4]).Append(',').Append(Stock[5]).Append('\n');
             sb.Append("sold=").Append(SoldItems[2]).Append(',').Append(SoldItems[3]).Append(',').Append(SoldItems[4]).Append(',').Append(SoldItems[5]).Append('\n');
@@ -1826,6 +1832,7 @@ namespace FS.Core
             sim.Projetos.Load(text);   // B-CORE-07: antes do pad (o parcial da bigorna longa so fica com o projeto); sem bp= o 1o Tick da o retroativo dos marcos
             sim.Colecao.Load(text);    // B-CORE-08: colq= (Superiores por item; Normal e Fina saem do solds= e do bpq=)
             sim.LoadCotas(text);       // C-CORE-07: o patio de cotas (save sem as linhas = patio vazio)
+            sim.LoadArcano(text);      // C-CORE-08: os medidores dos altares (save sem as linhas = vazios, Estavel)
             sim.LoadRotas(text);       // C-CORE-09: rotas e lote (save sem as linhas = rotas paradas e patio vazio)
             sim.Gold += refund;
             sim.UpgradesBought = 0;

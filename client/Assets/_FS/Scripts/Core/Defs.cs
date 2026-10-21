@@ -66,8 +66,9 @@ namespace FS.Core
     public enum Quality { Normal, Fine, Superior, Masterwork }
 
     /// <summary>Fontes dos pontos de qualidade de uma estacao (DM §15, Sim.QualityBreakdown). Existem o nivel da estacao (B-CORE-03) e a tecnica
-    /// (Blueprint da familia, B-CORE-07); oficial e fundidor (B-CORE-04, C-CORE-05), liga (Material, C-CORE-05) e buff (mestre de obras, evento).</summary>
-    public enum QualitySource { StationLevel, Worker, Blueprint, Material, Buff }
+    /// (Blueprint da familia, B-CORE-07); oficial e fundidor (B-CORE-04, C-CORE-05), liga (Material, C-CORE-05) e buff (mestre de obras, evento).
+    /// C-CORE-08 (anexado): Energizada = a peca do altar no modo Forcado (Sim.Arcano.cs; CONTEUDO_V1 §2.5 regra 4).</summary>
+    public enum QualitySource { StationLevel, Worker, Blueprint, Material, Buff, Energizada }
 
     /// <summary>Eventos de um tick, para a view (SFX, particulas, diario). A = item/upgrade/estacao, B = detalhe.
     /// Milestone: bau de marco apareceu (A = indice em Balance.Milestones, B = ouro); ChestOpened: o jogador abriu (A = indice, B = ouro).
@@ -312,6 +313,15 @@ namespace FS.Core
         public float CotaPrazo = 180f, CotaPrazoQm = 240f;
         /// <summary>DistrictDef.Selo comprado: q +SeloQ em toda estacao que faz produto no distrito (QualitySource.Buff; selo_arsenal, §5.4).</summary>
         public int SeloQ = 25;
+        // ---- arcane_foundry (C-CORE-08): medidor de carga dos altares (CONTEUDO_V1 §2.5, Sim.Arcano.cs), em centesimos (100 = 1 ponto de E)
+        /// <summary>Carga de cada peca, por handle de item (lanterna 15, anel 12...; o Ajuste do distrito); null = nenhum altar (os outros
+        /// distritos). Estacao com carga > 0 no produto e' altar: tem medidor E e modo Estavel/Forcado.</summary>
+        public int[] CargaArcana;
+        /// <summary>E cai DrenoBase/s (300 = 3/s); cada condensador soma DrenoCondensador; a oficial arcana (wk_isis) DrenoIsis no nivel 1 e
+        /// DrenoIsisPasso nos niveis 3, 5, 7 e 9. ArcanoTeto = 100 (o Estavel nunca passa; o Forcado que passa sobrecarrega): pausa de
+        /// SobrecargaSeg e depois E = SobrecargaE. EnergizadaQ = q da peca energizada (Forcado).</summary>
+        public int DrenoBase = 300, DrenoCondensador = 200, DrenoIsis = 100, DrenoIsisPasso = 50, ArcanoTeto = 10000, SobrecargaE = 4000, EnergizadaQ = 20;
+        public float SobrecargaSeg = 10f;
         // ---- grand_forge (C-CORE-09): rotas de importacao e lotes de exportacao do Mensageiro (CONTEUDO_V1 §2.6, Sim.Exportacao.cs)
         /// <summary>Rotas: ImportCap un/min com o mensageiro, +ImportCais2 com o cais2, +ImportNivel por nivel do Felix acima do 1, ate ImportMax;
         /// cada importado custa ImportCustoPct% do PriceOf Normal dele na renda de fundo da origem (Imperio.Importou).</summary>
