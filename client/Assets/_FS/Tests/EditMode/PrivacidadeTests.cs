@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using FS.Core;
 
 namespace FS.Tests
 {
@@ -7,6 +8,29 @@ namespace FS.Tests
     public class PrivacidadeTests
     {
         static readonly Faixa[] Todas = { Faixa.Menor13, Faixa.De13a17, Faixa.Adulto };
+
+        /// <summary>GDD "Conflitos" 1: a tela de idade abre so quando o 1o botao de anuncio aparece (sem resposta, fora de foto/smoke), ou com
+        /// a flag; e no jogo de verdade a 1a venda sai antes disso (a tela nunca fica antes do 1o toque) e o SDK so inicia depois da resposta.</summary>
+        [Test]
+        public void TelaDeIdade_NoPrimeiroBotaoDeAnuncio_DepoisDaPrimeiraVenda()
+        {
+            Assert.IsFalse(Privacidade.AbreTela(false, false, false, false), "antes do 1o anuncio: nao abre");
+            Assert.IsTrue(Privacidade.AbreTela(false, false, true, false), "1o anuncio, sem resposta: abre");
+            Assert.IsFalse(Privacidade.AbreTela(true, false, true, false), "ja respondida (versao atual): nao abre");
+            Assert.IsFalse(Privacidade.AbreTela(false, true, true, false), "foto e smoke: nao abre");
+            Assert.IsTrue(Privacidade.AbreTela(true, true, false, true), "-privacidade: sempre");
+            var s = new Sim(); var bot = new Bot();
+            float venda = -1f, anuncio = -1f;
+            for (float t = 0f; t < 300f && anuncio < 0f; t += BalanceTests.Dt)
+            {
+                bot.Step(s, BalanceTests.Dt);
+                if (venda < 0f && s.FirstSaleTime >= 0f) venda = s.Time;
+                if (anuncio < 0f && s.AdsUnlocked) anuncio = s.Time;
+            }
+            TestContext.WriteLine($"1a venda {venda:0.0} s; 1o botao de anuncio (a tela) {anuncio:0.0} s");
+            Assert.That(venda, Is.InRange(0f, 90f), "1a venda < 90 s sem a tela no caminho");
+            Assert.Greater(anuncio, venda, "a tela vem depois da 1a venda");
+        }
 
         [Test]
         public void Flags_FaixaXAceite()

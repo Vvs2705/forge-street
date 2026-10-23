@@ -115,6 +115,7 @@ namespace FS
         Hint _hintH; int _hintArg = -1, _hintU;   // v0.6d: a dica so e' remontada quando muda (sem string nova a cada 0,25 s)
         RectTransform _cfg;   // v0.6b: cartao de configuracoes (Som, Vibracao, versao)
         TelaPrivacidade _priv;   // E-PLAT-01: idade + consentimento (Privacidade.cs)
+        bool _privPedida;        // a tela de idade ja abriu nesta sessao (abre 1x, no 1o botao de anuncio)
         PainelMetas _metas;      // D-CORE-02: diarias, semanais, conquistas e login (PainelMetas.cs)
         PainelProjetos _projetos;   // B-CORE-07: Blueprints possuidos e bloqueados com a fonte (PainelProjetos.cs)
         PainelHall _hall;           // B-CORE-08: Hall das obras-primas e Collection (PainelHall.cs)
@@ -238,7 +239,7 @@ namespace FS
             // Fotos e smoke (-testsession, -record, -autoplay) nao a veem, salvo com -privacidade [18]
             _priv = new TelaPrivacidade(_safe, Responder);
             string priv = Arg("-privacidade");
-            if (priv != null || (!_testSession && !Ads.Resposta(out _, out _))) _priv.Abrir(null, priv == "18");
+            if (priv != null) _priv.Abrir(null, priv == "18");   // sem a flag: abre no 1o botao de anuncio (Update, Privacidade.AbreTela)
             if (Ads.Resposta(out Faixa rf, out bool ra)) Liberar(rf, ra);   // A-PLAT-08/09: respondida numa abertura anterior = rede liberada ja
             // Programa de arte, etapa 2: o logo (C2) por cima de tudo ao abrir; fotos e smoke nao o veem, salvo -abertura (que o segura na tela)
             if (!_testSession || Arg("-abertura") != null) StartCoroutine(Abertura(Arg("-abertura") != null));
@@ -408,6 +409,7 @@ namespace FS
         void Update()
         {
             if (_headless) return;
+            if (!_privPedida && _raiz.AdsUnlocked) { _privPedida = true; if (Privacidade.AbreTela(Ads.Resposta(out _, out _), _testSession, true, false)) _priv.Abrir(null); }   // 1x, no 1o quadro com anuncio
             // Input.GetKeyDown: com o GameActivity o voltar do Android nao chega ao Input System, so ao Input Manager legado (Setup: Both)
             bool back = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
 #if ENABLE_LEGACY_INPUT_MANAGER

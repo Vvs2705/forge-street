@@ -19,6 +19,14 @@ namespace FS
     /// </summary>
     public static class Privacidade
     {
+        /// <summary>
+        /// GDD "Conflitos" 1 (recomendacao): a tela de idade nao abre no 1o toque (contra a "1a venda < 90 s" do §3.3), e sim quando o 1o
+        /// botao de anuncio aparece (`anuncios` = Sim.AdsUnlocked: depois da 1a melhoria, D6). Ate la o SDK nem inicia (Ads.Responder so
+        /// depois da resposta). `forcada` = a flag -privacidade (fotos). Fotos e smoke (testSession) nao a veem.
+        /// </summary>
+        public static bool AbreTela(bool respondida, bool testSession, bool anuncios, bool forcada) =>
+            forcada || !testSession && !respondida && anuncios;
+
         /// <summary>Versao do texto da tela: resposta gravada com outra versao nao vale e a tela pergunta de novo. Mudou o texto pt-BR? Suba
         /// a versao (o PrivacidadeTests trava o Texto pelo hash e falha ate subir). DM §109: en/es podem mudar sem pedir de novo.</summary>
         public const int Versao = 1;

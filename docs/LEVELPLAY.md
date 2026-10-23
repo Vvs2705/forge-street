@@ -136,7 +136,7 @@ Tela de idade (E-PLAT-01). O `-testsession` não mostra a tela nem grava a respo
 ./win/ForgeStreet.exe -testsession -settings -shot "C:/caminho/absoluto/config_privacidade.png" -shotdelay 1.5     # botão PRIVACIDADE
 ```
 
-Sem `-testsession`, a tela aparece na 1ª abertura de verdade. Para ver de novo no PC, use Configurações > PRIVACIDADE ou apague o valor `fs_privacidade` do PlayerPrefs (no registro, em `HKCU\Software\<empresa>\<produto>`).
+Sem `-testsession`, a tela aparece quando o 1º botão de anúncio aparece (depois da 1ª melhoria; GDD "Conflitos" 1, 2026-10-23: antes, na 1ª abertura). Para ver de novo no PC, use Configurações > PRIVACIDADE ou apague o valor `fs_privacidade` do PlayerPrefs (no registro, em `HKCU\Software\<empresa>\<produto>`).
 
 ### Editor
 
@@ -194,7 +194,7 @@ Até a 0.6 o `AdsLevelPlay` fixava COPPA false, GDPR false e CCPA true para todo
 
 ### Fluxo
 
-1. **1ª abertura** (sem resposta, ou resposta com versão de texto antiga): o `AdsLevelPlay` **não toca no LevelPlay** (nem os eventos, nem o `SetAdaptersDebug`), loga `ad_init espera consentimento`, e o `Ready` é false (os botões de anúncio somem, inclusive o simulado do dev). O jogo funciona, e a oficina fica parada enquanto a tela está aberta (o `-bot` continua jogando por baixo).
+1. **Até a resposta** (a tela abre no 1º botão de anúncio; sem resposta, ou resposta com versão de texto antiga): o `AdsLevelPlay` **não toca no LevelPlay** (nem os eventos, nem o `SetAdaptersDebug`), loga `ad_init espera consentimento`, e o `Ready` é false (os botões de anúncio somem, inclusive o simulado do dev). O jogo funciona, e a oficina fica parada enquanto a tela está aberta (o `-bot` continua jogando por baixo).
 2. **Passo 1, "Qual é a sua idade?"**: 3 botões iguais, um embaixo do outro, na ordem da idade ("Menos de 13", "13 a 17", "18 ou mais"), nenhum pré-marcado. Não tem como fechar sem responder (o voltar do Android não faz nada aqui).
 3. **"Menos de 13" e "13 a 17"** fecham a tela: nada é perguntado sobre personalização, porque a resposta é sempre não.
 4. **"18 ou mais"** vai ao passo 2, **"Anúncios personalizados?"**: Recusar e Aceitar lado a lado, com o mesmo tamanho, a mesma cor (face `HudEdge`, texto `HudFace`) e a mesma fonte. VOLTAR (ou o voltar do Android) volta para a idade.
