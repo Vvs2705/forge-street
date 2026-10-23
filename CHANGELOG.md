@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Forja estelar da Grand Forge mais clara:** a folha saiu escura do render (luminância média 64; as outras estações ficam em 110–150). O brilho sobe em HSV com a saturação, e o fogo azul e branco do prompt entra como brilho na boca da forja (`client/tools/clarear_sprite.py`; luminância 94). Sem crédito do Tripo.
 - **Screenshots da loja (G-UA-03):** as 8 peças do `ASO.md` §7 em pt, en e es, tiradas do jogo real com a interface v2, sem a marca de desenvolvimento (`Setup.BuildWindowsLoja`) e com a legenda na fonte da marca (`client/tools/loja_screenshots.py`; `arte/loja/screenshots/`).
 - **Cabeçalho nos painéis (sobra da auditoria visual):** configurações, loja, metas, Hall, projetos, Passe e o cartão do cofre/mapa ganham uma faixa de couro de ponta a ponta com o título em creme e contorno (`Art.Cabecalho`).
 - **Recompensa com vida (programa de arte, etapa 6):** o cofre offline entra com pop, raios girando e faíscas atrás do "+N", o número conta até o prêmio e, no PEGAR, 10 moedas voam até a HUD; o baú de marco abre de verdade (agacha, pula com brilho e raios, faíscas) antes de sumir. Só código, 0 crédito.
