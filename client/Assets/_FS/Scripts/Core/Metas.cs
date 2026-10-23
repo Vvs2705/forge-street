@@ -55,6 +55,7 @@ namespace FS.Core
             "quality_crafted", "quality_superior", "master_strike", "event_enter",
             "district_unlock", "collection_milestone", "blueprint_unlock", "reputation_level", "station_level", "event_complete", "pass_level",
             "masterwork_empire",   // obras de todo distrito (o ledger mw: do Imperio); o masterwork_unlock conta so o Hall da raiz
+            "reputation_gain", "event_points",   // pool C das diarias: Renome ganho (total) e pontos do evento ativo, derivados (Valor)
         };
 
         public sealed class Slot { public MetaDef Def; public long Base, Alvo; }
@@ -162,6 +163,8 @@ namespace FS.Core
                 case "collection_milestone": return _sim.Renome.Ledger.Contains(Colecao.Prefixo + d.Ref) ? 1 : 0;   // Ref = marco (Colecao.Tx)
                 case "blueprint_unlock": return _sim.Projetos.Count;
                 case "reputation_level": return _sim.Renome.Nivel;
+                case "reputation_gain": return _sim.Renome.Total;   // pool C: a vaga guarda a base, o feito e' o ganho desde ela
+                case "event_points": return _sim.LiveOps.Evento != null ? _sim.LiveOps.PontosDe(_sim.LiveOps.Evento) : 0;
                 case "station_level":   // filtro = nivel: familias com um nivel >= filtro comprado (a bigorna longa, Meta sem estacao, nao conta)
                     UpgradeDef[] ups = _sim.UpgradeDefs;
                     var fam = new HashSet<string>();
@@ -237,7 +240,8 @@ namespace FS.Core
         {
             if (!Aberto) return;
             for (int p = 0; p < NDiarias; p++)
-                if (Diarias[p] == null) Diarias[p] = Novo(Escolhe(MetasDefs.Diarias, p, Dia * 5 + p, Diarias) ?? Escolhe(MetasDefs.Diarias, 0, Dia * 5 + p, Diarias));
+                if (Diarias[p] == null) Diarias[p] = Novo((p == PoolC && EventoAtivo ? Escolhe(DoEvento, p, Dia, Diarias) : null)
+                    ?? Escolhe(MetasDefs.Diarias, p, Dia * 5 + p, Diarias) ?? Escolhe(MetasDefs.Diarias, 0, Dia * 5 + p, Diarias));
             for (int k = 0; k < NSemanais; k++)
                 if (Semanais[k] == null) Semanais[k] = Novo(Escolhe(MetasDefs.Semanais, -1, Semana * 3 + k, Semanais));
         }
@@ -253,9 +257,29 @@ namespace FS.Core
             return null;
         }
 
+        const int PoolC = 2;
+        /// <summary>Pool C com evento ativo: so as 2 de evento, alternando por dia (LIVEOPS_V1 §4.1).</summary>
+        static readonly MetaDef[] DoEvento = Array.FindAll(MetasDefs.Diarias, d => d.Pool == PoolC && (d.Evento == "event_points" || d.Evento == "order_complete"));
+        bool EventoAtivo => _sim.LiveOps.Evento != null;
+
+        /// <summary>Pool C (LIVEOPS_V1 §4.2 #25-34): Fina so depois da 1a peca Fina daquele item (ou de qualquer uma, sem filtro), Superior e golpe
+        /// com a Quality aberta, as de evento so com um ativo (e com ele, as outras ficam para depois do evento).</summary>
+        bool LivreC(MetaDef d)
+        {
+            bool evento = Array.IndexOf(DoEvento, d) >= 0;
+            if (evento || EventoAtivo) return evento && EventoAtivo;
+            switch (d.Evento)
+            {
+                case "quality_crafted": return Cont.TryGetValue(Chave(d.Evento, d.Filtro), out long n) && n > 0;
+                case "quality_superior": case "master_strike": return _sim.Encomendas.TipoAberto(OrderType.Quality);
+                default: return true;
+            }
+        }
+
         bool Livre(MetaDef d)
         {
             if (d.Abre != null && !_sim.Bought[Upgrades.IndexOf(d.Abre)]) return false;
+            if (d.Tipo == TipoMeta.Diaria && d.Pool == PoolC) return LivreC(d);
             switch (d.Evento)   // ponytail: "compre 3" com 2 a venda ainda aparece; o rodizio so pula quando nao ha mais nada
             {
                 case "upgrade_buy": case "currency_sink": return _sim.UpgradesBought < Upgrades.Count;
