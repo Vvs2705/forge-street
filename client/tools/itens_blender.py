@@ -782,6 +782,38 @@ def lamina_bruta(p):
     tinge(p, {"lamina": "aco", "sulco": "aco_esc"})
 
 
+# ------------------------------------------------------------------ 2026-10-23: insumos da Arcane Foundry e da Grand Forge que caiam no bloco colorido
+
+def cristal_bruto(p):
+    """Cristal bruto (deposito da Foundry): a pedra do minerio em rocha arcana com veio ciano e nucleo de cristal."""
+    A.minerio(p)
+    tinge(p, {"rocha": "rocha_r", "veio": "ciano", "nucleo": "cristal"})
+
+
+def lingote_runico(p):
+    """Lingote runico: a barra do lingote em roxo-noite arcano, tampo ciano."""
+    A.lingote(p)
+    tinge(p, {"lingote": "arcano", "lingote_topo": "ciano"})
+
+
+def barra_bronze(p):
+    """Barra de bronze (Grand Forge): a barra do lingote em bronze, tampo dourado claro."""
+    A.lingote(p)
+    tinge(p, {"lingote": "bronze", "lingote_topo": "liga"})
+
+
+def pedra_estelar(p):
+    """Pedra estelar (cratera): a pedra do minerio em azul-noite com veio e nucleo de estrela."""
+    A.minerio(p)
+    tinge(p, {"rocha": "noite", "veio": "estrela", "nucleo": "estrela"})
+
+
+def aco_estelar(p):
+    """Aco estelar: a barra do lingote em azul-noite, tampo prateado."""
+    A.lingote(p)
+    tinge(p, {"lingote": "noite", "lingote_topo": "prata"})
+
+
 # ------------------------------------------------------------------ catalogo: id -> (construtor, pose do icone, pose deitada)
 
 ITENS = {
@@ -840,6 +872,12 @@ ITENS = {
     "item_lamina": (lamina_bruta, R("Y", 45) @ R("Z", 18), DEITA_X),
     "item_minerio_runico": (minerio_runico, R("X", 15) @ R("Z", 18), EM_PE),
     "item_cristal": (cristal, R("X", 10) @ R("Z", 15), EM_PE),
+    # 2026-10-23: insumos da Foundry e da Grand Forge
+    "item_cristal_bruto": (cristal_bruto, R("X", 22) @ R("Z", 18), Matrix()),
+    "item_lingote_runico": (lingote_runico, R("X", 32) @ R("Z", -24), R("Z", -8)),
+    "item_bronze": (barra_bronze, R("X", 32) @ R("Z", -24), R("Z", -8)),
+    "item_pedra_estelar": (pedra_estelar, R("X", 22) @ R("Z", 18), Matrix()),
+    "item_aco_estelar": (aco_estelar, R("X", 32) @ R("Z", -24), R("Z", -8)),
 }
 
 
