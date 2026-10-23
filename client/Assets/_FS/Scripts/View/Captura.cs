@@ -32,11 +32,10 @@ namespace FS
             ("full_district", "-buy 29 -warmup 120 -px 4.5,8.2 -recordsec 15"),                       // interino ate a Wave C: a oficina inteira
             ("district_unlock", "-buyids " + Oficina + ",15@100 -warmup 98 -px 8,8.2 -recordsec 8"),   // interino: Corredor aos 100 s (ouro 704)
             // G-UA-03, sequencia B "Ache o gargalo" (CRIATIVOS_BANCO_V1 §c): o ajudante enche a fornalha e ninguem leva o lingote (lampada vermelha);
-            // o menu com os cartoes; as fornalhas a 3x; a forja vista de perto com a fila cheia
+            // o menu com os cartoes; as fornalhas a 3x
             ("gargalo", "-buyids 0,2 -warmup 60 -px 3.2,6 -cam 8 -recordsec 6"),
             ("menu_cartoes", "-buyids 0,1,2,3,4,5,6 -warmup 40 -gold 2500 -px 4.5,8.2 -menu -recordsec 4"),
             ("boost3x", "-buyids 0,1,2,3,4,5,6,7,8,9 -boost 2 -bot -warmup 5 -recordsec 8"),
-            ("forja_fila", "-buyids 10,25,26,27,28 -warmup 45 -px 1.8,9.5 -cam 7 -recordfull -recordsec 6"),
         };
 
         public static string Nomes => string.Join(" ", Array.ConvertAll(Presets, p => p.Nome));

@@ -38,16 +38,16 @@ PECAS = [
 
 
 # Sequencia B, "Ache o gargalo" (CRIATIVOS_BANCO_V1 §c; ASO.md §7): a 8a ("sem anuncio forcado") espera o FS-5/P3, entao entra a forja
-# de perto com a fila cheia, como o banco manda
+# de perto (o conveyor da sequencia A, com outra legenda)
 PECAS_B = [
     (1, "huge_queue", 150, "A FILA LOTOU. E AGORA?", "THE LINE IS FULL. NOW WHAT?", "LA COLA SE LLENÓ. ¿Y AHORA?"),
-    (2, "gargalo", 150, "ACHE O GARGALO", "FIND THE BOTTLENECK", "ENCUENTRA EL ATASCO"),
+    (2, "gargalo", 120, "ACHE O GARGALO", "FIND THE BOTTLENECK", "ENCUENTRA EL ATASCO"),
     (3, "menu_cartoes", 60, "ESCOLHA A MELHORIA CERTA", "PICK THE RIGHT UPGRADE", "ELIGE LA MEJORA CORRECTA"),
-    (4, "boost3x", 150, "ACELERE QUANDO QUISER", "SPEED UP ANYTIME", "ACELERA CUANDO QUIERAS"),
+    (4, "boost3x", 60, "ACELERE QUANDO QUISER", "SPEED UP ANYTIME", "ACELERA CUANDO QUIERAS"),
     (5, "order", 510, "CUMPRA ENCOMENDAS", "COMPLETE ORDERS", "CUMPLE PEDIDOS"),
     (6, "offline", 60, "SUA OFICINA RENDE ATÉ 2 H FORA", "YOUR SHOP EARNS 2 H AWAY", "TU TALLER GANA 2 H SIN TI"),
     (7, "full_district", 300, "SUA EQUIPE TRABALHA POR VOCÊ", "YOUR CREW WORKS FOR YOU", "TU EQUIPO TRABAJA POR TI"),
-    (8, "forja_fila", 120, "A FORJA NUNCA PARA", "THE FORGE NEVER STOPS", "LA FORJA NUNCA PARA"),
+    (8, "conveyor", 180, "A FORJA NUNCA PARA", "THE FORGE NEVER STOPS", "LA FORJA NUNCA PARA"),
 ]
 
 
