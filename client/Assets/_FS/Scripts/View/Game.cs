@@ -277,7 +277,7 @@ namespace FS
             Offline();
             MetasAgora(false);   // D-CORE-01: o dia de hoje (o que ja estava pronto ao abrir nao vira aviso)
             if (_loja is LojaFalsa || _diario.Liberada) IniciarLoja();   // a loja real conecta depois da tela de idade (Liberar), como o LevelPlay
-            if (_loja != null && Arg("-lojacompra") != null) Comprar(Compras.Catalogo[0].Id);   // foto do comprado: o fluxo inteiro na abertura
+            if (_loja != null && Arg("-lojacompra") != null) Comprar((Compras.Def(Arg("-lojacompra")) ?? Compras.Catalogo[0]).Id);   // foto do comprado (-lojacompra <id>: outro produto)
             bool foto = Arg("-loja") != null;   // foto do painel (com -lojafalsa)
             if (foto && _lojaUi != null && _sim.T.Loja) _lojaUi.Abrir();
             // D-CORE-03/04 (fotos): -evento entra sem esperar o requisito; -passxp da XP; -eventocard e -pass abrem os modais
