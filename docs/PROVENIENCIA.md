@@ -599,3 +599,30 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 | altar_escudos | arcane_foundry: altar dos escudos | #1 (altar com o escudo hexagonal de prata e anel rúnico ciano em pé, martelo, rebites, lanterna) | `894447c5-b6f1-4372-a3e7-c22269ead3e9` | 45 | 6126 | `arte/tripo/altar_escudos/altar_escudos.zip` 2774429 · `8bfcb8cda302fc568de1f08a75c153ba6bfb7fec8cf543c54ca22e63e2afe9a0` | `tripo_convert_85628717-a046-4a51-a3be-22569301e90d.fbx` 200428 · `43fd3811534ccf2361602c9314fb51e59af5dca2566b955465c89fb98328eb3e` | `9985d0b9da4a02b12d91bd291337e0e0ae6788bbfbe68f59e6e54d96c9cdaa21` |
 | cadinho_celeste | arcane_foundry: cadinho celeste | #2 (cadinho de prata no tripé sobre chama ciano, giroscópio de prata, barra sextavada ciano, lanterna) | `5b33b09d-fb4b-4a01-8668-8c46d638b951` | 45 | 7618 | `arte/tripo/cadinho_celeste/cadinho_celeste.zip` 3167938 · `0d7a370d79cc36ddf9b319f92e24fe915ea5148c276f9c1c2ea7808a01656e4f` | `tripo_convert_93abfd3c-afb4-4b5a-ab90-5638f6aa3841.fbx` 244220 · `10458d2e6dec162a2fd66174e1332460745ebdd2dbaa5396456fbffa0e932900` | `9db88a955ce4a3978c196adccb34a3021c467ecf2d5c8028697aecb9e5d74efc` |
 | vulcana | armorers_row: worker Vulcana (Fundidora da Row) | #4 de 4 (fundidora ruiva de trança, casaco vermelho-escuro, viseira erguida, manoplas, tenaz nas costas, fuligem; pose T) | `8f0e54a7-97f5-4df9-ad9c-e46d02323dca` | 65 (45 + rig 20) | 7276 | `arte/tripo/vulcana/vulcana_mixamo.zip` 27471606 · `5913181c20c5c9c12690daf0a79ea02d1783f4f6ffec730c5b1c7bb7645cc3c2` | `tripo_convert_27c3f66e-a655-4b66-b898-20bcdfd2b4ad.fbx` 14091808 · `557335f6e2614e50b65bc3e01cc19605af17cdda5f9272107fde10317a7d71c7` | `Idle.png` 71d19ea9da694e20fcd3eae7b6a62b685d30958004a006a5e0772093be20a50f |
+
+## 19. Efeitos sonoros CC0 da Kenney (feat/audio-kenney, 2026-10-23)
+
+- **Licença:** Creative Commons Zero (CC0 1.0, domínio público; crédito opcional), conforme o `License.txt` de cada pacote ("Created/distributed by Kenney (www.kenney.nl)"). Uso comercial livre, sem atribuição obrigatória; o jogo credita "Kenney (kenney.nl)" mesmo assim, quando houver tela de créditos.
+- **Origem:** pacotes oficiais baixados de kenney.nl (página de cada pacote) com o aval do Vinicius de 2026-10-23 ("…O DOWLOAD DE TUDO QUE FOR NECESSARIO"); zips fora do git, em `%LOCALAPPDATA%\Temp\fs_audio_kenney`:
+  - `kenney_impact-sounds.zip` 800 850 bytes · `029d734af1582474edf3a694d1b0cebc97c1c152f2f39fa34d4c2bafc5de77f8`
+  - `kenney_interface-sounds.zip` 834 536 bytes · `f2193d072726d6758a5f7871b2dcc54dcce0d5c35c6f0a62f92549b327c81232`
+  - `kenney_rpg-audio.zip` 964 837 bytes · `6dbeaf8544da958d8f2adcb4a4a4b76c1ade34a05f8ab9edccd327da7375f38b`
+- **Tratamento:** `client/tools/audio_cc0.py` (ffmpeg): mono 22 050 Hz, corte do silêncio, ganho com limitador suave (tanh) até o RMS da janela de 50 ms mais forte ficar no do clip sintetizado que o arquivo substitui (`AUDIO.md` §2), WAV 16 bits. Conferido pelo `SomTests.Cc0_NoNivelDoSintetizado` (±1 dB).
+
+| arquivo (`client/Assets/_FS/Resources/Audio/`) | som da Sintese | origem no pacote | duração | alvo RMS 50 ms (dBFS) | SHA-256 |
+|---|---|---|---|---|---|
+| `hammer/hammer_0.wav` | `hammer` | `kenney_impact-sounds/Audio/impactMetal_heavy_000.ogg` | 0.16 s | -11.2 | `398c49cddc2cdc4f4747bd7a7090a20660026ae7eb5e7b042f5f4f8f1d86ca82` |
+| `hammer/hammer_1.wav` | `hammer` | `kenney_impact-sounds/Audio/impactMetal_heavy_001.ogg` | 0.17 s | -11.2 | `ec383eb2a5d98beed6e7acf6f636fc358b88d33ad38f9eb8c32e6da913517607` |
+| `hammer/hammer_2.wav` | `hammer` | `kenney_impact-sounds/Audio/impactMetal_heavy_002.ogg` | 0.11 s | -11.2 | `0d52187c6f08537094efade6a8f9baf12114ce27a6f29debbc6f6be3b85626a0` |
+| `martelo/martelo_0.wav` | `martelo` | `kenney_impact-sounds/Audio/impactMetal_medium_000.ogg` | 0.14 s | -11.2 | `11ebcc095c3528850421224d0ff7d092f64b0648708f71535229a2c54bc4e740` |
+| `martelo/martelo_1.wav` | `martelo` | `kenney_impact-sounds/Audio/impactMetal_medium_001.ogg` | 0.09 s | -11.2 | `f29c44a43c89267151eb2eb19494408314f054d4856e1385cc69676059f74f29` |
+| `martelo/martelo_2.wav` | `martelo` | `kenney_impact-sounds/Audio/impactMetal_medium_002.ogg` | 0.07 s | -11.2 | `1c997e9a9f699b7107b5ac5bf9af363f667b4cd0a48c1b6fceb02cae1e9be976` |
+| `ore/ore_0.wav` | `ore` | `kenney_impact-sounds/Audio/impactMining_000.ogg` | 0.53 s | -14.1 | `34061ba7ea06eacaf9152a27d85e9e777858ff9f4ef644de45515e39b0f39dc4` |
+| `ore/ore_1.wav` | `ore` | `kenney_impact-sounds/Audio/impactMining_001.ogg` | 0.50 s | -14.1 | `480461183dfcc326a0175de332f19f51c3d47ec1532121081e284fd150a76643` |
+| `drop/drop_0.wav` | `drop` | `kenney_impact-sounds/Audio/impactWood_light_000.ogg` | 0.07 s | -12.2 | `0acd0369e77941e0339deeb579649bd0c9c09f19bb82fd202af8aa0f629c9e02` |
+| `drop/drop_1.wav` | `drop` | `kenney_impact-sounds/Audio/impactWood_light_001.ogg` | 0.07 s | -12.2 | `b1682e6aabc8241352469cd73eb01dc50bad822c8d7726c05def48210acd0bdb` |
+| `esteira/esteira_0.wav` | `esteira` | `kenney_impact-sounds/Audio/impactPlate_light_000.ogg` | 0.26 s | -15.2 | `50b00463b4cb8ceaca85441bdceddb61ffcad88e2d93f7399e6e8736ba6bae39` |
+| `esteira/esteira_1.wav` | `esteira` | `kenney_impact-sounds/Audio/impactPlate_light_001.ogg` | 0.30 s | -15.2 | `e999c89637a67e059fdbd1840847049a6cd183b17a0170c39a371add7acf031b` |
+| `click/click_0.wav` | `click` | `kenney_interface-sounds/Audio/click_002.ogg` | 0.01 s | -19.0 | `f711297091c97d00ec4ad0a408500bc414cd1c39a42e2ec393796f8e2dc555e3` |
+| `coin/coin_0.wav` | `coin` | `kenney_rpg-audio/Audio/handleCoins.ogg` | 0.69 s | -13.5 | `5474916482ea188f0013578def221a61fffc85833e0ab24b307dd1953b97f698` |
+| `coin/coin_1.wav` | `coin` | `kenney_rpg-audio/Audio/handleCoins2.ogg` | 0.21 s | -13.5 | `ca04d9c269709b46fc501d59a838e3a7b808baad4e34bf48f633b620e08b3ec7` |

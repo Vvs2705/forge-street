@@ -489,8 +489,14 @@ namespace FS
             _musica = Fonte(host, false);   // 1 volta e pausa (Musica), nao laco
             foreach (string n in Sintese.Nomes)
             {
-                var v = new AudioClip[Sintese.Variacoes(n)];
-                for (int k = 0; k < v.Length; k++) v[k] = Clip(n + k, Sintese.Efeito(n, k), Sintese.Taxa);
+                // efeitos reais CC0 (Kenney, AUDIO.md §9) quando a pasta Resources/Audio/<nome> existe, no mesmo RMS do sintetizado; senao a Sintese
+                AudioClip[] v = Resources.LoadAll<AudioClip>("Audio/" + n);
+                Array.Sort(v, (a, b) => string.CompareOrdinal(a.name, b.name));
+                if (v.Length == 0)
+                {
+                    v = new AudioClip[Sintese.Variacoes(n)];
+                    for (int k = 0; k < v.Length; k++) v[k] = Clip(n + k, Sintese.Efeito(n, k), Sintese.Taxa);
+                }
                 Sons[n] = new Som { V = v };
             }
             _mix = new Mixagem(n => Sons[n].V[0].length);
