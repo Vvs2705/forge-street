@@ -188,7 +188,8 @@ migracao() {  # migracao <apk-antigo> <apk-novo>
 # base = permissões do APK 0.6.0 (LevelPlay/Unity Ads, WorkManager, androidx). Permissão nova = revisar o Data safety antes de subir
 PERMS="android.permission.INTERNET android.permission.ACCESS_NETWORK_STATE android.permission.VIBRATE android.permission.WAKE_LOCK
   android.permission.RECEIVE_BOOT_COMPLETED android.permission.FOREGROUND_SERVICE com.google.android.gms.permission.AD_ID
-  android.permission.ACCESS_ADSERVICES_TOPICS android.permission.ACCESS_ADSERVICES_ATTRIBUTION $PKG.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+  android.permission.ACCESS_ADSERVICES_TOPICS android.permission.ACCESS_ADSERVICES_ATTRIBUTION $PKG.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+  com.android.vending.BILLING"   # Unity IAP 5 (2026-10-23): Data safety "Histórico de compras", docs/IAP.md §6
 
 # confere um .aab ou .apk pronto, sem abrir o Unity; lista tudo o que reprova e só então sai 1
 release_check() {
