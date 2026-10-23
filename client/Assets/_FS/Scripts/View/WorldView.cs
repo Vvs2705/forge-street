@@ -122,6 +122,7 @@ namespace FS
             "mensageiro" => 1.02f, "gerente" => 1.00f,
             "campones" => 1.00f, "guarda_real" => 0.88f, "emissario" => 0.99f, "colecionador" => 0.86f,
             "vulcana" => 1.03f,   // ASSETS s20: 0,656 m, alvo 1,15 (viseira erguida, como o fundidor)
+            "felix" => 1.08f,     // ASSETS s23: 0,686 m, alvo 1,15 (adulto, a pena do bone e o ponto alto)
             _ => 1f,
         };
         // m do mundo por celula de estacao. Com 1,65 a peca ocupava 0,9-1,24 m de largura e o corpo solido tem 1,3 m (FASE5): o

@@ -635,3 +635,13 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 ## 21. Arte dos produtos da loja (auditoria visual item 5, 2026-10-23, 0 crédito)
 
 - Tripo, gerador de imagem Nano Banana 2 (1:1, 4 por prompt, grátis; saldo de créditos intacto em 14 660), pelo Chrome do Vinicius com o aval de 2026-10-23; prompts em `ASSETS.md` §22. Downloads da imagem escolhida (PNG 1024 px) versionados em `arte/ui/loja/fonte_<id>.png`; recorte local (`icones_premio.py`), sem outro serviço.
+
+## 22. Félix, o Mensageiro da Grand Forge (Tripo, 2026-10-23 18:10–18:20 UTC)
+
+- Operador: Claude (sessão do PR `art/felix`) pelo Chrome do Vinicius (Claude in Chrome), com o aval permanente de 2026-10-23 (o mesmo do §18). Painel conferido antes do "Generate 45": H3.1, Ultra, AI Complete desligado, 2K, remover iluminação, PBR, triângulos, 8 000 polígonos, 8K desligado, Privado. Imagens: Nano Banana 2, 1:1, 4 grátis; prompt em `ASSETS.md` §23. Auto Rig humanoide, esqueleto Mixamo (20); export FBX predefinição Mixamo 2K com esqueleto.
+- Créditos: 14 660 → **14 595 = 65** (45 + 20), o orçado; débito conferido no saldo depois de cada pedido.
+- Render (0 crédito): Blender 5.2 headless, `client/tools/render_sprites.py` sem mudança, `--anims client/Builds/anims_sets/ajudante` (4 direções, célula 128, ppu 112,2, pivô 64,38 px). Saída em `client/Assets/_FS/Resources/Sprites/felix/`; a folha de contato do render em `client/Builds/sprites_contact/felix.png` (fora do git).
+
+| asset | uso no jogo | imagem escolhida | task | créditos | faces | zip (SHA-256) | fbx (SHA-256) | folha (SHA-256) |
+|---|---|---|---|---|---|---|---|---|
+| felix | grand_forge: worker Félix, o Mensageiro (Courier) | #2 de 4 (mensageiro barbado de capa azul-noite com fecho de bronze, boné com pena branca, sacola de pergaminhos, caixote com aros de bronze nas costas; pose T) | `306f9f36-e2e3-47ed-902e-f8f2695d185f` | 65 (45 + rig 20) | 7438 | `arte/tripo/felix/felix_mixamo.zip` 27126615 · `5722a77e7abdadff6f01f2a124ed7f660e5068386e04f99e73061e4c0c0f3a74` | `tripo_convert_ff0c03a9-a140-49ea-a627-ea4f44404db0.fbx` 13911056 · `5e7ea8981c135b89e6db46e4a86b73654180beedaea350d4317020aa610f0a2d` | `Idle.png` c5c93da170b67b7a68d57ef38a735143ca731263f08c59b25399bda149a2dcb6 |

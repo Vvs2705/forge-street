@@ -116,7 +116,7 @@ namespace FS.Core
         /// <summary>§6: o Mensageiro Felix (Courier) vem com o upgrade `mensageiro` (o major unlock) e nao carrega: as rotas (+Tuning.ImportNivel
         /// un/min) e o lote (+Tuning.ExportNivel pecas) sobem a cada nivel acima do 1 (Sim.Exportacao.cs). Niveis 2-10 = 150.000 x 1,6^(L-2).</summary>
         static readonly WorkerDef Felix = new WorkerDef("wk_felix", "Félix", WorkerRole.Courier, Specialty.Carrying, GrandForgeId, null, Sim.Mensageiro, -1,
-            0, null, new long[] { 150000, 240000, 380000, 610000, 980000, 1600000, 2500000, 4000000, 6400000 }, "mensageiro", "rotas", "lote");
+            0, null, new long[] { 150000, 240000, 380000, 610000, 980000, 1600000, 2500000, 4000000, 6400000 }, "felix", "rotas", "lote");
 
         /// <summary>§12: as familias da Grand Forge. O mercador pede o sino e a estatua (2 un, paciencia x0,8, intervalo x1,3; a 1a, sempre aberta);
         /// o nobre o relicario, a estatua e a coroa (rico, x1,8, x2,5); o emissario real a coroa, a panoplia e a lamina estelar na Fina ou melhor
