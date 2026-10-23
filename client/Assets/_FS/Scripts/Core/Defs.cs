@@ -141,7 +141,6 @@ namespace FS.Core
         public const float WorkerSpeed = 2.4f, WorkerSpeedUp = 3.4f;
         public const int WorkerCap = 2, WorkerCapUp = 4;
         public const float WorkerPatience = 1.2f;              // s parado na fonte vazia antes de ir entregar o que tem
-        public const float GrabTime = 0.4f;                     // 1 minerio do deposito
         public const float TransferTime = 0.2f;                 // 1 item pego/depositado
         public const int FurnaceIn = 6, FurnaceOut = 4, CrafterIn = 4, CrafterOut = 3;
         public const int QueueCapMax = 8;                       // trava de geometria: 8 vagas cabem na oficina; Tuning.QueueCap0 + evolucoes nunca passa
@@ -285,6 +284,7 @@ namespace FS.Core
         // OrderDef (EncomendasDefs.cs); OrderSeconds e OrderRewardSeconds sao os da Common e escalam todos os tipos (x / 150, x / 10)
         public float OrderFirstDelay = 45f, OrderGap = 20f;     // s depois da 1a venda; s entre uma entregue e a proxima vaga
         public int OrderFirstTarget = 5, OrderMin = 3, OrderMax = 30;   // a 1a e' 5 espadas; OrderMax = teto do ord= do save antigo (o N vem do OrderDef; OrderMin sem uso)
+        public float GrabTime = 0.4f;                           // 1 minerio do deposito (knob do Rare Ore Rush, LIVEOPS_V1 §2.3: x0,7)
         public float OrderSeconds = 150f, OrderRewardSeconds = 10f;     // premio ~10 s da taxa online: 4,2% da receita no bot de 60 min (BALANCE §20)
         public int OrderRewardMin = 25;
 

@@ -105,6 +105,34 @@ namespace FS.Tests
             Assert.Greater(s.Renome.Total, 0L, "premissa: o bot ganhou Renome");
         }
 
+        /// <summary>O Renome e' do Imperio (o da raiz): jogando no Artisan Quarter, trocando de distrito, ganhando um Charter e salvando/abrindo o
+        /// save do Imperio a cada 2 min, o total nunca cai (nem no load).</summary>
+        [Test]
+        public void Imperio_TrocaCharterESave_NuncaCai()
+        {
+            Imperio imp = Imperio.Chegada(Distritos.Find("artisan_quarter"));
+            var bot = new Bot();
+            long antes = imp.Raiz.Renome.Total;
+            for (int bloco = 0; bloco < 5; bloco++)
+            {
+                for (float t = 0f; t < 120f; t += Dt)
+                {
+                    bot.Step(imp.Ativo, Dt);
+                    imp.Fundo(Dt);
+                    Assert.GreaterOrEqual(imp.Raiz.Renome.Total, antes, $"bloco {bloco}, t = {t:0.0}");
+                    antes = imp.Raiz.Renome.Total;
+                }
+                if (bloco == 2) { imp.Raiz.Renome.OnCharter("artisan_quarter"); Assert.Greater(imp.Raiz.Renome.Total, antes, "Charter +100"); antes = imp.Raiz.Renome.Total; }
+                string ativo = imp.Ativo.Distrito.Id;
+                Assert.IsTrue(imp.Trocar(Distritos.OldForgeId) || ativo == Distritos.OldForgeId);
+                Assert.AreEqual(antes, imp.Raiz.Renome.Total, "trocar de distrito nao mexe no Renome");
+                imp = Imperio.Load(imp.Save(1000 + bloco));
+                Assert.AreEqual(antes, imp.Raiz.Renome.Total, "o save do Imperio devolve o mesmo total");
+                imp.Trocar(ativo);
+            }
+            Assert.Greater(antes, 0L, "premissa: o bot ganhou Renome");
+        }
+
         /// <summary>Sem API de gasto: o total e o contador nao tem setter publico, e os metodos publicos sao so estes (um "Gasta" novo fica vermelho aqui).</summary>
         [Test]
         public void SemApiDeGasto()

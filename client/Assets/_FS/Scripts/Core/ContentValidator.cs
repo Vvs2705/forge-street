@@ -470,7 +470,7 @@ namespace FS.Core
                         || d.Evento == "station_level" && d.Filtro < 2)
                         yield return $"{at} filtro {d.Filtro} invalido para {d.Evento}";
                     // metas de sistemas (raia H): filtro por ID que exista, alvo dentro do conteudo do build, gatilho de Renome sem Renome (sem laco)
-                    bool porId = d.Evento == "district_unlock" || d.Evento == "collection_milestone";
+                    bool porId = d.Evento == "district_unlock" && d.Ref != null || d.Evento == "collection_milestone";   // district_unlock sem Ref = quantos abertos
                     if (porId != (d.Ref != null) && d.Evento != "product_sold" || d.Ref != null && (d.Filtro >= 0 || !RefExiste(d)))
                         yield return $"{at} ID \"{d.Ref}\" invalido para {d.Evento}";
                     long conteudo = Teto(d);
@@ -539,7 +539,9 @@ namespace FS.Core
             switch (d.Evento)
             {
                 case "contract_complete": return ContratosDefs.All.Length;
-                case "district_unlock": case "collection_milestone": return 1;
+                case "district_unlock": return d.Ref == null ? FS.Core.Distritos.All.Length : 1;
+                case "collection_milestone": return 1;
+                case "masterwork_empire": { long n = 0; foreach (DistrictDef x in FS.Core.Distritos.All) n += x.Masterworks.Length; return n; }
                 case "blueprint_unlock": return ProjetosDefs.All.Length;
                 case "reputation_level": return RenomeDefs.Niveis.Length - 1;
                 case "station_level": return MetasDefs.Estacoes(d.Filtro);

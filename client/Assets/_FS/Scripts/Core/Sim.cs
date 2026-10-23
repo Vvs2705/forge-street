@@ -867,7 +867,7 @@ namespace FS.Core
             if (act == 0) { c.ActT = 0f; c.IdleT += dt; return; }
             c.IdleT = 0f;
             c.ActT += dt;
-            float step = act == 3 ? Balance.GrabTime : Balance.TransferTime;
+            float step = act == 3 ? T.GrabTime : Balance.TransferTime;
             while (c.ActT >= step)
             {
                 c.ActT -= step;

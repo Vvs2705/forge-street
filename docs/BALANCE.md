@@ -1700,6 +1700,22 @@ Conta estática do `LIVEOPS_V1.md` §5.4 com o conteúdo real (`LiveOpsDefs.XpDi
 
 `LiveOpsTests` (20): calendário às 13:00 UTC e temporadas emendadas; os 10 eventos com os 9 campos, missões somando 700 e as reservas prontas; **evento novo só com dados** (um `EventDef` injetado na folga do dia 6 passa no validator, entra, aplica o knob, paga os limiares e devolve o knob); requisito (Ferramentas, Renome, encomendas) e os 10 primeiros minutos do bot iguais tick a tick com um evento forte ativo; modificadores pelo RemoteConfig sobre o config remoto e de volta no fim; evento com knob proibido preso pelas travas (offline ≤ 7.200 s) e recusado pelo validator; cofre igual; missão e limiar 1× com save/load, matar antes de gravar e reset do evento; relógio para trás; compra/contratação que completa sozinha (`worker_any` com o B-CORE-04); qualidade e golpe de mestre de verdade; Pass (retroativo 1×, espera até a temporada, teto de 100 XP/dia, RESGATAR 1×, nível 30, premium nunca paga, fim de temporada paga o alcançado); save do bot sem `ev.*`/`ps.*`; fechamento 26–30; 29 defeitos injetados no validator; textos nos 3 idiomas. `mutantes.py`: 12 mutações novas (`liveops-*`), todas mortas; o trecho do `qual-nivel-sem-velocidade` foi atualizado para o `Equipe.Ritmo` do #54 (estava desatualizado na `main`) e segue morto.
 
+### 27.4 Rare Ore Rush, o 10º evento (2026-10-23)
+
+O `GrabTime` (1 minério do depósito, 0,4 s) saiu do `Balance` e virou campo do `Tuning`, com o mesmo padrão: o econsim padrão sai **idêntico ao byte** ao da `main` (7adff95). Com isso o Rare Ore Rush entra no calendário e **os 10 `EventDef` rodam**. Os modificadores ficam os do `LIVEOPS_V1` §2.4: `GrabTime` ×0,7 e `FurnaceTime0..2` ×0,9.
+
+`econsim --evento rare_ore_rush --partidas 20` (média de 20 passos de tick por perfil, renda/min depois da entrada, sem → com o evento):
+
+| perfil | entra | sem → com | Δ |
+|---|---|---|---|
+| Ideal | 15:09 | 1.432 → 1.539 | +7,5% |
+| F2P | 14:42 | 1.423 → 1.576 | **+10,8%** |
+| Slow | 15:52 | 1.285 → 1.391 | +8,2% |
+| AdWatcher | 14:20 | 1.614 → 1.777 | +10,1% |
+| AdWatcherE | 16:50 | 1.505 → 1.595 | +6,0% |
+
+Portão "ouro/min do F2P ≤ +15%" (`LIVEOPS_V1` §6): **passa** (+10,8%), e passa também nos 5 perfis. Com 1 partida só (o padrão do §27.2), o F2P marca +16,3%: a partida-base dele sai baixa (1.316/min contra 1.423 na média). As variantes `GrabTime` ×0,8/×0,85 e a fornalha ×0,95 ficam no mesmo ruído (+14,6 a +16,7% com 1 partida, +9,1% com 20 a ×0,85), então o dado do `LIVEOPS_V1` fica como está. Missões do F2P: 784 pontos (6 de 7; só o "jogar em 3 dias" segura).
+
 ## 28. B-CORE-05: Orders 2.0 (2026-10-13)
 
 Regra em `ECONOMIA_WAVE_B.md` §3 e GDD §10; catálogo no `CONTEUDO_V1.md` §7. **Vigente** (`Core/Encomendas.cs`, `Core/EncomendasDefs.cs`): 8 tipos em dados (`OrderDef`, IDs `ord_*`): Common (= a encomenda de antes), Bulk (2 linhas e 5 entregues), Quality (linha que já faz Fina; variante Superior no Renome 3), Rush (8 entregues; prazo de 240 s **só de bônus**: no prazo o prêmio dobra e dá +1 de Renome, fora dele paga o normal), Mixed (3 linhas; 2 produtos, 3 com 4 linhas), Royal (Renome 2, Fina; o próximo projeto da fila Royal do `Projetos`), Blueprint (Renome 1 e projeto pendente na fila de encomenda do `Projetos`, B-CORE-07: `ProximoDaFila` no cartão, `GanhaDaFila` com o ID de transação na entrega) e Event (vaga própria enquanto o evento do `LiveOps` está ativo, a `OrderDef` do `EventDef.Encomenda`; só pontos na trilha do evento, §28.6). Os 5 fregueses do Old Forge (FS-3) entram na 7ª, 14ª… Common (N e item fixos, +1 coração). Rodízio do Old Forge `Common, Common, Bulk, Quality, Common, Mixed, Rush, Blueprint, Common, Royal` na posição `Abertas % 10` (abertas + entregues + trocadas), tipo travado vira Common; produto = `linhas[idx % linhas]`, pulando o que já está noutra vaga. Vagas 1 → 2 (Renome 1) → 3 (Renome 3). **Tudo o que é novo só depois das Ferramentas** (tipos, vagas extras, fregueses): até lá o jogo é o de antes, tick a tick. Prêmio em segundos da taxa online × a escala dos knobs da Common (`OrderSeconds / 150`, `OrderRewardSeconds / 10`), múltiplo de 5, fora do `GoldEarned`; Renome pelo tipo (+1 a +10). Uma peça vendida conta para uma vaga só (a mais antiga que a aceita). "Bônus da encomenda" (anúncio) = máx(50% do prêmio, **60 s de renda**) (`Tuning.EncomendaBonusMinSeg`).
