@@ -1155,6 +1155,8 @@ namespace FS
             { "meta.event_enter", L("Entre em {0} evento|Entre em {0} eventos", "Join {0} event|Join {0} events", "Entra en {0} evento|Entra en {0} eventos") },
             { "meta.pass_level", L("Feche a trilha grátis do Passe", "Complete the free Pass track", "Completa el Pase gratis") },
             { "ins.arsenal_do_reino", L("Arsenal do Reino", "Kingdom's Arsenal", "Arsenal del Reino") },
+            { "ins.senhor_das_ruas", L("Senhor das Ruas", "Lord of the Streets", "Señor de las Calles") },
+            { "ins.lenda_da_forja", L("Lenda da Forja", "Forge Legend", "Leyenda de la Forja") },
             { "ins.olho_de_mestre", L("Olho de Mestre", "Master's Eye", "Ojo de Maestro") },
             { "ins.arquivista", L("Arquivista", "Archivist", "Archivista") },
             { "ins.oficina_de_ferro", L("Oficina de Ferro", "Iron Workshop", "Taller de Hierro") },

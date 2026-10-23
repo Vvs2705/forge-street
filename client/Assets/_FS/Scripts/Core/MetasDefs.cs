@@ -44,7 +44,7 @@ namespace FS.Core
     /// <summary>
     /// D-CORE-02: os modelos. So entram os que tem gatilho que o Sim (ou o Metas) emite HOJE; os do LIVEOPS_V1 com evento ✗ entram com o
     /// sistema deles (raia H: contrato, Charter, Collection, projetos, Renome, nivel de estacao, qualidade, golpe, evento e Passe ja entraram;
-    /// esperam: a diaria do pool C, o golpe que faz Superior, ach_workers20, ach_distritos6 e ach_mw60). Os extras sobre eventos que ja existem
+    /// esperam: a diaria do pool C, o golpe que faz Superior, e ach_workers20). Os extras sobre eventos que ja existem
     /// (marcados "novo") completam os minimos do GDD §23 #12.
     /// Renome ainda nao existe: "abre com Renome 1" usa a Joalheria (12-25 min ~ 23 min no F2P) e "Renome 2" a Vitrine de joias, ate o B-CORE-06.
     /// </summary>
@@ -195,11 +195,12 @@ namespace FS.Core
             C("ach_workers13", Hire, -1, WorkersOldForge, xp: 150, renome: 10),
             C("ach_workers13_n5", Nivel, 5, WorkersOldForge, insignia: "mestre_oficio"),
             // B-CORE-08 (LIVEOPS_V1 §4.5 #20-25): Masterworks registradas no Hall. O Renome ja vem da obra (Hall): a conquista da so XP ou insignia.
-            // ach_mw30 conta as do Imperio (masterwork_empire); ach_mw60 espera as 60 (requiresContent: o validator recusa alvo acima das do build)
+            // ach_mw30/60 contam as do Imperio (masterwork_empire; requiresContent: o validator recusa alvo acima das do build)
             C("ach_mw1", Mw, -1, 1, xp: 100),
             C("ach_mw5", Mw, -1, 5, xp: 150),
             C("ach_mw10_oldforge", Mw, -1, 10, xp: 200, insignia: "hall_completo"),
-            C("ach_mw30", "masterwork_empire", -1, 30, xp: 200),   // LIVEOPS_V1 #26 (la, +Renome 10: aqui so XP, a obra ja deu o Renome); ach_mw60 espera as 60
+            C("ach_mw30", "masterwork_empire", -1, 30, xp: 200),   // LIVEOPS_V1 #26 (la, +Renome 10: aqui so XP, a obra ja deu o Renome)
+            C("ach_mw60", "masterwork_empire", -1, 60, insignia: "lenda_da_forja"),   // LIVEOPS_V1 #27
             C("ach_familia_espada", MwFamilia, Espada, 3, xp: 100),
             C("ach_sunblade", Mw, MasterworksDefs.IndexOf("mw_sunblade"), 1, insignia: "sol_do_rei"),
             C("ach_ember_crown", Mw, MasterworksDefs.IndexOf("mw_ember_crown"), 1, insignia: "coroa_de_brasa"),
@@ -249,7 +250,8 @@ namespace FS.Core
             // metas de sistemas (raia H, LIVEOPS_V1 §4.5): os gatilhos que esperavam um sistema que ja existe. Conquista de Renome nunca da
             // Renome; a de Charter, Collection e Masterwork da so XP ou insignia (a fonte ja deu o Renome). Districts:
             C("ach_charter1", Charter, -1, 1, xp: 200, refId: Distritos.OldForgeId),   // a insignia e' do proprio Charter (GDD §11)
-            C("ach_distritos3", Charter, -1, 3, xp: 200),   // LIVEOPS_V1 #55 (la, +Renome 10: aqui so XP, o Charter ja deu o Renome); ach_distritos6 espera o 6o
+            C("ach_distritos3", Charter, -1, 3, xp: 200),   // LIVEOPS_V1 #55 (la, +Renome 10: aqui so XP, o Charter ja deu o Renome)
+            C("ach_distritos6", Charter, -1, 6, insignia: "senhor_das_ruas"),   // LIVEOPS_V1 #56
             C("ach_elmos100", Sold, -1, 100, xp: 100, refId: "elmo"),                   // a venda da Rua dos Armeiros chega pela raiz (C-CORE-03)
             C("ach_contrato1", Ctr, -1, 1, xp: 150),
             C("ach_contratos12", Ctr, -1, 12, insignia: "arsenal_do_reino"),            // 9 dos 12 abrem com os distritos 3-6 (Wave C)
