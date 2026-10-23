@@ -44,6 +44,7 @@ namespace FS
             _chipPsPonto = Art.Node(_chipPs, "Ponto", Vector2.one, Vector2.one).gameObject.AddComponent<Image>();
             _chipPsPonto.rectTransform.sizeDelta = new Vector2(26f, 26f); _chipPsPonto.rectTransform.anchoredPosition = new Vector2(-4f, -4f);
             _chipPsPonto.sprite = Art.Disc(); _chipPsPonto.color = Art.Bad; _chipPsPonto.raycastTarget = false;
+            Art.Aro(_chipPsPonto.transform);
 
             // cartao do evento
             _ev = Modal(safe, "Evento", new Vector2(0.06f, 0.12f), new Vector2(0.94f, 0.88f), out Transform f);

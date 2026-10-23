@@ -145,11 +145,7 @@ namespace FS
                 x.resizeTextForBestFit = true; x.resizeTextMinSize = 14; x.resizeTextMaxSize = x.fontSize;
                 x.verticalOverflow = VerticalWrapMode.Truncate;
             }
-            l.SeloFace = Art.Panel(t, "Selo", MenuBar.Gray, new Vector2(0.72f, 0.66f), new Vector2(0.97f, 0.94f));
-            l.SeloFace.raycastTarget = false;
-            l.Selo = Art.Outlined(Art.NewText(l.SeloFace.transform, "Texto", 24, Vector2.zero, Vector2.one), 2f);
-            l.Selo.fontStyle = FontStyle.Bold; l.Selo.color = Color.white;
-            l.Selo.resizeTextForBestFit = true; l.Selo.resizeTextMinSize = 14; l.Selo.resizeTextMaxSize = 24;
+            l.SeloFace = Art.Selo(t, new Vector2(0.68f, 0.66f), new Vector2(0.97f, 0.94f), out l.Selo);   // auditoria item 10: fita com icone
             return l;
         }
 
@@ -178,13 +174,14 @@ namespace FS
 
         void Pinta(Linha l)
         {
-            string d1, d2, selo; Color cor;
+            string d1, d2, selo; Color cor; Sprite icone;
             if (l.Mw != null)
             {
                 d1 = Textos.CondicaoMasterwork(_sim, l.Mw);
                 d2 = Textos.ProjetoMasterwork(_sim, l.Mw);
                 selo = Textos.SeloMasterwork(_sim, l.Mw);
                 cor = _sim.Hall.Tem(l.Mw.Id) ? MenuBar.Green : _sim.Hall.Liberada(l.Mw) ? Art.Gold : MenuBar.Gray;
+                icone = _sim.Hall.Tem(l.Mw.Id) ? Art.Check() : _sim.Hall.Liberada(l.Mw) ? Art.Star() : Art.Lock();
             }
             else
             {
@@ -192,13 +189,13 @@ namespace FS
                 d2 = Loc.T("col.dica." + (int)l.Marco.Aba);   // a dica da categoria do marco (era a mesma frase em toda linha)
                 selo = Textos.SeloColecao(_sim, l.Marco);
                 cor = _sim.Colecao.Pago(l.Marco) ? MenuBar.Green : MenuBar.Gray;
+                icone = _sim.Colecao.Pago(l.Marco) ? Art.Check() : Art.Lock();
             }
             if (d1 != l.V1) { l.V1 = d1; l.Det1.text = d1; }
             if (d2 != l.V2) { l.V2 = d2; l.Det2.text = d2; }
             if (selo == l.VS) return;
             l.VS = selo;
-            l.Selo.text = selo;
-            l.SeloFace.color = cor;
+            Art.PintaSelo(l.SeloFace, l.Selo, selo, cor, icone);
         }
     }
 }

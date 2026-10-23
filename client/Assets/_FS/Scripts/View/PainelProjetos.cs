@@ -103,11 +103,7 @@ namespace FS
                 x.resizeTextForBestFit = true; x.resizeTextMinSize = 14; x.resizeTextMaxSize = x.fontSize;
                 x.verticalOverflow = VerticalWrapMode.Truncate;
             }
-            l.SeloFace = Art.Panel(t, "Selo", MenuBar.Gray, new Vector2(0.72f, 0.66f), new Vector2(0.97f, 0.94f));
-            l.SeloFace.raycastTarget = false;
-            l.Selo = Art.Outlined(Art.NewText(l.SeloFace.transform, "Texto", 24, Vector2.zero, Vector2.one), 2f);
-            l.Selo.fontStyle = FontStyle.Bold; l.Selo.color = Color.white;
-            l.Selo.resizeTextForBestFit = true; l.Selo.resizeTextMinSize = 14; l.Selo.resizeTextMaxSize = 24;
+            l.SeloFace = Art.Selo(t, new Vector2(0.68f, 0.66f), new Vector2(0.97f, 0.94f), out l.Selo);   // auditoria item 10: fita com icone
             return l;
         }
 
@@ -127,8 +123,7 @@ namespace FS
                 if (fonte != l.Fonte) { l.Fonte = fonte; l.Fontes.text = fonte; }
                 if (tem == l.Tem) continue;
                 l.Tem = tem;
-                l.SeloFace.color = tem ? MenuBar.Green : MenuBar.Gray;
-                l.Selo.text = Loc.T(tem ? "proj.tem" : "proj.falta");
+                Art.PintaSelo(l.SeloFace, l.Selo, Loc.T(tem ? "proj.tem" : "proj.falta"), tem ? MenuBar.Green : MenuBar.Gray, tem ? Art.Check() : Art.Lock());
             }
         }
     }
