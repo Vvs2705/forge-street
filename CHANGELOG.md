@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Encomenda de evento à parte das vagas (V27):** a peça vendida conta para a vaga normal mais antiga e também para a encomenda Event, que antes passava fome atrás das 3 normais; a trilha do evento deixa de depender do número de vagas. Os 10 eventos fecham no dia 4–5 com o F2P de referência e nunca numa sessão de 60 min; o Rare Ore Rush passa a 12 pontos por entrega (BALANCE §30.6).
 - **Efeitos sonoros reais (CC0, Kenney):** martelo, golpe da peça, minério, pegar/largar, esteira, clique e moedas tocam 15 gravações do banco CC0 da Kenney no lugar dos sons sintetizados, no mesmo nível de cada um (a mixagem não muda). Licença e SHA no `PROVENIENCIA.md` §19; `docs/AUDIO.md` §9.
 - **Ícones dos insumos da Arcane Foundry e da Grand Forge:** cristal bruto, lingote rúnico, bronze, pedra estelar e aço estelar ganham ícone e pose deitada (`itens_blender.py`, Blender headless, 0 crédito). Antes caíam no bloco de cor sólida nas bocas e no cartão de troca (rosa e vermelho na Grand Forge). Agora os 58 itens têm folha.
 - **Forja estelar da Grand Forge mais clara:** a folha saiu escura do render (luminância média 64; as outras estações ficam em 110–150). O brilho sobe em HSV com a saturação, e o fogo azul e branco do prompt entra como brilho na boca da forja (`client/tools/clarear_sprite.py`; luminância 94). Sem crédito do Tripo.

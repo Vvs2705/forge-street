@@ -158,10 +158,18 @@ namespace FS.Core
         /// <summary>Do Sim.Sell: a peca vendida conta para a vaga mais antiga que a aceita (item que falta e nivel minimo), so uma.</summary>
         internal void OnVenda(Item item, Quality q)
         {
+            // V27 (BALANCE.md §30.6 ressalva 2): a peca conta para a vaga normal mais antiga que a aceita E, a parte, para a encomenda Event
+            // (que deixou de passar fome atras das 3 normais: a trilha nao depende mais de VagasMax)
+            bool normal = false, evento = false;
             foreach (Encomenda e in Vagas)
             {
+                bool ev = e.Tipo == OrderType.Event;
+                if (ev ? evento : normal) continue;
                 int k = e.Aceita(item, q);
-                if (k >= 0) { e.Feito[k]++; return; }
+                if (k < 0) continue;
+                e.Feito[k]++;
+                if (ev) evento = true; else normal = true;
+                if (normal && evento) return;
             }
         }
 

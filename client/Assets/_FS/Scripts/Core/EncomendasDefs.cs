@@ -60,7 +60,7 @@ namespace FS.Core
             Evento("ord_ev_armorers_challenge", "ev_s1w3_armorers_challenge"),
             Evento("ord_ev_hunt_sunblade", "ev_s1w4_hunt_sunblade", 17),   // 20 fecha no dia 3; 15, no dia 6
             Evento("ord_ev_blacksmith_festival", "ev_s2w1_blacksmith_festival"),
-            Evento("ord_ev_rare_ore_rush", "ev_s2w2_rare_ore_rush"),
+            Evento("ord_ev_rare_ore_rush", "ev_s2w2_rare_ore_rush", 12),   // V27: com a Event fora das vagas, 15 fechava no dia 3
             Evento("ord_ev_merchant_caravan", "ev_s2w3_merchant_caravan", 12),   // so encomendas nas missoes: 15 fecha no dia 3, 10 nunca (3 vagas; BALANCE §30.6)
             Evento("ord_ev_hunt_ember_crown", "ev_s2w4_hunt_ember_crown", 20),   // 15 nao fecha em 6 dias
             Evento("ord_ev_arcane_week", "ev_arcane_week"),

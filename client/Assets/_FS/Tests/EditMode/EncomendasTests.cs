@@ -280,6 +280,24 @@ namespace FS.Tests
             Assert.IsFalse(s.Encomendas.Vagas.Exists(v => v.Tipo == OrderType.Event), "acabou o evento: a vaga sai sem pagar");
         }
 
+        /// <summary>V27 (BALANCE.md §30.6): a peca vendida conta 1x na vaga normal mais antiga que a aceita e, a parte, 1x na encomenda Event
+        /// (a Event nao passa mais fome atras das normais); nunca 2x na mesma categoria.</summary>
+        [Test]
+        public void Event_ContaAParteDasVagas_AMesmaPecaValeNasDuas()
+        {
+            Sim s = Oficina();
+            s.OrderCount = 10;
+            EventDef ff = LiveOpsDefs.Eventos.First(x => x.Id == "ev_s1w2_forge_frenzy");
+            s.Metas.Agora(ff.Comeca, 0); s.LiveOps.Agora(ff.Comeca);
+            EncTeste.Abre(s, 1);
+            Encomenda c = s.Encomendas.Principal, e = s.Encomendas.Vagas.Find(v => v.Tipo == OrderType.Event);
+            Item it = e.Itens[0];
+            c.Itens[0] = it;   // as duas pedindo o mesmo item (o rodizio escolhe o da Common a parte)
+            int fc = c.Feito.Sum(), fe = e.Feito.Sum();
+            s.Encomendas.OnVenda(it, Quality.Normal);
+            Assert.AreEqual((fc + 1, fe + 1), (c.Feito.Sum(), e.Feito.Sum()), "a mesma peca na Common e na Event");
+        }
+
         [Test]
         public void Fregues_ACada7aCommon_OProximoQueDa_ComCoracao()
         {
