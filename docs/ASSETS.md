@@ -486,3 +486,13 @@ Decisão do ticket (crédito ou adereço no Blender): **adereço no Blender**, 0
 Render com os parâmetros do `ferreiro` (`--size 192 --max-frames 21 --scale 164.82 --pivot-y 53.4`, 4 direções), então o tamanho e o pivô são iguais e a troca de folha não pula; nas `_mochila` a mochila vai junto (`--attach chapeu --bone mixamorig:Head --attach mochila_ferreiro --bone mixamorig:Spine2`). Silhuetas (preto, alfa ≥ 128, Idle quadro 0 nas 4 direções): o disco da aba larga no estágio 2 e o barrete alto com a pluma no 3 separam dos três de longe; a folha de conferência fica em `arte/auditoria/2026-10-23/heroi_estagios.jpg`.
 
 **Ligação no jogo:** `RenomeDefs.EstagioHeroi(nivel)` (0/1/2 pelo Renome do Império) e a `WorldView` troca a folha do corpo pelo estágio e pela mochila (`FolhasHeroi`; folha que faltar repete a do estágio de baixo), com a poeira da troca. Teste: `RenomeTests.Heroi_TresEstagiosPeloRenome_ComAsFolhas`. O cinto do estágio 4 (Renome 5) e o uniforme recolorido ficam para depois (GDD §151: o resto entre gameplay e cosmético).
+
+## 22. Arte dos produtos da loja (auditoria visual item 5, 2026-10-23, 0 crédito)
+
+A "loja vazia" da `AUDITORIA_VISUAL.md` (o Pacote do Mestre só em texto, sem arte nem selo) ganha uma arte pintada por produto à esquerda do cartão e um selo dourado: **PARA SEMPRE** no Pacote do Mestre (não-consumível) e **TEMPORADA** nos Passes. Imagens do Tripo (Nano Banana 2, 1:1, grátis), recortadas pelo `client/tools/icones_premio.py` (o GrabCut da marca v2) para `Resources/UI/<id do produto>.png` (256 px); a `PainelLoja` lê pelo ID (`Art.UI`), e sem o arquivo o cartão fica como antes. Fontes versionadas em `arte/ui/loja/fonte_<id>.png` (e `escolhidas.jpg`). Teste: `ComprasTests.Loja_TodoProdutoTemArte`.
+
+| produto | assunto do prompt (prefixo "mobile game shop product icon: " + o sufixo da §18) | escolhida (de 4) |
+|---|---|---|
+| `iap_pacote_mestre` | a sturdy brown leather master blacksmith satchel with a shiny golden anvil emblem on the flap and a small brass hourglass strapped to its side (sem moeda nem ouro na arte: o pacote não vende ouro, V20) | 2 |
+| `iap_pass_s1_royal_commission` | a royal blue velvet banner with a golden crown emblem and golden fringe hanging from a short golden pole with a small crown finial, royal season pass | 2 |
+| `iap_pass_s2_ember_festival` | a festival banner of orange and red cloth with a golden phoenix flame emblem hanging from a short dark wooden pole with brass end caps, ember festival season pass, no particles, no sparks, no glow around it (fundo "plain flat light grey"; a 1ª leva, com brasas, deixava um halo escuro no recorte) | 3 |
