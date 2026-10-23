@@ -703,13 +703,17 @@ namespace FS
                 Log(tipo, a, b);
                 switch (tipo)
                 {
-                    case "event_enter": if (avisa && e != null) Notice(Loc.T("aviso.evento", Textos.NomeEvento(e)), Art.Star(), Art.Accent); break;
+                    case "event_enter":
+                        if (avisa && e != null) Notice(Loc.T("aviso.evento", Textos.NomeEvento(e)), Art.Star(), Art.Accent);
+                        break;
                     case "event_complete":
                         if (avisa) { Sfx.Play("meta"); Notice(Loc.T("aviso.evento_marco", arg), _coinIcon.sprite, _coinIcon.color); }
                         if (ouro > 0) Source("evento", ouro);
                         pagou = true;
                         break;
-                    case "pass_level": if (avisa) Notice(Loc.T("aviso.passe", arg), Art.Star(), Art.Gold); break;
+                    case "pass_level":
+                        if (avisa) Notice(Loc.T("aviso.passe", arg), Art.Star(), Art.Gold);
+                        break;
                 }
             }
             lo.Novidades.Clear();
