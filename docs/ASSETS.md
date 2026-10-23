@@ -496,3 +496,13 @@ A "loja vazia" da `AUDITORIA_VISUAL.md` (o Pacote do Mestre só em texto, sem ar
 | `iap_pacote_mestre` | a sturdy brown leather master blacksmith satchel with a shiny golden anvil emblem on the flap and a small brass hourglass strapped to its side (sem moeda nem ouro na arte: o pacote não vende ouro, V20) | 2 |
 | `iap_pass_s1_royal_commission` | a royal blue velvet banner with a golden crown emblem and golden fringe hanging from a short golden pole with a small crown finial, royal season pass | 2 |
 | `iap_pass_s2_ember_festival` | a festival banner of orange and red cloth with a golden phoenix flame emblem hanging from a short dark wooden pole with brass end caps, ember festival season pass, no particles, no sparks, no glow around it (fundo "plain flat light grey"; a 1ª leva, com brasas, deixava um halo escuro no recorte) | 3 |
+
+## 23. Félix, o Mensageiro da Grand Forge (Tripo, 2026-10-23)
+
+45 + rig 20 = **65 créditos** (saldo 14 660 → 14 595). Ledger e SHA: `PROVENIENCIA.md` §22. Imagem grátis no Nano Banana 2 (1:1, 4 opções), receita da §19 (HD H3.1 Ultra 8 000 tris 2K, Privado), Auto Rig humanoide Mixamo e FBX Mixamo 2K, como a Vulcana (§20). Render com os clipes do ajudante (`--anims client/Builds/anims_sets/ajudante`; Idle, LookingAround, Walking; 4 direções, célula 128, ppu 112,2); `.meta` copiados da `vulcana` com GUID novo.
+
+| id | worker | assunto do prompt (+ `[S]` + `[I]`) | imagem | yaw |
+|---|---|---|---|---|
+| felix | `wk_felix`, Félix, o Mensageiro (Courier) | seasoned royal courier man, night-blue traveling cloak with a bronze clasp, bronze-trimmed cap with a small white feather, leather messenger satchel full of rolled scrolls across the chest, small wooden crate with bronze bands strapped on the back, short brown beard, beige tunic, brown trousers, sturdy travel boots | #2 de 4 (pose T, braços livres) | 0 |
+
+**Ligação no jogo:** o `WorkerDef` do Félix (`Distritos.GrandForge.cs`) troca a folha emprestada `mensageiro` (o menino de boné azul do Lote 5A) pela `felix`; o `mensageiro` fica no repositório. `WorldView.CharScale` **1,08** pela conta do §11: Idle S quadro 0 com 77 px a ppu 112,2 = 0,686 m, alvo 1,15 (adulto; a pena do boné é o ponto alto, como a viseira da Vulcana). De longe o caixote nas costas e a capa azul-noite separam o Félix da Vulcana e dos Aprendizes. O `DistritosTests.Arte_TodoWorkerTemAFolha` exige a folha de todo worker dos 6 distritos.

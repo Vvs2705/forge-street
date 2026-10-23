@@ -428,6 +428,17 @@ namespace FS.Tests
             Assert.IsEmpty(faltam);
         }
 
+        /// <summary>Todo worker dos distritos tem a folha da skin (o Felix e a Vulcana com as proprias, ASSETS s20 e s23).</summary>
+        [Test]
+        public void Arte_TodoWorkerTemAFolha()
+        {
+            string dir = SpritesDir();
+            if (!System.IO.Directory.Exists(dir)) Assert.Ignore("sprites fora do alcance: " + dir);
+            var faltam = Distritos.All.SelectMany(d => (d.Workers ?? new WorkerDef[0]).Where(w => !System.IO.File.Exists(System.IO.Path.Combine(dir, w.Skin, "Idle.png")))
+                .Select(w => d.Id + "/" + w.Id + " -> " + w.Skin)).ToList();
+            Assert.IsEmpty(faltam);
+        }
+
         static string SpritesDir([System.Runtime.CompilerServices.CallerFilePath] string aqui = "") =>
             System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(aqui), "../../Resources/Sprites"));
 

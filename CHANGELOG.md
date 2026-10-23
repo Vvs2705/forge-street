@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Félix com arte própria:** o Mensageiro da Grand Forge deixa a folha emprestada do menino mensageiro e ganha a sua (mensageiro barbado de capa azul-noite, boné com pena e caixote nas costas), com Idle, LookingAround e Walking nas 4 direções. 65 créditos do Tripo; `docs/ASSETS.md` §23.
 - **Loja com arte (auditoria visual item 5):** cada produto ganha uma arte pintada no cartão (a bolsa do mestre e os estandartes das duas temporadas do Passe) e um selo dourado PARA SEMPRE / TEMPORADA. 0 crédito; `docs/ASSETS.md` §22.
 - **Efeitos sonoros reais (CC0, Kenney):** martelo, golpe da peça, minério, pegar/largar, esteira, clique e moedas tocam 15 gravações do banco CC0 da Kenney no lugar dos sons sintetizados, no mesmo nível de cada um (a mixagem não muda). Licença e SHA no `PROVENIENCIA.md` §19; `docs/AUDIO.md` §9.
 - **Ícones dos insumos da Arcane Foundry e da Grand Forge:** cristal bruto, lingote rúnico, bronze, pedra estelar e aço estelar ganham ícone e pose deitada (`itens_blender.py`, Blender headless, 0 crédito). Antes caíam no bloco de cor sólida nas bocas e no cartão de troca (rosa e vermelho na Grand Forge). Agora os 58 itens têm folha.
