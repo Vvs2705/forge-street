@@ -194,15 +194,18 @@ namespace FS
                     Image img = Art.Node(bg.transform, "Arte", new Vector2(0.02f, 0.06f), new Vector2(0.25f, 0.94f)).gameObject.AddComponent<Image>();
                     img.sprite = arte; img.preserveAspect = true; img.raycastTarget = false;
                 }
-                Image selo = Art.Panel(bg.transform, "Selo", Art.Gold, new Vector2(0.72f, 0.80f), new Vector2(0.985f, 0.97f));
+                // selo na base da arte (sem arte, no canto de cima): nao rouba a largura do nome
+                Image selo = arte != null ? Art.Panel(bg.transform, "Selo", Art.Gold, new Vector2(0.01f, 0.02f), new Vector2(0.26f, 0.28f))
+                    : Art.Panel(bg.transform, "Selo", Art.Gold, new Vector2(0.72f, 0.80f), new Vector2(0.985f, 0.97f));
                 selo.raycastTarget = false;
                 Text st = Art.Outlined(Art.NewText(selo.transform, "Texto", 26, Vector2.zero, Vector2.one), 2f);
                 st.text = Loc.T(Array.IndexOf(Compras.CatalogoPasse, d) >= 0 ? "loja.selo.temporada" : "loja.selo.permanente");
-                st.color = Color.white; st.resizeTextForBestFit = true; st.resizeTextMinSize = 16; st.resizeTextMaxSize = 26;
-                Text nome = Art.NewText(bg.transform, "Nome", 44, new Vector2(x0, 0.78f), new Vector2(0.71f, 0.97f), TextAnchor.MiddleLeft);
+                st.color = Color.white; st.resizeTextForBestFit = true; st.resizeTextMinSize = 18; st.resizeTextMaxSize = 30;
+                Text nome = Art.NewText(bg.transform, "Nome", 44, new Vector2(x0, 0.78f), new Vector2(arte != null ? 0.96f : 0.71f, 0.97f), TextAnchor.MiddleLeft);
                 string chave = "iap." + d.Id + ".nome";
                 nome.text = Loc.T(chave); nome.fontStyle = FontStyle.Bold; nome.color = MenuBar.Brown;
-                nome.resizeTextForBestFit = true; nome.resizeTextMinSize = 28; nome.resizeTextMaxSize = 44;
+                nome.resizeTextForBestFit = true; nome.resizeTextMinSize = 24; nome.resizeTextMaxSize = 44;
+                nome.horizontalOverflow = HorizontalWrapMode.Wrap; nome.verticalOverflow = VerticalWrapMode.Truncate;
                 Text itens = Art.NewText(bg.transform, "Conteudo", 30, new Vector2(x0 + 0.01f, 0.3f), new Vector2(0.96f, 0.76f), TextAnchor.UpperLeft);
                 itens.text = Conteudo(d); itens.color = Art.ComAlfa(MenuBar.Brown, 0.85f);
                 itens.resizeTextForBestFit = true; itens.resizeTextMinSize = 20; itens.resizeTextMaxSize = 30;
