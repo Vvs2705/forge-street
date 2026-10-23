@@ -100,9 +100,50 @@ namespace FS.Tests
                 Assert.AreEqual(4, ws.Select(x => x.Chave).Distinct().Count(), $"semana do dia {d}: contador repetido");
                 Assert.AreEqual(0, ds[0].Pool, $"dia {d}");
                 Assert.AreEqual(1, ds[1].Pool, $"dia {d}");
-                Assert.AreEqual(0, ds[2].Pool, $"dia {d}: a C sem gatilho cai na A");
+                Assert.AreEqual(2, ds[2].Pool, $"dia {d}: pool C (com a Joalheria, o Renome; sem Fina ainda, so ele)");
+                Assert.AreEqual("dly_renome5", ds[2].Id, $"dia {d}");
             }
         }
+
+        /// <summary>
+        /// LIVEOPS_V1 §4.1-4.2 (#25-34): o slot C. Sem nada aberto cai na A; com a Joalheria, o Renome (feito = Renome ganho desde a vaga, paga
+        /// 1x); a 1a peca Fina de um item abre as de Fina (dele e a geral); com um evento ativo, so as 2 de evento, alternando por dia, e a de
+        /// pontos fecha pelos pontos do evento.
+        /// </summary>
+        [Test]
+        public void PoolC_RenomeFinaEEvento_GoldenERegras()
+        {
+            Sim s = Aberta(Upgrade.Jewelry);
+            s.Metas.Agora(Em(D, 10), Fuso);
+            Assert.AreEqual("dly_renome5", Ids(s)[2]);
+            Metas.Meta m = s.Metas.Diaria(2);
+            Assert.AreEqual(0L, m.Feito);
+            s.Renome.Ganha(5);
+            Assert.IsTrue(s.Metas.Diaria(2).Pronta, "Renome ganho desde a vaga");
+            long ouro = s.Gold;
+            Assert.Greater(s.Metas.ResgatarDiaria(2), 0L);
+            Assert.AreEqual(-1L, s.Metas.ResgatarDiaria(2), "paga 1x");
+            Assert.Greater(s.Gold, ouro);
+
+            s.Metas.On(Ev.Graded, s.ShieldBench.Index, (int)Quality.Fine);   // a 1a Fina (escudo): abre dly_fina10 e dly_fina_escudos10
+            var c = new List<string>();
+            for (long d = D + 1; d <= D + 6; d++) { s.Metas.Agora(Em(d, 10), Fuso); c.Add(Ids(s)[2]); }
+            CollectionAssert.IsSubsetOf(new[] { "dly_fina10", "dly_fina_escudos10" }, c, "as de Fina entram no rodizio da C");
+            Assert.IsFalse(c.Contains("dly_fina_joias5"), "sem Fina de joia, a de joias espera");
+            CollectionAssert.AreEqual(GoldenC, c);
+
+            EventDef ev = LiveOpsDefs.Eventos.First(e => e.Id.EndsWith("_forge_frenzy", StringComparison.Ordinal));
+            long t = ev.Comeca + 3600;
+            s.LiveOps.Agora(t);
+            Assert.IsTrue(s.LiveOps.Forca(ev) || s.LiveOps.Evento == ev);
+            var e2 = new List<string>();
+            for (int k = 0; k < 4; k++) { s.Metas.Agora(t + k * Calendario.Dia, Fuso); s.LiveOps.Agora(t + k * Calendario.Dia); e2.Add(Ids(s)[2]); }
+            Assert.IsTrue(e2.All(x => x == "dly_evento100" || x == "dly_enc_evento"), string.Join(",", e2));
+            for (int k = 1; k < e2.Count; k++) Assert.AreNotEqual(e2[k - 1], e2[k], "alterna por dia");
+        }
+
+        // (dia x 5 + 2) mod 9 sobre a C, pulando as travadas (superior e golpe sem a Quality, joias sem Fina de joia, fina30 sem a Vitrine, evento)
+        static readonly string[] GoldenC = { "dly_fina10", "dly_renome5", "dly_fina10", "dly_renome5", "dly_fina_escudos10", "dly_fina10" };
 
         [Test]
         public void PrimeirosMinutos_AntesDasFerramentas_NadaAbreNemPaga()

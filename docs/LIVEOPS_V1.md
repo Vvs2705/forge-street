@@ -410,16 +410,16 @@ Totais da trilha free por temporada: **ouro 1.170 s** (17 níveis), **Renome +44
 | 22 | `dly_vip2` | Atender 2 VIPs | B | Renome 1 | `vip_served` ✓ |
 | 23 | `dly_contrata` | Contratar 1 worker | B | vaga de worker à venda | `worker_hired` ✓ |
 | 24 | `dly_worker_nivel` | Subir 1 nível de worker | B | Wave B (níveis) | `worker_upgrade` ✗ |
-| 25 | `dly_fina_escudos10` | Fabricar 10 escudos Fina ou melhor | C | 1ª fonte de qualidade nos escudos | `quality_crafted` (escudo) ✗ |
-| 26 | `dly_fina_joias5` | Fabricar 5 joias Fina ou melhor | C | 1ª fonte de qualidade nas joias | `quality_crafted` (joia) ✗ |
+| 25 | `dly_fina_escudos10` | Fabricar 10 escudos Fina ou melhor | C | 1ª fonte de qualidade nos escudos | `quality_crafted` (escudo) ✓ |
+| 26 | `dly_fina_joias5` | Fabricar 5 joias Fina ou melhor | C | 1ª fonte de qualidade nas joias | `quality_crafted` (joia) ✓ |
 | 27 | `dly_golpe_superior1` | Acertar 1 golpe que faz Superior | C | Quality aberta | `master_strike` (superior) ✗ |
-| 28 | `dly_fina30` | Fabricar 30 peças Fina ou melhor | C | Renome 2 | `quality_crafted` ✗ |
-| 29 | `dly_fina10` | Fabricar 10 peças Fina ou melhor | C | 1ª fonte de qualidade | `quality_crafted` ✗ |
-| 30 | `dly_superior3` | Fabricar 3 peças Superiores (golpe numa peça Fina) | C | Quality aberta | `quality_crafted` ✗ |
-| 31 | `dly_golpe3` | Acertar 3 golpes de mestre | C | Quality aberta | `master_strike` ✗ |
-| 32 | `dly_renome5` | Ganhar 5 de Renome | C | Renome 1 | `reputation_gain` ✗ |
-| 33 | `dly_evento100` | Ganhar 100 pontos de evento | C | evento ativo + requisito | `event_points` ✗ |
-| 34 | `dly_enc_evento` | Entregar 1 encomenda de evento | C | evento ativo + requisito | `order_complete` (Event) ✗ |
+| 28 | `dly_fina30` | Fabricar 30 peças Fina ou melhor | C | Renome 2 | `quality_crafted` ✓ |
+| 29 | `dly_fina10` | Fabricar 10 peças Fina ou melhor | C | 1ª fonte de qualidade | `quality_crafted` ✓ |
+| 30 | `dly_superior3` | Fabricar 3 peças Superiores (golpe numa peça Fina) | C | Quality aberta | `quality_crafted` ✓ |
+| 31 | `dly_golpe3` | Acertar 3 golpes de mestre | C | Quality aberta | `master_strike` ✓ |
+| 32 | `dly_renome5` | Ganhar 5 de Renome | C | Renome 1 | `reputation_gain` ✓ |
+| 33 | `dly_evento100` | Ganhar 100 pontos de evento | C | evento ativo + requisito | `event_points` ✓ |
+| 34 | `dly_enc_evento` | Entregar 1 encomenda de evento | C | evento ativo + requisito | `order_complete` (Event) ✓ |
 
 Pools: A tem 13, B tem 11, C tem 10. Logo depois das Ferramentas já há ≥ 3 abertas em A e em B. ✓* = o evento existe, mas o filtro pede o `category` no `UpgradeDef` (B-CORE-01). Nenhuma diária pede encomenda de tipo especial (Bulk, Quality, Rush, Mixed, Royal): com 1 de cada a cada 10 no rodízio, não fecha em 15 min. Elas ficam nas semanais.
 
