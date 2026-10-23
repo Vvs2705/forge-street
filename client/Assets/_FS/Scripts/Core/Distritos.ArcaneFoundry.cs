@@ -118,10 +118,8 @@ namespace FS.Core
             new ClientDef("colecionador", 1, 2f, 3f, Quality.Fine, true),
         };
 
-        // ponytail (como a Row antes do C-ART-13): arte emprestada. Cubas e fornos runicos = o crisol do Quarter; a fornalha de liga = a da Row;
-        // altares e o cadinho = a mesa do gravador do Arsenal; depositos = os do Quarter (cristal = gemas brutas, runico = ouro). O coordenador
-        // troca pelos do Tripo no PR de arte
-        const string ArteCuba = "crisol", ArteAltar = "mesa_gravador";
+        // Arte das estacoes (Tripo, ASSETS.md §20): as 3 cubas dividem a folha cuba_cristal e os 2 fornos runicos a fornalha_runica; a fornalha
+        // de liga segue com a da Row
 
         public static readonly DistrictDef ArcaneFoundry = new DistrictDef
         {
@@ -137,23 +135,23 @@ namespace FS.Core
             Estacoes = new[]
             {
                 new StationDef("deposito", Kind.Deposit, 1.5f, 1.0f, "Depósito", 0f, 1f),
-                new StationDef("deposito_cristal", Kind.Deposit, 4.5f, 1.0f, "Cristal bruto", 0f, 1f, null, null, AfCristalBruto, arte: "deposito_gemas"),
+                new StationDef("deposito_cristal", Kind.Deposit, 4.5f, 1.0f, "Cristal bruto", 0f, 1f, null, null, AfCristalBruto, arte: "deposito_cristal"),
                 new StationDef("fornalha", Kind.Furnace, 1.5f, 4.0f, "Fornalha", -1f, 0f, null, "fornalha"),
-                new StationDef("cuba_cristal", Kind.Furnace, 4.5f, 4.0f, "Cuba de cristal", -1f, 0f, null, "cuba_cristal", arte: ArteCuba),
-                new StationDef("altar_lanternas", Kind.Crafter, 1.5f, 9.0f, "Altar lanternas", -1f, 0f, null, "altar_lanternas", arte: ArteAltar),
+                new StationDef("cuba_cristal", Kind.Furnace, 4.5f, 4.0f, "Cuba de cristal", -1f, 0f, null, "cuba_cristal", arte: "cuba_cristal"),
+                new StationDef("altar_lanternas", Kind.Crafter, 1.5f, 9.0f, "Altar lanternas", -1f, 0f, null, "altar_lanternas", arte: "altar_lanternas"),
                 new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f),
-                new StationDef("altar_aneis", Kind.Crafter, 4.5f, 9.0f, "Altar de anéis", -1f, 0f, "altar_aneis", "altar_aneis", arte: ArteAltar),
-                new StationDef("cuba2", Kind.Furnace, 7.5f, 4.0f, "Cuba 2", -1f, 0f, "cuba2", "cuba_cristal", arte: ArteCuba),
-                new StationDef("deposito_runico", Kind.Deposit, 10.5f, 1.0f, "Veio rúnico", 0f, 1f, "veio_runico", null, AfMinRunico, arte: "deposito_ouro"),
-                new StationDef("fornalha_runica", Kind.Furnace, 10.5f, 4.0f, "Forno rúnico", -1f, 0f, "veio_runico", "fornalha_runica", arte: ArteCuba),
-                new StationDef("altar_amuletos", Kind.Crafter, 7.5f, 9.0f, "Altar amuletos", -1f, 0f, "veio_runico", "altar_amuletos", arte: ArteAltar),
-                new StationDef("altar_laminas", Kind.Crafter, 1.5f, 11.0f, "Altar lâminas", -1f, 0f, "altar_laminas", "altar_laminas", arte: ArteAltar),
-                new StationDef("fornalha_runica2", Kind.Furnace, 13.5f, 4.0f, "Forno rúnico 2", -1f, 0f, "fornalha_runica2", "fornalha_runica", arte: ArteCuba),
+                new StationDef("altar_aneis", Kind.Crafter, 4.5f, 9.0f, "Altar de anéis", -1f, 0f, "altar_aneis", "altar_aneis", arte: "altar_aneis"),
+                new StationDef("cuba2", Kind.Furnace, 7.5f, 4.0f, "Cuba 2", -1f, 0f, "cuba2", "cuba_cristal", arte: "cuba_cristal"),
+                new StationDef("deposito_runico", Kind.Deposit, 10.5f, 1.0f, "Veio rúnico", 0f, 1f, "veio_runico", null, AfMinRunico, arte: "deposito_runico"),
+                new StationDef("fornalha_runica", Kind.Furnace, 10.5f, 4.0f, "Forno rúnico", -1f, 0f, "veio_runico", "fornalha_runica", arte: "fornalha_runica"),
+                new StationDef("altar_amuletos", Kind.Crafter, 7.5f, 9.0f, "Altar amuletos", -1f, 0f, "veio_runico", "altar_amuletos", arte: "altar_amuletos"),
+                new StationDef("altar_laminas", Kind.Crafter, 1.5f, 11.0f, "Altar lâminas", -1f, 0f, "altar_laminas", "altar_laminas", arte: "altar_laminas"),
+                new StationDef("fornalha_runica2", Kind.Furnace, 13.5f, 4.0f, "Forno rúnico 2", -1f, 0f, "fornalha_runica2", "fornalha_runica", arte: "fornalha_runica"),
                 new StationDef("fornalha_liga", Kind.Furnace, 1.5f, 6.5f, "Fornalha liga", -1f, 0f, "fornalha_liga_arcana", "fornalha_liga", arte: FornalhaLiga),
-                new StationDef("altar_cajados", Kind.Crafter, 7.5f, 11.0f, "Altar cajados", -1f, 0f, "fornalha_liga_arcana", "altar_cajados", arte: ArteAltar),
-                new StationDef("altar_escudos", Kind.Crafter, 4.5f, 11.0f, "Altar escudos", -1f, 0f, "altar_escudos", "altar_escudos", arte: ArteAltar),
-                new StationDef("cadinho_celeste", Kind.Crafter, 10.5f, 9.0f, "Cadinho celeste", -1f, 0f, "cadinho_celeste", "cadinho_celeste", arte: ArteAltar),
-                new StationDef("cuba3", Kind.Furnace, 7.5f, 6.5f, "Cuba 3", -1f, 0f, "cuba3", "cuba_cristal", arte: ArteCuba),
+                new StationDef("altar_cajados", Kind.Crafter, 7.5f, 11.0f, "Altar cajados", -1f, 0f, "fornalha_liga_arcana", "altar_cajados", arte: "altar_cajados"),
+                new StationDef("altar_escudos", Kind.Crafter, 4.5f, 11.0f, "Altar escudos", -1f, 0f, "altar_escudos", "altar_escudos", arte: "altar_escudos"),
+                new StationDef("cadinho_celeste", Kind.Crafter, 10.5f, 9.0f, "Cadinho celeste", -1f, 0f, "cadinho_celeste", "cadinho_celeste", arte: "cadinho_celeste"),
+                new StationDef("cuba3", Kind.Furnace, 7.5f, 6.5f, "Cuba 3", -1f, 0f, "cuba3", "cuba_cristal", arte: "cuba_cristal"),
             },
             Pads = new[]
             {

@@ -12,7 +12,7 @@ namespace FS.Core
     /// </summary>
     public struct BotProfile
     {
-        public string Name; public float Reaction, Stick; public bool Ads, AdsE, Strike;
+        public string Name; public float Reaction, Stick; public bool Ads, AdsE, Strike; public int StrikeCada;
 
         public static readonly BotProfile Ideal = new BotProfile { Name = "Ideal", Reaction = 0f, Stick = 1f, Strike = true };
         public static readonly BotProfile F2P = new BotProfile { Name = "F2P", Reaction = 0.7f, Stick = 0.85f };
@@ -20,6 +20,10 @@ namespace FS.Core
         public static readonly BotProfile AdWatcher = new BotProfile { Name = "AdWatcher", Reaction = 0.7f, Stick = 0.85f, Ads = true };
         public static readonly BotProfile AdWatcherE = new BotProfile { Name = "AdWatcherE", Reaction = 0.7f, Stick = 0.85f, Ads = true, AdsE = true };
         public static readonly BotProfile[] All = { Ideal, F2P, Slow, AdWatcher, AdWatcherE };
+        /// <summary>Portao "1a Masterwork do F2P em ate 4 h" (ECONOMIA_WAVE_B §10, BALANCE.md §30.4): o F2P que golpeia. Ve o anel depois da
+        /// reacao, toca uma vez por volta e acerta 1 em 2. Fora do All: o econsim padrao e os portoes do F2P de sempre nao mudam.</summary>
+        public static readonly BotProfile F2PGolpe = new BotProfile { Name = "F2PGolpe", Reaction = 0.7f, Stick = 0.85f, Strike = true, StrikeCada = 2 };
+        public static readonly BotProfile[] Extras = { F2PGolpe };
     }
 
     /// <summary>
@@ -43,6 +47,12 @@ namespace FS.Core
         public int AdsTotal => AdsVip + AdsBoost + AdsSupply + AdsBonus;
         /// <summary>B-CORE-03: acerta o golpe de mestre sempre que o Sim oferece (ferreiro parado na boca de uma bancada, recarga zerada).</summary>
         public bool Strike;
+        /// <summary>Golpe humano: com StrikeCada > 1 o bot toca o anel Reaction s depois de ele aparecer e de novo a cada volta (Anel), e so 1
+        /// toque em StrikeCada acerta (errar nao pune, como no jogo). 0 ou 1 = o acerto perfeito na hora de sempre (o Ideal).</summary>
+        public int StrikeCada;
+        /// <summary>s de uma volta do anel do golpe (= QualidadeView.Ciclo, que mora na View).</summary>
+        public const float Anel = 1.6f;
+        float _anel; int _toques;
         /// <summary>B-CORE-04: contrata/sobe nivel de worker antes da producao completa so quando custa ate tantos s da renda online; depois dela,
         /// qualquer preco (e' ralo). 0 = so depois da producao completa: na varredura (BALANCE.md §25) foi o que mais rendeu aos 60 e aos 90 min
         /// (worker comprado antes atrasa a producao mais do que devolve). Negativo = nunca (o bot de antes do B-CORE-04).</summary>
@@ -51,7 +61,7 @@ namespace FS.Core
         V2 _target; bool _has, _menu; float _wait;
 
         public static Bot Ideal() => From(BotProfile.Ideal);
-        public static Bot From(BotProfile p) => new Bot { Reaction = p.Reaction, Stick = p.Stick, Ads = p.Ads, AdsE = p.AdsE, Strike = p.Strike };
+        public static Bot From(BotProfile p) => new Bot { Reaction = p.Reaction, Stick = p.Stick, Ads = p.Ads, AdsE = p.AdsE, Strike = p.Strike, StrikeCada = p.StrikeCada };
 
         /// <summary>
         /// Um tick do jogo com o bot no joystick. Menu inferior (FASE6): mesma politica do pad (a compra mais barata que ja da
@@ -72,7 +82,7 @@ namespace FS.Core
                 if (s.SummonVip()) AdsVip++;                                 // o Sim recusa fora de CanSummonVip
                 if (s.BoostLeft <= 0f && s.StartBoost() > 0f) AdsBoost++;    // ponytail: so o 1o anuncio (2x); o 2o (3x) e' mais uma condicao
             }
-            if (Strike && !EsperaSuperior(s)) s.Strike(true);   // o Sim recusa fora de StrikeStation (parado na boca, recarga zerada); acerto perfeito, sem tempo de anel
+            if (Strike && !EsperaSuperior(s)) Golpe(s, dt);
             if (s.Contratos.Oferta != null) s.Contratos.Aceitar();   // D-CORE-04: aceita o contrato oferecido (ja tem o Renome) e vende como sempre
             ConfiguraBancadas(s);   // C-CORE-06: receita das bancadas configuraveis (Bot.Bancada; sem elas, nada)
             Cotas(s);   // C-CORE-07: a regra fixa das faixas do patio (Bot.Cotas.cs; sem patio, nada)
@@ -130,6 +140,17 @@ namespace FS.Core
         {
             Station st = s.StrikeStation;
             return st != null && s.QualityPoints(st) >= 100 && s.Hall.Pendente(st) >= 0 && s.Hall.ProximaPeca(st) != Quality.Superior;
+        }
+
+        /// <summary>Golpe de mestre: o Ideal acerta na hora (o Sim recusa fora de StrikeStation: parado na boca, recarga zerada); o humano
+        /// (StrikeCada > 1) ve o anel depois da reacao, toca a cada volta e acerta 1 em StrikeCada.</summary>
+        void Golpe(Sim s, float dt)
+        {
+            if (StrikeCada <= 1) { s.Strike(true); return; }
+            if (s.StrikeStation == null) { _anel = 0f; return; }
+            if ((_anel += dt) < Reaction) return;
+            _anel -= Anel;
+            s.Strike(++_toques % StrikeCada == 0);
         }
 
         static bool Assiste(Sim s, Anuncio a) => s.Anuncios.Pagar(s.Anuncios.Oferta(a)) >= 0;
