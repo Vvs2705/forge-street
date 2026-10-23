@@ -284,14 +284,32 @@ namespace FS.Core
             PassDef p = PasseEm(Relogio);
             if (p != null && p != Passe)
             {
-                if (Passe != null) for (int n = 1; n <= Nivel; n++) Resgatar(n);
+                if (Passe != null) { for (int n = 1; n <= Nivel; n++) Resgatar(n); PremiumAlcancado(); }
                 Passe = p; Xp = 0; XpEncHoje = 0;
             }
             _corre = p != null && p == Passe && _sim.T.Passe;
-            if (!_corre) return;
-            long d = M.PassXp - XpVisto;
-            XpVisto = M.PassXp;
-            if (d > 0) Ganha(d);
+            if (_corre)
+            {
+                long d = M.PassXp - XpVisto;
+                XpVisto = M.PassXp;
+                if (d > 0) Ganha(d);
+            }
+            PremiumAlcancado();
+        }
+
+        /// <summary>LIVEOPS_V1 §3.5: o jogador tem o premium desta temporada (posse re-derivada do recibo) e a flag esta ligada.</summary>
+        public bool Premium => Passe != null && _sim.T.PassePremium && _sim.Compras.Tem(Compras.PossePremium(Passe.Id));
+
+        public static string TxPremium(PassDef p, int n) => "p:" + p.Id + ":" + n.ToString(CultureInfo.InvariantCulture) + ":p";
+
+        /// <summary>LIVEOPS_V1 §3.5: a trilha premium paga sozinha todo nivel alcancado (sem botao), 1x pelo ID p:{pass}:{n}:p; quem compra no meio
+        /// da temporada recebe na hora os ja alcancados, e a temporada que acaba paga o que faltou (antes do Passe trocar). Cosmetico = o ID no
+        /// ledger (a posse); conveniencia = o ID, ate as cargas existirem (Wave E); Gems = nada, ate a moeda existir (V9). Nunca ouro/XP/Renome.</summary>
+        void PremiumAlcancado()
+        {
+            if (!Premium || !M.Aberto || Passe.Premium == null) return;
+            for (int n = 1; n <= Nivel; n++)
+                if (!M.Ledger.Contains(TxPremium(Passe, n))) Credita(TxPremium(Passe, n), new[] { Passe.Premium[n - 1] }, BlueprintSourceKind.PassFree);
         }
 
         /// <summary>V20: encomenda entregue da XpEncomenda ate o teto do dia local (as metas abertas: depois das Ferramentas).</summary>

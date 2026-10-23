@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace FS.Core
@@ -50,7 +51,9 @@ namespace FS.Core
         public const string RemoveAds = "remove_ads", SemVideo = "sem_video";
         /// <summary>Posses que o jogo sabe entregar: remove_ads = veto do intersticial (Anuncios.VetoIntersticial); sem_video = os placements de
         /// SemVideoCobre dao a recompensa sem o video, com as MESMAS recargas, tetos e ledger. Cosmetico entra aqui com o sistema dele (DM §48).</summary>
-        public static readonly string[] Posses = { RemoveAds, SemVideo };
+        public static readonly string[] Posses = new[] { RemoveAds, SemVideo }.Concat(LiveOpsDefs.Passes.Select(p => PossePremium(p.Id))).ToArray();
+        /// <summary>LIVEOPS_V1 §3.5: a posse da trilha premium de uma temporada do Pass (o produto iap_{pass}).</summary>
+        public static string PossePremium(string passe) => "premium_" + passe;
         /// <summary>Moedas que uma compra pode dar: nenhuma ate a Wave E (V9: so o ouro ativo; Gems entram com o mapa fonte -> ralo do
         /// BALANCE.md). Ouro nunca (V20: premium sem ouro, Renome, XP nem Blueprint).</summary>
         public static readonly string[] MoedasAVenda = new string[0];
@@ -66,7 +69,21 @@ namespace FS.Core
                 Conteudo = new[] { ItemCompra.Posse(RemoveAds), ItemCompra.Posse(SemVideo) } },
         };
 
-        public static ProductDef Def(string id) => Array.Find(Catalogo, d => d.Id == id);
+        /// <summary>LIVEOPS_V1 §3.5 (Wave E, atras do Tuning.PassePremium): o premium de cada temporada, nao-consumivel, compra direta sem moeda
+        /// intermediaria. Preco = placeholder pela faixa de mercado dos passes (US$ 8,99-9,99, GDD §17.3, BENCHMARK_MERCADO §8): revisar na P3.</summary>
+        public static readonly ProductDef[] CatalogoPasse = Array.ConvertAll(LiveOpsDefs.Passes, p => new ProductDef
+        {
+            Id = "iap_" + p.Id, Tipo = TipoProduto.NaoConsumivel, PrecoPlaceholder = "R$ 44,90", Conteudo = new[] { ItemCompra.Posse(PossePremium(p.Id)) },
+        });
+
+        /// <summary>Todo produto conhecido (o que a loja busca e restaura, a venda ou nao) e o que o validator confere.</summary>
+        public static readonly ProductDef[] Todos = Catalogo.Concat(CatalogoPasse).ToArray();
+
+        /// <summary>O que a loja oferece agora: o Pacote do Mestre e, com a flag, o premium das temporadas.</summary>
+        public static ProductDef[] AVenda(Tuning t) => t.PassePremium ? Catalogo.Concat(CatalogoPasse).ToArray() : Catalogo;
+
+        /// <summary>Qualquer produto conhecido, a venda ou nao: o recibo do Pass comprado continua valendo com a flag desligada.</summary>
+        public static ProductDef Def(string id) => Array.Find(Catalogo, d => d.Id == id) ?? Array.Find(CatalogoPasse, d => d.Id == id);
 
         sealed class Registro { public Recibo R; public EstadoCompra E; }
 
