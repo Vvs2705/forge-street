@@ -54,6 +54,7 @@ namespace FS.Core
             // do Passe pelo ledger das metas
             "quality_crafted", "quality_superior", "master_strike", "event_enter",
             "district_unlock", "collection_milestone", "blueprint_unlock", "reputation_level", "station_level", "event_complete", "pass_level",
+            "masterwork_empire",   // obras de todo distrito (o ledger mw: do Imperio); o masterwork_unlock conta so o Hall da raiz
         };
 
         public sealed class Slot { public MetaDef Def; public long Base, Alvo; }
@@ -143,12 +144,21 @@ namespace FS.Core
             Cont[k] = v + n;
         }
 
+        int Prefixados(string prefixo)
+        {
+            int n = 0;
+            foreach (string tx in _sim.Renome.Ledger) if (tx.StartsWith(prefixo, StringComparison.Ordinal)) n++;
+            return n;
+        }
+
         /// <summary>Valor do contador da meta (Distintos: quantos produtos com pelo menos 1; em order_complete, quantos tipos fora o Event).</summary>
         public long Valor(MetaDef d)
         {
             switch (d.Evento)   // raia H: derivados do estado do nucleo (LIVEOPS_V1 §4.5: save antigo ganha o retroativo, nada novo no save)
             {
-                case "district_unlock": return _sim.Renome.Ledger.Contains("charter:" + d.Ref) ? 1 : 0;   // Ref = distrito (Renome.OnCharter)
+                case "district_unlock":   // Ref = distrito (Renome.OnCharter); sem Ref = distritos abertos (o Old Forge + 1 por Charter)
+                    return d.Ref != null ? (_sim.Renome.Ledger.Contains("charter:" + d.Ref) ? 1 : 0) : 1 + Prefixados("charter:");
+                case "masterwork_empire": return Prefixados(Hall.Prefixo);
                 case "collection_milestone": return _sim.Renome.Ledger.Contains(Colecao.Prefixo + d.Ref) ? 1 : 0;   // Ref = marco (Colecao.Tx)
                 case "blueprint_unlock": return _sim.Projetos.Count;
                 case "reputation_level": return _sim.Renome.Nivel;
