@@ -37,6 +37,20 @@ PECAS = [
 ]
 
 
+# Sequencia B, "Ache o gargalo" (CRIATIVOS_BANCO_V1 §c; ASO.md §7): a 8a ("sem anuncio forcado") espera o FS-5/P3, entao entra a forja
+# de perto com a fila cheia, como o banco manda
+PECAS_B = [
+    (1, "huge_queue", 150, "A FILA LOTOU. E AGORA?", "THE LINE IS FULL. NOW WHAT?", "LA COLA SE LLENÓ. ¿Y AHORA?"),
+    (2, "gargalo", 150, "ACHE O GARGALO", "FIND THE BOTTLENECK", "ENCUENTRA EL ATASCO"),
+    (3, "menu_cartoes", 60, "ESCOLHA A MELHORIA CERTA", "PICK THE RIGHT UPGRADE", "ELIGE LA MEJORA CORRECTA"),
+    (4, "boost3x", 150, "ACELERE QUANDO QUISER", "SPEED UP ANYTIME", "ACELERA CUANDO QUIERAS"),
+    (5, "order", 510, "CUMPRA ENCOMENDAS", "COMPLETE ORDERS", "CUMPLE PEDIDOS"),
+    (6, "offline", 60, "SUA OFICINA RENDE ATÉ 2 H FORA", "YOUR SHOP EARNS 2 H AWAY", "TU TALLER GANA 2 H SIN TI"),
+    (7, "full_district", 300, "SUA EQUIPE TRABALHA POR VOCÊ", "YOUR CREW WORKS FOR YOU", "TU EQUIPO TRABAJA POR TI"),
+    (8, "forja_fila", 120, "A FORJA NUNCA PARA", "THE FORGE NEVER STOPS", "LA FORJA NUNCA PARA"),
+]
+
+
 def capturar(so, langs, candidatos):
     """Roda o preset (o -record ja liga o -testsession) e copia so o quadro escolhido; com --candidatos, 1 a cada 60 para escolher."""
     for n, preset, q, *_ in PECAS:
@@ -60,6 +74,33 @@ def capturar(so, langs, candidatos):
                     shutil.copy(src, os.path.join(dest, "%d_%s%s.jpg" % (n, preset, "" if not candidatos else "_f%05d" % k)))
             print("%s %s rc=%d ok=%s quadros=%d" % (preset, lang, r.returncode, ok, len(fs)), flush=True)
             shutil.rmtree(pasta, ignore_errors=True)   # ~0,7 MB por quadro: so o escolhido fica
+
+
+# G-UA-03: video curto de gameplay (Play: ate 30 s funciona melhor; 9:16) gravado do jogo real, sem legenda (a loja mostra o titulo)
+VIDEO = ["conveyor", "boost3x", "full_district"]
+
+
+def video():
+    """Grava os presets do VIDEO (30 fps, pt) e junta num MP4 H.264 1080 x 1920 em arte/loja/video/gameplay.mp4 (precisa do ffmpeg)."""
+    lista = os.path.join(TMP, "video.txt")
+    os.makedirs(TMP, exist_ok=True)
+    with open(lista, "w", encoding="utf-8") as f:
+        for preset in VIDEO:
+            pasta = os.path.join(TMP, "video_" + preset)
+            shutil.rmtree(pasta, ignore_errors=True)
+            os.makedirs(pasta)
+            subprocess.run([EXE, "-screen-fullscreen", "0", "-screen-width", "540", "-screen-height", "960",
+                            "-preset", preset, "-lang", "pt", "-record", pasta, "-logFile", pasta + ".log"], timeout=900)
+            mp4 = os.path.join(TMP, "video_" + preset + ".mp4")
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", "30", "-i", os.path.join(pasta, "f%05d.jpg"),
+                            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", mp4], check=True)
+            f.write("file '%s'\n" % mp4.replace("\\", "/"))
+            shutil.rmtree(pasta, ignore_errors=True)
+    out = os.path.join(RAIZ, "arte", "loja", "video")
+    os.makedirs(out, exist_ok=True)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", lista, "-c", "copy",
+                    os.path.join(out, "gameplay.mp4")], check=True)
+    print("VIDEO_OK", os.path.join(out, "gameplay.mp4"))
 
 
 def legenda(d, texto, cx, y, larg):
@@ -129,12 +170,17 @@ def compor():
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("acao", choices=["capturar", "compor"])
+    ap.add_argument("acao", choices=["capturar", "compor", "video"])
     ap.add_argument("--so", action="append")
     ap.add_argument("--lang", action="append")
     ap.add_argument("--candidatos", action="store_true", help="1 quadro a cada 60 (2 s) para escolher o da peca")
+    ap.add_argument("--seq", choices=["A", "B"], default="A", help="B = Ache o gargalo (CRIATIVOS_BANCO_V1 §c), em screenshots_b/")
     a = ap.parse_args()
+    if a.seq == "B":
+        PECAS, QUADROS, SAI = PECAS_B, QUADROS + "_b", SAI + "_b"
     if a.acao == "capturar":
         capturar(a.so, a.lang or LANGS, a.candidatos)
+    elif a.acao == "video":
+        video()
     else:
         compor()
