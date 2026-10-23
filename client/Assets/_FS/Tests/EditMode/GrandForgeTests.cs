@@ -55,7 +55,7 @@ namespace FS.Tests
             Assert.AreEqual((Distritos.All.Length - 1, i), (i, GF.Indice), "o ultimo do mapa; indice = posicao");
             Assert.IsNull(GF.Charter.Proximo, "a Carta da Grande Forja nao libera ninguem");
             Assert.AreEqual(GF.Id, Distritos.All[i - 1].Charter.Proximo, "o anterior do mapa libera a Grand Forge");
-            CollectionAssert.AreEqual(new[] { "peitoral", "colar", "caixa_joias", "insignia_real", "espada_gala" }, GF.Importados.Select(x => x.Item).ToArray(), "§3.1, na ordem");
+            CollectionAssert.AreEqual(new[] { "peitoral", "colar", "caixa_joias", "insignia_real", "espada_gala", "lanterna_arcana", "anel_cristal", "lamina_runica", "escudo_runico" }, GF.Importados.Select(x => x.Item).ToArray(), "§3.1, na ordem");
             foreach ((string item, string origem) in GF.Importados)
                 Assert.IsTrue(Distritos.Find(origem).Itens.Any(x => x.Id == item && x.Product) && !s.IsProduct((Item)I(s, item)), item + ": produto la, insumo aqui");
             CollectionAssert.AreEqual(new[] { "mercador", "nobre", "emissario", "colecionador" }, GF.Clientes.Select(c => c.Id).ToArray(), "§12");
@@ -114,6 +114,8 @@ namespace FS.Tests
             Station rel = s.Est("bancada_relicarios"), cor = s.Est("bancada_coroas");
             cor.Out = cor.OutCap;   // a coroa parada (saida cheia) nao consome o que chega
             int colar = cor.InIndex((Item)I(s, "colar")), ins = cor.InIndex((Item)I(s, "insignia_real")), caixa = rel.InIndex((Item)I(s, "caixa_joias"));
+            cor.Ins[cor.InIndex((Item)I(s, "anel_cristal"))] = cor.InCap;   // os da Foundry cheios (nenhuma bancada faz peca: sem bronze, coroa parada):
+            rel.Ins[rel.InIndex((Item)I(s, "lanterna_arcana"))] = rel.InCap;   // o rodizio fica nas 3 rotas de antes
             Roda(s, 30f);
             Assert.AreEqual(0, s.ImportedUnits, "sem o mensageiro, nada chega");
             Compra(s, Sim.Mensageiro);
@@ -153,8 +155,9 @@ namespace FS.Tests
                 long g0 = imp.FundoGanho;
                 for (float t = 0f; t < 59.9f; t += Dt)
                 {
-                    cor.Ins[colar] = 0;   // so o colar recebe (a insignia esta cheia): toda unidade e' do Quarter
+                    cor.Ins[colar] = 0;   // so o colar recebe (a insignia e o anel estao cheios): toda unidade e' do Quarter
                     cor.Ins[cor.InIndex((Item)I(s, "insignia_real"))] = cor.InCap;
+                    cor.Ins[cor.InIndex((Item)I(s, "anel_cristal"))] = cor.InCap;   // o anel da Foundry tambem cheio
                     s.Tick(Dt, 0f, 0f);
                     long depoisTick = s.Gold;
                     imp.Fundo(Dt);

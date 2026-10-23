@@ -14,7 +14,8 @@ namespace FS.Core
 
         const Item GfMinCobre = (Item)0, GfBronze = (Item)1, GfSino = (Item)2, GfEstatua = (Item)3, GfLaminaEstelar = (Item)4, GfRelicario = (Item)5,
             GfCoroa = (Item)6, GfPanoplia = (Item)7, GfMinerio = (Item)8, GfLingote = (Item)9, GfPedra = (Item)10, GfAco = (Item)11, GfPeitoral = (Item)12,
-            GfColar = (Item)13, GfCaixa = (Item)14, GfInsignia = (Item)15, GfEspadaGala = (Item)16;
+            GfColar = (Item)13, GfCaixa = (Item)14, GfInsignia = (Item)15, GfEspadaGala = (Item)16,
+            GfLanterna = (Item)17, GfAnel = (Item)18, GfLaminaRunica = (Item)19, GfEscudoRunico = (Item)20;
 
         static readonly ItemDef[] ItensGrandForge =
         {
@@ -36,6 +37,11 @@ namespace FS.Core
             new ItemDef("caixa_joias", "caixa de joias", 3, false),
             new ItemDef("insignia_real", "insígnia real", 4, false),
             new ItemDef("espada_gala", "espada de gala", 4, false),
+            // os 4 da Arcane Foundry (§3.1; BALANCE.md §41 desvio 1, entregue em 2026-10-23): no fim, para nao mexer nos handles de antes
+            new ItemDef("lanterna_arcana", "lanterna arcana", 5, false),
+            new ItemDef("anel_cristal", "anel de cristal", 5, false),
+            new ItemDef("lamina_runica", "lâmina rúnica", 5, false),
+            new ItemDef("escudo_runico", "escudo rúnico", 5, false),
         };
 
         /// <summary>§3.1: TimeMul = tempo base / tempo inicial do tipo (crisol, fornalha e forja estelar: 4 s; fundicoes e bancadas: 5 s). Fundicao
@@ -47,10 +53,10 @@ namespace FS.Core
             new RecipeDef("forja_estelar", Kind.Furnace, GfAco, t => 1.5f, (GfLingote, 1), (GfPedra, 1)),
             new RecipeDef("fundicao_sinos", "fundicao", Kind.Crafter, GfSino, t => 3.6f, (GfBronze, 8)),
             new RecipeDef("fundicao_estatuas", "fundicao", Kind.Crafter, GfEstatua, t => 3.2f, (GfBronze, 6), (GfAco, 1)),
-            new RecipeDef("forja_sintese", "sintese", Kind.Crafter, GfLaminaEstelar, t => 2f, (GfAco, 2)),
-            new RecipeDef("bancada_relicarios", "sintese", Kind.Crafter, GfRelicario, t => 2.4f, (GfCaixa, 1), (GfBronze, 2)),
-            new RecipeDef("bancada_coroas", "sintese", Kind.Crafter, GfCoroa, t => 2.4f, (GfColar, 1), (GfInsignia, 1)),
-            new RecipeDef("bancada_panoplia", "sintese", Kind.Crafter, GfPanoplia, t => 2.8f, (GfPeitoral, 1), (GfEspadaGala, 1), (GfAco, 1)),
+            new RecipeDef("forja_sintese", "sintese", Kind.Crafter, GfLaminaEstelar, t => 2f, (GfAco, 2), (GfLaminaRunica, 1)),
+            new RecipeDef("bancada_relicarios", "sintese", Kind.Crafter, GfRelicario, t => 2.4f, (GfCaixa, 1), (GfLanterna, 1), (GfBronze, 2)),
+            new RecipeDef("bancada_coroas", "sintese", Kind.Crafter, GfCoroa, t => 2.4f, (GfColar, 1), (GfInsignia, 1), (GfAnel, 1)),
+            new RecipeDef("bancada_panoplia", "sintese", Kind.Crafter, GfPanoplia, t => 2.8f, (GfPeitoral, 1), (GfEspadaGala, 1), (GfEscudoRunico, 1), (GfAco, 1)),
         };
 
         const string MestraGrand = "bp_mestra_grand";
@@ -187,9 +193,9 @@ namespace FS.Core
                 // §3 precos (Normal) x 0,85, desvio do catalogo (revisar; BALANCE.md §41): ao contrario da Row, do Quarter e do Arsenal, a Grand
                 // Forge nao e' presa no transporte na renda: a coroa sai so de importados (o Mensageiro entrega na entrada) e o lote paga x1,25;
                 // com o catalogo a renda nos 10 min depois da producao ia a ~+30% da alvo. A relacao entre os produtos e' a do §3
-                t.Price = new[] { 0, 0, 19600, 20400, 17900, 17000, 18700, 24700, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+                t.Price = new[] { 0, 0, 19600, 20400, 17900, 17000, 18700, 24700, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
                 // s entre clientes no inicio = 60 / (un/min do modelo na producao completa, §1 "mix"), como o Arsenal
-                t.ClientInterval = new[] { 0f, 0f, 10.7f, 13.6f, 37.5f, 42.9f, 42.9f, 50f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f };
+                t.ClientInterval = new[] { 0f, 0f, 10.7f, 13.6f, 37.5f, 42.9f, 42.9f, 50f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f };
                 t.CustoTabela = CustosGrandForge;
                 t.QueueCap0 = 4; t.CounterCap0 = t.CounterCap1 = 10;
                 t.OrderRewardMin = 6075;   // §7.2: Common da Grand Forge, 6.075 de minimo (x243 o do Old Forge)
@@ -207,6 +213,7 @@ namespace FS.Core
             Importados = new[]
             {
                 ("peitoral", ArmorersRowId), ("colar", ArtisanQuarterId), ("caixa_joias", ArtisanQuarterId), ("insignia_real", RoyalArsenalId), ("espada_gala", RoyalArsenalId),
+                ("lanterna_arcana", ArcaneFoundryId), ("anel_cristal", ArcaneFoundryId), ("lamina_runica", ArcaneFoundryId), ("escudo_runico", ArcaneFoundryId),
             },
         };
     }
