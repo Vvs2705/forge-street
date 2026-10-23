@@ -44,14 +44,14 @@ namespace FS.Core
     /// <summary>
     /// D-CORE-02: os modelos. So entram os que tem gatilho que o Sim (ou o Metas) emite HOJE; os do LIVEOPS_V1 com evento ✗ entram com o
     /// sistema deles (raia H: contrato, Charter, Collection, projetos, Renome, nivel de estacao, qualidade, golpe, evento e Passe ja entraram;
-    /// esperam: a diaria do pool C, o golpe que faz Superior, e ach_workers20). Os extras sobre eventos que ja existem
+    /// esperam: o golpe que faz Superior (dly_golpe_superior1) e ach_workers20; o pool C entrou no feat/diarias-pool-c). Os extras sobre eventos que ja existem
     /// (marcados "novo") completam os minimos do GDD §23 #12.
     /// Renome ainda nao existe: "abre com Renome 1" usa a Joalheria (12-25 min ~ 23 min no F2P) e "Renome 2" a Vitrine de joias, ate o B-CORE-06.
     /// </summary>
     public static class MetasDefs
     {
         const string Ferr = "ferramentas", Joal = "joalheria", Corr = "corredor", Ren2 = "vitrine_joias";
-        const int A = 0, B = 1;
+        const int A = 0, B = 1, PoolC = 2;
         const string Sold = "product_sold", Craft = "product_crafted", Ord = "order_done", Buy = "upgrade_buy", Src = "currency_source",
             Sink = "currency_sink", Cofre = "offline_claim", Vip = "vip_served", Hire = "worker_hired", Bau = "chest_opened",
             Missao = "mission_complete", Login = "login_claim", Nivel = "worker_upgrade",
@@ -60,7 +60,9 @@ namespace FS.Core
             // (B-CORE-03), eventos e Passe (D-CORE-03/04)
             Ctr = "contract_complete", Charter = "district_unlock", Col = "collection_milestone", Bp = "blueprint_unlock", Ren = "reputation_level",
             Est = "station_level", Fina = "quality_crafted", Sup = "quality_superior", Golpe = "master_strike", EvFim = "event_complete",
-            EvEntra = "event_enter", Passe = "pass_level";
+            EvEntra = "event_enter", Passe = "pass_level",
+            // pool C das diarias (LIVEOPS_V1 §4.2 #25-34): derivados do estado (Metas.Valor), nada novo no save
+            RenGanho = "reputation_gain", EvPontos = "event_points";
         /// <summary>B-CORE-04: os workers do Old Forge (6 ajudantes + 7 da Equipe, LIVEOPS_V1 §5.5 ach_workers13).</summary>
         static readonly int WorkersOldForge = Array.FindAll(WorkerDefs.All, d => d.Distrito == WorkerDefs.OldForge).Length;
         const int Lingote = (int)Item.Ingot, Espada = (int)Item.Sword, Escudo = (int)Item.Shield, Ferram = (int)Item.Tool, Joia = (int)Item.Jewel;
@@ -77,7 +79,8 @@ namespace FS.Core
             string refId = null) =>
             new MetaDef(id, TipoMeta.Conquista, -1, ev, filtro, alvo, null, ouroS, xp, renome, c, insignia, refId);
 
-        /// <summary>Pools A (volume) e B (gestao); a C (qualidade/Renome/evento) ainda nao tem gatilho e cai na A (LIVEOPS_V1 §4.1).</summary>
+        /// <summary>Pools A (volume), B (gestao) e C (qualidade, golpe, Renome e evento, LIVEOPS_V1 §4.1); pool C sem nenhuma aberta (antes da
+        /// Quality) cai na A (Metas.Preenche).</summary>
         public static readonly MetaDef[] Diarias =
         {
             D("dly_vende50", A, Sold, -1, 50, Ferr),
@@ -113,6 +116,18 @@ namespace FS.Core
             D("dly_cofre2", B, Cofre, -1, 2, Corr),                    // novo: as 2 sessoes do F2P de referencia
             D("dly_gasta5min", B, Sink, -1, 300, Ferr, Conta.Segundos), // novo
             D("dly_worker_nivel", B, Nivel, -1, 1, Ferr),              // B-CORE-04 (LIVEOPS_V1 §4.2 #24)
+            // pool C (LIVEOPS_V1 §4.2 #25-34; Metas.LivreC): a de Fina so depois da 1a peca Fina daquele item (a "1a fonte de qualidade"),
+            // Superior e golpe com a Quality aberta, Renome depois da Joalheria (o "Renome 1" desta tabela), e as 2 de evento so com um evento
+            // ativo (e ai so elas, alternando por dia). Fora: dly_golpe_superior1 (o golpe nao sabe o nivel com que a peca saiu)
+            D("dly_fina10", PoolC, Fina, -1, 10, Ferr),
+            D("dly_fina_escudos10", PoolC, Fina, Escudo, 10, Ferr),
+            D("dly_superior3", PoolC, Sup, -1, 3, Ferr),
+            D("dly_golpe3", PoolC, Golpe, -1, 3, Ferr),
+            D("dly_fina_joias5", PoolC, Fina, Joia, 5, Joal),
+            D("dly_renome5", PoolC, RenGanho, -1, 5, Joal),
+            D("dly_fina30", PoolC, Fina, -1, 30, Ren2),
+            D("dly_evento100", PoolC, EvPontos, -1, 100, Ferr),
+            D("dly_enc_evento", PoolC, Tipo, (int)OrderType.Event, 1, Ferr),
         };
 
         public static readonly MetaDef[] Semanais =

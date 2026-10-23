@@ -626,3 +626,12 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 | `click/click_0.wav` | `click` | `kenney_interface-sounds/Audio/click_002.ogg` | 0.01 s | -19.0 | `f711297091c97d00ec4ad0a408500bc414cd1c39a42e2ec393796f8e2dc555e3` |
 | `coin/coin_0.wav` | `coin` | `kenney_rpg-audio/Audio/handleCoins.ogg` | 0.69 s | -13.5 | `5474916482ea188f0013578def221a61fffc85833e0ab24b307dd1953b97f698` |
 | `coin/coin_1.wav` | `coin` | `kenney_rpg-audio/Audio/handleCoins2.ogg` | 0.21 s | -13.5 | `ca04d9c269709b46fc501d59a838e3a7b808baad4e34bf48f633b620e08b3ec7` |
+
+## 20. Herói em 3 estágios — adereços do Blender (B-ART-05, 2026-10-23, 0 crédito)
+
+- Nada gerado por IA nem baixado: `chapeu_couro` e `barrete_mestre` modelados por script em `client/tools/props_blender.py` (primitivas, paleta do arquivo; `veludo` e `pluma` novos) e presos ao osso `mixamorig:Head` do ferreiro (`arte/tripo/ferreiro`, licença do Lote 1, §2) pelo `render_sprites.py`. Clipes de `client/Builds/anims_sets/ferreiro` (Mixamo, §3). Blender 5.2 headless.
+- Folhas novas em `client/Assets/_FS/Resources/Sprites/`: `ferreiro_e2`, `ferreiro_e3`, `ferreiro_e2_mochila`, `ferreiro_e3_mochila` (Idle, Walking e Cheering; `.meta` copiados do `ferreiro` com GUID novo).
+
+## 21. Arte dos produtos da loja (auditoria visual item 5, 2026-10-23, 0 crédito)
+
+- Tripo, gerador de imagem Nano Banana 2 (1:1, 4 por prompt, grátis; saldo de créditos intacto em 14 660), pelo Chrome do Vinicius com o aval de 2026-10-23; prompts em `ASSETS.md` §22. Downloads da imagem escolhida (PNG 1024 px) versionados em `arte/ui/loja/fonte_<id>.png`; recorte local (`icones_premio.py`), sem outro serviço.

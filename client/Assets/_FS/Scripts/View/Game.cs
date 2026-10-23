@@ -184,13 +184,19 @@ namespace FS
             string dir = Application.persistentDataPath;
             var diario = new Diario(!_testSession && (Debug.isDebugBuild || Arg("-playtest") != null) ? Path.Combine(dir, "diario.csv") : null);
             // A-PLAT-08: o RemoteConfig vale antes do Sim nascer (-rcfile so no build dev; fotos e smoke sem o cache baixado). Travas no nucleo
-            _rc = new RemoteConfigHttp(new RemoteConfigLocal(dir, Debug.isDebugBuild ? Arg("-rcfile") : null, !_testSession), this);
+            // P8 = UGS (Ugs.cs): fora do Editor e das fotos; no Editor e no -testsession so o local (nada vai ao projeto de producao)
+            bool ugs = !_testSession && !Application.isEditor;
+            var rcLocal = new RemoteConfigLocal(dir, Debug.isDebugBuild ? Arg("-rcfile") : null, !_testSession);
+            _rc = ugs ? new RemoteConfigUgs(rcLocal) : (IRemoteConfig)rcLocal;
             var tuning = new Tuning();
             string rcJson = _rc.Ler(out _rcOrigem);
             _rcr = RemoteConfig.Aplicar(tuning, rcJson, IntersticialNoBuild);
             Func<Tuning> novoTuning = () => { var t = new Tuning(); RemoteConfig.Aplicar(t, rcJson, IntersticialNoBuild); return t; };   // um por distrito
-            // A-PLAT-09: provedor remoto = nulo ate a P8 (-analyticslog ecoa no Player.log); excecao nao tratada vira evento (5 por sessao)
-            _diario = new Telemetria(diario, new ProvedorNulo(Arg("-analyticslog") != null ? s => Debug.Log("ANALYTICS " + s) : (Action<string>)null),
+            // A-PLAT-09: provedor remoto = UGS (so 18+ com aceite, depois da tela de idade); -analyticslog troca pelo eco no Player.log; excecao
+            // nao tratada vira evento (5 por sessao)
+            IProvedorAnalytics remoto = Arg("-analyticslog") != null ? new ProvedorNulo(s => Debug.Log("ANALYTICS " + s))
+                : ugs ? new ProvedorUgs() : (IProvedorAnalytics)new ProvedorNulo(null);
+            _diario = new Telemetria(diario, remoto,
                 diario.Sessao, Application.version, _rcr.Rotulo, dir, Application.dataPath);
             Application.logMessageReceived += Excecao;
             _save = new Salvamento(new SaveStore(Path.Combine(dir, "save.txt")), new SaveEspelho(SaveKey), _diario);
@@ -209,6 +215,9 @@ namespace FS
             // sai dos recibos do save validados por ela; sem loja, nenhuma
             string lf = Debug.isDebugBuild ? Arg("-lojafalsa") : null;
             if (lf != null) _loja = new LojaFalsa(_testSession ? null : Path.Combine(dir, LojaFalsa.Arquivo), LojaFalsa.Ler(lf));
+#if UNITY_ANDROID && !UNITY_EDITOR
+            else if (!_testSession) _loja = LojaUnity.Criar();   // Unity IAP: so com a chave da Play no projeto (GooglePlayTangle, IAP.md §5); sem ela, sem LOJA
+#endif
             _raiz.Compras.Conectar(_loja);
             // -cam W (dev, P2-3 do BENCHMARK_VISUAL): largura visivel em m, 6..11,4 (padrao 9; 11,4 = a camera antiga, fotos de antes)
             _visW = Mathf.Clamp(ArgF("-cam", VisibleWidth), 6f, Enquadramento.OficinaInteira);
@@ -267,8 +276,8 @@ namespace FS
             _started = true;   // A-PLAT-07: Loading -> Playing; o save grava daqui em diante (o resgate do cofre logo abaixo ja grava)
             Offline();
             MetasAgora(false);   // D-CORE-01: o dia de hoje (o que ja estava pronto ao abrir nao vira aviso)
-            IniciarLoja();
-            if (_loja != null && Arg("-lojacompra") != null) Comprar(Compras.Catalogo[0].Id);   // foto do comprado: o fluxo inteiro na abertura
+            if (_loja is LojaFalsa || _diario.Liberada) IniciarLoja();   // a loja real conecta depois da tela de idade (Liberar), como o LevelPlay
+            if (_loja != null && Arg("-lojacompra") != null) Comprar((Compras.Def(Arg("-lojacompra")) ?? Compras.Catalogo[0]).Id);   // foto do comprado (-lojacompra <id>: outro produto)
             bool foto = Arg("-loja") != null;   // foto do painel (com -lojafalsa)
             if (foto && _lojaUi != null && _sim.T.Loja) _lojaUi.Abrir();
             // D-CORE-03/04 (fotos): -evento entra sem esperar o requisito; -passxp da XP; -eventocard e -pass abrem os modais
@@ -699,17 +708,21 @@ namespace FS
             foreach ((string tipo, string id, string arg, long ouro) in lo.Novidades)
             {
                 EventDef e = Array.Find(lo.Eventos, x => x.Id == id);
+                (string a, string b) = lo.Diario((tipo, id, arg, ouro));
+                Log(tipo, a, b);
                 switch (tipo)
                 {
-                    case "event_enter": if (avisa && e != null) Notice(Loc.T("aviso.evento", Textos.NomeEvento(e)), Art.Star(), Art.Accent); Log(tipo, id); break;
-                    case "event_points": Log(tipo, id, e != null ? lo.PontosDe(e).ToString(CultureInfo.InvariantCulture) : arg); break;
+                    case "event_enter":
+                        if (avisa && e != null) Notice(Loc.T("aviso.evento", Textos.NomeEvento(e)), Art.Star(), Art.Accent);
+                        break;
                     case "event_complete":
                         if (avisa) { Sfx.Play("meta"); Notice(Loc.T("aviso.evento_marco", arg), _coinIcon.sprite, _coinIcon.color); }
-                        Log(tipo, id, arg);
                         if (ouro > 0) Source("evento", ouro);
                         pagou = true;
                         break;
-                    case "pass_level": if (avisa) Notice(Loc.T("aviso.passe", arg), Art.Star(), Art.Gold); Log(tipo, id, arg); break;
+                    case "pass_level":
+                        if (avisa) Notice(Loc.T("aviso.passe", arg), Art.Star(), Art.Gold);
+                        break;
                 }
             }
             lo.Novidades.Clear();
@@ -766,7 +779,7 @@ namespace FS
         void IniciarLoja()
         {
             if (_loja == null) return;
-            _loja.Iniciar(Compras.Catalogo, ReciboChegou, FalhaCompra);
+            _loja.Iniciar(Compras.Todos, ReciboChegou, FalhaCompra);   // todos: o Pass comprado restaura mesmo com a flag desligada
             Concluir();
         }
 
@@ -1655,6 +1668,7 @@ namespace FS
             if (_diario.Liberada) return;
             _diario.Liberar(f, aceitou);
             if (!_testSession) _rc.Buscar((e, a, b) => Log(e, a, b));
+            if (_started && _loja != null && !(_loja is LojaFalsa)) IniciarLoja();   // respondida agora; numa abertura anterior, o Start ja iniciou
         }
 
         /// <summary>A-PLAT-09 (DM §90): excecao nao tratada (e Debug.LogException) -> evento "excecao" no diario e no remoto, ate 5 por sessao.</summary>

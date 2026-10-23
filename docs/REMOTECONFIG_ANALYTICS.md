@@ -109,8 +109,20 @@ Coerência entre chaves diferentes (por exemplo `VipMin` < `VipMax`) fica com qu
 | `rc_fetch` | `ok` / `invalido` / `falha` | bytes ou erro (só com a URL preenchida) |
 | `ad_init` | `desligado` | `remoteconfig` (chave mestra) |
 | `excecao` | mensagem sem caminho privado | 1ª linha da pilha |
+| `event_enter` | ID do evento | — |
+| `event_points` | ID do evento | total de pontos da trilha |
+| `event_complete` | ID do evento | limiar cruzado (pontos) |
+| `pass_level` | ID da temporada | nível do Passe |
+
+Os quatro do LiveOps (GDD §13, `LIVEOPS_V1.md` §4.6) saem de `LiveOps.Diario`, a mesma linha que o `Game.LiveOpsAgora` loga; `LiveOpsTests.Telemetria_EntradaEMarcoDoEvento_ChegamAoRemoto` confere que `event_enter` e `event_complete` chegam ao provedor remoto pela `Telemetria`, só depois da tela de idade e na ordem.
 
 ## 3. Como plugar o provedor quando a P8 for decidida
+
+**P8 decidida em 2026-10-23: Unity Gaming Services** (o Vinicius: "PODE SEGUIR O RECOMENDADO Unity Gaming Services"). Feito no `feat/analytics-rc`: projeto "Forge Street" no Unity Cloud (org `vsouz009`, `production`, `cloudProjectId` no `ProjectSettings.asset`); pacotes `com.unity.services.analytics` 6.3.0 e `com.unity.remote-config` 4.2.5; `client/Assets/_FS/Scripts/View/Ugs.cs` com o `ProvedorUgs` (só 18+ com aceite: `EndUserConsent` com `AnalyticsIntent`; evento `fs_evento` com `fsNome`, `fsA`, `fsB`, `fsT`, `fsConfig`; espera até 256 enquanto o SDK inicia) e o `RemoteConfigUgs` (baixa a chave JSON `fs_config` depois da tela de idade e grava no cache local; Ler continua o cache). Fora do Editor e do `-testsession`; `-analyticslog` continua trocando pelo eco no Player.log. Analytics e Remote Config ativos no painel (aval do Vinicius, 2026-10-23).
+
+**Falta no painel (Vinicius; a automação do painel travou no meio):** em Analytics > Event Manager, ambiente `production`: criar os parâmetros que faltam — `fsB` (String), `fsT` (Float), `fsConfig` (String) — (`fsNome` e `fsA`, String, já existem) e o **evento personalizado `fs_evento`** com os 5 parâmetros. Sem ele os eventos chegam como "inválidos". Em Remote Config, quando quiser publicar um config: a chave **`fs_config`** do tipo JSON com o JSON plano do §1 (com `id` e `versao`), conferido antes com o `econsim --rc`.
+
+**Antes (até 2026-10-23): parado na P8.** O caminho natural seria o Unity Gaming Services (Analytics + Remote Config), já que o jogo usa o LevelPlay e o Unity IAP (que traz o `com.unity.services.core`). Ele pede que o projeto esteja **ligado a um projeto do Unity Cloud** (hoje `cloudProjectId` vazio e `cloudEnabled: 0` no `ProjectSettings.asset`), os ambientes e as chaves no painel do Unity Dashboard e a decisão de custo da P8; Firebase pede um projeto no console e o `google-services.json`. Nada disso existe e é decisão e conta do Vinicius, então o provedor segue `ProvedorNulo` e o `RemoteConfigHttp` com a URL vazia. Pronto para quando houver: as duas costuras abaixo e a telemetria dos eventos.
 
 **RemoteConfig, opção A (sem SDK):** publique o JSON acima num endereço HTTPS estático (CDN ou bucket) e preencha `RemoteConfigHttp.Url`.
 
@@ -148,8 +160,16 @@ Checklist da troca:
 
 O `Aplicar` usa reflexão nos campos públicos do `Tuning` e do `AdPlacementDef`. No IL2CPP isso funciona porque o Sim lê todos esses campos e porque o stripping padrão (`managedStrippingLevel` vazio) não remove código do jogo. Se o stripping subir para High, rode o `-rcfile` no aparelho antes de publicar.
 
+### Rodar o bot com o config antes de publicar (`econsim --rc`)
+
+```
+dotnet run --project client/tools/econsim -c Release -- --rc C:/caminho/config.json --perfis F2P,AdWatcher,Slow --minutos 60 --partidas 8
+```
+
+O econsim aplica o JSON em todo `Tuning` da rodada pelo mesmo `RemoteConfig.Aplicar` do jogo (build sem intersticial, como o `Game`), antes do `--tuning` (que fica por cima), e imprime `rc: id@versao (N chaves)` com um `aviso:` por valor preso ou ignorado pela trava. JSON que não abre = uso (sai 2). Conferir nas tabelas os portões do GDD §3 contra a mesma rodada sem o `--rc`. Prova (2026-10-23): `{"id":"teste_rc","versao":2,"AnunciosLigados":false,"OfflineFactor":5}` deu `aviso: OfflineFactor: preso: 5 -> 1`, e o AdWatcher de 60 min passou a jogar igual ao F2P (9 anúncios → 0; produção completa 44:50 → 49:23), como deve com a chave mestra desligada.
+
 ## 5. Pendências
 
-- `econsim --rc arquivo.json`: rodar o bot com o config antes de publicar (portões do §3 do GDD).
+- ~~`econsim --rc arquivo.json`~~ (feito em 2026-10-23, `feat/econsim-rc`, abaixo).
 - Experimentos (DM §89): o `id@versao` é o snapshot. Variante, início e fim vêm do fornecedor da P8.
 - Faixas marcadas **revisar**: `OfflineFactor` ≤ 1 e os tetos de anúncio "nunca acima do build" (`BoostMax`, `BoostPlayerMax`, `VipSummonPackMax`).

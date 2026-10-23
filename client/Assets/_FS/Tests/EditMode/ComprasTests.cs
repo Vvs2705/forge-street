@@ -66,7 +66,7 @@ namespace FS.Tests
             Assert.IsNotEmpty(d.PrecoPlaceholder, "preco so de referencia, marcado");
             Assert.IsEmpty(Compras.MoedasAVenda, "V9: nenhuma moeda a venda ate a Wave E");
             CollectionAssert.AreEquivalent(new[] { Anuncio.Velocidade, Anuncio.EncomendaTroca, Anuncio.Supply }, Compras.SemVideoCobre, "V20: so as conveniencias");
-            Assert.IsFalse(Compras.Posses.Any(x => x.Contains("pass")), "o pacote nunca liga o premium do Passe (produto proprio da Wave E)");
+            Assert.IsFalse(d.Conteudo.Any(c => c.Id.StartsWith("premium_", StringComparison.Ordinal)), "o pacote nunca liga o premium do Passe (produto proprio, LIVEOPS_V1 §3.5)");
             Assert.IsFalse(LiveOpsDefs.PremiumLigado);
         }
 
@@ -407,5 +407,15 @@ namespace FS.Tests
             b.Metas.Agora(meioDia + 2 * Calendario.Dia, 0);
             Assert.AreEqual(-1L, b.Anuncios.Pagar(tx), "nem depois de reabrir em outro dia");
         }
+            /// <summary>Auditoria visual item 5 (loja vazia): todo produto da loja tem a arte pintada do cartao em Resources/UI/&lt;id&gt;.png.</summary>
+        [Test]
+        public void Loja_TodoProdutoTemArte()
+        {
+            string dir = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(Aqui()), "../../Resources/UI"));
+            if (!Directory.Exists(dir)) Assert.Ignore("UI fora do alcance: " + dir);
+            Assert.IsEmpty(Compras.Todos.Where(d => !File.Exists(Path.Combine(dir, d.Id + ".png"))).Select(d => d.Id).ToList());
+        }
+
+        static string Aqui([System.Runtime.CompilerServices.CallerFilePath] string f = "") => f;
     }
 }

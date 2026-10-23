@@ -356,7 +356,7 @@ Totais da trilha free por temporada: **ouro 1.170 s** (17 níveis), **Renome +44
 
 ### 3.5 Até a Wave E: Pass só com a trilha free
 
-- Flags: `pass_free` liga na Wave D; `pass_premium` fica **desligada** até a Wave E (sem moeda premium nem IAP, V9).
+- Flags: `pass_free` liga na Wave D; `pass_premium` fica **desligada** até a Wave E (sem moeda premium nem IAP, V9). No código (2026-10-23, `feat/passe-premium`): `Tuning.PassePremium` (padrão `LiveOpsDefs.PremiumLigado` = false, chaveável pelo RemoteConfig); o produto da temporada é `iap_{pass}` no `Compras.CatalogoPasse` (posse `premium_{pass}`), à venda só com a flag (`Compras.AVenda`), mas buscado e restaurado sempre (`Compras.Todos`). Com a flag e a posse, `LiveOps.PremiumAlcancado` paga sozinho cada nível alcançado pelo ID `p:{pass}:{n}:p` (comprou no meio = na hora; a temporada que acaba paga o que faltou); cosmético = o ID; conveniência = o ID até as cargas existirem; Gems = nada até a moeda (V9). Teste: `LiveOpsTests.PassePremium_AtrasDaFlag_PagaOsAlcancadosUmaVez_SemProgressao`. Tela (2026-10-23, `feat/passe-premium-tela`): com a flag, cada linha de nível do Passe ganha a coluna premium (o ícone do prêmio numa moldura dourada quando o ID `:p` já está pago, apagada antes); sem a flag, só a trilha free, sem vitrine. Falta para ligar: as cargas de conveniência e o preço (P3).
 - Com `pass_premium` desligada, a tela do Pass mostra **só a trilha free**: sem a faixa premium, sem cadeado, sem preço, sem "em breve" (nada de vitrine do que não se pode comprar).
 - Todo o resto funciona igual: XP, níveis, recompensas free, fim de temporada.
 - Quando a Wave E ligar o premium: a compra é IAP direta (sem moeda intermediária), confirmada só depois do save gravado e com restore (E-PLAT-04). Quem compra no meio da temporada recebe **na hora** o premium dos níveis já alcançados, cada um com o seu ID (`p:{pass}:{n}:p`), sem duplicar. Os cosméticos premium são posse re-derivada do recibo; as conveniências são creditadas 1× pelo ID.
@@ -410,16 +410,16 @@ Totais da trilha free por temporada: **ouro 1.170 s** (17 níveis), **Renome +44
 | 22 | `dly_vip2` | Atender 2 VIPs | B | Renome 1 | `vip_served` ✓ |
 | 23 | `dly_contrata` | Contratar 1 worker | B | vaga de worker à venda | `worker_hired` ✓ |
 | 24 | `dly_worker_nivel` | Subir 1 nível de worker | B | Wave B (níveis) | `worker_upgrade` ✗ |
-| 25 | `dly_fina_escudos10` | Fabricar 10 escudos Fina ou melhor | C | 1ª fonte de qualidade nos escudos | `quality_crafted` (escudo) ✗ |
-| 26 | `dly_fina_joias5` | Fabricar 5 joias Fina ou melhor | C | 1ª fonte de qualidade nas joias | `quality_crafted` (joia) ✗ |
+| 25 | `dly_fina_escudos10` | Fabricar 10 escudos Fina ou melhor | C | 1ª fonte de qualidade nos escudos | `quality_crafted` (escudo) ✓ |
+| 26 | `dly_fina_joias5` | Fabricar 5 joias Fina ou melhor | C | 1ª fonte de qualidade nas joias | `quality_crafted` (joia) ✓ |
 | 27 | `dly_golpe_superior1` | Acertar 1 golpe que faz Superior | C | Quality aberta | `master_strike` (superior) ✗ |
-| 28 | `dly_fina30` | Fabricar 30 peças Fina ou melhor | C | Renome 2 | `quality_crafted` ✗ |
-| 29 | `dly_fina10` | Fabricar 10 peças Fina ou melhor | C | 1ª fonte de qualidade | `quality_crafted` ✗ |
-| 30 | `dly_superior3` | Fabricar 3 peças Superiores (golpe numa peça Fina) | C | Quality aberta | `quality_crafted` ✗ |
-| 31 | `dly_golpe3` | Acertar 3 golpes de mestre | C | Quality aberta | `master_strike` ✗ |
-| 32 | `dly_renome5` | Ganhar 5 de Renome | C | Renome 1 | `reputation_gain` ✗ |
-| 33 | `dly_evento100` | Ganhar 100 pontos de evento | C | evento ativo + requisito | `event_points` ✗ |
-| 34 | `dly_enc_evento` | Entregar 1 encomenda de evento | C | evento ativo + requisito | `order_complete` (Event) ✗ |
+| 28 | `dly_fina30` | Fabricar 30 peças Fina ou melhor | C | Renome 2 | `quality_crafted` ✓ |
+| 29 | `dly_fina10` | Fabricar 10 peças Fina ou melhor | C | 1ª fonte de qualidade | `quality_crafted` ✓ |
+| 30 | `dly_superior3` | Fabricar 3 peças Superiores (golpe numa peça Fina) | C | Quality aberta | `quality_crafted` ✓ |
+| 31 | `dly_golpe3` | Acertar 3 golpes de mestre | C | Quality aberta | `master_strike` ✓ |
+| 32 | `dly_renome5` | Ganhar 5 de Renome | C | Renome 1 | `reputation_gain` ✓ |
+| 33 | `dly_evento100` | Ganhar 100 pontos de evento | C | evento ativo + requisito | `event_points` ✓ |
+| 34 | `dly_enc_evento` | Entregar 1 encomenda de evento | C | evento ativo + requisito | `order_complete` (Event) ✓ |
 
 Pools: A tem 13, B tem 11, C tem 10. Logo depois das Ferramentas já há ≥ 3 abertas em A e em B. ✓* = o evento existe, mas o filtro pede o `category` no `UpgradeDef` (B-CORE-01). Nenhuma diária pede encomenda de tipo especial (Bulk, Quality, Rush, Mixed, Royal): com 1 de cada a cada 10 no rodízio, não fecha em 15 min. Elas ficam nas semanais.
 

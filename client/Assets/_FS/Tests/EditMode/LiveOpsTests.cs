@@ -291,6 +291,29 @@ namespace FS.Tests
             Assert.AreEqual(g2, r.Gold);
         }
 
+        /// <summary>GDD §13 / A-PLAT-09: event_enter e event_complete (e os pontos) chegam ao analytics remoto pela Telemetria, so depois da tela
+        /// de idade e na ordem, com o evento no `a` e o limiar no `b`: a mesma linha que o Game loga (LiveOps.Diario).</summary>
+        [Test]
+        public void Telemetria_EntradaEMarcoDoEvento_ChegamAoRemoto()
+        {
+            var remoto = new ProvedorMemoria();
+            var t = new Telemetria(new AnalyticsMemoria(), remoto, "abcd1234", "0.7.0", "base@1");
+            Sim s = Aberta();
+            long agora = FF.Comeca + H;
+            void Drena() { foreach (var n in s.LiveOps.Novidades) { var (a, b) = s.LiveOps.Diario(n); t.Log(n.Tipo, s.Time, a, b); } s.LiveOps.Novidades.Clear(); }
+            Agora(s, agora); Drena();
+            s.LiveOps.On(Ev.VipServed, (int)Item.Sword, 30); s.LiveOps.On(Ev.VipServed, (int)Item.Sword, 30);
+            Agora(s, agora + 10); Drena();
+            Assert.IsEmpty(remoto.Enviados, "antes da tela de idade nada sai");
+            t.Liberar(Faixa.Adulto, false);
+            Evento entra = remoto.Enviados.Single(e => e.Nome == "event_enter");
+            Evento marco = remoto.Enviados.Single(e => e.Nome == "event_complete");
+            Assert.AreEqual(FF.Id, entra.A);
+            Assert.AreEqual((FF.Id, "50"), (marco.A, marco.B), "o limiar cruzado");
+            Assert.Less(entra.Seq, marco.Seq);
+            Assert.AreEqual("60", remoto.Enviados.Last(e => e.Nome == "event_points").B, "o total de pontos (vip2 = 60)");
+        }
+
         [Test]
         public void RelogioParaTras_NaoReabreONemPagaDeNovo()
         {
@@ -586,6 +609,53 @@ namespace FS.Tests
             Assert.AreEqual(30, r.LiveOps.Nivel);
             for (int n = 1; n <= 30; n++) r.LiveOps.Resgatar(n);
             Assert.IsFalse(r.Metas.Ledger.Any(x => x.EndsWith(":p", StringComparison.Ordinal)), "premium desligado ate a Wave E");
+        }
+
+        /// <summary>LIVEOPS_V1 §3.5 (atras do Tuning.PassePremium): o premium da temporada e' um produto da loja; com a flag desligada nao fica a
+        /// venda e nada premium paga, mesmo com o recibo; ligada, paga sozinho todo nivel ja alcancado (comprou no meio = na hora), 1x pelo ID
+        /// p:{pass}:{n}:p, sem ouro, XP nem Renome; save/load nao repete; a temporada que acaba paga o que faltou.</summary>
+        [Test]
+        public void PassePremium_AtrasDaFlag_PagaOsAlcancadosUmaVez_SemProgressao()
+        {
+            Sim s = Aberta();
+            var loja = new LojaFalsa(null);
+            s.Compras.Conectar(loja);
+            loja.Iniciar(Compras.Todos, r => { s.Compras.Receber(r); s.Compras.Concluir(() => true, loja.Confirmar); }, (p, m) => { });
+            string id = "iap_" + S1.Id;
+            long t = S1.Comeca + H;
+            Agora(s, t);
+            s.LiveOps.Ganha(3 * S1.XpNivel);
+            Assert.AreEqual(3, s.LiveOps.Nivel);
+            Assert.IsFalse(Compras.AVenda(s.T).Any(d => d.Id == id), "flag desligada: o Pass nao esta a venda");
+            Assert.IsTrue(s.Compras.Iniciar(id)); loja.Comprar(id);   // recibo que chegou mesmo assim (restore de outro aparelho)
+            Assert.IsTrue(s.Compras.Tem(Compras.PossePremium(S1.Id)));
+            Agora(s, t + 10);
+            Assert.IsFalse(s.LiveOps.Premium);
+            Assert.IsFalse(s.Metas.Ledger.Contains(LiveOps.TxPremium(S1, 1)), "flag desligada: nenhum nivel premium");
+
+            s.T.PassePremium = true;
+            Assert.IsTrue(Compras.AVenda(s.T).Any(d => d.Id == id));
+            long gold = s.Gold, xp = s.Metas.PassXp, nivel = s.Renome.Nivel;
+            Agora(s, t + 20);
+            for (int n = 1; n <= 3; n++) Assert.IsTrue(s.Metas.Ledger.Contains(LiveOps.TxPremium(S1, n)), "alcancado: " + n);
+            Assert.IsFalse(s.Metas.Ledger.Contains(LiveOps.TxPremium(S1, 4)));
+            Assert.AreEqual((gold, xp, nivel), (s.Gold, s.Metas.PassXp, (long)s.Renome.Nivel), "o pago nunca progride");
+            Assert.AreEqual(0, s.LiveOps.Prontos() - 3, "a trilha free continua no botao, a parte");
+
+            s.LiveOps.Ganha(S1.XpNivel);
+            Agora(s, t + 30);
+            Assert.IsTrue(s.Metas.Ledger.Contains(LiveOps.TxPremium(S1, 4)), "subiu de nivel com o premium: paga na hora");
+            Sim r = Sim.Load(s.Save(t + 30));
+            r.Compras.Conectar(loja); r.T.PassePremium = true;
+            long g2 = r.Gold;
+            Agora(r, t + 40);
+            Assert.AreEqual(g2, r.Gold);
+            Assert.AreEqual(s.Save(t + 30), Sim.Load(s.Save(t + 30)).Save(t + 30), "save -> load -> save igual");
+
+            r.LiveOps.Ganha(S1.XpNivel);   // nivel 5 alcancado no ultimo instante da temporada
+            r.T.Passe = false;             // nem o XP corre mais: o fim da temporada paga o premium que faltou
+            Agora(r, S1.Termina + H);
+            Assert.IsTrue(r.Metas.Ledger.Contains(LiveOps.TxPremium(S1, 5)), "a temporada que acaba paga o premium alcancado");
         }
 
         [Test]

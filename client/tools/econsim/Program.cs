@@ -67,10 +67,15 @@ static class EconSim
         public int CtrAceitos, CtrConcluidos; public long CtrOuro; public float Ctr1 = -1f, CtrFim1 = -1f; public double CtrPct;
     }
 
+    /// <summary>A-PLAT-08 (REMOTECONFIG_ANALYTICS §5): --rc arquivo.json = o config remoto que se pretende publicar, aplicado em todo Tuning
+    /// da rodada pelo mesmo RemoteConfig.Aplicar do Game (valor preso pela trava aparece como aviso). Rodar o bot com ele antes de publicar.</summary>
+    static string _rc;
+
     /// <summary>--tuning "GolpeRecarga=30;NivelEstacaoCusto=500|1500|650|1900|500|1500|1000|3000|...": campos publicos do Tuning (NivelEstacaoCusto: os 16, II-III e IV-V)
     /// (int, long, float, bool e listas deles com |) por cima do padrao, para varrer knob sem recompilar. Campo ou valor ruim = null.</summary>
     static Tuning Knobs(string spec, Tuning t)
     {
+        if (_rc != null) RemoteConfig.Aplicar(t, _rc, false);   // --rc primeiro, com as travas do jogo (build sem intersticial); o --tuning por cima
         if (string.IsNullOrEmpty(spec)) return t;
         foreach (string kv in spec.Split(';'))
         {
@@ -112,6 +117,14 @@ static class EconSim
                 case "--partidas" when ok: ok = int.TryParse(v, out partidas) && partidas > 0; break;
                 case "--anuncio-seg" when ok: ok = float.TryParse(v, out anuncioSeg) && anuncioSeg >= 0f; break;
                 case "--saida" when ok: saida = v; break;
+                case "--rc" when ok:
+                    ok = File.Exists(v);
+                    if (!ok) break;
+                    _rc = File.ReadAllText(v);
+                    RemoteConfig.Resultado rc = RemoteConfig.Aplicar(new Tuning(), _rc, false);
+                    ok = rc.Valido;
+                    Console.WriteLine($"rc: {rc.Rotulo} ({rc.Aplicadas} chaves)" + string.Concat(rc.Avisos.Select(a => "\n  aviso: " + a)));
+                    break;
                 case "--pacote" when ok: ok = v == "0" || v == "1"; pacote = v == "1"; break;
                 case "--evento" when ok:
                     evento = Array.Find(LiveOpsDefs.Eventos, e => e.Id == v || e.Id.EndsWith("_" + v, StringComparison.Ordinal));
@@ -129,7 +142,7 @@ static class EconSim
             }
             if (!ok || perfis.Any(p => p.Name == null))
             {
-                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400] [--gerente 0|1] [--renome 500] [--bancadas regra|volume|margem] [--histerese 3] [--arcano regra|estavel|forcado]");
+                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--rc config.json] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400] [--gerente 0|1] [--renome 500] [--bancadas regra|volume|margem] [--histerese 3] [--arcano regra|estavel|forcado]");
                 return 2;
             }
         }
