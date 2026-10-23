@@ -212,8 +212,8 @@ A legenda vai na faixa de cima (fora da HUD), curta para ler na miniatura, com a
 - Ordem: a 1 e a 2 vendem a transformação e a automação (as que mais aparecem na busca); a 4 é a decisão; a 8 fecha com a volta ao jogo.
 - `full_district` e `district_unlock` são **interinos** até a Wave C: mostram a oficina e a rua lateral, nunca um "distrito". A legenda não diz "distrito".
 - **en/es:** a HUD sai no idioma do quadro com `-lang en|es` junto do `-preset` (ex.: `-preset vip -lang es`); o `SHOT` do log grava `idioma=`.
-- A segunda sequência ("Ache o gargalo", `CRIATIVOS_BANCO_V1.md` §c) fica para o experimento de screenshots depois do de descrição curta.
-- Ícone, feature graphic e vídeo: G-UA-03 / C-ART-14, fora deste documento. As 4 variantes de ícone, o logo e a feature graphic estão em `arte/marca/` (ASSETS §13, PROPOSTO). O vídeo ainda falta.
+- **A segunda sequência ("Ache o gargalo", `CRIATIVOS_BANCO_V1.md` §c) está pronta** (2026-10-23): `arte/loja/screenshots_b/<lang>/` (8 × pt/en/es, 1080 × 1920; `python client/tools/loja_screenshots.py capturar|compor --seq B`). Peças: fila cheia, o gargalo (fornalha cheia com a lâmpada vermelha), o menu com os cartões, o 3×, a encomenda, o cofre, a oficina completa e a forja de perto (no lugar do "sem anúncio forçado", que espera o FS-5/P3). Entra no teste de screenshots depois do de descrição curta.
+- Ícone, feature graphic e vídeo: G-UA-03 / C-ART-14, fora deste documento. As 4 variantes de ícone, o logo e a feature graphic estão em `arte/marca/` (ASSETS §13, PROPOSTO). **Vídeo de gameplay:** `arte/loja/video/gameplay.mp4` (35 s, 1080 × 1920, 30 fps, H.264, 7,3 MB), gravado do build sem a marca de desenvolvimento: a esteira com a câmera perto, as fornalhas a 3× e a oficina completa (`loja_screenshots.py video`).
 
 ## 8. Decisões do Vinicius
 

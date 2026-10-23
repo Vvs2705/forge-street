@@ -93,7 +93,7 @@ def video():
                             "-preset", preset, "-lang", "pt", "-record", pasta, "-logFile", pasta + ".log"], timeout=900)
             mp4 = os.path.join(TMP, "video_" + preset + ".mp4")
             subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", "30", "-i", os.path.join(pasta, "f%05d.jpg"),
-                            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", mp4], check=True)
+                            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "26", "-preset", "slow", mp4], check=True)
             f.write("file '%s'\n" % mp4.replace("\\", "/"))
             shutil.rmtree(pasta, ignore_errors=True)
     out = os.path.join(RAIZ, "arte", "loja", "video")
