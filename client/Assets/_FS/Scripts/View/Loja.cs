@@ -200,7 +200,7 @@ namespace FS
                 selo.raycastTarget = false;
                 Text st = Art.Outlined(Art.NewText(selo.transform, "Texto", 26, Vector2.zero, Vector2.one), 2f);
                 st.text = Loc.T(Array.IndexOf(Compras.CatalogoPasse, d) >= 0 ? "loja.selo.temporada" : "loja.selo.permanente");
-                st.color = Color.white; st.resizeTextForBestFit = true; st.resizeTextMinSize = 14; st.resizeTextMaxSize = 30; st.horizontalOverflow = HorizontalWrapMode.Overflow;
+                st.color = Color.white; st.resizeTextForBestFit = true; st.resizeTextMinSize = 14; st.resizeTextMaxSize = 24; st.horizontalOverflow = HorizontalWrapMode.Overflow;
                 Text nome = Art.NewText(bg.transform, "Nome", 44, new Vector2(x0, 0.78f), new Vector2(arte != null ? 0.96f : 0.71f, 0.97f), TextAnchor.MiddleLeft);
                 string chave = "iap." + d.Id + ".nome";
                 nome.text = Loc.T(chave); nome.fontStyle = FontStyle.Bold; nome.color = MenuBar.Brown;
