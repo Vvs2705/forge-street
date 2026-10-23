@@ -209,6 +209,9 @@ namespace FS
             // sai dos recibos do save validados por ela; sem loja, nenhuma
             string lf = Debug.isDebugBuild ? Arg("-lojafalsa") : null;
             if (lf != null) _loja = new LojaFalsa(_testSession ? null : Path.Combine(dir, LojaFalsa.Arquivo), LojaFalsa.Ler(lf));
+#if UNITY_ANDROID && !UNITY_EDITOR
+            else if (!_testSession) _loja = LojaUnity.Criar();   // Unity IAP: so com a chave da Play no projeto (GooglePlayTangle, IAP.md §5); sem ela, sem LOJA
+#endif
             _raiz.Compras.Conectar(_loja);
             // -cam W (dev, P2-3 do BENCHMARK_VISUAL): largura visivel em m, 6..11,4 (padrao 9; 11,4 = a camera antiga, fotos de antes)
             _visW = Mathf.Clamp(ArgF("-cam", VisibleWidth), 6f, Enquadramento.OficinaInteira);
@@ -267,7 +270,7 @@ namespace FS
             _started = true;   // A-PLAT-07: Loading -> Playing; o save grava daqui em diante (o resgate do cofre logo abaixo ja grava)
             Offline();
             MetasAgora(false);   // D-CORE-01: o dia de hoje (o que ja estava pronto ao abrir nao vira aviso)
-            IniciarLoja();
+            if (_loja is LojaFalsa || _diario.Liberada) IniciarLoja();   // a loja real conecta depois da tela de idade (Liberar), como o LevelPlay
             if (_loja != null && Arg("-lojacompra") != null) Comprar(Compras.Catalogo[0].Id);   // foto do comprado: o fluxo inteiro na abertura
             bool foto = Arg("-loja") != null;   // foto do painel (com -lojafalsa)
             if (foto && _lojaUi != null && _sim.T.Loja) _lojaUi.Abrir();
@@ -1655,6 +1658,7 @@ namespace FS
             if (_diario.Liberada) return;
             _diario.Liberar(f, aceitou);
             if (!_testSession) _rc.Buscar((e, a, b) => Log(e, a, b));
+            if (_started && _loja != null && !(_loja is LojaFalsa)) IniciarLoja();   // respondida agora; numa abertura anterior, o Start ja iniciou
         }
 
         /// <summary>A-PLAT-09 (DM §90): excecao nao tratada (e Debug.LogException) -> evento "excecao" no diario e no remoto, ate 5 por sessao.</summary>
