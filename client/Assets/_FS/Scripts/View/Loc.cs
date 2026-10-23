@@ -1418,6 +1418,10 @@ namespace FS
             { "iap.posse.remove_ads", L("Sem anúncio entre telas", "No ads between screens", "Sin anuncios entre pantallas") },
             { "iap.posse.sem_video", L("Velocidade, Lingotes e Trocar sem vídeo", "Speed, Ingots and Swap without video",
                 "Velocidad, Lingotes y Cambiar sin video") },
+            { "iap.iap_pass_s1_royal_commission.nome", L("Passe Comissão Real", "Royal Commission Pass", "Pase Comisión Real") },
+            { "iap.iap_pass_s2_ember_festival.nome", L("Passe Festival da Brasa", "Ember Festival Pass", "Pase Festival de Brasas") },
+            { "iap.posse.premium_pass_s1_royal_commission", L("Trilha premium da temporada", "Season premium track", "Ruta premium de la temporada") },
+            { "iap.posse.premium_pass_s2_ember_festival", L("Trilha premium da temporada", "Season premium track", "Ruta premium de la temporada") },
 
             // ---------- privacidade (E-PLAT-01). O hash do pt-BR trava a Privacidade.Versao; en/es podem mudar sem pedir de novo ----------
             { "priv.idade.titulo", L("Qual é a sua idade?", "How old are you?", "¿Qué edad tienes?") },

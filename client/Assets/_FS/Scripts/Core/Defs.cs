@@ -358,6 +358,9 @@ namespace FS.Core
         /// <summary>A-PLAT-08 / E-PLAT-04: chave da loja. false = o botao LOJA some (nenhuma compra nova); recibo, restore automatico e posse
         /// seguem (quem pagou nao perde).</summary>
         public bool Loja = true;
+        /// <summary>LIVEOPS_V1 §3.5 / E-PLAT-04: chave da trilha premium do Pass. false (padrao ate a Wave E, LiveOpsDefs.PremiumLigado) = o
+        /// produto do Pass nao fica a venda e nenhum nivel premium paga; quem ja comprou mantem a posse e recebe ao religar.</summary>
+        public bool PassePremium = LiveOpsDefs.PremiumLigado;
 
         /// <summary>Segundos na fila antes de desistir: base + k x tempo de producao da linha no inicio (B-CORE-01: soma de quantidade x tempo
         /// inicial da receita de cada insumo + o da propria receita; hoje = fornalha inicial x lingotes + bancada inicial). Espada 9 s, escudo

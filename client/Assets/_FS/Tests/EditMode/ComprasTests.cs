@@ -66,7 +66,7 @@ namespace FS.Tests
             Assert.IsNotEmpty(d.PrecoPlaceholder, "preco so de referencia, marcado");
             Assert.IsEmpty(Compras.MoedasAVenda, "V9: nenhuma moeda a venda ate a Wave E");
             CollectionAssert.AreEquivalent(new[] { Anuncio.Velocidade, Anuncio.EncomendaTroca, Anuncio.Supply }, Compras.SemVideoCobre, "V20: so as conveniencias");
-            Assert.IsFalse(Compras.Posses.Any(x => x.Contains("pass")), "o pacote nunca liga o premium do Passe (produto proprio da Wave E)");
+            Assert.IsFalse(d.Conteudo.Any(c => c.Id.StartsWith("premium_", StringComparison.Ordinal)), "o pacote nunca liga o premium do Passe (produto proprio, LIVEOPS_V1 §3.5)");
             Assert.IsFalse(LiveOpsDefs.PremiumLigado);
         }
 
