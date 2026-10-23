@@ -184,13 +184,19 @@ namespace FS
             string dir = Application.persistentDataPath;
             var diario = new Diario(!_testSession && (Debug.isDebugBuild || Arg("-playtest") != null) ? Path.Combine(dir, "diario.csv") : null);
             // A-PLAT-08: o RemoteConfig vale antes do Sim nascer (-rcfile so no build dev; fotos e smoke sem o cache baixado). Travas no nucleo
-            _rc = new RemoteConfigHttp(new RemoteConfigLocal(dir, Debug.isDebugBuild ? Arg("-rcfile") : null, !_testSession), this);
+            // P8 = UGS (Ugs.cs): fora do Editor e das fotos; no Editor e no -testsession so o local (nada vai ao projeto de producao)
+            bool ugs = !_testSession && !Application.isEditor;
+            var rcLocal = new RemoteConfigLocal(dir, Debug.isDebugBuild ? Arg("-rcfile") : null, !_testSession);
+            _rc = ugs ? new RemoteConfigUgs(rcLocal) : (IRemoteConfig)rcLocal;
             var tuning = new Tuning();
             string rcJson = _rc.Ler(out _rcOrigem);
             _rcr = RemoteConfig.Aplicar(tuning, rcJson, IntersticialNoBuild);
             Func<Tuning> novoTuning = () => { var t = new Tuning(); RemoteConfig.Aplicar(t, rcJson, IntersticialNoBuild); return t; };   // um por distrito
-            // A-PLAT-09: provedor remoto = nulo ate a P8 (-analyticslog ecoa no Player.log); excecao nao tratada vira evento (5 por sessao)
-            _diario = new Telemetria(diario, new ProvedorNulo(Arg("-analyticslog") != null ? s => Debug.Log("ANALYTICS " + s) : (Action<string>)null),
+            // A-PLAT-09: provedor remoto = UGS (so 18+ com aceite, depois da tela de idade); -analyticslog troca pelo eco no Player.log; excecao
+            // nao tratada vira evento (5 por sessao)
+            IProvedorAnalytics remoto = Arg("-analyticslog") != null ? new ProvedorNulo(s => Debug.Log("ANALYTICS " + s))
+                : ugs ? new ProvedorUgs() : (IProvedorAnalytics)new ProvedorNulo(null);
+            _diario = new Telemetria(diario, remoto,
                 diario.Sessao, Application.version, _rcr.Rotulo, dir, Application.dataPath);
             Application.logMessageReceived += Excecao;
             _save = new Salvamento(new SaveStore(Path.Combine(dir, "save.txt")), new SaveEspelho(SaveKey), _diario);
@@ -702,17 +708,21 @@ namespace FS
             foreach ((string tipo, string id, string arg, long ouro) in lo.Novidades)
             {
                 EventDef e = Array.Find(lo.Eventos, x => x.Id == id);
+                (string a, string b) = lo.Diario((tipo, id, arg, ouro));
+                Log(tipo, a, b);
                 switch (tipo)
                 {
-                    case "event_enter": if (avisa && e != null) Notice(Loc.T("aviso.evento", Textos.NomeEvento(e)), Art.Star(), Art.Accent); Log(tipo, id); break;
-                    case "event_points": Log(tipo, id, e != null ? lo.PontosDe(e).ToString(CultureInfo.InvariantCulture) : arg); break;
+                    case "event_enter":
+                        if (avisa && e != null) Notice(Loc.T("aviso.evento", Textos.NomeEvento(e)), Art.Star(), Art.Accent);
+                        break;
                     case "event_complete":
                         if (avisa) { Sfx.Play("meta"); Notice(Loc.T("aviso.evento_marco", arg), _coinIcon.sprite, _coinIcon.color); }
-                        Log(tipo, id, arg);
                         if (ouro > 0) Source("evento", ouro);
                         pagou = true;
                         break;
-                    case "pass_level": if (avisa) Notice(Loc.T("aviso.passe", arg), Art.Star(), Art.Gold); Log(tipo, id, arg); break;
+                    case "pass_level":
+                        if (avisa) Notice(Loc.T("aviso.passe", arg), Art.Star(), Art.Gold);
+                        break;
                 }
             }
             lo.Novidades.Clear();

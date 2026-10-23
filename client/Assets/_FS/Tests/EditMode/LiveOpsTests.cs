@@ -291,6 +291,29 @@ namespace FS.Tests
             Assert.AreEqual(g2, r.Gold);
         }
 
+        /// <summary>GDD §13 / A-PLAT-09: event_enter e event_complete (e os pontos) chegam ao analytics remoto pela Telemetria, so depois da tela
+        /// de idade e na ordem, com o evento no `a` e o limiar no `b`: a mesma linha que o Game loga (LiveOps.Diario).</summary>
+        [Test]
+        public void Telemetria_EntradaEMarcoDoEvento_ChegamAoRemoto()
+        {
+            var remoto = new ProvedorMemoria();
+            var t = new Telemetria(new AnalyticsMemoria(), remoto, "abcd1234", "0.7.0", "base@1");
+            Sim s = Aberta();
+            long agora = FF.Comeca + H;
+            void Drena() { foreach (var n in s.LiveOps.Novidades) { var (a, b) = s.LiveOps.Diario(n); t.Log(n.Tipo, s.Time, a, b); } s.LiveOps.Novidades.Clear(); }
+            Agora(s, agora); Drena();
+            s.LiveOps.On(Ev.VipServed, (int)Item.Sword, 30); s.LiveOps.On(Ev.VipServed, (int)Item.Sword, 30);
+            Agora(s, agora + 10); Drena();
+            Assert.IsEmpty(remoto.Enviados, "antes da tela de idade nada sai");
+            t.Liberar(Faixa.Adulto, false);
+            Evento entra = remoto.Enviados.Single(e => e.Nome == "event_enter");
+            Evento marco = remoto.Enviados.Single(e => e.Nome == "event_complete");
+            Assert.AreEqual(FF.Id, entra.A);
+            Assert.AreEqual((FF.Id, "50"), (marco.A, marco.B), "o limiar cruzado");
+            Assert.Less(entra.Seq, marco.Seq);
+            Assert.AreEqual("60", remoto.Enviados.Last(e => e.Nome == "event_points").B, "o total de pontos (vip2 = 60)");
+        }
+
         [Test]
         public void RelogioParaTras_NaoReabreONemPagaDeNovo()
         {
