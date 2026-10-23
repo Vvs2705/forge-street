@@ -567,7 +567,7 @@ namespace FS
 
         /// <summary>
         /// Auditoria item 15: o piso repetia o mesmo ladrilho. Manchas de fuligem e de desgaste (glow suave, escuro ou claro, elipses de
-        /// 0,8-2,4 m) em posicoes fixas por semente, entre o chao e a luz quente. ponytail: sorteio deterministico simples (LCG), sem
+        /// 1,2-3,2 m) em posicoes fixas por semente, entre o chao e a luz quente. ponytail: sorteio deterministico simples (LCG), sem
         /// mapa de desgaste por estacao; se a oficina pedir trilhas de passagem, desenhar pelo caminho do bot.
         /// </summary>
         void Manchas(float w, float h)
@@ -577,9 +577,9 @@ namespace FS
             int n = Mathf.RoundToInt(w * h / 6f);
             for (int i = 0; i < n; i++)
             {
-                float x = 0.6f + R() * (w - 1.2f), y = 0.6f + R() * (h - 1.2f), s = 0.8f + R() * 1.6f;
+                float x = 0.6f + R() * (w - 1.2f), y = 0.6f + R() * (h - 1.2f), s = 1.2f + R() * 2.0f;
                 bool fuligem = R() < 0.7f;
-                Color c = fuligem ? new Color(0.12f, 0.07f, 0.03f, 0.10f + 0.10f * R()) : new Color(1f, 0.92f, 0.75f, 0.05f + 0.05f * R());
+                Color c = fuligem ? new Color(0.10f, 0.06f, 0.02f, 0.22f + 0.14f * R()) : new Color(1f, 0.92f, 0.75f, 0.10f + 0.06f * R());
                 Art.NewSprite(transform, "Mancha", Art.Glow(), c, WashOrder, new Vector2(x, y), new Vector2(s, s * (0.55f + 0.35f * R())), R() * 180f);
             }
         }
