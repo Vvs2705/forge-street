@@ -580,6 +580,30 @@ namespace FS.Tests
             UmaVez(r, "ach_contrato1");
         }
 
+        /// <summary>ach_distritos3 (3 distritos abertos) e ach_mw30 (30 obras no Imperio) derivam do ledger do Renome (charter:, mw:): um save
+        /// com 2 Charters e 30 obras e nenhuma meta aberta ganha as duas pelo retroativo, 1x; com 1 Charter e 29 obras, nenhuma.</summary>
+        [Test]
+        public void SaveAntigo_DistritosEObrasDoImperio_ConquistaPeloRetroativo()
+        {
+            Assert.That(Distritos.All.Length, Is.AtLeast(3), "premissa: 3 distritos no build");
+            long obras = 0; foreach (DistrictDef d in Distritos.All) obras += d.Masterworks.Length;
+            Assert.That(obras, Is.AtLeast(30), "premissa: 30 obras alcancaveis no build");
+            Sim s = Aberta();
+            s.Renome.OnCharter(Distritos.OldForgeId);
+            for (int i = 0; i < 29; i++) s.Renome.Credita(Hall.Prefixo + "mw_teste_" + i, 0);
+            s.Tick(1f / 30f, 0f, 0f);
+            Assert.IsFalse(s.Metas.Conquista(A("ach_distritos3")).Pronta, "2 abertos");
+            Assert.IsFalse(s.Metas.Conquista(A("ach_mw30")).Pronta, "29 obras");
+            s.Renome.OnCharter("armorers_row");
+            s.Renome.Credita(Hall.Prefixo + "mw_teste_29", 0);
+            string velho = s.Save(1000);
+            StringAssert.DoesNotContain("mt.", velho);
+            Sim r = Sim.Load(velho);
+            r.Metas.Agora(Em(D, 10), Fuso);
+            UmaVez(r, "ach_distritos3");
+            UmaVez(r, "ach_mw30");
+        }
+
         [Test]
         public void Volume_E_ConteudoReal_SemViolacao()
         {
@@ -633,7 +657,8 @@ namespace FS.Tests
             Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_q9", "quality_crafted", 9, 1))), "filtro 9 invalido");
             Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_rn", "reputation_level", -1, 2, renome: 5))), "laco");
             Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_ch", "district_unlock", -1, 1, refId: "nada"))), "ID \"nada\" invalido");
-            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_ch0", "district_unlock", -1, 1))), "invalido para district_unlock");
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_ch0", "district_unlock", -1, Distritos.All.Length + 1))), $"acima do que o build tem ({Distritos.All.Length})");   // sem Ref = distritos abertos
+            Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_mwx", "masterwork_empire", -1, 999))), "acima do que o build tem");
             Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_col", "collection_milestone", -1, 1, refId: "col_x"))), "ID \"col_x\" invalido");
             Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_lingote", "product_sold", -1, 1, refId: "lingote"))), "ID \"lingote\" invalido");   // insumo
             Acusa(Valida(ach: Com(MetasDefs.Conquistas, Ach("ach_elmo2", "product_sold", 2, 1, refId: "elmo"))), "ID \"elmo\" invalido");   // ID e filtro

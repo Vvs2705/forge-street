@@ -89,7 +89,7 @@ namespace FS.Tests
             Sim r = Aberta();
             Agora(r, LiveOpsDefs.T0 + H);
             Assert.AreSame(Evt("_royal_week"), r.LiveOps.Evento);
-            StringAssert.Contains("knob", r.LiveOps.Falta(Evt("_rare_ore_rush")), "o Rare Ore Rush ainda espera o GrabTime virar knob");
+            Assert.IsNull(r.LiveOps.Falta(Evt("_rare_ore_rush")), "o Rare Ore Rush roda: o GrabTime virou campo do Tuning");
         }
 
         [Test]
@@ -112,8 +112,8 @@ namespace FS.Tests
             Assert.AreEqual(2, evs.Count(e => e.Reserva));
             var s = new Sim();
             CollectionAssert.AreEqual(new[] { "ev_s1w1_royal_week", "ev_s1w2_forge_frenzy", "ev_s1w3_armorers_challenge", "ev_s1w4_hunt_sunblade", "ev_s1w5_forge_frenzy_b",
-                "ev_s2w1_blacksmith_festival", "ev_s2w3_merchant_caravan", "ev_s2w4_hunt_ember_crown", "ev_s2w5_royal_week_b" }, evs.Where(e => s.LiveOps.Falta(e) == null).Select(e => e.Id),
-                "os que rodam hoje (B-CORE-08: os Hunts com o QualidadeEvento; o Rare Ore Rush espera o GrabTime)");
+                "ev_s2w1_blacksmith_festival", "ev_s2w2_rare_ore_rush", "ev_s2w3_merchant_caravan", "ev_s2w4_hunt_ember_crown", "ev_s2w5_royal_week_b" }, evs.Where(e => s.LiveOps.Falta(e) == null).Select(e => e.Id),
+                "os 10 rodam (B-CORE-08: os Hunts com o QualidadeEvento; o Rare Ore Rush com o GrabTime no Tuning)");
             Assert.IsEmpty(LiveOpsDefs.Validar(LiveOpsDefs.Eventos, LiveOpsDefs.Passes).ToList());
             Assert.AreEqual(30, S1.Niveis);
             Assert.AreEqual(18000L, S1.XpTotal);
@@ -439,7 +439,7 @@ namespace FS.Tests
         public void TrilhaDeEvento_NuncaNumaSessaoDe60Min_OF2PDeReferenciaFechaNoDia4a5()
         {
             EventDef[] evs = LiveOpsDefs.Eventos.Where(e => LiveOpsDefs.Falta(e, Items.All) == null).ToArray();
-            Assert.AreEqual(9, evs.Length);   // B-CORE-08: os 2 Hunts entraram
+            Assert.AreEqual(10, evs.Length);   // B-CORE-08: os 2 Hunts; o Rare Ore Rush com o GrabTime no Tuning
             var aq = new Sim(); var ab = new Bot();
             while (aq.Time < 2 * 3600f) ab.Step(aq, 1f / 30f);
             string jogou = aq.Save(LiveOpsDefs.T0);
@@ -670,7 +670,7 @@ namespace FS.Tests
             Acusa(Valida(Troca(FF, Copia(FF, e => e.Trilha = FF.Trilha.Concat(new[] { new Marco(1100, new RewardDef(TipoPremio.Blueprint, 0, "bp_x")) }).ToArray()))), "sem fallback");
             EventDef ffb = Evt("_forge_frenzy_b");
             Acusa(Valida(Troca(ffb, Copia(ffb, e => e.Trilha = FF.Trilha))), "mais de uma fonte");
-            Acusa(Valida(Troca(ffb, Copia(ffb, e => e.Modificadores = new[] { new Modificador("GrabTime", 0.7f) }))), "reserva com o que ainda nao existe");
+            Acusa(Valida(Troca(ffb, Copia(ffb, e => e.Requer = new[] { "bp_que_nao_existe" }))), "reserva com o que ainda nao existe");
             Acusa(Valida(Troca(FF, Copia(FF, e => e.Encomenda = "ord_ev_royal_week"))), "nao e' a OrderDef Event deste evento");
             Acusa(Valida(Troca(FF, Copia(FF, e => e.Missoes = FF.Missoes.Where(x => x.Evento != "play_day").ToArray()))), "jogue em 3 dias");
             Acusa(Valida(Troca(FF, Copia(FF, e => e.Encomenda = "ord_common_old_forge"))), "nao e' a OrderDef Event deste evento");
