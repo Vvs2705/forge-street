@@ -6,8 +6,9 @@ using System.Text;
 namespace FS.Core
 {
     /// <summary>B-CORE-04 (GDD §8, DM §22): os 8 papeis. Porter = os ajudantes que carregam (Sim.Workers, Carrier); os outros ficam no posto e
-    /// mudam um numero do Sim (Equipe). C-CORE-05: Smelter (a Vulcana da Row) tem regra; Courier e o Manager de distrito (Imperio) ainda nao
-    /// entram na Equipe (o ContentValidator.Workers recusa no build).</summary>
+    /// mudam um numero do Sim (Equipe). C-CORE-05: Smelter (a Vulcana da Row) tem regra; C-CORE-09: o Courier (o Felix da Grand Forge) vem com o
+    /// upgrade dele (Contrata, como o Porter) e nao carrega: as rotas e o lote sobem com o nivel (Sim.Exportacao.cs). O Manager de distrito
+    /// (Imperio) ainda nao entra na Equipe (o ContentValidator.Workers recusa no build).</summary>
     public enum WorkerRole { Porter, Smith, Clerk, Quartermaster, Foreman, Smelter, Courier, Manager }
 
     /// <summary>Especialidade (ECONOMIA_WAVE_B §8.3; Arcane do CONTEUDO_V1 §6).</summary>

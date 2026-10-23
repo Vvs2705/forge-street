@@ -40,7 +40,8 @@ namespace FS
     /// projetos; "todos" da os 19 do catalogo antes do -buy/-buyids; B-CORE-07) | -hall [colecao] (abre o Hall das obras-primas, ou a aba da
     /// Collection; B-CORE-08) | -masterwork [N] (os projetos de Masterwork e as N primeiras do catalogo no Hall, padrao 3; Captura.Hall) |
     /// -cotas (C-CORE-07, com -distrito royal_arsenal: as 3 faixas do patio de cotas com blocos em curso; Captura.Cotas) | -arcano (C-CORE-08,
-    /// com -distrito arcane_foundry: os altares Estavel, estabilizando, Forcado e em sobrecarga; Captura.Arcano).
+    /// com -distrito arcane_foundry: os altares Estavel, estabilizando, Forcado e em sobrecarga; Captura.Arcano) | -exportacao (C-CORE-09,
+    /// com -distrito grand_forge: a producao completa, o Felix no nivel 3, as rotas e um lote de 7 sinos a meio caminho; Captura.Exportacao).
     /// D-CORE-03/04: -evento id (relogio do LiveOps 1 h depois do inicio do evento, ex. forge_frenzy; entra sem esperar o requisito; evento que
     /// ainda nao roda neste build = Falha) | -eventocard (abre o cartao do evento) | -pass (abre o Passe; sem -evento o relogio vai ao T0 + 1 h) |
     /// -passxp N (N de XP no Passe). Os chips aparecem depois das Ferramentas (-buy 12).
@@ -245,7 +246,7 @@ namespace FS
             if (cfg != null) _cfg.gameObject.SetActive(true);
             _joy = new Joystick(_joyCanvas.transform);
             _joy.TopBand = HudBand;
-            _joy.Ignora = p => _view.NoAnel(p) || _view.BarraEm(p) != null || _view.FaixaEm(p) >= 0;   // B-CORE-03: anel e barra de qualidade; C-CORE-07: faixa do patio
+            _joy.Ignora = p => _view.NoAnel(p) || _view.BarraEm(p) != null || _view.FaixaEm(p) >= 0 || _view.LoteEm(p);   // B-CORE-03: anel e barra de qualidade; C-CORE-07: faixa do patio; C-CORE-09: o lote
             Fit();
             FollowCamera(100f);
         }
@@ -560,6 +561,11 @@ namespace FS
                         Notice(Textos.AvisoCota(e.B, _sim.CotaUltimaNoPrazo), _crown, Color.white);
                         Ajustes.Pulso(40, 200);
                         Log("quota_block", _sim.ItemDefs[e.A].Id, e.B.ToString());
+                        break;
+                    case Ev.ExportLot:   // C-CORE-09: o Mensageiro partiu com o lote (cada peca ja saiu como Sold)
+                        Notice(Textos.AvisoLote(e.B), _crown, Color.white);
+                        Ajustes.Pulso(40, 200);
+                        Log("export_lot", e.A.ToString(CultureInfo.InvariantCulture), e.B.ToString(CultureInfo.InvariantCulture));
                         break;
                     case Ev.Bought: Bought(e.A, e.B, e.Pos); break;
                     case Ev.ClientLeft:
@@ -1376,6 +1382,12 @@ namespace FS
                 if (_sim.EscolheCota(fx, prod)) { Sfx.Play("click"); Log("quota_lane", (fx + 1).ToString(CultureInfo.InvariantCulture), prod >= 0 ? _sim.ItemDefs[prod].Id : "-"); }
                 return;
             }
+            if (_view.LoteEm(px))   // C-CORE-09: toque no lote do patio de exportacao = o proximo produto (automatico -> cada linha aberta -> automatico)
+            {
+                int prod = Textos.ProximoLote(_sim);
+                if (_sim.EscolheLote(prod)) { Sfx.Play("click"); Log("export_lot_product", prod >= 0 ? _sim.ItemDefs[prod].Id : "auto"); }
+                return;
+            }
             Station st = _view.BarraEm(px);
             if (st == null) return;
             Sfx.Play("click");
@@ -1759,6 +1771,7 @@ namespace FS
             if (Arg("-equipe") != null) Captura.Equipe(_sim);   // B-CORE-04 (fotos): a oficina com os 13 workers do Old Forge; o -gold vem depois
             if (Arg("-cotas") != null) Captura.Cotas(_sim);   // C-CORE-07 (fotos, -distrito royal_arsenal): as 3 faixas do patio com blocos em curso
             if (Arg("-arcano") != null) Captura.Arcano(_sim);   // C-CORE-08 (fotos, -distrito arcane_foundry): os altares nos 4 estados do medidor
+            if (Arg("-exportacao") != null) Captura.Exportacao(_sim);   // C-CORE-09 (fotos, -distrito grand_forge): as rotas e o lote do Mensageiro
             if (long.TryParse(Arg("-gold"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long g)) _sim.Gold = Math.Max(0, g);   // A-CORE-06: aceita > int (foto da HUD)
             if (long.TryParse(Arg("-renome"), NumberStyles.Integer, CultureInfo.InvariantCulture, out long rn)) _raiz.Renome.Ganha(rn - _raiz.Renome.Total);   // B-CORE-06: so sobe
             // C-CORE-03 (fotos): -gerente N = o manager do Old Forge no nivel N (precisa do Charter: -distrito armorers_row), sem gastar o ouro

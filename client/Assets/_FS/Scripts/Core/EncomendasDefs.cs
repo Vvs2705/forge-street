@@ -25,6 +25,8 @@ namespace FS.Core
             FS.Core.Distritos.RoyalArsenalId,
             // ---- arcane_foundry (C-CORE-08)
             FS.Core.Distritos.ArcaneFoundryId,
+            // ---- grand_forge (C-CORE-09)
+            FS.Core.Distritos.GrandForgeId,
         };
         /// <summary>Base da escala dos knobs (a Common do catalogo): alvo x Tuning.OrderSeconds / 150 e premio x Tuning.OrderRewardSeconds / 10.</summary>
         public const float AlvoBase = 150f, PremioBase = 10f;
@@ -91,7 +93,9 @@ namespace FS.Core
             // ---- royal_arsenal (C-CORE-07): Distritos.RoyalArsenal.cs
             OrdensArsenal(),
             // ---- arcane_foundry (C-CORE-08): Distritos.ArcaneFoundry.cs
-            OrdensArcane());
+            OrdensArcane(),
+            // ---- grand_forge (C-CORE-09): Distritos.GrandForge.cs
+            OrdensGrandForge());
 
         /// <summary>As OrderDefs do build, na ordem dos distritos: cada distrito novo traz as dele num metodo do arquivo dele (classe parcial).</summary>
         static OrderDef[] Junta(params OrderDef[][] partes)
@@ -110,6 +114,7 @@ namespace FS.Core
             (FS.Core.Distritos.ArtisanQuarterId, CicloArtisan()),
             (Arsenal, new[] { Royal, Common, Bulk, Royal, Qual, Mixed, Royal, Blueprint, Rush, Common }),   // ---- royal_arsenal (C-CORE-07): Royal x3
             (FS.Core.Distritos.ArcaneFoundryId, CicloArcane()),   // ---- arcane_foundry (C-CORE-08): Quality x3
+            (FS.Core.Distritos.GrandForgeId, CicloGrandForge()),   // ---- grand_forge (C-CORE-09): Royal x3 e Mixed x2
         };
 
         public static OrderType[] Ciclo(string district) => Array.Find(Ciclos, c => c.District == district).Cycle;

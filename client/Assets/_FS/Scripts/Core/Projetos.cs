@@ -109,6 +109,7 @@ namespace FS.Core
                     if (f.Ref == BlueprintSource.Producao) return _sim.ProductionComplete;
                     if (f.Ref == BlueprintSource.Cotas) return _sim.CotasFechadas >= f.N;   // C-CORE-07
                     if (f.Ref == BlueprintSource.Energizadas) return _sim.EnergizadasTotal >= f.N;   // C-CORE-08
+                    if (f.Ref == BlueprintSource.Lotes) return _sim.ExportLots >= f.N;      // C-CORE-09
                     int it = Items.IndexOf(f.Ref, _sim.ItemDefs);
                     return it >= 0 && (f.MinQ >= Quality.Fine ? Finas[it] : _sim.SoldItems[it]) >= f.N;
                 case BlueprintSourceKind.Reputation: return _sim.Renome.Nivel >= f.N;

@@ -17,7 +17,10 @@ namespace FS.Core
         CotaBlocos, CotaNoPrazo, Contratos,
         /// <summary>C-CORE-08: PecasEnergizadas = EnergizedPieces:item (Sim.PecasEnergizadas) e SequenciaEstavel = StableStreak:estacao (o ID do
         /// altar, Station.Sequencia; §2.5 regra 6).</summary>
-        PecasEnergizadas, SequenciaEstavel }
+        PecasEnergizadas, SequenciaEstavel,
+        /// <summary>C-CORE-09 (§2.6): Importados = ImportedUnits e Lotes = ExportLots (Sim.Exportacao.cs); Charters = DistrictCharters (os Charters
+        /// do Imperio; sem Ref).</summary>
+        Importados, Lotes, Charters }
 
     /// <summary>Uma condicao: `Ref` = item, familia de estacao, tipo de encomenda ou worker (Renome: nenhum); `N` = o alvo; `MinQ` = nivel
     /// minimo da peca vendida (so VendidosQualidade).</summary>
@@ -225,6 +228,9 @@ namespace FS.Core
                         case CondicaoMw.Contratos: ok &= c.N <= ContratosDefs.CatalogoV1; break;
                         case CondicaoMw.PecasEnergizadas: int pe = Produto(c.Ref); ok &= pe >= 0 && w.Stations.Exists(s => w.Arcana(s) && (int)s.OutItem == pe); break;   // C-CORE-08
                         case CondicaoMw.SequenciaEstavel: ok &= w.Stations.Exists(s => s.Id == c.Ref && w.Arcana(s)); break;
+                        case CondicaoMw.Importados: ok &= w.Cais != null; break;              // C-CORE-09: so com o cais
+                        case CondicaoMw.Lotes: ok &= w.Exportacao != null; break;            // e o patio de exportacao
+                        case CondicaoMw.Charters: ok &= c.N < FS.Core.Distritos.All.Length; break;   // os outros distritos do build
                         default: ok = false; break;   // tipo que o nucleo nao conhece
                     }
                     if (!ok) yield return $"{ac} inalcancavel (alvo, nivel ou tipo que o build nao tem)";

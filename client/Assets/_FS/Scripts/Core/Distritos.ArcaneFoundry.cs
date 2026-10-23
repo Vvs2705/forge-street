@@ -184,8 +184,9 @@ namespace FS.Core
                 t.CargaArcana = new[] { 0, 0, 15, 12, 18, 20, 25, 22, 30, 0, 0, 0, 0, 0 };
             },
             Abertura = 3900000,
-            // §2.5: producao completa + Renome 8 (3.000) + 4 Masterworks + (2 Royal Contracts OU 20 encomendas Royal no distrito); o ultimo do build
-            Charter = new CharterDef(true, 3000, 4, null, contratos: 2),
+            // §2.5: producao completa + Renome 8 (3.000) + 4 Masterworks + (2 Royal Contracts OU 20 encomendas Royal no distrito); o proximo e' a
+            // Grand Forge (C-CORE-09)
+            Charter = new CharterDef(true, 3000, 4, GrandForgeId, contratos: 2),
             InsumoPorEspera = true,   // o do Arsenal: 4 insumos (lingote, cristal, runico, liga) para o papel 1 (BALANCE.md §40)
         };
     }

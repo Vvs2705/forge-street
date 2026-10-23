@@ -30,7 +30,7 @@ namespace FS.Tests
         [Test]
         public void Niveis_PorLimiar_GoldenDoConteudoV1()
         {
-            CollectionAssert.AreEqual(new long[] { 0, 20, 70, 180, 400, 750, 1250, 2000, 3000, 4500, 6500 }, RenomeDefs.Niveis.Select(d => d.Limiar).ToArray(),
+            CollectionAssert.AreEqual(new long[] { 0, 20, 70, 180, 400, 750, 1250, 2000, 3000, 4200, 6500 }, RenomeDefs.Niveis.Select(d => d.Limiar).ToArray(),
                 "CONTEUDO_V1 §11 / ECONOMIA_WAVE_B §5.2");
             var r = new Sim().Renome;
             Assert.AreEqual(0, r.Nivel);

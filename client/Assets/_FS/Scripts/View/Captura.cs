@@ -184,6 +184,20 @@ namespace FS
             s.Player.Pos = new V2(4.5f, 7.6f);
         }
 
+        /// <summary>C-CORE-09 -exportacao (fotos, -distrito grand_forge): os produtivos do distrito, o Felix no nivel 3 (rotas de 16/min com o cais
+        /// 2, lote de 24), o lote do Mensageiro com 7 sinos (Fina 2) e 40 s gastos, o produto do lote no automatico e 120 importados; o ferreiro
+        /// em frente ao patio de exportacao. Sem patio no distrito: nada.</summary>
+        public static void Exportacao(Sim s)
+        {
+            if (s.Exportacao == null) return;
+            for (int u = 0; u < s.UpgradeDefs.Length; u++) if (s.IsProduction(u)) s.Buy((Upgrade)u);
+            int f = Array.FindIndex(s.Equipe.Defs, d => d.Papel == WorkerRole.Courier);
+            for (int n = 0; n < 2 && f >= 0; n++) { s.Gold += s.Equipe.Custo(f); s.Equipe.Comprar(f); }
+            int sino = Items.IndexOf("sino_catedral", s.ItemDefs);
+            s.Lote[sino] = 7; s.LoteQ[sino][(int)Quality.Fine] = 2; s.ExportT = 40f; s.ImportedUnits = 120;
+            s.Player.Pos = new V2(s.Exportacao.InAt.X, s.Exportacao.InAt.Y - 0.6f);
+        }
+
         static void Enche(Sim s, int k, int n, float t)
         {
             FaixaCota f = s.Faixas[k];

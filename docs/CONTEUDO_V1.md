@@ -251,7 +251,8 @@ Catedral de forja; todas as paletas, sinos, vitrais. Família: sino da catedral,
 ```
 
 - **Major unlock:** `mensageiro` (rotas + exportação).
-- **Carta da Grande Forja:** produção completa + Renome 9 (4.500) + 5 Masterworks + (3 Royal Contracts **ou** 30 encomendas Royal no distrito).
+- **Carta da Grande Forja:** produção completa + Renome 9 (4.500; **4.200 medido**, §11) + 5 Masterworks + (3 Royal Contracts **ou** 30 encomendas Royal no distrito).
+- **Medido (C-CORE-09, `BALANCE.md` §41, revisar):** só os 5 importados que já existem entram (peitoral, colar, caixa de joias, insígnia, espada de gala); os 4 da Arcane Foundry esperam o distrito 5 (até lá a lâmina estelar é só aço ×2). O Mensageiro entrega direto na entrada da bancada (o cais é a chegada) e a Estrela 4 leva brutos; empate das rotas em rodízio; "+2 por nível do Félix" acima do 1; o desconto na origem sai do fundo que ela credita no minuto (o resto, perdoado). A cratera estelar traz o trilho fornalha → forja estelar. No jogo os preços do §3 valem × 0,85 e os produtivos do §5.6 × 0,9 (13.136.000), o alvo das encomendas × 1/3 e o prêmio × 0,35. Com a chegada da cadeia inteira (o fundo da Foundry): produção completa do F2P ~58 min, renda ~400 mil/min, Carta do Ideal em ~6 h 30.
 
 ---
 
@@ -1095,7 +1096,7 @@ Monotônico, sem gasto, nunca cai. Limiares do `ECONOMIA_WAVE_B.md` §5.2 (0–4
 | 6 | Ourives da corte | Court Goldsmith | Orfebre de corte | 1.250 | Charter do Artisan Quarter; ctr_dote_princesa; Quality do Quarter pede Superior; bp_mw_broche_guilda |
 | 7 | Fornecedor real | Royal Purveyor | Proveedor regio | 2.000 | Charter do Royal Arsenal; ctr_coroacao; bp_mw_rainha_guerreira; herói estágio 5 (uniforme real) |
 | 8 | Mestre arcano | Arcane Master | Maestro arcano | 3.000 | Charter da Arcane Foundry; ctr_vanguarda; Quality da Foundry pede Superior; bp_mw_escudo_aurora |
-| 9 | Grão-mestre | Grandmaster | Gran maestro | 4.500 | Carta da Grande Forja; ctr_campeao; Royal da Grand Forge pede Superior; bp_mw_rainha_forjadora |
+| 9 | Grão-mestre | Grandmaster | Gran maestro | 4.200 (medido, `BALANCE.md` §41; era 4.500) | Carta da Grande Forja; ctr_campeao; Royal da Grand Forge pede Superior; bp_mw_rainha_forjadora |
 | 10 | Lenda do reino | Realm Legend | Leyenda real | 6.500 | bp_mw_coroa_granforja (lendária); estátua do ferreiro na praça; título no perfil |
 
 
