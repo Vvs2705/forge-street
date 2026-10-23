@@ -240,6 +240,7 @@ namespace FS
         // v0.6d (revisao de UX, px na largura 1080 = 94,7 px/m): seta da dica de ~80 px quicando 12 px a 1,5 Hz; placa creme com borda
         // verde e pulso 1,05 quando da para pagar, preco salmao quando nao da; rotulos de 30 px com contorno #2A1E14 de 3 px
         const float ArrowS = 0.95f, ArrowY = 1.5f, ArrowBob = 0.127f, SaleMerge = 0.4f;
+        static readonly Color PlacaC = Art.ComAlfa(Art.Hex(0x3A2614), 0.62f);
         static readonly Color Edge = Art.Hex(0x2A1E14), PlateCream = Art.ComAlfa(Art.Hex(0xE9D8B4), 0.9f), PadOk = Art.Hex(0x5BD16B),
             PadNo = Art.ComAlfa(Art.Hex(0x2A1E14), 0.45f), PriceNo = Art.Hex(0xFF8A7A), StreetInk = Art.Hex(0xE8D9B8), PillC = Art.Hex(0xFFD34D);
 
@@ -247,6 +248,7 @@ namespace FS
         internal static int Depth(float footY) => 1000 - Mathf.RoundToInt(footY * 50f);
 
         Sim _sim; Camera _cam; RectTransform _labels;
+        readonly List<(Image P, Text T)> _placas = new List<(Image, Text)>();   // auditoria item 13: placa de couro atras do rotulo
         readonly List<StationV> _stations = new List<StationV>();
         readonly List<PadV> _pads = new List<PadV>();
         readonly List<ChestV> _chests = new List<ChestV>();
@@ -453,6 +455,7 @@ namespace FS
             _street = Tiled("RuaLateral", rua, StreetShut, FloorOrder, new Vector2(ws, 0f), new Vector2(w, h));
             Tiled("Chao", Art.Ground("piso_oficina"), Color.white, FloorOrder, Vector2.zero, new Vector2(ws, DeckY));
             Tiled("Assoalho", Art.Ground("madeira"), Color.white, FloorOrder, new Vector2(0f, DeckY), new Vector2(ws, h));
+            Manchas(ws, DeckY);
             Art.NewSprite(transform, "LuzQuente", Art.Square(), Wash, WashOrder, new Vector2(ws / 2f, h / 2f), new Vector2(ws, h));   // sobre chao, assoalho e piso de luxo
             // ruas: luz fria (pedra fria da ART_BIBLE s2 mais clara); a lateral so depois do Corredor (antes ela e' a penumbra do teaser)
             Art.NewSprite(transform, "LuzRua", Art.Square(), StreetWash, WashOrder, new Vector2(w / 2f, h + 1.3f), new Vector2(w + 8f, 2.6f));
@@ -562,6 +565,25 @@ namespace FS
             return r;
         }
 
+        /// <summary>
+        /// Auditoria item 15: o piso repetia o mesmo ladrilho. Manchas de fuligem e de desgaste (glow suave, escuro ou claro, elipses de
+        /// 0,8-2,4 m) em posicoes fixas por semente, entre o chao e a luz quente. ponytail: sorteio deterministico simples (LCG), sem
+        /// mapa de desgaste por estacao; se a oficina pedir trilhas de passagem, desenhar pelo caminho do bot.
+        /// </summary>
+        void Manchas(float w, float h)
+        {
+            uint seed = 0x9E3779B9u;
+            float R() { seed = seed * 1664525u + 1013904223u; return (seed >> 8) / 16777216f; }
+            int n = Mathf.RoundToInt(w * h / 6f);
+            for (int i = 0; i < n; i++)
+            {
+                float x = 0.6f + R() * (w - 1.2f), y = 0.6f + R() * (h - 1.2f), s = 0.8f + R() * 1.6f;
+                bool fuligem = R() < 0.7f;
+                Color c = fuligem ? new Color(0.12f, 0.07f, 0.03f, 0.10f + 0.10f * R()) : new Color(1f, 0.92f, 0.75f, 0.05f + 0.05f * R());
+                Art.NewSprite(transform, "Mancha", Art.Glow(), c, WashOrder, new Vector2(x, y), new Vector2(s, s * (0.55f + 0.35f * R())), R() * 180f);
+            }
+        }
+
         /// <summary>Sombra de contato no chao ao pe de uma parede: degrade escuro saindo dela (`up` = parede embaixo; senao a esquerda).</summary>
         void Shade(Vector2 min, Vector2 max, bool up)
         {
@@ -604,7 +626,7 @@ namespace FS
                 Vector2 isc = s.Kind == Kind.Counter || s.Kind == Kind.Deposit ? new Vector2(0.5f, 0.5f) : Art.ItemScale(s.OutItem, 0.5f);
                 Art.NewSprite(v.Root, "Icone", icon, Art.ComAlfa(ic, 0.55f), 3, new Vector2(0f, 0.08f), isc);
             }
-            v.Label = Art.Outlined(Art.FreeText(_labels, s.Name, 30, new Vector2(320f, 44f)), 3f, Edge);   // v0.6d: 28 -> 30 px, contorno 3 px
+            v.Label = Placa(Art.Outlined(Art.FreeText(_labels, s.Name, 30, new Vector2(320f, 44f)), 3f, Edge));   // v0.6d: 28 -> 30 px, contorno 3 px
             v.Label.text = Textos.Estacao(s.Index);
             v.Label.fontStyle = FontStyle.Bold;
             if (s.Kind == Kind.Quota)   // C-CORE-07: as faixas do patio, sempre visiveis embaixo dele (ponytail: texto; a arte das faixas vem com o C-ART-13)
@@ -649,7 +671,7 @@ namespace FS
                     v.OutGlint = Glints(v.Root, v.OutPile, 7);
                     v.QBarBg = Capsule(v.Root, "QualidadeFundo", Art.ComAlfa(Art.Bg, 0.85f), 3, new Vector2(0f, QBarY), BarW, QBarH);
                     v.QBarFill = Capsule(v.Root, "Qualidade", Silver, 4, new Vector2(0f, QBarY), QBarH, QBarH);
-                    v.QLabel = Art.Outlined(Art.FreeText(_labels, "Qualidade", 26, new Vector2(360f, 64f)), 2.5f, Edge);
+                    v.QLabel = Placa(Art.Outlined(Art.FreeText(_labels, "Qualidade", 26, new Vector2(360f, 64f)), 2.5f, Edge));
                     v.QLabel.fontStyle = FontStyle.Bold;
                     v.QBarBg.enabled = v.QBarFill.enabled = v.QLabel.enabled = false;
                 }
@@ -741,7 +763,7 @@ namespace FS
             v.Fill = Art.NewSprite(v.Root, "Pago", Art.Rounded(), Art.ComAlfa(Art.Gold, 0.8f), 3, Vector2.zero, Vector2.zero);
             v.Border = Art.NewSprite(v.Root, "Borda", Art.DashedBox(), Color.white, 4, Vector2.zero, Vector2.one * PadSize);
             v.Icon = Art.NewSprite(v.Root, "Obra", null, Color.white, 5, Vector2.zero, Vector2.one);
-            v.Label = Art.Outlined(Art.FreeText(_labels, "PadNome", 30, new Vector2(360f, 44f)), 3f, Edge);   // v0.6d: 24 -> 30 px
+            v.Label = Placa(Art.Outlined(Art.FreeText(_labels, "PadNome", 30, new Vector2(360f, 44f)), 3f, Edge));   // v0.6d: 24 -> 30 px
             v.Label.fontStyle = FontStyle.Bold;
             v.PriceBox = Art.Node(_labels, "PadPreco", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
             v.PriceBox.sizeDelta = new Vector2(150f, 44f);
@@ -1203,6 +1225,7 @@ namespace FS
 
             TickFx(dt);
             RefreshArrow();
+            RefreshPlacas();
             for (int i = 0; i < _floaters.Count; i++)
             {
                 Floater f = _floaters[i];
@@ -2036,6 +2059,35 @@ namespace FS
         // ------------------------------------------------------------------ rotulos na HUD
 
         void PlaceLabel(Text t, Vector3 world, Vector2 offsetPx) => PlaceRect(t.rectTransform, world, offsetPx);
+
+        /// <summary>
+        /// Auditoria item 13: o rotulo do mundo (nome da estacao e da placa, "Fina em 3") ganha uma placa de couro translucida atras, do
+        /// tamanho do texto; na oficina cheia o branco com contorno virava ruido sobre o chao. A placa segue o rotulo (RefreshPlacas).
+        /// </summary>
+        Text Placa(Text t)
+        {
+            Image p = Art.Node(_labels, "Placa", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f)).gameObject.AddComponent<Image>();
+            p.sprite = Art.Moldura(); p.type = Image.Type.Sliced; p.pixelsPerUnitMultiplier = 2f; p.raycastTarget = false;
+            p.transform.SetSiblingIndex(t.transform.GetSiblingIndex());   // logo antes do texto: fica atras dele
+            _placas.Add((p, t));
+            return t;
+        }
+
+        void RefreshPlacas()
+        {
+            for (int i = _placas.Count - 1; i >= 0; i--)
+            {
+                (Image p, Text t) = _placas[i];
+                if (t == null) { if (p != null) Destroy(p.gameObject); _placas.RemoveAt(i); continue; }   // a estacao refeita (Refaz) destroi o rotulo
+                bool on = t.enabled && t.gameObject.activeInHierarchy && !string.IsNullOrEmpty(t.text);
+                p.enabled = on;
+                if (!on) continue;
+                RectTransform r = p.rectTransform;
+                r.anchoredPosition = t.rectTransform.anchoredPosition;
+                r.sizeDelta = new Vector2(Mathf.Min(t.preferredWidth, t.rectTransform.sizeDelta.x + 120f) + 30f, t.preferredHeight + 8f);
+                p.color = Art.ComAlfa(PlacaC, PlacaC.a * t.color.a);
+            }
+        }
 
         void PlaceRect(RectTransform r, Vector3 world, Vector2 offsetPx = default)
         {

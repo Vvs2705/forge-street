@@ -34,7 +34,7 @@ namespace FS
             Image edge = Art.Panel(top, "SeloRenome", Art.Gold, new Vector2(0.36f, 0f), new Vector2(0.36f, 0f));
             _selo = edge.rectTransform;
             _selo.pivot = new Vector2(1f, 0.5f);
-            _selo.sizeDelta = new Vector2(290f, 46f);
+            _selo.sizeDelta = new Vector2(330f, 56f);   // auditoria item 11: era 290 x 46 (minusculo sob o ouro)
             _selo.anchoredPosition = new Vector2(-6f, 0f);
             Image face = Art.Panel(_selo, "Fundo", Art.HudFace, Vector2.zero, Vector2.one);
             face.rectTransform.offsetMin = new Vector2(4f, 4f); face.rectTransform.offsetMax = new Vector2(-4f, -4f);
@@ -44,14 +44,14 @@ namespace FS
             b.targetGraphic = edge;
             b.onClick.AddListener(() => { Sfx.Play("click"); Abrir(); });
             Image star = Art.Node(_selo, "Estrela", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f)).gameObject.AddComponent<Image>();
-            star.rectTransform.sizeDelta = new Vector2(58f, 58f); star.rectTransform.anchoredPosition = new Vector2(24f, 2f);
+            star.rectTransform.sizeDelta = new Vector2(70f, 70f); star.rectTransform.anchoredPosition = new Vector2(26f, 2f);
             star.sprite = Art.Star(); star.color = Art.Gold; star.raycastTarget = false;
-            _seloNum = Art.Outlined(Art.NewText(star.transform, "Nivel", 26, Vector2.zero, Vector2.one), 2f);
+            _seloNum = Art.Outlined(Art.NewText(star.transform, "Nivel", 30, Vector2.zero, Vector2.one), 2f);
             _seloNum.fontStyle = FontStyle.Bold; _seloNum.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _seloNome = Art.NewText(_selo, "Nome", 26, new Vector2(0f, 0f), new Vector2(1f, 1f), TextAnchor.MiddleLeft);
-            _seloNome.rectTransform.offsetMin = new Vector2(58f, 0f); _seloNome.rectTransform.offsetMax = new Vector2(-10f, 0f);
+            _seloNome = Art.Outlined(Art.NewText(_selo, "Nome", 30, new Vector2(0f, 0f), new Vector2(1f, 1f), TextAnchor.MiddleLeft), 2f);
+            _seloNome.rectTransform.offsetMin = new Vector2(66f, 0f); _seloNome.rectTransform.offsetMax = new Vector2(-12f, 0f);
             _seloNome.fontStyle = FontStyle.Bold; _seloNome.color = Art.Accent;
-            _seloNome.resizeTextForBestFit = true; _seloNome.resizeTextMinSize = 16; _seloNome.resizeTextMaxSize = 26;
+            _seloNome.resizeTextForBestFit = true; _seloNome.resizeTextMinSize = 18; _seloNome.resizeTextMaxSize = 30;
             _seloNome.verticalOverflow = VerticalWrapMode.Truncate;
             _selo.gameObject.SetActive(false);
 
