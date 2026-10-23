@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Grand Forge com os importados da Arcane Foundry (BALANCE §41.7):** a lâmina estelar pede a lâmina rúnica, o relicário a lanterna arcana, a coroa o anel de cristal e a panóplia o escudo rúnico, pelas 4 rotas novas do Mensageiro (`CONTEUDO_V1.md` §3.1). F2P: produção completa 58:08 → 64:09, renda depois da produção −11,7% da alvo, todos os portões ok. A Carta do Ideal sai em 5 de 8 rodadas aos 359 min (antes 3 de 8 aos 396), sem mexer em knob. Os outros 5 distritos ficam idênticos ao byte.
 - **Loja com arte (auditoria visual item 5):** cada produto ganha uma arte pintada no cartão (a bolsa do mestre e os estandartes das duas temporadas do Passe) e um selo dourado PARA SEMPRE / TEMPORADA. 0 crédito; `docs/ASSETS.md` §22.
 - **Efeitos sonoros reais (CC0, Kenney):** martelo, golpe da peça, minério, pegar/largar, esteira, clique e moedas tocam 15 gravações do banco CC0 da Kenney no lugar dos sons sintetizados, no mesmo nível de cada um (a mixagem não muda). Licença e SHA no `PROVENIENCIA.md` §19; `docs/AUDIO.md` §9.
 - **Ícones dos insumos da Arcane Foundry e da Grand Forge:** cristal bruto, lingote rúnico, bronze, pedra estelar e aço estelar ganham ícone e pose deitada (`itens_blender.py`, Blender headless, 0 crédito). Antes caíam no bloco de cor sólida nas bocas e no cartão de troca (rosa e vermelho na Grand Forge). Agora os 58 itens têm folha.
