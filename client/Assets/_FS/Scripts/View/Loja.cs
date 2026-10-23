@@ -195,12 +195,12 @@ namespace FS
                     img.sprite = arte; img.preserveAspect = true; img.raycastTarget = false;
                 }
                 // selo na base da arte (sem arte, no canto de cima): nao rouba a largura do nome
-                Image selo = arte != null ? Art.Panel(bg.transform, "Selo", Art.Gold, new Vector2(0.01f, 0.02f), new Vector2(0.26f, 0.28f))
+                Image selo = arte != null ? Art.Panel(bg.transform, "Selo", Art.Gold, new Vector2(0.01f, 0.02f), new Vector2(0.26f, cat.Length > 1 ? 0.28f : 0.14f))
                     : Art.Panel(bg.transform, "Selo", Art.Gold, new Vector2(0.72f, 0.80f), new Vector2(0.985f, 0.97f));
                 selo.raycastTarget = false;
                 Text st = Art.Outlined(Art.NewText(selo.transform, "Texto", 26, Vector2.zero, Vector2.one), 2f);
                 st.text = Loc.T(Array.IndexOf(Compras.CatalogoPasse, d) >= 0 ? "loja.selo.temporada" : "loja.selo.permanente");
-                st.color = Color.white; st.resizeTextForBestFit = true; st.resizeTextMinSize = 18; st.resizeTextMaxSize = 30;
+                st.color = Color.white; st.resizeTextForBestFit = true; st.resizeTextMinSize = 14; st.resizeTextMaxSize = 30; st.horizontalOverflow = HorizontalWrapMode.Overflow;
                 Text nome = Art.NewText(bg.transform, "Nome", 44, new Vector2(x0, 0.78f), new Vector2(arte != null ? 0.96f : 0.71f, 0.97f), TextAnchor.MiddleLeft);
                 string chave = "iap." + d.Id + ".nome";
                 nome.text = Loc.T(chave); nome.fontStyle = FontStyle.Bold; nome.color = MenuBar.Brown;
