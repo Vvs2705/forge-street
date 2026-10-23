@@ -178,10 +178,11 @@ namespace FS
             Text title = Art.NewText(f, "Titulo", 58, new Vector2(0.05f, 0.88f), new Vector2(0.95f, 0.98f));
             title.text = Loc.T("loja.titulo"); title.fontStyle = FontStyle.Bold; title.color = MenuBar.Brown;
             Art.Cabecalho(title);
-            float h = 0.5f / Compras.Catalogo.Length;
-            for (int i = 0; i < Compras.Catalogo.Length; i++)
+            ProductDef[] cat = Compras.AVenda(_sim.T);   // o premium do Pass so com o Tuning.PassePremium (LIVEOPS_V1 §3.5)
+            float h = 0.5f / cat.Length;
+            for (int i = 0; i < cat.Length; i++)
             {
-                ProductDef d = Compras.Catalogo[i];
+                ProductDef d = cat[i];
                 float top = 0.86f - h * i;
                 Image bg = Art.Panel(f, d.Id, Fundo, new Vector2(0.04f, top - h + 0.01f), new Vector2(0.96f, top));
                 bg.raycastTarget = false;

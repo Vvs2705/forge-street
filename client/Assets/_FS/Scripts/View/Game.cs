@@ -766,7 +766,7 @@ namespace FS
         void IniciarLoja()
         {
             if (_loja == null) return;
-            _loja.Iniciar(Compras.Catalogo, ReciboChegou, FalhaCompra);
+            _loja.Iniciar(Compras.Todos, ReciboChegou, FalhaCompra);   // todos: o Pass comprado restaura mesmo com a flag desligada
             Concluir();
         }
 
