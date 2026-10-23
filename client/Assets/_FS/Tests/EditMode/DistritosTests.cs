@@ -417,6 +417,20 @@ namespace FS.Tests
             Assert.AreEqual("Pise na placa da Bigorna 2", Textos.Placa((int)Upgrade.Anvil2), "o Old Forge de volta");
         }
 
+        /// <summary>Toda `arte:` de estacao tem a folha em Resources/Sprites (sem ela a View cai no desenho procedural sem avisar).</summary>
+        [Test]
+        public void Arte_TodaEstacaoTemAFolha()
+        {
+            string dir = SpritesDir();
+            if (!System.IO.Directory.Exists(dir)) Assert.Ignore("sprites fora do alcance: " + dir);
+            var faltam = Distritos.All.SelectMany(d => d.Estacoes.Where(e => e.Arte != null && !System.IO.File.Exists(System.IO.Path.Combine(dir, e.Arte, "Static.png")))
+                .Select(e => d.Id + "/" + e.Id + " -> " + e.Arte)).ToList();
+            Assert.IsEmpty(faltam);
+        }
+
+        static string SpritesDir([System.Runtime.CompilerServices.CallerFilePath] string aqui = "") =>
+            System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(aqui), "../../Resources/Sprites"));
+
         // ------------------------------------------------------------------ C-CORE-04 / validator
 
         /// <summary>O mapa real passa (layout, caminho do ferreiro em todo distrito, Charter); a Row tambem nas regras de conteudo de sempre.</summary>
