@@ -13,6 +13,53 @@ namespace FS.Tests
     /// </summary>
     public class SomTests
     {
+        /// <summary>AUDIO.md §9: os efeitos CC0 da Kenney (Resources/Audio/&lt;som&gt;/&lt;som&gt;_k.wav) trocam o sintetizado sem recalibrar a Mixagem: WAV mono
+        /// 16 bits a 22 050 Hz, sem clipar, curto, e o RMS da janela de 50 ms mais forte a 1 dB do clip da Sintese que substitui.</summary>
+        [Test]
+        public void Cc0_NoNivelDoSintetizado()
+        {
+            string dir = AudioDir();
+            if (!Directory.Exists(dir)) Assert.Ignore("audio fora do alcance: " + dir);
+            string[] sons = Directory.GetDirectories(dir);
+            Assert.That(sons.Length, Is.GreaterThanOrEqualTo(7), "hammer, martelo, ore, drop, esteira, click e coin");
+            foreach (string pasta in sons)
+            {
+                string n = Path.GetFileName(pasta);
+                CollectionAssert.Contains(Sintese.Nomes, n, "pasta com nome de som da Sintese");
+                string[] wavs = Directory.GetFiles(pasta, "*.wav");
+                Assert.IsNotEmpty(wavs, n);
+                double alvo = Rms50(Sintese.Efeito(n, 0));
+                foreach (string f in wavs)
+                {
+                    byte[] b = File.ReadAllBytes(f);
+                    Assert.AreEqual(1, BitConverter.ToInt16(b, 22), f + ": mono");
+                    Assert.AreEqual(Sintese.Taxa, BitConverter.ToInt32(b, 24), f + ": taxa");
+                    Assert.AreEqual(16, BitConverter.ToInt16(b, 34), f + ": 16 bits");
+                    float[] x = new float[(b.Length - 44) / 2];
+                    for (int i = 0; i < x.Length; i++) x[i] = BitConverter.ToInt16(b, 44 + 2 * i) / 32768f;
+                    Assert.That(x.Length / (float)Sintese.Taxa, Is.InRange(0.005f, 1.5f), f + ": duracao");
+                    Assert.Less(Pico(x, f), 0.99f, f + ": sem clipar");
+                    Assert.AreEqual(alvo, Rms50(x), 1.0, f + ": RMS 50 ms (dB) do sintetizado");
+                }
+            }
+        }
+
+        static double Rms50(float[] x)
+        {
+            int n = Sintese.Taxa / 20, passo = Sintese.Taxa / 200;
+            double melhor = 0;
+            for (int i = 0; i <= Math.Max(0, x.Length - n); i += passo)
+            {
+                double s = 0; int m = Math.Min(n, x.Length - i);
+                for (int k = 0; k < m; k++) s += x[i + k] * x[i + k];
+                melhor = Math.Max(melhor, s / m);
+            }
+            return 10 * Math.Log10(Math.Max(melhor, 1e-12));
+        }
+
+        static string AudioDir([System.Runtime.CompilerServices.CallerFilePath] string aqui = "") =>
+            Path.GetFullPath(Path.Combine(Path.GetDirectoryName(aqui), "../../Resources/Audio"));
+
         [Test]
         public void Efeitos_ValidosEDeterministicos()
         {
