@@ -381,6 +381,8 @@ Pendente (parte 2, com os distritos 3–4 na `main`): estações do Artisan Quar
 
 **Ícones dos insumos novos** (0 crédito, `client/tools/itens_blender.py`, mesma pipeline da Leva 9): `item_minerio_cobre` (veio em pátina verde), `item_minerio_ouro` (pepitas), `item_lingote_cobre`, `item_lingote_ouro`, `item_gema_bruta` (cristais roxos; a lapidada é o `item_gema`) e `item_lamina` (lâmina crua em aço, sem guarda: separa da espada azul). Antes saíam como blocos coloridos procedurais.
 
+**Insumos da Foundry e da Grand Forge (2026-10-23, 0 crédito, `itens_blender.py`):** `item_cristal_bruto` (rocha arcana com veio ciano), `item_lingote_runico` (barra roxo-noite com tampo ciano), `item_bronze` (barra de bronze), `item_pedra_estelar` (rocha azul-noite com estrelas) e `item_aco_estelar` (barra azul-noite com tampo prateado). Antes caíam no bloco de cor sólida (rosa e vermelho nas bocas de entrada da Grand Forge). Os 58 itens dos 6 distritos agora têm folha.
+
 ## 16. Elenco mais nítido (programa de arte, etapa 5, 2026-10-16)
 
 Re-render dos 32 personagens com célula de 192 px (era 128) e teto de 21 quadros por clipe, para caber em 4 096 px de largura: 1,5× os pixels por metro, mesmo tamanho no mundo (o `ppu` do `meta.json` é a escala de exibição). Comando e detalhes: `PROVENIENCIA.md` §14. Comparação antes/depois na mesma escala: `arte/auditoria/2026-10-16/nitidez_antes_depois.png`.
