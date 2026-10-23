@@ -186,15 +186,30 @@ namespace FS
                 float top = 0.86f - h * i;
                 Image bg = Art.Panel(f, d.Id, Fundo, new Vector2(0.04f, top - h + 0.01f), new Vector2(0.96f, top));
                 bg.raycastTarget = false;
-                Text nome = Art.NewText(bg.transform, "Nome", 44, new Vector2(0.04f, 0.78f), new Vector2(0.96f, 0.97f), TextAnchor.MiddleLeft);
+                // auditoria item 5 (loja vazia): a arte pintada do produto a esquerda (Resources/UI/<id>, icones_premio.py) e o selo do que ele e'
+                Sprite arte = Art.UI(d.Id);
+                float x0 = arte != null ? 0.27f : 0.04f;
+                if (arte != null)
+                {
+                    Image img = Art.Node(bg.transform, "Arte", new Vector2(0.02f, 0.06f), new Vector2(0.25f, 0.94f)).gameObject.AddComponent<Image>();
+                    img.sprite = arte; img.preserveAspect = true; img.raycastTarget = false;
+                }
+                // selo na base da arte (sem arte, no canto de cima): nao rouba a largura do nome
+                Image selo = arte != null ? Art.Panel(bg.transform, "Selo", Art.Gold, new Vector2(0.01f, 0.02f), new Vector2(0.26f, cat.Length > 1 ? 0.28f : 0.14f))
+                    : Art.Panel(bg.transform, "Selo", Art.Gold, new Vector2(0.72f, 0.80f), new Vector2(0.985f, 0.97f));
+                selo.raycastTarget = false;
+                Text st = Art.Outlined(Art.NewText(selo.transform, "Texto", 26, Vector2.zero, Vector2.one), 2f);
+                st.text = Loc.T(Array.IndexOf(Compras.CatalogoPasse, d) >= 0 ? "loja.selo.temporada" : "loja.selo.permanente");
+                st.color = Color.white; st.resizeTextForBestFit = true; st.resizeTextMinSize = 14; st.resizeTextMaxSize = 24; st.horizontalOverflow = HorizontalWrapMode.Overflow;
+                Text nome = Art.NewText(bg.transform, "Nome", 44, new Vector2(x0, 0.78f), new Vector2(arte != null ? 0.96f : 0.71f, 0.97f), TextAnchor.MiddleLeft);
                 string chave = "iap." + d.Id + ".nome";
                 nome.text = Loc.T(chave); nome.fontStyle = FontStyle.Bold; nome.color = MenuBar.Brown;
-                Text itens = Art.NewText(bg.transform, "Conteudo", 30, new Vector2(0.05f, 0.3f), new Vector2(0.96f, 0.76f), TextAnchor.UpperLeft);
+                Text itens = Art.NewText(bg.transform, "Conteudo", 30, new Vector2(x0 + 0.01f, 0.3f), new Vector2(0.96f, 0.76f), TextAnchor.UpperLeft);
                 itens.text = Conteudo(d); itens.color = Art.ComAlfa(MenuBar.Brown, 0.85f);
                 itens.resizeTextForBestFit = true; itens.resizeTextMinSize = 20; itens.resizeTextMaxSize = 30;
                 itens.verticalOverflow = VerticalWrapMode.Truncate;
                 var l = new Linha { D = d };
-                l.B = Art.NewButton(bg.transform, "", 40, MenuBar.Green, new Vector2(0.25f, 0.04f), new Vector2(0.75f, 0.26f), () => comprar(d.Id));
+                l.B = Art.NewButton(bg.transform, "", 40, MenuBar.Green, new Vector2(Mathf.Max(0.25f, x0 + 0.04f), 0.04f), new Vector2(0.92f, 0.26f), () => comprar(d.Id));
                 l.Face = l.B.GetComponent<Image>();
                 l.Rotulo = Art.Outlined(l.B.GetComponentInChildren<Text>(), 2f);
                 l.Rotulo.color = Color.white;

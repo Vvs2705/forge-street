@@ -17,6 +17,9 @@ RAIZ = V.RAIZ
 FONTE = os.path.join(RAIZ, "arte", "ui", "premios")
 SAI = os.path.join(RAIZ, "client", "Assets", "_FS", "Resources", "UI")
 TIPOS = ["renome", "passxp", "cosmetico", "blueprint"]
+# auditoria item 5 (loja vazia): a arte do cartao de cada produto, pelo ID do produto (arte/ui/loja/fonte_<id>.png -> Resources/UI/<id>.png)
+LOJA = ["iap_pacote_mestre", "iap_pass_s1_royal_commission", "iap_pass_s2_ember_festival"]
+FONTE_LOJA = os.path.join(RAIZ, "arte", "ui", "loja")
 SEM_HALO = {"passxp": 16}   # o brilho azul da estrela vinha com o fundo escuro (halo sujo no creme): fica o corpo claro + o contorno
 
 
@@ -32,16 +35,16 @@ def sem_halo(im, contorno, lum_min=90):
 
 
 def main():
-    for t in TIPOS:
-        ob = V.recorte(os.path.join(FONTE, "fonte_%s.png" % t), (0.06, 0.06))
+    for fonte, t, nome in [(FONTE, t, "premio_" + t) for t in TIPOS] + [(FONTE_LOJA, t, t) for t in LOJA]:
+        ob = V.recorte(os.path.join(fonte, "fonte_%s.png" % t), (0.06, 0.06))
         if t in SEM_HALO:
             ob = sem_halo(ob, SEM_HALO[t])
             ob = ob.crop(ob.getchannel("A").point(lambda v: 255 if v > 40 else 0).getbbox())
         e = V.caber(ob, 240)
         out = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
         out.alpha_composite(e, ((256 - e.width) // 2, (256 - e.height) // 2))
-        out.save(os.path.join(SAI, "premio_%s.png" % t), optimize=True)
-        print("premio_%s %dx%d" % (t, ob.width, ob.height))
+        out.save(os.path.join(SAI, nome + ".png"), optimize=True)
+        print("%s %dx%d" % (nome, ob.width, ob.height))
 
 
 if __name__ == "__main__":

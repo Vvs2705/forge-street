@@ -631,3 +631,7 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 
 - Nada gerado por IA nem baixado: `chapeu_couro` e `barrete_mestre` modelados por script em `client/tools/props_blender.py` (primitivas, paleta do arquivo; `veludo` e `pluma` novos) e presos ao osso `mixamorig:Head` do ferreiro (`arte/tripo/ferreiro`, licença do Lote 1, §2) pelo `render_sprites.py`. Clipes de `client/Builds/anims_sets/ferreiro` (Mixamo, §3). Blender 5.2 headless.
 - Folhas novas em `client/Assets/_FS/Resources/Sprites/`: `ferreiro_e2`, `ferreiro_e3`, `ferreiro_e2_mochila`, `ferreiro_e3_mochila` (Idle, Walking e Cheering; `.meta` copiados do `ferreiro` com GUID novo).
+
+## 21. Arte dos produtos da loja (auditoria visual item 5, 2026-10-23, 0 crédito)
+
+- Tripo, gerador de imagem Nano Banana 2 (1:1, 4 por prompt, grátis; saldo de créditos intacto em 14 660), pelo Chrome do Vinicius com o aval de 2026-10-23; prompts em `ASSETS.md` §22. Downloads da imagem escolhida (PNG 1024 px) versionados em `arte/ui/loja/fonte_<id>.png`; recorte local (`icones_premio.py`), sem outro serviço.
