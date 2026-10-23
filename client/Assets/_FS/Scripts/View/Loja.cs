@@ -204,8 +204,6 @@ namespace FS
                 Text nome = Art.NewText(bg.transform, "Nome", 44, new Vector2(x0, 0.78f), new Vector2(arte != null ? 0.96f : 0.71f, 0.97f), TextAnchor.MiddleLeft);
                 string chave = "iap." + d.Id + ".nome";
                 nome.text = Loc.T(chave); nome.fontStyle = FontStyle.Bold; nome.color = MenuBar.Brown;
-                nome.resizeTextForBestFit = true; nome.resizeTextMinSize = 24; nome.resizeTextMaxSize = 44;
-                nome.horizontalOverflow = HorizontalWrapMode.Wrap; nome.verticalOverflow = VerticalWrapMode.Truncate;
                 Text itens = Art.NewText(bg.transform, "Conteudo", 30, new Vector2(x0 + 0.01f, 0.3f), new Vector2(0.96f, 0.76f), TextAnchor.UpperLeft);
                 itens.text = Conteudo(d); itens.color = Art.ComAlfa(MenuBar.Brown, 0.85f);
                 itens.resizeTextForBestFit = true; itens.resizeTextMinSize = 20; itens.resizeTextMaxSize = 30;
