@@ -148,8 +148,16 @@ Checklist da troca:
 
 O `Aplicar` usa reflexão nos campos públicos do `Tuning` e do `AdPlacementDef`. No IL2CPP isso funciona porque o Sim lê todos esses campos e porque o stripping padrão (`managedStrippingLevel` vazio) não remove código do jogo. Se o stripping subir para High, rode o `-rcfile` no aparelho antes de publicar.
 
+### Rodar o bot com o config antes de publicar (`econsim --rc`)
+
+```
+dotnet run --project client/tools/econsim -c Release -- --rc C:/caminho/config.json --perfis F2P,AdWatcher,Slow --minutos 60 --partidas 8
+```
+
+O econsim aplica o JSON em todo `Tuning` da rodada pelo mesmo `RemoteConfig.Aplicar` do jogo (build sem intersticial, como o `Game`), antes do `--tuning` (que fica por cima), e imprime `rc: id@versao (N chaves)` com um `aviso:` por valor preso ou ignorado pela trava. JSON que não abre = uso (sai 2). Conferir nas tabelas os portões do GDD §3 contra a mesma rodada sem o `--rc`. Prova (2026-10-23): `{"id":"teste_rc","versao":2,"AnunciosLigados":false,"OfflineFactor":5}` deu `aviso: OfflineFactor: preso: 5 -> 1`, e o AdWatcher de 60 min passou a jogar igual ao F2P (9 anúncios → 0; produção completa 44:50 → 49:23), como deve com a chave mestra desligada.
+
 ## 5. Pendências
 
-- `econsim --rc arquivo.json`: rodar o bot com o config antes de publicar (portões do §3 do GDD).
+- ~~`econsim --rc arquivo.json`~~ (feito em 2026-10-23, `feat/econsim-rc`, abaixo).
 - Experimentos (DM §89): o `id@versao` é o snapshot. Variante, início e fim vêm do fornecedor da P8.
 - Faixas marcadas **revisar**: `OfflineFactor` ≤ 1 e os tetos de anúncio "nunca acima do build" (`BoostMax`, `BoostPlayerMax`, `VipSummonPackMax`).
