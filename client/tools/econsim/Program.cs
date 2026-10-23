@@ -107,7 +107,7 @@ static class EconSim
             switch (args[i])
             {
                 case "--tuning" when ok: ok = Knobs(v, new Tuning()) != null; knobs = v; break;
-                case "--perfis" when ok: perfis = Array.ConvertAll(v.Split(','), n => Array.Find(BotProfile.All, p => string.Equals(p.Name, n.Trim(), StringComparison.OrdinalIgnoreCase))); break;
+                case "--perfis" when ok: perfis = Array.ConvertAll(v.Split(','), n => Array.Find(BotProfile.All.Concat(BotProfile.Extras).ToArray(), p => string.Equals(p.Name, n.Trim(), StringComparison.OrdinalIgnoreCase))); break;
                 case "--minutos" when ok: ok = int.TryParse(v, out minutos) && minutos > 0; break;
                 case "--partidas" when ok: ok = int.TryParse(v, out partidas) && partidas > 0; break;
                 case "--anuncio-seg" when ok: ok = float.TryParse(v, out anuncioSeg) && anuncioSeg >= 0f; break;

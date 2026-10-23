@@ -34,6 +34,30 @@ namespace FS.Tests
             Assert.AreEqual(BalanceTests.Report(Play(new Bot(), 240f)), BalanceTests.Report(Play(Bot.From(BotProfile.F2P), 240f)), "new Bot() e' o perfil F2P ao tick");
         }
 
+        /// <summary>
+        /// Portao "1a Masterwork do F2P em ate 4 h" (ECONOMIA_WAVE_B §10, BALANCE.md §30.4): o F2PGolpe (reacao e stick do F2P, um toque por volta
+        /// do anel, acerta 1 em 2) registra a 1a obra no Hall antes das 4 h (medido ~80 min em 8 partidas); errar nao gasta a recarga, e o golpe
+        /// fica abaixo do Ideal. O F2P de sempre segue sem golpe.
+        /// </summary>
+        [Test]
+        public void F2PGolpe_PrimeiraMasterworkEmAte4h_ErraSemGastarARecarga()
+        {
+            var s = new Sim(); var bot = Bot.From(BotProfile.F2PGolpe);
+            float dt = BalanceTests.Dt, primeira = -1f;
+            for (float t = 0f; t < 4 * 3600f && primeira < 0f; t += dt)
+            {
+                bot.Step(s, dt);
+                if (s.Hall.Count > 0) primeira = s.Time;
+            }
+            TestContext.WriteLine($"F2PGolpe: 1a Masterwork aos {BalanceTests.Clock(primeira)}, {s.Strikes} golpes");
+            Assert.That(primeira, Is.InRange(0f, 4 * 3600f), "1a Masterwork em ate 4 h");
+            Assert.Greater(s.Strikes, 0);
+            var ideal = new Sim(); var bi = Bot.Ideal();
+            for (float t = 0f; t < primeira; t += dt) bi.Step(ideal, dt);
+            Assert.Greater(ideal.Strikes, s.Strikes, "o humano golpeia menos que o Ideal no mesmo tempo");
+            Assert.AreEqual(0, Play(new Bot(), 600f).Strikes, "o F2P de sempre nao golpeia");
+        }
+
         [Test]
         public void Slow_ChegaAProducaoCompletaDepoisDoHumano()
         {

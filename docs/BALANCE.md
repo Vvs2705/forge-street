@@ -1888,7 +1888,7 @@ O pacote poupa o tempo dos vídeos (3,5–5 min na produção completa de 60 min
 | Medida | Portão | Medido | |
 |---|---|---|---|
 | 1ª Masterwork, Perfect | ≤ 2,5 h | 1:23:45 (4 partidas) | ok |
-| 1ª Masterwork, F2P | ≤ 4 h | o bot F2P não golpeia (B-CORE-03: só o Ideal) | **não se mede (revisar:** perfil F2P que acerta 1 em 2) |
+| 1ª Masterwork, F2P | ≤ 4 h | **1:20:04** (perfil `F2PGolpe`, 8 partidas; 2026-10-23) | ok: o F2P de reação 0,7 s que toca o anel uma vez por volta (1,6 s) e acerta 1 em 2 registra 6,5 obras em 4 h (o Ideal, 9,9 aos 73 min); a receita e a produção são as do F2P ao segundo (produção completa 47:18 contra 47:14) |
 | Renome 2, F2P | 40–75 min | 0:59:24 (antes 2:18:40) | ok (passou a valer) |
 | Renome 3, F2P | 1,5–3 h | 3:11 (antes > 4 h) | 11 min acima; o Renome por tipo do Orders 2.0 traz para dentro |
 | Prêmio de qualidade aos 120 | ≤ 35% | 30,8% (F2P) | ok |
