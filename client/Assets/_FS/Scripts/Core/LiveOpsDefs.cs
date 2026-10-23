@@ -109,8 +109,8 @@ namespace FS.Core
         public static readonly string[] TiposEncomenda = { "common", "bulk", "quality", "mixed", "rush", "royal", "event", "blueprint" };
 
         /// <summary>LIVEOPS_V1 §2.3: os knobs que um evento pode tocar (campo do Tuning), x ou +, e a faixa (sempre do lado do jogador). Fora
-        /// daqui e' proibido: offline (P2), anuncio e recargas (V11), custo de upgrade. GrabTime ainda e' const do Balance (QualidadeEvento virou
-        /// campo no B-CORE-08): evento que o usa fica fora ate virar campo do Tuning.</summary>
+        /// daqui e' proibido: offline (P2), anuncio e recargas (V11), custo de upgrade. Knob que nao e' campo do Tuning deixa o evento fora
+        /// (LiveOpsDefs.Falta); QualidadeEvento virou campo no B-CORE-08 e GrabTime no Rare Ore Rush.</summary>
         public static readonly (string Knob, bool Soma, float Min, float Max)[] Knobs =
         {
             ("ClientInterval", false, 0.75f, 1f), ("PatienceBase", false, 1f, 1.3f), ("VipMin", false, 0.7f, 1f), ("VipMax", false, 0.7f, 1f),
