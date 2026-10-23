@@ -132,21 +132,21 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 
 ## 8. Progresso rumo ao 100% (definição de jogo completo, DM §164)
 
-Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-16, depois do #88). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
+Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-21, depois do #GF). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
 
 | Item (§164) | % | Onde está | Próximo passo |
 |---|---|---|---|
 | Core polido | 70 | loop completo, Save 2.0 schema 3 por ID, itens/receitas em dados, exploits fechados, ouro long, validator, `Tuning`/flags, RemoteConfig com travas; feedback do POCO resolvido no código (#59, #62); regra de transporte de insumos para distritos com 2+ insumos (#76) | ouvir e ver no POCO; `Sim` em partes; replay determinístico (§23 item 1) |
-| 6 distritos | 66 | Old Forge; Rua dos Armeiros (#66, #71, #76); **Artisan Quarter** (#78) e **Royal Arsenal** com o pátio de cotas (#83), cada um com arte própria (#75, #79, #84); managers e Império (#65) | distritos 3–6 (Artisan Quarter e Royal Arsenal primeiro); arte da Row |
-| 35–45 produtos | 55 | 25 de 38 vendáveis do catálogo em jogo: Old Forge 5, Row 7, Quarter 7, Arsenal 6 (#83) | `ItemDef`/`RecipeDef` dos distritos 3–6 |
-| Workers | 72 | Old Forge (13), Ferraz e Vulcana (Row), Dourado e Lúcia (Quarter), Cadetes e Matias (Arsenal), managers 2–5 com Valentim e Leonor | workers dos distritos 3–6 |
-| Quality | 88 | 4 níveis, níveis II–V, golpe, técnica, oficiais, Masterwork; liga na Row e técnica da lapidação no Quarter (#78) | fonte material dos distritos 3–6 |
-| Orders | 80 | Orders 2.0 (#60); encomendas da Row, do Quarter (Condessa Amara) e do Arsenal (Arauto Tibério; a Royal nunca vira Common) | encomendas dos distritos 3–6; V27 (Event e vagas) |
-| Royal Contracts | 74 | 12 em dados; abrem os do Old Forge, da Row, do Quarter e do Arsenal (#83); 2ª vaga pela `mesa_real`; Charter do Arsenal aceita 1 contrato ou 10 Royal | os 9 dos distritos 3–6; cota por linha |
-| Blueprints | 76 | 19 do Old Forge + 14 da Row + 14 do Quarter + 14 do Arsenal (#83) | os dos distritos 3–6 |
-| Masterworks | 74 | 40 de 60: Old Forge, Row, Quarter e Arsenal (#83), Hall por distrito | as 40 dos distritos 3–6; bot F2P que golpeia (portão "1ª em até 4 h") |
-| Collection | 71 | marcos do Old Forge, da Row, do Quarter e do Arsenal | marcos dos distritos 3–6 |
-| Reputation | 80 | Renome 10 níveis do Império (todo distrito conta, #65); F2P chega ao 2/3/4 em 0:51 / 1:41 / 3:11 (`BALANCE.md` §30.6) | conferir com jogador real |
+| 6 distritos | 82 | os 6 no build: Old Forge; Rua dos Armeiros (#66, #71, #76); Artisan Quarter (#78) e Royal Arsenal (#83) com arte própria (#75, #79, #84); **Arcane Foundry** com o medidor de carga dos altares (#97) e **Grand Forge** com as rotas e os lotes do Mensageiro (#GF), as duas com arte emprestada; managers e Império (#65) | arte das estações da Foundry e da Grand Forge (Tripo, aval por lote); importados da Foundry na Grand Forge e a Carta (`BALANCE.md` §41, desvios 1 e 16) |
+| 35–45 produtos | 85 | 38 de 38 vendáveis do catálogo em jogo: Old Forge 5, Row 7, Quarter 7, Arsenal 6, Foundry 7 (#97), Grand Forge 6 (#GF) | ícones próprios dos insumos novos (cristal bruto, lingote rúnico; os da Grand Forge) |
+| Workers | 86 | Old Forge (13), Ferraz e Vulcana (Row), Dourado e Lúcia (Quarter), Cadetes e Matias (Arsenal), Aprendizes e Ísis (Foundry), Estrela e Félix, o Mensageiro (Grand Forge); managers 2–5 dos 6 (Sibila e Aurélio) | arte da Vulcana e do herói; Félix com folha própria |
+| Quality | 92 | 4 níveis, níveis II–V, golpe, técnica, oficiais, Masterwork; liga na Row, lapidação no Quarter (#78), peça energizada na Foundry (#97) e bênção da forja na Grand Forge (#GF) | conferir com jogador real |
+| Orders | 86 | Orders 2.0 (#60); encomendas dos 6 distritos (Amara, Tibério, Zélia, Kael; a Royal nunca vira Common) | V27 (Event e vagas) |
+| Royal Contracts | 84 | os 12 em dados abrem no build (os da Foundry e da Grand Forge entram com elas); 2ª vaga pela `mesa_real`; Charters do Arsenal, da Foundry e a Carta aceitam contrato ou Royal | contratos que andam no bot (hoje a lista oferece o 1º não concluído; §41 achado 15) |
+| Blueprints | 88 | 19 do Old Forge + 14 por distrito nos outros 5 (#83, #97, #GF) | conferir a fila com jogador real |
+| Masterworks | 86 | 60 de 60 nos 6 distritos, Hall por distrito; condições novas de peças energizadas, sequência estável, importados, lotes e Charters | bot F2P que golpeia (portão "1ª em até 4 h") |
+| Collection | 86 | marcos dos 6 distritos | conferir com jogador real |
+| Reputation | 83 | Renome 10 níveis do Império (todo distrito conta, #65); o 8 e o 9 abrem o conteúdo da Foundry e da Grand Forge (Renome 9 em 4.200, desvio); F2P chega ao 2/3/4 em 0:51 / 1:41 / 3:11 (`BALANCE.md` §30.6) | calibrar 5–10 com a Carta (§41 achado 16) |
 | Daily / Weekly / Achievements | 90 | 32 diárias, 17 semanais, 102 conquistas, login de 7 dias; derivadas do estado com retroativo (#70) | pool C das diárias, conquistas de 3/6 distritos e 30/60 obras (esperam conteúdo) |
 | Events (LiveOps) | 72 | 10 `EventDef`, 9 rodando; pontos de todo distrito (#65); missão de contrato na Royal Week (#70) | V27 (Event disputa vagas); o 10º evento |
 | Pass | 50 | 30 níveis × 600 XP, temporada de 35 dias, trilha free com RESGATAR; premium no dado, desligado (#56) | premium na Wave E (preço = decisão) |
@@ -154,14 +154,14 @@ Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-16, 
 | IAP | 35 | núcleo com estados e recibos, loja falsa, Pacote do Mestre, restaurar compras (#58) | pacote Unity IAP (aval de download) |
 | Analytics | 45 | `Telemetria` com fila até o consentimento, esquema v1, exceções (#53) | provedor remoto (P8) |
 | RemoteConfig | 47 | JSON local com travas no núcleo, chave mestra dos anúncios, cache, HTTP desligado (#53); trava do `QualidadeEvento` (#63) | provedor remoto (P8); `econsim --rc` |
-| Save | 90 | Save 2.0 + schema 3; multi-distrito; linhas opcionais da bancada configurável e das famílias de cliente (#78) | cloud save (opcional) |
+| Save | 92 | Save 2.0 + schema 3; multi-distrito; linhas opcionais da bancada, das famílias, das cotas, do medidor dos altares e das rotas e lotes (#78, #83, #97, #GF) | cloud save (opcional) |
 | Release pipeline | 55 | AAB assinado por env, `verify release`, 16 KB, API 36 | chave real (aval), Unity no CI, release automatizada |
 | Arte final | 72 | estações do Old Forge, da Row (#75), do Quarter (#79) e do Arsenal (#84), ícones de insumo (#79), elenco 1,5× mais nítido (#81); **programa de arte** (`AUDITORIA_VISUAL.md`): interface v2 com fontes OFL, molduras, botões com relevo, barras, fundo dos menus e ícones de prêmio pintados (#87), cofre e baú com vida (#88) | Vulcana e herói; HUD de cima e barra de baixo no estilo novo, fita nos títulos, selos de estado (itens 10–13 da auditoria); chão menos repetitivo |
 | Áudio final | 38 | 3 grupos, 15 efeitos sintetizados, mix com prioridade, orçamento de vozes e distância (#59) | ouvir no POCO; banco de sons real + 5 músicas |
 | Store assets | 62 | marca v2 (#86): ícone A3 (adaptativo, legado, redondo, 512 da loja), logo C2 na abertura e na feature graphic; **8 screenshots × pt/en/es** com a interface v2 (#92); 37 criativos, ASO pt/en/es | vídeo; 2ª sequência de screenshots e teste de ícones (G-UA-03, na Play Console) |
-| **Média** | **~66** | | |
+| **Média** | **~72** | | |
 
-## 9. Retomada (handoff 2026-10-15, pausa pedida pelo Vinicius)
+## 9. Retomada (atualizada em 2026-10-21)
 
 Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões V9–V29 (§4).
 
@@ -181,18 +181,18 @@ Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões
 
 **Programa de arte (pedido de 2026-10-16, `docs/AUDITORIA_VISUAL.md`):** etapas 1–6 feitas: auditoria (#77), nitidez (#81), marca v2 com a escolha do Vinicius, A3 no ícone e C2 no logo (#86), interface v2 (#87) e recompensa com vida (#88), sempre com build Windows e fotos antes/depois. Sobra da auditoria para uma leva de arte: HUD de cima e barra de baixo, fita nos títulos, selos de estado, rótulos do mundo, chão. Etapa 7: POCO **só com "pode testar"**, depois PR final.
 
-**PAUSA 2026-10-16 ~12:25 (PC desligado; retomar daqui).** Na `main` desde a última retomada: #86 marca v2, #87 interface v2, #88 recompensa com vida, #89 placar, #90 e #91 (4 mutações antigas e cabeçalho dos painéis), #92 **screenshots da loja** (8 × pt/en/es em `arte/loja/screenshots/`, build sem Development via `Setup.BuildWindowsLoja`, `client/tools/loja_screenshots.py`). Branches no GitHub, nenhuma na `main`:
-- `feat/grand-forge` (6c239cc): raia **concluída** — testes 546/546, 43/43 mutações mortas, ao byte nos distritos 1–4; índice 4 provisório (Arsenal → Grand Forge). Sem a Foundry a produção fica em 72:17 e a sequência morta em 16 (fora do portão 55–70 / 15): **só integrar depois da Foundry**, com índice 5, Foundry → Grand Forge, e REMEDIR (`BALANCE.md` §41; 12 desvios "revisar" listados lá).
-- `feat/arcane-foundry`: raia **interrompida** pela pausa (último commit no GitHub; o worktree `.claude/worktrees/agent-afffc38848184129d` pode ter um commit WIP local a mais: `git -C <worktree> log` e push). Estado (38f3385, no GitHub): distrito, medidor de carga, bot, save, validator, view, econsim, 17 testes e BALANCE §40 prontos; `verify.sh quick` 547 testes; distritos 1–4 ao byte. Medido: produção completa F2P 62:18, renda 126.575/min (alvo 129.600), encomendas 11,5%, Charter Ideal 302 min, Forçado 1,05× (F2P) / 1,10× (Ideal) o Estável — mas o Ideal a 150 min ganha 1,24× no Forçado (achado, revisar). Falta: rodar de novo as mutações `af-` (parou em 20/46, as 20 mortas), uma passada no `ArcaneTests` (3 laços de espera limitados depois da rodada), preencher o §40.5; depois integrar (índice 4) e só então a Grand Forge.
-- `fix/mutantes-antigas-2`: trechos de mais 3 mutações que o código deixou para trás (`fila-trava-na-frente`, `wk-load-depois-da-pilha`, `bp-tecnica-zero`); rodar `mutantes.py --so` nas 3 e abrir o PR.
-- **Arte da Grand Forge (Tripo):** 10 imagens já geradas no Nano Banana 2 (grátis) no histórico do Tripo (perfil do Chrome logado = "Browser 4" na lista do Claude in Chrome; os outros perfis estão deslogados): sinos, cratera estelar, forja estelar, fundição de estátuas, cais, pátio de exportação, forja de síntese, bancadas de relicários, coroas e panóplia. Falta escolher, gerar os modelos HD (45 cr cada, ~450) e exportar; **neste perfil o download não caiu em `Downloads`** (conferir a pasta de download/aviso de vários downloads do Chrome antes). Paleta: bronze, mármore e azul-noite (ART_BIBLE).
+**CONTINUAR DAQUI (2026-10-21).** Na `main` desde a pausa de 2026-10-16: #93 (docs da pausa), #94 (mais 3 mutações antigas voltam a morrer), #97 **Arcane Foundry** (distrito 5, índice 4: medidor de carga dos altares; 45/45 mutações `af-`) e #GF **Grand Forge** (distrito 6, índice 5: rotas e lotes do Mensageiro; Foundry → Grand Forge; MUT_GF). Os 6 distritos estão no build; distritos 1–5 ao byte; placar ~72%. Próximos, nesta ordem:
+1. **Grand Forge: importados da Foundry e a Carta** (`BALANCE.md` §41, desvios 1 e 16): pôr a lanterna arcana, o anel de cristal e a lâmina e o escudo rúnicos nas rotas e nas receitas (lâmina estelar, relicário, coroa e panóplia; `CONTEUDO_V1.md` §3.1) e recalibrar a Carta do Ideal (hoje 3 de 8 em 480 min porque o bot sobe a Mestra Sibila; com `--gerente 0`, 6 de 8).
+2. **Arte das estações da Foundry e da Grand Forge (Tripo):** as 10 imagens da Grand Forge (sinos, cratera estelar, forja estelar, fundição de estátuas, cais, pátio de exportação, forja de síntese, bancadas de relicários, coroas e panóplia) já estão geradas no Nano Banana 2 (grátis) no histórico do Tripo, perfil do Chrome logado = "Browser 4" na lista do Claude in Chrome. Os modelos HD custam ~45 créditos cada (~450): **pedir o aval do Vinicius por lote antes** (regra global). Nesse perfil o download do Chrome não caiu em `Downloads`: achar a pasta (ou o aviso de vários downloads) antes de exportar. A Foundry ainda não tem imagens. Paleta: bronze, mármore e azul-noite (ART_BIBLE).
+3. Leva de arte da HUD (sobras da auditoria: HUD de cima, barra de baixo, fita nos títulos, selos de estado, rótulos do mundo, chão).
+4. Áudio real (decidir a fonte), Store (vídeo), IAP (aval de download); POCO só com "pode testar".
 
-**Leva dos distritos 5 e 6 (em andamento, 2026-10-16):** raias `feat/arcane-foundry` (C-CORE-08, `Sim.Arcano.cs`, BALANCE §40, mutações af-) e `feat/grand-forge` (C-CORE-09, `Sim.Exportacao.cs`, BALANCE §41, mutações gf-), brief no scratchpad do coordenador com as lições da leva 3–4 (transporte, Charter cedo, chaves de texto duplicadas, merge da `main` no fim). Integrar a Foundry primeiro (índice 4) e a Grand Forge depois (índice 5); depois a arte das estações deles no Tripo. Fora delas: 4 mutações antigas quebradas no `mutantes.py` (`enc-rodizio-repete-produto`, `enc-validator-item`, `ad-inter-tutorial`, `liveops-limiar-2x`) num PR à parte.
+**Leva dos distritos 5 e 6 (concluída em 2026-10-21: #97 e #GF):** raias `feat/arcane-foundry` (C-CORE-08, `Sim.Arcano.cs`, BALANCE §40, mutações af-) e `feat/grand-forge` (C-CORE-09, `Sim.Exportacao.cs`, BALANCE §41, mutações gf-), brief no scratchpad do coordenador com as lições da leva 3–4 (transporte, Charter cedo, chaves de texto duplicadas, merge da `main` no fim). Integrar a Foundry primeiro (índice 4) e a Grand Forge depois (índice 5); depois a arte das estações deles no Tripo. Fora delas: 4 mutações antigas quebradas no `mutantes.py` (`enc-rodizio-repete-produto`, `enc-validator-item`, `ad-inter-tutorial`, `liveops-limiar-2x`) num PR à parte.
 
 **Fila das próximas levas (ordem):**
 1. ~~Distritos 3 e 4 + pendências da Row~~ (#76, #78, #83) e ~~a arte deles~~ (#75, #79, #84).
-2. Integrar os distritos 5 e 6 (acima) e a arte das estações deles (Tripo); Vulcana e herói.
-3. Leva de arte da HUD (sobras da auditoria) e as 4 mutações quebradas.
+2. ~~Integrar os distritos 5 e 6~~ (#97, #GF); importados da Foundry na Grand Forge e a Carta; a arte das estações deles (Tripo, aval por lote); Vulcana e herói.
+3. Leva de arte da HUD (sobras da auditoria); ~~as mutações quebradas~~ (#90, #91, #94).
 4. Áudio real: decidir a fonte com o Vinicius (gerado por IA com licença comercial do plano, ou banco CC0); depois 5 músicas + banco de efeitos.
 5. Store: 2 × 8 screenshots pelos presets, vídeo, feature graphic com quadro novo; IAP com o pacote Unity IAP (aval de download).
 6. POCO (o coordenador pede ao Vinicius quando precisar) e loja: a conta Google Play está em andamento em outro projeto.

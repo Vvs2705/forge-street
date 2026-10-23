@@ -166,10 +166,11 @@ namespace FS.Tests
                 Assert.GreaterOrEqual(imp.FundoGanho - g0, 0L);
                 if (!caro) continue;
                 cor.Ins[colar] = cor.InCap; cor.Out = cor.OutCap;   // as rotas param (a coroa cheia e parada): o que passou do minuto foi perdoado
-                double todos = imp.Abertos.Sum(o => imp.FundoPorSegundo(o)) * 60.0;
+                // os inativos (o ativo nao credita fundo); sem o perdao o Quarter nao credita nada nos 2 min: 2 x (todos - porMin)
+                double todos = imp.Abertos.Where(o => o != s).Sum(o => imp.FundoPorSegundo(o)) * 60.0;
                 long g1 = imp.FundoGanho;
                 for (float t = 0f; t < 120f; t += Dt) { s.Tick(Dt, 0f, 0f); imp.Fundo(Dt); }
-                Assert.GreaterOrEqual(imp.FundoGanho - g1, 0.85 * 2 * todos, "2 min: o fundo de todos volta (a divida nao passa do minuto)");
+                Assert.GreaterOrEqual(imp.FundoGanho - g1, 2 * todos - porMin, "2 min: o fundo de todos volta, o do Quarter inclusive (a divida nao passa do minuto)");
             }
         }
 
