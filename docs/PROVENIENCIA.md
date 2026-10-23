@@ -603,7 +603,7 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 ## 19. Efeitos sonoros CC0 da Kenney (feat/audio-kenney, 2026-10-23)
 
 - **Licença:** Creative Commons Zero (CC0 1.0, domínio público; crédito opcional), conforme o `License.txt` de cada pacote ("Created/distributed by Kenney (www.kenney.nl)"). Uso comercial livre, sem atribuição obrigatória; o jogo credita "Kenney (kenney.nl)" mesmo assim, quando houver tela de créditos.
-- **Origem:** pacotes oficiais baixados de kenney.nl (página de cada pacote) com o aval do Vinicius de 2026-10-23 ("…O DOWLOAD DE TUDO QUE FOR NECESSARIO"); zips fora do git, em `%LOCALAPPDATA%\Temps_audio_kenney`:
+- **Origem:** pacotes oficiais baixados de kenney.nl (página de cada pacote) com o aval do Vinicius de 2026-10-23 ("…O DOWLOAD DE TUDO QUE FOR NECESSARIO"); zips fora do git, em `%LOCALAPPDATA%\Temp\fs_audio_kenney`:
   - `kenney_impact-sounds.zip` 800 850 bytes · `029d734af1582474edf3a694d1b0cebc97c1c152f2f39fa34d4c2bafc5de77f8`
   - `kenney_interface-sounds.zip` 834 536 bytes · `f2193d072726d6758a5f7871b2dcc54dcce0d5c35c6f0a62f92549b327c81232`
   - `kenney_rpg-audio.zip` 964 837 bytes · `6dbeaf8544da958d8f2adcb4a4a4b76c1ade34a05f8ab9edccd327da7375f38b`
