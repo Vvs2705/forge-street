@@ -61,10 +61,10 @@ namespace FS
             _worker = worker;
             _bar = Art.Node(safe, "Menu", new Vector2(0.02f, 0.005f), new Vector2(0.98f, Band));
             // A-UI-16: borda creme e face marrom como as pilulas da HUD (era o azul #2C3550); com compra pronta a face fica ouro
-            Button b = Art.NewButton(_bar, Loc.T("menu.melhorias"), 44, Art.HudEdge, new Vector2(0.18f, 0.08f), new Vector2(0.82f, 0.92f), Toggle);
+            Button b = Art.NewButton(_bar, Loc.T("menu.melhorias"), 48, Art.HudEdge, new Vector2(0.18f, 0.08f), new Vector2(0.82f, 0.92f), Toggle);
             _melhorias = (RectTransform)b.transform;
             _btn = Art.Panel(b.transform, "Face", Art.HudFace, Vector2.zero, Vector2.one);
-            _btn.rectTransform.offsetMin = new Vector2(5f, 5f); _btn.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            _btn.rectTransform.offsetMin = new Vector2(7f, 7f); _btn.rectTransform.offsetMax = new Vector2(-7f, -7f);   // auditoria item 12: o botao principal tem o aro de ouro mais grosso
             _btn.raycastTarget = false;
             _btn.transform.SetAsFirstSibling();   // por baixo da legenda
             b.targetGraphic = _btn;               // o toque escurece a face, nao so a borda
@@ -120,9 +120,7 @@ namespace FS
             r.sizeDelta = new Vector2(62f, 62f); r.anchoredPosition = new Vector2(-14f, -10f);
             Image bd = r.gameObject.AddComponent<Image>();
             bd.sprite = Art.Disc(); bd.color = Art.Bad; bd.raycastTarget = false;
-            Image ring = Art.Node(r, "Aro", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
-            ring.sprite = Art.Ring(); ring.color = Color.white; ring.raycastTarget = false;
-            ring.rectTransform.offsetMin = new Vector2(-3f, -3f); ring.rectTransform.offsetMax = new Vector2(3f, 3f);
+            Art.Aro(r);
             Text n = Art.Outlined(Art.NewText(r, "N", 36, Vector2.zero, Vector2.one), 1.5f);
             n.fontStyle = FontStyle.Bold;
             r.gameObject.SetActive(false);

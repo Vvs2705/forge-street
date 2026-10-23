@@ -111,6 +111,7 @@ namespace FS
                 _pontos[k] = Art.Node(b.transform, "Ponto", new Vector2(1f, 1f), new Vector2(1f, 1f)).gameObject.AddComponent<Image>();
                 _pontos[k].rectTransform.sizeDelta = new Vector2(30f, 30f); _pontos[k].rectTransform.anchoredPosition = new Vector2(-6f, -6f);
                 _pontos[k].sprite = Art.Disc(); _pontos[k].color = Art.Bad; _pontos[k].raycastTarget = false;
+                Art.Aro(_pontos[k].transform);
             }
 
             // B-CORE-07: o rodape, a esquerda do Fechar, abre o painel de Projetos (Blueprints vem de marcos e conquistas, como as metas)

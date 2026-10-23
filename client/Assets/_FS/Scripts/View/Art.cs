@@ -18,9 +18,10 @@ namespace FS
             Player = Hex(0xFFE08A), Worker = Hex(0x9ED0C8), Client = Hex(0xE8C9A8), Bubble = Hex(0xF4F6FA), Good = Hex(0x4CD964);
         /// <summary>Ouro (ART_BIBLE s2: base #E0B23A, sombra #9C7520, luz = Accent): luxos da fase 3.</summary>
         public static readonly Color Gold = Hex(0xE0B23A), GoldDark = Hex(0x9C7520);
-        /// <summary>HUD numa paleta so (A-UI-16, D7 do BACKLOG_V07): face marrom e borda creme em pilulas, botoes e avisos. O Bg azul
-        /// fica so no fundo da camera (mundo).</summary>
-        public static readonly Color HudFace = Hex(0x2A1E14), HudEdge = Hex(0xF2D9A0);
+        /// <summary>HUD numa paleta so (A-UI-16, D7 do BACKLOG_V07): face e borda em pilulas, botoes e avisos. O Bg azul fica so no fundo
+        /// da camera (mundo). Sobra da auditoria (itens 11-12): couro com aro de ouro, a linguagem dos paineis v2 (era marrom-escuro liso
+        /// #2A1E14 com borda creme #F2D9A0).</summary>
+        public static readonly Color HudFace = Hex(0x4A2E17), HudEdge = Hex(0xE0B23A);
 
         /// <summary>Cor por Item (handle do distrito ativo; Distrito troca). Old Forge: a de sempre.</summary>
         public static Color[] ItemColor = CoresOldForge;
@@ -254,6 +255,83 @@ namespace FS
             conta = Outlined(NewText(bar.transform, "Conta", tamConta, Vector2.zero, Vector2.one), 2f);
             conta.fontStyle = FontStyle.Bold; conta.horizontalOverflow = HorizontalWrapMode.Overflow;
             return cheio;
+        }
+
+        /// <summary>
+        /// Sobra da auditoria (item 10): fita 9-fatias com as pontas em V e o relevo da Moldura (filete claro em cima, sombra embaixo,
+        /// aro escuro), tingida pela cor do Image. Os selos de estado ("NO HALL", "BLOQUEADO") deixam de ser pilula lisa.
+        /// </summary>
+        public static Sprite Fita()
+        {
+            if (Cache.TryGetValue("fita9", out Sprite s) && s != null) return s;
+            const float h = Side * 0.5f, v = 12f;   // meia altura; fundo do V nas pontas (px)
+            var tex = new Texture2D(Side, Side, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var px = new Color32[Side * Side];
+            for (int y = 0; y < Side; y++)
+                for (int x = 0; x < Side; x++)
+                {
+                    float dy = Mathf.Abs(y + 0.5f - h), n = v * (1f - dy / h);   // o V entra mais no meio da altura
+                    float dx = Mathf.Min(x + 0.5f - n, Side - (x + 0.5f) - n) * 0.9f;   // distancia ate a ponta (inclinada)
+                    float dentro = Mathf.Min(dx, h - 1f - dy);
+                    float corpo = Mathf.Lerp(0.5f, y + 0.5f > h ? 1f : 0.72f, Mathf.Clamp01(dentro - 2.5f));
+                    byte c = (byte)(255f * corpo);
+                    px[y * Side + x] = new Color32(c, c, c, (byte)(255f * Mathf.Clamp01(dentro + 0.5f)));
+                }
+            tex.SetPixels32(px);
+            tex.Apply(false, true);
+            s = Sprite.Create(tex, new Rect(0, 0, Side, Side), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(20, 20, 20, 20));
+            Cache["fita9"] = s;
+            return s;
+        }
+
+        static float Segmento(float x, float y, float ax, float ay, float bx, float by)
+        {
+            float vx = bx - ax, vy = by - ay, t = Mathf.Clamp01(((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy));
+            float qx = x - ax - t * vx, qy = y - ay - t * vy;
+            return Mathf.Sqrt(qx * qx + qy * qy);
+        }
+
+        /// <summary>Visto (selo de feito).</summary>
+        public static Sprite Check() => Get("check", (x, y) => Mathf.Min(Segmento(x, y, -0.7f, 0.05f, -0.2f, -0.5f), Segmento(x, y, -0.2f, -0.5f, 0.75f, 0.6f)) < 0.2f);
+
+        /// <summary>Cadeado (selo de bloqueado): corpo e alca.</summary>
+        public static Sprite Lock() => Get("lock", (x, y) =>
+        {
+            bool corpo = Mathf.Abs(x) < 0.66f && y < 0.12f && y > -0.85f;
+            float d = Mathf.Sqrt(x * x + (y - 0.2f) * (y - 0.2f));
+            return corpo || y >= 0.12f && d < 0.56f && d > 0.32f;
+        });
+
+        /// <summary>Selo de estado (item 10): fita tingida com o icone a esquerda e o texto com contorno. Pintar com PintaSelo.</summary>
+        public static Image Selo(Transform parent, Vector2 anchorMin, Vector2 anchorMax, out Text texto)
+        {
+            Image f = Panel(parent, "Selo", MenuBar.Gray, anchorMin, anchorMax);
+            f.sprite = Fita(); f.raycastTarget = false;
+            Image ic = Node(f.transform, "Icone", new Vector2(0.06f, 0.18f), new Vector2(0.26f, 0.82f)).gameObject.AddComponent<Image>();
+            ic.preserveAspect = true; ic.raycastTarget = false;
+            var sombra = ic.gameObject.AddComponent<Shadow>();   // o icone branco descola da fita clara (ouro, verde)
+            sombra.effectColor = new Color(0f, 0f, 0f, 0.55f); sombra.effectDistance = new Vector2(2f, -2f);
+            texto = Outlined(NewText(f.transform, "Texto", 24, new Vector2(0.24f, 0f), new Vector2(0.94f, 1f)), 2f);
+            texto.fontStyle = FontStyle.Bold; texto.color = Color.white;
+            texto.resizeTextForBestFit = true; texto.resizeTextMinSize = 14; texto.resizeTextMaxSize = 24;
+            return f;
+        }
+
+        /// <summary>Aro branco em volta do ponto de notificacao (auditoria item 10; antes so o badge do menu tinha): descola do botao.</summary>
+        public static void Aro(Transform ponto)
+        {
+            Image ring = Node(ponto, "Aro", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();
+            ring.sprite = Ring(); ring.color = Color.white; ring.raycastTarget = false;
+            ring.rectTransform.offsetMin = new Vector2(-3f, -3f); ring.rectTransform.offsetMax = new Vector2(3f, 3f);
+        }
+
+        /// <summary>Cor, texto e icone do selo (feito = visto, pronta = estrela, falta = cadeado).</summary>
+        public static void PintaSelo(Image selo, Text texto, string s, Color cor, Sprite icone)
+        {
+            selo.color = cor;
+            texto.text = s;
+            Image ic = selo.transform.Find("Icone").GetComponent<Image>();
+            ic.sprite = icone; ic.color = Color.white;
         }
 
         /// <summary>Arte pintada de interface: Resources/UI/&lt;nome&gt;.png como Sprite (cache); null sem o arquivo.</summary>
