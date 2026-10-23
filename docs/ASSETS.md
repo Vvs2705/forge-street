@@ -473,6 +473,20 @@ Resolve os itens 2, 3, 4, 7 e 8 da `AUDITORIA_VISUAL.md` (painéis chapados, fon
 
 **Ligação no jogo:** os `arte:` da Foundry em `Distritos.ArcaneFoundry.cs` trocam a arte emprestada (crisol do Quarter nas cubas e nos fornos rúnicos, mesa do gravador do Arsenal nos 7 altares e no cadinho, gemas e ouro nos depósitos) pela própria; o `DistritosTests.Arte_TodaEstacaoTemAFolha` (§19) cobre as folhas. A Vulcana (`wk_vulcana`, `Distritos.cs`) troca a folha do Fundidor pela `vulcana`, com `WorldView.CharScale` **1,03** pela conta do §11: Idle S quadro 0 com 78 px a ppu 118,9 = 0,656 m, alvo 1,15 (viseira erguida, como o fundidor). O `fundidor` fica no repositório para o Smelter dos distritos seguintes.
 
+## 21. Herói em 3 estágios pelo Renome (B-ART-05, 2026-10-23, 0 crédito)
+
+Decisão do ticket (crédito ou adereço no Blender): **adereço no Blender**, 0 crédito. O herói continua o mesmo modelo (`arte/tripo/ferreiro`) e os mesmos clipes (`client/Builds/anims_sets/ferreiro`: Idle, Walking, Cheering); o que muda é o que vai na cabeça, preso ao osso `mixamorig:Head` pelo `render_sprites.py --attach` (que agora aceita vários `--attach`/`--bone`, um por adereço):
+
+| estágio | Renome do Império | adereço (`client/tools/props_blender.py`) | folhas |
+|---|---|---|---|
+| 1 | 0–2 | — (a bandana vermelha de sempre) | `ferreiro`, `ferreiro_mochila` |
+| 2 | 3 (Mestre artesão) | `chapeu_couro`: chapéu de couro de aba larga (0,47 m), fita e fivela de latão | `ferreiro_e2`, `ferreiro_e2_mochila` |
+| 3 | 4+ (Fornecedor do reino) | `barrete_mestre`: barrete alto de veludo azul com faixa e broche de ouro e pluma vermelha | `ferreiro_e3`, `ferreiro_e3_mochila` |
+
+Render com os parâmetros do `ferreiro` (`--size 192 --max-frames 21 --scale 164.82 --pivot-y 53.4`, 4 direções), então o tamanho e o pivô são iguais e a troca de folha não pula; nas `_mochila` a mochila vai junto (`--attach chapeu --bone mixamorig:Head --attach mochila_ferreiro --bone mixamorig:Spine2`). Silhuetas (preto, alfa ≥ 128, Idle quadro 0 nas 4 direções): o disco da aba larga no estágio 2 e o barrete alto com a pluma no 3 separam dos três de longe; a folha de conferência fica em `arte/auditoria/2026-10-23/heroi_estagios.jpg`.
+
+**Ligação no jogo:** `RenomeDefs.EstagioHeroi(nivel)` (0/1/2 pelo Renome do Império) e a `WorldView` troca a folha do corpo pelo estágio e pela mochila (`FolhasHeroi`; folha que faltar repete a do estágio de baixo), com a poeira da troca. Teste: `RenomeTests.Heroi_TresEstagiosPeloRenome_ComAsFolhas`. O cinto do estágio 4 (Renome 5) e o uniforme recolorido ficam para depois (GDD §151: o resto entre gameplay e cosmético).
+
 ## 22. Arte dos produtos da loja (auditoria visual item 5, 2026-10-23, 0 crédito)
 
 A "loja vazia" da `AUDITORIA_VISUAL.md` (o Pacote do Mestre só em texto, sem arte nem selo) ganha uma arte pintada por produto à esquerda do cartão e um selo dourado: **PARA SEMPRE** no Pacote do Mestre (não-consumível) e **TEMPORADA** nos Passes. Imagens do Tripo (Nano Banana 2, 1:1, grátis), recortadas pelo `client/tools/icones_premio.py` (o GrabCut da marca v2) para `Resources/UI/<id do produto>.png` (256 px); a `PainelLoja` lê pelo ID (`Art.UI`), e sem o arquivo o cartão fica como antes. Fontes versionadas em `arte/ui/loja/fonte_<id>.png` (e `escolhidas.jpg`). Teste: `ComprasTests.Loja_TodoProdutoTemArte`.

@@ -20,6 +20,7 @@ PAL = {
     "vidro": (0x3F5E5A, 0x6A8F88), "carvao": (0x2E2B2A, 0x4A4644), "agua": (0x2F5F85, 0x4F86B8),
     "chama": (0xFF7A1F, 0xFF7A1F), "nucleo": (0xFFD166, 0xFFD166),
     "couro_esc": (0x5C3A1E, 0x7E5230), "correia": (0x3E2412, 0x5C3A1E),   # aba e alcas da mochila (tons do icone melhoria_mochila)
+    "veludo": (0x2B3A6B, 0x45579A), "pluma": (0xB8282E, 0xE04848),          # barrete do mestre (B-ART-05: azul real, pluma vermelha)
 }
 EMISSIVE = {"chama", "nucleo"}
 
@@ -296,8 +297,30 @@ def mochila_ferreiro(p):
         p.add(box(0.05, 0.014, 0.036), "ouro", at=(x, -0.095, 0.545), rot=(-19.5, 0, 0), bevel=0.005)
 
 
+def chapeu_couro(p):
+    """B-ART-05, estagio 2 do heroi (Renome 3, Mestre artesao): chapeu de couro de aba larga por cima da bandana. Coordenadas do FERREIRO
+    em repouso (arte/tripo/ferreiro: cabeca de z 0,69 a 0,98, larga ~0,33 m em z 0,85, centro x 0, y ~0,02; frente = -Y). O render_sprites.py
+    --attach o prende ao osso mixamorig:Head. De cima, a aba (0,47 m) e' o que muda a silhueta: o disco bem maior que a cabeca."""
+    p.add(cyl(0.155, 0.13, 0.135, segs=16), "couro", at=(0.01, 0.02, 0.95), bevel=0.02)            # copa: z 0,885-1,015
+    p.add(cyl(0.235, 0.026, segs=20), "couro_esc", at=(0.01, 0.02, 0.89), bevel=0.01)                # aba
+    p.add(cyl(0.158, 0.035, segs=16), "correia", at=(0.01, 0.02, 0.915), bevel=0.004)                # fita
+    p.add(box(0.05, 0.016, 0.038), "ouro", at=(0.01, -0.14, 0.915), bevel=0.005)                     # fivela na frente
+
+
+def barrete_mestre(p):
+    """B-ART-05, estagio 3 do heroi (Renome 4, Fornecedor do reino): o uniforme de mestre pela cabeca — barrete alto de veludo azul com
+    faixa de ouro e uma pluma vermelha subindo atras. Mesmas coordenadas e osso do chapeu_couro; de cima, alto e com a pluma saindo."""
+    p.add(lathe([(0.15, 0.86), (0.162, 0.93), (0.172, 1.02), (0.15, 1.08), (0.08, 1.105)], segs=16), "veludo", at=(0.01, 0.02, 0), bevel=0)   # copa: z 0,86-1,105
+    p.add(cyl(0.168, 0.05, segs=16), "ouro", at=(0.01, 0.02, 0.885), bevel=0.006)     # faixa de ouro na base
+    p.add(cyl(0.19, 0.022, segs=18), "veludo", at=(0.01, 0.02, 0.865), bevel=0.008)                         # aba curta
+    p.add(ball(0.045, 0.02, 0.045), "ouro", at=(0.01, -0.152, 0.89), bevel=0)                            # broche na frente
+    for k, (y, z, rx) in enumerate(((0.10, 1.02, 30), (0.15, 1.12, 50), (0.17, 1.22, 70))):          # pluma: 3 gomos curvando para tras
+        p.add(ball(0.05 - 0.008 * k, 0.03, 0.10), "pluma", at=(0.07, y, z), rot=(rx, 0, 0), bevel=0)
+
+
 PROPS = {"barril": barril, "caixote": caixote, "sacos": sacos, "tocha": tocha, "prateleira": prateleira,
-         "suporte_armas": suporte_armas, "lenha": lenha, "balde": balde, "mochila_ferreiro": mochila_ferreiro}
+         "suporte_armas": suporte_armas, "lenha": lenha, "balde": balde, "mochila_ferreiro": mochila_ferreiro,
+         "chapeu_couro": chapeu_couro, "barrete_mestre": barrete_mestre}
 
 
 def export(name, p, out):
