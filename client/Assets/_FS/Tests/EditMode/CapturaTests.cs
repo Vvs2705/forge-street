@@ -38,7 +38,7 @@ namespace FS.Tests
                 Assert.IsNull(Captura.Valor(a, "-record"), p.Nome + ": a pasta vem da linha de comando");
                 Assert.Greater(F(Captura.Valor(a, "-recordsec")), 0f, p.Nome);
             }
-            Assert.AreEqual(9, nomes.Count);   // os 9 do G-UA-02 que nao dependem de Wave
+            Assert.AreEqual(12, nomes.Count);   // os 9 do G-UA-02 que nao dependem de Wave + os 3 da sequencia B (G-UA-03)
         }
 
         [Test]
