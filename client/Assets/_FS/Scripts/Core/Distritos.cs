@@ -257,9 +257,9 @@ namespace FS.Core
 
         /// <summary>C-CORE-05 (CONTEUDO_V1 §6): a Fundidora (Smelter) que opera a fornalha de liga (o Requer, Equipe.Ritmo: 6 -> 4 s, +3%/nivel) e
         /// da q +15/+25/+30 nas montagens (Station = a familia). Contratacao e niveis do catalogo (1.800 x 1,6^(L-2)), em ouro, como a equipe do
-        /// Old Forge. C-ART-13: a folha do Fundidor (Lote 5A).</summary>
+        /// Old Forge. Folha propria `vulcana` (Tripo, ASSETS.md §20; era a do Fundidor do Lote 5A).</summary>
         static readonly WorkerDef Vulcana = new WorkerDef("wk_vulcana", "Vulcana", WorkerRole.Smelter, Specialty.Armor, ArmorersRowId, "montagem", null, -1,
-            7200, "fornalha_liga", new long[] { 1800, 2880, 4610, 7375, 12000, 19000, 30000, 48000, 77000 }, "fundidor", "liga", "qualidade");
+            7200, "fornalha_liga", new long[] { 1800, 2880, 4610, 7375, 12000, 19000, 30000, 48000, 77000 }, "vulcana", "liga", "qualidade");
 
         public static readonly DistrictDef ArmorersRow = new DistrictDef
         {
