@@ -14,7 +14,7 @@
 
 ### 1.1 O que o jogo grava (fica no aparelho; nada vai para servidor nosso)
 
-O Forge Street não tem servidor, conta, login, chat, compra nem SDK de analytics ou de crash. O jogo em si não transmite dado nenhum.
+O Forge Street não tem servidor, conta, login nem chat. **Desde 2026-10-23 (P8 = Unity Gaming Services, §1.5)** o jogo manda eventos de analytics (só 18+ que aceitou) e baixa o RemoteConfig, depois da tela de idade; a compra (Unity IAP) só liga com a chave da Play (`docs/IAP.md` §5.1). Revisar o §2 antes do Closed.
 
 | Dado | Onde fica | Quando grava | Conteúdo | Sai do aparelho? |
 |---|---|---|---|---|
@@ -42,6 +42,14 @@ Peças (`LEVELPLAY.md` §1): Ads Mediation `com.unity.services.levelplay` 9.5.1,
 - **O que coletam**, pela tabela oficial de cada um (detalhe no §2.2): localização aproximada (do IP), identificadores do aparelho (o ID de publicidade só de quem tem 18+), interações **dentro do anúncio**, diagnóstico do app e, no Unity Ads, "identificadores pessoais" para funcionamento, "histórico de compras" e tempo de uso do app (este só com o *Acquire Optimization* ligado no painel do Unity Ads).
 - **O que o jogo não manda:** sem `userId` no `Init`, sem `SetSegment`, sem receita por impressão encaminhada, sem a faixa de idade.
 
+### 1.5 Unity Gaming Services: Analytics e Remote Config (P8, 2026-10-23)
+
+- **Projeto:** "Forge Street" no Unity Cloud, organização `vsouz009`, ambiente `production` (`cloudProjectId` 05962639-e02d-4f7c-8293-0ff2089e5144 no `ProjectSettings.asset`). Pacotes `com.unity.services.analytics` 6.3.0 e `com.unity.remote-config` 4.2.5 (`Ugs.cs`).
+- **Quando:** nada inicia antes da resposta da tela de idade (`Game.Liberar`). Fora do Editor e do `-testsession`.
+- **Analytics:** só com `Privacidade.Flags(...).Consentimento` = 18+ que aceitou. Liga o `AnalyticsIntent` do `EndUserConsent` e manda o evento `fs_evento` (nome, `a`, `b`, segundos de jogo e o `id@versao` do config; o ID de transação nunca). O SDK acrescenta os eventos padrão dele (sessão, aparelho, `newPlayer`) e um **ID de instalação**. Menor de 18 e quem recusou: nada sai, só o diário local.
+- **Remote Config:** baixa para todos depois da tela de idade (é funcionamento do jogo, não analytics), com o **ID de instalação** e o IP. O JSON vai ao cache e vale na próxima abertura, com as travas do núcleo.
+- **Data Safety (§2.2, a refazer):** "Atividade no app / interações" e "Identificadores do aparelho ou outros IDs" passam a ser coletados também pelo jogo, finalidade "Análise" (analytics) e "Funcionalidade do app" (config); compartilhamento = não (a Unity é operadora); criptografado em trânsito = sim.
+
 ### 1.3 Permissões do manifesto mesclado (lista do `release_check`, APK 0.6.0)
 
 | Permissão | Quem traz | Para quê | Efeito na loja |
@@ -59,7 +67,7 @@ Não há localização, contatos, armazenamento compartilhado, câmera, microfon
 
 ### 1.4 Outros caminhos de saída a conferir
 
-- **Serviços da Unity:** Analytics, Cloud Diagnostics/Crash Reporting, Performance Reporting, Purchasing e Unity Ads legado estão desligados (`UnityConnectSettings.asset`, todos `m_Enabled: 0`; `cloudProjectId` vazio). **Pendente:** o `ProjectSettings.asset` tem `submitAnalytics: 1` (estatísticas de hardware do motor). Não achei doc do Unity 6 que diga o que ele envia hoje. Ação: desligar ou medir com captura de rede antes do Closed (decisão D-PRIV-8).
+- **Serviços da Unity:** os legados do `UnityConnectSettings.asset` (Analytics antigo, Cloud Diagnostics/Crash Reporting, Performance Reporting, Purchasing antigo e Unity Ads legado) continuam `m_Enabled: 0`; o Analytics e o Remote Config do UGS entram pelos pacotes novos (§1.5), e o `cloudProjectId` agora aponta para o projeto Forge Street. **Pendente:** o `ProjectSettings.asset` tem `submitAnalytics: 1` (estatísticas de hardware do motor). Não achei doc do Unity 6 que diga o que ele envia hoje. Ação: desligar ou medir com captura de rede antes do Closed (decisão D-PRIV-8).
 - **Backup do Android:** se o manifesto mesclado tiver `android:allowBackup="true"`, o próprio Android pode copiar o save e as configurações para a conta Google do jogador (serviço do sistema, não do jogo). Conferir no AAB (`bundletool dump manifest`) e citar na política (D-PRIV-9).
 - **Apps instalados:** o Unity Ads declara "não". Há relato de app com LevelPlay em que a Play exigiu "sim" por causa de `<queries>` no manifesto. Se o relatório de pré-lançamento acusar, comparar os `<queries>` do manifesto mesclado com a tabela do §2.2.
 
