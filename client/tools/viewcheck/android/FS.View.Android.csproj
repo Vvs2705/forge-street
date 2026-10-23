@@ -10,5 +10,10 @@
     <Compile Include="$(ProjClient)\Assets\_FS\Scripts\View\*.cs" />
     <!-- a API publica do LevelPlay nao muda por plataforma: a DLL compilada pelo Editor serve de referencia -->
     <Reference Include="$(ProjClient)\Library\ScriptAssemblies\Unity.LevelPlay.dll" Private="false" />
+    <!-- Unity IAP (LojaUnity.cs): no Editor o Unity.Purchasing.Security e' o SecurityStub, com a mesma API publica -->
+    <Reference Include="$(ProjClient)\Library\ScriptAssemblies\Unity.Purchasing.dll" Private="false" />
+    <Reference Include="$(ProjClient)\Library\ScriptAssemblies\Unity.Purchasing.Stores.dll" Private="false" />
+    <Reference Include="$(ProjClient)\Library\ScriptAssemblies\Unity.Purchasing.SecurityStub.dll" Private="false" />
+    <Reference Include="$(ProjClient)\Library\ScriptAssemblies\Unity.Purchasing.SecurityCore.dll" Private="false" />
   </ItemGroup>
 </Project>
