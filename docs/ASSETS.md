@@ -428,3 +428,22 @@ Resolve os itens 2, 3, 4, 7 e 8 da `AUDITORIA_VISUAL.md` (painéis chapados, fon
 | `premio_blueprint` | a half-unrolled blue blueprint paper scroll with a white technical drawing of a sword on it, tied with a brown leather string, crafting blueprint reward | 3 |
 
 **Fora desta etapa:** cabeçalho em fita nos títulos, selos de estado desenhados (item 10) e a barra de baixo com destaque de botão principal (item 12).
+
+## 19. Estações da Grand Forge (Tripo, 2026-10-23)
+
+10 estações × 45 = **450 créditos** (saldo 15 670 → 15 220). Ledger e SHA: `PROVENIENCIA.md` §17. Receita da §14 (imagem grátis Nano Banana 2 1:1 gerada em 2026-10-16, HD H3.1 Ultra 8 000 tris 2K, Privado, FBX Blender 2K) e render `--dirs 1 --size 256`, todas com yaw 0. Paleta do distrito: bronze, mármore e azul-noite (ART_BIBLE). Os crisóis de bronze continuam com a folha `crisol` e o minério de cobre com a `deposito_cobre`.
+
+| id | uso | assunto do prompt (+ `[P]` + `[I]`) | imagem | yaw |
+|---|---|---|---|---|
+| fundicao_sinos | fundição de sinos | abell foundry station: round clay casting pit with a glowing orange bronze mold, a big bronze bell hanging from a sturdy wooden beam above it, a long-handled iron ladle, small red lantern on the top-right corner | #1 | 0 |
+| cratera_estelar | depósito da cratera estelar | small star crater deposit: a shallow rocky crater rim filled with glowing night-blue meteorite rocks and tiny white star sparkles, a small pickaxe leaning on the rim | #3 | 0 |
+| forja_estelar | forja estelar | star-steel forge station: tall dark stone forge with a glowing deep blue and white fire, a night-blue metal hood with small star-shaped bronze rivets, a shining half-forged blade on a small anvil beside it, small red lantern on the top-right corner | #2 | 0 |
+| fundicao_estatuas | fundição de estátuas | statue foundry station: a white marble pedestal with a half-finished bronze knight statue on top, a small bronze pouring crucible on a brazier beside it, sculpting chisels on a wooden stand, small red lantern on the top-right corner | #1 | 0 |
+| cais | cais (importação do Mensageiro) | small wooden harbor dock station: short wooden pier platform with two mooring posts, stacked cargo crates with bronze bands, a coiled rope and a small night-blue pennant on a pole | #3 | 0 |
+| patio_exportacao | pátio de exportação | export yard station: wide stone loading platform with a sturdy wooden cart full of bronze-trimmed crates, a white marble milestone with a bronze compass emblem, a night-blue and bronze banner on a pole | #2 | 0 |
+| forja_sintese | forja de síntese | grand synthesis forge station: big ornate bronze anvil on a white marble base, a glowing golden crucible on top, four small bronze braziers around it, night-blue cloth with gold stars, small red lantern on the top-right corner | #1 | 0 |
+| bancada_relicarios | bancada de relicários | reliquary workbench station: elegant marble-topped workbench with a small ornate gold and bronze reliquary box shaped like a tiny chapel with a roof, fine tools in a bronze cup, night-blue velvet cloth, small red lantern on the top-right corner | #2 | 0 |
+| bancada_coroas | bancada de coroas | crown workbench station: dark wood workbench with a closed royal crown with arches and a small golden orb on top resting on a burgundy velvet cushion, small gems on a tray, a tiny hammer, small red lantern on the top-right corner | #3 | 0 |
+| bancada_panoplia | banca da panóplia | champion panoply assembly station: wooden armor stand with a shiny champion plate armor, two crossed swords behind a burgundy shield on a small wall rack beside it, a low bronze-trimmed bench, small red lantern on the top-right corner | #1 | 0 |
+
+**Ligação no jogo:** os `arte:` das 10 estações em `Distritos.GrandForge.cs` trocam a arte emprestada (forja de armas, gemas, forja de lâminas, carroça, pátio de cotas, forja cerimonial, mesa do gravador, bancada de kits e montagem de gala) pela própria. Teste novo `DistritosTests.Arte_TodaEstacaoTemAFolha`: toda `arte:` de estação, nos 6 distritos, tem `Resources/Sprites/<arte>/Static.png`.
