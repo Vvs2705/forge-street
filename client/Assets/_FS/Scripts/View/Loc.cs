@@ -1413,6 +1413,8 @@ namespace FS
             { "loja.titulo", L("Loja", "Shop", "Tienda") },
             { "loja.comprado", L("COMPRADO", "OWNED", "COMPRADO") },
             { "loja.restaurar", L("RESTAURAR COMPRAS", "RESTORE PURCHASES", "RESTAURAR COMPRAS") },
+            { "loja.selo.permanente", L("PARA SEMPRE", "FOREVER", "PARA SIEMPRE") },
+            { "loja.selo.temporada", L("TEMPORADA", "SEASON", "TEMPORADA") },
             { "loja.falsa", L("Loja de teste: nenhum pagamento real", "Test store: no real payment", "Tienda de prueba: ningún pago real") },
             { "iap.iap_pacote_mestre.nome", L("Pacote do Mestre", "Master's Pack", "Paquete del Maestro") },
             { "iap.posse.remove_ads", L("Sem anúncio entre telas", "No ads between screens", "Sin anuncios entre pantallas") },

@@ -626,3 +626,7 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 | `click/click_0.wav` | `click` | `kenney_interface-sounds/Audio/click_002.ogg` | 0.01 s | -19.0 | `f711297091c97d00ec4ad0a408500bc414cd1c39a42e2ec393796f8e2dc555e3` |
 | `coin/coin_0.wav` | `coin` | `kenney_rpg-audio/Audio/handleCoins.ogg` | 0.69 s | -13.5 | `5474916482ea188f0013578def221a61fffc85833e0ab24b307dd1953b97f698` |
 | `coin/coin_1.wav` | `coin` | `kenney_rpg-audio/Audio/handleCoins2.ogg` | 0.21 s | -13.5 | `ca04d9c269709b46fc501d59a838e3a7b808baad4e34bf48f633b620e08b3ec7` |
+
+## 21. Arte dos produtos da loja (auditoria visual item 5, 2026-10-23, 0 crédito)
+
+- Tripo, gerador de imagem Nano Banana 2 (1:1, 4 por prompt, grátis; saldo de créditos intacto em 14 660), pelo Chrome do Vinicius com o aval de 2026-10-23; prompts em `ASSETS.md` §22. Downloads da imagem escolhida (PNG 1024 px) versionados em `arte/ui/loja/fonte_<id>.png`; recorte local (`icones_premio.py`), sem outro serviço.

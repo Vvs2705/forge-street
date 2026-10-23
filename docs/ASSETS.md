@@ -473,3 +473,12 @@ Resolve os itens 2, 3, 4, 7 e 8 da `AUDITORIA_VISUAL.md` (painéis chapados, fon
 
 **Ligação no jogo:** os `arte:` da Foundry em `Distritos.ArcaneFoundry.cs` trocam a arte emprestada (crisol do Quarter nas cubas e nos fornos rúnicos, mesa do gravador do Arsenal nos 7 altares e no cadinho, gemas e ouro nos depósitos) pela própria; o `DistritosTests.Arte_TodaEstacaoTemAFolha` (§19) cobre as folhas. A Vulcana (`wk_vulcana`, `Distritos.cs`) troca a folha do Fundidor pela `vulcana`, com `WorldView.CharScale` **1,03** pela conta do §11: Idle S quadro 0 com 78 px a ppu 118,9 = 0,656 m, alvo 1,15 (viseira erguida, como o fundidor). O `fundidor` fica no repositório para o Smelter dos distritos seguintes.
 
+## 22. Arte dos produtos da loja (auditoria visual item 5, 2026-10-23, 0 crédito)
+
+A "loja vazia" da `AUDITORIA_VISUAL.md` (o Pacote do Mestre só em texto, sem arte nem selo) ganha uma arte pintada por produto à esquerda do cartão e um selo dourado: **PARA SEMPRE** no Pacote do Mestre (não-consumível) e **TEMPORADA** nos Passes. Imagens do Tripo (Nano Banana 2, 1:1, grátis), recortadas pelo `client/tools/icones_premio.py` (o GrabCut da marca v2) para `Resources/UI/<id do produto>.png` (256 px); a `PainelLoja` lê pelo ID (`Art.UI`), e sem o arquivo o cartão fica como antes. Fontes versionadas em `arte/ui/loja/fonte_<id>.png` (e `escolhidas.jpg`). Teste: `ComprasTests.Loja_TodoProdutoTemArte`.
+
+| produto | assunto do prompt (prefixo "mobile game shop product icon: " + o sufixo da §18) | escolhida (de 4) |
+|---|---|---|
+| `iap_pacote_mestre` | a sturdy brown leather master blacksmith satchel with a shiny golden anvil emblem on the flap and a small brass hourglass strapped to its side (sem moeda nem ouro na arte: o pacote não vende ouro, V20) | 2 |
+| `iap_pass_s1_royal_commission` | a royal blue velvet banner with a golden crown emblem and golden fringe hanging from a short golden pole with a small crown finial, royal season pass | 2 |
+| `iap_pass_s2_ember_festival` | a festival banner of orange and red cloth with a golden phoenix flame emblem hanging from a short dark wooden pole with brass end caps, ember festival season pass, no particles, no sparks, no glow around it (fundo "plain flat light grey"; a 1ª leva, com brasas, deixava um halo escuro no recorte) | 3 |
