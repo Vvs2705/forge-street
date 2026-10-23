@@ -109,8 +109,16 @@ Coerência entre chaves diferentes (por exemplo `VipMin` < `VipMax`) fica com qu
 | `rc_fetch` | `ok` / `invalido` / `falha` | bytes ou erro (só com a URL preenchida) |
 | `ad_init` | `desligado` | `remoteconfig` (chave mestra) |
 | `excecao` | mensagem sem caminho privado | 1ª linha da pilha |
+| `event_enter` | ID do evento | — |
+| `event_points` | ID do evento | total de pontos da trilha |
+| `event_complete` | ID do evento | limiar cruzado (pontos) |
+| `pass_level` | ID da temporada | nível do Passe |
+
+Os quatro do LiveOps (GDD §13, `LIVEOPS_V1.md` §4.6) saem de `LiveOps.Diario`, a mesma linha que o `Game.LiveOpsAgora` loga; `LiveOpsTests.Telemetria_EntradaEMarcoDoEvento_ChegamAoRemoto` confere que `event_enter` e `event_complete` chegam ao provedor remoto pela `Telemetria`, só depois da tela de idade e na ordem.
 
 ## 3. Como plugar o provedor quando a P8 for decidida
+
+**Estado em 2026-10-23 (frente `feat/analytics-rc`): parado na P8.** O caminho natural seria o Unity Gaming Services (Analytics + Remote Config), já que o jogo usa o LevelPlay e o Unity IAP (que traz o `com.unity.services.core`). Ele pede que o projeto esteja **ligado a um projeto do Unity Cloud** (hoje `cloudProjectId` vazio e `cloudEnabled: 0` no `ProjectSettings.asset`), os ambientes e as chaves no painel do Unity Dashboard e a decisão de custo da P8; Firebase pede um projeto no console e o `google-services.json`. Nada disso existe e é decisão e conta do Vinicius, então o provedor segue `ProvedorNulo` e o `RemoteConfigHttp` com a URL vazia. Pronto para quando houver: as duas costuras abaixo e a telemetria dos eventos.
 
 **RemoteConfig, opção A (sem SDK):** publique o JSON acima num endereço HTTPS estático (CDN ou bucket) e preencha `RemoteConfigHttp.Url`.
 

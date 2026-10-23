@@ -699,17 +699,17 @@ namespace FS
             foreach ((string tipo, string id, string arg, long ouro) in lo.Novidades)
             {
                 EventDef e = Array.Find(lo.Eventos, x => x.Id == id);
+                (string a, string b) = lo.Diario((tipo, id, arg, ouro));
+                Log(tipo, a, b);
                 switch (tipo)
                 {
-                    case "event_enter": if (avisa && e != null) Notice(Loc.T("aviso.evento", Textos.NomeEvento(e)), Art.Star(), Art.Accent); Log(tipo, id); break;
-                    case "event_points": Log(tipo, id, e != null ? lo.PontosDe(e).ToString(CultureInfo.InvariantCulture) : arg); break;
+                    case "event_enter": if (avisa && e != null) Notice(Loc.T("aviso.evento", Textos.NomeEvento(e)), Art.Star(), Art.Accent); break;
                     case "event_complete":
                         if (avisa) { Sfx.Play("meta"); Notice(Loc.T("aviso.evento_marco", arg), _coinIcon.sprite, _coinIcon.color); }
-                        Log(tipo, id, arg);
                         if (ouro > 0) Source("evento", ouro);
                         pagou = true;
                         break;
-                    case "pass_level": if (avisa) Notice(Loc.T("aviso.passe", arg), Art.Star(), Art.Gold); Log(tipo, id, arg); break;
+                    case "pass_level": if (avisa) Notice(Loc.T("aviso.passe", arg), Art.Star(), Art.Gold); break;
                 }
             }
             lo.Novidades.Clear();
