@@ -43,6 +43,14 @@ namespace FS.Core
 
         public LiveOps(Sim sim) { _sim = sim; }
 
+        /// <summary>A-PLAT-09 (GDD §13, LIVEOPS_V1 §4.6): a linha do diario, e do analytics pela Telemetria, de uma novidade: event_enter (evento),
+        /// event_points (evento, total de pontos), event_complete (evento, limiar), pass_level (temporada, nivel). O Game loga exatamente isto.</summary>
+        public (string A, string B) Diario((string Tipo, string Id, string Arg, long Ouro) n)
+        {
+            EventDef e = n.Tipo == "event_points" ? Array.Find(Eventos, x => x.Id == n.Id) : null;
+            return (n.Id, e != null ? PontosDe(e).ToString(CultureInfo.InvariantCulture) : n.Arg);
+        }
+
         Metas M => _sim.Metas;
 
         // ------------------------------------------------------------------ relogio e calendario

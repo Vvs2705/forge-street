@@ -148,7 +148,7 @@ Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-23, 
 | Collection | 86 | marcos dos 6 distritos | conferir com jogador real |
 | Reputation | 83 | Renome 10 níveis do Império (todo distrito conta, #65); o 8 e o 9 abrem o conteúdo da Foundry e da Grand Forge (Renome 9 em 4.200, desvio); F2P chega ao 2/3/4 em 0:51 / 1:41 / 3:11 (`BALANCE.md` §30.6) | calibrar 5–10 com a Carta (§41 achado 16) |
 | Daily / Weekly / Achievements | 95 | 32 diárias, 17 semanais, 106 conquistas, login de 7 dias; derivadas do estado com retroativo (#70); conquistas de 3/6 distritos e 30/60 obras (#100) | pool C das diárias |
-| Events (LiveOps) | 82 | 10 `EventDef`, os 10 rodando com o Rare Ore Rush (#100); pontos de todo distrito (#65); missão de contrato na Royal Week (#70) | V27 (Event disputa vagas); `event_enter`/`event_complete` na telemetria |
+| Events (LiveOps) | 82 | 10 `EventDef`, os 10 rodando com o Rare Ore Rush (#100); pontos de todo distrito (#65); missão de contrato na Royal Week (#70) | V27 (Event disputa vagas); provedor remoto da telemetria (P8; `event_enter`/`event_complete` já chegam à `Telemetria`, testado) |
 | Pass | 50 | 30 níveis × 600 XP, temporada de 35 dias, trilha free com RESGATAR; premium no dado, desligado (#56) | premium na Wave E (preço = decisão) |
 | Ads | 70 | 6 placements por config, teto diário, ID de transação, intersticial atrás de flag, `ad_impression` (#52) | conta da V-STACK com VIP e Velocidade (#67); ad units dos outros 4 placements e Unity Ads no painel (Vinicius); A/B do intersticial no Limited Release |
 | IAP | 35 | núcleo com estados e recibos, loja falsa, Pacote do Mestre, restaurar compras (#58) | pacote Unity IAP (aval de download) |
