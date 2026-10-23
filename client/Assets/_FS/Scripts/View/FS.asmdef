@@ -1,7 +1,7 @@
 {
     "name": "FS",
     "rootNamespace": "FS",
-    "references": ["FS.Core", "Unity.InputSystem", "UnityEngine.UI", "Unity.LevelPlay"],
+    "references": ["FS.Core", "Unity.InputSystem", "UnityEngine.UI", "Unity.LevelPlay", "Unity.Purchasing", "Unity.Purchasing.Stores", "Unity.Purchasing.Security", "Unity.Purchasing.SecurityStub"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
