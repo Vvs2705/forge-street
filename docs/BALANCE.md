@@ -1432,6 +1432,18 @@ Robustez (250 passos de tick por perfil, 1.000 partidas): produção completa m�
 
 **QA:** 1 em 1.000 partidas travou — o Ideal a 36,36 ticks/s parou aos 31 min em (8,4; 6,1) a caminho do pad do Mineiro, com o `Sim.Steer` alternando entre (0,71; 0,70) e (−0,71; −0,70). Impasse de navegação no núcleo; conferir se os ajudantes podem cair nele (ticket para a raia de núcleo).
 
+**1.000 partidas por perfil sem deadlock (GDD §164 item 1, 2026-10-23):** `econsim --partidas 1000 --minutos 60 --anuncio-seg 30 --impasse 1` (5 perfis, 5.000 partidas, 761 s). Preso = algum personagem (o ferreiro ou um ajudante) mais de 10 s andando sem sair de `Balance.StuckRadius` (o `Steer` desfaz o impasse em 1 s); parada = 5 min de jogo sem venda depois da 1ª.
+
+| perfil | partidas | presos > 10 s | maior s preso | paradas > 5 min sem venda | maior s sem venda |
+|---|---|---|---|---|---|
+| Ideal | 1.000 | 0 | 2,4 | 0 | 22 |
+| F2P | 1.000 | 0 | 2,2 | 0 | 32 |
+| Slow | 1.000 | 0 | 2,4 | 0 | 49 |
+| AdWatcher | 1.000 | 0 | 2,4 | 0 | 32 |
+| AdWatcherE | 1.000 | 0 | 2,5 | 0 | 36 |
+
+Nenhum deadlock. O CSV do econsim padrão não muda (a medida só aparece com `--impasse 1`).
+
 ### 22.1 A-CORE-03, P14 e D6 (2026-10-12)
 
 Com o `Tuning` padrão o econsim é idêntico ao byte; F2P, Ideal e Slow não mudam (não usam anúncio). **P14:** recarga de 5 min no "Chamar VIP", contada de quando o chamado sai. **D6:** Velocidade e "Chamar VIP" só depois da 1ª melhoria.

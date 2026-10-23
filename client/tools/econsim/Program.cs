@@ -51,6 +51,9 @@ static class EconSim
     {
         public string Perfil, Csv; public float[] Marcos, Pisos;
         public int Morta, MortaSeq, MortaIni, SemDestinoMin, Luxo, AdsVip, AdsBoost, AdsSupply, AdsBonus, Vips; public long PosProd, Parado, Encomendas; public double Segundos;
+        // GDD §164 item 1 (--impasse): maior s de algum personagem andando sem sair do lugar (StuckT; o Steer sai em 1 s) e maior intervalo sem
+        // venda depois da 1a, no tempo de jogo
+        public float StuckMax, SemVendaMax;
         // B-CORE-03: % da receita acima do preco Normal (premio de qualidade) e o que o golpe somou; niveis de estacao comprados, gasto e o 1o
         public double Quali, Golpe; public int Niveis, Golpes; public long NiveisGasto; public float Nivel1;
         // B-CORE-05: relogio em que o Renome chegou a 1..4 (-1 = nao chegou), encomendas e % do ouro de venda que veio delas aos 60 min e no fim
@@ -95,7 +98,7 @@ static class EconSim
         BotProfile[] perfis = BotProfile.All; int minutos = 60, partidas = 1; string saida = "econsim.csv", knobs = null; EventDef evento = null;
         float? workerSeg = null;  // B-CORE-04: null = o padrao do Bot
         float anuncioSeg = 30f;   // V19: ~30 s por anuncio premiado (o LevelPlay nao mostra o tempo; medir no POCO e ajustar aqui)
-        bool pacote = false;
+        bool pacote = false, impasse = false;
         DistrictDef distrito = null; double fundoOF = 2400;   // C-CORE-01/02: --distrito id; --fundo-of = ouro/min do Old Forge no Charter (CONTEUDO_V1 §1)
         bool gerente = true;   // C-CORE-03: --gerente 0 = o bot nunca sobe manager
         long renome = 0;       // C-CORE-05: --renome N = o Renome do Imperio na chegada (500 = o do Charter do Old Forge: 400 + 100)
@@ -113,6 +116,7 @@ static class EconSim
                 case "--anuncio-seg" when ok: ok = float.TryParse(v, out anuncioSeg) && anuncioSeg >= 0f; break;
                 case "--saida" when ok: saida = v; break;
                 case "--pacote" when ok: ok = v == "0" || v == "1"; pacote = v == "1"; break;
+                case "--impasse" when ok: ok = v == "0" || v == "1"; impasse = v == "1"; break;
                 case "--evento" when ok:
                     evento = Array.Find(LiveOpsDefs.Eventos, e => e.Id == v || e.Id.EndsWith("_" + v, StringComparison.Ordinal));
                     ok = evento != null && LiveOpsDefs.Falta(evento, Items.All) == null;   // so o que roda neste build
@@ -129,7 +133,7 @@ static class EconSim
             }
             if (!ok || perfis.Any(p => p.Name == null))
             {
-                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400] [--gerente 0|1] [--renome 500] [--bancadas regra|volume|margem] [--histerese 3] [--arcano regra|estavel|forcado]");
+                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400] [--gerente 0|1] [--renome 500] [--bancadas regra|volume|margem] [--histerese 3] [--arcano regra|estavel|forcado] [--impasse 0|1]");
                 return 2;
             }
         }
@@ -146,6 +150,18 @@ static class EconSim
         File.WriteAllText(saida, Header + Environment.NewLine + string.Concat(runs.Select(r => r.Csv)));
 
         Console.WriteLine($"econsim: {perfis.Length} perfis x {partidas} partidas x {minutos} min de relogio (anuncio = {anuncioSeg:0.#} s) em {wall.Elapsed.TotalSeconds:0.0} s -> {Path.GetFullPath(saida)}");
+        if (impasse)
+        {
+            // GDD §164 item 1: "1.000 partidas do econsim por perfil sem deadlock". Preso = algum personagem > 10 s andando sem sair de
+            // Balance.StuckRadius (o Steer desfaz o impasse em 1 s); parada = 5 min de jogo sem venda depois da 1a
+            Console.WriteLine("| perfil | partidas | presos > 10 s | maior s preso | paradas > 5 min sem venda | maior s sem venda |");
+            Console.WriteLine("|---|---|---|---|---|---|");
+            foreach (BotProfile p in perfis)
+            {
+                Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+                Console.WriteLine($"| {p.Name} | {g.Length} | {g.Count(r => r.StuckMax > 10f)} | {g.Max(r => r.StuckMax):0.0} | {g.Count(r => r.SemVendaMax > 300f)} | {g.Max(r => r.SemVendaMax):0} |");
+            }
+        }
         Console.WriteLine("(* = nem toda partida chegou; zona morta = minutos sem compra antes da producao completa; pos-producao = ouro ganho depois dela, so luxo ou nada a comprar)");
         Console.WriteLine($"| perfil | {string.Join(" | ", MarcoNome)} | zona morta (min; maior seq.) | pos-producao | luxo | saldo final | min sem destino | VIP (anuncios VIP/boost) | s/partida |");
         Console.WriteLine("|" + string.Concat(Enumerable.Repeat("---|", MarcoNome.Length + 8)));
@@ -305,7 +321,7 @@ static class EconSim
         long earned0 = 0, goldAtProd = -1;
         int bought0 = 0, seq = 0, ads = 0, wk = 0, wk0 = 0;   // wk: compras de worker (contratar ou nivel), que contam como compra na zona morta
         // V19: relogio = s.Time + pausa (s de anuncio, jogo parado); `rel` = instante de relogio de cada compra e da 1a venda (-1 = ainda nao)
-        float pausa = 0f, venda1 = -1f;
+        float pausa = 0f, venda1 = -1f, ultimaVenda = -1f;
         var rel = new float[Upgrades.Count];
         for (int i = 0; i < rel.Length; i++) rel[i] = -1f;
         r.EarnedMin = new long[minutos + 1];
@@ -330,6 +346,11 @@ static class EconSim
                     if (e.Kind == Ev.Colecao) { r.MarcosCol++; r.RenomeCol += e.B; }
                 }
                 if (venda1 < 0f && s.FirstSaleTime >= 0f) venda1 = s.FirstSaleTime + pausa;
+                float preso = s.Player.StuckT;
+                foreach (Carrier w in s.Workers) preso = Math.Max(preso, w.StuckT);
+                r.StuckMax = Math.Max(r.StuckMax, preso);
+                if (s.Events.Exists(e => e.Kind == Ev.Sold)) ultimaVenda = s.Time;
+                if (s.FirstSaleTime >= 0f) r.SemVendaMax = Math.Max(r.SemVendaMax, s.Time - Math.Max(ultimaVenda, s.FirstSaleTime));
                 if (s.UpgradesBought != before)
                     for (int i = 0; i < rel.Length; i++) if (s.Bought[i] && rel[i] < 0f) rel[i] = s.UpgradeTime[i] + pausa;
                 if (goldAtProd < 0 && s.UpgradesBought != before && s.ProductionComplete) goldAtProd = s.Gold;
