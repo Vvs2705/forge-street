@@ -107,14 +107,14 @@ namespace FS.Core
             return -1;
         }
 
-        /// <summary>O patio recebe 1 `p` agora (regra 2: senao vai ao balcao).</summary>
-        public bool CotaAceita(Item p) => Patio != null && FaixaPara(p) >= 0;
+        /// <summary>O patio recebe 1 `p` agora (regra 2: senao vai ao balcao). C-CORE-09: ou o patio de exportacao (Sim.Exportacao.cs).</summary>
+        public bool CotaAceita(Item p) => Patio != null && FaixaPara(p) >= 0 || ExportaAceita(p);
 
-        /// <summary>Carregador com `n` na mao ainda cabe no bloco de `p` (o ajudante de produto busca o que tem destino).</summary>
-        bool CabeNaCota(Item p, int n) => Patio != null && FaixaPara(p, n) >= 0;
+        /// <summary>Carregador com `n` na mao ainda cabe no bloco de `p` (o ajudante de produto busca o que tem destino); ou no lote (C-CORE-09).</summary>
+        bool CabeNaCota(Item p, int n) => Patio != null && FaixaPara(p, n) >= 0 || ExportaCabe(p, n);
 
-        /// <summary>Para onde vai o produto `p` de quem carrega: o patio se aceita, senao o balcao dele.</summary>
-        public Station Destino(Item p) => CotaAceita(p) ? Patio : CounterFor(p);
+        /// <summary>Para onde vai o produto `p` de quem carrega: o patio se aceita, senao o de exportacao (C-CORE-09), senao o balcao dele.</summary>
+        public Station Destino(Item p) => Patio != null && FaixaPara(p) >= 0 ? Patio : ExportaAceita(p) ? Exportacao : CounterFor(p);
 
         /// <summary>
         /// O jogador escolhe o produto da faixa `k` (-1 = deixar vazia): produto de linha aberta do distrito, aberta neste build, em no maximo uma

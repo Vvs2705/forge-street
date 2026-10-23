@@ -120,6 +120,7 @@ namespace FS.Core
             e.AddRange(MasterworksDefs.Validar(w.Hall.Defs, w.Colecao.Marcos, w.Projetos.Defs, d.Upgrades, w));   // C-CORE-05: o Hall e a Collection que o Sim dele usa
             e.AddRange(Sim.ValidarBancadas(d, w)); e.AddRange(Sim.ValidarFamilias(d, w));   // C-CORE-06: bancada configuravel e familias de cliente
             e.AddRange(Sim.ValidarArcano(d, w));   // C-CORE-08: o medidor dos altares
+            e.AddRange(Sim.ValidarRotas(d, w));   // C-CORE-09: cais, patio de exportacao, rotas e o Mensageiro
             return e;
         }
 
@@ -279,6 +280,13 @@ namespace FS.Core
                     if (d.Contratacao != 0 || d.Requer != null) yield return $"{at} ajudante com preco ou requisito proprio (o upgrade e' que contrata)";
                     continue;
                 }
+                if (d.Papel == WorkerRole.Courier)   // C-CORE-09: o Mensageiro (wk_felix) vem com o upgrade dele, nao carrega (Sim.Exportacao.cs)
+                {
+                    if (d.Contrata == null || Upgrades.IndexOf(d.Contrata, w.UpgradeDefs) < 0) yield return $"{at} mensageiro sem upgrade que contrata (\"{d.Contrata}\")";
+                    else if (!contrata.Add(d.Contrata)) yield return $"{at} upgrade \"{d.Contrata}\" ja contrata outro worker";
+                    if (d.Rota != -1 || d.Contratacao != 0 || d.Requer != null || d.Station != null) yield return $"{at} mensageiro com rota, preco, requisito ou familia (o upgrade e' que contrata)";
+                    continue;
+                }
                 if (d.Contrata != null || d.Rota != -1) yield return $"{at} so o ajudante (Porter) e' contratado por upgrade e tem rota";
                 if (d.Contratacao <= 0 || d.Contratacao % 5 != 0) yield return $"{at} contratacao {d.Contratacao} (positiva e multipla de 5)";
                 if (d.Requer != null && Upgrades.IndexOf(d.Requer, w.UpgradeDefs) < 0) yield return $"{at} requisito \"{d.Requer}\", que nao e' upgrade do build";
@@ -337,6 +345,7 @@ namespace FS.Core
                         case BlueprintSourceKind.Milestone:
                             if (f.Ref == BlueprintSource.Cotas ? w.Patio == null || f.N <= 0
                                 : f.Ref == BlueprintSource.Energizadas ? !w.TemArcano || f.N <= 0   // C-CORE-08: pecas energizadas so com altar
+                                : f.Ref == BlueprintSource.Lotes ? w.Exportacao == null || f.N <= 0   // C-CORE-09: lotes so com o patio de exportacao
                                 : f.Ref != BlueprintSource.Producao && (!Produto(f.Ref) || f.N <= 0))
                                 yield return $"{at} marco \"{f.Ref}\" x{f.N} inalcancavel";   // C-CORE-07: blocos de cota so com o patio
                             break;
@@ -702,7 +711,7 @@ namespace FS.Core
         {
             string Name(Item i) => (uint)i < (uint)w.ItemDefs.Length ? w.ItemDefs[(int)i].Id : ((int)i).ToString();
             // C-CORE-06: a bancada configuravel faz e usa o de todas as receitas dela (w.ReceitasDe; estacao fixa = a dela, como antes)
-            bool Made(Item i) => w.Stations.Exists(s => s.Kind == Kind.Deposit ? s.OutItem == i : Array.Exists(w.ReceitasDe(s), r => r.Output == i));   // C-CORE-01: o bruto de cada deposito
+            bool Made(Item i) => w.Importado(i) || w.Stations.Exists(s => s.Kind == Kind.Deposit ? s.OutItem == i : Array.Exists(w.ReceitasDe(s), r => r.Output == i));   // C-CORE-01: o bruto de cada deposito; C-CORE-09: o importado chega pela rota
             bool Used(Item i) => w.Stations.Exists(s => Array.Exists(w.ReceitasDe(s), r => Array.Exists(r.Inputs, x => x.Item == i)));
             bool Sold(Item i) => w.Stations.Exists(s => w.Sells(s, i));
             for (int k = 0; k < w.ItemDefs.Length; k++)
@@ -718,6 +727,7 @@ namespace FS.Core
             // fecho a partir do minerio: o que as estacoes fazem quando todos os insumos ja sao alcancaveis (pega o ciclo)
             var reach = new HashSet<Item>();
             foreach (Station s in w.Stations) if (s.Kind == Kind.Deposit) reach.Add(s.OutItem);
+            for (int k = 0; k < w.ItemDefs.Length; k++) if (w.Importado((Item)k)) reach.Add((Item)k);   // C-CORE-09
             for (bool grew = true; grew;)
             {
                 grew = false;

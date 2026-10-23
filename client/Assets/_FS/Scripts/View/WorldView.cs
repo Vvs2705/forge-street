@@ -44,6 +44,7 @@ namespace FS
             public RecipeDef Receita;   // C-CORE-06: a receita com que as pilhas foram montadas (a bancada configuravel troca: a estacao e' refeita)
             public Text[] Faixas;   // C-CORE-07: uma linha por faixa do patio de cotas (o toque troca o produto dela, Game.Toque)
             public Text Medidor;    // C-CORE-08: o medidor do altar ("Estável · 45/100"; o toque na barra de qualidade troca o modo, Game.Toque)
+            public Text Linha;      // C-CORE-09: as rotas embaixo do cais e o lote embaixo do patio de exportacao (o toque troca o produto do lote)
         }
         /// <summary>Placa de obra: fundo escuro, enchimento de ouro, borda tracejada, icone do que constroi; preco (moeda + valor) e nome na HUD.</summary>
         sealed class PadV
@@ -621,6 +622,12 @@ namespace FS
                 v.Medidor = Art.Outlined(Art.FreeText(_labels, "Medidor", 24, new Vector2(360f, 34f)), 2.5f, Edge);
                 v.Medidor.fontStyle = FontStyle.Bold;
                 v.Medidor.enabled = false;
+            }
+            if (s.Kind == Kind.Import || s.Kind == Kind.Export)   // C-CORE-09: ponytail: texto, como as faixas do patio de cotas
+            {
+                v.Linha = Art.Outlined(Art.FreeText(_labels, "Lote", 24, new Vector2(460f, 34f)), 2.5f, Edge);
+                v.Linha.fontStyle = FontStyle.Bold;
+                v.Linha.enabled = false;
             }
             // bocas no chao (FASE5 s2b): deposito so entrega, balcoes so recebem, quem produz tem as duas. v0.5b: placa no chao
             if (s.Kind == Kind.Deposit) Mouth(v.Root, s.OutAt - s.Pos, false, (int)s.OutItem);   // o bruto do deposito (minerio; couro na Row)
@@ -1382,6 +1389,13 @@ namespace FS
                     v.Faixas[k].color = _sim.Faixas[k].Produto >= 0 ? Art.Ink : Art.Accent;
                     PlaceLabel(v.Faixas[k], W(s.Pos) + new Vector3(0f, -0.9f - 0.32f * k, 0f), Vector2.zero);
                 }
+            if (v.Linha != null)   // C-CORE-09: "Rotas: 6/min · 123 chegaram" / "Lote: 7/10 auto: sinos da catedral · 0:42"
+            {
+                v.Linha.enabled = true;
+                v.Linha.text = s.Kind == Kind.Export ? Textos.Lote(_sim) : Textos.Rotas(_sim);
+                v.Linha.color = s.Kind == Kind.Export && _sim.LoteProduto < 0 ? Art.Accent : Art.Ink;
+                PlaceLabel(v.Linha, W(s.Pos) + new Vector3(0f, -0.9f, 0f), Vector2.zero);
+            }
             if (v.PopT >= 0f)
             {
                 v.PopT += dt;
@@ -1499,6 +1513,14 @@ namespace FS
                     for (int k = 0; k < v.Faixas.Length; k++)
                         if (v.Faixas[k].enabled && RectTransformUtility.RectangleContainsScreenPoint(v.Faixas[k].rectTransform, px, null)) return k;
             return -1;
+        }
+
+        /// <summary>C-CORE-09: a linha do lote (embaixo do patio de exportacao) contem o ponto de tela (px).</summary>
+        public bool LoteEm(Vector2 px)
+        {
+            foreach (StationV v in _stations)
+                if (v.Linha != null && v.S.Kind == Kind.Export && v.Linha.enabled && RectTransformUtility.RectangleContainsScreenPoint(v.Linha.rectTransform, px, null)) return true;
+            return false;
         }
 
         /// <summary>Estacao cuja "Fina em N" visivel contem o ponto de tela (px), ou null.</summary>
@@ -1815,6 +1837,7 @@ namespace FS
                     return f != null ? new V2(f.Pos.X, f.Pos.Y + 0.62f) : _sim.Counter.Pos;
                 case WorkerRole.Clerk: return new V2(_sim.Counter.Pos.X + _sim.Counter.Half.X - 0.35f, _sim.Counter.Pos.Y - 0.62f);
                 case WorkerRole.Quartermaster: return new V2(3.2f, 2.0f);
+                case WorkerRole.Courier: return _sim.Exportacao != null ? new V2(_sim.Exportacao.Pos.X + 1.2f, _sim.Exportacao.Pos.Y - 0.62f) : _sim.Counter.Pos;   // C-CORE-09: o Felix ao lado do patio de exportacao
                 default: return new V2(6.0f, 7.5f);
             }
         }

@@ -436,6 +436,9 @@ static class EconSim
         public int Trocas, Ricos, MeiaVolta, Perdidos;
         // C-CORE-08: pecas energizadas, sobrecargas, a maior StableStreak dos altares no fim e as encomendas entregues
         public int Energ, Sobre, SeqMax, Pedidos;
+        // C-CORE-09 (rotas e lotes): pecas e ouro do patio de exportacao, lotes, importados (por rota), o fundo que as rotas tiraram e a maior
+        // fracao do fundo de cada origem pedida num minuto (portao: < 1)
+        public long ExpUn, ExpOuro; public int Lotes, Importados; public int[] PorRota; public double Descontado; public double[] DescMax; public float Mw5 = -1f;
     }
 
     /// <summary>C-CORE-08: --arcano regra|estavel|forcado = a politica do bot nos altares (Bot.Altares; o portao "nenhum modo domina").</summary>
@@ -539,6 +542,26 @@ static class EconSim
                                   $"{g.Count(r => r.CharterMin >= 0)}/{g.Length}; {(g.Any(r => r.CharterMin >= 0) ? g.Where(r => r.CharterMin >= 0).Average(r => r.CharterMin).ToString("0") + " min" : "--")} |");
             }
         }
+        if (amostra.Cais != null)
+        {
+            // C-CORE-09 (CONTEUDO_V1 §16): rotas e lotes do Mensageiro; portao: o fundo da origem nunca chega a 0 (fracao pedida num minuto < 1)
+            string[] org = d.Importados.Select(x => x.Origem).Distinct().ToArray();
+            Console.WriteLine();
+            Console.WriteLine("Rotas e lotes.");
+            Console.WriteLine($"| perfil | pecas pelo lote (% das vendidas) | ouro do lote (% da receita) | lotes | importados ({string.Join(", ", d.Importados.Select(x => x.Item))}) | fundo tirado das origens | maior fracao do fundo pedida num minuto ({string.Join(", ", org)}) | Royal entregues; contratos | obras (3a; 5a) | Charter (condicoes; minuto) |");
+            Console.WriteLine("|---|---|---|---|---|---|---|---|---|---|");
+            foreach (BotProfile p in perfis)
+            {
+                RunD[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+                static string Media(IEnumerable<float> v) { float[] a = v.Where(t => t >= 0f).ToArray(); return a.Length == 0 ? "--:--" : Clock(a.Average()); }
+                string rotas = string.Join(" / ", Enumerable.Range(0, d.Importados.Length).Select(k => g.Average(r => r.PorRota[k]).ToString("0")));
+                string desc = string.Join(" / ", Enumerable.Range(0, org.Length).Select(o => (100.0 * g.Max(r => r.DescMax[o])).ToString("0.0") + "%"));
+                Console.WriteLine($"| {p.Name} | {100.0 * g.Average(r => r.ExpUn) / Math.Max(1.0, g.Average(r => r.Un)):0.0}% | {100.0 * g.Average(r => r.ExpOuro) / Math.Max(1.0, g.Average(r => r.Earned)):0.0}% | " +
+                                  $"{g.Average(r => r.Lotes):0.#} | {g.Average(r => r.Importados):0} ({rotas}) | {g.Average(r => r.Descontado):0} | {desc} | {g.Average(r => r.Royal):0.#}; {g.Average(r => r.Contratos):0.#} | " +
+                                  $"{g.Average(r => r.Mw):0.#} ({Media(g.Select(r => r.Mw3))}; {Media(g.Select(r => r.Mw5))}) | " +
+                                  $"{g.Count(r => r.CharterMin >= 0)}/{g.Length}; {(g.Any(r => r.CharterMin >= 0) ? g.Where(r => r.CharterMin >= 0).Average(r => r.CharterMin).ToString("0") + " min" : "--")} |");
+            }
+        }
         if (amostra.Patio == null) return 0;
         // C-CORE-07 (CONTEUDO_V1 §16): quanto da producao passa pelo patio de cotas (portao 30-70% no bot), blocos, prazo e o Charter (3 obras e
         // 1 contrato OU 10 Royal no distrito)
@@ -574,6 +597,10 @@ static class EconSim
         float pausa = 0f; int ads = 0, bought0 = 0, seq = 0; long earned0 = 0, fundo0 = 0;
         var earnedMin = new long[minutos + 1];
         int prodMin = -1;
+        // C-CORE-09: as origens das rotas (na ordem da tabela) e o que cada rota ja importou no minuto anterior
+        string[] origens = (d.Importados ?? new (string, string)[0]).Select(x => x.Origem).Distinct().ToArray();
+        r.DescMax = new double[origens.Length];
+        var rota0 = new int[d.Importados?.Length ?? 0];
         for (int m = 1; m <= minutos; m++)
         {
             while (s.Time + pausa < m * 60f)
@@ -589,9 +616,13 @@ static class EconSim
                     {
                         r.Vendas[e.A] += e.B; r.Un++;
                         if (s.Patio != null && e.Pos.X == s.Patio.Pos.X && e.Pos.Y == s.Patio.Pos.Y) { r.CotaUn++; r.CotaOuro += e.B; }   // C-CORE-07: a peca do bloco
+                        if (s.Exportacao != null && e.Pos.X == s.Exportacao.Pos.X && e.Pos.Y == s.Exportacao.Pos.Y) { r.ExpUn++; r.ExpOuro += e.B; }   // C-CORE-09: a peca do lote
                     }
                     else if (e.Kind == Ev.Masterwork && e.B >= 0)   // C-CORE-05 (C-CORE-07: e a 3a)
-                    { if (r.Mw1 < 0f) r.Mw1 = s.Time + pausa; else if (r.Mw2 < 0f) r.Mw2 = s.Time + pausa; else if (r.Mw3 < 0f) r.Mw3 = s.Time + pausa; }
+                    {
+                        if (r.Mw1 < 0f) r.Mw1 = s.Time + pausa; else if (r.Mw2 < 0f) r.Mw2 = s.Time + pausa; else if (r.Mw3 < 0f) r.Mw3 = s.Time + pausa;
+                        if (s.Hall.Count == 5 && r.Mw5 < 0f) r.Mw5 = s.Time + pausa;   // C-CORE-09: a 5a (a Carta pede 5)
+                    }
                     else if (e.Kind == Ev.Hired && (e.B == (int)WorkerRole.Smelter || e.B == (int)WorkerRole.Smith) && r.Fundidor1 < 0f) r.Fundidor1 = s.Time + pausa;
                 }
                 if (r.Venda1 < 0f && s.FirstSaleTime >= 0f) r.Venda1 = s.FirstSaleTime + pausa;
@@ -599,6 +630,19 @@ static class EconSim
                     for (int i = 0; i < rel.Length; i++) if (s.Bought[i] && rel[i] < 0f) rel[i] = s.UpgradeTime[i] + pausa;
             }
             earnedMin[m] = s.GoldEarned;
+            for (int o = 0; o < origens.Length; o++)   // C-CORE-09: o que as rotas pediram ao fundo da origem neste minuto / o fundo dela no minuto
+            {
+                Sim so = imp.Distrito(origens[o]);
+                double pede = 0, tem = so == null ? 0 : imp.FundoPorSegundo(so) * 60.0;
+                for (int k = 0; k < rota0.Length; k++)
+                {
+                    if (d.Importados[k].Origem != origens[o] || so == null) continue;
+                    int it = Items.IndexOf(d.Importados[k].Item, so.ItemDefs);
+                    pede += (s.PorRota[k] - rota0[k]) * so.PriceOf((Item)it, Quality.Normal) * s.T.ImportCustoPct / 100.0;
+                }
+                if (tem > 0 && pede > 0) r.DescMax[o] = Math.Max(r.DescMax[o], pede / tem);
+            }
+            for (int k = 0; k < rota0.Length; k++) rota0[k] = s.PorRota[k];
             bool aVenda = s.Pads.Exists(pad => pad.Current(s) >= 0) || Enumerable.Range(0, s.UpgradeDefs.Length).Any(s.MenuAvailable);
             int compras = s.UpgradesBought - bought0;
             if (!s.ProductionComplete && compras == 0) { r.Morta++; if (++seq > r.MortaSeq) { r.MortaSeq = seq; r.MortaIni = m - seq; } } else seq = 0;
@@ -627,6 +671,7 @@ static class EconSim
         r.Trocas = s.TrocasReceita; r.Ricos = s.ClientesRicos; r.MeiaVolta = s.ClientsTurnedAway; r.Perdidos = s.ClientsLost;   // C-CORE-06
         r.Energ = s.EnergizadasTotal; r.Sobre = s.Sobrecargas; r.Pedidos = s.OrderCount;   // C-CORE-08
         r.SeqMax = s.Stations.Where(s.Arcana).Select(x => x.Sequencia).DefaultIfEmpty(0).Max();
+        r.Lotes = s.ExportLots; r.Importados = s.ImportedUnits; r.PorRota = (int[])s.PorRota.Clone(); r.Descontado = imp.FundoDescontado;   // C-CORE-09
         r.Csv = csv.ToString(); r.Segundos = clock.Elapsed.TotalSeconds;
         return r;
     }

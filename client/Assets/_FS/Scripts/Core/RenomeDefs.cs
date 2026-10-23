@@ -45,7 +45,8 @@ namespace FS.Core
             new RenomeDef(6, 1250, "charter_artisan_quarter", "ctr_dote_princesa", "ord_quality_artisan_quarter_superior", "bp_mw_broche_guilda"),
             new RenomeDef(7, 2000, "charter_royal_arsenal", "ctr_coroacao", "bp_mw_rainha_guerreira", "heroi_estagio_5"),
             new RenomeDef(8, 3000, "charter_arcane_foundry", "ctr_vanguarda", "ord_quality_arcane_foundry_superior", "bp_mw_escudo_aurora"),
-            new RenomeDef(9, 4500, "charter_grand_forge", "ctr_campeao", "ord_royal_grand_forge_superior", "bp_mw_rainha_forjadora"),
+            // C-CORE-09 (BALANCE.md §41, revisar): 4.500 -> 4.200, o limiar que o §11 manda calibrar; com 4.500 a Carta do Ideal passava das 8 h
+            new RenomeDef(9, 4200, "charter_grand_forge", "ctr_campeao", "ord_royal_grand_forge_superior", "bp_mw_rainha_forjadora"),
             new RenomeDef(10, 6500, "bp_mw_coroa_granforja", "estatua_ferreiro_praca", "titulo_lenda"),
         };
 

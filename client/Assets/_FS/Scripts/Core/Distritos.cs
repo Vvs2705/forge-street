@@ -80,6 +80,9 @@ namespace FS.Core
         /// <summary>C-CORE-06 (CONTEUDO_V1 §12): familias de cliente do distrito (Sim.Clientes: rodizio fixo de pedidos, unidades, paciencia,
         /// intervalo e qualidade minima por familia). null = um relogio por produto, o de sempre (Old Forge e Row).</summary>
         public ClientDef[] Clientes;
+        /// <summary>---- grand_forge (C-CORE-09, CONTEUDO_V1 §2.6 e a tabela de importados do §3.1): as rotas do Mensageiro, na ordem do catalogo
+        /// (o desempate): o importado (ID do ItemDef, o mesmo nos dois distritos; insumo aqui) e o distrito de origem. null = sem rotas.</summary>
+        public (string Item, string Origem)[] Importados;
     }
 
     /// <summary>C-CORE-01: os distritos do build, na ordem do mapa. Old Forge = as tabelas de sempre; Armorer's Row = CONTEUDO_V1 §2.2/§3/§5.2.</summary>
@@ -341,6 +344,8 @@ namespace FS.Core
             RoyalArsenal,
             // ---- arcane_foundry (C-CORE-08)
             ArcaneFoundry,
+            // ---- grand_forge (C-CORE-09)
+            GrandForge,
         };
 
         /// <summary>Distrito com este ID, ou null.</summary>
