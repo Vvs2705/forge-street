@@ -16,7 +16,7 @@ namespace FS
     public sealed class PainelLiveOps
     {
         sealed class LinhaMissao { public GameObject Go; public Text Nome, Conta, Pontos; public Image Cheio; }
-        sealed class LinhaNivel { public GameObject Go; public RewardDef Premio; public Text Nome, Texto, BText; public Image BFace; public Button B; public int Estado = -1; public long Ouro = -1; }
+        sealed class LinhaNivel { public GameObject Go; public RewardDef Premio; public Text Nome, Texto, BText; public Image BFace, Prem; public Button B; public int Estado = -1, EstPrem = -1; public long Ouro = -1; }
 
         static readonly Color Fundo = Art.Hex(0xF3DFB8), Tinta = MenuBar.Brown;
         const int MaxMissoes = LiveOpsDefs.MaxMissoes;   // o validator recusa evento com mais
@@ -218,11 +218,13 @@ namespace FS
         {
             foreach (LinhaNivel l in _niveis) UnityEngine.Object.Destroy(l.Go);
             _niveis.Clear();
-            for (int n = 1; n <= p.Niveis; n++) _niveis.Add(NovaLinha(n, p.Free[n - 1]));
+            // LIVEOPS_V1 §3.5: a coluna premium so com a flag (desligada: so a trilha free, sem vitrine do que nao se compra)
+            RewardDef[] prem = _sim.T.PassePremium ? p.Premium : null;
+            for (int n = 1; n <= p.Niveis; n++) _niveis.Add(NovaLinha(n, p.Free[n - 1], prem?[n - 1]));
             _montado = p;
         }
 
-        LinhaNivel NovaLinha(int n, RewardDef premio)
+        LinhaNivel NovaLinha(int n, RewardDef premio, RewardDef prem)
         {
             var l = new LinhaNivel { Premio = premio };
             Image bg = Art.Panel(_lista, "Nivel", Fundo, Vector2.zero, Vector2.one);
@@ -233,9 +235,18 @@ namespace FS
             Image ic = Art.Node(bg.transform, "Icone", new Vector2(0.02f, 0.14f), new Vector2(0.13f, 0.86f)).gameObject.AddComponent<Image>();
             ic.sprite = Art.IconePremio(premio.Tipo, out Color cor);
             ic.color = cor; ic.preserveAspect = true; ic.raycastTarget = false;
-            l.Nome = Texto(bg.transform, "Nome", 32, 0.15f, 0.5f, 0.68f, 0.95f, TextAnchor.MiddleLeft, true);
+            float x1 = prem != null ? 0.53f : 0.68f;
+            l.Nome = Texto(bg.transform, "Nome", 32, 0.15f, 0.5f, x1, 0.95f, TextAnchor.MiddleLeft, true);
             l.Nome.text = Loc.T("liveops.passe.nivel", n);
-            l.Texto = Texto(bg.transform, "Premio", 26, 0.15f, 0.06f, 0.68f, 0.5f, TextAnchor.MiddleLeft);
+            l.Texto = Texto(bg.transform, "Premio", 26, 0.15f, 0.06f, x1, 0.5f, TextAnchor.MiddleLeft);
+            if (prem != null)   // o premio premium do nivel: dourado quando ja pago (sozinho, LiveOps.PremiumAlcancado), apagado antes
+            {
+                Image moldura = Art.Panel(bg.transform, "Premium", Art.Gold, new Vector2(0.55f, 0.1f), new Vector2(0.68f, 0.9f));
+                moldura.raycastTarget = false;
+                l.Prem = Art.Node(moldura.transform, "Icone", new Vector2(0.1f, 0.1f), new Vector2(0.9f, 0.9f)).gameObject.AddComponent<Image>();
+                l.Prem.sprite = Art.IconePremio(prem.Tipo, out Color pc);
+                l.Prem.color = pc; l.Prem.preserveAspect = true; l.Prem.raycastTarget = false;
+            }
             l.Texto.color = MenuBar.Leather;
             l.B = Art.NewButton(bg.transform, Loc.T("metas.resgatar"), 30, MenuBar.Green, new Vector2(0.71f, 0.15f), new Vector2(0.97f, 0.85f), () => Resgata(n));
             l.BFace = l.B.GetComponent<Image>();
@@ -283,6 +294,16 @@ namespace FS
                 l.B.interactable = estado == 1;
                 l.BFace.color = estado == 1 ? MenuBar.Green : MenuBar.Gray;
                 l.BText.text = Loc.T(estado == 1 ? "metas.resgatar" : "metas.feito");
+            }
+            for (int n = 1; n <= _niveis.Count; n++)
+            {
+                LinhaNivel l = _niveis[n - 1];
+                if (l.Prem == null) continue;
+                int ep = _sim.Metas.Ledger.Contains(LiveOps.TxPremium(p, n)) ? 1 : 0;
+                if (ep == l.EstPrem) continue;
+                l.EstPrem = ep;
+                l.Prem.transform.parent.GetComponent<Image>().color = ep == 1 ? Art.Gold : Art.ComAlfa(MenuBar.Gray, 0.6f);
+                l.Prem.color = ep == 1 ? Color.white : Art.ComAlfa(Color.white, 0.45f);
             }
         }
     }
