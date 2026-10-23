@@ -23,9 +23,18 @@ namespace FS.Core
     /// </summary>
     public static class RenomeDefs
     {
-        /// <summary>B-ART-05 (GDD §151, CONTEUDO_V1 Renome 3 e 4): o estagio visual do heroi pelo nivel do Renome do Imperio. 0 = o de sempre,
-        /// 1 = chapeu de couro (Renome 3, Mestre artesao), 2 = barrete de mestre (Renome 4, Fornecedor do reino).</summary>
-        public static int EstagioHeroi(int nivel) => nivel >= 4 ? 2 : nivel >= 3 ? 1 : 0;
+        /// <summary>B-ART-05 (GDD §151): o estagio visual do heroi pelo nivel do Renome do Imperio, lido da tabela (o maior "heroi_estagio_N"
+        /// liberado ate o nivel, menos 1). 0 = o de sempre; 1 = chapeu de couro (Renome 3); 2 = barrete de mestre (4); 3 e 4 (cinto e o seguinte,
+        /// Renome 5 e 7) ainda sem folha: a View repete a do estagio de baixo.</summary>
+        public static int EstagioHeroi(int nivel)
+        {
+            int e = 0;
+            foreach (RenomeDef d in Niveis)
+                if (d.Nivel <= nivel)
+                    foreach (string l in d.Libera)
+                        if (l.StartsWith("heroi_estagio_", StringComparison.Ordinal) && int.TryParse(l.Substring(14), out int n)) e = Math.Max(e, n - 1);
+            return e;
+        }
 
         /// <summary>Encomenda Common: o retroativo do save sem rn= (0.1-0.8, toda encomenda era Common). Orders 2.0 (B-CORE-05): o Renome de
         /// cada entrega vem do OrderDef.Reputation (§3.1: +1 a +10).</summary>

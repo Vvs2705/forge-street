@@ -1805,7 +1805,8 @@ namespace FS
                 if (v == _player && _heroi != null)   // mesma animacao e quadro, outra folha; comprou a mochila ou subiu de estagio agora = poeira
                 {
                     // Has: a mochila e' do ferreiro em todo distrito (C-CORE-02); o Renome e' o do Imperio
-                    SpriteSheet want = _heroi[2 * RenomeDefs.EstagioHeroi(_sim.Renome.Nivel) + (_sim.Has(Upgrade.PlayerCapacity) ? 1 : 0)];
+                    int estagio = Mathf.Min(RenomeDefs.EstagioHeroi(_sim.Renome.Nivel), _heroi.Length / 2 - 1);   // estagio sem folha = o mais alto que existe
+                    SpriteSheet want = _heroi[2 * estagio + (_sim.Has(Upgrade.PlayerCapacity) ? 1 : 0)];
                     if (v.Body.Sheet != want && Time.timeSinceLevelLoad > 1f) Poof(c.Pos, 0.6f);
                     v.Body.Sheet = want;
                 }
