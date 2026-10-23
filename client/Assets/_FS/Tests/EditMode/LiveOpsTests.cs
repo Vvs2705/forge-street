@@ -619,6 +619,36 @@ namespace FS.Tests
             Assert.IsNull(r.LiveOps.Passe);
         }
 
+        /// <summary>
+        /// LIVEOPS_V1 §3.3 jogado de verdade (a conta estatica e' o Fechamento_ abaixo): o F2P de referencia (2 sessoes de 10 min por dia, cofre
+        /// entre elas, sem anuncio nem golpe) joga a S1 desde o T0 e, ao fim de cada sessao, resgata login, diarias, semanais, conquistas e os
+        /// niveis do Passe. A trilha free fecha (nivel 30) antes do fim da temporada (35 dias), e nunca com premium.
+        /// </summary>
+        [Test]
+        public void Passe_F2PDeReferencia_FechaATrilhaFreeAntesDoFimDaTemporada()
+        {
+            var s = new Sim(); var b = new Bot();
+            long ultimo = S1.Comeca;
+            int fechou = -1;
+            for (int d = 0; d < S1.Dias && fechou < 0; d++)
+                foreach (long h in new[] { H, 8 * H })
+                {
+                    long t = S1.Comeca + d * Dia + h;
+                    s.ApplyOffline(t - ultimo, t);
+                    Joga(s, b, t, 600f);
+                    ultimo = t + 600;
+                    s.Metas.ResgatarLogin();
+                    for (int i = 0; i < s.Metas.Diarias.Length; i++) s.Metas.ResgatarDiaria(i);
+                    for (int k = 0; k < s.Metas.Semanais.Length; k++) s.Metas.ResgatarSemanal(k);
+                    foreach (MetaDef c in MetasDefs.Conquistas) s.Metas.ResgatarConquista(c.Id);
+                    for (int n = 1; n <= S1.Niveis; n++) s.LiveOps.Resgatar(n);
+                    if (s.LiveOps.Passe == S1 && s.LiveOps.Nivel >= S1.Niveis) { fechou = d + 1; break; }
+                }
+            TestContext.WriteLine($"F2P de referencia: trilha free do {S1.Id} fechada no dia {fechou} (nivel {s.LiveOps.Nivel}, XP {s.LiveOps.Xp})");
+            Assert.That(fechou, Is.InRange(1, S1.Dias), "fecha dentro da temporada");
+            Assert.IsFalse(s.Metas.Ledger.Any(x => x.EndsWith(":p", StringComparison.Ordinal)), "nada do premium");
+        }
+
         [Test]
         public void Fechamento_F2PFechaATrilhaFreePertoDoDia28()
         {

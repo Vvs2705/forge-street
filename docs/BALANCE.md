@@ -1692,6 +1692,8 @@ Conta estática do `LIVEOPS_V1.md` §5.4 com o conteúdo real (`LiveOpsDefs.XpDi
 | S1 Royal Commission | 651 XP/dia → **dia 27,6** | 603–613 XP/dia → dia 29,4–29,9 |
 | S2 Ember Festival | 651 XP/dia → **dia 27,6** | 589–599 XP/dia → dia 30,1–30,6 |
 
+**Jogado de verdade (2026-10-23, `LiveOpsTests.Passe_F2PDeReferencia_FechaATrilhaFreeAntesDoFimDaTemporada`):** o F2P de referência (2 sessões de 10 min por dia, cofre entre elas, sem anúncio nem golpe, do T0) resgata ao fim de cada sessão o login, as diárias, as semanais, as conquistas e os níveis do Passe. **Fecha a trilha free da S1 no dia 19**, nunca com premium. **Achado (revisar):** 8–11 dias antes da conta estática, porque ela não conta o XP das conquistas, e o F2P fecha dezenas delas nas 2 primeiras semanas (o retroativo e o começo do jogo). O portão do teste é "dentro da temporada" (35 dias). Se o portão "dia 26–30" valer para o jogo jogado, os knobs são o `PassDef.XpNivel` (600 → ~850) ou o XP das conquistas no Passe (`Metas.PassXp`). Nada mudou nos números.
+
 - Portão "fecha entre o dia 26 e o 30": o desenho passa nas duas; hoje a S1 passa e a **S2 passa do 30** porque só 2 dos 5 eventos dela rodam (volta ao 27,6 quando o Orders 2.0 liberar Rare Ore Rush, Merchant Caravan e Ember Crown). Knob se preciso: `PassDef.XpNivel`.
 - Numa sessão de 60 min com evento, o Passe ganha 250 XP (100 de encomendas, no teto, + 150 da trilha do evento).
 - Orçamento de ouro de LiveOps por dia (validator): metas 115,7 s + Pass 33,4 s + o evento mais caro 27,9 s (Hunt com o fallback do projeto) = **177 s ≤ 180** (14,7% dos 1.200 s de venda de um dia de 20 min; portão ≤ 15%).
