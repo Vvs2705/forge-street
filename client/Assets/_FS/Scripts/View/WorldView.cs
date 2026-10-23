@@ -263,7 +263,10 @@ namespace FS
         readonly System.Random _artRng = new System.Random(7);
         int _lastArt = -1;
         SpriteSheet _nobre;
-        SpriteSheet _packSheet, _plainSheet;   // ferreiro com e sem a mochila (Init; troca em RefreshCarrier)
+        /// <summary>B-ART-05: as folhas do heroi por estagio (RenomeDefs.EstagioHeroi) sem e com a mochila; null = sem a folha da mochila (icone).
+        /// Folha de estagio que faltar repete a do estagio de baixo.</summary>
+        static readonly string[] FolhasHeroi = { "ferreiro", "ferreiro_mochila", "ferreiro_e2", "ferreiro_e2_mochila", "ferreiro_e3", "ferreiro_e3_mochila" };
+        SpriteSheet[] _heroi;
         SpriteRenderer _street, _streetWash, _shopTeaser; Text _streetLabel, _shopLabel;
         readonly List<(GameObject Shut, GameObject Open)> _gates = new List<(GameObject, GameObject)>();   // portao e porta de servico
         BubbleV _bubble, _jewelBubble;
@@ -340,7 +343,13 @@ namespace FS
             _player = BuildCarrier(sim.Player, Art.Player, 0.62f, Balance.PlayerCapUp * sim.Player.Held.Length);   // FASE7: ate o teto de CADA tipo
             // Mochila (feedback do POCO 2026-10-13, "item solto"): com a folha ferreiro_mochila (mesmo render, mochila presa ao Spine2) a compra
             // troca a folha do corpo (RefreshCarrier). Sem ela, v0.6a (P2-2): icone do cartao nas costas (RefreshCarrier a poe do lado das costas)
-            if (_player.Body != null && SpriteSheet.TryGet("ferreiro_mochila", out _packSheet)) { _packSheet.Scale = CharScale("ferreiro"); _plainSheet = _player.Body.Sheet; }
+            if (_player.Body != null && SpriteSheet.TryGet(FolhasHeroi[1], out SpriteSheet mochila))
+            {
+                _heroi = new SpriteSheet[FolhasHeroi.Length];
+                _heroi[0] = _player.Body.Sheet; _heroi[1] = mochila;
+                for (int k = 2; k < _heroi.Length; k++) if (!SpriteSheet.TryGet(FolhasHeroi[k], out _heroi[k])) _heroi[k] = _heroi[k - 2];
+                for (int k = 1; k < _heroi.Length; k++) _heroi[k].Scale = CharScale("ferreiro");
+            }
             else
             {
                 Transform pack = _player.Body != null ? Prop(_player.Root, "melhoria_mochila", Upgrade.PlayerCapacity, Vector2.zero, PackS, 0) : null;
@@ -1793,10 +1802,11 @@ namespace FS
                 if (c.Moving) v.CheerT = 0f; else v.CheerT -= dt;
                 // ajudante parado ha 0,5 s (fonte vazia ou nada a fazer) olha em volta: le como "esperando" o gargalo
                 string clip = c.Moving ? "Walking" : v.CheerT > 0f ? "Cheering" : c.Role >= 0 && c.IdleT > 0.5f ? "LookingAround" : "Idle";
-                if (v == _player && _packSheet != null)   // mesma animacao e quadro, outra folha; comprou agora = poeira (o save carrega sem)
+                if (v == _player && _heroi != null)   // mesma animacao e quadro, outra folha; comprou a mochila ou subiu de estagio agora = poeira
                 {
-                    SpriteSheet want = _sim.Has(Upgrade.PlayerCapacity) ? _packSheet : _plainSheet;   // Has: a mochila e' do ferreiro em todo distrito (C-CORE-02)
-                    if (v.Body.Sheet != want && want == _packSheet && Time.timeSinceLevelLoad > 1f) Poof(c.Pos, 0.6f);
+                    // Has: a mochila e' do ferreiro em todo distrito (C-CORE-02); o Renome e' o do Imperio
+                    SpriteSheet want = _heroi[2 * RenomeDefs.EstagioHeroi(_sim.Renome.Nivel) + (_sim.Has(Upgrade.PlayerCapacity) ? 1 : 0)];
+                    if (v.Body.Sheet != want && Time.timeSinceLevelLoad > 1f) Poof(c.Pos, 0.6f);
                     v.Body.Sheet = want;
                 }
                 v.Body.Tick(clip, dt, v.Root.localPosition - before, clip == "LookingAround");

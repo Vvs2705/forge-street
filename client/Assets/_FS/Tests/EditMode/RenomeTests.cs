@@ -305,5 +305,19 @@ namespace FS.Tests
             Acusa("renome: \"wk_baltazar\" liberado por mais de um nivel");
             Assert.IsTrue(ContentValidator.NiveisRenome(RenomeDefs.Niveis.Take(10).ToArray()).Any(m => m.Contains("10 niveis na tabela")), "faltando o 10");
         }
+            /// <summary>B-ART-05: o heroi muda de visual no Renome 3 (chapeu de couro) e 4 (barrete de mestre), nunca volta, e as 6 folhas
+        /// (3 estagios, sem e com a mochila) existem em Resources/Sprites.</summary>
+        [Test]
+        public void Heroi_TresEstagiosPeloRenome_ComAsFolhas()
+        {
+            Assert.AreEqual(new[] { 0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2 }, Enumerable.Range(0, 11).Select(RenomeDefs.EstagioHeroi).ToArray());
+            string dir = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Aqui()), "../../Resources/Sprites"));
+            if (!System.IO.Directory.Exists(dir)) Assert.Ignore("sprites fora do alcance: " + dir);
+            foreach (string f in new[] { "ferreiro", "ferreiro_mochila", "ferreiro_e2", "ferreiro_e2_mochila", "ferreiro_e3", "ferreiro_e3_mochila" })
+                foreach (string clip in new[] { "Idle", "Walking", "Cheering" })
+                    Assert.IsTrue(System.IO.File.Exists(System.IO.Path.Combine(dir, f, clip + ".png")), f + "/" + clip);
+        }
+
+        static string Aqui([System.Runtime.CompilerServices.CallerFilePath] string f = "") => f;
     }
 }
