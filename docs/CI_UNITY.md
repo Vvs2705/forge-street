@@ -13,18 +13,19 @@ O `nucleo.yml` continua com o `dotnet test` do núcleo. O viewcheck (`view`/`and
 
 Cada job guarda o `client/Library` em cache (uma chave por alvo). A 1ª rodada importa o projeto inteiro (~20–40 min por job); as seguintes reaproveitam o cache.
 
-## Licença: os 3 secrets que o Vinicius cola uma vez
+## Licença: os secrets que o Vinicius cola uma vez
 
-Sem `UNITY_LICENSE` os jobs do Unity aparecem como **skipped** e o PR não fica vermelho. Para ligar:
+Sem `UNITY_EMAIL` e `UNITY_PASSWORD` os jobs do Unity aparecem como **skipped** e o PR não fica vermelho.
 
-1. No PC, gere o `.ulf`: o Unity 6 ativado pelo Hub guarda só o `%LOCALAPPDATA%\Unity\licenses\UnityEntitlementLicense.xml`, que o GameCI não aceita. No Unity Hub, *Preferences → Licenses → Add → Get a free personal license* (mesmo que já apareça uma licença na lista). Isso cria `C:\ProgramData\Unity\Unity_lic.ulf` (pasta oculta: cole o caminho na barra do Explorador). Abra no Bloco de Notas e copie **todo** o conteúdo (do `<?xml` até o `</root>`).
-2. Em https://github.com/Vvs2705/forge-street/settings/secrets/actions/new crie 3 secrets (botão *New repository secret*, um por vez):
-   - `UNITY_LICENSE`: o conteúdo do `.ulf` copiado no passo 1;
-   - `UNITY_EMAIL`: o e-mail da conta Unity;
-   - `UNITY_PASSWORD`: a senha da conta Unity.
-3. Rode o workflow em https://github.com/Vvs2705/forge-street/actions/workflows/unity.yml (*Run workflow* na `main`) ou abra/atualize qualquer PR.
+Licença Personal: o GameCI (game-ci/cli) ativa uma vaga Personal pela conta Unity em cada rodada. O `.ulf` do PC (`UNITY_LICENSE`) não serve sozinho: ele é preso à máquina que o pediu e o runner reprova com `Machine bindings don't match` (visto em 2026-10-24); com e-mail e senha cadastrados, o GameCI cai sozinho na ativação pela conta.
 
-Se o `.ulf` ainda não aparecer, em *Preferences → Licenses* devolva a licença Personal (*Return*) e faça o *Add* de novo. A licença Personal vence de tempos em tempos: se o EditMode começar a falhar com erro de ativação, repita o passo 1 e atualize o `UNITY_LICENSE`.
+1. Em https://github.com/Vvs2705/forge-street/settings/secrets/actions/new crie (botão *New repository secret*, um por vez):
+   - `UNITY_EMAIL`: o e-mail da conta Unity logada no Hub;
+   - `UNITY_PASSWORD`: a senha dessa conta.
+2. A conta precisa estar **sem verificação em duas etapas** (o login automático não responde ao código).
+3. Rode o workflow em https://github.com/Vvs2705/forge-street/actions/workflows/unity.yml (*Run workflow* na `main`) ou atualize qualquer PR.
+
+`UNITY_LICENSE` (conteúdo de `C:\ProgramData\Unity\Unity_lic.ulf`, gerado no Hub em *Preferences → Licenses → Adicionar licença → Obter uma licença pessoal gratuita*) pode ficar cadastrada: o GameCI tenta o arquivo primeiro e, no erro de máquina, usa a conta.
 
 ## Regra de merge
 
