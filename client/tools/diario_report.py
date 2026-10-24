@@ -34,6 +34,7 @@ Colunas (Game.Log: sem cabecalho, virgula crua, sem aspas): utc, sessao, evento,
   O diario so grava no build de desenvolvimento (ou com -playtest) e roda a partir de 1 MB (fica a cauda mais nova).
 """
 import glob
+from datetime import date, timedelta
 import math
 import os
 import statistics
@@ -309,8 +310,7 @@ def relatorio(linhas, ruins=0):
     s += taxonomia(r)
     s += ["", "PORTOES"]
     s += [f"  [{st}] {texto}" for _, st, texto in portoes(r)]
-    s.append("  nao medidos aqui: D1/D7 e sessoes/dia (utc existe; Camada 0 nao mede retencao), "
-             "CPI, payer, crash-free (GDD sec.15/sec.26)")
+    s.append("  nao medidos aqui: sessoes/dia, CPI, payer e crash-free (GDD sec.15/sec.26); D1/D7 e os funis do DM s86: secao seguinte")
     return "\n".join(s)
 
 
@@ -345,6 +345,81 @@ def taxonomia(r):
     (ent, te), (sai, ts) = linha("currency_source"), linha("currency_sink")
     s += ["", "ECONOMIA (currency_source/currency_sink: ouro somado por origem/destino; mapa fonte -> ralo do BALANCE)",
           f"  entrou {ent:.0f}: {te}", f"  saiu {sai:.0f}: {ts}", f"  saldo {ent - sai:+.0f}"]
+    return s
+
+
+# DM s86: funis para os dashboards (G-UA-05), validados no diario antes do UGS. Etapa = o testador teve o evento ao menos 1 vez
+# (nomes antigos entre parenteses ainda contam: diario de antes do #137).
+FUNIL_FTUE = [
+    ("abriu", ("session_start",)),
+    ("1a venda", ("first_sale",)),
+    ("tutorial", ("tutorial_complete",)),
+    ("1a melhoria", ("upgrade_buy",)),
+    ("contratou", ("worker_hired",)),
+    ("encomenda", ("order_complete", "order_done")),
+    ("contrato real", ("royal_contract_start", "contract_accept")),
+    ("obra-prima", ("masterwork_unlock", "masterwork")),
+    ("distrito novo", ("district_unlock", "district_open")),
+]
+FUNIL_ANUNCIO = [
+    ("oferta", ("rewarded_offer",)),
+    ("toque", ("rewarded_start", "ad_request")),
+    ("recompensa", ("rewarded_complete", "ad_paid")),
+]
+FUNIL_COMPRA = [
+    ("viu a loja", ("iap_view",)),
+    ("comprou", ("iap_purchase", "iap_delivered")),
+    ("viu o Passe", ("pass_view",)),
+    ("comprou o Passe", ("pass_purchase",)),
+]
+
+
+def funis(caminhos):
+    """Retencao D1/D7 (dia de calendario UTC da 1a session_start de cada testador; D1 = abriu no dia seguinte, D7 = no 7o) e os
+    funis do DM s86 por testador. So le utc e evento: diario antigo ou vazio da '-', nunca excecao."""
+    tst = defaultdict(lambda: {"dias": set(), "ev": set()})
+    for c in caminhos:
+        for arq in (
+            sorted(glob.glob(os.path.join(c, "*.csv"))) if os.path.isdir(c) else [c]
+        ):
+            with open(arq, encoding="utf-8", errors="replace") as f:
+                for bruta in f.read().replace("\0", "").splitlines():
+                    r = bruta.split(",")
+                    if len(r) != 6 or len(r[0]) < 10:
+                        continue
+                    T = tst[arq]
+                    T["ev"].add(r[2])
+                    if r[2] == "session_start":
+                        try:
+                            T["dias"].add(date.fromisoformat(r[0][:10]))
+                        except ValueError:
+                            pass
+    n = len(tst)
+    s = [
+        "",
+        f"RETENCAO E FUNIS (DM s86; {n} testador(es); D1/D7 pelo dia UTC da 1a abertura)",
+    ]
+    if n == 0:
+        return s + ["  -"]
+
+    def ret(k):
+        base = [T for T in tst.values() if T["dias"]]
+        volta = sum(1 for T in base if min(T["dias"]) + timedelta(days=k) in T["dias"])
+        return f"{volta}/{len(base)}" + (
+            f" ({100 * volta / len(base):.0f}%)" if base else ""
+        )
+
+    s.append(f"  D1 {ret(1)} | D7 {ret(7)}")
+    for nome, funil in (
+        ("FTUE e progressao", FUNIL_FTUE),
+        ("anuncio", FUNIL_ANUNCIO),
+        ("compra", FUNIL_COMPRA),
+    ):
+        partes = []
+        for etapa, evs in funil:
+            k = sum(1 for T in tst.values() if T["ev"] & set(evs))
+            partes.append(f"{etapa} {k} ({100 * k / n:.0f}%)")
+        s.append(f"  {nome}: " + " > ".join(partes))
     return s
 
 
@@ -488,6 +563,20 @@ def autoteste():
                      "fator": "SEM DADOS", "rewarded": "SEM DADOS", "gargalo": "MANUAL"}, p
 
         print(rodar([rapido() for _ in range(7)] + [lento() for _ in range(3)])[2])
+
+    # funis (DM s86): 3 testadores; A volta no D1 e no D7 e compra o Passe, B so no D1 (nome antigo de encomenda), C so no dia 0
+    with tempfile.TemporaryDirectory() as d:
+        def grava(nome, linhas):
+            with open(os.path.join(d, nome + ".csv"), "w", encoding="utf-8") as f:
+                f.write("\n".join(f"{u},s,{e},0.0,x,y" for u, e in linhas) + "\n")
+        grava("A", [("2026-11-02T13:00:00", "session_start"), ("2026-11-02T13:01:00", "first_sale"), ("2026-11-03T09:00:00", "session_start"),
+                    ("2026-11-09T20:00:00", "session_start"), ("2026-11-09T20:05:00", "pass_view"), ("2026-11-09T20:06:00", "pass_purchase")])
+        grava("B", [("2026-11-02T23:59:00", "session_start"), ("2026-11-03T00:10:00", "session_start"), ("2026-11-03T00:11:00", "order_done")])
+        grava("C", [("2026-11-04T10:00:00", "session_start"), ("lixo", "session_start")])
+        f = "\n".join(funis([d]))
+        assert "D1 2/3 (67%) | D7 1/3 (33%)" in f, f
+        assert "encomenda 1 (33%)" in f and "comprou o Passe 1 (33%)" in f and "1a venda 1 (33%)" in f, f
+        assert funis([]) == ["", "RETENCAO E FUNIS (DM s86; 0 testador(es); D1/D7 pelo dia UTC da 1a abertura)", "  -"]
     print("\nautoteste OK")
 
 
@@ -503,3 +592,4 @@ if __name__ == "__main__":
         print("nao encontrei:", ", ".join(faltando))
         sys.exit(2)
     print(relatorio(*ler(caminhos)))
+    print("\n".join(funis(caminhos)))
