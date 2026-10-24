@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Visual Robustness Gate (DM §73) na `main` atual:** 15 telas conferidas nas 8 perguntas (`AUDITORIA_VISUAL.md`); o mapa dos distritos reprovava (as 6 linhas passavam por cima do título e do OK) e foi corrigido com o best-fit que encolhe de verdade no corpo dos painéis. O No Placeholder Gate ganhou a rodada do herói no estágio 5 e segue com 0 falta.
 - **Funis do DM §86 no relatório do diário:** o `diario_report.py` passa a imprimir a retenção D1/D7 e os funis de FTUE e progressão, de anúncio e de compra por testador, para validar a taxonomia antes de montar os dashboards no UGS.
 - **Teste de silhueta dos personagens:** `client/tools/silhuetas.py` gera as silhuetas pretas na escala do jogo; os personagens que dividem a tela em cada distrito se distinguem; os estágios 4 e 5 do herói têm a mesma silhueta e se distinguem pela cor e pela coroa (`AUDITORIA_VISUAL.md`).
 - **Pass reafinado:** cada conquista dá metade do XP de Passe (86 conquistas). O bot F2P de 20 min por dia passa a fechar a trilha free no dia 28 da temporada de 35 (antes, no dia 23), dentro da faixa 26–30 do LIVEOPS_V1; a conta estática e o validator não mudam (`BALANCE.md` §44).
