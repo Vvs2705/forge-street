@@ -116,7 +116,7 @@ namespace FS.EditorTools
         static string Env(string name)
         {
             string v = System.Environment.GetEnvironmentVariable(name);
-            if (string.IsNullOrEmpty(v) && GameCi.TryGetValue(name, out string ci))
+            if (string.IsNullOrEmpty(v) && GameCi.TryGetValue(name, out var ci))
             {
                 v = System.Environment.GetEnvironmentVariable(ci.Env);
                 string[] args = System.Environment.GetCommandLineArgs();
