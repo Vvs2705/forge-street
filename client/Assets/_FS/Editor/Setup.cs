@@ -149,6 +149,12 @@ namespace FS.EditorTools
                     PlayerSettings.Android.bundleVersionCode = VersionCode(Version);
                     PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel36;   // fixo: exigencia da Play desde 31/08/2026
                     EditorUserBuildSettings.buildAppBundle = true;
+#if UNITY_ANDROID
+                    // GDD §164 item 17 (crash reporting com simbolos): a tabela de simbolos do IL2CPP dentro do AAB (a Play simboliza o crash
+                    // nativo sozinha) e em .symbols.zip ao lado (o workflow release guarda como artifact). Fica nas configuracoes do Library: nao pesa no APK de dev
+                    UnityEditor.Android.UserBuildSettings.DebugSymbols.level = Unity.Android.Types.DebugSymbolLevel.SymbolTable;
+                    UnityEditor.Android.UserBuildSettings.DebugSymbols.format = Unity.Android.Types.DebugSymbolFormat.IncludeInBundle | Unity.Android.Types.DebugSymbolFormat.Zip;
+#endif
                 }
                 if (arch != AndroidArchitecture.None) PlayerSettings.Android.targetArchitectures = arch;
                 // o empacotamento incremental do Gradle reaproveita o APK anterior: depois de trocar de branch deixou ~12 MB de buracos e,

@@ -1381,6 +1381,8 @@ namespace FS
                 "Haz {0} obra maestra|Haz {0} obras maestras") },
             { "meta.masterwork_empire", L("Faça {0} obra-prima (Império)|Faça {0} obras-primas (Império)", "Make {0} masterwork (Empire)|Make {0} masterworks (Empire)",
                 "Haz {0} obra maestra (Imperio)|Haz {0} obras maestras (Imperio)") },
+            { "meta.worker_empire", L("Contrate {0} no Império|Contrate {0} no Império", "Hire {0} in the Empire|Hire {0} in the Empire",
+                "Contrata {0} en el Imperio|Contrata {0} en el Imperio") },
             { "meta.distritos", L("Abra {0} distrito|Abra {0} distritos", "Open {0} district|Open {0} districts", "Abre {0} distrito|Abre {0} distritos") },
             { "meta.masterwork_um", L("Obra-prima: {0}", "Masterwork: {0}", "Obra maestra: {0}") },
             { "meta.masterwork_familia", L("Faça {0} obras-primas de {1}", "Make {0} {1} masterworks", "Haz {0} obras maestras de {1}") },
