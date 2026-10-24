@@ -17,14 +17,14 @@ Cada job guarda o `client/Library` em cache (uma chave por alvo). A 1ª rodada i
 
 Sem `UNITY_LICENSE` os jobs do Unity aparecem como **skipped** e o PR não fica vermelho. Para ligar:
 
-1. No PC, com o Unity Hub logado na conta da licença Personal, abra `C:\ProgramData\Unity\Unity_lic.ulf` no Bloco de Notas e copie **todo** o conteúdo (do `<?xml` até o `</root>`).
+1. No PC, gere o `.ulf`: o Unity 6 ativado pelo Hub guarda só o `%LOCALAPPDATA%\Unity\licenses\UnityEntitlementLicense.xml`, que o GameCI não aceita. No Unity Hub, *Preferences → Licenses → Add → Get a free personal license* (mesmo que já apareça uma licença na lista). Isso cria `C:\ProgramData\Unity\Unity_lic.ulf` (pasta oculta: cole o caminho na barra do Explorador). Abra no Bloco de Notas e copie **todo** o conteúdo (do `<?xml` até o `</root>`).
 2. Em https://github.com/Vvs2705/forge-street/settings/secrets/actions/new crie 3 secrets (botão *New repository secret*, um por vez):
    - `UNITY_LICENSE`: o conteúdo do `.ulf` copiado no passo 1;
    - `UNITY_EMAIL`: o e-mail da conta Unity;
    - `UNITY_PASSWORD`: a senha da conta Unity.
 3. Rode o workflow em https://github.com/Vvs2705/forge-street/actions/workflows/unity.yml (*Run workflow* na `main`) ou abra/atualize qualquer PR.
 
-Se o `.ulf` não existir nesse caminho, abra o Unity Hub, *Preferences → Licenses*, devolva e ative de novo a licença Personal; o arquivo é recriado. A licença Personal vence de tempos em tempos: se o EditMode começar a falhar com erro de ativação, repita o passo 1 e atualize o `UNITY_LICENSE`.
+Se o `.ulf` ainda não aparecer, em *Preferences → Licenses* devolva a licença Personal (*Return*) e faça o *Add* de novo. A licença Personal vence de tempos em tempos: se o EditMode começar a falhar com erro de ativação, repita o passo 1 e atualize o `UNITY_LICENSE`.
 
 ## Regra de merge
 
