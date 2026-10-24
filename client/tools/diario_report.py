@@ -145,8 +145,8 @@ def analisar(linhas):
                 T["ads"][a] += 1
         elif ev in ("vip_arrived", "vip_served", "vip_left", "boost_start"):
             vip[ev] += 1
-        elif ev in ("order_new", "order_done"):
-            T["enc"][ev] += 1
+        elif ev in ("order_new", "order_done", "order_start", "order_complete"):   # DM §86: order_start/order_complete (os antigos seguem lidos)
+            T["enc"]["order_new" if ev in ("order_new", "order_start") else "order_done"] += 1
         elif ev.startswith("save_") or ev == "clock_back":
             save[ev] += 1
         elif ev == "session_end":

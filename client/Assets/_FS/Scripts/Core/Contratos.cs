@@ -56,8 +56,29 @@ namespace FS.Core
 
         public bool Concluido(string id) => Concluidos.Contains(id);
 
-        /// <summary>O proximo da lista fixa (nao concluido, nao ativo), aberto ou nao; null = acabaram.</summary>
-        public ContractDef Proximo => Array.Find(Defs, d => !Concluido(d.Id) && (Ativo == null || Ativo.Def != d) && (Ativo2 == null || Ativo2.Def != d));
+        /// <summary>Distrito do ultimo Tick (o ativo; null antes do 1o): o Proximo prefere um contrato que anda nele. Fora do save.</summary>
+        string _aqui;
+
+        /// <summary>O proximo da lista fixa (nao concluido, nao ativo), sem sorteio: no distrito ativo, o 1o aberto dele (senao o 1o dele, que o
+        /// cartao mostra fechado); distrito sem contrato pendente = o 1o da lista, como antes. A ordem da lista segue valendo como progressao
+        /// (no Old Forge nada muda); so que o ronda_vila do Old Forge nao fica mais na vaga na Grand Forge, onde nunca anda, nem o torre_magos
+        /// fechado segura os de la (BALANCE §41, achado 15). null = acabaram.</summary>
+        public ContractDef Proximo
+        {
+            get
+            {
+                ContractDef primeiro = null, daqui = null;
+                foreach (ContractDef d in Defs)
+                {
+                    if (Concluido(d.Id) || Ativo?.Def == d || Ativo2?.Def == d) continue;
+                    primeiro ??= d;
+                    if (d.District != _aqui) continue;
+                    if (Aberto(d)) return d;
+                    daqui ??= d;
+                }
+                return daqui ?? primeiro;
+            }
+        }
 
         /// <summary>O contrato que da para aceitar agora: o Proximo, com uma vaga livre e aberto.</summary>
         public ContractDef Oferta { get { ContractDef d = Proximo; return d != null && (Ativo == null || MesaReal && Ativo2 == null) && Aberto(d) ? d : null; } }
@@ -102,6 +123,7 @@ namespace FS.Core
         /// conta); completo = paga.</summary>
         internal void Tick(float dt, Sim ativo)
         {
+            _aqui = ativo.Distrito?.Id;
             if (Ativo2 != null && Ativo2.Prazo > 0f) Ativo2.Prazo = Math.Max(0f, Ativo2.Prazo - dt);   // C-CORE-07: a 2a vaga
             if (Ativo2 != null && Ativo2.Pronto) Concluir(ativo, true);
             if (Ativo == null) return;
