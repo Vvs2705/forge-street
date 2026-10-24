@@ -103,7 +103,7 @@ O começo é dominado pelo que o jogador faz (pegar/largar ~20/min, só dele); o
 
 ## 5. Música
 
-Uma volta da música (28,8 s, `Sintese.Musica`), depois **30 s só com o ambiente**, e volta (`Mixagem.MusicaPausa`). Entra em 0,4 s e sai nos últimos 2,5 s (`Mixagem.MusicaGanho`), sem estalo no fim; em 30 min ela toca ~30 voltas em vez de ~60, e o silêncio entre elas faz cada volta soar nova. Abaixa 6 dB sob os Importantes. Ligar a chave Música recomeça a volta do início.
+Uma volta da música (uma das 5 da §10; a `Sintese.Musica` de 28,8 s só quando falta algum arquivo), depois **30 s só com o ambiente**, e volta (`Mixagem.MusicaPausa`). Entra em 0,4 s e sai nos últimos 2,5 s (`Mixagem.MusicaGanho`), sem estalo no fim; com a sintetizada, em 30 min eram ~30 voltas em vez de ~60; com as reais (2–5 min) são ~8, e o silêncio entre elas faz cada volta soar nova. Abaixa 6 dB sob os Importantes. Ligar a chave Música recomeça a volta do início.
 
 ## 6. Configurações
 
@@ -143,4 +143,22 @@ Sete sons da `Sintese` passam a tocar arquivos reais do banco CC0 da Kenney (15 
 
 **A mixagem não muda:** cada arquivo foi normalizado ao RMS 50 ms do clip sintetizado que substitui (coluna da §2), então os volumes da `Mixagem.Regras` e os alvos por categoria continuam valendo; o teste `SomTests.Cc0_NoNivelDoSintetizado` cai se um arquivo sair do nível (±1 dB), do formato (mono, 16 bits, 22 050 Hz) ou clipar. A duração muda (os impactos reais são mais curtos: 0,07–0,53 s contra 0,16–0,75 s), e a `Mixagem` mede a voz ocupada pelo `AudioClip.length` do 1º arquivo; a medida do bot da §4 segue com as durações da `Sintese` (núcleo sem Unity), um teto conservador: vozes mais curtas só baixam o pico e o tempo com ≥ 3 sons.
 
-Continuam sintetizados: furnace (lingote), upgrade, hire, client (sino), leave, offline, vip, order, o ambiente e a música (sem equivalente no banco escolhido; decisão de fonte para música e fanfarras em aberto, `PROJETO.md` §9). Para refazer: `python client/tools/audio_cc0.py <pasta com os zips extraídos>` (precisa do ffmpeg).
+Continuam sintetizados: furnace (lingote), upgrade, hire, client (sino), leave, offline, vip, order e o ambiente (sem equivalente no banco escolhido). A música real está na §10. Para refazer: `python client/tools/audio_cc0.py <pasta com os zips extraídos>` (precisa do ffmpeg).
+
+## 10. As 5 músicas (CC0, RandomMind, 2026-10-24)
+
+GDD v2 §22 ("5 músicas: main, workshop, royal, event, arcane; medieval estilizado, sem cansar"). Cinco faixas CC0 do mesmo autor (RandomMind, OpenGameArt; licença, origem e SHA no `PROVENIENCIA.md` §23), em `client/Assets/_FS/Resources/Musica/<trilha>.ogg`, importadas como **Streaming** (Vorbis 0,5, sem pré-carga, carga em segundo plano: só o trecho que toca fica na memória).
+
+| trilha | faixa | quando toca |
+|---|---|---|
+| main | The Old Tower Inn | a 1ª volta da sessão e a cada 4 voltas (o tema) |
+| workshop | Market Day | a da casa no Old Forge, na Rua dos Armeiros e no Artisan Quarter |
+| royal | King's Feast | a da casa no Royal Arsenal e na Grand Forge |
+| arcane | Rising Moon | a da casa na Arcane Foundry |
+| event | Rejoicing | com evento ativo, as voltas ímpares |
+
+Regra (`Mixagem.Trilha`, pura, `MixagemTests.Musica_TrilhaPorDistritoEEvento`): volta 0 e múltiplas de 4 = main; com evento, ímpares = event; o resto = a da casa (`Mixagem.TrilhaDoDistrito`). Sem sorteio. Entre as voltas segue a pausa de 30 s da §5 (com entrada e saída suaves e o ducking dos Importantes). **Trocar de distrito** com a música ligada começa já a da casa nova (a viagem é o corte). Sem os 5 arquivos (projeto incompleto), toda volta toca a `Sintese.Musica`, como antes.
+
+**Nível:** o `audio_musica.py` põe o RMS médio de cada faixa em −18 dBFS, o da `Sintese.Musica`, então o `MusicaVol` 0,18 continua dando os −33 dB da §2 e a hierarquia do mix não muda. Picos num joelho suave (teto 0,95), sem clipar. Para refazer: `python client/tools/audio_musica.py <pasta com os 5 mp3>` (precisa do ffmpeg com libvorbis).
+
+**Calibrar (revisar):** ouvir no POCO se a música real, mais cheia que a sintetizada, pede 1–2 dB a menos no `MusicaVol`, e se a pausa de 30 s ainda faz sentido com faixas de 2–5 min.

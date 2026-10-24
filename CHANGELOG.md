@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **5 músicas reais (CC0, RandomMind):** a música sintetizada dá lugar a 5 faixas medievais do mesmo autor no OpenGameArt: o tema (The Old Tower Inn) abre a sessão e volta a cada 4 voltas, a oficina (Market Day) toca no Old Forge, na Rua dos Armeiros e no Artisan Quarter, King's Feast no Royal Arsenal e na Grand Forge, Rising Moon na Arcane Foundry e Rejoicing durante os eventos. Trocar de distrito já começa a música dele. No mesmo nível da antiga (a mixagem não muda), em streaming. Licença e SHA no `PROVENIENCIA.md` §23; `docs/AUDIO.md` §10.
 - **Pass medido com o bot:** teste novo em que o bot F2P joga 20 min por dia e fecha a trilha free no dia 23 da temporada de 35, sem nada do premium; o validator do LiveOps recusa requisito de evento ou alvo de meta que só a trilha premium dá ("nada obrigatório só no premium").
 - **Preço do Pass premium definitivo:** R$ 44,90 por temporada (`iap_pass_s1_royal_commission`, `iap_pass_s2_ember_festival`), aprovado pelo Vinicius em 2026-10-24; sai a marca de provisório do código e dos docs (`IAP.md` §1, `PROJETO.md` §8 e §9).
 - **Félix com arte própria:** o Mensageiro da Grand Forge deixa a folha emprestada do menino mensageiro e ganha a sua (mensageiro barbado de capa azul-noite, boné com pena e caixote nas costas), com Idle, LookingAround e Walking nas 4 direções. 65 créditos do Tripo; `docs/ASSETS.md` §23.

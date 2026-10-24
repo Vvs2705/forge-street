@@ -480,7 +480,7 @@ namespace FS
 
             if (_vipNow && _sim.CanSummonVip) _vipNow = !_sim.SummonVip();
             _view.Refresh(Time.deltaTime);
-            Sfx.Tick(_sim, _cam, Time.unscaledDeltaTime);   // A-AUD-23: musica e ambiente que cresce com estacoes trabalhando e fila; fix/mix-audio: ouvinte, tela e fila da Mixagem
+            Sfx.Tick(_sim, _cam, Time.unscaledDeltaTime, _raiz.LiveOps.Evento != null);   // A-AUD-23: musica (a do distrito e a do evento) e ambiente que cresce com estacoes trabalhando e fila; fix/mix-audio: ouvinte, tela e fila da Mixagem
             FollowCamera(Time.deltaTime);
             RefreshHud();
             _menu.Refresh(Time.deltaTime);
