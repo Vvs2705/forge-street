@@ -314,7 +314,7 @@ namespace FS
             if (Arg("-adencomenda") != null) for (float t = 0f; t < 60f && _sim.Encomendas.Principal == null; t += MaxStep) _sim.Tick(MaxStep, 0f, 0f);
             // B-CORE-05, foto: -encomendas joga ate 180 s de jogo (sem andar) ate todas as vagas abrirem (com -renome 20/180: 2/3 vagas)
             if (Arg("-encomendas") != null)
-                for (float t = 0f; t < 180f && _sim.Encomendas.Vagas.Count < _sim.Encomendas.VagasMax; t += MaxStep) _sim.Tick(MaxStep, 0f, 0f);
+                for (float t = 0f; t < 180f && _sim.Encomendas.Normais < _sim.Encomendas.VagasMax; t += MaxStep) _sim.Tick(MaxStep, 0f, 0f);
             foreach ((string flag, Anuncio a) in new[] { ("-adcofre", Anuncio.Cofre), ("-adencomenda", Anuncio.EncomendaBonus), ("-adsupply", Anuncio.Supply) })
                 if (Arg(flag) != null && !_sim.Anuncios.Pode(a)) { Falha($"AD: {flag} sem o placement {a} (D6 pede -buy 1; encomenda e cofre, vendas no -warmup)"); return; }
             _botDrive = Arg("-bot") != null;

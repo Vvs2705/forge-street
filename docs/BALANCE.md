@@ -2605,3 +2605,45 @@ A Carta melhora porque as receitas de síntese ficam mais lentas e o bot passa m
 **Bot (`econsim --perfis F2P,Ideal,Slow --minutos 120 --partidas 4`):** CSV **idêntico** ao byte (`805079bc…69798`, `md5`) na `main` 1f83293 e neste branch: o bot não resgata diárias, então o rodízio novo não muda produção, renda nem Renome. O efeito no jogador real é só o prêmio da diária (o mesmo de antes: XP 100 + 20 s) vindo de outra tarefa.
 
 **Testes:** `MetasTests.PoolC_RenomeFinaEEvento_GoldenERegras` (fallback para a A sem nada aberto; Renome pelo ganho desde a vaga, pago 1x; a 1ª Fina de escudo abre as de Fina e o golden de 6 dias `fina10, renome5, fina10, renome5, fina_escudos10, fina10`; com o Forge Frenzy ativo, só as 2 de evento, alternando) e `Rodizio_60Dias_…` ajustado (com a Joalheria, o slot C é o `dly_renome5`).
+
+## 44. V27: a encomenda Event conta à parte das vagas normais (2026-10-24)
+
+**Regra vigente** (`Core/Encomendas.cs`, `Core/EncomendasDefs.cs`; branch `feat/v27-evento-fora-das-vagas`; decisão V27 do `PROJETO.md` §4: à parte). Até aqui a encomenda Event tinha cartão próprio (não contava no `VagasMax`), mas **disputava a peça** com as normais: `Encomendas.OnVenda` dava a peça só à vaga mais antiga que a aceitasse, e a Event, que reabre no fim da lista, passava fome atrás das 3 normais (§30.6, ressalva 2); os pontos dela tinham sido afinados por evento para compensar (Caravan 12, Royal Week-B 15, Hunts 17/20). Agora:
+
+- **Venda:** a peça conta para a vaga **normal** mais antiga que a aceita (só uma, como antes) **e também** para a do evento, mesmo que a do evento seja a mais antiga.
+- **Rodízio de produto:** cada lado só olha o seu: as normais não pulam o item da Event e a Event não pula o das normais (`Encomendas.Lado`); a Event segue o próprio contador (`linhas[Eventos % linhas]`). Com o mesmo item nos dois cartões, a mesma peça anda os dois.
+- **Pontos:** um valor só, **17 por entrega nos 10 eventos** (`OrderDefs.Evento`, padrão; os ajustes por evento saíram). Sem ouro nem Renome, como antes.
+- **Nada novo no save:** `enc=` já guardava o contador `Eventos` e a vaga Event já ia em `enc.v=`; save antigo carrega igual. `Encomendas.Normais` virou público (a foto `-encomendas` do `Game.cs` conta só as normais).
+- Fora: a View já mostrava a Event num cartão à parte (`CartoesEncomenda`, o 4º). O `ContentValidator` não tem regra de pontos por evento (só "Event pede evento e pontos > 0, sem ouro nem Renome"), então não mudou.
+
+**Prova ao byte (Old Forge sem evento).** `git archive origin/main` (0b5bff8) do `Scripts/Core` e do `econsim` num diretório temporário, os dois econsim compilados em Release e os CSVs comparados com `cmp`: `--minutos 60 --partidas 1 --anuncio-seg 30` (5 perfis) **igual** (md5 `4cbb5e1a159e…`); `--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 360 --partidas 3 --anuncio-seg 30` (§28.1) **igual** (`130d10705634…`); `--distrito armorers_row --perfis F2P,Ideal --minutos 120 --partidas 2` **igual** (`0c706336e0bf…`). Nos resumos só muda a coluna de segundos de CPU. Sem vaga Event, o `OnVenda` novo para na 1ª normal que aceita (o de antes) e o `Lado` é sempre verdadeiro.
+
+**Trilha de evento (`LiveOpsTests.TrilhaDeEvento_*`; o F2P de referência da §28.6: 60 min seguidos no 1º dia / dia em que 2 sessões de 10 min por dia fecham os 1.000).** Antes = `main` 0b5bff8; "só a regra" = este branch com os pontos de antes; vigente = 17 nos 10. Entre parênteses, as encomendas Event entregues.
+
+| evento | antes (pontos da `main`) | só a regra, pontos de antes | **vigente: 17** | com 16 / 18 (folga) |
+|---|---|---|---|---|
+| Royal Week | 15: 605 (19) / dia 5 | 515 (13) / dia 5 | **541 (13) / dia 5** | 5 / 5 |
+| Forge Frenzy | 15: 785 (15) / dia 4 | 755 (13) / dia 5 | **781 (13) / dia 4** | 4 / 4 |
+| Armorer's Challenge | 15: 810 (20) / dia 5 | 750 (16) / dia 5 | **782 (16) / dia 5** | 5 / 5 |
+| Hunt da Sunblade | 17: 840 (20) / dia 4 | 772 (16) / dia 5 | **772 (16) / dia 5** | 5 / 5 |
+| Forge Frenzy-B | 15: 765 (15) / dia 4 | 735 (13) / dia 5 | **761 (13) / dia 4** | 4 / 4 |
+| Blacksmith Festival | 15: 700 (16) / dia 5 | 715 (17) / dia 5 | **749 (17) / dia 4** | 4 / 4 |
+| Rare Ore Rush | 15: 835 (19) / dia 4 | 790 (16) / dia 4 | **822 (16) / dia 4** | 4 / 4 |
+| Merchant Caravan | 12: 780 (20) / dia 5 | 732 (16) / dia 5 | **812 (16) / dia 4** | 4 / 4 |
+| Hunt da Ember Crown | 20: 820 (16) / dia 4 | 820 (16) / dia 4 | **772 (16) / dia 5** | 5 / 5 |
+| Royal Week-B | 15: 810 (18) / dia 4 | 750 (14) / dia 5 | **778 (14) / dia 4** | 4 / 4 |
+
+Varredura (pontos de 10 a 20, cada evento à parte, mesmo F2P). **Na `main` nenhum valor único servia aos 10:** com a disputa, 14 deixava Armorer's e os 2 Hunts no dia 6 e 16 já levava Rare Ore Rush e Merchant Caravan ao dia 3 (por isso os ajustes por evento). **Com a regra nova,** a faixa que fecha no dia 4–5 por evento: Royal Week, Forge Frenzy, Forge Frenzy-B, Blacksmith Festival e Royal Week-B 14–20; Armorer's 15–20; os 2 Hunts 16–20; Rare Ore Rush e Merchant Caravan 12–18. **17 é o único valor no meio das 10 faixas com ±1 de folga** (16 e 18 também passam nos 10); 14 tira Armorer's e os Hunts (dia 6) e 19 leva Rare Ore e Caravan ao dia 3. A Event entrega menos que antes em 60 min (13–17 contra 15–20): sem pular o item das normais, o rodízio próprio passa pelas linhas lentas (joia, ferramenta) em vez de cair quase sempre na linha livre mais rápida (a espada longa); a fome atrás das normais sumiu, mas pesava menos que isso. Com 17 a sessão de 60 min fica em 541–822 (portão "nunca numa sessão": < 1.000).
+
+**econsim com evento** (`--perfis F2P,Ideal,AdWatcher --minutos 60 --partidas 2 --anuncio-seg 30 --evento X`; F2P: pontos na sessão, renda/min depois da entrada sem → com evento, ouro dos limiares). O CSV muda, como esperado (a Event e as normais escolhem itens diferentes e o ouro dos limiares muda as compras):
+
+| evento | antes | vigente |
+|---|---|---|
+| Forge Frenzy | 748 pts, 1.531 → 1.631 (+6,5%), 2.438 | 764 pts, 1.531 → 1.605 (+4,9%), 2.368 |
+| Merchant Caravan | 744 pts, 1.367 → 1.431 (+4,6%), 2.408 | 778 pts, 1.367 → 1.440 (+5,3%), 2.800 |
+| Hunt da Sunblade | 491 pts, 1.367 → 1.437 (+5,1%), 843 | 423 pts, 1.367 → 1.430 (+4,6%), 1.215 |
+| Rare Ore Rush | 805 pts, 1.367 → 1.542 (+12,8%), 2.328 | 746 pts, 1.367 → 1.476 (+7,9%), 2.248 |
+
+Ganho de renda com o evento nos 3 perfis: +3,7% a +11,8% (antes +4,6% a +12,8%).
+
+**Testes e mutações.** `EncomendasTests.Event_ContaAParte_APecaContaNaNormalENaDoEvento_RodizioProprio` (novo: a Event abre antes da Common e é a mais antiga; as duas na posição 1 pedem o mesmo item; a peça anda a Event e a normal mais antiga, nunca a 2ª normal); `Event_VagaPropria_*` e `LiveOpsTests.OrdersDois_RoyalWeek*` com 17; `LiveOpsTests.TrilhaDeEvento_*` (o portão: os 10 entre o dia 4 e o 5, sessão < 1.000) sem mudança de código. `mutantes.py`: `enc-evento-disputa-vaga` (a Event volta a disputar a peça) e `enc-evento-ve-normais` (os rodízios voltam a se enxergar) novas; `enc-evento-pontos-20` com o 17 e `enc-evento-pontos-14` nova; `enc-peca-conta-2x` e `enc-rodizio-repete-produto` reescritas no código novo; `enc-caravan-pontos-15` e `enc-sunblade-pontos-20` saíram (não há mais valor por evento). `mutantes.py --so` nas 7 do tema (as 6 acima e `enc-evento-sem-pontos`): **7 mortas, 0 vivas** (1.457 s). `dotnet test client/tools/coretests`: 583 verdes.

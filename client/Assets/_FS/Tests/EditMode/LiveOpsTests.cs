@@ -408,11 +408,11 @@ namespace FS.Tests
             Assert.AreEqual(rw.Encomenda, ev.Def.Id);
             EncTeste.Completa(ev);
             s.Tick(1f / 30f, 0f, 0f);
-            Assert.AreEqual(pontos + 15, s.LiveOps.Pontos, "+15 da encomenda Event");
+            Assert.AreEqual(pontos + 17, s.LiveOps.Pontos, "+17 da encomenda Event");
             Assert.AreEqual(xp + 10L, s.LiveOps.Xp, "a Event e' uma entrega: 10 de XP, nao dobra");
             Sim r = Sim.Load(s.Save(rw.Comeca + H + 2));
             Agora(r, rw.Comeca + H + 3);
-            Assert.AreEqual(pontos + 15, r.LiveOps.Pontos, "os pontos da Event vao no save (ev.c)");
+            Assert.AreEqual(pontos + 17, r.LiveOps.Pontos, "os pontos da Event vao no save (ev.c)");
             xp = s.LiveOps.Xp;
             for (int k = 0; k < 9; k++) Entrega(s, "ord_common_old_forge");
             Assert.AreEqual(xp + 60L, s.LiveOps.Xp, "teto de 100 por dia local contando a Event (4 + 6 entregas pagam XP)");
@@ -454,7 +454,7 @@ namespace FS.Tests
 
         /// <summary>
         /// LIVEOPS_V1 §2.2/§6: a trilha de evento fecha no dia 4-5 de 6, nunca numa sessao. Para cada evento que roda: (a) o bot F2P jogando
-        /// 60 min seguidos no 1o dia nao chega aos 1.000 (a missao play_day segura 100 e a encomenda Event da 15); (b) o F2P de referencia
+        /// 60 min seguidos no 1o dia nao chega aos 1.000 (a missao play_day segura 100 e a encomenda Event da 17, contada a parte das vagas: V27); (b) o F2P de referencia
         /// (§1: 2 sessoes de 10 min por dia, cofre entre elas, sem anuncio nem golpe) fecha no dia 4 ou 5. Antes do evento o jogador ja jogou
         /// 20 min por dia desde o T0, ate 2 h (a Royal Week e' o D0: comeca do zero). Os 7 eventos em paralelo (cada Sim tem o seu Tuning).
         /// </summary>
