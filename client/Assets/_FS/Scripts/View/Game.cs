@@ -115,6 +115,7 @@ namespace FS
         Hint _hintH; int _hintArg = -1, _hintU;   // v0.6d: a dica so e' remontada quando muda (sem string nova a cada 0,25 s)
         RectTransform _cfg;   // v0.6b: cartao de configuracoes (Som, Vibracao, versao)
         TelaPrivacidade _priv;   // E-PLAT-01: idade + consentimento (Privacidade.cs)
+        PedidoIdade _pedido;     // E-PLAT-01: quando a tela abre sozinha (no 1o botao de anuncio) e se os botoes de anuncio podem aparecer
         PainelMetas _metas;      // D-CORE-02: diarias, semanais, conquistas e login (PainelMetas.cs)
         PainelProjetos _projetos;   // B-CORE-07: Blueprints possuidos e bloqueados com a fonte (PainelProjetos.cs)
         PainelHall _hall;           // B-CORE-08: Hall das obras-primas e Collection (PainelHall.cs)
@@ -243,12 +244,16 @@ namespace FS
             _projetos = new PainelProjetos(_safe, _sim);   // C-CORE-05: projetos, Hall e Colecao do distrito ativo (cada um tem os dele: a Row,
             _hall = new PainelHall(_safe, _sim);           // o projeto de mestre e as 10 obras dela); no Old Forge e' a raiz, como antes
             if (_loja != null) _lojaUi = new PainelLoja(_safe, _raiz, _loja, Comprar, Restaurar);
-            // E-PLAT-01: sem resposta (ou com texto novo) a tela de idade abre por cima de tudo e o SDK de anuncio espera (Ads.Responder).
-            // Fotos e smoke (-testsession, -record, -autoplay) nao a veem, salvo com -privacidade [18]
+            // E-PLAT-01 (GDD "Conflitos" item 1, decidido: movida): nada antes do 1o toque. Sem resposta (ou com texto novo) a tela de idade
+            // abre no 1o instante em que um botao de anuncio apareceria (PedidoIdade, no RefreshAdUi: depois da 1a melhoria, D6); ate la
+            // nenhum botao de anuncio, o SDK espera (Ads.Responder) e a rede tambem (Liberar). Fotos e smoke (-testsession, -record,
+            // -autoplay) nao a veem sozinha; -privacidade [18] a abre ja no Awake (foto, teste)
             _priv = new TelaPrivacidade(_safe, Responder);
+            bool respondida = Ads.Resposta(out Faixa rf, out bool ra);
+            _pedido = new PedidoIdade(respondida, _testSession);
             string priv = Arg("-privacidade");
-            if (priv != null || (!_testSession && !Ads.Resposta(out _, out _))) _priv.Abrir(null, priv == "18");
-            if (Ads.Resposta(out Faixa rf, out bool ra)) Liberar(rf, ra);   // A-PLAT-08/09: respondida numa abertura anterior = rede liberada ja
+            if (priv != null) { _priv.Abrir(null, priv == "18"); _pedido.Aberta(); }
+            if (respondida) Liberar(rf, ra);   // A-PLAT-08/09: respondida numa abertura anterior = rede liberada ja
             // Programa de arte, etapa 2: o logo (C2) por cima de tudo ao abrir; fotos e smoke nao o veem, salvo -abertura (que o segura na tela)
             if (!_testSession || Arg("-abertura") != null) StartCoroutine(Abertura(Arg("-abertura") != null));
             if (Arg("-menu") != null) _menu.Toggle();   // foto com a fileira aberta
@@ -314,7 +319,7 @@ namespace FS
             if (Arg("-adencomenda") != null) for (float t = 0f; t < 60f && _sim.Encomendas.Principal == null; t += MaxStep) _sim.Tick(MaxStep, 0f, 0f);
             // B-CORE-05, foto: -encomendas joga ate 180 s de jogo (sem andar) ate todas as vagas abrirem (com -renome 20/180: 2/3 vagas)
             if (Arg("-encomendas") != null)
-                for (float t = 0f; t < 180f && _sim.Encomendas.Vagas.Count < _sim.Encomendas.VagasMax; t += MaxStep) _sim.Tick(MaxStep, 0f, 0f);
+                for (float t = 0f; t < 180f && _sim.Encomendas.Normais < _sim.Encomendas.VagasMax; t += MaxStep) _sim.Tick(MaxStep, 0f, 0f);
             foreach ((string flag, Anuncio a) in new[] { ("-adcofre", Anuncio.Cofre), ("-adencomenda", Anuncio.EncomendaBonus), ("-adsupply", Anuncio.Supply) })
                 if (Arg(flag) != null && !_sim.Anuncios.Pode(a)) { Falha($"AD: {flag} sem o placement {a} (D6 pede -buy 1; encomenda e cofre, vendas no -warmup)"); return; }
             _botDrive = Arg("-bot") != null;
@@ -1277,16 +1282,25 @@ namespace FS
         /// </summary>
         void RefreshAdUi()
         {
-            bool vip = Pode(Anuncio.Vip), vipCool = _sim.T.Vip && _sim.T.Ad(Anuncio.Vip).Ligado && !_sim.VipActive && _sim.VipCooldown > 0f;
+            if (!_pedido.Botoes)
+            {
+                // E-PLAT-01: o 1o botao de anuncio que apareceria (so o nucleo: sem resposta o SDK nem iniciou) abre a tela de idade, 1x
+                Anuncios an = _sim.Anuncios;
+                bool hud = an.Pode(Anuncio.Vip) || an.Pode(Anuncio.Velocidade) || an.Pode(Anuncio.Supply)
+                    || _cards != null && _cards.PrincipalNaTela(_sim) && (an.Pode(Anuncio.EncomendaBonus) || an.Pode(Anuncio.EncomendaTroca));
+                bool noCofre = Painel && _panelRow.gameObject.activeSelf && an.Pode(Anuncio.Cofre);
+                if (_pedido.Abrir(hud, noCofre, EstadoAtual)) { _priv.Abrir(null); Log("consent_ask", hud ? "hud" : "cofre"); }
+            }
+            bool vip = Pode(Anuncio.Vip), vipCool = _pedido.Botoes && _sim.T.Vip && _sim.T.Ad(Anuncio.Vip).Ligado && !_sim.VipActive && _sim.VipCooldown > 0f;
             if (_vipBtn.B.gameObject.activeSelf != (vip || vipCool)) _vipBtn.B.gameObject.SetActive(vip || vipCool);
             if (vip || vipCool) Paint(_vipBtn, vip, Color.white, vip ? Loc.T("hud.vip") : Clock(_sim.VipCooldown));
-            bool active = _sim.BoostLeft > 0f, can = Pode(Anuncio.Velocidade), cool = _sim.T.Ad(Anuncio.Velocidade).Ligado && !active && _sim.BoostCooldown > 0f;
+            bool active = _sim.BoostLeft > 0f, can = Pode(Anuncio.Velocidade), cool = _pedido.Botoes && _sim.T.Ad(Anuncio.Velocidade).Ligado && !active && _sim.BoostCooldown > 0f;
             // s86 rewarded_offer: uma por aparicao do botao disponivel (cinza da recarga nao e' oferta), contada quando da para tocar
             // (A-PLAT-07: Estados.Anuncia; por baixo de painel ela espera o painel fechar)
             bool on = Estados.Anuncia(EstadoAtual);
             Ofertou(Anuncio.Vip, vip, on);
             Ofertou(Anuncio.Velocidade, can, on, active ? "3x" : "2x");
-            bool sup = Pode(Anuncio.Supply), supCool = _sim.T.Ad(Anuncio.Supply).Ligado && _sim.AdsUnlocked && _sim.Anuncios.Recarga[(int)Anuncio.Supply] > 0f;
+            bool sup = Pode(Anuncio.Supply), supCool = _pedido.Botoes && _sim.T.Ad(Anuncio.Supply).Ligado && _sim.AdsUnlocked && _sim.Anuncios.Recarga[(int)Anuncio.Supply] > 0f;
             if (_supplyBtn.B.gameObject.activeSelf != (sup || supCool)) _supplyBtn.B.gameObject.SetActive(sup || supCool);
             if (sup || supCool)
             {
@@ -1422,8 +1436,9 @@ namespace FS
             Log("quality_breakdown", st.Name, _sim.QualityPoints(st).ToString(CultureInfo.InvariantCulture));
         }
 
-        /// <summary>Botao do placement disponivel: o nucleo deixa (Anuncios.Pode) e o IAds tem anuncio (ou o Pacote do Mestre dispensa o video).</summary>
-        bool Pode(Anuncio a) => _sim.Anuncios.Pode(a) && (_raiz.Compras.SemVideoEm(a) || _ads.Ready(_sim.T.Ad(a).Id));
+        /// <summary>Botao do placement disponivel: a tela de idade respondida (E-PLAT-01, PedidoIdade.Botoes), o nucleo deixa (Anuncios.Pode)
+        /// e o IAds tem anuncio (ou o Pacote do Mestre dispensa o video).</summary>
+        bool Pode(Anuncio a) => _pedido.Botoes && _sim.Anuncios.Pode(a) && (_raiz.Compras.SemVideoEm(a) || _ads.Ready(_sim.T.Ad(a).Id));
 
         /// <summary>s86 rewarded_offer: uma por aparicao do botao disponivel (cinza da recarga nao e' oferta), contada quando da para tocar.</summary>
         void Ofertou(Anuncio a, bool pode, bool tocavel, string b = "")
@@ -1498,6 +1513,7 @@ namespace FS
             bool acao = _joy.Active || _menu.IsOpen || Time.unscaledTime - _compraT < 2f;
             _sim.Anuncios.RemoveAds = _raiz.Anuncios.RemoveAds;   // C-CORE-02: a posse da compra (Compras da raiz) vale em todo distrito
             string veto = _sim.Anuncios.VetoIntersticial(EstadoAtual == Estado.Transition, acao, _sessionT);
+            if (veto == null && !_pedido.Botoes) veto = "consentimento";   // E-PLAT-01: sem resposta da tela de idade, nenhum anuncio
             if (veto == null && !_ads.InterstitialReady) veto = "sem_anuncio";
             if (veto != null) { if (veto != "flag") Log("ad_veto", Ads.Intersticial, veto); return; }
             _sim.Anuncios.IntersticialMostrado(_sessionT);
@@ -1656,6 +1672,7 @@ namespace FS
         /// personalizado sim/nao; nada de dado pessoal).</summary>
         void Responder(Faixa f, bool aceitou)
         {
+            _pedido.Responder();
             Ads.Responder(f, aceitou, !_testSession);
             Log("consent_answer", Privacidade.Diario(f), Privacidade.Flags(f, aceitou).Consentimento ? "sim" : "nao");
             Liberar(f, aceitou);
