@@ -232,6 +232,20 @@ Bugs abertos (um por FAIL): passos · build · esperado × obtido · severidade 
 - **FAIL / BLOCKED:** §1 (repete só o que o bug ou a dependência pede).
 - O progresso antigo do POCO fica no backup (`$G/antes_*`); não há restauração automática.
 
+## 5.1 Linha de base pré-POCO no emulador (2026-10-24)
+
+Medido para tirar do POCO o que dá para conferir antes: `AVD=fs_base bash client/tools/verify.sh android-emulator --medir 120`, que faz o build do `Setup.BuildAndroidEmu`, o smoke de sempre (`-bot -speed 4`, BACK/HOME, logcat sem exceção), a abertura a frio (`am start -W`) e o `medir_aparelho.sh` com o bot jogando 120 s. AVD `fs_base`: Pixel 7 1080×2400, Android 15 Google Play x86_64, 2 GB de RAM, criado com a mesma configuração do `fs_playstore` (que segue sem boot, §6; não foi apagado). PC de 7,7 GB, sem outro processo pesado.
+
+| Medida | Emulador (`main` 2026-10-24, 0.6.0 dev) | Alvo no POCO |
+|---|---|---|
+| Abertura a frio (`TotalTime`) | **2,0 s** | anotar (sem base anterior) |
+| FPS com o bot jogando | **30,5** médio; mediana 20,3 ms; p95 104,9 ms; pior 218,6 ms; 32 de 97 quadros acima de 33 ms | 30–60 fps (`PROJETO.md` §9) |
+| Memória (`dumpsys meminfo`) | **PSS 265 MB** (RSS 154 MB; swap PSS 179 MB) | anotar |
+| Erros da Unity no logcat | **0** | 0 |
+| Diário (`-playtest`) | puxado pelo adb (`Builds/verify/medida/diario.csv`) | idem |
+
+Leitura: o emulador x86_64 com GPU emulada não serve para cravar FPS; os quadros longos (p95 105 ms) são do host. O que conta como base é o que não depende da GPU: a abertura a frio de 2 s, a memória em ~265 MB de PSS e o logcat sem exceção. No POCO, a mesma linha de comando do `medir_aparelho.sh` (G5/G6) mede o que vale.
+
 ## 6. Emulador: recuperar o AVD `fs_playstore`
 
 **Sintoma (2026-10):** o AVD não sobe nem com boot frio e o log mostra `Can't find service: package` — a partição de dados corrompeu quando o C: encheu. O `verify.sh android-emulator` agora aborta com menos de 6 GB livres para não repetir isso.

@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Linha de base pré-POCO no emulador:** `verify.sh android-emulator --medir S` mede a abertura a frio e roda o `medir_aparelho.sh` com o bot; no AVD novo `fs_base` (o `fs_playstore` segue sem boot): abertura a frio 2,0 s, PSS 265 MB, 0 erro da Unity, 30,5 fps no emulador (GPU emulada, só referência). Registrado no `ROTEIRO_TESTE_POCO.md` §5.1.
 - **Página da loja (ASO) atualizada para o jogo de hoje:** as descrições completas em pt-BR, en e es trocam o texto da v0.6 (4 linhas, 29 melhorias) pelos 6 distritos com a mecânica de cada um, mais de 35 produtos, qualidade e obras-primas, contratos reais, Renome, metas, eventos, o Passe com trilha grátis e os 3 idiomas; limites da Play conferidos (1.845–1.928 de 4.000) e as frases liberadas riscadas no `ASO.md` §6.
 - **Roteiro do POCO alinhado à tela de idade nova (#125):** G3, G4 e o teste do voltar esperam a oficina sem tela antes do 1º toque e a pergunta só quando o 1º botão de anúncio apareceria.
 - **`verify.sh release-check` portável e com o teto da Play:** roda também no Linux do CI (as ferramentas vêm por `RC_JAVA`, `RC_JARSIGNER`, `RC_BUNDLETOOL` e `RC_READELF`; no PC seguem as do Unity) e reprova AAB com o módulo base acima de 200 MB (APK: o arquivo inteiro).
