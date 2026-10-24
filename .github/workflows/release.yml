@@ -85,9 +85,13 @@ jobs:
           aab=$(ls client/Builds/android/ForgeStreet-*.aab | head -1)
           [ -n "$aab" ] || { echo "::error::o build não deixou client/Builds/android/ForgeStreet-*.aab"; exit 1; }
           bash client/tools/verify.sh release-check "$aab"
+          z=$(ls client/Builds/android/*.symbols.zip 2>/dev/null | head -1)   # GDD §164 item 17: símbolos do IL2CPP para o crash nativo
+          [ -n "$z" ] && echo "símbolos: $z ($(du -h "$z" | cut -f1))" >> "$GITHUB_STEP_SUMMARY" || echo "::warning::o build não deixou o .symbols.zip (crash nativo sem símbolo fora da Play)"
           echo "AAB: $aab ($(du -h "$aab" | cut -f1)), chave de ${{ steps.ks.outputs.tipo }}" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         with:
           name: aab-${{ steps.ks.outputs.tipo }}
-          path: client/Builds/android/ForgeStreet-*.aab
+          path: |
+            client/Builds/android/ForgeStreet-*.aab
+            client/Builds/android/*.symbols.zip
           retention-days: 7

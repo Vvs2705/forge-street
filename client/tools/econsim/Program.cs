@@ -123,7 +123,7 @@ static class EconSim
                     _rc = File.ReadAllText(v);
                     RemoteConfig.Resultado rc = RemoteConfig.Aplicar(new Tuning(), _rc, false);
                     ok = rc.Valido;
-                    Console.WriteLine($"rc: {rc.Rotulo} ({rc.Aplicadas} chaves)" + string.Concat(rc.Avisos.Select(a => "\n  aviso: " + a)));
+                    Console.WriteLine($"rc: {rc.Snapshot} ({rc.Aplicadas} chaves)" + string.Concat(rc.Avisos.Select(a => "\n  aviso: " + a)));
                     break;
                 case "--pacote" when ok: ok = v == "0" || v == "1"; pacote = v == "1"; break;
                 case "--evento" when ok:
