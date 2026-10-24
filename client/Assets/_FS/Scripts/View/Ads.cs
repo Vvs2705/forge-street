@@ -17,7 +17,7 @@ namespace FS
     /// Placements do jogo = os Id do Tuning.Placements (E-PLAT-02); no painel, ad units "vip" e "velocidade" (os novos usam a da Velocidade
     /// ate o painel ter as deles: AdsLevelPlay.Units). Intersticial (E-PLAT-03): so com a flag Tuning.Interstitial ligada no Init.
     /// Diario: ad_init, ad_request, ad_shown, ad_impression (receita da impressao, DM §95), ad_reward, ad_reward_late, ad_fail e ad_load_fail
-    /// saem pelo `log` do Init (o Game grava; ad_paid e ad_veto sao do Game).
+    /// saem pelo `log` do Init (o Game grava; rewarded_start, rewarded_complete e ad_veto sao do Game).
     /// Este MonoBehaviour so' hospeda as corrotinas das duas implementacoes.
     /// Flags: -fakeads (sempre simulado) e -adtestsuite (abre o Test Suite do LevelPlay; so' em build de desenvolvimento).
     /// E-PLAT-01: o SDK so inicia depois da resposta da tela de idade (Privacidade.cs); sem resposta, ad_init "espera" e nenhum botao.
