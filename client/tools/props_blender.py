@@ -21,6 +21,7 @@ PAL = {
     "chama": (0xFF7A1F, 0xFF7A1F), "nucleo": (0xFFD166, 0xFFD166),
     "couro_esc": (0x5C3A1E, 0x7E5230), "correia": (0x3E2412, 0x5C3A1E),   # aba e alcas da mochila (tons do icone melhoria_mochila)
     "veludo": (0x2B3A6B, 0x45579A), "pluma": (0xB8282E, 0xE04848),          # barrete do mestre (B-ART-05: azul real, pluma vermelha)
+    "carmesim": (0x7A1424, 0xA8243A), "arminho": (0xE8E2D4, 0xFFFFFF),      # capa e barrete reais (B-ART-05, estagio 5)
 }
 EMISSIVE = {"chama", "nucleo"}
 
@@ -318,9 +319,76 @@ def barrete_mestre(p):
         p.add(ball(0.05 - 0.008 * k, 0.03, 0.10), "pluma", at=(0.07, y, z), rot=(rx, 0, 0), bevel=0)
 
 
+CINTURA = (0.0, -0.03, 0.44, 0.155, 0.14)   # centro x, y, z e meios-eixos x, y da cintura do FERREIRO em repouso (medido no FBX)
+
+
+def cinto_ferramentas(p):
+    """B-ART-05, estagio 4 do heroi (Renome 5, Armeiro da Coroa; GDD s151 "cinto"): cinto largo de couro com fivela de ouro, bolsas nos
+    dois quadris, tenaz pendurada a direita e martelo de mao a esquerda. Preso ao osso mixamorig:Hips. De longe, o que muda a silhueta
+    sao as ferramentas e bolsas saindo dos dois lados da cintura."""
+    cx, cy, cz, rx, ry = CINTURA
+    for mat, h, d in (("couro_esc", 0.075, 0.018), ("correia", 0.03, 0.026)):   # cinto e o vinco escuro no meio
+        t = cyl(1.0, h, segs=20)
+        bmesh.ops.scale(t, vec=(rx + d, ry + d, 1.0), verts=t.verts)
+        p.add(t, mat, at=(cx, cy, cz), bevel=0.006)
+    p.add(box(0.085, 0.022, 0.07), "ouro", at=(cx, cy - ry - 0.03, cz), bevel=0.008)                 # fivela
+    p.add(box(0.045, 0.026, 0.03), "couro_esc", at=(cx, cy - ry - 0.035, cz), bevel=0.004)
+    for s in (-1, 1):                                                                                 # bolsas nos quadris
+        p.add(box(0.07, 0.11, 0.12), "couro", at=(cx + s * (rx + 0.05), cy + 0.01, cz - 0.07), bevel=0.02)
+        p.add(box(0.078, 0.118, 0.035), "couro_esc", at=(cx + s * (rx + 0.052), cy + 0.01, cz - 0.02), bevel=0.01)
+        p.add(box(0.02, 0.03, 0.025), "ouro", at=(cx + s * (rx + 0.09), cy + 0.01, cz - 0.05), bevel=0.004)
+    # tenaz a direita (-X = direita do heroi de frente para -Y): 2 bracos de ferro abertos em V pendurados do cinto
+    x = cx - rx - 0.11
+    for a in (-8, 8):
+        p.add(box(0.022, 0.022, 0.30), "ferro", at=(x, cy - 0.04, cz - 0.13), rot=(0, a, 0), bevel=0.005)
+    p.add(cyl(0.02, 0.03, segs=10), "ouro", at=(x, cy - 0.04, cz - 0.03), rot=(90, 0, 0), bevel=0.003)   # rebite
+    # martelo de mao a esquerda: cabo de madeira pendurado e cabeca de ferro de lado, saindo da silhueta
+    x = cx + rx + 0.11
+    p.add(cyl(0.018, 0.26, segs=10), "madeira", at=(x, cy - 0.03, cz - 0.11), bevel=0.004)
+    p.add(box(0.15, 0.06, 0.06), "ferro", at=(x + 0.02, cy - 0.03, cz - 0.25), bevel=0.012)
+
+
+def lamina(p, w0, w1, z0, z1, y0, y1, t, mat, x=0.0, bevel=0.01):
+    """Placa trapezoidal de espessura t: largura w0 no topo (z0, y0) e w1 embaixo (z1, y1), centrada em x."""
+    b = box(1.0, t, 1.0)
+    for v in b.verts:
+        top = v.co.z > 0
+        v.co.x = x + v.co.x * (w0 if top else w1)
+        v.co.y += y0 if top else y1
+        v.co.z = z0 if top else z1
+    p.add(b, mat, bevel=bevel)
+
+
+def capa_real(p):
+    """B-ART-05, estagio 5 do heroi (Renome 7, Fornecedor real; GDD s151 "visual real"): capa carmesim com barras de ouro e gola de
+    arminho, caindo dos ombros e abrindo para tras. Presa ao osso mixamorig:Spine2 (como a mochila). De cima e de lado, o trapezio da
+    capa atras do corpo e' o que muda a silhueta."""
+    lamina(p, 0.36, 0.44, 0.64, 0.18, 0.15, 0.22, 0.03, "carmesim")                          # capa
+    lamina(p, 0.435, 0.445, 0.215, 0.18, 0.215, 0.222, 0.04, "ouro", bevel=0.006)            # barra de ouro na ponta
+    for s in (-1, 1):                                                                        # barras de ouro nas bordas
+        lamina(p, 0.03, 0.03, 0.64, 0.18, 0.152, 0.222, 0.04, "ouro", x=s * 0.19, bevel=0.006)
+    p.add(lathe([(0.12, 0.6), (0.2, 0.61), (0.205, 0.64), (0.12, 0.65)], segs=18, closed=True), "arminho", at=(0.0, 0.03, 0), bevel=0)   # gola: anel nos ombros, abaixo do queixo
+    p.add(ball(0.035, 0.02, 0.035), "ouro", at=(0.0, -0.165, 0.64), bevel=0)                 # fecho
+
+
+def barrete_real(p):
+    """B-ART-05, estagio 5 do heroi (Renome 7): o barrete do mestre virado barrete real — veludo carmesim, aba de arminho e coroa de ouro
+    de 6 pontas. Mesmas coordenadas e osso do barrete_mestre; de cima, as pontas da coroa e a pluma branca."""
+    p.add(lathe([(0.15, 0.86), (0.162, 0.93), (0.172, 1.02), (0.15, 1.08), (0.08, 1.105)], segs=16), "carmesim", at=(0.01, 0.02, 0), bevel=0)
+    p.add(cyl(0.192, 0.04, segs=18), "arminho", at=(0.01, 0.02, 0.87), bevel=0.012)
+    p.add(cyl(0.176, 0.05, segs=18), "ouro", at=(0.01, 0.02, 0.91), bevel=0.006)                       # aro da coroa
+    for k in range(6):                                                                            # pontas da coroa
+        a = 2 * math.pi * (k + 0.5) / 6 - math.pi / 2
+        p.add(cyl(0.03, 0.08, 0.004, segs=6), "ouro", at=(0.01 + 0.17 * math.cos(a), 0.02 + 0.17 * math.sin(a), 0.97), bevel=0)
+    p.add(ball(0.04, 0.02, 0.04), "pluma", at=(0.01, -0.172, 0.91), bevel=0)                      # rubi na frente
+    for k, (y, z, rx) in enumerate(((0.10, 1.02, 30), (0.15, 1.12, 50), (0.17, 1.22, 70))):          # pluma branca
+        p.add(ball(0.05 - 0.008 * k, 0.03, 0.10), "arminho", at=(0.07, y, z), rot=(rx, 0, 0), bevel=0)
+
+
 PROPS = {"barril": barril, "caixote": caixote, "sacos": sacos, "tocha": tocha, "prateleira": prateleira,
          "suporte_armas": suporte_armas, "lenha": lenha, "balde": balde, "mochila_ferreiro": mochila_ferreiro,
-         "chapeu_couro": chapeu_couro, "barrete_mestre": barrete_mestre}
+         "chapeu_couro": chapeu_couro, "barrete_mestre": barrete_mestre, "cinto_ferramentas": cinto_ferramentas,
+         "capa_real": capa_real, "barrete_real": barrete_real}
 
 
 def export(name, p, out):
