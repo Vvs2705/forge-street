@@ -4,6 +4,8 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Blueprints e Coleção por dia no econsim:** a `--campanha` imprime, para cada dia de 20 min do F2P, os Blueprints, os marcos da Coleção e as obras no Hall somando os distritos abertos; quem golpeia acompanha a campanha, e o F2P que nunca golpeia para no Old Forge (`BALANCE.md` §47).
+- **Renome 1–10 medido na campanha inteira:** `econsim --campanha H` joga o Império do zero (Charters de verdade, abertura dos distritos, fundo e managers) e mede o relógio de cada nível de Renome e de cada Charter; o começo está ~2× mais rápido que o alvo e o fim converge (`BALANCE.md` §46, com o knob proposto sem mexer na economia).
 - **Os 6 placements de anúncio de ponta a ponta sem SDK:** `-autoplay N -anuncios` joga com o bot que assiste tudo pelo núcleo (VIP, Velocidade, Supply, bônus e troca da encomenda, Cofre 2×) e reprova se algum ficar em 0 ou passar do teto do dia; o mesmo caminho é teste no núcleo (`LEVELPLAY.md` §4).
 - **Renome 1–10 medido na campanha inteira:** `econsim --campanha H` joga o Império do zero (Charters de verdade, abertura dos distritos, fundo e managers) e mede o relógio de cada nível de Renome e de cada Charter; o começo está ~2× mais rápido que o alvo e o fim converge (`BALANCE.md` §46, com o knob proposto sem mexer na economia).
 - **IAP testado nos 3 produtos:** o premium das duas temporadas do Passe passa pelo mesmo teste de fluxo da loja que o Pacote do Mestre (compra, recibo repetido, restore e reinstalar, recibo inválido); o `IAP.md` §5.2 separa o que os testes cobrem do que só a Play Console fecha.

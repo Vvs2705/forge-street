@@ -15,7 +15,15 @@ static partial class EconSim
 {
     static readonly BotProfile Pagante = new BotProfile { Name = "Pagante", Reaction = 0.7f, Stick = 0.85f, Ads = true, AdsE = true, Strike = true, StrikeCada = 2 };
 
-    sealed class RunC { public string Perfil; public float[] Renome = Enumerable.Repeat(-1f, 11).ToArray(); public Dictionary<string, float> Charter = new Dictionary<string, float>(); public string Fim; }
+    sealed class RunC
+    {
+        public string Perfil; public float[] Renome = Enumerable.Repeat(-1f, 11).ToArray(); public Dictionary<string, float> Charter = new Dictionary<string, float>(); public string Fim;
+        // BALANCE §47: no fim de cada dia do F2P de referencia (20 min de relogio, LIVEOPS_V1 §1), somando os distritos abertos
+        public int[] Bp = new int[Dias.Length], BpTot = new int[Dias.Length], Col = new int[Dias.Length], ColTot = new int[Dias.Length], Mw = new int[Dias.Length];
+    }
+
+    static readonly int[] Dias = { 1, 2, 3, 5, 7, 10, 14, 21, 28, 35 };
+    const float SegDia = 20f * 60f;
 
     static int Campanha(BotProfile[] perfis, int horas, int partidas, float anuncioSeg, string knobs)
     {
@@ -42,6 +50,17 @@ static partial class EconSim
             RunC[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
             Console.WriteLine($"| {p.Name} | " + string.Join(" | ", Distritos.All.Select(d => Media(g.Select(r => r.Charter.TryGetValue(d.Id, out float t) ? t : -1f), g.Length, H))) + " |");
         }
+        // BALANCE §47: Blueprints (posse / os dos distritos abertos), marcos da Colecao pagos / os dos abertos e obras no Hall, por dia de 20 min
+        foreach (BotProfile p in ps)
+        {
+            RunC[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            Console.WriteLine();
+            Console.WriteLine($"{p.Name}, por dia de 20 min (media das partidas; so os dias dentro das {horas} h):");
+            Console.WriteLine("| dia | Blueprints (posse / dos abertos) | Colecao (marcos pagos / dos abertos) | obras no Hall |");
+            Console.WriteLine("|---|---|---|---|");
+            for (int k = 0; k < Dias.Length && Dias[k] * SegDia <= horas * 3600f; k++)
+                Console.WriteLine($"| {Dias[k]} | {g.Average(r => r.Bp[k]):0.#} / {g.Average(r => r.BpTot[k]):0} | {g.Average(r => r.Col[k]):0.#} / {g.Average(r => r.ColTot[k]):0} | {g.Average(r => r.Mw[k]):0.#} |");
+        }
         return 0;
     }
 
@@ -59,9 +78,18 @@ static partial class EconSim
         bool pacote = p.Name == Pagante.Name;   // E-PLAT-05: Velocidade e Supply sem o video
         Bot bot = Novo(p);
         float dt = 1f / hz, relogio = 0f, conferido = 0f;
-        int ads = 0;
+        int ads = 0, dia = 0;
         while (relogio < horas * 3600f)
         {
+            if (dia < Dias.Length && relogio >= Dias[dia] * SegDia)
+            {
+                foreach (Sim d in imp.Abertos)
+                {
+                    r.Bp[dia] += d.Projetos.Count; r.BpTot[dia] += d.Projetos.Defs.Length; r.Mw[dia] += d.Hall.Count;
+                    r.ColTot[dia] += d.Colecao.Marcos.Length; r.Col[dia] += d.Colecao.Marcos.Count(d.Colecao.Pago);
+                }
+                dia++;
+            }
             Sim s = imp.Ativo;
             bot.Step(s, dt);
             Bot.Manager(imp);
