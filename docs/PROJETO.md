@@ -157,9 +157,9 @@ Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-24: 
 | Save | 92 | Save 2.0 + schema 3; multi-distrito; linhas opcionais da bancada, das famílias, das cotas, do medidor dos altares e das rotas e lotes (#78, #83, #97, #98) | cloud save (opcional) |
 | Release pipeline | 72 | AAB assinado por env, `verify release`, 16 KB, API 36; Unity no CI do GitHub (EditMode, builds Windows/Android, autoplay; #130, #135); `release-check` portável com o teto de 200 MB (#145); workflow `release` gera o AAB não-development e roda o check, com gatilho por tag `v*` pronto (#146); passo a passo em `RELEASE.md` (#147) | chave de upload real e secrets (Vinicius); subir à Play pelo CI com a conta de serviço |
 | Arte final | 87 | estações dos 6 distritos com arte própria (#75, #79, #84, #102, #107); ícones de todos os itens (#105); programa de arte: interface v2 (#87), recompensa com vida (#88), cabeçalho dos painéis (#91), HUD v2, selos em fita, placas nos rótulos e chão (#103); arte e selo nos cartões da loja (#116); herói em 3 estágios (#115); No Placeholder Gate com 0 falta em 14 rodadas, grama CC0 (#132) e balcão com folha nos 5 distritos novos (#133); herói nos estágios 4 e 5 (#134) | Visual Robustness Gate por tela |
-| Áudio final | 60 | 15 efeitos CC0 da Kenney no lugar dos sintetizados, no mesmo nível (#109, `AUDIO.md` §9, `PROVENIENCIA.md` §19); 3 grupos, mix com prioridade, orçamento de vozes e distância (#59); os 8 efeitos que faltavam também CC0 (#132): nenhum efeito sintetizado | 5 músicas (CC0 ou licença comercial); ambiente em camadas; ouvir no POCO |
+| Áudio final | 72 | 23 efeitos CC0 da Kenney no lugar dos sintetizados, no mesmo nível (#109, #132; `AUDIO.md` §9, `PROVENIENCIA.md` §19 e §23); **5 músicas CC0 do RandomMind** (tema, oficina, royal, arcane e evento) por distrito e por evento, no nível da antiga (`AUDIO.md` §10, `PROVENIENCIA.md` §24); 3 grupos, mix com prioridade, orçamento de vozes e distância (#59) | ambiente em camadas real (fogo e rua ainda sintetizados); ouvir no POCO |
 | Store assets | 82 | marca v2 (#86); 8 screenshots × pt/en/es (#92) e a 2ª sequência "Ache o gargalo" (#108); vídeo de gameplay de 35 s 9:16 (#108); 37 criativos, ASO pt/en/es; descrições completas pt/en/es com o jogo de hoje (#142) | teste de ícones na Play Console; cortar o vídeo para 30 s se a Play pedir |
-| **Média** | **~85** (85,4) | | |
+| **Média** | **~86** (86,0) | | |
 
 ## 9. Retomada (atualizada em 2026-10-24)
 
@@ -192,7 +192,7 @@ Fila para chegar a 90% (um PR por item; ver o plano em https://claude.ai/artifac
 2. **Ads:** ~~tela de idade movida para quando o 1º botão de anúncio aparece (GDD, Conflito 1); consentimento antes do SDK testado~~ (#125; G3/G4 do `ROTEIRO_TESTE_POCO.md` ajustados). Ad units dos outros 4 placements e Unity Ads no painel do LevelPlay (Vinicius).
 3. ~~**Events:** V27, encomenda Event contada à parte das vagas, e reafinar os 10 eventos com o bot~~ (#131, `BALANCE.md` §44: 17 pontos nos 10, que fecham no dia 4–5 do F2P).
 4. ~~**Pass:** teste de que o bot F2P fecha a trilha free e validator "nada obrigatório só no premium".~~ #126 (2026-10-24); preço do premium definitivo em R$ 44,90 no #121.
-5. **Áudio:** 5 músicas (CC0 ou licença comercial) e ambiente em camadas.
+5. **Áudio:** ~~5 músicas~~ (feat/musicas, `AUDIO.md` §10) e ~~fanfarras~~ (#132); falta o ambiente em camadas real.
 6. ~~**Arte:** estágios 4 e 5 do herói (Renome 5 e 7, Blender); auditoria do No Placeholder Gate.~~ #134 e #132 (2026-10-24); Visual Robustness Gate no #149.
 7. ~~**Metas:** `dly_golpe_superior1`~~ (#124, com `ach_golpe_superior50`; `BALANCE.md` §45).
 8. **Release pipeline:** ~~Unity no CI (P15) e release tag → AAB~~ (#130, #135, #145, #146); → faixa interna precisa da chave real e da conta de serviço (Vinicius, `RELEASE.md`).

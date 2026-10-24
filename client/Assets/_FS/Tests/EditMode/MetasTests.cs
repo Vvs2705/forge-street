@@ -513,8 +513,8 @@ namespace FS.Tests
             Assert.AreEqual(2L, raiz.Metas.Conquista(A("ach_elmos100")).Feito, "o elmo conta pelo ID na raiz");
             Assert.AreEqual(0L, raiz.Metas.Conquista(A("ach_espadas_venda100")).Feito, "e nao vira espada (handle 2 da Row)");
             long xp = raiz.Metas.PassXp;
-            Assert.AreEqual(0L, UmaVez(raiz, "ach_contrato1"), "XP 150, sem ouro");
-            Assert.AreEqual(xp + 150L, raiz.Metas.PassXp);
+            Assert.AreEqual(0L, UmaVez(raiz, "ach_contrato1"), "XP da conquista, sem ouro");
+            Assert.AreEqual(xp + Array.Find(MetasDefs.Conquistas, d => d.Id == "ach_contrato1").Xp, raiz.Metas.PassXp);
             for (int k = 0; k < 98; k++) EncTeste.Vende(row, elmo);
             UmaVez(raiz, "ach_elmos100");
             Assert.IsFalse(raiz.Metas.Conquista(A("ach_contratos12")).Pronta);
