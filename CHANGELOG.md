@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Página da loja (ASO) atualizada para o jogo de hoje:** as descrições completas em pt-BR, en e es trocam o texto da v0.6 (4 linhas, 29 melhorias) pelos 6 distritos com a mecânica de cada um, mais de 35 produtos, qualidade e obras-primas, contratos reais, Renome, metas, eventos, o Passe com trilha grátis e os 3 idiomas; limites da Play conferidos (1.845–1.928 de 4.000) e as frases liberadas riscadas no `ASO.md` §6.
 - **Roteiro do POCO alinhado à tela de idade nova (#125):** G3, G4 e o teste do voltar esperam a oficina sem tela antes do 1º toque e a pergunta só quando o 1º botão de anúncio apareceria.
 - **`verify.sh release-check` portável e com o teto da Play:** roda também no Linux do CI (as ferramentas vêm por `RC_JAVA`, `RC_JARSIGNER`, `RC_BUNDLETOOL` e `RC_READELF`; no PC seguem as do Unity) e reprova AAB com o módulo base acima de 200 MB (APK: o arquivo inteiro).
 - **Royal Contracts que andam fora do Old Forge:** no distrito em que o jogador está, a oferta é o 1º contrato aberto daquele distrito; antes ficava presa no 1º da lista (o do Old Forge, que nunca anda na Grand Forge) ou num fechado da Foundry. Na Foundry e na Grand Forge o bot passa a fechar contratos (0 → até 1 por partida de 2 h); Old Forge, Row, Quarter e Arsenal iguais ao byte.
