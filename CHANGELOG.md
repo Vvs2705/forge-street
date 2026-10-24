@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Preço do Pass premium definitivo:** R$ 44,90 por temporada (`iap_pass_s1_royal_commission`, `iap_pass_s2_ember_festival`), aprovado pelo Vinicius em 2026-10-24; sai a marca de provisório do código e dos docs (`IAP.md` §1, `PROJETO.md` §8 e §9).
 - **Félix com arte própria:** o Mensageiro da Grand Forge deixa a folha emprestada do menino mensageiro e ganha a sua (mensageiro barbado de capa azul-noite, boné com pena e caixote nas costas), com Idle, LookingAround e Walking nas 4 direções. 65 créditos do Tripo; `docs/ASSETS.md` §23.
 - **Grand Forge com os importados da Arcane Foundry (BALANCE §41.7):** a lâmina estelar pede a lâmina rúnica, o relicário a lanterna arcana, a coroa o anel de cristal e a panóplia o escudo rúnico, pelas 4 rotas novas do Mensageiro (`CONTEUDO_V1.md` §3.1). F2P: produção completa 58:08 → 64:09, renda depois da produção −11,7% da alvo, todos os portões ok. A Carta do Ideal sai em 5 de 8 rodadas aos 359 min (antes 3 de 8 aos 396), sem mexer em knob. Os outros 5 distritos ficam idênticos ao byte.
 - **Loja com arte (auditoria visual item 5):** cada produto ganha uma arte pintada no cartão (a bolsa do mestre e os estandartes das duas temporadas do Passe) e um selo dourado PARA SEMPRE / TEMPORADA. 0 crédito; `docs/ASSETS.md` §22.

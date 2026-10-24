@@ -70,7 +70,7 @@ namespace FS.Core
         };
 
         /// <summary>LIVEOPS_V1 §3.5 (Wave E, atras do Tuning.PassePremium): o premium de cada temporada, nao-consumivel, compra direta sem moeda
-        /// intermediaria. Preco = placeholder pela faixa de mercado dos passes (US$ 8,99-9,99, GDD §17.3, BENCHMARK_MERCADO §8): revisar na P3.</summary>
+        /// intermediaria. Preco definitivo R$ 44,90 (Vinicius, 2026-10-24; faixa de mercado dos passes US$ 8,99-9,99, GDD §17.3, BENCHMARK_MERCADO §8).</summary>
         public static readonly ProductDef[] CatalogoPasse = Array.ConvertAll(LiveOpsDefs.Passes, p => new ProductDef
         {
             Id = "iap_" + p.Id, Tipo = TipoProduto.NaoConsumivel, PrecoPlaceholder = "R$ 44,90", Conteudo = new[] { ItemCompra.Posse(PossePremium(p.Id)) },
