@@ -199,7 +199,7 @@ namespace FS
                 : ugs ? new ProvedorUgs() : (IProvedorAnalytics)new ProvedorNulo(null);
             _diario = new Telemetria(diario, remoto,
                 diario.Sessao, Application.version, _rcr.Snapshot, dir, Application.dataPath);
-            Application.logMessageReceived += Excecao;
+            Application.logMessageReceivedThreaded += Excecao;   // DM §90: as threads de fundo tambem (som, save); o Update entrega ao diario
             _save = new Salvamento(new SaveStore(Path.Combine(dir, "save.txt")), new SaveEspelho(SaveKey), _diario);
             Sfx.Init(gameObject);
             Sfx.Log = Arg("-somlog") != null;   // fix/mix-audio (dev): "SOM min=..." por minuto no Player.log
@@ -423,6 +423,7 @@ namespace FS
 
         void Update()
         {
+            EntregaExcecoes();   // DM 90: os erros que chegaram de qualquer thread
             if (_headless) return;
             // Input.GetKeyDown: com o GameActivity o voltar do Android nao chega ao Input System, so ao Input Manager legado (Setup: Both)
             bool back = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
@@ -1694,13 +1695,21 @@ namespace FS
             if (_started && _loja != null && !(_loja is LojaFalsa)) IniciarLoja();   // respondida agora; numa abertura anterior, o Start ja iniciou
         }
 
-        /// <summary>A-PLAT-09 (DM §90): excecao nao tratada (e Debug.LogException) -> evento "excecao" no diario e no remoto, ate 5 por sessao.</summary>
+        /// <summary>A-PLAT-09 (DM §90): excecao nao tratada (e Debug.LogException) de qualquer thread -> fila; o Update entrega ao Telemetria.Excecao
+        /// (evento client_error, 1x por erro distinto, ate 5 por sessao). O Telemetria nao e' thread-safe: fora do main thread so a fila e' tocada.</summary>
         void Excecao(string msg, string pilha, LogType tipo)
         {
-            if (tipo == LogType.Exception) _diario.Excecao(msg, pilha, _sim != null ? _sim.Time : 0f);
+            if (tipo == LogType.Exception) _excecoes.Enqueue((msg, pilha));
         }
 
-        void OnDestroy() => Application.logMessageReceived -= Excecao;
+        readonly System.Collections.Concurrent.ConcurrentQueue<(string Msg, string Pilha)> _excecoes = new System.Collections.Concurrent.ConcurrentQueue<(string Msg, string Pilha)>();
+
+        void EntregaExcecoes()
+        {
+            while (_excecoes.TryDequeue(out var e)) _diario?.Excecao(e.Msg, e.Pilha, _sim != null ? _sim.Time : 0f);
+        }
+
+        void OnDestroy() { Application.logMessageReceivedThreaded -= Excecao; EntregaExcecoes(); }
 
         /// <param name="gold">&gt; 0: linha da moeda com "+gold" grande (cofre); 0: so o texto.</param>
         void ShowPanel(string title, string body, string button, Action action, long gold = 0)

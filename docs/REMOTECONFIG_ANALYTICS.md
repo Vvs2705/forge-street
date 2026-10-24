@@ -95,9 +95,11 @@ Coerência entre chaves diferentes (por exemplo `VipMin` < `VipMax`) fica com qu
 
 ### Exceções (DM §90)
 
-`Application.logMessageReceived` com `LogType.Exception` (não tratada ou `Debug.LogException`) vira o evento `excecao`: `a` = mensagem, `b` = 1ª linha da pilha.
+`Application.logMessageReceivedThreaded` com `LogType.Exception` (não tratada ou `Debug.LogException`, **de qualquer thread**: o som e o save rodam em threads de fundo) entra numa fila; o `Game.Update` entrega ao `Telemetria.Excecao`, que gera o evento **`client_error`** (`excecao` até 2026-10-24): `a` = mensagem, `b` = `hash8 topo` (FNV-1a da mensagem e da 1ª linha da pilha, já sem os caminhos privados, mais a 1ª linha).
 
-- Teto de 5 por sessão (`Telemetria.ExcecoesMax`), para que um erro em loop não encha o diário nem a cota do provedor.
+- **Amostragem:** 1 evento por erro distinto (o mesmo hash não repete; `Telemetria.Repetidas` conta o resto) e no máximo 5 erros distintos por sessão (`Telemetria.ExcecoesMax`). Um erro em loop vira 1 linha, não enche o diário nem a cota do provedor.
+- O remoto segue a regra de todo evento: nada antes da tela de idade; o UGS só coleta com o aceite (18+).
+- Testes: `TelemetriaTests.Excecao_UmaVezPorErroDistinto_TetoPorSessao_SemCaminhoPrivado` e `Excecao_AntesDaTelaDeIdade_SoNoDiario_DepoisSaiEmOrdem`.
 - O `persistentDataPath` e o `dataPath` viram `~` (no Windows eles têm o nome do usuário).
 - Crash nativo (sinal, ANR) e os símbolos por build ficam para o SDK de crash da P8.
 
@@ -109,7 +111,7 @@ Coerência entre chaves diferentes (por exemplo `VipMin` < `VipMax`) fica com qu
 | `rc_aviso` | `chave: preso: pedido -> aplicado` ou `chave: motivo` | — |
 | `rc_fetch` | `ok` / `invalido` / `falha` | bytes ou erro (só com a URL preenchida) |
 | `ad_init` | `desligado` | `remoteconfig` (chave mestra) |
-| `excecao` | mensagem sem caminho privado | 1ª linha da pilha |
+| `client_error` (`excecao` até 2026-10-24) | mensagem sem caminho privado | `hash8` + 1ª linha da pilha |
 | `collection_view` / `hall_view` | distrito | marcos da coleção pagos / obras no Hall | cada aba do Hall que o jogador passa a ver (GDD §164 item 10: "≥ 30% abrem a coleção sem dica" no Closed = sessões com `collection_view` antes de qualquer aviso de marco) |
 | `event_enter` | ID do evento | — |
 | `event_points` | ID do evento | total de pontos da trilha |
@@ -155,7 +157,7 @@ Todos saem pelo `Game.Log` → diário (`diario.csv`) e, depois do aceite da tel
 
 **Funis para os dashboards (G-UA-05), validados no diário antes do UGS:** `python client/tools/diario_report.py <pasta com os diario.csv>` imprime, no fim, a retenção D1/D7 (dia UTC da 1ª `session_start` de cada testador) e três funis por testador: FTUE e progressão (abriu > 1ª venda > tutorial > 1ª melhoria > contratou > encomenda > contrato real > obra-prima > distrito novo), anúncio (`rewarded_offer` > `rewarded_start` > `rewarded_complete`) e compra (`iap_view` > `iap_purchase` > `pass_view` > `pass_purchase`). Os nomes antigos contam, para o diário de antes do #137. O `--autoteste` confere a conta com 3 testadores sintéticos. São as mesmas etapas que o painel do UGS deve montar sobre o `fs_evento` (`fsNome`).
 
-Além dos 31: `ad_*` (SDK: pedido, mostrado, impressão com receita, recompensa, falha), `iap_start/pending/restore/fail`, `consent_answer`, `settings`, `excecao`, `charter`, `district_switch`, `event_points`, `pass_level`.
+Além dos 31: `ad_*` (SDK: pedido, mostrado, impressão com receita, recompensa, falha), `iap_start/pending/restore/fail`, `consent_answer`, `settings`, `client_error`, `charter`, `district_switch`, `event_points`, `pass_level`.
 
 ## 3. Como plugar o provedor quando a P8 for decidida
 
