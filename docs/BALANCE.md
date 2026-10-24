@@ -2598,6 +2598,8 @@ A lâmina estelar passa a pedir a lâmina rúnica, o relicário a lanterna arcan
 
 A Carta melhora porque as receitas de síntese ficam mais lentas e o bot passa mais tempo nos níveis V e no golpe (a 5ª obra sai aos 316 min contra 359). As Royal Superiores também andam mais (41 contra 30). O fundo tirado das origens triplica (5,8 mi contra 2,0 mi em 480 min), mas a maior fração num minuto cai, porque a Foundry divide a conta. **Old Forge, Row, Quarter, Arsenal e Foundry idênticos ao byte** (os SHAs do §40.6 e o do econsim padrão `a7d9e6c9…`). Revisar: 359 min fica na borda de baixo da coluna 6–8 h; se o jogador real fechar mais cedo, o knob é o Renome 9 (4.200 → 4.500 do catálogo).
 
+**Remedido em 2026-10-24 (`main` 94aa788; `--distrito grand_forge --perfis Ideal --minutos 480 --partidas 8 --renome 3100`):** com o que entrou depois (Pass, eventos, metas, golpe que faz Superior), a Carta do Ideal fecha em **8 de 8 aos 373 min** (6 h 13; Renome do Charter aos 367 min, 5ª obra aos 305 min, 37,1 Royal), já dentro da coluna 6–8 h. O knob não ajuda: com o Renome 9 em 4.350 ou 4.500 a Carta sai aos 358 min, mas em 7 de 8 (as Royal Superiores abrem em outra ordem e uma rodada fica sem a 5ª obra). **Decidido: Renome 9 fica em 4.200**, sem mudança de código. Revisar com o jogador real no POCO.
+
 ## 42. Diárias do pool C: qualidade, golpe, Renome e evento (LIVEOPS_V1 §4.2 #25–34, 2026-10-23)
 
 **Vigente** (`Core/MetasDefs.cs`, `Core/Metas.cs`, `View/Loc.cs`; branch `feat/diarias-pool-c`). A 3ª vaga diária deixa de cair sempre no pool A: entram 9 diárias do pool C com a recompensa padrão (XP 100 + 20 s de ouro): `dly_fina10`, `dly_fina_escudos10`, `dly_superior3`, `dly_golpe3`, `dly_fina_joias5`, `dly_renome5`, `dly_fina30`, `dly_evento100` e `dly_enc_evento`. Regras do slot C (`Metas.LivreC`): a de Fina de um item só depois da 1ª peça Fina daquele item (a "1ª fonte de qualidade" da tabela, lida do contador `quality_crafted`); Superior e golpe com a Quality aberta (como as semanais); Renome depois da Joalheria (o "Renome 1" desta tabela) e a de 30 Finas depois da Vitrine de joias ("Renome 2"); com um evento ativo, **só** as 2 de evento, alternando por dia (`dia mod 2`). Sem nenhuma aberta, a vaga cai no pool A como antes. `reputation_gain` (Renome ganho desde a vaga) e `event_points` (pontos do evento ativo) são derivados do estado: nada novo no save. Fora: `dly_golpe_superior1` (o golpe não sabe o nível com que a peça saiu).
@@ -2678,3 +2680,43 @@ Bot F2P de 20 min por dia desde o 1º dia da S1, resgatando diárias, semanais, 
 | depois (XP de cada conquista ÷ 2) | — | — | 15.385 (conquistas 2.875) | **dia 28** (27 no fim da sessão) |
 
 Faixa do LIVEOPS_V1 §8: dia 26–30. O teste trava 26 ≤ dia ≤ `Dias − 7` (28). A conta estática do §3.3 (651 XP/dia, dia 27,6) e o validator não contam conquista e não mudam. Nada vem do premium (flag desligada), e o validator "nada obrigatório só no premium" segue verde.
+
+## 46. Renome 1–10 e os Charters na campanha inteira (Reputation, 2026-10-24)
+
+Até aqui o econsim media o Renome só até o 4 (o Old Forge) e cada distrito à parte, chegando com o Charter forçado. **`econsim --campanha H`** (`client/tools/econsim/Campanha.cs`) joga o Império do zero, como o jogador:
+- o bot joga o distrito ativo;
+- o Charter sai quando as condições fecham (`Imperio.CharterFalta`, sem `Forca`);
+- o distrito seguinte abre e vira o ativo assim que o ouro paga a abertura;
+- o fundo dos outros e os managers andam;
+- o relógio inclui 30 s por anúncio (V19).
+
+Perfis:
+- **F2PGolpe:** o F2P que golpeia (sem golpe não há obra-prima, e o Charter do Old Forge pede uma);
+- **Ideal;**
+- **Pagante:** o F2PGolpe que assiste tudo e tem o Pacote do Mestre, com Velocidade e Supply sem vídeo.
+
+`--campanha 40 --perfis F2PGolpe,Ideal --partidas 4` (40 h de relógio, 4 partidas por perfil, 89 s). Horas de relógio acumuladas, média de quem chegou (`*` = nem toda partida chegou):
+
+| perfil | Renome 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| F2PGolpe | 0,2 | 0,8 | 1,4 | 2,1 | 4,4 | 7,4 | 13,0 | 18,7 | 24,7* | — |
+| Ideal | 0,3 | 0,8 | 1,3 | 1,8 | 3,0 | 6,0 | 11,2 | 17,2 | 22,7 | 37,1* |
+| Pagante | 0,2 | 0,8 | 1,2 | 2,1 | 4,1 | 8,0 | 13,1 | 18,7 | 25,4* | — |
+
+| Charter (h acumuladas) | Old Forge | Row | Quarter | Arsenal | Foundry | Carta (Grand Forge) |
+|---|---|---|---|---|---|---|
+| alvo (`CONTEUDO_V1.md` §1) | 4,5 (3–6) | 8,5 | 13,5 | 18,5 | 24,5 | 31,5 |
+| F2PGolpe | 2,1 | 4,8 | 10,0 | 15,7 | 19,0 | 28,2* |
+| Ideal | 1,8 | 4,8 | 10,4 | 16,2 | 19,0 | 24,6 |
+| Pagante | 2,1 | 4,4 | 10,1 | 15,4 | 18,9 | 25,9* |
+
+**Leitura:**
+- **O começo está rápido.** O Charter do Old Forge sai às 2,1 h, abaixo dos 3–6 h do alvo. O Renome 4 também (2,1 h, contra 3–6 h no `ECONOMIA_WAVE_B.md` §10) e o 3 (1,4 h, contra 1,5–3 h), porque o F2P que golpeia soma o Renome das Superiores e das obras.
+- **O meio converge:** a Row fecha às 4,8 h (alvo 8,5), e do Arsenal à Foundry a diferença cai para 3–5 h.
+- **O fim fica perto do alvo:** a Carta sai às 24,6–28,2 h (alvo 31,5), e 1 em 4 partidas do F2P ainda não chega ao Renome 9 (4.200) em 40 h. O Renome 10 (6.500) só o Ideal chega, às ~37 h.
+- **O Pagante não ganha tempo de Renome** (anúncio e pacote dão ouro, não Renome), o que é o desenhado (V20: o pago nunca progride).
+
+**Knob proposto (não aplicado; decidir com jogador real):**
+- Se o Closed confirmar o começo rápido, o primeiro candidato é o **limiar do Renome 4** (400 → ~550, `RenomeDefs.Niveis`), que puxa o Charter do Old Forge para ~3 h.
+- O segundo é a **obra-prima do Charter do Old Forge** (`CharterDef.Masterworks` 1 → 2).
+- Mexer só depois de medir o F2P sem golpe com jogador real: o F2P que não golpeia faz o Renome 4 às 3:11 (§8 do `PROJETO.md`), dentro da faixa.

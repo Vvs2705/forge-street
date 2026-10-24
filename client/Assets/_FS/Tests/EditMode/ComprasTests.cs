@@ -27,12 +27,12 @@ namespace FS.Tests
             public readonly List<string> Ordem = new List<string>(), Falhas = new List<string>();
             public bool SaveFalha;
 
-            public Jogo(LojaFalsa loja, string disco = null)
+            public Jogo(LojaFalsa loja, string disco = null, ProductDef[] catalogo = null)
             {
                 L = loja; Disco = disco;
                 S = disco == null ? new Sim() : Sim.Load(disco);
                 S.Compras.Conectar(loja);
-                L.Iniciar(Compras.Catalogo, Recibo, (p, m) => { Falhas.Add(p + ":" + m); S.Compras.Falhou(p); });
+                L.Iniciar(catalogo ?? Compras.Catalogo, Recibo, (p, m) => { Falhas.Add(p + ":" + m); S.Compras.Falhou(p); });
                 Concluir();
             }
 
@@ -121,6 +121,42 @@ namespace FS.Tests
             Sim b = Sim.Load(j.Disco);
             b.Compras.Conectar(j.L);
             Assert.IsTrue(b.Compras.Possui(Pacote), "o save gravado leva a compra");
+        }
+
+        /// <summary>IAP.md §6: o Pacote do Mestre e o premium do Passe pelo mesmo fluxo da loja (a loja falsa no lugar da Play): compra (pendente,
+        /// grava e so entao confirma), recibo repetido entrega 1x, restore 2x e depois de reinstalar devolve 1x, e recibo de outra transacao ou com a
+        /// assinatura mexida nao entrega. O premium so paga niveis com a flag (LiveOpsTests.PassePremium_AtrasDaFlag...); aqui, a posse.</summary>
+        [TestCase("iap_pacote_mestre", "remove_ads")]
+        [TestCase("iap_pass_s1_royal_commission", "premium_pass_s1_royal_commission")]
+        [TestCase("iap_pass_s2_ember_festival", "premium_pass_s2_ember_festival")]
+        public void FluxoDaLoja_CompraRepetidoRestoreEInvalido_ParaCadaProduto(string produto, string posse)
+        {
+            string conta = Temp();
+            try
+            {
+                var j = new Jogo(new LojaFalsa(conta, LojaFalsa.Cenario.Duplica), catalogo: Compras.Todos);
+                Assert.IsTrue(j.S.Compras.Iniciar(produto)); j.L.Comprar(produto);
+                CollectionAssert.AreEqual(new EstadoCompra?[] { EstadoCompra.Pendente, EstadoCompra.Entregue }, j.Estados, "o recibo repetido nao entrega de novo");
+                CollectionAssert.AreEqual(new[] { "gravar", "confirmar" }, j.Ordem.Take(2), "so confirma depois do save (o repetido so confirma de novo)");
+                Assert.IsTrue(j.S.Compras.Tem(posse));
+                Assert.AreEqual(1, j.S.Compras.Transacoes);
+                int n = -1;
+                j.L.Restaurar(x => n = x); j.L.Restaurar(x => n = x);
+                Assert.AreEqual((1, 1), (n, j.S.Compras.Transacoes), "restore 2x: a mesma transacao");
+                var k = new Jogo(new LojaFalsa(conta), catalogo: Compras.Todos);   // reinstalou: sem save, a mesma conta da loja
+                Assert.IsFalse(k.S.Compras.Tem(posse), "instalacao limpa: nada ate restaurar");
+                k.L.Restaurar(x => n = x);
+                Assert.IsTrue(k.S.Compras.Tem(posse), "restore devolve");
+                Assert.AreEqual(1, k.Gravacoes);
+
+                var s = new Sim();
+                s.Compras.Conectar(new LojaFalsa(null));
+                Recibo ok = LojaFalsa.Assina("fake.ok", produto);
+                Assert.IsNull(s.Compras.Receber(new Recibo { Tx = "fake.outra", Produto = produto, Payload = ok.Payload, Assinatura = ok.Assinatura }), "outra transacao");
+                Assert.IsNull(s.Compras.Receber(new Recibo { Tx = ok.Tx, Produto = produto, Payload = ok.Payload, Assinatura = "00" + ok.Assinatura.Substring(2) }), "assinatura mexida");
+                Assert.IsFalse(s.Compras.Tem(posse));
+            }
+            finally { if (File.Exists(conta)) File.Delete(conta); }
         }
 
         [Test]
