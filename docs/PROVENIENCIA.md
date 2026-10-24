@@ -680,7 +680,7 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 
 ## 25. Ambiente em camadas: fogo e multidão CC0 (OpenGameArt, 2026-10-24)
 
-Baixados com o aval permanente do Vinicius para downloads, fora do git (`%LOCALAPPDATA%\Temps_amb_cc0`); tratamento em `client/tools/audio_ambiente.py` (`AUDIO.md` §11).
+Baixados com o aval permanente do Vinicius para downloads, fora do git (`%LOCALAPPDATA%\Temp\fs_amb_cc0`); tratamento em `client/tools/audio_ambiente.py` (`AUDIO.md` §11).
 
 | arquivo (`client/Assets/_FS/Resources/Audio/`) | origem | licença | arquivo baixado (bytes · SHA-256) | saída (SHA-256) |
 |---|---|---|---|---|
