@@ -628,6 +628,7 @@ namespace FS.Tests
             // Charter do Old Forge pelo Imperio (producao completa, Renome 4, 1 obra-prima): o Renome.OnCharter grava charter:old_forge
             for (int u = 0; u < s.UpgradeDefs.Length; u++) if (s.IsProduction(u)) s.Buy((Upgrade)u);
             Assert.AreEqual(Quality.Masterwork, MasterworksTests.ComGolpe(s, s.AnvilA));
+            s.Renome.Ganha(Math.Max(0, Distritos.OldForge.Charter.Renome - s.Renome.Total));   // BALANCE §48: o Charter pede 700
             var imp = new Imperio(s);
             Assert.IsFalse(s.Metas.Conquista(A("ach_charter1")).Pronta);
             Assert.IsTrue(imp.Charter(Distritos.OldForgeId));
