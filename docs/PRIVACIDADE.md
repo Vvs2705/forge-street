@@ -30,7 +30,8 @@ O Forge Street não tem servidor, conta, login nem chat. **Desde 2026-10-23 (P8 
 
 Peças (`LEVELPLAY.md` §1): Ads Mediation `com.unity.services.levelplay` 9.5.1, SDK nativo `mediation-sdk` 9.6.1, adaptador Unity Ads 5.14.0 + `unity-ads` 4.21.0, `play-services-ads-identifier` 18.1.0. Rede ativa: só a Unity Ads.
 
-- **Quando:** só depois da resposta da tela de idade. Antes dela o `AdsLevelPlay` não toca no LevelPlay (logcat `ADS ad_init espera consentimento`; o `verify.sh android-emulator --migracao` reprova se o SDK iniciar sem resposta). Depois da resposta o SDK inicia para **qualquer** faixa, com estas flags (`Privacidade.Flags`, tabela em `LEVELPLAY.md` §6):
+- **Quando a tela abre (desde 2026-10-24, GDD "Conflitos" item 1, decidido: movida):** nada antes do 1º toque. Sem resposta (ou com resposta de outra versão do texto), a tela de idade abre **uma vez**, no 1º instante em que um botão de anúncio apareceria: algum placement que o núcleo deixa (`Anuncios.Pode`), o que pela D6 só acontece depois da 1ª melhoria comprada, e só onde o botão é tocável (HUD jogando, ou o "Cofre 2x" no painel do cofre aberto). A regra é a `PedidoIdade` (`View/Privacidade.cs`, pura, `PrivacidadeTests`); o diário registra `consent_ask` (`hud`/`cofre`) quando ela abre e `consent_answer` na resposta. Até a resposta: nenhum botão de anúncio (nem o simulado do dev), nenhum intersticial (veto `consentimento`), SDK parado e **nenhuma rede** (sem analytics remoto, sem busca do RemoteConfig, sem loja real: `Game.Liberar` só roda com resposta, como antes; os eventos esperam na fila da `Telemetria`, até 256, e só vão ao remoto de quem tem 18+ e aceitou). A oficina para enquanto a tela está aberta (o `-bot` segue). Continuam: Configurações > Privacidade (rever, revogar ou responder antes do pedido), `-privacidade [18]` (abre já no Awake, também no `-testsession`) e o `-testsession` sem a tela automática (fotos e smoke mostram os botões do anúncio simulado).
+- **Quando o SDK inicia:** só depois da resposta da tela de idade (`Privacidade.Sdk`: sem resposta = `Espera`). Antes dela o `AdsLevelPlay` não toca no LevelPlay (logcat `ADS ad_init espera consentimento`; o `verify.sh android-emulator --migracao` reprova se o SDK iniciar sem resposta). Depois da resposta o SDK inicia para **qualquer** faixa, com estas flags (`Privacidade.Flags`, tabela em `LEVELPLAY.md` §6):
 
 | Faixa | COPPA | Sem ID de publicidade (`is_deviceid_optout`) | Famílias (`Google_Family_Self_Certified_SDKS`) | Personalizado (`SetGDPRConsent`) | Não vender (`SetCCPA`) |
 |---|---|---|---|---|---|
@@ -226,7 +227,7 @@ unity3d.com, <<PREENCHER: ID da organização/publisher no painel Unity Ads>>, D
 | Nada aleatório pago (loot box) | OK | sem IAP; baús de marco com ouro fixo (`Defs.cs` `Milestones`); núcleo sem RNG |
 | Menor de 18 sem anúncio personalizado | OK | `Privacidade.Flags`, `PrivacidadeTests` |
 | Menor de 18 sem ID de publicidade | OK no código / **não verificado no aparelho** | `is_deviceid_optout` antes do `Init`. Falta prova de rede ou do logcat do `IntegrationHelper` no POCO |
-| Tela de idade neutra, sem pré-seleção, obrigatória, revogável | OK | `TelaPrivacidade`; Configurações > Privacidade |
+| Tela de idade neutra, sem pré-seleção, obrigatória antes do 1º anúncio, revogável | OK | `TelaPrivacidade` (abre no 1º botão de anúncio, `PedidoIdade`); Configurações > Privacidade |
 | SDK só depois da resposta | OK no emulador / POCO pendente | `verify.sh android-emulator --migracao` (`ADS ad_init ok` ausente antes da resposta); item da tela de idade no `ROTEIRO_TESTE_POCO.md` |
 | Sem consentimento fixo no release | OK | E-PLAT-01 acabou com o hardcode (DM §94) |
 | Sem interação entre usuários | OK | single-player |
