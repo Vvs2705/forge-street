@@ -11,6 +11,7 @@ Atualizado: 2026-10-24 · Estado: **pipeline sem segredo pronto no repositório;
 | conferência | `client/tools/verify.sh release-check <aab>` | targetSdk ≥ 36, versionCode coerente e > 1, não-debuggable, só arm64-v8a, 16 KB, módulo base ≤ 200 MB, assinatura que não é a de debug, permissões da lista aprovada |
 | no PC | `client/tools/verify.sh release` | quick + o AAB + o release-check, com as 4 variáveis no ambiente do Vinicius |
 | no CI | workflow `release` (`.github/workflows/release.yml`) | o mesmo build com uma **keystore de teste gerada na hora** (descartável, só prova que o pipeline funciona) + release-check + o AAB como artifact. Roda à mão (`workflow_dispatch`) e numa tag `v*`. **Não sobe à Play** |
+| símbolos | `Setup.BuildAndroidRelease` (só `#if UNITY_ANDROID`) | a tabela de símbolos do IL2CPP (`DebugSymbolLevel.SymbolTable`) **dentro do AAB** (a Play simboliza o crash nativo sozinha, GDD §164 item 17) e num `.symbols.zip` ao lado, que o workflow `release` guarda no artifact |
 | loja | Play Console | o 1º AAB vai à mão (a Play exige); os seguintes podem ir pela conta de serviço (§3.3) |
 
 A tag `v*` (ex.: `v0.7.0`) é o gatilho preparado para a release automática; criar a tag e publicar uma Release do GitHub seguem dependendo do aval do Vinicius.
