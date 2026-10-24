@@ -358,6 +358,9 @@ namespace FS.Core
         /// <summary>A-PLAT-08 / E-PLAT-04: chave da loja. false = o botao LOJA some (nenhuma compra nova); recibo, restore automatico e posse
         /// seguem (quem pagou nao perde).</summary>
         public bool Loja = true;
+        /// <summary>DM §130 ("districts"): chave dos distritos novos. false = nenhum distrito abre (Imperio.Abrir recusa e o mapa nao mostra
+        /// ABRIR); os ja abertos, o Charter e o fundo seguem. Vale o Tuning da raiz.</summary>
+        public bool DistritosNovos = true;
         /// <summary>LIVEOPS_V1 §3.5 / E-PLAT-04: chave da trilha premium do Pass. false (padrao ate a Wave E, LiveOpsDefs.PremiumLigado) = o
         /// produto do Pass nao fica a venda e nenhum nivel premium paga; quem ja comprou mantem a posse e recebe ao religar.</summary>
         public bool PassePremium = LiveOpsDefs.PremiumLigado;

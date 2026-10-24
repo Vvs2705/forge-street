@@ -555,7 +555,7 @@ namespace FS
                     case Ev.Masterwork:
                         Ajustes.Pulso(60, 255);
                         Notice(Loc.T("fx.qualidade", Textos.Qualidade(Quality.Masterwork)), _crown, Color.white);
-                        Log("masterwork", _sim.ItemDefs[e.A].Name, e.B >= 0 ? _sim.Hall.Defs[e.B].Id : "-");   // B-CORE-08: B = indice no Hall
+                        Log("masterwork_unlock", _sim.ItemDefs[e.A].Name, e.B >= 0 ? _sim.Hall.Defs[e.B].Id : "-");   // B-CORE-08: B = indice no Hall
                         break;
                     // B-CORE-08: marco da colecao pago (Renome 1x pelo ID): aviso e diario (o som e' o "colecao" da Mixagem)
                     case Ev.Colecao:
@@ -569,7 +569,7 @@ namespace FS
                         break;
                     case Ev.ContractDone:   // D-CORE-04: pago 1x pelo nucleo (ledger das metas); aqui o aviso, o diario, a fonte e a vibracao
                         Notice(Loc.T("aviso.contrato", Textos.Qtd(e.B)), _coinIcon.sprite, _coinIcon.color);
-                        Log("contract_complete", _raiz.Contratos.Defs[e.A].Id, e.B.ToString());
+                        Log("royal_contract_complete", _raiz.Contratos.Defs[e.A].Id, e.B.ToString());   // DM §86
                         Source("contrato", e.B);
                         Ajustes.Pulso(40, 200);
                         break;
@@ -626,7 +626,7 @@ namespace FS
                         break;
                     // FASE9 (v0.6c): a encomenda nova entra pelo estado do Sim (CartoesEncomenda.Refresh, vale tambem para a do save); entregue = som,
                     // aviso e moedas saindo do cartao (o premio ja entrou no Gold, fora do GoldEarned, como o bau)
-                    case Ev.OrderNew: Log("order_new", _sim.ItemDefs[e.A].Name, e.B.ToString()); break;
+                    case Ev.OrderNew: Log("order_start", _sim.ItemDefs[e.A].Name, e.B.ToString()); break;
                     case Ev.OrderDone:
                         Log("order_done", _sim.ItemDefs[e.A].Name, e.B.ToString());
                         // B-CORE-05 (LIVEOPS_V1 §5.8): order_complete com o tipo ("rush_prazo" no bonus). ponytail: 2 entregues no mesmo tick logam o
@@ -765,7 +765,7 @@ namespace FS
         /// <summary>D-CORE-04: ACEITAR/ABANDONAR na aba de contratos (o nucleo ja decidiu): diario e save. A conclusao vem pelo Ev.ContractDone.</summary>
         void Contrato(string acao, string id)
         {
-            Log("contract_" + acao, id);
+            Log(acao == "accept" ? "royal_contract_start" : "royal_contract_abandon", id);   // DM §86
             Save();
         }
 
@@ -810,7 +810,7 @@ namespace FS
         {
             if (_loja == null) return 0;
             System.Collections.Generic.List<Recibo> feitos = _raiz.Compras.Concluir(Save, _loja.Confirmar);
-            foreach (Recibo r in feitos) Log("iap_delivered", r.Produto, "confirmada");
+            foreach (Recibo r in feitos) Log(Array.Exists(Compras.CatalogoPasse, d => d.Id == r.Produto) ? "pass_purchase" : "iap_purchase", r.Produto, "confirmada");   // DM §86
             if (_raiz.Compras.Pendentes) Log("iap_fail", "", "save");
             return feitos.Count;
         }
@@ -942,6 +942,7 @@ namespace FS
             _hint.verticalOverflow = VerticalWrapMode.Truncate;
             _notice = MakeNotice(top, hintMin, hintMax);
             _liveops = new PainelLiveOps(top, _safe, _raiz, PagoPasse);   // D-CORE-03/04: chips presos embaixo da pilula da dica (por cima dela)
+            _liveops.PasseAberto = () => Log("pass_view", _raiz.LiveOps.Passe.Id, _raiz.LiveOps.Nivel.ToString(CultureInfo.InvariantCulture));   // DM §86
             _crown = Art.Icon("coroa", "icone");
             // versao: so no build dev (o playtest usa); release so nas configuracoes (v0.6b, P1-1); criativo nenhuma. v0.6d: pequena, logo
             // abaixo da pilula de ouro, na folga de 24 px que o balao do 1o da fila respeita (no canto de baixo batia no cartao e no VIP)
@@ -1463,13 +1464,13 @@ namespace FS
             void Recompensa()
             {
                 long v = _sim.Anuncios.Pagar(tx);
-                Log("ad_paid", p, tx + " " + v.ToString(CultureInfo.InvariantCulture) + (semVideo ? " sem_video" : ""));
+                Log("rewarded_complete", p, tx + " " + v.ToString(CultureInfo.InvariantCulture) + (semVideo ? " sem_video" : ""));
                 if (v < 0) return;
                 Pago(a, v);
                 Save();   // a chave paga, a recarga e o ouro vao juntos para o disco
             }
             if (semVideo) Recompensa();
-            else _ads.Show(p, Recompensa, AdFail);
+            else { Log("rewarded_start", p, tx); _ads.Show(p, Recompensa, AdFail); }   // DM §86
         }
 
         /// <summary>O que a tela faz depois que o nucleo aplicou a recompensa `v` (Anuncios.Previa do toque).</summary>
@@ -1519,6 +1520,7 @@ namespace FS
             if (veto == null && !_ads.InterstitialReady) veto = "sem_anuncio";
             if (veto != null) { if (veto != "flag") Log("ad_veto", Ads.Intersticial, veto); return; }
             _sim.Anuncios.IntersticialMostrado(_sessionT);
+            Log("interstitial_show", Ads.Intersticial);   // DM §86 (o ad_shown/ad_impression do SDK vem depois, com a receita)
             _ads.ShowInterstitial(null);
         }
 
@@ -1583,6 +1585,7 @@ namespace FS
                 {
                     _cfg.gameObject.SetActive(false);
                     _lojaUi.Abrir();
+                    Log("iap_view", "configuracoes");   // DM §86
                 });
                 ((RectTransform)priv.transform).anchorMax = new Vector2(0.35f, 0.175f);
                 ((RectTransform)close.transform).anchorMin = new Vector2(0.65f, 0.045f);
@@ -1905,7 +1908,7 @@ namespace FS
                 else if (_imp.Liberado(d.Id))
                 {
                     linhas.Add(Loc.T("mapa.abrir", nome, Textos.Ouro(d.Abertura)));
-                    if (_sim.Gold >= d.Abertura) Poe(1, Loc.T("mapa.btn_abrir"), () => { if (_imp.Abrir(d.Id)) { Log("district_open", d.Id); Renascer(d.Id); } });
+                    if (_sim.Gold >= d.Abertura && _raiz.T.DistritosNovos) Poe(1, Loc.T("mapa.btn_abrir"), () => { if (_imp.Abrir(d.Id)) { Log("district_unlock", d.Id); Renascer(d.Id); } });
                 }
                 else linhas.Add(Loc.T("mapa.fechado", nome));
                 // C-CORE-03: o manager vem com o Charter; o nivel sobe a renda de fundo (25 -> 40% da taxa), nunca o teto de 2 h
