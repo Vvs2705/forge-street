@@ -34,6 +34,20 @@ namespace FS.Tests
 
         static string Avisos(RemoteConfig.Resultado r) => string.Join(" | ", r.Avisos);
 
+        /// <summary>DM §130: Pass, distritos, eventos, anuncios e IAP desligam pelo remoto, sem build (ofertas so existem na Wave E: o validator
+        /// do LiveOps recusa oferta ate la). Cada chave vale sozinha e nada mais muda.</summary>
+        [Test]
+        public void FlagsDoDM130_DesligamPeloRemoto()
+        {
+            foreach (string k in new[] { "Passe", "PassePremium", "DistritosNovos", "Eventos", "AnunciosLigados", "Loja" })
+            {
+                var t = new Tuning();
+                RemoteConfig.Resultado r = Aplica(t, "{\"" + k + "\": false}");
+                Assert.IsTrue(r.Valido, k + ": " + Avisos(r));
+                Assert.IsFalse((bool)typeof(Tuning).GetField(k).GetValue(t), k);
+            }
+        }
+
         // ------------------------------------------------------------------ sem config, JSON invalido, parcial, idempotente
 
         [Test]
