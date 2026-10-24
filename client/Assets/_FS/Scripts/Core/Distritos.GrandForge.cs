@@ -151,7 +151,7 @@ namespace FS.Core
                 new StationDef("deposito", Kind.Deposit, 1.5f, 1.0f, "Minério cobre", 0f, 1f, null, null, GfMinCobre, arte: "deposito_cobre"),
                 new StationDef("fornalha", Kind.Furnace, 1.5f, 4.0f, "Crisol bronze", -1f, 0f, null, "crisol_bronze", arte: "crisol"),
                 new StationDef("fundicao_sinos", Kind.Crafter, 1.5f, 9.0f, "Fundição sinos", -1f, 0f, null, "fundicao_sinos", arte: "fundicao_sinos"),
-                new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f),
+                new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f, arte: "balcao"),
                 new StationDef("crisol_bronze2", Kind.Furnace, 4.5f, 4.0f, "Crisol 2", -1f, 0f, "crisol_bronze2", "crisol_bronze", arte: "crisol"),
                 new StationDef("deposito_ferro", Kind.Deposit, 7.5f, 1.0f, "Minério", 0f, 1f, "cratera_estelar", null, GfMinerio),
                 new StationDef("fornalha_ferro", Kind.Furnace, 7.5f, 4.0f, "Fornalha", -1f, 0f, "cratera_estelar", "fornalha"),

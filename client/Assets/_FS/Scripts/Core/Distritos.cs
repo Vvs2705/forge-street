@@ -281,7 +281,7 @@ namespace FS.Core
                 new StationDef("prensa", Kind.Furnace, 1.5f, 6.5f, "Prensa", -1f, 0f, null, "prensa", arte: Prensa),
                 new StationDef("rebitadeira", Kind.Furnace, 7.5f, 6.5f, "Rebitadeira", -1f, 0f, null, "rebitadeira", arte: Rebitadeira),
                 new StationDef("montagem_elmo", Kind.Crafter, 1.5f, 9.0f, "Montagem elmo", -1f, 0f, null, "montagem_elmo", arte: Montagem),
-                new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f),
+                new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f, arte: "balcao"),
                 new StationDef("prensa2", Kind.Furnace, 4.5f, 6.5f, "Prensa 2", -1f, 0f, "prensa2", "prensa", arte: Prensa),
                 new StationDef("bigorna_pesada", Kind.Crafter, 1.5f, 11.0f, "Bigorna pesada", -1f, 0f, "bigorna_pesada", "bigorna_pesada", arte: ForjaArmas),
                 new StationDef("carroca_couro", Kind.Deposit, 13.5f, 1.5f, "Carroça couro", 0f, 1f, "carroca_curtidor", null, Couro, "carroca"),

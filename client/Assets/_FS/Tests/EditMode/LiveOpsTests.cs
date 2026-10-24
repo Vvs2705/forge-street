@@ -458,7 +458,7 @@ namespace FS.Tests
         /// (§1: 2 sessoes de 10 min por dia, cofre entre elas, sem anuncio nem golpe) fecha no dia 4 ou 5. Antes do evento o jogador ja jogou
         /// 20 min por dia desde o T0, ate 2 h (a Royal Week e' o D0: comeca do zero). Os 7 eventos em paralelo (cada Sim tem o seu Tuning).
         /// </summary>
-        [Test]
+        [Test, Timeout(900000)]   // runner do CI (2 vCPU) leva ~370 s; o padrao do Unity e' 180 s por teste
         public void TrilhaDeEvento_NuncaNumaSessaoDe60Min_OF2PDeReferenciaFechaNoDia4a5()
         {
             EventDef[] evs = LiveOpsDefs.Eventos.Where(e => LiveOpsDefs.Falta(e, Items.All) == null).ToArray();
@@ -705,7 +705,7 @@ namespace FS.Tests
         /// dia, do 1o dia da S1, e no fim de cada uma resgata o que estiver pronto (diarias, semanais, login, conquistas e a trilha free). Fecha
         /// os 30 niveis da trilha free dentro de `Dias - 7` sem nada do premium (flag desligada). ponytail: ~12 h de jogo a 30 Hz, o teste
         /// mais lento do Pass; a janela de 20 min/dia e' a do F2P de referencia (LiveOpsDefs.EncomendasDiaF2P).</summary>
-        [Test]
+        [Test, Timeout(900000)]   // runner do CI (2 vCPU) leva ~370 s; o padrao do Unity e' 180 s por teste
         public void BotF2P_FechaATrilhaFreeDentroDaTemporada()
         {
             var s = new Sim();

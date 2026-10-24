@@ -159,6 +159,8 @@ namespace FS.EditorTools
                     options = release || limpo ? BuildOptions.None : BuildOptions.Development,
                 });
                 Debug.Log($"BuildSummary({target}): result={r.summary.result} errors={r.summary.totalErrors} size={r.summary.totalSize} path={path}");
+                // o GameCI (CI do GitHub, docs/CI_UNITY.md) só aceita o build com esta linha exata no log
+                if (r.summary.result == BuildResult.Succeeded) Debug.Log("Build succeeded!");
             }
             catch (System.Exception e) { Debug.LogError("FS Setup: build abortado: " + e.Message); }
             finally
