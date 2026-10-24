@@ -57,6 +57,7 @@ Valor fora da faixa fica **preso** na borda e é registrado. Cada aviso vira uma
 | Liga, mas não desliga | `AnunciosDepoisDaPrimeiraMelhoria` | D6/V18 |
 | Intersticial: o remoto sempre pode desligar. Ligar só vale num build com `Game.IntersticialNoBuild = true`; hoje é `false` (o build do A/B no Limited Release muda isso). | `Interstitial` | P3/V10 |
 | Chave mestra: com `false`, o `Aplicar` desliga todos os placements e o intersticial, e o `Game` nem inicia o SDK (`SemAnuncio`) | `AnunciosLigados` | DM §130 |
+| Flags do DM §130 sem build: Pass (`Passe`, `PassePremium`), distritos novos (`DistritosNovos`: o mapa não mostra ABRIR e o `Imperio.Abrir` recusa; os abertos seguem), eventos (`Eventos`), anúncios (`AnunciosLigados`) e IAP (`Loja`). Ofertas só existem na Wave E (o validator do LiveOps recusa antes). Teste: `RemoteConfigTests.FlagsDoDM130_DesligamPeloRemoto` | as 6 | DM §130 |
 
 Coerência entre chaves diferentes (por exemplo `VipMin` < `VipMax`) fica com quem escreve o config. Antes de publicar um config que mexe em economia, rode o bot e registre os números no `BALANCE.md`. Hoje o `econsim` não lê JSON (pendência §5).
 
