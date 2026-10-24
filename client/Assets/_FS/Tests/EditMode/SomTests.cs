@@ -130,6 +130,50 @@ namespace FS.Tests
             Assert.AreEqual(1f, cheio.rua2, 1e-6f, "filas cheias: as duas camadas de rua");
         }
 
+        /// <summary>AUDIO.md §11: a 5a camada (multidao) nunca soa com a oficina vazia e sem evento, cresce com a fila e com o evento e
+        /// soma pouco no total: a oficina cheia sobe no maximo ~1 dB com ela (os volumes do Sfx: rua 1, multidao 0,5 do mesmo RMS).</summary>
+        [Test]
+        public void Ambiente_Multidao_SoComFilaOuEvento_ESomaPouco()
+        {
+            Assert.AreEqual(0f, Sintese.Multidao(0, false), 1e-6f);
+            Assert.AreEqual(0f, Sintese.Multidao(2, false), 1e-6f, "fila curta: so a rua");
+            Assert.AreEqual(0.4f, Sintese.Multidao(0, true), 1e-6f, "evento: a festa ja na rua vazia");
+            for (int q = 0; q <= 14; q++)
+            {
+                Assert.GreaterOrEqual(Sintese.Multidao(q + 1, false), Sintese.Multidao(q, false), q + ": nunca diminui com a fila");
+                Assert.Greater(Sintese.Multidao(q, true), Sintese.Multidao(q, false) - 1e-6f, q + ": o evento so soma");
+                Assert.LessOrEqual(Sintese.Multidao(q, true), 1f);
+            }
+            // energia das 5 camadas na oficina cheia, com o RMS dos lacos (fogo e rua sintetizados; o fogo CC0 e a multidao no mesmo nivel)
+            double fogo = Math.Pow(10, Rms(Sintese.Fogo()) / 10), rua = Math.Pow(10, Rms(Sintese.Rua()) / 10);
+            var c = Sintese.Camadas(7, 13);
+            double sem = fogo * (Sq(c.fogo) + Sq(0.6 * c.fogo2)) + rua * (Sq(c.rua) + Sq(0.6 * c.rua2));
+            double com = sem + rua * Sq(0.5 * Sintese.Multidao(13, true));
+            Assert.That(10 * Math.Log10(com / sem), Is.InRange(0.1, 1.0), "a multidao aparece, mas o crescimento parado -> cheio fica o mesmo (±1 dB)");
+        }
+
+        static double Sq(double v) => v * v;
+        static double Rms(float[] x) { double s = 0; foreach (float v in x) s += v * v; return 10 * Math.Log10(s / x.Length); }
+
+        /// <summary>AUDIO.md §11: os lacos CC0 do ambiente (Resources/Audio/amb_*.wav, client/tools/audio_ambiente.py) em mono 22 050 Hz, sem clipar,
+        /// e o fogo no RMS medio do sintetizado que ele substitui (±1 dB): a Mixagem segue valendo.</summary>
+        [Test]
+        public void Ambiente_LacosCc0_NoNivelDoSintetizado()
+        {
+            string dir = AudioDir();
+            if (!Directory.Exists(dir)) Assert.Ignore("audio fora do alcance: " + dir);
+            foreach ((string n, float[] alvo) in new[] { ("amb_fogo", Sintese.Fogo()), ("amb_multidao", Sintese.Rua()) })
+            {
+                byte[] b = File.ReadAllBytes(Path.Combine(dir, n + ".wav"));
+                Assert.AreEqual(1, BitConverter.ToInt16(b, 22), n + ": mono");
+                Assert.AreEqual(Sintese.Taxa, BitConverter.ToInt32(b, 24), n + ": taxa");
+                float[] x = new float[(b.Length - 44) / 2];
+                for (int i = 0; i < x.Length; i++) x[i] = BitConverter.ToInt16(b, 44 + 2 * i) / 32768f;
+                Assert.Less(Pico(x, n), 0.99f, n + ": sem clipar");
+                Assert.AreEqual(Rms(alvo), Rms(x), 1.0, n + ": RMS medio do laco sintetizado (dB)");
+            }
+        }
+
         /// <summary>
         /// Para ouvir sem o Unity: grava cada som em .wav (16 bits, mono) e imprime duracao, memoria e tempo de geracao.
         /// dotnet test client/tools/coretests --filter Name=Som_GravaWav --logger "console;verbosity=detailed"
