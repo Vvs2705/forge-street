@@ -135,7 +135,7 @@ namespace FS.Core
                 new StationDef("deposito", Kind.Deposit, 1.5f, 1.0f, "Minério cobre", 0f, 1f, null, null, AqMinCobre, arte: "deposito_cobre"),
                 new StationDef("fornalha", Kind.Furnace, 1.5f, 4.0f, "Crisol cobre", -1f, 0f, null, "crisol_cobre", arte: "crisol"),
                 new StationDef("bancada_ourives", Kind.Crafter, 1.5f, 9.0f, "Bancada ourives", -1f, 0f, null, Ourivesaria, arte: ArteOurives),
-                new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Loja fina", 0f, -1f),
+                new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Loja fina", 0f, -1f, arte: "loja_rica"),
                 new StationDef("bancada_ourives2", Kind.Crafter, 4.5f, 9.0f, "Bancada 2", -1f, 0f, "bancada_ourives2", Ourivesaria, arte: ArteOurives),
                 new StationDef("deposito_ouro", Kind.Deposit, 7.5f, 1.0f, "Minério ouro", 0f, 1f, "veio_ouro", null, AqMinOuro, arte: "deposito_ouro"),
                 new StationDef("crisol_ouro", Kind.Furnace, 7.5f, 4.0f, "Crisol ouro", -1f, 0f, "veio_ouro", "crisol_ouro", arte: "crisol"),
