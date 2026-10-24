@@ -106,8 +106,8 @@ Trocar de build: `adb uninstall $P` (apaga o save do aparelho; o backup está em
   adb logcat -d > $G/logcat_idade.txt
   grep -niE 'ADS (ad_init|privacidade)|ironsource|levelplay' $G/logcat_idade.txt | head -40
   ```
-- **PASS:** a 1ª linha `ADS` é `ad_init espera consentimento`; nenhuma linha de inicialização do SDK (IronSource/LevelPlay) antes de `ADS privacidade <13 coppa=True gdpr=False ccpa=True aaid_optout=True familias=True` (linha do sistema que só cita o pacote do SDK registrado no manifesto não conta: em dúvida, o coordenador lê); `ADS ad_init ok` só depois (sem rede sai `ad_init falha`, que não reprova este item); nenhum botão de anúncio antes da resposta; nenhuma faixa pré-marcada; Recusar e Aceitar do mesmo tamanho e cor; a mudança em Configurações loga `mudou para 18+ ... sem anuncio ate reabrir` e, depois de reabrir, `ADS privacidade 18+ coppa=False gdpr=True ccpa=False aaid_optout=False familias=False`.
-- **FAIL:** SDK iniciando antes da resposta, botão de anúncio antes da resposta, faixa pré-marcada, dá para pular a pergunta na 1ª abertura, flags erradas para a faixa.
+- **PASS:** nenhuma tela antes do 1º toque; a pergunta só depois da 1ª melhoria; a 1ª linha `ADS` é `ad_init espera consentimento`; nenhuma linha de inicialização do SDK (IronSource/LevelPlay) antes de `ADS privacidade <13 coppa=True gdpr=False ccpa=True aaid_optout=True familias=True` (linha do sistema que só cita o pacote do SDK registrado no manifesto não conta: em dúvida, o coordenador lê); `ADS ad_init ok` só depois (sem rede sai `ad_init falha`, que não reprova este item); nenhum botão de anúncio antes da resposta; nenhuma faixa pré-marcada; Recusar e Aceitar do mesmo tamanho e cor; a mudança em Configurações loga `mudou para 18+ ... sem anuncio ate reabrir` e, depois de reabrir, `ADS privacidade 18+ coppa=False gdpr=True ccpa=False aaid_optout=False familias=False`.
+- **FAIL:** SDK iniciando antes da resposta, botão de anúncio antes da resposta, faixa pré-marcada, dá para pular a pergunta da 1ª vez que ela abre, tela de idade antes do 1º toque, flags erradas para a faixa.
 
 **G5. 30 min jogando** (§113 "30 min") — G6 a G13 são medidos dentro desta sessão
 - **Fazer:** logo depois do G4 (aparelho com a resposta 18+), o Vinicius joga 30 min seguidos, normalmente (vende, compra, contrata, assiste aos anúncios oferecidos); o coordenador mede pelo cabo sem tocar no aparelho. Logcat da Fase B inteira em arquivo, no formato padrão (o `grep` abaixo depende dele): `adb logcat -c; adb logcat > $G/logcat_faseB.txt & LC=$!` (`kill $LC` no fim do G17). Passos que fecham, reabrem ou tiram o jogo da frente (G7: reabrir na recarga e modo avião; G8 g; G9 a e d) ficam para depois dos 30 min.
@@ -179,8 +179,8 @@ Trocar de build: `adb uninstall $P` (apaga o save do aparelho; o backup está em
 - **FAIL:** sem painel com renda, valor 0, paga em dobro, ouro diferente do mostrado.
 
 **G17. Voltar do Android** (§113/§151 "Back"; com gestos e, se der, com os botões de navegação)
-- **Fazer:** voltar em cada estado: tela de idade na 1ª abertura e no passo do consentimento (antes, numa instalação limpa, ou pela revisão em Configurações > Privacidade); "Bem-vindo de volta!" aberto; Configurações aberta; bandeja de Melhorias aberta; tela limpa; durante um anúncio.
-- **PASS:** idade na 1ª abertura fica; consentimento volta à idade; painel, Configurações e bandeja fecham só o que está aberto, um por toque (um toque nunca vale por dois); tela limpa grava e sai; durante o anúncio o jogo não faz nada (o anúncio trata).
+- **Fazer:** voltar em cada estado: tela de idade da 1ª vez que abre (no 1º botão de anúncio) e no passo do consentimento (antes, numa instalação limpa, ou pela revisão em Configurações > Privacidade); "Bem-vindo de volta!" aberto; Configurações aberta; bandeja de Melhorias aberta; tela limpa; durante um anúncio.
+- **PASS:** idade da 1ª vez fica; consentimento volta à idade; painel, Configurações e bandeja fecham só o que está aberto, um por toque (um toque nunca vale por dois); tela limpa grava e sai; durante o anúncio o jogo não faz nada (o anúncio trata).
 - **FAIL:** sai com algo aberto, um toque fecha dois níveis, voltar sem efeito com a tela limpa.
 
 ### Ainda não existem
