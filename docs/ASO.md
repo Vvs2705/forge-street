@@ -4,14 +4,14 @@
 
 **Régua:** só entra o que existe no build de hoje (`PROJETO.md` §8 e `Defs.cs`). Nada de "em breve" no texto da loja: a política de metadados da Play não aceita promessa enganosa, e a ficha 51 não vende o futuro. O que depende de Wave está na tabela do §6 e só entra quando a Wave fechar.
 
-**O que existe hoje** (conferido em `client/Assets/_FS/Scripts/Core/Defs.cs`, `main` `0af7d10`):
-- 1 oficina (Old Forge) + rua lateral com joalheria; 4 produtos: espada, escudo, ferramenta e joia;
-- 29 melhorias (26 de produção + 3 de decoração); 6 ajudantes (Ajudante 1–3, Mineiro, Joalheiro 1–2); esteira; balcão de 4 a 8 vagas;
-- clientes com paciência, que vão embora; VIP que paga 3× por unidade; encomendas (1 por vez, sem prazo); 4 baús de marco com ouro fixo;
-- cofre offline: 25% da taxa, até 2 h; rewarded opcional: Velocidade 2×/3× e "Chamar VIP" (só depois da 1ª melhoria, recarga de 5 min);
-- retrato, uma mão; roda sem internet. Sem IAP. Interstitial atrás de flag desligada (V10). Textos do jogo em pt-BR, en e es desde o PR #41 (`View/Loc.cs`, idioma do aparelho ou escolha nas Configurações).
+**O que existe hoje** (2026-10-24, `main`; `PROJETO.md` §8 ~83%):
+- 6 distritos no build (Old Forge, Rua dos Armeiros, Bairro Artesão, Arsenal Real, Fundição Arcana, Grande Forja), cada um com uma mecânica nova; 38 produtos vendáveis; estações com níveis II–V; workers, turmas e managers por distrito;
+- qualidade Normal/Fina/Superior com o golpe de mestre; 60 obras-primas no Hall; Coleção; encomendas Orders 2.0 (8 tipos); 12 contratos reais; Renome do Império em 10 níveis;
+- 41 diárias, 17 semanais, 106 conquistas, login de 7 dias; 10 eventos; Passe de 30 níveis com trilha grátis (premium atrás de flag desligada, fora do texto);
+- cofre offline: 25% da taxa, até 2 h; rewarded opcional (VIP, Velocidade e outros), só depois da 1ª melhoria; intersticial atrás de flag desligada (V10); IAP desligado até a chave da Play (fora do texto);
+- retrato, uma mão; roda sem internet; textos em pt-BR, en e es (`View/Loc.cs`).
 
-Limites da Play conferidos com `len()` do Python em cada bloco `text` abaixo (2026-10-12): títulos 24–29 de 30, descrições curtas 70–79 de 80, completas 1.384–1.465 de 4.000. Mudou um texto? Conte de novo.
+Limites da Play conferidos com `len()` do Python em cada bloco `text` abaixo (títulos e curtas em 2026-10-12: 24–29 de 30 e 70–79 de 80; completas reescritas em 2026-10-24: 1.845, 1.847 e 1.928 de 4.000). Mudou um texto? Conte de novo.
 
 ---
 
@@ -66,81 +66,105 @@ Funde mineral, forja espadas y encuentra el atasco de tu forja medieval.
 
 <!-- completa pt-BR -->
 ```text
-Forge Street é um jogo de ferreiro em que a oficina cresce junto com você. Pegue minério, funda lingotes na fornalha, martele espadas na bigorna e venda no balcão para os clientes da rua. Com o ouro, compre melhorias, contrate ajudantes e transforme uma forja pequena na mais movimentada da rua.
+Forge Street é um jogo de ferreiro em que a oficina cresce junto com você. Pegue minério, funda lingotes na fornalha, martele espadas na bigorna e venda no balcão para os clientes da rua. Com o ouro, compre melhorias, contrate ajudantes e transforme uma forja pequena numa rua inteira de oficinas.
 
 Ache o gargalo
-Cada estação mostra quando trava: a fornalha acende uma lâmpada vermelha quando a saída enche e fica cinza quando falta minério. Descubra o que está segurando a produção e invista no lugar certo.
+Cada estação mostra quando trava: fica cinza quando falta insumo e acende o vermelho quando a saída enche. Descubra o que está segurando a produção e invista no lugar certo.
 
-Construa e automatize
-• 4 linhas de produção: espadas, escudos, ferramentas e joias
-• 29 melhorias: fornalhas, bigornas, fole, mochila, botas, vitrines e decoração
-• 6 ajudantes que carregam minério, lingotes e produtos por você
-• Esteira que leva os lingotes da fornalha até a bigorna
-• Balcão de até 8 vagas para atender a fila inteira
-• Rua lateral com joalheria e clientes nobres
+Seis distritos, uma mecânica nova em cada
+• Old Forge: espadas, escudos, ferramentas e joias, com esteira e ajudantes
+• Rua dos Armeiros: ligas e peças montadas de várias partes
+• Bairro Artesão: bancadas que você configura e clientes por família
+• Arsenal Real: cotas com prazo para o exército do rei
+• Fundição Arcana: peças energizadas nos altares
+• Grande Forja: síntese com peças dos outros distritos e lotes de exportação
+Mais de 35 produtos, melhorias, níveis de estação e uma equipe de ajudantes e mestres para cada distrito.
 
-Clientes, encomendas e VIP
-Os clientes chegam, esperam na fila e vão embora se a espera passar do limite. Cumpra encomendas para ganhar ouro extra, abra baús nos marcos de venda e atenda clientes VIP, que pagam o triplo.
+Qualidade e obras-primas
+Acerte o golpe de mestre na bigorna e a peça sobe de qualidade: Normal, Fina, Superior. Peças perfeitas viram obras-primas para o Hall, e a Coleção guarda cada marco que você alcança.
+
+Encomendas, contratos reais e Renome
+Cumpra encomendas de vários tipos, aceite contratos reais e suba o Renome do seu império para abrir os próximos distritos.
+
+Metas, eventos e Passe
+Diárias, semanais e conquistas, eventos com trilha própria e um Passe de temporada com trilha grátis.
 
 A forja rende enquanto você está fora
 Feche o jogo e volte depois: o cofre junta ouro por até 2 horas.
 
 No seu ritmo
 • Jogo em retrato, com uma mão só
+• Em português, inglês e espanhol
 • Bônus opcional por anúncio: chame um cliente VIP ou acelere a produção
 • Funciona sem internet (os bônus por anúncio precisam de conexão)
 ```
 
 <!-- completa en -->
 ```text
-Forge Street is a blacksmith game where your workshop grows with you. Grab ore, smelt ingots in the furnace, hammer swords on the anvil and sell them at the counter to customers on the street. Spend your gold on upgrades, hire helpers and turn a small forge into the busiest one on the street.
+Forge Street is a blacksmith game where your workshop grows with you. Grab ore, smelt ingots in the furnace, hammer swords on the anvil and sell them at the counter to customers on the street. Spend your gold on upgrades, hire helpers and turn a small forge into a whole street of workshops.
 
 Find the bottleneck
-Every station shows when it's stuck: the furnace lights a red lamp when its output is full and turns grey when it runs out of ore. Find what's holding production back and invest in the right place.
+Every station shows when it's stuck: it turns grey when it runs out of input and lights up red when its output is full. Find what's holding production back and invest in the right place.
 
-Build and automate
-• 4 production lines: swords, shields, tools and jewelry
-• 29 upgrades: furnaces, anvils, bellows, backpack, boots, display shelves and decorations
-• 6 helpers who carry ore, ingots and goods for you
-• A conveyor that moves ingots from the furnace to the anvil
-• A counter with up to 8 slots to serve the whole line
-• A side street with a jewelry shop and noble customers
+Six districts, a new mechanic in each
+• Old Forge: swords, shields, tools and jewelry, with a conveyor and helpers
+• Armorer's Row: alloys and goods assembled from several parts
+• Artisan Quarter: workbenches you configure and customers by family
+• Royal Arsenal: quotas with deadlines for the king's army
+• Arcane Foundry: goods energized at the altars
+• Grand Forge: synthesis with parts from the other districts and export batches
+More than 35 products, upgrades, station levels and a team of helpers and masters for each district.
 
-Customers, orders and VIPs
-Customers arrive, wait in line and leave if the wait gets too long. Complete orders for extra gold, open chests at sales milestones and serve VIP customers, who pay triple.
+Quality and Masterworks
+Land the master strike on the anvil and the piece goes up in quality: Normal, Fine, Superior. Perfect pieces become Masterworks for the Hall, and the Collection keeps every milestone you reach.
+
+Orders, royal contracts and Renown
+Fulfil orders of many kinds, take on royal contracts and raise your empire's Renown to open the next districts.
+
+Goals, events and the Pass
+Dailies, weeklies and achievements, events with their own track and a season Pass with a free track.
 
 Your forge earns while you're away
 Close the game and come back later: the vault collects gold for up to 2 hours.
 
 At your own pace
 • Portrait mode, one-handed play
+• In English, Portuguese and Spanish
 • Optional ad bonuses: call a VIP customer or speed up production
 • Plays offline (ad bonuses need a connection)
 ```
 
 <!-- completa es -->
 ```text
-Forge Street es un juego de herrero en el que el taller crece contigo. Recoge mineral, funde lingotes en la fragua, forja espadas en el yunque y véndelas en el mostrador a los clientes de la calle. Con el oro, compra mejoras, contrata ayudantes y convierte una forja pequeña en la más concurrida de la calle.
+Forge Street es un juego de herrero en el que el taller crece contigo. Recoge mineral, funde lingotes en la fragua, forja espadas en el yunque y véndelas en el mostrador a los clientes de la calle. Con el oro, compra mejoras, contrata ayudantes y convierte una forja pequeña en toda una calle de talleres.
 
 Encuentra el atasco
-Cada estación muestra cuándo se traba: la fragua enciende una luz roja cuando la salida se llena y se pone gris cuando falta mineral. Descubre qué frena la producción e invierte en el lugar correcto.
+Cada estación muestra cuándo se traba: se pone gris cuando falta material y se enciende en rojo cuando la salida se llena. Descubre qué frena la producción e invierte en el lugar correcto.
 
-Construye y automatiza
-• 4 líneas de producción: espadas, escudos, herramientas y joyas
-• 29 mejoras: fraguas, yunques, fuelle, mochila, botas, vitrinas y decoración
-• 6 ayudantes que llevan mineral, lingotes y productos por ti
-• Una cinta que lleva los lingotes de la fragua al yunque
-• Un mostrador de hasta 8 puestos para atender toda la cola
-• Una calle lateral con joyería y clientes nobles
+Seis distritos, una mecánica nueva en cada uno
+• Vieja Forja: espadas, escudos, herramientas y joyas, con cinta y ayudantes
+• Calle Armeros: aleaciones y piezas montadas con varias partes
+• Barrio Artesano: mesas de trabajo que configuras y clientes por familia
+• Arsenal Real: cuotas con plazo para el ejército del rey
+• Fundición Arcana: piezas energizadas en los altares
+• Gran Forja: síntesis con piezas de los otros distritos y lotes de exportación
+Más de 35 productos, mejoras, niveles de estación y un equipo de ayudantes y maestros para cada distrito.
 
-Clientes, pedidos y VIP
-Los clientes llegan, esperan en la cola y se van si la espera se alarga demasiado. Cumple pedidos para ganar oro extra, abre cofres en los hitos de ventas y atiende a clientes VIP, que pagan el triple.
+Calidad y obras maestras
+Acierta el golpe maestro en el yunque y la pieza sube de calidad: Normal, Fina, Superior. Las piezas perfectas se vuelven obras maestras para el Salón, y la Colección guarda cada hito que alcanzas.
+
+Pedidos, contratos reales y Renombre
+Cumple pedidos de muchos tipos, acepta contratos reales y sube el Renombre de tu imperio para abrir los siguientes distritos.
+
+Metas, eventos y Pase
+Diarias, semanales y logros, eventos con su propia ruta y un Pase de temporada con ruta gratis.
 
 Tu forja gana mientras no estás
 Cierra el juego y vuelve más tarde: la caja fuerte junta oro durante hasta 2 horas.
 
 A tu ritmo
 • Juego en vertical, con una sola mano
+• En español, portugués e inglés
 • Bonus opcional por anuncio: llama a un cliente VIP o acelera la producción
 • Funciona sin internet (los bonus por anuncio necesitan conexión)
 ```
@@ -173,14 +197,14 @@ Dados de contato da ficha: e-mail `<<CONFIRMAR: contato@vstack-solutions.com.br>
 
 | Frase ou recurso | Entra quando | Fonte |
 |---|---|---|
-| "Termine comandando um distrito inteiro", "6 distritos", mapa | Wave C (C-CORE-01..05) | `PROJETO.md` §8: 6 distritos = 15% |
-| Obras-primas / Masterwork, qualidade (Fina/Superior), Hall, coleção | Wave B (B-CORE-03/08) | §8: 0% |
-| Projetos (Blueprints), Renome, encomendas de 8 tipos | Wave B | §8 |
-| Contratos reais, eventos, temporadas, Pass, diárias e conquistas | Wave D | §8 |
-| "35+ produtos" | Waves B/C | §8: 4 produtos |
+| ~~"6 distritos", mapa~~ | Wave C | **no texto desde 2026-10-24** (6 distritos no build) |
+| ~~Obras-primas, qualidade (Fina/Superior), Hall, coleção~~ | Wave B | **no texto desde 2026-10-24** |
+| ~~Renome, encomendas de vários tipos~~ (projetos fora do texto) | Wave B | **no texto desde 2026-10-24** |
+| ~~Contratos reais, eventos, Passe (trilha grátis), diárias e conquistas~~ | Wave D | **no texto desde 2026-10-24**; o premium do Passe só com a loja ligada |
+| ~~"Mais de 35 produtos"~~ | Waves B/C | **no texto desde 2026-10-24** (38 vendáveis) |
 | "Sem anúncio forçado" / "sem interstitial" | decisão P3 depois do A/B (V10) | `CRIATIVOS_BANCO_V1.md` |
 | Pacotes, Remove Ads / Pacote do Mestre | Wave E | GDD §17.3 |
-| "Em português, inglês e espanhol" | localização no build | DM §109 |
+| ~~"Em português, inglês e espanhol"~~ | localização no build | **no texto desde 2026-10-24** |
 
 ## 7. Roteiro das 8 screenshots
 

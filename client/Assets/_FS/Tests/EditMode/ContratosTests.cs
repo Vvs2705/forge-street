@@ -338,6 +338,27 @@ namespace FS.Tests
             Assert.AreEqual(1L, n, "as metas da raiz contam");
         }
 
+        /// <summary>BALANCE §41, achado 15: no distrito ativo a oferta e' o 1o contrato aberto DELE (o do Old Forge nunca anda na Row, e um fechado
+        /// de la nao segura o seguinte); sem contrato do distrito, a ordem da lista de antes.</summary>
+        [Test]
+        public void Oferta_NoDistritoAtivo_O1oAbertoDele_SenaoAOrdemDaLista()
+        {
+            Imperio imp = Imperio.Chegada(Distritos.ArmorersRow);
+            Sim raiz = imp.Raiz, row = imp.Ativo;
+            raiz.Contratos.Defs = new[]
+            {
+                Def("ctr_of", OrderDefs.OldForge, Quality.Normal, 10f, 1, 15, null, ("espada", 1)),
+                Def("ctr_row_fechado", OrderDefs.Row, Quality.Normal, 10f, 1, 15, null, ("item_que_nao_existe", 1)),
+                Def("ctr_row", OrderDefs.Row, Quality.Normal, 10f, 1, 15, null, ("elmo", 1)),
+            };
+            Assert.AreEqual("ctr_of", raiz.Contratos.Oferta?.Id, "antes de qualquer tick: a ordem da lista");
+            row.Tick(0.1f, 0f, 0f);
+            Assert.AreEqual("ctr_row", raiz.Contratos.Oferta?.Id, "na Row: o 1o aberto da Row (o fechado nao segura)");
+            Assert.IsTrue(raiz.Contratos.Aceitar());
+            Assert.AreEqual("ctr_row_fechado", raiz.Contratos.Proximo.Id, "o cartao mostra o fechado da Row");
+            Assert.IsNull(raiz.Contratos.Oferta, "1 vaga");
+        }
+
         // ------------------------------------------------------------------ eventos, bot e validator
 
         [Test]
