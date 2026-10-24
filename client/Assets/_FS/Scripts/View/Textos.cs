@@ -338,6 +338,7 @@ namespace FS
                 case "quality_crafted": case "quality_superior":
                     return Loc.T(d.Evento == "quality_crafted" ? "missao.fina" : "missao.superior", n, d.Filtro >= 0 ? ItemNomeOF(d.Filtro, alvo) : Loc.P("missao.peca", alvo));
                 case "master_strike": return Loc.P("missao.golpe", alvo, n);
+                case "master_strike_superior": return Loc.P("meta.golpe_superior", alvo, n);
                 case "district_unlock" when d.Ref == null: return Loc.P("meta.distritos", alvo, n);   // quantos abertos (ach_distritos3)
                 case "district_unlock": return Loc.T("meta.district_unlock", Loc.T("distrito." + d.Ref));
                 case "collection_milestone":

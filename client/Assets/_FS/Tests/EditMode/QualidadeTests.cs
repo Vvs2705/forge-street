@@ -273,6 +273,27 @@ namespace FS.Tests
             Assert.Greater(ideal.Strikes, 0, "o Ideal (Perfect) acerta os golpes");
         }
 
+        /// <summary>dly_golpe_superior1 / ach_golpe_superior50 (LIVEOPS_V1 §4.2 #27, §4.5 #19): conta o golpe cuja peca saiu Superior ou
+        /// melhor (q 100: Fina + golpe; q 200: ja Superior), nao o que so subiu a Fina (q 0); errar nao conta. So as metas mudam.</summary>
+        [Test]
+        public void GolpeSuperior_ContaSoQuandoAPecaSaiSuperior()
+        {
+            foreach ((int q, long esperado) in new[] { (0, 0L), (100, 1L), (200, 1L) })
+            {
+                Sim s = ComQ(q);
+                s.Player.Pos = s.AnvilA.InAt; s.AnvilA.Ins[0] = s.AnvilA.InCap; s.Tick(Dt, 0f, 0f);
+                Assert.IsFalse(s.Strike(false));
+                Assert.IsTrue(s.Strike(true), "q " + q);
+                Quality l = Peca(s);
+                Assert.AreEqual(q == 0 ? Quality.Fine : Quality.Superior, l, "q " + q);
+                s.Metas.Cont.TryGetValue("master_strike_superior", out long n);
+                Assert.AreEqual(esperado, n, "q " + q);
+                s.Metas.Cont.TryGetValue("master_strike_superior." + (int)Item.Sword, out long porItem);
+                Assert.AreEqual(esperado, porItem, "filtro = item da bigorna");
+                Assert.AreEqual(1L, s.Metas.Cont["master_strike"], "o golpe conta sempre");
+            }
+        }
+
         /// <summary>As linhas de qualidade do save (lotes, acumuladores, golpe).</summary>
         static string Qualidade(string save) =>
             string.Join("\n", Array.FindAll(save.Split('\n'), l => l.StartsWith("stocksq=") || l.StartsWith("holdsq=") || l.StartsWith("wksq=") || l.StartsWith("qst") || l.StartsWith("golpe=")));

@@ -53,6 +53,7 @@ namespace FS.Core
             // nada no mt.c): Charter e marco da Collection pelo ledger do Renome, projetos, nivel do Renome, nivel de estacao, trilha de evento e
             // do Passe pelo ledger das metas
             "quality_crafted", "quality_superior", "master_strike", "event_enter",
+            "master_strike_superior",   // golpe cuja peca saiu Superior ou melhor (Sim.GolpeSuperior; filtro = item)
             "district_unlock", "collection_milestone", "blueprint_unlock", "reputation_level", "station_level", "event_complete", "pass_level",
             "masterwork_empire",   // obras de todo distrito (o ledger mw: do Imperio); o masterwork_unlock conta so o Hall da raiz
             "reputation_gain", "event_points",   // pool C das diarias: Renome ganho (total) e pontos do evento ativo, derivados (Valor)
@@ -232,7 +233,7 @@ namespace FS.Core
         }
 
         /// <summary>
-        /// Rodizio sem sorteio (LIVEOPS_V1 §4.1): vaga diaria p = pool p a partir de (dia x 5 + p) mod tamanho; pool sem nenhuma aberta (a C, hoje)
+        /// Rodizio sem sorteio (LIVEOPS_V1 §4.1): vaga diaria p = pool p a partir de (dia x Passo + p) mod tamanho; pool sem nenhuma aberta (a C, hoje)
         /// cai na A. Semanal k = (semana x 3 + k) mod tamanho. Pula a travada (Abre), a esgotada (nada mais a comprar/contratar) e a que repete
         /// contador com outra vaga do periodo. Vaga preenchida fica ate a virada: comprar algo no meio do dia nao troca a missao.
         /// </summary>
@@ -241,10 +242,14 @@ namespace FS.Core
             if (!Aberto) return;
             for (int p = 0; p < NDiarias; p++)
                 if (Diarias[p] == null) Diarias[p] = Novo((p == PoolC && EventoAtivo ? Escolhe(DoEvento, p, Dia, Diarias) : null)
-                    ?? Escolhe(MetasDefs.Diarias, p, Dia * 5 + p, Diarias) ?? Escolhe(MetasDefs.Diarias, 0, Dia * 5 + p, Diarias));
+                    ?? Escolhe(MetasDefs.Diarias, p, Dia * Passo(p) + p, Diarias) ?? Escolhe(MetasDefs.Diarias, 0, Dia * 5 + p, Diarias));
             for (int k = 0; k < NSemanais; k++)
                 if (Semanais[k] == null) Semanais[k] = Novo(Escolhe(MetasDefs.Semanais, -1, Semana * 3 + k, Semanais));
         }
+
+        /// <summary>Passo do rodizio diario do pool `p`: 5, ou 7 quando o tamanho e' multiplo de 5 (a C com 10: passo 5 so visitaria 2
+        /// posicoes e nunca chegaria as outras). A (19) e B (14) seguem com 5, ao byte.</summary>
+        static long Passo(int p) => Array.FindAll(MetasDefs.Diarias, d => d.Pool == p).Length % 5 == 0 ? 7 : 5;
 
         MetaDef Escolhe(MetaDef[] defs, int pool, long inicio, Slot[] ocupadas)
         {
@@ -272,6 +277,8 @@ namespace FS.Core
             {
                 case "quality_crafted": return Cont.TryGetValue(Chave(d.Evento, d.Filtro), out long n) && n > 0;
                 case "quality_superior": case "master_strike": return _sim.Encomendas.TipoAberto(OrderType.Quality);
+                // so depois da 1a Fina: o golpe numa linha que ainda faz Normal sobe a peca so ate Fina
+                case "master_strike_superior": return _sim.Encomendas.TipoAberto(OrderType.Quality) && Cont.TryGetValue("quality_crafted", out long f) && f > 0;
                 default: return true;
             }
         }
@@ -293,7 +300,8 @@ namespace FS.Core
                 // raia H: contrato so com um a cumprir (o ativo ou a oferta); qualidade e golpe so com a Quality aberta (LIVEOPS_V1 §4.3: uma
                 // linha ja faz Fina). ponytail: a vaga escolhida fica ate a virada mesmo se o contrato for abandonado (abandonar nao pune)
                 case "contract_complete": return _sim.Contratos.Ativo != null || _sim.Contratos.Oferta != null;
-                case "quality_crafted": case "quality_superior": case "master_strike": return _sim.Encomendas.TipoAberto(OrderType.Quality);
+                case "quality_crafted": case "quality_superior": case "master_strike": case "master_strike_superior":
+                    return _sim.Encomendas.TipoAberto(OrderType.Quality);
                 default: return true;
             }
         }

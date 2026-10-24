@@ -2191,7 +2191,7 @@ F2P × 8: produção completa 47:14, zona morta 19,6, saldo 619 — os do §34.2
 
 **Validator (`ContentValidator.Missoes`):** alvo de conquista dentro do conteúdo do build (`requiresContent`: 12 contratos, 1 Charter por distrito, 19 projetos, nível 10 do Renome, 4 famílias com nível V, 10 eventos, 2 Passes), filtro de item/nível nos gatilhos novos, `Ref` só onde vale e que exista (produto de algum distrito, distrito com Charter, marco da Collection), Renome que não dá Renome. **Decisão por padrão (revisar):** os 9 contratos dormentes (distritos 3–6) contam como conteúdo, então `ach_contratos12` aparece "x/12" até a Wave C; para escondê-la, a régua vira `ContratosDefs.NoBuild`.
 
-**Ficaram de fora (registrado):** as 10 diárias do pool C (qualidade, golpe, Renome, evento: mudam o slot C de todo jogador com a Quality aberta; ticket próprio com o golden do rodízio), `wkl_evento350` (regra "slot 1 do evento"), `dly_golpe_superior1`/`ach_golpe_superior50` (o golpe não sabe o nível com que a peça saiu), `ach_workers20` (contratação do distrito não sobe à raiz), `ach_distritos3/6`, `ach_mw30/60` e `ach_colecao_clientes` (conteúdo ou aba que não existe), e nenhuma de manager (o catálogo não lista).
+**Ficaram de fora (registrado):** as 10 diárias do pool C (qualidade, golpe, Renome, evento: mudam o slot C de todo jogador com a Quality aberta; ticket próprio com o golden do rodízio), `wkl_evento350` (regra "slot 1 do evento"), `dly_golpe_superior1`/`ach_golpe_superior50` (o golpe não sabe o nível com que a peça saiu; entraram no §45), `ach_workers20` (contratação do distrito não sobe à raiz), `ach_distritos3/6`, `ach_mw30/60` e `ach_colecao_clientes` (conteúdo ou aba que não existe), e nenhuma de manager (o catálogo não lista).
 
 ### 36.1 econsim antes (`main` a8e693b) → depois (este branch), `cmp` dos CSVs
 
@@ -2615,3 +2615,55 @@ A Carta melhora porque as receitas de síntese ficam mais lentas e o bot passa m
 **Mutações:** as 60 do `Sim.cs` apontam para o parcial onde o trecho está agora (`SIM_TROCAS`, `SIM_PRODUCAO` etc. no `mutantes.py`); 4 trechos que já estavam velhos na `main` foram corrigidos (`meta-charter-ledger-errado`, `meta-qualidade-sempre-livre`, `liveops-fim-sem-pendentes`, `mw-bot-nao-espera`). As 388 batem com o código (passo 1 do script).
 
 **Deadlock** (linha nova do econsim: partida com 10+ min de relógio seguidos sem ouro novo depois do 1º minuto): `econsim --minutos 60 --partidas 1000` (5 perfis × 1.000 partidas, passo de 30 a 60 Hz; 745 s) → **Ideal 0/1000, F2P 0/1000, Slow 0/1000, AdWatcher 0/1000, AdWatcherE 0/1000**. Só o modo sem `--distrito` (o `RunD` não guarda o ouro por minuto).
+
+## 44. V27: a encomenda Event conta à parte das vagas normais (2026-10-24)
+
+**Regra vigente** (`Core/Encomendas.cs`, `Core/EncomendasDefs.cs`; branch `feat/v27-evento-fora-das-vagas`; decisão V27 do `PROJETO.md` §4: à parte). Até aqui a encomenda Event tinha cartão próprio (não contava no `VagasMax`), mas **disputava a peça** com as normais: `Encomendas.OnVenda` dava a peça só à vaga mais antiga que a aceitasse, e a Event, que reabre no fim da lista, passava fome atrás das 3 normais (§30.6, ressalva 2); os pontos dela tinham sido afinados por evento para compensar (Caravan 12, Royal Week-B 15, Hunts 17/20). Agora:
+
+- **Venda:** a peça conta para a vaga **normal** mais antiga que a aceita (só uma, como antes) **e também** para a do evento, mesmo que a do evento seja a mais antiga.
+- **Rodízio de produto:** cada lado só olha o seu: as normais não pulam o item da Event e a Event não pula o das normais (`Encomendas.Lado`); a Event segue o próprio contador (`linhas[Eventos % linhas]`). Com o mesmo item nos dois cartões, a mesma peça anda os dois.
+- **Pontos:** um valor só, **17 por entrega nos 10 eventos** (`OrderDefs.Evento`, padrão; os ajustes por evento saíram). Sem ouro nem Renome, como antes.
+- **Nada novo no save:** `enc=` já guardava o contador `Eventos` e a vaga Event já ia em `enc.v=`; save antigo carrega igual. `Encomendas.Normais` virou público (a foto `-encomendas` do `Game.cs` conta só as normais).
+- Fora: a View já mostrava a Event num cartão à parte (`CartoesEncomenda`, o 4º). O `ContentValidator` não tem regra de pontos por evento (só "Event pede evento e pontos > 0, sem ouro nem Renome"), então não mudou.
+
+**Prova ao byte (Old Forge sem evento).** `git archive origin/main` (0b5bff8) do `Scripts/Core` e do `econsim` num diretório temporário, os dois econsim compilados em Release e os CSVs comparados com `cmp`: `--minutos 60 --partidas 1 --anuncio-seg 30` (5 perfis) **igual** (md5 `4cbb5e1a159e…`); `--perfis Ideal,F2P,Slow,AdWatcher,AdWatcherE --minutos 360 --partidas 3 --anuncio-seg 30` (§28.1) **igual** (`130d10705634…`); `--distrito armorers_row --perfis F2P,Ideal --minutos 120 --partidas 2` **igual** (`0c706336e0bf…`). Nos resumos só muda a coluna de segundos de CPU. Sem vaga Event, o `OnVenda` novo para na 1ª normal que aceita (o de antes) e o `Lado` é sempre verdadeiro.
+
+**Trilha de evento (`LiveOpsTests.TrilhaDeEvento_*`; o F2P de referência da §28.6: 60 min seguidos no 1º dia / dia em que 2 sessões de 10 min por dia fecham os 1.000).** Antes = `main` 0b5bff8; "só a regra" = este branch com os pontos de antes; vigente = 17 nos 10. Entre parênteses, as encomendas Event entregues.
+
+| evento | antes (pontos da `main`) | só a regra, pontos de antes | **vigente: 17** | com 16 / 18 (folga) |
+|---|---|---|---|---|
+| Royal Week | 15: 605 (19) / dia 5 | 515 (13) / dia 5 | **541 (13) / dia 5** | 5 / 5 |
+| Forge Frenzy | 15: 785 (15) / dia 4 | 755 (13) / dia 5 | **781 (13) / dia 4** | 4 / 4 |
+| Armorer's Challenge | 15: 810 (20) / dia 5 | 750 (16) / dia 5 | **782 (16) / dia 5** | 5 / 5 |
+| Hunt da Sunblade | 17: 840 (20) / dia 4 | 772 (16) / dia 5 | **772 (16) / dia 5** | 5 / 5 |
+| Forge Frenzy-B | 15: 765 (15) / dia 4 | 735 (13) / dia 5 | **761 (13) / dia 4** | 4 / 4 |
+| Blacksmith Festival | 15: 700 (16) / dia 5 | 715 (17) / dia 5 | **749 (17) / dia 4** | 4 / 4 |
+| Rare Ore Rush | 15: 835 (19) / dia 4 | 790 (16) / dia 4 | **822 (16) / dia 4** | 4 / 4 |
+| Merchant Caravan | 12: 780 (20) / dia 5 | 732 (16) / dia 5 | **812 (16) / dia 4** | 4 / 4 |
+| Hunt da Ember Crown | 20: 820 (16) / dia 4 | 820 (16) / dia 4 | **772 (16) / dia 5** | 5 / 5 |
+| Royal Week-B | 15: 810 (18) / dia 4 | 750 (14) / dia 5 | **778 (14) / dia 4** | 4 / 4 |
+
+Varredura (pontos de 10 a 20, cada evento à parte, mesmo F2P). **Na `main` nenhum valor único servia aos 10:** com a disputa, 14 deixava Armorer's e os 2 Hunts no dia 6 e 16 já levava Rare Ore Rush e Merchant Caravan ao dia 3 (por isso os ajustes por evento). **Com a regra nova,** a faixa que fecha no dia 4–5 por evento: Royal Week, Forge Frenzy, Forge Frenzy-B, Blacksmith Festival e Royal Week-B 14–20; Armorer's 15–20; os 2 Hunts 16–20; Rare Ore Rush e Merchant Caravan 12–18. **17 é o único valor no meio das 10 faixas com ±1 de folga** (16 e 18 também passam nos 10); 14 tira Armorer's e os Hunts (dia 6) e 19 leva Rare Ore e Caravan ao dia 3. A Event entrega menos que antes em 60 min (13–17 contra 15–20): sem pular o item das normais, o rodízio próprio passa pelas linhas lentas (joia, ferramenta) em vez de cair quase sempre na linha livre mais rápida (a espada longa); a fome atrás das normais sumiu, mas pesava menos que isso. Com 17 a sessão de 60 min fica em 541–822 (portão "nunca numa sessão": < 1.000).
+
+**econsim com evento** (`--perfis F2P,Ideal,AdWatcher --minutos 60 --partidas 2 --anuncio-seg 30 --evento X`; F2P: pontos na sessão, renda/min depois da entrada sem → com evento, ouro dos limiares). O CSV muda, como esperado (a Event e as normais escolhem itens diferentes e o ouro dos limiares muda as compras):
+
+| evento | antes | vigente |
+|---|---|---|
+| Forge Frenzy | 748 pts, 1.531 → 1.631 (+6,5%), 2.438 | 764 pts, 1.531 → 1.605 (+4,9%), 2.368 |
+| Merchant Caravan | 744 pts, 1.367 → 1.431 (+4,6%), 2.408 | 778 pts, 1.367 → 1.440 (+5,3%), 2.800 |
+| Hunt da Sunblade | 491 pts, 1.367 → 1.437 (+5,1%), 843 | 423 pts, 1.367 → 1.430 (+4,6%), 1.215 |
+| Rare Ore Rush | 805 pts, 1.367 → 1.542 (+12,8%), 2.328 | 746 pts, 1.367 → 1.476 (+7,9%), 2.248 |
+
+Ganho de renda com o evento nos 3 perfis: +3,7% a +11,8% (antes +4,6% a +12,8%).
+
+**Testes e mutações.** `EncomendasTests.Event_ContaAParte_APecaContaNaNormalENaDoEvento_RodizioProprio` (novo: a Event abre antes da Common e é a mais antiga; as duas na posição 1 pedem o mesmo item; a peça anda a Event e a normal mais antiga, nunca a 2ª normal); `Event_VagaPropria_*` e `LiveOpsTests.OrdersDois_RoyalWeek*` com 17; `LiveOpsTests.TrilhaDeEvento_*` (o portão: os 10 entre o dia 4 e o 5, sessão < 1.000) sem mudança de código. `mutantes.py`: `enc-evento-disputa-vaga` (a Event volta a disputar a peça) e `enc-evento-ve-normais` (os rodízios voltam a se enxergar) novas; `enc-evento-pontos-20` com o 17 e `enc-evento-pontos-14` nova; `enc-peca-conta-2x` e `enc-rodizio-repete-produto` reescritas no código novo; `enc-caravan-pontos-15` e `enc-sunblade-pontos-20` saíram (não há mais valor por evento). `mutantes.py --so` nas 7 do tema (as 6 acima e `enc-evento-sem-pontos`): **7 mortas, 0 vivas** (1.457 s). `dotnet test client/tools/coretests`: 583 verdes.
+
+## 45. Golpe que faz Superior: `dly_golpe_superior1` e `ach_golpe_superior50` (LIVEOPS_V1 §4.2 #27, §4.5 #19, 2026-10-24)
+
+**Vigente** (`Core/Sim.Qualidade.cs` `GolpeSuperior`, `Core/Metas.cs`, `Core/MetasDefs.cs`, `View/Textos.cs`, `View/Loc.cs`; branch `feat/diaria-golpe-superior`). O que faltava (§42, "o golpe não sabe o nível com que a peça saiu"): o `Sim.Grade`, onde o golpe é consumido na saída da peça, agora registra `master_strike_superior` (filtro = item; o do distrito também na raiz, como o `master_strike`) quando a peça golpeada sai Superior ou melhor (nível de antes + 1 ≥ Superior: Fina + golpe, Superior + golpe, e a obra-prima). Só conta nas metas: produção, preço e `StrikeGold` não mudam.
+
+- `dly_golpe_superior1` (pool C, recompensa padrão XP 100 + 20 s): entra no rodízio da C com a Quality aberta **e** depois da 1ª peça Fina ou melhor (`quality_crafted` > 0); antes disso o golpe só sobe a peça até Fina e a diária não fecharia no dia.
+- `ach_golpe_superior50` (Quality, XP 150), como no catálogo.
+- **Rodízio da C com 10:** `(dia × 5 + 2) mod 10` só visita 2 posições (mdc 5), e as Finas de escudo nunca apareciam. `Metas.Passo`: pool com tamanho múltiplo de 5 anda de 7 em 7. A (19) e B (14) seguem com o passo 5, ao byte; a C muda de sequência a partir do dia seguinte (a vaga do dia está no save). Golden novo de 10 dias com a Joalheria e uma Fina de escudo: `fina10, renome5, renome5, fina10, fina10, renome5, fina_escudos10, fina10, renome5, renome5`.
+
+**Bot:** o `econsim` não muda (o bot não resgata metas; o `Grade` só ganhou a contagem). **Testes:** `QualidadeTests.GolpeSuperior_ContaSoQuandoAPecaSaiSuperior` (q 0 não conta, q 100 e 200 contam, por item, errar não conta) e `MetasTests.GolpeSuperior_DiariaEConquista_PeloGolpeReal` (espera a 1ª Fina, entra na C, o golpe real fecha e paga, a conquista soma; golpe que só faz Fina não conta).

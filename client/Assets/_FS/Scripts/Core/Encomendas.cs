@@ -79,7 +79,7 @@ namespace FS.Core
     /// distrito na posicao Abertas % 10 (tipo travado vira Common); produto = linhas[idx % linhas] como a de antes, pulando a que ja esta numa
     /// vaga; a cada 7a Common, o proximo freguês (FS-3) que der. Vagas: 1, 2 no Renome 1, 3 no Renome 3. Tudo que e' novo (tipos, vagas,
     /// fregueses) so depois das Ferramentas: os 10 primeiros minutos ficam os de antes, tick a tick (EncomendasTests). Cada peca vendida conta
-    /// para no maximo uma vaga, a mais antiga que a aceita. Premio fora do GoldEarned (como o bau), Renome pelo tipo, Blueprint pela fila do
+    /// para no maximo uma vaga normal, a mais antiga que a aceita, e tambem para a de evento (V27: conta a parte). Premio fora do GoldEarned (como o bau), Renome pelo tipo, Blueprint pela fila do
     /// Sim.Projetos (B-CORE-07) e pontos de evento pelo gancho do LiveOps; a vaga sai junto com o pagamento (ID de transacao `Encomenda.Tx`: entregar 2x nao paga 2x). Nunca falha nem
     /// pune: Rush fora do prazo paga o normal. Save: ord= (espelho da principal para o downgrade) e linhas enc*; save sem enc= migra a
     /// encomenda de antes para uma Common igual.
@@ -107,7 +107,8 @@ namespace FS.Core
 
         /// <summary>A mais antiga fora de evento: a do cartao com os anuncios (bonus, trocar).</summary>
         public Encomenda Principal => Vagas.Find(e => e.Tipo != OrderType.Event);
-        int Normais { get { int n = 0; foreach (Encomenda e in Vagas) if (e.Tipo != OrderType.Event) n++; return n; } }
+        /// <summary>Vagas abertas sem a de evento (a conta do VagasMax; V27: a Event e' a parte).</summary>
+        public int Normais { get { int n = 0; foreach (Encomenda e in Vagas) if (e.Tipo != OrderType.Event) n++; return n; } }
 
         static readonly int Vaga2 = RenomeDefs.NivelQueLibera("vaga_encomenda_2"), Vaga3 = RenomeDefs.NivelQueLibera("vaga_encomenda_3");
         /// <summary>Quantas vagas (sem a de evento): 1; 2 no Renome 1; 3 no Renome 3 (RenomeDefs vaga_encomenda_*). So depois das Ferramentas.</summary>
@@ -155,13 +156,20 @@ namespace FS.Core
             return ouro;
         }
 
-        /// <summary>Do Sim.Sell: a peca vendida conta para a vaga mais antiga que a aceita (item que falta e nivel minimo), so uma.</summary>
+        /// <summary>Do Sim.Sell: a peca vendida conta para a vaga normal mais antiga que a aceita (item que falta e nivel minimo), so uma, e
+        /// V27 (2026-10-24): tambem para a de evento, que tem a conta dela a parte (nao disputa a peca com as normais nem passa fome atras delas).
+        /// Sem evento, o de antes ao bit.</summary>
         internal void OnVenda(Item item, Quality q)
         {
+            bool normal = false, evento = false;
             foreach (Encomenda e in Vagas)
             {
+                bool ev = e.Tipo == OrderType.Event;
+                if (ev ? evento : normal) continue;
                 int k = e.Aceita(item, q);
-                if (k >= 0) { e.Feito[k]++; return; }
+                if (k < 0) continue;
+                e.Feito[k]++;
+                if (ev) evento = true; else normal = true;
             }
         }
 
@@ -275,7 +283,8 @@ namespace FS.Core
         }
 
         /// <summary>
-        /// Monta a vaga: produtos pelo rodizio das linhas a partir de idx % linhas (pulando a que ja esta noutra vaga e a que nao faz a qualidade
+        /// Monta a vaga: produtos pelo rodizio das linhas a partir de idx % linhas (pulando a que ja esta noutra vaga do mesmo lado — V27: a de
+        /// evento e as normais nao se enxergam, a peca conta nas duas — e a que nao faz a qualidade
         /// minima; Mixed = as proximas min(Products, linhas - 1)), N = alvo x escala x RateEma x fracao da qualidade / (linhas x preco) no
         /// intervalo (a 1a de todas: OrderFirstTarget; freguês: N fixo) e premio = s x escala x RateEma, multiplo de 5, nunca abaixo do minimo.
         /// Escala = os knobs do Tuning sobre a Common (OrderSeconds / 150, OrderRewardSeconds / 10): com o padrao, a Common e' a de antes ao bit.
@@ -294,8 +303,8 @@ namespace FS.Core
                 {
                     Item it = linhas[(idx + k) % n];
                     if (Fracao(it, d.MinQuality) <= 0.0) continue;
-                    if (!Vagas.Exists(v => v != fora && Array.IndexOf(v.Itens, it) >= 0)) livres.Add(it);
-                    else (Vagas.Exists(v => v != fora && v.Itens.Length == 1 && v.Itens[0] == it) ? ocupadas : soVariada).Add(it);
+                    if (!Vagas.Exists(v => v != fora && Lado(v, d) && Array.IndexOf(v.Itens, it) >= 0)) livres.Add(it);
+                    else (Vagas.Exists(v => v != fora && Lado(v, d) && v.Itens.Length == 1 && v.Itens[0] == it) ? ocupadas : soVariada).Add(it);
                 }
                 // todas ocupadas: repete primeiro o que so esta dentro de uma Mixed (dois cartoes "Venda 30 espadas" lado a lado confundem)
                 livres.AddRange(soVariada); livres.AddRange(ocupadas);
@@ -315,6 +324,9 @@ namespace FS.Core
             return new Encomenda(d, idx, itens, alvo, Premio(d.RewardSeconds, d.RewardMin), bonus ? Premio(d.BonusRewardSeconds, d.RewardMin) : 0,
                 d.BonusDeadline, Pendente(d));
         }
+
+        /// <summary>V27: a vaga `v` e a `d` sao do mesmo lado (as duas de evento ou as duas normais).</summary>
+        static bool Lado(Encomenda v, OrderDef d) => (v.Tipo == OrderType.Event) == (d.Type == OrderType.Event);
 
         /// <summary>`s` segundos (antes da escala) da taxa online, multiplo de 5, nunca abaixo de `min`. Event (s = 0): so pontos, nada de ouro.</summary>
         long Premio(float s, int min) => s <= 0f ? 0 : Math.Max(min, 5 * (long)Math.Round(_sim.RateEma * (s * (double)_sim.T.OrderRewardSeconds / OrderDefs.PremioBase) / 5.0));
