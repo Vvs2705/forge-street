@@ -24,8 +24,8 @@ namespace FS.Core
     public static class RenomeDefs
     {
         /// <summary>B-ART-05 (GDD §151): o estagio visual do heroi pelo nivel do Renome do Imperio, lido da tabela (o maior "heroi_estagio_N"
-        /// liberado ate o nivel, menos 1). 0 = o de sempre; 1 = chapeu de couro (Renome 3); 2 = barrete de mestre (4); 3 e 4 (cinto e o seguinte,
-        /// Renome 5 e 7) ainda sem folha: a View repete a do estagio de baixo.</summary>
+        /// liberado ate o nivel, menos 1). 0 = o de sempre; 1 = chapeu de couro (Renome 3); 2 = barrete de mestre (4); 3 = barrete e cinto de
+        /// ferramentas (5); 4 = capa e barrete reais com o cinto (7). Folha que faltar: a View repete a do estagio de baixo.</summary>
         public static int EstagioHeroi(int nivel)
         {
             int e = 0;
