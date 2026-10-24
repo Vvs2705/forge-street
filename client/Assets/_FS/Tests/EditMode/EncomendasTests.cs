@@ -269,7 +269,7 @@ namespace FS.Tests
             long gold = s.Gold, rn = s.Renome.Total;
             EncTeste.Completa(e);
             s.Tick(Dt, 0f, 0f);
-            Assert.AreEqual(15, s.LiveOps.Pontos, "15 pontos por entrega, na trilha do evento");
+            Assert.AreEqual(17, s.LiveOps.Pontos, "17 pontos por entrega, na trilha do evento (V27, BALANCE §44)");
             Assert.AreEqual(gold, s.Gold);
             Assert.AreEqual(rn, s.Renome.Total);
             Run(s, 1f);
@@ -278,6 +278,33 @@ namespace FS.Tests
             Assert.IsNull(s.LiveOps.Evento);
             s.Tick(Dt, 0f, 0f);
             Assert.IsFalse(s.Encomendas.Vagas.Exists(v => v.Tipo == OrderType.Event), "acabou o evento: a vaga sai sem pagar");
+        }
+
+        /// <summary>V27 (BALANCE §44): a encomenda Event conta a parte das vagas normais. A peca vendida conta para a normal mais antiga que a
+        /// aceita (so uma) E para a do evento, mesmo a do evento sendo a mais antiga; o rodizio de produto de cada lado nao olha o outro (a
+        /// Event e a Common da mesma posicao pedem o mesmo item e a mesma peca anda as duas).</summary>
+        [Test]
+        public void Event_ContaAParte_APecaContaNaNormalENaDoEvento_RodizioProprio()
+        {
+            Sim s = Oficina();
+            s.OrderCount = 10;   // requisito do Forge Frenzy
+            EventDef ff = LiveOpsDefs.Eventos.First(x => x.Id == "ev_s1w2_forge_frenzy");
+            s.Metas.Agora(ff.Comeca, 0); s.LiveOps.Agora(ff.Comeca);
+            s.Encomendas.Eventos = 1;
+            Encomenda normal = EncTeste.Abre(s, 1);   // o tick abre a do evento (1a da lista: a mais antiga) e depois a Common da posicao 1
+            Encomenda ev = s.Encomendas.Vagas.Find(v => v.Tipo == OrderType.Event);
+            Assert.IsNotNull(ev);
+            Assert.AreEqual(OrderType.Common, normal.Tipo);
+            Assert.AreEqual(0, s.Encomendas.Vagas.IndexOf(ev), "a do evento abriu antes: e' a mais antiga");
+            Assert.AreEqual(ev.Itens[0], normal.Itens[0], "rodizio proprio: as duas na posicao 1 pedem o mesmo item (a Common nao pula o da Event)");
+            Assert.AreEqual(1, s.Encomendas.Normais);
+            Encomenda segunda = EncTeste.Poe(s, normal.Itens[0], 5, 40);
+            EncTeste.Vende(s, normal.Itens[0]);
+            Assert.AreEqual(1, ev.Feito[0], "a peca conta na do evento");
+            Assert.AreEqual(1, normal.Feito[0], "e na normal mais antiga, mesmo com a do evento na frente");
+            Assert.AreEqual(0, segunda.Feito[0], "so uma normal");
+            EncTeste.Vende(s, normal.Itens[0]);
+            Assert.AreEqual((2, 2, 0), (ev.Feito[0], normal.Feito[0], segunda.Feito[0]));
         }
 
         [Test]
