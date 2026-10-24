@@ -69,14 +69,14 @@ Cada item: **Fazer** · **Medir** · **PASS** · **FAIL / BLOCKED**.
 ### Fase A — APK dev do candidato por cima do save atual
 
 **G1. Migração por cima da 0.5.1/0.6.0** (§113/§151 "migration"; Save 2.0 e schema 2)
-- **Fazer:** com a 0.5.1 ou 0.6.0 instalada e com progresso (o backup do §2 feito), `adb install -r client/Builds/android/ForgeStreet-dev.apk`; abrir pelo ícone; responder a tela de idade; jogar 1 min; HOME. Sem versão antiga no aparelho: `adb install -r <pasta principal>/client/Builds/android/ForgeStreet-0.6.0.apk`, jogar 5 min, HOME e seguir.
+- **Fazer:** com a 0.5.1 ou 0.6.0 instalada e com progresso (o backup do §2 feito), `adb install -r client/Builds/android/ForgeStreet-dev.apk`; abrir pelo ícone; jogar até a 1ª melhoria e responder a tela de idade quando ela abrir (#125: abre quando o 1º botão de anúncio apareceria, ou no Cofre 2×); jogar 1 min; HOME. Sem versão antiga no aparelho: `adb install -r <pasta principal>/client/Builds/android/ForgeStreet-0.6.0.apk`, jogar 5 min, HOME e seguir.
 - **Medir:**
   ```
   grep -oiE '(^|%0A|>)(up|gold)(=|%3D)[0-9]+' $G/antes_prefs.xml      # up = flags 0/1 das compras, gold = ouro (com ou sem URL encoding)
   adb exec-out cat $F/save.txt > $G/depois_save.txt; grep -E '^(schema|gold|ups)=' $G/depois_save.txt
   adb exec-out cat $F/diario.csv | grep -E 'save_(prefs|corrupt|error|newer)'
   ```
-- **PASS:** `schema=2`; o `ups=` novo tem tantas compras quanto os `1` do `up=` antigo; ouro igual ou maior (o cofre pode pagar o tempo fora); a oficina abre com as mesmas estações, ajudantes e vagas do balcão; o diário tem `save_prefs` com `Legacy` e nenhum `save_corrupt`/`save_error`; a tela de idade aparece (quem atualiza nunca respondeu).
+- **PASS:** `schema=2`; o `ups=` novo tem tantas compras quanto os `1` do `up=` antigo; ouro igual ou maior (o cofre pode pagar o tempo fora); a oficina abre com as mesmas estações, ajudantes e vagas do balcão; o diário tem `save_prefs` com `Legacy` e nenhum `save_corrupt`/`save_error`; a tela de idade aparece quando o 1º botão de anúncio apareceria, por cima do painel do cofre se ele estiver aberto (quem atualiza nunca respondeu).
 - **FAIL:** compra ou ajudante a menos, ouro menor sem compra, `schema=1`, `save_corrupt`, crash na abertura. **BLOCKED:** nenhum APK antigo disponível.
 
 **G2. Câmera a 9 m e leitura a 1080×2400** (A-ART-03, V23; HUD e cartões v2)
@@ -96,18 +96,18 @@ Trocar de build: `adb uninstall $P` (apaga o save do aparelho; o backup está em
 **G3. Instalação limpa** (§113/§151 "clean install")
 - **Fazer:** com o AAB instalado, `adb logcat -c` e abrir: `adb shell am start -W -n $ACT | tee $G/abertura.txt`.
 - **Medir:** `adb shell dumpsys package $P | grep -E 'versionName|versionCode|targetSdk|flags=' > $G/instalado.txt` e `adb shell getconf PAGE_SIZE >> $G/instalado.txt` (anotar; o 16 KB em si é o `release-check`). `TotalTime` do `am start -W` = abertura a frio (anotar; ainda não há base).
-- **PASS:** instala sem erro; versionName, versionCode e targetSdk iguais aos do `release-check`; sem `DEBUGGABLE` nas flags; a 1ª tela é a de idade; depois da resposta, a oficina do zero (sem compras, sem cofre, dica apontando a 1ª ação).
+- **PASS:** instala sem erro; versionName, versionCode e targetSdk iguais aos do `release-check`; sem `DEBUGGABLE` nas flags; a 1ª tela é a oficina do zero (sem compras, sem cofre, dica apontando a 1ª ação), sem tela de idade antes do 1º toque; ela abre uma vez logo depois da 1ª melhoria.
 - **FAIL:** erro de instalação, crash na 1ª abertura, progresso de outra instalação, `DEBUGGABLE` no release.
 
-**G4. Tela de idade na 1ª abertura e SDK só depois da resposta** (E-PLAT-01, DM §94)
-- **Fazer:** na abertura do G3, ficar 30 s na tela de idade sem responder; apertar voltar (não pode fechar); responder "Menos de 13"; jogar 1 min. Depois, Configurações > Privacidade > "18 ou mais" > Aceitar; `adb shell am force-stop $P` e abrir de novo.
+**G4. Tela de idade no 1º botão de anúncio e SDK só depois da resposta** (E-PLAT-01, DM §94)
+- **Fazer:** na abertura do G3, comprar a 1ª melhoria; quando a tela de idade abrir (diário `consent_ask hud`), conferir que ela fica por cima da bandeja e que o toque da compra não vazou para nenhum botão; ficar 30 s nela sem responder; apertar voltar (não pode fechar); responder "Menos de 13"; jogar 1 min. Depois, Configurações > Privacidade > "18 ou mais" > Aceitar; `adb shell am force-stop $P` e abrir de novo.
 - **Medir:** depois de reabrir (o buffer do logcat guarda as duas aberturas desde o `logcat -c` do G3):
   ```
   adb logcat -d > $G/logcat_idade.txt
   grep -niE 'ADS (ad_init|privacidade)|ironsource|levelplay' $G/logcat_idade.txt | head -40
   ```
-- **PASS:** a 1ª linha `ADS` é `ad_init espera consentimento`; nenhuma linha de inicialização do SDK (IronSource/LevelPlay) antes de `ADS privacidade <13 coppa=True gdpr=False ccpa=True aaid_optout=True familias=True` (linha do sistema que só cita o pacote do SDK registrado no manifesto não conta: em dúvida, o coordenador lê); `ADS ad_init ok` só depois (sem rede sai `ad_init falha`, que não reprova este item); nenhum botão de anúncio antes da resposta; nenhuma faixa pré-marcada; Recusar e Aceitar do mesmo tamanho e cor; a mudança em Configurações loga `mudou para 18+ ... sem anuncio ate reabrir` e, depois de reabrir, `ADS privacidade 18+ coppa=False gdpr=True ccpa=False aaid_optout=False familias=False`.
-- **FAIL:** SDK iniciando antes da resposta, botão de anúncio antes da resposta, faixa pré-marcada, dá para pular a pergunta na 1ª abertura, flags erradas para a faixa.
+- **PASS:** nenhuma tela antes do 1º toque; a pergunta só depois da 1ª melhoria; a 1ª linha `ADS` é `ad_init espera consentimento`; nenhuma linha de inicialização do SDK (IronSource/LevelPlay) antes de `ADS privacidade <13 coppa=True gdpr=False ccpa=True aaid_optout=True familias=True` (linha do sistema que só cita o pacote do SDK registrado no manifesto não conta: em dúvida, o coordenador lê); `ADS ad_init ok` só depois (sem rede sai `ad_init falha`, que não reprova este item); nenhum botão de anúncio antes da resposta; nenhuma faixa pré-marcada; Recusar e Aceitar do mesmo tamanho e cor; a mudança em Configurações loga `mudou para 18+ ... sem anuncio ate reabrir` e, depois de reabrir, `ADS privacidade 18+ coppa=False gdpr=True ccpa=False aaid_optout=False familias=False`.
+- **FAIL:** SDK iniciando antes da resposta, botão de anúncio antes da resposta, faixa pré-marcada, dá para pular a pergunta da 1ª vez que ela abre, tela de idade antes do 1º toque, flags erradas para a faixa.
 
 **G5. 30 min jogando** (§113 "30 min") — G6 a G13 são medidos dentro desta sessão
 - **Fazer:** logo depois do G4 (aparelho com a resposta 18+), o Vinicius joga 30 min seguidos, normalmente (vende, compra, contrata, assiste aos anúncios oferecidos); o coordenador mede pelo cabo sem tocar no aparelho. Logcat da Fase B inteira em arquivo, no formato padrão (o `grep` abaixo depende dele): `adb logcat -c; adb logcat > $G/logcat_faseB.txt & LC=$!` (`kill $LC` no fim do G17). Passos que fecham, reabrem ou tiram o jogo da frente (G7: reabrir na recarga e modo avião; G8 g; G9 a e d) ficam para depois dos 30 min.
@@ -179,8 +179,8 @@ Trocar de build: `adb uninstall $P` (apaga o save do aparelho; o backup está em
 - **FAIL:** sem painel com renda, valor 0, paga em dobro, ouro diferente do mostrado.
 
 **G17. Voltar do Android** (§113/§151 "Back"; com gestos e, se der, com os botões de navegação)
-- **Fazer:** voltar em cada estado: tela de idade na 1ª abertura e no passo do consentimento (antes, numa instalação limpa, ou pela revisão em Configurações > Privacidade); "Bem-vindo de volta!" aberto; Configurações aberta; bandeja de Melhorias aberta; tela limpa; durante um anúncio.
-- **PASS:** idade na 1ª abertura fica; consentimento volta à idade; painel, Configurações e bandeja fecham só o que está aberto, um por toque (um toque nunca vale por dois); tela limpa grava e sai; durante o anúncio o jogo não faz nada (o anúncio trata).
+- **Fazer:** voltar em cada estado: tela de idade da 1ª vez que abre (no 1º botão de anúncio) e no passo do consentimento (antes, numa instalação limpa, ou pela revisão em Configurações > Privacidade); "Bem-vindo de volta!" aberto; Configurações aberta; bandeja de Melhorias aberta; tela limpa; durante um anúncio.
+- **PASS:** idade da 1ª vez fica; consentimento volta à idade; painel, Configurações e bandeja fecham só o que está aberto, um por toque (um toque nunca vale por dois); tela limpa grava e sai; durante o anúncio o jogo não faz nada (o anúncio trata).
 - **FAIL:** sai com algo aberto, um toque fecha dois níveis, voltar sem efeito com a tela limpa.
 
 ### Ainda não existem
@@ -231,6 +231,20 @@ Bugs abertos (um por FAIL): passos · build · esperado × obtido · severidade 
 - **PASS:** registrar no `VALIDACAO_<versão>.md` e no `PROJETO.md` §1; o POCO só volta no próximo marco ou por bug Android real.
 - **FAIL / BLOCKED:** §1 (repete só o que o bug ou a dependência pede).
 - O progresso antigo do POCO fica no backup (`$G/antes_*`); não há restauração automática.
+
+## 5.1 Linha de base pré-POCO no emulador (2026-10-24)
+
+Medido para tirar do POCO o que dá para conferir antes: `AVD=fs_base bash client/tools/verify.sh android-emulator --medir 120`, que faz o build do `Setup.BuildAndroidEmu`, o smoke de sempre (`-bot -speed 4`, BACK/HOME, logcat sem exceção), a abertura a frio (`am start -W`) e o `medir_aparelho.sh` com o bot jogando 120 s. AVD `fs_base`: Pixel 7 1080×2400, Android 15 Google Play x86_64, 2 GB de RAM, criado com a mesma configuração do `fs_playstore` (que segue sem boot, §6; não foi apagado). PC de 7,7 GB, sem outro processo pesado.
+
+| Medida | Emulador (`main` 2026-10-24, 0.6.0 dev) | Alvo no POCO |
+|---|---|---|
+| Abertura a frio (`TotalTime`) | **2,0 s** | anotar (sem base anterior) |
+| FPS com o bot jogando | **30,5** médio; mediana 20,3 ms; p95 104,9 ms; pior 218,6 ms; 32 de 97 quadros acima de 33 ms | 30–60 fps (`PROJETO.md` §9) |
+| Memória (`dumpsys meminfo`) | **PSS 265 MB** (RSS 154 MB; swap PSS 179 MB) | anotar |
+| Erros da Unity no logcat | **0** | 0 |
+| Diário (`-playtest`) | puxado pelo adb (`Builds/verify/medida/diario.csv`) | idem |
+
+Leitura: o emulador x86_64 com GPU emulada não serve para cravar FPS; os quadros longos (p95 105 ms) são do host. O que conta como base é o que não depende da GPU: a abertura a frio de 2 s, a memória em ~265 MB de PSS e o logcat sem exceção. No POCO, a mesma linha de comando do `medir_aparelho.sh` (G5/G6) mede o que vale.
 
 ## 6. Emulador: recuperar o AVD `fs_playstore`
 
