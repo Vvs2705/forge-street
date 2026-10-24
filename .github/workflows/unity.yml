@@ -13,6 +13,8 @@ concurrency:
   group: unity-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: true   # PR: só o último push; main: um grupo por commit, merge seguido não cancela
 env:
+  # o unity-builder e o unity-test-runner buscam a última versão do game-ci/cli na API do GitHub; sem token o limite de 60/h por IP do runner dá 403
+  GITHUB_TOKEN: ${{ github.token }}
   UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
   UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
   UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
@@ -79,8 +81,6 @@ jobs:
           key: library-win-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-${{ hashFiles('client/Assets/**/*.meta') }}
           restore-keys: library-win-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-
       - uses: game-ci/unity-builder@v6
-        env:   # o builder busca a última versão do game-ci/cli na API do GitHub; sem token o limite de 60/h por IP do runner dá 403
-          GITHUB_TOKEN: ${{ github.token }}
         with:
           projectPath: client
           targetPlatform: StandaloneWindows64
@@ -138,8 +138,6 @@ jobs:
           key: library-android-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-${{ hashFiles('client/Assets/**/*.meta') }}
           restore-keys: library-android-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-
       - uses: game-ci/unity-builder@v6
-        env:   # o builder busca a última versão do game-ci/cli na API do GitHub; sem token o limite de 60/h por IP do runner dá 403
-          GITHUB_TOKEN: ${{ github.token }}
         with:
           projectPath: client
           targetPlatform: Android
