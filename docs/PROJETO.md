@@ -111,13 +111,13 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 | ~~Impasse de navegação: 1 em 1.000 partidas o `Sim.Steer` alterna entre duas direções a caminho do pad do Mineiro~~ **fechado**: `Carrier.MoveTo` conta o tempo sem progresso e o `Steer` dá a quina como contornada (bot e ajudantes; 0 impasses em 1.000 partidas) | — | `BALANCE.md` §22.1, CHANGELOG | testes `Steer_QuinaDeFrente_*` e `Ajudantes_CicloLongo_*` |
 | Vibra em toda venda (§72 pede só eventos importantes) | P2 | `Game.cs:262` | PR #19 |
 | Sem AAB, chave de release, `versionCode` monotônico nem build não-development; targetSdk automático | antes da loja | `ProjectSettings.asset:181,183`, `Setup.cs:97` | PR #18 (falta a chave real: decisão) |
-| viewcheck não compila o caminho `#if UNITY_ANDROID` e só roda com o Unity local | — | `client/tools/viewcheck` | PR #13 (viewcheck Android); Unity no CI = P15 |
+| ~~viewcheck não compila o caminho `#if UNITY_ANDROID` e só roda com o Unity local~~ | — | `client/tools/viewcheck` | resolvido: viewcheck Android no #13 e Unity no CI (GameCI) no #122 |
 | `dotnet test` (NUnit 3.14) aceita tupla `int` × `long`; o EditMode do Unity (NUnit 3.5) não | portão | `FSCore.Tests.csproj` | regra: `verify.sh full` antes de todo PR de jogo |
 | 0.6.0 sem aparelho físico | — | `VALIDACAO_V06A.md` | gate de Feature Complete (POCO só em marcos) |
 | ~~Diário CSV grava também no release e cresce sem limite~~ | — | `Servicos.cs` | resolvido (A-PLAT-06: teto de 1 MB, desligado no release; conferido no #53) |
-| Sem analytics remoto, crash reporting e RemoteConfig | antes de UA | — | A-PLAT-08/09 (decisão P8) |
-| Textos no código, sem localização | antes de en/es | DM §109 | — |
-| Bandeja mostra o cartão travado primeiro; "Ajudantes ágeis" fora do padrão "Ajudantes rápidos" | P2 | `VALIDACAO_V05.md` | — |
+| ~~Sem analytics remoto, crash reporting e RemoteConfig~~ | — | `Ugs.cs` | resolvido no #112 (UGS Analytics e Remote Config; a exceção vai como evento `excecao`, A-PLAT-09) |
+| ~~Textos no código, sem localização~~ | — | `Loc.cs` | resolvido: pt/en/es em chaves (`Loc.T`, 1.227 chaves; `LocTests`) |
+| Bandeja mostra o cartão travado primeiro; "Ajudantes ágeis" fora do padrão "Ajudantes rápidos" | P2 | `VALIDACAO_V05.md` | a ordem está resolvida (`MenuBar`: disponível, sem ouro, travado); falta só o nome do upgrade (texto, `up.ajudantes_ageis.nome`) |
 | Fome da Bigorna 2 (2.582 s em 60 min no bot) | P2 | `BACKLOG_V07.md` | — |
 | Zona morta ~53% da curva até a produção completa; ouro sem destino depois dela | design | `BALANCE.md` §22 | Waves B (Orders 2.0, Blueprints) e C (distritos) |
 | ~~**Barulheira:** muitos sons ao mesmo tempo (Vinicius no POCO, 2026-10-13)~~ | — | `Som.cs` | resolvido no #59 (categorias, orçamento de vozes, distância, ducking); falta ouvir no POCO |
