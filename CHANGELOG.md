@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Funis do DM §86 no relatório do diário:** o `diario_report.py` passa a imprimir a retenção D1/D7 e os funis de FTUE e progressão, de anúncio e de compra por testador, para validar a taxonomia antes de montar os dashboards no UGS.
 - **Teste de silhueta dos personagens:** `client/tools/silhuetas.py` gera as silhuetas pretas na escala do jogo; os personagens que dividem a tela em cada distrito se distinguem; os estágios 4 e 5 do herói têm a mesma silhueta e se distinguem pela cor e pela coroa (`AUDITORIA_VISUAL.md`).
 - **Pass reafinado:** cada conquista dá metade do XP de Passe (86 conquistas). O bot F2P de 20 min por dia passa a fechar a trilha free no dia 28 da temporada de 35 (antes, no dia 23), dentro da faixa 26–30 do LIVEOPS_V1; a conta estática e o validator não mudam (`BALANCE.md` §44).
 - **5 músicas reais (CC0, RandomMind):** a música sintetizada dá lugar a 5 faixas medievais do mesmo autor no OpenGameArt: o tema (The Old Tower Inn) abre a sessão e volta a cada 4 voltas, a oficina (Market Day) toca no Old Forge, na Rua dos Armeiros e no Artisan Quarter, King's Feast no Royal Arsenal e na Grand Forge, Rising Moon na Arcane Foundry e Rejoicing durante os eventos. Trocar de distrito já começa a música dele. No mesmo nível da antiga (a mixagem não muda), em streaming. Licença e SHA no `PROVENIENCIA.md` §24; `docs/AUDIO.md` §10.
