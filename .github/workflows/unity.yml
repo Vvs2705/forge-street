@@ -1,0 +1,147 @@
+# Unity no CI (P15): o que o client/tools/verify.sh full faz no PC, rodando no GitHub com GameCI (docker unityci/editor).
+#   editmode  testes EditMode do Unity (NUnit 3.5: pega a tupla int x long que o dotnet test deixa passar)
+#   windows   Setup.BuildWindows (Mono, imagem windows-mono) e o .exe com -autoplay 10 num runner Windows
+#   android   Setup.BuildAndroidDev (IL2CPP ARM64; compila o caminho #if UNITY_ANDROID que o viewcheck android cobre no PC)
+# Sem o secret UNITY_LICENSE os jobs do Unity ficam como "skipped" (não reprovam o PR). Como configurar: docs/CI_UNITY.md
+name: unity
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: unity-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+  UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+  UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+jobs:
+  licenca:
+    name: licença do Unity configurada?
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.c.outputs.ok }}
+    steps:
+      - id: c
+        run: |
+          if [ -n "$UNITY_LICENSE" ]; then echo ok=true >> "$GITHUB_OUTPUT"
+          else echo ok=false >> "$GITHUB_OUTPUT"; echo "::warning::sem o secret UNITY_LICENSE: EditMode, build e autoplay não rodaram (docs/CI_UNITY.md)"; fi
+
+  editmode:
+    name: EditMode (Unity)
+    needs: licenca
+    if: needs.licenca.outputs.ok == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/cache@v6
+        with:
+          path: client/Library
+          key: library-editmode-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-${{ hashFiles('client/Assets/**/*.meta') }}
+          restore-keys: library-editmode-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-
+      - uses: game-ci/unity-test-runner@v4.4.0
+        id: testes
+        with:
+          projectPath: client
+          testMode: editmode
+          artifactsPath: editmode
+      - name: veredito do XML (como o verify.sh)
+        if: always()
+        run: |
+          x=$(ls ${{ steps.testes.outputs.artifactsPath || 'editmode' }}/*.xml 2>/dev/null | head -1)
+          [ -n "$x" ] || { echo "::error::EditMode sem XML de resultado"; exit 1; }
+          run=$(grep -m1 -o '<test-run [^>]*>' "$x")
+          echo "EditMode: $(echo "$run" | grep -oE '(total|passed|failed)="[0-9]+"' | paste -sd' ')"
+          [[ "$run" == *'result="Passed"'* ]] || { grep -oE '<test-case [^>]*result="Failed"[^>]*' "$x" | grep -oE 'fullname="[^"]*"' | head -30; exit 1; }
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: editmode
+          path: ${{ steps.testes.outputs.artifactsPath || 'editmode' }}
+
+  windows:
+    name: build Windows (Setup.BuildWindows)
+    needs: licenca
+    if: needs.licenca.outputs.ok == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/cache@v6
+        with:
+          path: client/Library
+          key: library-win-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-${{ hashFiles('client/Assets/**/*.meta') }}
+          restore-keys: library-win-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-
+      - uses: game-ci/unity-builder@v6
+        with:
+          projectPath: client
+          targetPlatform: StandaloneWindows64
+          buildMethod: FS.EditorTools.Setup.BuildWindows
+          versioning: None
+          allowDirtyBuild: true
+      - name: BuildSummary
+        run: ls -la client/Builds/win && test -f client/Builds/win/ForgeStreet.exe
+      - uses: actions/upload-artifact@v7
+        with:
+          name: build-win
+          path: client/Builds/win
+          retention-days: 3
+
+  autoplay:
+    name: autoplay 10 min (bot no .exe)
+    needs: windows
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: build-win
+          path: win
+      - name: ForgeStreet.exe -batchmode -nographics -autoplay 10
+        shell: bash
+        run: |
+          rc=0; ./win/ForgeStreet.exe -batchmode -nographics -autoplay 10 -logFile autoplay.log || rc=$?
+          grep -E 'AUTOPLAY|Exception' autoplay.log | tail -40
+          a=$(grep -m1 -o 'AUTOPLAY OK.*' autoplay.log) || { echo "::error::sem 'AUTOPLAY OK' (saída $rc)"; exit 1; }
+          [ $rc = 0 ] || { echo "::error::autoplay saiu $rc"; exit 1; }
+          echo "autoplay: $a"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: autoplay-log
+          path: autoplay.log
+
+  android:
+    name: build Android (Setup.BuildAndroidDev)
+    needs: licenca
+    if: needs.licenca.outputs.ok == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      # a imagem android + IL2CPP + Gradle não cabem nos ~14 GB livres do runner
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          large-packages: false
+      - uses: actions/checkout@v7
+      - uses: actions/cache@v6
+        with:
+          path: client/Library
+          key: library-android-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-${{ hashFiles('client/Assets/**/*.meta') }}
+          restore-keys: library-android-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-
+      - uses: game-ci/unity-builder@v6
+        with:
+          projectPath: client
+          targetPlatform: Android
+          buildMethod: FS.EditorTools.Setup.BuildAndroidDev
+          versioning: None
+          allowDirtyBuild: true
+      - name: APK gerado
+        run: ls -la client/Builds/android && test -f client/Builds/android/ForgeStreet-dev.apk
+      - uses: actions/upload-artifact@v7
+        with:
+          name: apk-dev
+          path: client/Builds/android/ForgeStreet-dev.apk
+          retention-days: 3

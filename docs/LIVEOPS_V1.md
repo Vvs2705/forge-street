@@ -310,6 +310,7 @@ F2P de referência do §1 (3 diárias por dia, 4 semanais por semana, 20 min/dia
 | **Nível** | | 7 | 15 | 22 | **30** |
 
 - **Fecha no dia 27,6** (18.000 / 651) com o portão de encomendas da Wave B (≥ 25 em 60 min → 8 por dia, `ECONOMIA_WAVE_B.md` §10).
+- **Medido (2026-10-24, `LiveOpsTests.BotF2P_FechaATrilhaFreeDentroDaTemporada`):** o bot F2P, numa sessão de 20 min por dia desde o 1º dia da S1 e resgatando tudo no fim de cada uma, fecha os 30 níveis no **dia 23**, antes da faixa 26–30 do §8 porque resgata também as conquistas (a conta acima não conta XP de conquista, que pesa mais nas primeiras semanas de um jogador novo). O teste trava o teto (`Dias − 7` = 28); reafinar o XP fica para a medição com jogador real.
 - **Com o ritmo medido hoje** (21 em 60 min → 7 por dia, 70 XP, `BALANCE.md` §20): 641 XP/dia, fecha no **dia 28,1**.
 - Ritmo de ~1 nível por dia; a semana 5 (dias 28–34) é a folga para quem faltou até ~7 dias de diárias.
 - **Casual** (2 de 3 diárias, 3 de 4 semanais, 5 encomendas por dia, 70% de cada evento): ~450 XP/dia → **nível 26 no dia 35**, sem fechar. Fechar o casual pede ~520 XP por nível, e aí o F2P fecharia no dia ~24. Decisão no §7.
