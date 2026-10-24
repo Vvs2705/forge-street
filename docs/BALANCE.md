@@ -2718,3 +2718,26 @@ Perfis:
 - Se o Closed confirmar o começo rápido, o primeiro candidato é o **limiar do Renome 4** (400 → ~550, `RenomeDefs.Niveis`), que puxa o Charter do Old Forge para ~3 h.
 - O segundo é a **obra-prima do Charter do Old Forge** (`CharterDef.Masterworks` 1 → 2).
 - Mexer só depois de medir o F2P sem golpe com jogador real: o F2P que não golpeia faz o Renome 4 às 3:11 (§8 do `PROJETO.md`), dentro da faixa.
+
+## 47. Blueprints e Coleção por dia do F2P (Blueprints e Collection, 2026-10-24)
+
+`econsim --campanha 12 --perfis F2PGolpe,F2P --partidas 4` (a campanha do §46; 15 s): no fim de cada dia do F2P de referência (20 min de relógio, `LIVEOPS_V1.md` §1), somando os distritos abertos. Média das 4 partidas.
+
+| dia | F2PGolpe: Blueprints (posse / dos abertos) | Coleção (marcos / dos abertos) | obras no Hall | F2P sem golpe: Blueprints | Coleção | obras |
+|---|---|---|---|---|---|---|
+| 1 | 2 / 19 | 0 / 9 | 0 | 2 / 19 | 0 / 9 | 0 |
+| 3 | 13,3 / 19 | 4,3 / 9 | 0 | 12,5 / 19 | 4 / 9 | 0 |
+| 5 | 18 / 19 | 6,5 / 9 | 2 | 17,3 / 19 | 6,3 / 9 | 0 |
+| 7 | 19,3 / 33 | 7,5 / 16 | 4,3 | 19 / 19 | 7 / 9 | 0 |
+| 14 | 30 / 33 | 12,5 / 16 | 5,5 | 19 / 19 | 7 / 9 | 0 |
+| 21 | 32,8 / 44 | 13 / 21 | 9,5 | 19 / 19 | 7 / 9 | 0 |
+| 28 | 45,5 / 47 | 18 / 23 | 10 | 19 / 19 | 7 / 9 | 0 |
+| 35 | 46,5 / 51 | 19 / 25 | 14,5 | 19 / 19 | 7 / 9 | 0 |
+
+**Leitura:**
+- **A fila de Blueprints acompanha a campanha.** Quem golpeia fecha os 19 do Old Forge no dia 5–7 e chega a ~90% dos distritos abertos em cada degrau (30/33 no dia 14, 45,5/47 no dia 28). Cada distrito novo traz 14 e o salto aparece no dia em que abre.
+- **A Coleção anda mais devagar:** 7,5/16 no dia 7 e 19/25 no dia 35, porque os marcos de obra-prima pedem obras, e a obra pede golpe.
+- **O F2P que nunca golpeia para no Old Forge para sempre:** 0 obras, então o Charter não sai (ele pede 1 obra-prima), e trava em 19/19 e 7/9 a partir do dia 7.
+  - É o mesmo achado do §46 por outro lado: o golpe é o caminho do Charter.
+  - O tutorial ensina o golpe no 1º anel (`Golpe`, GDD §9), então o jogador real deve golpear; conferir no Closed quantos nunca golpeiam (`master_strike` no diário).
+  - Se forem muitos, o knob é a obra-prima do Charter do Old Forge virar "obra **ou** N Superiores" (como os Charters que aceitam contrato **ou** Royal).

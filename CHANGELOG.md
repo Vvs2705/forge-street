@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Blueprints e Coleção por dia no econsim:** a `--campanha` imprime, para cada dia de 20 min do F2P, os Blueprints, os marcos da Coleção e as obras no Hall somando os distritos abertos; quem golpeia acompanha a campanha, e o F2P que nunca golpeia para no Old Forge (`BALANCE.md` §47).
 - **Renome 1–10 medido na campanha inteira:** `econsim --campanha H` joga o Império do zero (Charters de verdade, abertura dos distritos, fundo e managers) e mede o relógio de cada nível de Renome e de cada Charter; o começo está ~2× mais rápido que o alvo e o fim converge (`BALANCE.md` §46, com o knob proposto sem mexer na economia).
 - **Snapshot do config em todo evento com o conteúdo:** o rótulo do RemoteConfig que vai em todo evento do diário e do UGS (`fsConfig`) e no `session_info` passa a ser `id@versao#hash` (FNV-1a do JSON recebido), para dois configs de A/B com o mesmo `id@versao` e valores diferentes não se confundirem (DM §89).
 - **Crash reporting com símbolos:** o AAB de release leva a tabela de símbolos do IL2CPP (a Play simboliza o crash nativo) e o `.symbols.zip` sai no artifact do workflow `release` (`docs/RELEASE.md`).
