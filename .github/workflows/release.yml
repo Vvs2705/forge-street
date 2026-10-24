@@ -7,6 +7,8 @@ on:
   workflow_dispatch:
   push:
     tags: ['v*']
+  pull_request:   # PR que mexe no caminho do release prova o pipeline antes do merge (a chave de teste; nada sobe)
+    paths: ['.github/workflows/release.yml', 'client/Assets/_FS/Editor/Setup.cs', 'client/tools/verify.sh']
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
