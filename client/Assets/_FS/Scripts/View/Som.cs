@@ -456,7 +456,8 @@ namespace FS
     /// <summary>
     /// "Mixer leve" (A-AUD-23; o AudioMixer de asset exige o Editor): 3 grupos por codigo. Efeitos = pool de Mixagem.Vozes AudioSource que so
     /// executa o que a Mixagem decide (fix/mix-audio: categoria, prioridade, intervalos, distancia e a fila dos Importantes); Ambiente = 4 lacos
-    /// (fogo, fogo grave, rua, rua densa) com volume seguindo o Sim; Musica = 1 volta e Mixagem.MusicaPausa s de silencio. Importante soando
+    /// (fogo, fogo grave, rua, rua densa) com volume seguindo o Sim; Musica = 1 volta (uma das 5 Mixagem.Trilhas, AUDIO.md §10) e
+    /// Mixagem.MusicaPausa s de silencio. Importante soando
     /// abaixa musica, ambiente e Mundo 6 dB (Mixagem.Duck). Efeitos e ambiente obedecem a chave Efeitos; a musica, a chave Musica (Ajustes).
     /// Desligado = fonte parada (nada mixando), nao volume 0. Efeitos sintetizados no Init (a abertura toca o cofre); musica e ambiente numa
     /// thread e entram quando ficam prontos. -somlog (Log): uma linha "SOM min=..." por minuto no Player.log.
@@ -470,6 +471,10 @@ namespace FS
         static readonly AudioSource[] _fx = new AudioSource[Mixagem.Vozes], _amb = new AudioSource[4];
         static readonly float[] _ambPitch = { 1f, 0.82f, 1f, 1.08f }, _ambGanho = { 1f, 0.6f, 1f, 0.6f }, _ambVol = new float[4], _vol = new float[Mixagem.Vozes];
         static AudioSource _musica;
+        static AudioClip _sintetica;   // so sem as 5 musicas em Resources/Musica (projeto sem os arquivos): a da Sintese
+        static readonly Dictionary<string, AudioClip> _trilhas = new Dictionary<string, AudioClip>();
+        static int _volta;
+        static string _casa;
         static Mixagem _mix;
         static bool _musicaOn, _ambOn, _fxOn = true;
         static float _musT, _logT;
@@ -485,7 +490,7 @@ namespace FS
 
         public static void Init(GameObject host)
         {
-            _musicaOn = _ambOn = false; _fxOn = true; _logT = 0f; _logMin = 0;   // Editor sem domain reload: estaticos da sessao anterior
+            _musicaOn = _ambOn = false; _fxOn = true; _logT = 0f; _logMin = 0; _volta = 0; _casa = null; _sintetica = null;   // Editor sem domain reload: estaticos da sessao anterior
             for (int i = 0; i < _fx.Length; i++) _fx[i] = Fonte(host, false);
             for (int i = 0; i < _amb.Length; i++) { _amb[i] = Fonte(host, true); _amb[i].pitch = _ambPitch[i]; }
             _musica = Fonte(host, false);   // 1 volta e pausa (Musica), nao laco
@@ -503,7 +508,12 @@ namespace FS
                 Sons[n] = new Som { V = v };
             }
             _mix = new Mixagem(n => Sons[n].V[0].length);
-            _fundo = Task.Run(() => new[] { Sintese.Fogo(), Sintese.Rua(), Sintese.Musica() });
+            // as 5 musicas reais (CC0, AUDIO.md §10; Streaming: nao ocupam memoria inteiras); faltando alguma, a da Sintese em todas as voltas
+            _trilhas.Clear();
+            foreach (string n in Mixagem.Trilhas) { AudioClip c = Resources.Load<AudioClip>("Musica/" + n); if (c != null) _trilhas[n] = c; }
+            bool reais = _trilhas.Count == Mixagem.Trilhas.Length;
+            if (!reais) { _trilhas.Clear(); Sintetizados.Add("musica"); }   // No Placeholder Gate: musica sem as gravacoes
+            _fundo = Task.Run(() => new[] { Sintese.Fogo(), Sintese.Rua(), reais ? null : Sintese.Musica() });
         }
 
         /// <summary>Som `som` (nome da Mixagem.Regras; o nome de um clip tambem toca, como Importante) sem lugar: UI, Importante, o ferreiro.</summary>
@@ -542,7 +552,7 @@ namespace FS
         /// Um quadro (Game.Update): ouvinte e tela da Mixagem (ferreiro e camera), Importantes da fila, ducking, chaves dos grupos, a musica e o
         /// ambiente ate o alvo das Sintese.Camadas (estacoes produzindo agora e clientes nas filas, lidos do Sim) em ~1 s; -somlog, a linha do minuto.
         /// </summary>
-        public static void Tick(Sim sim, Camera cam, float dt)
+        public static void Tick(Sim sim, Camera cam, float dt, bool evento)
         {
             if (_fundo != null && _fundo.IsCompleted) Fundo();
             float t = Time.unscaledTime, duck = _mix.Duck(t);
@@ -561,7 +571,7 @@ namespace FS
                 for (int i = 0; i < _fx.Length; i++) if (_mix.CatDa(i) == Cat.Mundo && _fx[i].isPlaying) _fx[i].volume = _vol[i] * duck;
             }
             if (Log && (_logT += dt) >= 60f) { _logT -= 60f; Debug.Log(_mix.Minuto(++_logMin)); }
-            Musica(Mathf.Min(dt, 0.1f), duck);
+            Musica(sim.Distrito.Id, evento, Mathf.Min(dt, 0.1f), duck);
 
             bool a = fx && _amb[0].clip != null;
             if (a != _ambOn)
@@ -586,26 +596,33 @@ namespace FS
         static void Mix(int i, float alvo, float k, float duck) => _amb[i].volume = AmbienteVol * _ambGanho[i] * duck * (_ambVol[i] += (alvo - _ambVol[i]) * k);
 
         /// <summary>
-        /// Musica: 1 volta (28,8 s) e Mixagem.MusicaPausa s so com o ambiente (em laco o mesmo trecho voltava ~60 vezes em 30 min), entrando e
-        /// saindo suave (Mixagem.MusicaGanho), com o ducking. Ligou (chave ou clip pronto): comeca a volta do inicio.
+        /// Musica: 1 volta (a Mixagem.Trilha da vez: tema, oficina, a da casa ou a do evento) e Mixagem.MusicaPausa s so com o ambiente (em laco
+        /// o mesmo trecho cansava), entrando e saindo suave (Mixagem.MusicaGanho), com o ducking. Ligou (chave ou clip pronto): comeca uma volta.
+        /// Entrou noutro distrito com a musica ligada: a da casa nova comeca ja (a viagem e' o corte).
         /// </summary>
-        static void Musica(float dt, float duck)
+        static void Musica(string distrito, bool evento, float dt, float duck)
         {
-            bool m = Ajustes.Musica && _musica.clip != null;
+            string casa = Mixagem.TrilhaDoDistrito(distrito);
+            bool trocou = _casa != null && casa != _casa;
+            _casa = casa;
+            bool m = Ajustes.Musica && (_trilhas.Count > 0 || _sintetica != null);
             if (m != _musicaOn)
             {
                 _musicaOn = m;
-                if (m) Volta(); else _musica.Stop();
+                if (m) Volta(distrito, evento, null); else _musica.Stop();
             }
             if (!m) return;
+            if (trocou) Volta(distrito, evento, casa);
             float volta = _musica.clip.length;
             if (_musica.isPlaying) _musT = _musica.time;
-            else if ((_musT = Mathf.Max(_musT, volta) + dt) >= volta + Mixagem.MusicaPausa) Volta();   // a volta acabou: conta a pausa
+            else if ((_musT = Mathf.Max(_musT, volta) + dt) >= volta + Mixagem.MusicaPausa) Volta(distrito, evento, null);   // a volta acabou: conta a pausa
             _musica.volume = MusicaVol * Mixagem.MusicaGanho(_musT, volta) * duck;
         }
 
-        static void Volta()
+        static void Volta(string distrito, bool evento, string trilha)
         {
+            _musica.Stop();
+            _musica.clip = _trilhas.Count == 0 ? _sintetica : _trilhas[trilha ?? Mixagem.Trilha(_volta++, distrito, evento)];
             _musT = 0f;
             _musica.time = 0f;
             _musica.Play();
@@ -620,7 +637,7 @@ namespace FS
             float[][] r = t.Result;
             _amb[0].clip = _amb[1].clip = Clip("fogo", r[0], Sintese.Taxa);
             _amb[2].clip = _amb[3].clip = Clip("rua", r[1], Sintese.Taxa);
-            _musica.clip = Clip("musica", r[2], Sintese.TaxaMusica);
+            if (r[2] != null) _sintetica = Clip("musica", r[2], Sintese.TaxaMusica);
         }
 
         static AudioSource Fonte(GameObject host, bool loop)

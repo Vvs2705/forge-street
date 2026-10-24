@@ -27,7 +27,7 @@ namespace FS
         public const float Perto = 2f, Longe = 6f, Minimo = 0.2f;
         /// <summary>Ducking: -6 dB por ate DuckMax s depois que um Importante comeca, voltando em DuckSolta s.</summary>
         public const float DuckGanho = 0.5f, DuckMax = 1f, DuckSolta = 0.3f;
-        /// <summary>Musica (Sfx): 1 volta, depois MusicaPausa s so com o ambiente; entra em MusicaEntra s e sai nos ultimos MusicaSai s.</summary>
+        /// <summary>Musica (Sfx): 1 volta, depois MusicaPausa s so com o ambiente; entra em MusicaEntra s e sai nos ultimos MusicaSai s (Trilha escolhe qual).</summary>
         public const float MusicaPausa = 30f, MusicaEntra = 0.4f, MusicaSai = 2.5f;
 
         // por categoria (indice = Cat): vozes ao mesmo tempo, s entre 2 da mesma, piso do ganho de distancia (1 = nao atenua), variacao de pitch
@@ -220,6 +220,29 @@ namespace FS
 
         /// <summary>Ganho 0..1 da musica `t` s depois do comeco de uma volta de `volta` s: sobe em MusicaEntra, desce nos ultimos MusicaSai, 0 na pausa.</summary>
         public static float MusicaGanho(float t, float volta) => t < 0f || t >= volta ? 0f : Math.Min(1f, Math.Min(t / MusicaEntra, (volta - t) / MusicaSai));
+
+        /// <summary>
+        /// As 5 musicas (GDD v2 §22, DM §71; AUDIO.md §10): arquivos Resources/Musica/&lt;nome&gt;.ogg, CC0 do RandomMind (PROVENIENCIA.md §24).
+        /// main = tema (abre a sessao e volta de tempos em tempos), workshop = oficina, royal = Royal Arsenal e Grand Forge, arcane = Arcane
+        /// Foundry, event = evento ativo.
+        /// </summary>
+        public static readonly string[] Trilhas = { "main", "workshop", "royal", "arcane", "event" };
+
+        /// <summary>A musica "da casa" de um distrito: a que toca entre os temas e o que toca ja ao entrar nele.</summary>
+        public static string TrilhaDoDistrito(string distrito) =>
+            distrito == Distritos.RoyalArsenalId || distrito == Distritos.GrandForgeId ? "royal"
+            : distrito == Distritos.ArcaneFoundryId ? "arcane" : "workshop";
+
+        /// <summary>
+        /// A musica da volta `volta` da sessao (0 = a primeira): a 1a e o tema; com evento ativo, as impares sao a do evento; a cada 4 voltas
+        /// o tema volta; o resto e a da casa (com 30 s de pausa entre as voltas, MusicaPausa). Sem sorteio: a sequencia e fixa.
+        /// </summary>
+        public static string Trilha(int volta, string distrito, bool evento)
+        {
+            if (volta <= 0 || volta % 4 == 0) return "main";
+            if (evento && volta % 2 == 1) return "event";
+            return TrilhaDoDistrito(distrito);
+        }
 
         /// <summary>Quantas vozes soam em `t`.</summary>
         public int Soando(float t)
