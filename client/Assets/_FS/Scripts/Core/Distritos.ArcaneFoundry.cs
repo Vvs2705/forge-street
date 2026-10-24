@@ -139,7 +139,7 @@ namespace FS.Core
                 new StationDef("fornalha", Kind.Furnace, 1.5f, 4.0f, "Fornalha", -1f, 0f, null, "fornalha"),
                 new StationDef("cuba_cristal", Kind.Furnace, 4.5f, 4.0f, "Cuba de cristal", -1f, 0f, null, "cuba_cristal", arte: "cuba_cristal"),
                 new StationDef("altar_lanternas", Kind.Crafter, 1.5f, 9.0f, "Altar lanternas", -1f, 0f, null, "altar_lanternas", arte: "altar_lanternas"),
-                new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f),
+                new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f, arte: "balcao"),
                 new StationDef("altar_aneis", Kind.Crafter, 4.5f, 9.0f, "Altar de anéis", -1f, 0f, "altar_aneis", "altar_aneis", arte: "altar_aneis"),
                 new StationDef("cuba2", Kind.Furnace, 7.5f, 4.0f, "Cuba 2", -1f, 0f, "cuba2", "cuba_cristal", arte: "cuba_cristal"),
                 new StationDef("deposito_runico", Kind.Deposit, 10.5f, 1.0f, "Veio rúnico", 0f, 1f, "veio_runico", null, AfMinRunico, arte: "deposito_runico"),

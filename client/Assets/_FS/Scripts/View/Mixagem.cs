@@ -222,7 +222,7 @@ namespace FS
         public static float MusicaGanho(float t, float volta) => t < 0f || t >= volta ? 0f : Math.Min(1f, Math.Min(t / MusicaEntra, (volta - t) / MusicaSai));
 
         /// <summary>
-        /// As 5 musicas (GDD v2 §22, DM §71; AUDIO.md §10): arquivos Resources/Musica/&lt;nome&gt;.ogg, CC0 do RandomMind (PROVENIENCIA.md §23).
+        /// As 5 musicas (GDD v2 §22, DM §71; AUDIO.md §10): arquivos Resources/Musica/&lt;nome&gt;.ogg, CC0 do RandomMind (PROVENIENCIA.md §24).
         /// main = tema (abre a sessao e volta de tempos em tempos), workshop = oficina, royal = Royal Arsenal e Grand Forge, arcane = Arcane
         /// Foundry, event = evento ativo.
         /// </summary>

@@ -143,11 +143,11 @@ Sete sons da `Sintese` passam a tocar arquivos reais do banco CC0 da Kenney (15 
 
 **A mixagem não muda:** cada arquivo foi normalizado ao RMS 50 ms do clip sintetizado que substitui (coluna da §2), então os volumes da `Mixagem.Regras` e os alvos por categoria continuam valendo; o teste `SomTests.Cc0_NoNivelDoSintetizado` cai se um arquivo sair do nível (±1 dB), do formato (mono, 16 bits, 22 050 Hz) ou clipar. A duração muda (os impactos reais são mais curtos: 0,07–0,53 s contra 0,16–0,75 s), e a `Mixagem` mede a voz ocupada pelo `AudioClip.length` do 1º arquivo; a medida do bot da §4 segue com as durações da `Sintese` (núcleo sem Unity), um teto conservador: vozes mais curtas só baixam o pico e o tempo com ≥ 3 sons.
 
-Continuam sintetizados: furnace (lingote), upgrade, hire, client (sino), leave, offline, vip, order e o ambiente (sem equivalente no banco escolhido). A música real está na §10. Para refazer: `python client/tools/audio_cc0.py <pasta com os zips extraídos>` (precisa do ffmpeg).
+Desde 2026-10-24 (No Placeholder Gate, `PROVENIENCIA.md` §23) os 8 que faltavam também tocam CC0 da Kenney, no mesmo nível: furnace = `impactPlate_heavy_000`, client (sino) = `impactBell_heavy_002`, leave = `doorClose_2`, e jingles de `kenney_music-jingles` em upgrade (`PIZZI10`), hire (`PIZZI04`), order (`PIZZI01`), vip (`STEEL00`) e offline (`STEEL04`); escolhidos pela duração e pelo tema, sem ouvir (calibrar no POCO). Antes desta data continuavam sintetizados: furnace (lingote), upgrade, hire, client (sino), leave, offline, vip, order, o ambiente e a música (sem equivalente no banco escolhido; decisão de fonte para música e fanfarras em aberto, `PROJETO.md` §9). Para refazer: `python client/tools/audio_cc0.py <pasta com os zips extraídos>` (precisa do ffmpeg). A música real está na §10.
 
 ## 10. As 5 músicas (CC0, RandomMind, 2026-10-24)
 
-GDD v2 §22 ("5 músicas: main, workshop, royal, event, arcane; medieval estilizado, sem cansar"). Cinco faixas CC0 do mesmo autor (RandomMind, OpenGameArt; licença, origem e SHA no `PROVENIENCIA.md` §23), em `client/Assets/_FS/Resources/Musica/<trilha>.ogg`, importadas como **Streaming** (Vorbis 0,5, sem pré-carga, carga em segundo plano: só o trecho que toca fica na memória).
+GDD v2 §22 ("5 músicas: main, workshop, royal, event, arcane; medieval estilizado, sem cansar"). Cinco faixas CC0 do mesmo autor (RandomMind, OpenGameArt; licença, origem e SHA no `PROVENIENCIA.md` §24), em `client/Assets/_FS/Resources/Musica/<trilha>.ogg`, importadas como **Streaming** (Vorbis 0,5, sem pré-carga, carga em segundo plano: só o trecho que toca fica na memória).
 
 | trilha | faixa | quando toca |
 |---|---|---|

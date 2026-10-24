@@ -1,4 +1,4 @@
-"""As 5 musicas (CC0, RandomMind no OpenGameArt; docs/AUDIO.md §10, PROVENIENCIA.md §23) no lugar da musica sintetizada: decodifica,
+"""As 5 musicas (CC0, RandomMind no OpenGameArt; docs/AUDIO.md §10, PROVENIENCIA.md §24) no lugar da musica sintetizada: decodifica,
 corta o silencio das pontas, normaliza o RMS medio da faixa ao da Sintese.Musica (-18 dBFS, para o MusicaVol 0,18 continuar dando os
 -33 dB do AUDIO.md §2) com um joelho suave nos picos e grava Resources/Musica/<trilha>.ogg (Vorbis estereo 44 100 Hz).
 

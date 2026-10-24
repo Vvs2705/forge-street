@@ -2,7 +2,7 @@
 #   editmode  testes EditMode do Unity (NUnit 3.5: pega a tupla int x long que o dotnet test deixa passar)
 #   windows   Setup.BuildWindows (Mono, imagem windows-mono) e o .exe com -autoplay 10 num runner Windows
 #   android   Setup.BuildAndroidDev (IL2CPP ARM64; compila o caminho #if UNITY_ANDROID que o viewcheck android cobre no PC)
-# Sem o secret UNITY_LICENSE os jobs do Unity ficam como "skipped" (não reprovam o PR). Como configurar: docs/CI_UNITY.md
+# Sem os secrets UNITY_EMAIL e UNITY_PASSWORD os jobs do Unity ficam como "skipped" (não reprovam o PR). Como configurar: docs/CI_UNITY.md
 name: unity
 on:
   push:
@@ -10,8 +10,8 @@ on:
   pull_request:
   workflow_dispatch:
 concurrency:
-  group: unity-${{ github.ref }}
-  cancel-in-progress: true
+  group: unity-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: true   # PR: só o último push; main: um grupo por commit, merge seguido não cancela
 env:
   UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
   UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
@@ -25,8 +25,9 @@ jobs:
     steps:
       - id: c
         run: |
-          if [ -n "$UNITY_LICENSE" ]; then echo ok=true >> "$GITHUB_OUTPUT"
-          else echo ok=false >> "$GITHUB_OUTPUT"; echo "::warning::sem o secret UNITY_LICENSE: EditMode, build e autoplay não rodaram (docs/CI_UNITY.md)"; fi
+          # licença Personal: o .ulf do PC é preso à máquina ("Machine bindings don't match"); o GameCI ativa pela conta (e-mail + senha)
+          if [ -n "$UNITY_EMAIL" ] && [ -n "$UNITY_PASSWORD" ]; then echo ok=true >> "$GITHUB_OUTPUT"
+          else echo ok=false >> "$GITHUB_OUTPUT"; echo "::warning::sem os secrets UNITY_EMAIL e UNITY_PASSWORD: EditMode, build e autoplay não rodaram (docs/CI_UNITY.md)"; fi
 
   editmode:
     name: EditMode (Unity)
