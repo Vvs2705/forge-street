@@ -34,6 +34,9 @@ jobs:
     needs: licenca
     if: needs.licenca.outputs.ok == 'true'
     runs-on: ubuntu-latest
+    permissions:   # o unity-test-runner publica o resumo dos testes como check run; sem checks: write ele reprova o job
+      contents: read
+      checks: write
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
