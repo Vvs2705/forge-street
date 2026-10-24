@@ -2743,3 +2743,36 @@ Perfis:
   - É o mesmo achado do §46 por outro lado: o golpe é o caminho do Charter.
   - O tutorial ensina o golpe no 1º anel (`Golpe`, GDD §9), então o jogador real deve golpear; conferir no Closed quantos nunca golpeiam (`master_strike` no diário).
   - Se forem muitos, o knob é a obra-prima do Charter do Old Forge virar "obra **ou** N Superiores" (como os Charters que aceitam contrato **ou** Royal).
+
+## 48. Charter do Old Forge: Renome 700 e "obra-prima OU 80 Superiores" (2026-10-24)
+
+**Problema** (§46 e §47):
+- o Charter do Old Forge saía às 2,1 h (F2PGolpe) e 1,8 h (Ideal), abaixo dos 3–6 h do `CONTEUDO_V1.md` §1;
+- o F2P que nunca golpeia não saía do Old Forge (o Charter pede 1 obra-prima, e a obra pede golpe).
+
+**Opções medidas** (`--campanha`, 4 partidas; Charter do Old Forge em h acumuladas):
+
+| opção | F2PGolpe | F2P sem golpe | Ideal | por que fica ou sai |
+|---|---|---|---|---|
+| antes (Renome 400, 1 obra) | 2,1 | nunca | 1,8 | — |
+| 2 obras | 2,1 | nunca | 1,8 | a 2ª obra já existe quando o Renome fecha: não muda nada |
+| Renome 400 + 1 contrato (ou 10 Royal) + "obra ou 80 Superiores" | 2,1 | 2,9 | — | o contrato também já fecha às 2,1 h |
+| limiar do nível 4: 400 → 550 | — | — | — | descartado: rebaixa o nível de quem já está no 4 (quebra o "Renome nunca cai", #100) |
+| **Renome do Charter 700 (dentro do nível 4) + "1 obra OU 80 Superiores"** | **3,5** | **5,0** | 2,9 | **escolhida**: as duas dentro de 3–6 h |
+
+**Mudança:**
+- `Distritos.OldForge.Charter = new CharterDef(true, 700, 1, …, superiores: 80)`: o campo novo `CharterDef.Superiores` aceita obra-prima **ou** N Superiores vendidas no distrito (`Colecao.Superiores`, que já vai no save), como os Charters que aceitam contrato **ou** Royal.
+- **Validator:** o Renome do Charter fica **dentro** do nível que o libera (do limiar dele até antes do seguinte; o Old Forge, no nível 4: 400 ≤ 700 < 750). Antes tinha de ser igual ao limiar.
+- **O limiar dos níveis não muda.** Ninguém perde nível. Save com o Charter concedido segue concedido; save sem ele passa a pedir 700 (o painel do mapa mostra "falta Renome").
+
+**Campanha inteira depois** (`--campanha 40 --perfis F2PGolpe,F2P,Ideal --partidas 4`, h acumuladas):
+
+| perfil | Charter OF | Row | Quarter | Arsenal | Foundry | Carta | Renome 5 | Renome 9 |
+|---|---|---|---|---|---|---|---|---|
+| F2PGolpe | 2,1 → **3,5** | 4,8 → 5,1 | 10,0 → 10,5 | 15,7 → 15,9 | 19,0 → 19,0 | 28,2* → **24,8** | 4,4 → 3,5 | 24,7* → 23,5 |
+| F2P sem golpe | nunca → **5,0** | — | — | — | — | — | — → 5,0 | — |
+| Ideal | 1,8 → 2,9 | 4,8 → 4,7 | 10,4 → 10,4 | 16,2 → 16,2 | 19,0 → 19,2 | 24,6 → 23,8 | 3,0 → 2,9 | 22,7 → 22,2 |
+
+- A Carta segue abaixo dos 31,5 h. O Renome 9 do F2PGolpe agora sai em todas as 4 partidas: os 300 a mais do Charter adiantam o Renome do Império.
+- **O resto não muda:** o econsim padrão (Old Forge, sem Charter) sai **idêntico ao byte** à `main` (`--minutos 60 --partidas 20`), então o Renome 2/3 do F2P (0:51 / 1:41) e o 0 deadlock em 1.000 partidas (§43) ficam como estavam.
+- **Próximo degrau do F2P sem golpe:** ele para na Row, cujo Charter pede 2 obras. Se o Closed mostrar muitos jogadores sem golpe, a mesma regra ("obra ou N Superiores") serve para a Row.

@@ -37,9 +37,11 @@ namespace FS.Core
     {
         /// <summary>Encomendas Royal entregues no distrito que valem 1 contrato do Charter (CONTEUDO_V1 §2, regra comum).</summary>
         public const int RoyalPorContrato = 10;
-        public readonly bool Producao; public readonly long Renome; public readonly int Masterworks, Contratos; public readonly string Proximo;
-        public CharterDef(bool producao, long renome, int masterworks, string proximo, int contratos = 0)
-        { Producao = producao; Renome = renome; Masterworks = masterworks; Proximo = proximo; Contratos = contratos; }
+        public readonly bool Producao; public readonly long Renome; public readonly int Masterworks, Contratos, Superiores; public readonly string Proximo;
+        /// <param name="superiores">BALANCE §48: &gt; 0 = as obras-primas OU esse tanto de pecas Superiores vendidas no distrito (Colecao.Superiores,
+        /// que vai no save), como os Charters que aceitam contrato OU Royal: quem nunca golpeia tambem fecha. 0 = so as obras.</param>
+        public CharterDef(bool producao, long renome, int masterworks, string proximo, int contratos = 0, int superiores = 0)
+        { Producao = producao; Renome = renome; Masterworks = masterworks; Proximo = proximo; Contratos = contratos; Superiores = superiores; }
     }
 
     /// <summary>
@@ -143,7 +145,7 @@ namespace FS.Core
             Obstaculos = Balance.Obstacles, Marcos = Balance.Milestones,
             Inicio = new V2(4.5f, 3.5f), Contratacao = Sim.HireSpot, Largura = Balance.WorkshopW, Parede = true,
             EsteiraDe = "fornalha", EsteiraPara = "bigorna",
-            Charter = new CharterDef(true, 400, 1, ArmorersRowId),   // V15: producao completa + Renome 4 (400) + 1 Masterwork
+            Charter = new CharterDef(true, 700, 1, ArmorersRowId, superiores: 80),   // V15 + BALANCE §48: producao completa + Renome 700 + 1 Masterwork OU 80 Superiores vendidas
         };
 
         // ---------------------------------------------------------------- Armorer's Row (CONTEUDO_V1 §2.2, §3, §3.1, §4, §5.2, §6)

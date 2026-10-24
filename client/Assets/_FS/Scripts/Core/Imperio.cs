@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 
 namespace FS.Core
@@ -136,7 +137,8 @@ namespace FS.Core
             if (Charters.Contains(id)) return "concedido";
             if (c.Producao && !s.ProductionComplete) return "producao";
             if (Raiz.Renome.Total < c.Renome) return "renome";
-            if (Math.Max(s.Masterworks, s.Hall.Count) < c.Masterworks) return "masterwork";   // C-CORE-03: o Hall vai no save (o contador nao)
+            if (Math.Max(s.Masterworks, s.Hall.Count) < c.Masterworks && (c.Superiores <= 0 || s.Colecao.Superiores.Sum() < c.Superiores))
+                return "masterwork";   // C-CORE-03: o Hall vai no save (o contador nao); BALANCE §48: ou as Superiores vendidas
             if (c.Contratos > 0 && Raiz.Contratos.Concluidos.Count < c.Contratos && s.RoyalEntregues < c.Contratos * CharterDef.RoyalPorContrato)
                 return "contrato";   // ---- royal_arsenal (C-CORE-07): N contratos OU 10 x N encomendas Royal no distrito (V25: nunca bloqueia)
             return null;

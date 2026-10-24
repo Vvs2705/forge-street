@@ -87,22 +87,34 @@ namespace FS.Tests
         }
 
         [Test]
-        public void Excecao_TetoPorSessao_SemCaminhoPrivado_UmaLinhaDaPilha()
+        public void Excecao_UmaVezPorErroDistinto_TetoPorSessao_SemCaminhoPrivado()
         {
             _t.Liberar(Faixa.Adulto, false);
             string msg = "IOException: Could not find file \"C:/Users/Fulano/AppData/LocalLow/VStack/Forge Street/save.txt\"";
-            for (int i = 0; i < Telemetria.ExcecoesMax; i++) Assert.IsTrue(_t.Excecao(msg, "FS.SaveStore.Read ()\nFS.Game.Awake ()", 12f));
-            Assert.IsFalse(_t.Excecao(msg, "x", 13f), "passou do teto: nada");
-            Assert.AreEqual(Telemetria.ExcecoesMax, _remoto.Enviados.Count);
+            Assert.IsTrue(_t.Excecao(msg, "FS.SaveStore.Read ()\nFS.Game.Awake ()", 12f));
+            for (int i = 0; i < 50; i++) Assert.IsFalse(_t.Excecao(msg, "FS.SaveStore.Read ()\nFS.Game.Update ()", 12f), "o mesmo erro em loop: 1 evento");
+            Assert.AreEqual((1, 50), (_remoto.Enviados.Count, _t.Repetidas));
             Evento e = _remoto.Enviados[0];
-            Assert.AreEqual("excecao", e.Nome);
+            Assert.AreEqual(Telemetria.EventoErro, e.Nome);
+            Assert.AreEqual("client_error", e.Nome);
             StringAssert.DoesNotContain("Fulano", e.A);
             StringAssert.Contains("~/save.txt", e.A);
-            Assert.AreEqual("FS.SaveStore.Read ()", e.B);
+            StringAssert.IsMatch("^[0-9a-f]{8} FS.SaveStore.Read \\(\\)$", e.B, "b = hash da pilha + o topo");
             StringAssert.DoesNotContain("Fulano", string.Join("|", _local.Linhas), "nem no diario");
-            _t.Excecao(new string('x', 500), null, 1f);
+            for (int i = 1; i < Telemetria.ExcecoesMax; i++) Assert.IsTrue(_t.Excecao("erro " + i, "FS.X" + i, 13f), "erro distinto " + i);
+            Assert.IsFalse(_t.Excecao("mais um distinto", "FS.Y", 14f), "passou do teto de distintos");
             Assert.AreEqual(Telemetria.ExcecoesMax, _remoto.Enviados.Count);
-            Assert.IsTrue(new Telemetria(_local, _remoto, "s", "v", "c").Excecao(new string('x', 500), null, 1f), "outra sessao, outro teto");
+            Assert.IsTrue(new Telemetria(_local, _remoto, "s", "v", "c").Excecao(msg, "FS.SaveStore.Read ()", 1f), "outra sessao, outro teto e outro conjunto");
+        }
+
+        [Test]
+        public void Excecao_AntesDaTelaDeIdade_SoNoDiario_DepoisSaiEmOrdem()
+        {
+            _t.Excecao("NullReferenceException", "FS.Game.Update ()", 1f);
+            Assert.AreEqual(0, _remoto.Enviados.Count, "antes da tela de idade: so o diario local");
+            Assert.AreEqual(1, _local.Linhas.Count);
+            _t.Liberar(Faixa.Adulto, true);
+            Assert.AreEqual(1, _remoto.Enviados.Count, "com a resposta, a fila sai em ordem");
         }
 
         [Test]

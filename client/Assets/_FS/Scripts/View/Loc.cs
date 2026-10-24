@@ -735,8 +735,9 @@ namespace FS
             { "mapa.aqui", L("{0}: você está aqui", "{0}: you are here", "{0}: estás aquí") },
             { "mapa.charter_pronto", L("{0}: Charter pronto!", "{0}: Charter ready!", "{0}: ¡Carta lista!") },
             { "mapa.falta.producao", L("{0}: falta a produção", "{0}: finish production", "{0}: falta producción") },
-            { "mapa.falta.renome", L("{0}: falta Renome", "{0}: need Renown", "{0}: falta Renombre") },
-            { "mapa.falta.masterwork", L("{0}: falta obra-prima", "{0}: need a Masterwork", "{0}: falta obra maestra") },
+            { "mapa.falta.renome", L("{0}: falta Renome ({1}/{2})", "{0}: need Renown ({1}/{2})", "{0}: falta Renombre ({1}/{2})") },
+            { "mapa.falta.masterwork", L("{0}: falta obra-prima ({1})", "{0}: need a Masterwork ({1})", "{0}: falta obra maestra ({1})") },
+            { "mapa.falta.masterwork_ou", L("{0}: falta obra-prima ({1}) OU Superiores ({2})", "{0}: need a Masterwork ({1}) OR Superiors ({2})", "{0}: falta obra maestra ({1}) O Superiores ({2})") },   // BALANCE §48
             { "mapa.aberto", L("{0}: aberto", "{0}: open", "{0}: abierto") },
             { "mapa.abrir", L("{0}: abrir por {1}", "{0}: open for {1}", "{0}: abrir por {1}") },
             { "mapa.fechado", L("{0}: fechado", "{0}: locked", "{0}: cerrado") },

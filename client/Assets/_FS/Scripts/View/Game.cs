@@ -200,7 +200,7 @@ namespace FS
                 : ugs ? new ProvedorUgs() : (IProvedorAnalytics)new ProvedorNulo(null);
             _diario = new Telemetria(diario, remoto,
                 diario.Sessao, Application.version, _rcr.Snapshot, dir, Application.dataPath);
-            Application.logMessageReceived += Excecao;
+            Application.logMessageReceivedThreaded += Excecao;   // DM §90: as threads de fundo tambem (som, save); o Update entrega ao diario
             _save = new Salvamento(new SaveStore(Path.Combine(dir, "save.txt")), new SaveEspelho(SaveKey), _diario);
             Sfx.Init(gameObject);
             Sfx.Log = Arg("-somlog") != null;   // fix/mix-audio (dev): "SOM min=..." por minuto no Player.log
@@ -424,6 +424,7 @@ namespace FS
 
         void Update()
         {
+            EntregaExcecoes();   // DM 90: os erros que chegaram de qualquer thread
             if (_headless) return;
             // Input.GetKeyDown: com o GameActivity o voltar do Android nao chega ao Input System, so ao Input Manager legado (Setup: Both)
             bool back = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
@@ -1695,13 +1696,21 @@ namespace FS
             if (_started && _loja != null && !(_loja is LojaFalsa)) IniciarLoja();   // respondida agora; numa abertura anterior, o Start ja iniciou
         }
 
-        /// <summary>A-PLAT-09 (DM §90): excecao nao tratada (e Debug.LogException) -> evento "excecao" no diario e no remoto, ate 5 por sessao.</summary>
+        /// <summary>A-PLAT-09 (DM §90): excecao nao tratada (e Debug.LogException) de qualquer thread -> fila; o Update entrega ao Telemetria.Excecao
+        /// (evento client_error, 1x por erro distinto, ate 5 por sessao). O Telemetria nao e' thread-safe: fora do main thread so a fila e' tocada.</summary>
         void Excecao(string msg, string pilha, LogType tipo)
         {
-            if (tipo == LogType.Exception) _diario.Excecao(msg, pilha, _sim != null ? _sim.Time : 0f);
+            if (tipo == LogType.Exception) _excecoes.Enqueue((msg, pilha));
         }
 
-        void OnDestroy() => Application.logMessageReceived -= Excecao;
+        readonly System.Collections.Concurrent.ConcurrentQueue<(string Msg, string Pilha)> _excecoes = new System.Collections.Concurrent.ConcurrentQueue<(string Msg, string Pilha)>();
+
+        void EntregaExcecoes()
+        {
+            while (_excecoes.TryDequeue(out var e)) _diario?.Excecao(e.Msg, e.Pilha, _sim != null ? _sim.Time : 0f);
+        }
+
+        void OnDestroy() { Application.logMessageReceivedThreaded -= Excecao; EntregaExcecoes(); }
 
         /// <param name="gold">&gt; 0: linha da moeda com "+gold" grande (cofre); 0: so o texto.</param>
         void ShowPanel(string title, string body, string button, Action action, long gold = 0)
@@ -1899,7 +1908,7 @@ namespace FS
                 if (d.Id == _sim.Distrito.Id)
                 {
                     string falta = _imp.CharterFalta(d.Id);
-                    linhas.Add(Loc.T(falta == null ? "mapa.charter_pronto" : falta == "concedido" ? "mapa.aqui" : "mapa.falta." + falta, nome));
+                    linhas.Add(falta == null ? Loc.T("mapa.charter_pronto", nome) : falta == "concedido" ? Loc.T("mapa.aqui", nome) : FaltaCharter(d, falta, nome));
                     if (falta == null) Poe(0, Loc.T("mapa.charter"), () => { _imp.Charter(d.Id); Log("charter", d.Id); Save(); AbrirMapa(); });
                 }
                 else if (_imp.Aberto(d.Id))
@@ -1929,6 +1938,19 @@ namespace FS
             }
             (string Texto, Action Fazer) acao = Array.Find(acoes, x => x.Fazer != null);
             ShowPanel(Loc.T("mapa.titulo"), string.Join("\n", linhas), acao.Texto ?? Loc.T("ui.ok"), acao.Fazer ?? ClosePanel);
+        }
+
+        /// <summary>BALANCE §48: a linha "falta X" do Charter com o progresso (Renome a/b; obra-prima a/b e, se o Charter aceita, OU Superiores a/b).</summary>
+        string FaltaCharter(DistrictDef d, string falta, string nome)
+        {
+            CharterDef c = d.Charter;
+            Sim s = _imp.Distrito(d.Id);
+            string N(long v) => v.ToString(CultureInfo.InvariantCulture);
+            if (falta == "renome") return Loc.T("mapa.falta.renome", nome, N(_imp.Raiz.Renome.Total), N(c.Renome));
+            if (falta != "masterwork") return Loc.T("mapa.falta." + falta, nome);
+            string mw = N(Math.Max(s.Masterworks, s.Hall.Count)) + "/" + N(c.Masterworks);
+            return c.Superiores > 0 ? Loc.T("mapa.falta.masterwork_ou", nome, mw, N(System.Linq.Enumerable.Sum(s.Colecao.Superiores)) + "/" + N(c.Superiores))
+                : Loc.T("mapa.falta.masterwork", nome, mw);
         }
 
         /// <summary>Foco no distrito `id` e a cena renasce com o mesmo Imperio (grava antes): o mundo, a HUD e o menu nascem do Sim dele.</summary>

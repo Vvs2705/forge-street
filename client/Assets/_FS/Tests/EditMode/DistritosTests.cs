@@ -263,7 +263,16 @@ namespace FS.Tests
             Assert.AreEqual("producao", imp.CharterFalta(Distritos.OldForgeId));
             for (int i = 0; i < Upgrades.Count; i++) if (Upgrades.IsProduction(i)) raiz.Buy((Upgrade)i);
             Assert.AreEqual("renome", imp.CharterFalta(Distritos.OldForgeId));
-            raiz.Renome.Ganha(400);
+            long pede = Distritos.OldForge.Charter.Renome;   // BALANCE §48: 700, dentro do nivel 4
+            raiz.Renome.Ganha(pede - 1);
+            Assert.AreEqual("renome", imp.CharterFalta(Distritos.OldForgeId), "o Renome do Charter, nao o limiar do nivel");
+            raiz.Renome.Ganha(1);
+            Assert.AreEqual("masterwork", imp.CharterFalta(Distritos.OldForgeId));
+            raiz.Colecao.Superiores[(int)Item.Sword] = Distritos.OldForge.Charter.Superiores - 1;
+            Assert.AreEqual("masterwork", imp.CharterFalta(Distritos.OldForgeId), "uma Superior a menos");
+            raiz.Colecao.Superiores[(int)Item.Sword]++;
+            Assert.IsNull(imp.CharterFalta(Distritos.OldForgeId), "BALANCE §48: as Superiores no lugar da obra-prima");
+            raiz.Colecao.Superiores[(int)Item.Sword] = 0;
             Assert.AreEqual("masterwork", imp.CharterFalta(Distritos.OldForgeId));
             raiz.Masterworks = 1;
             Assert.IsNull(imp.CharterFalta(Distritos.OldForgeId));
@@ -271,9 +280,9 @@ namespace FS.Tests
             Assert.IsFalse(imp.Abrir(Row.Id), "sem Charter nao abre");
             int compras = raiz.UpgradesBought; long gold = raiz.Gold;
             Assert.IsTrue(imp.Charter(Distritos.OldForgeId));
-            Assert.AreEqual((500L, compras, gold), (raiz.Renome.Total, raiz.UpgradesBought, raiz.Gold), "+100 de Renome, sem reset");
+            Assert.AreEqual((pede + 100L, compras, gold), (raiz.Renome.Total, raiz.UpgradesBought, raiz.Gold), "+100 de Renome, sem reset");
             Assert.IsFalse(imp.Charter(Distritos.OldForgeId));
-            Assert.AreEqual(("concedido", 500L), (imp.CharterFalta(Distritos.OldForgeId), raiz.Renome.Total));
+            Assert.AreEqual(("concedido", pede + 100L), (imp.CharterFalta(Distritos.OldForgeId), raiz.Renome.Total));
             Assert.IsTrue(imp.Liberado(Row.Id));
             raiz.Gold = Row.Abertura - 1;
             Assert.IsFalse(imp.Abrir(Row.Id), "sem ouro");
@@ -501,7 +510,7 @@ namespace FS.Tests
             d.FundoFator = 1.2f;
             var v = ContentValidator.Charter(d, Distritos.All).ToList();
             Acusa(v, "pede Renome 99999");
-            Acusa(v, "o nivel 5 (o que libera charter_armorers_row) comeca em 750");
+            Acusa(v, "fora do nivel 5 (o que libera charter_armorers_row: de 750 ate antes de 1250)");
             Acusa(v, "pede -1 Masterworks");
             Acusa(v, "libera \"nao_existe\"");
             Acusa(v, "renda de fundo 1.2");
