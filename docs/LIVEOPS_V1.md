@@ -310,7 +310,7 @@ F2P de referência do §1 (3 diárias por dia, 4 semanais por semana, 20 min/dia
 | **Nível** | | 7 | 15 | 22 | **30** |
 
 - **Fecha no dia 27,6** (18.000 / 651) com o portão de encomendas da Wave B (≥ 25 em 60 min → 8 por dia, `ECONOMIA_WAVE_B.md` §10).
-- **Medido (2026-10-24, `LiveOpsTests.BotF2P_FechaATrilhaFreeDentroDaTemporada`):** o bot F2P, numa sessão de 20 min por dia desde o 1º dia da S1 e resgatando tudo no fim de cada uma, fecha os 30 níveis no **dia 23**, antes da faixa 26–30 do §8 porque resgata também as conquistas (a conta acima não conta XP de conquista, que pesa mais nas primeiras semanas de um jogador novo). O teste trava o teto (`Dias − 7` = 28); reafinar o XP fica para a medição com jogador real.
+- **Medido (2026-10-24, `LiveOpsTests.BotF2P_FechaATrilhaFreeDentroDaTemporada`):** o bot F2P, numa sessão de 20 min por dia desde o 1º dia da S1 e resgatando tudo no fim de cada uma, fechava os 30 níveis no **dia 23**: as conquistas davam 5.750 XP até ali (32% dos 18.000; 3.600 nos 4 primeiros dias), fora desta conta. **Reafinado no mesmo dia:** o XP de cada conquista caiu pela metade (`MetasDefs.Conquistas`, 86 conquistas; decisão 8 do §7 segue: elas dão XP, fora da estimativa) e o bot passa a fechar no **dia 28** (27 no fim da sessão), dentro da faixa 26–30 do §8. A conta acima e o validator (o F2P de referência fecha em `Dias − 7`) não mudam, porque não contam conquista. O teste trava 26 ≤ dia ≤ 28.
 - **Com o ritmo medido hoje** (21 em 60 min → 7 por dia, 70 XP, `BALANCE.md` §20): 641 XP/dia, fecha no **dia 28,1**.
 - Ritmo de ~1 nível por dia; a semana 5 (dias 28–34) é a folga para quem faltou até ~7 dias de diárias.
 - **Casual** (2 de 3 diárias, 3 de 4 semanais, 5 encomendas por dia, 70% de cada evento): ~450 XP/dia → **nível 26 no dia 35**, sem fechar. Fechar o casual pede ~520 XP por nível, e aí o F2P fecharia no dia ~24. Decisão no §7.
@@ -747,7 +747,7 @@ Pré-requisito: o econsim precisa jogar **dias** (2 sessões de 10 min com inter
 | 5 | Premium sem ouro, Renome, XP e Blueprint (mais restrito que o DM §33, que só proíbe o "obrigatório") | sim: o validator fica simples e não existe "pagar para subir o Pass" | D-CORE-04, Wave E |
 | 6 | Conveniências do premium (Supply Drop, Velocidade, Trocar) como "cargas" | decidir junto das Gems na Wave E (é um recurso novo, V9) | Wave E |
 | 7 | XP de encomenda com teto de 100 por dia | sim (knob): segura o ritmo de ~28 dias para quem joga muito | D-CORE-04 |
-| 8 | XP de conquista no Pass (DM §32) | sim, fora da estimativa: ajuda quem entra no meio da temporada | D-CORE-02 |
+| 8 | XP de conquista no Pass (DM §32) | sim, fora da estimativa: ajuda quem entra no meio da temporada; **metade do valor original** desde 2026-10-24 (com o valor cheio o bot F2P fechava a trilha no dia 23, §3.3) | D-CORE-02 |
 | 9 | "Rare ore" (DM §123) como skin, não como item novo | skin agora; minério de verdade só com `ItemDef` na Wave C | D-PROD-01 |
 | 10 | Eventos de 6 dias + 1 de respiro | sim (referência: eventos de 6 dias no Burger Please!, `BENCHMARK_MERCADO.md` §8) | D-PROD-01 |
 | 11 | Preço do premium | Wave E; referência de mercado US$ 8,99–9,99 (`BENCHMARK_MERCADO.md` §8) | D-PROD-02 (DECISÃO "preço") |

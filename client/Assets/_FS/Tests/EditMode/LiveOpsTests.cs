@@ -517,9 +517,9 @@ namespace FS.Tests
             Agora(s, FF.Comeca + H + 2);
             Assert.IsTrue(s.Metas.Conquista(fim).Pronta);
             long xp = s.Metas.PassXp;
-            Assert.AreEqual(0L, s.Metas.ResgatarConquista(fim.Id), "XP 100, sem ouro");
+            Assert.AreEqual(0L, s.Metas.ResgatarConquista(fim.Id), "XP da conquista, sem ouro");
             Assert.AreEqual(-1L, s.Metas.ResgatarConquista(fim.Id));
-            Assert.AreEqual(xp + 100L, s.Metas.PassXp);
+            Assert.AreEqual(xp + fim.Xp, s.Metas.PassXp);
             Agora(s, Armeiro.Comeca + H);
             Assert.AreSame(Armeiro, s.LiveOps.Evento);
             Assert.AreEqual(2L, s.Metas.Conquista(entra).Feito);
@@ -703,7 +703,8 @@ namespace FS.Tests
 
         /// <summary>LIVEOPS_V1 §3.3 e §5.7 regra 2, medido (o Fechamento acima e' a conta estatica): o bot F2P joga uma sessao de 20 min por
         /// dia, do 1o dia da S1, e no fim de cada uma resgata o que estiver pronto (diarias, semanais, login, conquistas e a trilha free). Fecha
-        /// os 30 niveis da trilha free dentro de `Dias - 7` sem nada do premium (flag desligada). ponytail: ~12 h de jogo a 30 Hz, o teste
+        /// os 30 niveis da trilha free entre o dia 26 e `Dias - 7` (28) sem nada do premium (flag desligada); antes de as conquistas darem metade do XP
+        /// (2026-10-24) fechava no dia 23. ponytail: ~12 h de jogo a 30 Hz, o teste
         /// mais lento do Pass; a janela de 20 min/dia e' a do F2P de referencia (LiveOpsDefs.EncomendasDiaF2P).</summary>
         [Test, Timeout(900000)]   // runner do CI (2 vCPU) leva ~370 s; o padrao do Unity e' 180 s por teste
         public void BotF2P_FechaATrilhaFreeDentroDaTemporada()
@@ -729,7 +730,7 @@ namespace FS.Tests
                 if (s.LiveOps.Passe == S1 && Enumerable.Range(1, S1.Niveis).All(s.LiveOps.Resgatado)) fechou = d + 1;
             }
             Assert.IsFalse(s.LiveOps.Premium, "flag do premium desligada: nada veio da trilha paga");
-            Assert.That(fechou, Is.InRange(1, S1.Dias - 7), $"o F2P parou no nivel {s.LiveOps.Nivel}/{S1.Niveis} ({s.LiveOps.Xp} XP) em {S1.Dias - 7} dias");
+            Assert.That(fechou, Is.InRange(26, S1.Dias - 7), $"LIVEOPS_V1 §8: dia 26-30 (e no maximo Dias - 7); o F2P parou no nivel {s.LiveOps.Nivel}/{S1.Niveis} ({s.LiveOps.Xp} XP) em {S1.Dias - 7} dias");
             TestContext.WriteLine($"F2P fechou a trilha free no dia {fechou} de {S1.Dias}");
         }
 
