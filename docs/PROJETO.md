@@ -132,7 +132,7 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 
 ## 8. Progresso rumo ao 100% (definição de jogo completo, DM §164)
 
-Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-24: #121–#142 desta frente, com #124, #125, #131, #134 e #140 das outras; com #136, #137, #141, #142 e #145–#148). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
+Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-24: #121–#148 desta frente, com #124, #125, #131, #134, #135 e #140 das outras). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
 
 | Item (§164) | % | Onde está | Próximo passo |
 |---|---|---|---|
@@ -161,7 +161,7 @@ Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-24: 
 | Store assets | 82 | marca v2 (#86); 8 screenshots × pt/en/es (#92) e a 2ª sequência "Ache o gargalo" (#108); vídeo de gameplay de 35 s 9:16 (#108); 37 criativos, ASO pt/en/es; descrições completas pt/en/es com o jogo de hoje (#142) | teste de ícones na Play Console; cortar o vídeo para 30 s se a Play pedir |
 | **Média** | **~85** (85,4) | | |
 
-## 9. Retomada (atualizada em 2026-10-23)
+## 9. Retomada (atualizada em 2026-10-24)
 
 Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões V9–V29 (§4).
 
@@ -183,6 +183,8 @@ Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões
 
 **Sessão de 2026-10-23 (worktree `C:/fsv2`, em paralelo com a da Grand Forge).** Na `main`: #99, o replay determinístico. O impasse do `Steer` e a recarga do VIP já estavam fechados. **#100 mesclado** com o `verify.sh full` verde (573 testes, com a Grand Forge mesclada): 10º evento (o `GrabTime` virou knob; +10,8% de ouro/min do F2P, `BALANCE.md` §27.4), `ach_distritos3/6` e `ach_mw30/60` pelo ledger do Renome (retroativo), Renome do Império que nunca cai e migração dos saves das 3 versões publicadas. Os merges desta sessão saem pela API do GitHub na nuvem quando o filtro do PC barra (aval permanente do Vinicius). As `OrderDef` já são 60 (≥ 50). Item da Foundry: §40.5 e os 3 laços do `ArcaneTests` já estavam prontos, e as 3 mutações do #94 morreram (`mutantes.py --so`: `fila-trava-na-frente`, `wk-load-depois-da-pilha` e `bp-tecnica-zero`, 3/3 em 629 s). Arte das estações da Foundry no Tripo (~7 modelos, ~315 créditos): liberada pelo aval permanente. **Travas novas:** Unity = arquivo `C:/fsv2/.unity.lock`, Tripo = `C:/fsv2/.tripo.lock` (a raiz do C: não aceita apagar pasta sem elevação; a `C:/fsv_unity.lock` está obsoleta).
 
+**CONTINUAR DAQUI (2026-10-24, ~20:40 UTC).** Placar **~85%** (§8). Na `main` desde o fim de 2026-10-23: #121 preço do Pass · #124 golpe que faz Superior · #125 tela de idade no 1º anúncio · #126 bot fecha a trilha free · #127 `Sim` em partes · #128 placar · #130 e #135 Unity no CI do GitHub · #131 V27 · #132 No Placeholder Gate · #133 balcão · #134 herói 4–5 · #136 contrato no distrito ativo · #137 analytics na taxonomia · #139 coleção medida · #140 placar · #141 flag `DistritosNovos` · #142 ASO · #144 roteiro G3/G4 · #145–#147 pipeline de release · #148 linha de base no emulador. **Portão:** os 4 jobs do `unity.yml` (EditMode, builds Windows/Android, autoplay) valem como o `verify.sh full`; o PC fica para o .exe com janela. Em aberto: #123 (5 músicas, outra sessão) e #149 (Visual Robustness Gate). Fila da sessão no PC: XP do Passe para o bot fechar entre os dias 26 e 30, snapshot do `fs_config` em todo evento de analytics, corte de 30 s do vídeo. Dependem do Vinicius: Play Console (IAP e produto do Pass), painel do LevelPlay (Ads), chave de upload e secrets do `release` (`RELEASE.md`), projeto UGS na conta empresarial nova, POCO só com "pode testar".
+
 **CONTINUAR DAQUI (2026-10-23, fim do dia; o Vinicius segue num chat novo).** Placar **~82%** (§8). Na `main` hoje, todos com `verify.sh full` e CI verdes: #99 replay determinístico · #100 10º evento, conquistas de 3/6 distritos e 30/60 obras, Renome que nunca cai, migração dos saves publicados · #101 docs · #102 arte da Grand Forge · #103 HUD v2 · #104 forja estelar clareada · #105 ícones de 5 insumos · #106 bot F2P que golpeia · #107 arte da Foundry e Vulcana (Tripo) · #108 2ª sequência de screenshots e vídeo · #109 15 sons CC0 · #110 importados da Foundry na Grand Forge · #111 Unity IAP 5.4.4 (desligado até a chave da Play) · #112 UGS Analytics e Remote Config · #113/#117 Pass premium atrás da flag · #114 `econsim --rc` · #115 herói em 3 estágios · #116 arte nos cartões da loja · #118 diárias do pool C · #119 Félix. **Nenhum PR aberto e nenhum branch em andamento.** Tripo: saldo 14.595.
 
 Fila para chegar a 90% (um PR por item; ver o plano em https://claude.ai/artifact/1PQAo9PBHazpwQLdNn6K6y):
@@ -191,9 +193,9 @@ Fila para chegar a 90% (um PR por item; ver o plano em https://claude.ai/artifac
 3. ~~**Events:** V27, encomenda Event contada à parte das vagas, e reafinar os 10 eventos com o bot~~ (#131, `BALANCE.md` §44: 17 pontos nos 10, que fecham no dia 4–5 do F2P).
 4. ~~**Pass:** teste de que o bot F2P fecha a trilha free e validator "nada obrigatório só no premium".~~ #126 (2026-10-24); preço do premium definitivo em R$ 44,90 no #121.
 5. **Áudio:** 5 músicas (CC0 ou licença comercial) e ambiente em camadas.
-6. **Arte:** estágios 4 e 5 do herói (Renome 5 e 7, Blender); auditoria do No Placeholder Gate.
+6. ~~**Arte:** estágios 4 e 5 do herói (Renome 5 e 7, Blender); auditoria do No Placeholder Gate.~~ #134 e #132 (2026-10-24); Visual Robustness Gate no #149.
 7. ~~**Metas:** `dly_golpe_superior1`~~ (#124, com `ach_golpe_superior50`; `BALANCE.md` §45).
-8. **Release pipeline:** Unity no CI (P15) e release tag → AAB → faixa interna; precisa de licença/segredo do Unity e da chave real (Vinicius).
+8. **Release pipeline:** ~~Unity no CI (P15) e release tag → AAB~~ (#130, #135, #145, #146); → faixa interna precisa da chave real e da conta de serviço (Vinicius, `RELEASE.md`).
 9. **Dependem do Vinicius:** Play Console (perfil de pagamento, AAB em faixa de teste, `iap_pacote_mestre`, chave RSA; `IAP.md` §5.1), teste de ícones na Play; depois o POCO F4 (só com "pode testar").
 
 **Como as sessões de 2026-10-23 trabalharam:** duas sessões Remote Control no PC (worktrees `C:/fsv` e `C:/fsv2`), travas por arquivo (`C:/fsv2/.unity.lock`, `C:/fsv2/.tripo.lock`), um PR por item com `verify.sh full`; os merges saíram pela API do GitHub na nuvem (o filtro do Claude Code no PC barra merge, Tripo e pacotes de terceiros quando o aval não é digitado na própria conversa; aval permanente do Vinicius de 2026-10-23 para merge, Tripo, navegador e downloads; só compra nova depende dele). Conflitos entre PRs paralelos foram quase sempre só no topo do CHANGELOG (manter as duas entradas).
