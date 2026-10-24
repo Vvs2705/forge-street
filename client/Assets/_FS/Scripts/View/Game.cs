@@ -1753,7 +1753,12 @@ namespace FS
             }
         }
         void OnApplicationFocus(bool focus) { if (!focus) Save(); }
-        void OnApplicationQuit() { Save(); EndSession("saiu"); }
+        void OnApplicationQuit()
+        {
+            Save(); EndSession("saiu");
+            // No Placeholder Gate (DM §178, client/tools/placeholder_gate.sh): o que esta sessao pediu e caiu no procedural
+            Debug.Log($"PLACEHOLDERS arte={SpriteSheet.Faltas.Count} [{string.Join(" ", SpriteSheet.Faltas)}] som={Sfx.Sintetizados.Count} [{string.Join(" ", Sfx.Sintetizados)}]");
+        }
 
         /// <summary>s86/s87 session_end: a = s em primeiro plano desde o session_start, b = pausa|saiu. Sai a cada ida ao segundo plano
         /// (o sistema pode matar o app la sem aviso), entao vale a ultima da sessao; o ouro pendente (currency_*) sai junto.</summary>

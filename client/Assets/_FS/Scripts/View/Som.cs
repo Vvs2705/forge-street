@@ -480,6 +480,8 @@ namespace FS
 
         sealed class Som { public AudioClip[] V; public int K; }
         static readonly Dictionary<string, Som> Sons = new Dictionary<string, Som>();
+        /// <summary>No Placeholder Gate (DM §178): efeitos sem gravacao em Resources/Audio (tocam a Sintese). O Game loga ao sair.</summary>
+        public static readonly SortedSet<string> Sintetizados = new SortedSet<string>();
 
         public static void Init(GameObject host)
         {
@@ -494,6 +496,7 @@ namespace FS
                 Array.Sort(v, (a, b) => string.CompareOrdinal(a.name, b.name));
                 if (v.Length == 0)
                 {
+                    Sintetizados.Add(n);   // No Placeholder Gate: efeito sem gravacao real
                     v = new AudioClip[Sintese.Variacoes(n)];
                     for (int k = 0; k < v.Length; k++) v[k] = Clip(n + k, Sintese.Efeito(n, k), Sintese.Taxa);
                 }
