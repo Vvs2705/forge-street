@@ -701,6 +701,38 @@ namespace FS.Tests
             Assert.That(LiveOpsDefs.DiaFechamento(S2, LiveOpsDefs.Eventos, LiveOpsDefs.EncomendasDiaF2P), Is.InRange(26.0, 30.0));
         }
 
+        /// <summary>LIVEOPS_V1 §3.3 e §5.7 regra 2, medido (o Fechamento acima e' a conta estatica): o bot F2P joga uma sessao de 20 min por
+        /// dia, do 1o dia da S1, e no fim de cada uma resgata o que estiver pronto (diarias, semanais, login, conquistas e a trilha free). Fecha
+        /// os 30 niveis da trilha free dentro de `Dias - 7` sem nada do premium (flag desligada). ponytail: ~12 h de jogo a 30 Hz, o teste
+        /// mais lento do Pass; a janela de 20 min/dia e' a do F2P de referencia (LiveOpsDefs.EncomendasDiaF2P).</summary>
+        [Test]
+        public void BotF2P_FechaATrilhaFreeDentroDaTemporada()
+        {
+            var s = new Sim();
+            Bot bot = Bot.From(BotProfile.F2P);
+            const float dt = 1f / 30f;
+            int fechou = -1, seg;
+            for (int d = 0; d < S1.Dias - 7 && fechou < 0; d++)
+            {
+                long t0 = S1.Comeca + d * Dia + 3600;   // 14:00 UTC, 1 h depois da virada do evento
+                seg = -1;
+                for (float t = 0f; t < 20 * 60f; t += dt)
+                {
+                    if ((int)t != seg) { seg = (int)t; Agora(s, t0 + seg); }   // o relogio do LiveOps anda 1x/s, como a View
+                    bot.Step(s, dt);
+                }
+                for (int i = 0; i < Metas.NDiarias; i++) s.Metas.ResgatarDiaria(i);
+                for (int k = 0; k < Metas.NSemanais; k++) s.Metas.ResgatarSemanal(k);
+                s.Metas.ResgatarLogin();
+                foreach (MetaDef m in MetasDefs.Conquistas) s.Metas.ResgatarConquista(m.Id);
+                for (int n = 1; n <= s.LiveOps.Nivel; n++) s.LiveOps.Resgatar(n);
+                if (s.LiveOps.Passe == S1 && Enumerable.Range(1, S1.Niveis).All(s.LiveOps.Resgatado)) fechou = d + 1;
+            }
+            Assert.IsFalse(s.LiveOps.Premium, "flag do premium desligada: nada veio da trilha paga");
+            Assert.That(fechou, Is.InRange(1, S1.Dias - 7), $"o F2P parou no nivel {s.LiveOps.Nivel}/{S1.Niveis} ({s.LiveOps.Xp} XP) em {S1.Dias - 7} dias");
+            TestContext.WriteLine($"F2P fechou a trilha free no dia {fechou} de {S1.Dias}");
+        }
+
         // ------------------------------------------------------------------ validator
 
         static List<string> Valida(EventDef[] evs = null, PassDef[] ps = null, bool premium = false) =>
@@ -749,6 +781,7 @@ namespace FS.Tests
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.Premium[1] = new RewardDef(TipoPremio.Blueprint, 0, "bp_x", new RewardDef(TipoPremio.Ouro, 60))), S2 }), "o pago nunca progride");
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.Premium[1] = new RewardDef(TipoPremio.PassXp, 100)), S2 }), "o pago nunca progride");
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.Free[4] = null), S2 }), "nada obrigatorio so no premium");
+            Acusa(Valida(Troca(FF, Copia(FF, e => e.Requer = new[] { S1.Premium[0].Ref }))), "so sai na trilha premium");
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.Free[4] = new RewardDef(TipoPremio.Gems, 10)), S2 }), "nao e' recompensa gratis");
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.Dias = 40), S2 }), "40 dias");
             Acusa(Valida(ps: new[] { CopiaPasse(S1, p => p.XpNivel = 1000), S2 }), "nao fecha");

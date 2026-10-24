@@ -132,11 +132,11 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 
 ## 8. Progresso rumo ao 100% (definição de jogo completo, DM §164)
 
-Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-23, fim do dia: #99–#119). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
+Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-24: #121, #126, #127 sobre a leva #99–#119). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
 
 | Item (§164) | % | Onde está | Próximo passo |
 |---|---|---|---|
-| Core polido | 74 | loop completo, Save 2.0 schema 3 por ID, itens/receitas em dados, exploits fechados, ouro long, validator, `Tuning`/flags, RemoteConfig com travas; feedback do POCO resolvido no código (#59, #62); transporte de insumos (#76); replay determinístico (#99); impasse do `Steer` e recarga de 5 min do VIP fechados (§7) | `Sim` em partes (refatoração com econsim ao byte); 1.000 partidas por perfil sem deadlock; ouvir e ver no POCO |
+| Core polido | 84 | loop completo, Save 2.0 schema 3 por ID, itens/receitas em dados, exploits fechados, ouro long, validator, `Tuning`/flags, RemoteConfig com travas; feedback do POCO resolvido no código (#59, #62); transporte de insumos (#76); replay determinístico (#99); impasse do `Steer` e recarga de 5 min do VIP fechados (§7); `Sim` em 7 parciais com o econsim ao byte e as mutações remapeadas, 0 deadlock em 1.000 partidas × 5 perfis (#127, `BALANCE.md` §43) | ouvir e ver no POCO |
 | 6 distritos | 92 | os 6 no build com arte própria: Old Forge; Row (#66, #71, #75, #76); Quarter (#78, #79); Arsenal (#83, #84); **Arcane Foundry** (#97, 11 estações do Tripo no #107); **Grand Forge** (#98, 10 estações no #102, forja estelar clareada no #104, importados da Foundry nas rotas e na síntese no #110); managers e Império (#65) | conferir com jogador real; Carta do Ideal em 5 de 8 aos 359 min (borda de baixo, knob Renome 9; `BALANCE.md` §41.7) |
 | 35–45 produtos | 90 | 38 de 38 vendáveis em jogo nos 6 distritos; os 58 itens com ícone (5 insumos novos no #105); textos pt/en/es (1.227 chaves) | chave de analytics por produto conferida no painel do UGS |
 | Workers | 90 | Old Forge (13), Ferraz e Vulcana (Row), Dourado e Lúcia (Quarter), Cadetes e Matias (Arsenal), Aprendizes e Ísis (Foundry), Estrela e Félix (Grand Forge); managers 2–5 dos 6; arte própria da Vulcana (#107), do Félix (#119) e do herói em 3 estágios pelo Renome (#115) | estágios 4 e 5 do herói (Renome 5 e 7, Blender, 0 crédito); teste de silhueta |
@@ -149,7 +149,7 @@ Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-23, 
 | Reputation | 85 | Renome 10 níveis do Império (#65); o 8 e o 9 abrem a Foundry e a Grand Forge; teste de que nunca cai (#100); F2P chega ao 2/3/4 em 0:51 / 1:41 / 3:11 | calibrar 5–10 com jogador real (Renome 9 = knob da Carta) |
 | Daily / Weekly / Achievements | 97 | 41 diárias (9 do pool C no #118, `BALANCE.md` §42), 17 semanais, 106 conquistas (3/6 distritos e 30/60 obras no #100), login de 7 dias; retroativo | `dly_golpe_superior1` (o golpe não sabe o nível da peça) |
 | Events (LiveOps) | 86 | 10 `EventDef`, os 10 rodando (Rare Ore Rush no #100); `event_enter`/`event_complete` chegam ao UGS Analytics (#112) | V27: encomenda Event contada à parte das vagas e reafinar os eventos |
-| Pass | 75 | 30 níveis, temporada de 35 dias, trilha free; premium como produto da loja (`iap_pass_s1_royal_commission`/`s2_ember_festival`, R$ 44,90 definitivo, Vinicius 2026-10-24) e coluna premium no Passe, tudo atrás da flag `PassePremium` desligada (#113, #117) | produto na Play Console; teste de que o bot F2P fecha a trilha free |
+| Pass | 85 | 30 níveis, temporada de 35 dias, trilha free; premium como produto da loja (`iap_pass_s1_royal_commission`/`s2_ember_festival`, R$ 44,90 definitivo, Vinicius 2026-10-24) e coluna premium no Passe, tudo atrás da flag `PassePremium` desligada (#113, #117, #121); bot F2P fecha a trilha free no dia 23 de 35 e o validator recusa requisito que só o premium dá (#126) | produto na Play Console; reafinar o XP com jogador real (o bot fecha antes da faixa 26–30, `LIVEOPS_V1.md` §3.3) |
 | Ads | 70 | 6 placements por config, teto diário, ID de transação, intersticial atrás de flag, `ad_impression` (#52) | conta da V-STACK com VIP e Velocidade (#67); ad units dos outros 4 placements e Unity Ads no painel (Vinicius); A/B do intersticial no Limited Release |
 | IAP | 75 | Unity IAP 5.4.4 com a `LojaUnity` (Google Play Billing 9), estados, recibos, restore e Pacote do Mestre; desligada até a chave da Play (#58, #111; `IAP.md` §5.1) | Play Console: perfil de pagamento, AAB numa faixa de teste, produto `iap_pacote_mestre` e chave RSA (Vinicius) |
 | Analytics | 78 | UGS Analytics só para 18+ com aceite, evento `fs_evento` com 5 parâmetros ativo no Event Manager de production (#112; projeto Unity Cloud 05962639-e02d-4f7c-8293-0ff2089e5144) | dashboards de retenção/monetização; crash reporting com símbolos |
@@ -159,7 +159,7 @@ Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-23, 
 | Arte final | 84 | estações dos 6 distritos com arte própria (#75, #79, #84, #102, #107); ícones de todos os itens (#105); programa de arte: interface v2 (#87), recompensa com vida (#88), cabeçalho dos painéis (#91), HUD v2, selos em fita, placas nos rótulos e chão (#103); arte e selo nos cartões da loja (#116); herói em 3 estágios (#115) | estágios 4 e 5 do herói; No Placeholder Gate (DM §178) com 0 item; Visual Robustness Gate 8/8 |
 | Áudio final | 55 | 15 efeitos CC0 da Kenney no lugar dos sintetizados, no mesmo nível (#109, `AUDIO.md` §9, `PROVENIENCIA.md` §19); 3 grupos, mix com prioridade, orçamento de vozes e distância (#59) | 5 músicas (CC0 ou licença comercial); ambiente em camadas; ouvir no POCO |
 | Store assets | 78 | marca v2 (#86); 8 screenshots × pt/en/es (#92) e a 2ª sequência "Ache o gargalo" (#108); vídeo de gameplay de 35 s 9:16 (#108); 37 criativos, ASO pt/en/es | teste de ícones na Play Console; cortar o vídeo para 30 s se a Play pedir |
-| **Média** | **~82** | | |
+| **Média** | **~83** | | |
 
 ## 9. Retomada (atualizada em 2026-10-23)
 
@@ -186,10 +186,10 @@ Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões
 **CONTINUAR DAQUI (2026-10-23, fim do dia; o Vinicius segue num chat novo).** Placar **~82%** (§8). Na `main` hoje, todos com `verify.sh full` e CI verdes: #99 replay determinístico · #100 10º evento, conquistas de 3/6 distritos e 30/60 obras, Renome que nunca cai, migração dos saves publicados · #101 docs · #102 arte da Grand Forge · #103 HUD v2 · #104 forja estelar clareada · #105 ícones de 5 insumos · #106 bot F2P que golpeia · #107 arte da Foundry e Vulcana (Tripo) · #108 2ª sequência de screenshots e vídeo · #109 15 sons CC0 · #110 importados da Foundry na Grand Forge · #111 Unity IAP 5.4.4 (desligado até a chave da Play) · #112 UGS Analytics e Remote Config · #113/#117 Pass premium atrás da flag · #114 `econsim --rc` · #115 herói em 3 estágios · #116 arte nos cartões da loja · #118 diárias do pool C · #119 Félix. **Nenhum PR aberto e nenhum branch em andamento.** Tripo: saldo 14.595.
 
 Fila para chegar a 90% (um PR por item; ver o plano em https://claude.ai/artifact/1PQAo9PBHazpwQLdNn6K6y):
-1. **Core:** `Sim` em partes (refatoração, econsim ao byte e mutações vivas); 1.000 partidas do econsim por perfil sem deadlock.
+1. ~~**Core:** `Sim` em partes (refatoração, econsim ao byte e mutações vivas); 1.000 partidas do econsim por perfil sem deadlock.~~ #127 (2026-10-24).
 2. **Ads:** tela de idade movida para quando o 1º botão de anúncio aparece (GDD, Conflito 1); consentimento antes do SDK testado. Ad units dos outros 4 placements e Unity Ads no painel do LevelPlay (Vinicius).
 3. **Events:** V27, encomenda Event contada à parte das vagas, e reafinar os 10 eventos com o bot.
-4. **Pass:** teste de que o bot F2P fecha a trilha free e validator "nada obrigatório só no premium".
+4. ~~**Pass:** teste de que o bot F2P fecha a trilha free e validator "nada obrigatório só no premium".~~ #126 (2026-10-24); preço do premium definitivo em R$ 44,90 no #121.
 5. **Áudio:** 5 músicas (CC0 ou licença comercial) e ambiente em camadas.
 6. **Arte:** estágios 4 e 5 do herói (Renome 5 e 7, Blender); auditoria do No Placeholder Gate.
 7. **Metas:** `dly_golpe_superior1`.

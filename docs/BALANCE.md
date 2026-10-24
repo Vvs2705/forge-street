@@ -2606,6 +2606,16 @@ A Carta melhora porque as receitas de síntese ficam mais lentas e o bot passa m
 
 **Testes:** `MetasTests.PoolC_RenomeFinaEEvento_GoldenERegras` (fallback para a A sem nada aberto; Renome pelo ganho desde a vaga, pago 1x; a 1ª Fina de escudo abre as de Fina e o golden de 6 dias `fina10, renome5, fina10, renome5, fina_escudos10, fina10`; com o Forge Frenzy ativo, só as 2 de evento, alternando) e `Rodizio_60Dias_…` ajustado (com a Joalheria, o slot C é o `dly_renome5`).
 
+## 43. Sim em partes e 1.000 partidas por perfil (GDD §164 item 1, 2026-10-24)
+
+**Refatoração** (branch `refactor/sim-partes`): o `Sim.cs` (1.886 linhas) fica com o estado e o construtor (468) e o resto vai para 7 parciais, cortados nos separadores que o arquivo já tinha, só movendo código: `Sim.Tick` (o passo), `Sim.Ajudantes`, `Sim.Trocas` (pegar, depositar, vender, pagar pad), `Sim.Producao` (produção, esteira, clientes), `Sim.Qualidade`, `Sim.Consultas` (view, bot, dica e offline) e `Sim.Save`.
+
+**Econsim ao byte** (`main` 676d3d2 × o branch; CSV e saída sem os tempos de parede): idênticos em `--minutos 90 --partidas 4`; `--perfis F2P,Ideal --minutos 60 --partidas 2 --evento forge_frenzy`; e `--distrito` armorers_row, artisan_quarter, royal_arsenal, arcane_foundry e grand_forge (120 min, 2 partidas).
+
+**Mutações:** as 60 do `Sim.cs` apontam para o parcial onde o trecho está agora (`SIM_TROCAS`, `SIM_PRODUCAO` etc. no `mutantes.py`); 4 trechos que já estavam velhos na `main` foram corrigidos (`meta-charter-ledger-errado`, `meta-qualidade-sempre-livre`, `liveops-fim-sem-pendentes`, `mw-bot-nao-espera`). As 388 batem com o código (passo 1 do script).
+
+**Deadlock** (linha nova do econsim: partida com 10+ min de relógio seguidos sem ouro novo depois do 1º minuto): `econsim --minutos 60 --partidas 1000` (5 perfis × 1.000 partidas, passo de 30 a 60 Hz; 745 s) → **Ideal 0/1000, F2P 0/1000, Slow 0/1000, AdWatcher 0/1000, AdWatcherE 0/1000**. Só o modo sem `--distrito` (o `RunD` não guarda o ouro por minuto).
+
 ## 44. V27: a encomenda Event conta à parte das vagas normais (2026-10-24)
 
 **Regra vigente** (`Core/Encomendas.cs`, `Core/EncomendasDefs.cs`; branch `feat/v27-evento-fora-das-vagas`; decisão V27 do `PROJETO.md` §4: à parte). Até aqui a encomenda Event tinha cartão próprio (não contava no `VagasMax`), mas **disputava a peça** com as normais: `Encomendas.OnVenda` dava a peça só à vaga mais antiga que a aceitasse, e a Event, que reabre no fim da lista, passava fome atrás das 3 normais (§30.6, ressalva 2); os pontos dela tinham sido afinados por evento para compensar (Caravan 12, Royal Week-B 15, Hunts 17/20). Agora:
