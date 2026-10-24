@@ -44,7 +44,10 @@ namespace FS.Core
         /// <summary>Assiste anuncio (AdWatcher): chama o VIP quando pode e liga o boost 2x quando a recarga deixa; com AdsE (AdWatcherE) tambem o
         /// Supply Drop e o bonus da encomenda, pelo Anuncios. Conta os anuncios vistos.</summary>
         public bool Ads, AdsE; public int AdsVip, AdsBoost, AdsSupply, AdsBonus;
-        public int AdsTotal => AdsVip + AdsBoost + AdsSupply + AdsBonus;
+        /// <summary>Os 6 placements de ponta a ponta (autoplay -anuncios e AnunciosTests): com AdsE, tambem troca a encomenda e dobra o cofre.
+        /// Fora dos perfis (o econsim e os portoes nao mudam).</summary>
+        public bool AdsTodos; public int AdsTroca, AdsCofre;
+        public int AdsTotal => AdsVip + AdsBoost + AdsSupply + AdsBonus + AdsTroca + AdsCofre;
         /// <summary>B-CORE-03: acerta o golpe de mestre sempre que o Sim oferece (ferreiro parado na boca de uma bancada, recarga zerada).</summary>
         public bool Strike;
         /// <summary>Golpe humano: com StrikeCada > 1 o bot toca o anel Reaction s depois de ele aparecer e de novo a cada volta (Anel), e so 1
@@ -75,7 +78,9 @@ namespace FS.Core
                 if (Assiste(s, Anuncio.Vip)) AdsVip++;
                 if (s.BoostLeft <= 0f && Assiste(s, Anuncio.Velocidade)) AdsBoost++;
                 if (Assiste(s, Anuncio.Supply)) AdsSupply++;
+                if (AdsTodos && Assiste(s, Anuncio.EncomendaTroca)) AdsTroca++;   // antes do bonus: a troca perderia o bonus ja visto
                 if (Assiste(s, Anuncio.EncomendaBonus)) AdsBonus++;
+                if (AdsTodos && Assiste(s, Anuncio.Cofre)) AdsCofre++;
             }
             else if (Ads)
             {

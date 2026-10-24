@@ -199,7 +199,7 @@ namespace FS
                 : ugs ? new ProvedorUgs() : (IProvedorAnalytics)new ProvedorNulo(null);
             _diario = new Telemetria(diario, remoto,
                 diario.Sessao, Application.version, _rcr.Snapshot, dir, Application.dataPath);
-            Application.logMessageReceived += Excecao;
+            Application.logMessageReceivedThreaded += Excecao;   // DM §90: as threads de fundo tambem (som, save); o Update entrega ao diario
             _save = new Salvamento(new SaveStore(Path.Combine(dir, "save.txt")), new SaveEspelho(SaveKey), _diario);
             Sfx.Init(gameObject);
             Sfx.Log = Arg("-somlog") != null;   // fix/mix-audio (dev): "SOM min=..." por minuto no Player.log
@@ -423,6 +423,7 @@ namespace FS
 
         void Update()
         {
+            EntregaExcecoes();   // DM 90: os erros que chegaram de qualquer thread
             if (_headless) return;
             // Input.GetKeyDown: com o GameActivity o voltar do Android nao chega ao Input System, so ao Input Manager legado (Setup: Both)
             bool back = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
@@ -1694,13 +1695,21 @@ namespace FS
             if (_started && _loja != null && !(_loja is LojaFalsa)) IniciarLoja();   // respondida agora; numa abertura anterior, o Start ja iniciou
         }
 
-        /// <summary>A-PLAT-09 (DM §90): excecao nao tratada (e Debug.LogException) -> evento "excecao" no diario e no remoto, ate 5 por sessao.</summary>
+        /// <summary>A-PLAT-09 (DM §90): excecao nao tratada (e Debug.LogException) de qualquer thread -> fila; o Update entrega ao Telemetria.Excecao
+        /// (evento client_error, 1x por erro distinto, ate 5 por sessao). O Telemetria nao e' thread-safe: fora do main thread so a fila e' tocada.</summary>
         void Excecao(string msg, string pilha, LogType tipo)
         {
-            if (tipo == LogType.Exception) _diario.Excecao(msg, pilha, _sim != null ? _sim.Time : 0f);
+            if (tipo == LogType.Exception) _excecoes.Enqueue((msg, pilha));
         }
 
-        void OnDestroy() => Application.logMessageReceived -= Excecao;
+        readonly System.Collections.Concurrent.ConcurrentQueue<(string Msg, string Pilha)> _excecoes = new System.Collections.Concurrent.ConcurrentQueue<(string Msg, string Pilha)>();
+
+        void EntregaExcecoes()
+        {
+            while (_excecoes.TryDequeue(out var e)) _diario?.Excecao(e.Msg, e.Pilha, _sim != null ? _sim.Time : 0f);
+        }
+
+        void OnDestroy() { Application.logMessageReceivedThreaded -= Excecao; EntregaExcecoes(); }
 
         /// <param name="gold">&gt; 0: linha da moeda com "+gold" grande (cofre); 0: so o texto.</param>
         void ShowPanel(string title, string body, string button, Action action, long gold = 0)
@@ -2051,12 +2060,16 @@ namespace FS
             string m = Arg("-autoplay");
             float minutes = !string.IsNullOrEmpty(m) && float.TryParse(m, NumberStyles.Float, CultureInfo.InvariantCulture, out float v) ? v : 10f;
             var sim = new Sim();
-            var bot = new Bot();
+            // ADS (-anuncios): o bot que assiste os 6 placements pelo nucleo (oferta -> recompensa, teto do dia), com um cofre offline no minuto 5
+            bool ads = Arg("-anuncios") != null;
+            Bot bot = ads ? Bot.From(BotProfile.AdWatcherE) : new Bot();
+            bot.AdsTodos = ads;
             const float dt = 1f / 30f;
             int next = 1;
             for (float t = 0f; t < minutes * 60f; t += dt)
             {
                 bot.Step(sim, dt);
+                if (ads && sim.Time >= 300f && sim.LastClaim == 0) sim.ApplyOffline(600, 1);
                 if (sim.Time < next * 60f) continue;
                 Debug.Log(string.Format(CultureInfo.InvariantCulture, "AUTOPLAY t={0} gold={1} earned={2} upgrades={3} sales={4} lost={5} away={6} walk={7:0}s ema={8:0.00}/s",
                     Clock(sim.Time), sim.Gold, sim.GoldEarned, sim.UpgradesBought, sim.Sales, sim.ClientsLost, sim.ClientsTurnedAway, sim.WalkNoDecision, sim.RateEma));
@@ -2065,6 +2078,13 @@ namespace FS
             for (int i = 0; i < Upgrades.Count; i++)
                 if (sim.UpgradeTime[i] >= 0f) Debug.Log($"AUTOPLAY upgrade {(Upgrade)i} em {Clock(sim.UpgradeTime[i])}");
             bool ok = sim.FirstSaleTime > 0f && sim.FirstSaleTime < 90f && sim.UpgradesBought >= 1;
+            if (ads)
+            {
+                int[] h = sim.Anuncios.Hoje;
+                Debug.Log($"AUTOPLAY ANUNCIOS vip={h[(int)Anuncio.Vip]} velocidade={h[(int)Anuncio.Velocidade]} supply={h[(int)Anuncio.Supply]} bonus={h[(int)Anuncio.EncomendaBonus]} " +
+                          $"troca={h[(int)Anuncio.EncomendaTroca]} cofre={h[(int)Anuncio.Cofre]} total={sim.Anuncios.HojeTotal()}/{sim.T.AnunciosTetoDia} intersticial={sim.Anuncios.VetoIntersticial(true, false, 9999f) ?? "liberado"}");
+                ok &= Array.TrueForAll(h, n => n > 0) && sim.Anuncios.HojeTotal() <= sim.T.AnunciosTetoDia;
+            }
             Debug.Log(string.Format(CultureInfo.InvariantCulture, "AUTOPLAY {0} venda1={1:0}s upgrades={2} ouro={3}", ok ? "OK" : "FALHOU", sim.FirstSaleTime, sim.UpgradesBought, sim.GoldEarned));
             Application.Quit(ok ? 0 : 1);
         }

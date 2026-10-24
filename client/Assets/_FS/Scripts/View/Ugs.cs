@@ -11,7 +11,7 @@ using UnityEngine.UnityConsent;
 namespace FS
 {
     // A-PLAT-08/09, P8 = Unity Gaming Services (decisao do Vinicius em 2026-10-23; docs/REMOTECONFIG_ANALYTICS.md §3): projeto "Forge Street"
-    // do Unity Cloud (organizacao vsouz009, ambiente production). Nada inicia antes da tela de idade: o Game chama o Buscar e a Telemetria o
+    // do Unity Cloud (organizacao vinicius_unity980, ambiente production). Nada inicia antes da tela de idade: o Game chama o Buscar e a Telemetria o
     // Iniciar so no Liberar. As travas do RemoteConfig e a fila do analytics continuam no nucleo e na Telemetria.
 
     static class Ugs

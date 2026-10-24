@@ -95,9 +95,11 @@ Coerência entre chaves diferentes (por exemplo `VipMin` < `VipMax`) fica com qu
 
 ### Exceções (DM §90)
 
-`Application.logMessageReceived` com `LogType.Exception` (não tratada ou `Debug.LogException`) vira o evento `excecao`: `a` = mensagem, `b` = 1ª linha da pilha.
+`Application.logMessageReceivedThreaded` com `LogType.Exception` (não tratada ou `Debug.LogException`, **de qualquer thread**: o som e o save rodam em threads de fundo) entra numa fila; o `Game.Update` entrega ao `Telemetria.Excecao`, que gera o evento **`client_error`** (`excecao` até 2026-10-24): `a` = mensagem, `b` = `hash8 topo` (FNV-1a da mensagem e da 1ª linha da pilha, já sem os caminhos privados, mais a 1ª linha).
 
-- Teto de 5 por sessão (`Telemetria.ExcecoesMax`), para que um erro em loop não encha o diário nem a cota do provedor.
+- **Amostragem:** 1 evento por erro distinto (o mesmo hash não repete; `Telemetria.Repetidas` conta o resto) e no máximo 5 erros distintos por sessão (`Telemetria.ExcecoesMax`). Um erro em loop vira 1 linha, não enche o diário nem a cota do provedor.
+- O remoto segue a regra de todo evento: nada antes da tela de idade; o UGS só coleta com o aceite (18+).
+- Testes: `TelemetriaTests.Excecao_UmaVezPorErroDistinto_TetoPorSessao_SemCaminhoPrivado` e `Excecao_AntesDaTelaDeIdade_SoNoDiario_DepoisSaiEmOrdem`.
 - O `persistentDataPath` e o `dataPath` viram `~` (no Windows eles têm o nome do usuário).
 - Crash nativo (sinal, ANR) e os símbolos por build ficam para o SDK de crash da P8.
 
@@ -109,7 +111,7 @@ Coerência entre chaves diferentes (por exemplo `VipMin` < `VipMax`) fica com qu
 | `rc_aviso` | `chave: preso: pedido -> aplicado` ou `chave: motivo` | — |
 | `rc_fetch` | `ok` / `invalido` / `falha` | bytes ou erro (só com a URL preenchida) |
 | `ad_init` | `desligado` | `remoteconfig` (chave mestra) |
-| `excecao` | mensagem sem caminho privado | 1ª linha da pilha |
+| `client_error` (`excecao` até 2026-10-24) | mensagem sem caminho privado | `hash8` + 1ª linha da pilha |
 | `collection_view` / `hall_view` | distrito | marcos da coleção pagos / obras no Hall | cada aba do Hall que o jogador passa a ver (GDD §164 item 10: "≥ 30% abrem a coleção sem dica" no Closed = sessões com `collection_view` antes de qualquer aviso de marco) |
 | `event_enter` | ID do evento | — |
 | `event_points` | ID do evento | total de pontos da trilha |
@@ -155,13 +157,29 @@ Todos saem pelo `Game.Log` → diário (`diario.csv`) e, depois do aceite da tel
 
 **Funis para os dashboards (G-UA-05), validados no diário antes do UGS:** `python client/tools/diario_report.py <pasta com os diario.csv>` imprime, no fim, a retenção D1/D7 (dia UTC da 1ª `session_start` de cada testador) e três funis por testador: FTUE e progressão (abriu > 1ª venda > tutorial > 1ª melhoria > contratou > encomenda > contrato real > obra-prima > distrito novo), anúncio (`rewarded_offer` > `rewarded_start` > `rewarded_complete`) e compra (`iap_view` > `iap_purchase` > `pass_view` > `pass_purchase`). Os nomes antigos contam, para o diário de antes do #137. O `--autoteste` confere a conta com 3 testadores sintéticos. São as mesmas etapas que o painel do UGS deve montar sobre o `fs_evento` (`fsNome`).
 
-Além dos 31: `ad_*` (SDK: pedido, mostrado, impressão com receita, recompensa, falha), `iap_start/pending/restore/fail`, `consent_answer`, `settings`, `excecao`, `charter`, `district_switch`, `event_points`, `pass_level`.
+Além dos 31: `ad_*` (SDK: pedido, mostrado, impressão com receita, recompensa, falha), `iap_start/pending/restore/fail`, `consent_answer`, `settings`, `client_error`, `charter`, `district_switch`, `event_points`, `pass_level`.
+
+### Painéis do UGS (2026-10-24)
+
+Projeto 305e7176-73fa-4e2d-8095-3340d3986b75, ambiente `production`, em Analytics > Painéis personalizados. Montados antes do 1º evento: os relatórios salvam sem dados e passam a desenhar quando o `fs_evento` chegar (o jogo só envia de 18+ com aceite). Todos vêm do Explorador de Dados (experiência nova), nunca do SQL Data Explorer, que cobra por consulta.
+
+| Painel | Relatório (Explorador de Dados) | O que usa |
+|---|---|---|
+| **FS Retencao** | FS Retencao D1/D7/D30 | métricas padrão Retenção D1, D7 e D30, por dia (vêm do `newPlayer`/sessão que o SDK manda sozinho) |
+| | FS Sessoes por usuario | métricas padrão Sessões por usuário, Número de sessões, Duração média da sessão e DAU, por dia |
+| **FS Monetizacao** | FS Anuncios por placement | `fs_evento` (soma) com filtro `fsNome` = `rewarded_complete`, por dia e por `fsA` (placement: `vip`, `velocidade`, `cofre2x`, `encomenda_bonus`, `encomenda_troca`, `supply`) |
+| | FS Compras por produto | `fs_evento` (soma) com filtro `fsNome` = `iap_purchase`, por dia e por `fsA` (produto) |
+| | FS Receita e pagadores | métricas padrão Receita total, Receita do IAP, Pagadores, ARPDAU e Total de transações, por dia |
+
+Além deles, os painéis prontos do UGS (Painéis de controle > Desempenho do jogo, Retenção etc.) já mostram DAU, retenção e sessões sem configurar nada.
+
+**Espera o jogo (pendência):** o FS Receita e pagadores lê o evento padrão `transaction` do UGS, que o jogo ainda não manda (a compra vai só no `fs_evento` como `iap_purchase`). Até lá, ele fica vazio e a contagem de compras sai do FS Compras por produto. A receita de anúncio (eCPM, `adImpression`) também não sobe: a impressão com receita do LevelPlay fica no diário (`ad_*`). Os dois entram juntos com o IAP real (chave da Play), num ticket próprio. Para ver os nomes de `fsNome` que chegam, use o Navegador de eventos.
 
 ## 3. Como plugar o provedor quando a P8 for decidida
 
-**P8 decidida em 2026-10-23: Unity Gaming Services** (o Vinicius: "PODE SEGUIR O RECOMENDADO Unity Gaming Services"). Feito no `feat/analytics-rc`: projeto "Forge Street" no Unity Cloud (org `vsouz009`, `production`, `cloudProjectId` no `ProjectSettings.asset`); pacotes `com.unity.services.analytics` 6.3.0 e `com.unity.remote-config` 4.2.5; `client/Assets/_FS/Scripts/View/Ugs.cs` com o `ProvedorUgs` (só 18+ com aceite: `EndUserConsent` com `AnalyticsIntent`; evento `fs_evento` com `fsNome`, `fsA`, `fsB`, `fsT`, `fsConfig`; espera até 256 enquanto o SDK inicia) e o `RemoteConfigUgs` (baixa a chave JSON `fs_config` depois da tela de idade e grava no cache local; Ler continua o cache). Fora do Editor e do `-testsession`; `-analyticslog` continua trocando pelo eco no Player.log. Analytics e Remote Config ativos no painel (aval do Vinicius, 2026-10-23).
+**P8 decidida em 2026-10-23: Unity Gaming Services** (o Vinicius: "PODE SEGUIR O RECOMENDADO Unity Gaming Services"). Feito no `feat/analytics-rc`: projeto "Forge Street" no Unity Cloud (org `vsouz009` até 2026-10-24; hoje a conta empresarial, abaixo; `production`, `cloudProjectId` no `ProjectSettings.asset`); pacotes `com.unity.services.analytics` 6.3.0 e `com.unity.remote-config` 4.2.5; `client/Assets/_FS/Scripts/View/Ugs.cs` com o `ProvedorUgs` (só 18+ com aceite: `EndUserConsent` com `AnalyticsIntent`; evento `fs_evento` com `fsNome`, `fsA`, `fsB`, `fsT`, `fsConfig`; espera até 256 enquanto o SDK inicia) e o `RemoteConfigUgs` (baixa a chave JSON `fs_config` depois da tela de idade e grava no cache local; Ler continua o cache). Fora do Editor e do `-testsession`; `-analyticslog` continua trocando pelo eco no Player.log. Analytics e Remote Config ativos no painel (aval do Vinicius, 2026-10-23).
 
-**Falta no painel (Vinicius; a automação do painel travou no meio):** em Analytics > Event Manager, ambiente `production`: criar os parâmetros que faltam — `fsB` (String), `fsT` (Float), `fsConfig` (String) — (`fsNome` e `fsA`, String, já existem) e o **evento personalizado `fs_evento`** com os 5 parâmetros. Sem ele os eventos chegam como "inválidos". Em Remote Config, quando quiser publicar um config: a chave **`fs_config`** do tipo JSON com o JSON plano do §1 (com `id` e `versao`), conferido antes com o `econsim --rc`.
+**Conta empresarial (2026-10-24):** o projeto foi recriado na org `vinicius_unity980` (ID 4674267143380): `cloudProjectId` **305e7176-73fa-4e2d-8095-3340d3986b75**, ambiente `production` (ID 787c92f2-698c-4ec3-933f-7efe0150c1e1). O antigo (05962639-e02d-4f7c-8293-0ff2089e5144, org `vsouz009`) não é mais usado. COPPA respondido **Não** (não direcionado a crianças; público-alvo na Play 13+). No painel, tudo feito: em Analytics > Event Manager (`production`), os parâmetros `fsNome`, `fsA`, `fsB` e `fsConfig` (String) e `fsT` (Float) e o **evento personalizado `fs_evento`** com os 5, ativo; em Remote Config, a chave **`fs_config`** (JSON) publicada com `{"id":"padrao","versao":1}` (sem chave de `Tuning`: o jogo roda com os padrões). Para um config de verdade, troque o valor pelo JSON plano do §1, conferido antes com o `econsim --rc`.
 
 **Antes (até 2026-10-23): parado na P8.** O caminho natural seria o Unity Gaming Services (Analytics + Remote Config), já que o jogo usa o LevelPlay e o Unity IAP (que traz o `com.unity.services.core`). Ele pede que o projeto esteja **ligado a um projeto do Unity Cloud** (hoje `cloudProjectId` vazio e `cloudEnabled: 0` no `ProjectSettings.asset`), os ambientes e as chaves no painel do Unity Dashboard e a decisão de custo da P8; Firebase pede um projeto no console e o `google-services.json`. Nada disso existe e é decisão e conta do Vinicius, então o provedor segue `ProvedorNulo` e o `RemoteConfigHttp` com a URL vazia. Pronto para quando houver: as duas costuras abaixo e a telemetria dos eventos.
 
