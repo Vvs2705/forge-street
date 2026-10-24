@@ -293,6 +293,10 @@ namespace FS
             return (0.5f + 0.5f * f, Clamp01(2f * f - 1f), 0.4f + 0.6f * r, Clamp01(2f * r - 1f));   // parado -> cheio: ~+9,5 dB
         }
 
+        /// <summary>AUDIO.md §11: alvo 0..1 da 5a camada, a multidao (vozes CC0 abafadas): so com fila de 3 ou mais (cresce ate 10) e com o
+        /// evento ativo (+0,4, o movimento da festa). Parado e sem evento = 0: a oficina vazia soa como antes.</summary>
+        public static float Multidao(int fila, bool evento) => Clamp01(0.6f * Clamp01((fila - 2) / 8f) + (evento ? 0.4f : 0f));
+
         // ---------- blocos ----------
 
         static readonly float[] BigR = { 1f, 2.08f, 2.83f, 3.91f, 5.15f }, BigA = { 1f, 0.55f, 0.5f, 0.3f, 0.2f }, BigT = { 0.38f, 0.22f, 0.18f, 0.11f, 0.07f };
@@ -468,10 +472,11 @@ namespace FS
         // musica 0,18 = -33 dB de RMS medio (era 0,3 = -29, em laco sem parar); ambiente 0,11 com as camadas de densidade a 60%: parado ~-38 dB,
         // cheio ~-30, +7,7 dB (era -35 / -26, +9,4). ponytail: calibrar no POCO (alto-falante e fone) e no PC
         const float MusicaVol = 0.18f, AmbienteVol = 0.11f, Suave = 0.8f;
-        static readonly AudioSource[] _fx = new AudioSource[Mixagem.Vozes], _amb = new AudioSource[4];
-        static readonly float[] _ambPitch = { 1f, 0.82f, 1f, 1.08f }, _ambGanho = { 1f, 0.6f, 1f, 0.6f }, _ambVol = new float[4], _vol = new float[Mixagem.Vozes];
+        static readonly AudioSource[] _fx = new AudioSource[Mixagem.Vozes], _amb = new AudioSource[5];
+        // AUDIO.md §11: 0 fogo, 1 fogo grave, 2 rua, 3 rua densa (as 4 de antes) e 4 a multidao (fila e evento), metade do nivel da rua
+        static readonly float[] _ambPitch = { 1f, 0.82f, 1f, 1.08f, 1f }, _ambGanho = { 1f, 0.6f, 1f, 0.6f, 0.5f }, _ambVol = new float[5], _vol = new float[Mixagem.Vozes];
         static AudioSource _musica;
-        static AudioClip _sintetica;   // so sem as 5 musicas em Resources/Musica (projeto sem os arquivos): a da Sintese
+        static AudioClip _sintetica, _fogoCc0;   // so sem as 5 musicas em Resources/Musica (projeto sem os arquivos): a da Sintese
         static readonly Dictionary<string, AudioClip> _trilhas = new Dictionary<string, AudioClip>();
         static int _volta;
         static string _casa;
@@ -513,7 +518,11 @@ namespace FS
             foreach (string n in Mixagem.Trilhas) { AudioClip c = Resources.Load<AudioClip>("Musica/" + n); if (c != null) _trilhas[n] = c; }
             bool reais = _trilhas.Count == Mixagem.Trilhas.Length;
             if (!reais) { _trilhas.Clear(); Sintetizados.Add("musica"); }   // No Placeholder Gate: musica sem as gravacoes
-            _fundo = Task.Run(() => new[] { Sintese.Fogo(), Sintese.Rua(), reais ? null : Sintese.Musica() });
+            // AUDIO.md §11: o fogo CC0 (lacos do OpenGameArt, Resources/Audio/amb_*) no lugar do sintetizado, no mesmo RMS; a multidao so existe gravada
+            _fogoCc0 = Resources.Load<AudioClip>("Audio/amb_fogo");
+            _amb[4].clip = Resources.Load<AudioClip>("Audio/amb_multidao");
+            bool fogo = _fogoCc0 != null;
+            _fundo = Task.Run(() => new[] { fogo ? null : Sintese.Fogo(), Sintese.Rua(), reais ? null : Sintese.Musica() });
         }
 
         /// <summary>Som `som` (nome da Mixagem.Regras; o nome de um clip tambem toca, como Importante) sem lugar: UI, Importante, o ferreiro.</summary>
@@ -579,7 +588,7 @@ namespace FS
                 _ambOn = a;
                 for (int i = 0; i < _amb.Length; i++)
                 {
-                    if (!a) { _amb[i].Stop(); continue; }
+                    if (!a || _amb[i].clip == null) { _amb[i].Stop(); continue; }   // sem a multidao gravada: 4 camadas, como antes
                     _ambVol[i] = _amb[i].volume = 0f;
                     _amb[i].Play();
                     if (i % 2 == 1) _amb[i].timeSamples = _amb[i].clip.samples / 2;   // a 2a camada noutro ponto do laco: soma, nao dobra
@@ -591,6 +600,7 @@ namespace FS
             var (f1, f2, r1, r2) = Sintese.Camadas(ativas, sim.Queue.Count + sim.JewelQueue.Count);
             float k = Mathf.Min(1f, dt * Suave);
             Mix(0, f1, k, duck); Mix(1, f2, k, duck); Mix(2, r1, k, duck); Mix(3, r2, k, duck);
+            if (_amb[4].clip != null) Mix(4, Sintese.Multidao(sim.Queue.Count + sim.JewelQueue.Count, evento), k, duck);
         }
 
         static void Mix(int i, float alvo, float k, float duck) => _amb[i].volume = AmbienteVol * _ambGanho[i] * duck * (_ambVol[i] += (alvo - _ambVol[i]) * k);
@@ -635,7 +645,7 @@ namespace FS
             _fundo = null;
             if (t.Status != TaskStatus.RanToCompletion) { Debug.LogWarning("SOM fundo nao gerado: " + t.Exception?.GetBaseException().Message); return; }
             float[][] r = t.Result;
-            _amb[0].clip = _amb[1].clip = Clip("fogo", r[0], Sintese.Taxa);
+            _amb[0].clip = _amb[1].clip = _fogoCc0 != null ? _fogoCc0 : Clip("fogo", r[0], Sintese.Taxa);
             _amb[2].clip = _amb[3].clip = Clip("rua", r[1], Sintese.Taxa);
             if (r[2] != null) _sintetica = Clip("musica", r[2], Sintese.TaxaMusica);
         }

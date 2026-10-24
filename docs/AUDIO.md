@@ -162,3 +162,19 @@ Regra (`Mixagem.Trilha`, pura, `MixagemTests.Musica_TrilhaPorDistritoEEvento`): 
 **Nível:** o `audio_musica.py` põe o RMS médio de cada faixa em −18 dBFS, o da `Sintese.Musica`, então o `MusicaVol` 0,18 continua dando os −33 dB da §2 e a hierarquia do mix não muda. Picos num joelho suave (teto 0,95), sem clipar. Para refazer: `python client/tools/audio_musica.py <pasta com os 5 mp3>` (precisa do ffmpeg com libvorbis).
 
 **Calibrar (revisar):** ouvir no POCO se a música real, mais cheia que a sintetizada, pede 1–2 dB a menos no `MusicaVol`, e se a pausa de 30 s ainda faz sentido com faixas de 2–5 min.
+
+## 11. Ambiente em camadas (2026-10-24)
+
+O ambiente tinha 4 laços sintetizados (fogo, fogo grave, rua e rua densa), seguindo as estações trabalhando e a fila (`Sintese.Camadas`, §2). Agora:
+
+| Camada | Laço | Quando sobe | Nível |
+|---|---|---|---|
+| 0 fogo | **CC0 gravado** (`Resources/Audio/amb_fogo.wav`, lareira do OpenGameArt) no lugar do sintetizado | sempre; mais forte com mais estações trabalhando | o mesmo RMS médio do `Sintese.Fogo` (−13,4 dBFS ± 1) |
+| 1 fogo grave | o mesmo laço, pitch 0,82, do meio do laço | da metade das estações para cima | como antes (0,6) |
+| 2 rua | sintetizado (não achei rua CC0 boa) | sempre; mais forte com a fila | como antes |
+| 3 rua densa | sintetizado, pitch 1,08 | fila da metade para cima | como antes (0,6) |
+| **4 multidão (nova)** | **CC0 gravado** (`amb_multidao.wav`, vozes abafadas: passa-baixa 900 Hz) | só com fila de 3 ou mais (cresce até 10) e com **evento ativo** (+0,4): `Sintese.Multidao(fila, evento)` | metade do nível da rua (`_ambGanho` 0,5), no RMS da rua (−18,9 dBFS ± 1) |
+
+- A oficina vazia, sem evento, soa como antes (a multidão fica em 0). Na oficina cheia com evento, a multidão soma **0,1–1,0 dB** ao ambiente (`SomTests.Ambiente_Multidao_SoComFilaOuEvento_ESomaPouco`): o crescimento de parado para cheio (~+7,7 dB, §2) não muda. A mixagem dos efeitos e da música não muda.
+- Os laços: `client/tools/audio_ambiente.py` (ffmpeg): mono 22 050 Hz, as pontas cruzadas em 1 s (sem emenda no laço), ganho até o RMS do sintetizado e limitador suave com teto 0,95. `SomTests.Ambiente_LacosCc0_NoNivelDoSintetizado` confere formato, pico e nível. Sem os arquivos, volta tudo ao de antes (fogo sintetizado, 4 camadas).
+- Por distrito: as camadas são as mesmas nos 6 (o fogo e a rua seguem a fila e as estações de cada um); a música é que muda por distrito (§10). Ouvir no POCO: a multidão abafada pode pedir menos que 0,5.
