@@ -411,7 +411,7 @@ Estado: 2 rewarded IMPLEMENTADO (LevelPlay 9.5.1; conta aguardando aprovação) 
 
 **Princípio (DM §39):** pagar acelera, amplia opções ou melhora a aparência; nunca torna a experiência grátis deliberadamente ruim. Kill criterion herdado do v1 §26: **rewarded necessário para a progressão normal = cancelar**. O bot F2P, sem anúncio, fecha todo o conteúdo.
 
-**Pré-requisito de toda monetização comercial:** tela de idade + consentimento antes de iniciar qualquer SDK (E-PLAT-01); menor de 18 sem anúncio personalizado; nada de consentimento fixo no release (DM §94).
+**Pré-requisito de toda monetização comercial:** tela de idade + consentimento antes de iniciar qualquer SDK (E-PLAT-01; a tela abre no 1º botão de anúncio, depois da 1ª melhoria, nunca antes do 1º toque); menor de 18 sem anúncio personalizado; nada de consentimento fixo no release (DM §94).
 
 ### 17.1 Rewarded (DM §40), tudo por RemoteConfig
 
@@ -729,6 +729,7 @@ O que acrescentar:
    - **A favor do Forge:** eCPM maior com adultos.
    - **Contra:** é uma tela antes do 1º toque (contra a "1ª venda < 90 s" do §3.3); a declaração de ID de publicidade fica = sim; o consentimento tem de ser versionado; a verificação no POCO ainda está pendente (`PRIVACIDADE.md` §7).
    - **Recomendação (decisão do Vinicius):** se a tela ficar, mova-a para o momento em que o 1º botão de anúncio aparece (depois da 1ª melhoria). Se não, copie o modelo do DC (`AnunciosLevelPlay.cs` + `Setup.SemIdDePublicidade`) e apague a tela.
+   - **Decidido: movida** (2026-10-24, fila do `PROJETO.md` §9 item 2). Nada antes do 1º toque; a tela abre 1x no 1º instante em que um botão de anúncio apareceria (`PedidoIdade` em `View/Privacidade.cs`, `PrivacidadeTests`). Sem resposta: nenhum botão de anúncio, SDK parado, sem analytics remoto nem RemoteConfig. Fluxo em `PRIVACIDADE.md` §1.2.
 2. **§5.1 e §17.3: Gems na Wave E** (Gem Packs, Starter com Gems, Master Blacksmith Bundle) criam a 2ª moeda. O DC fechou o GDD inteiro com 1 moeda e IAP de conteúdo fixo (remover anúncios, pacote inicial, roupas, pacote de evento). **Recomendação:** v1.0 só com ouro e venda de conteúdo fixo (Pacote do Mestre, skins, Pass). Gems só se o `econsim` mostrar um ralo de conveniência que o ouro não cobre.
 3. **§18 / `ASSETS.md`: item fundido na mão** do balconista (livro), do gerente (livro), do mensageiro e do emissário (pergaminho). A regra do estúdio é item separado preso ao osso. **Recomendação:**
    - nos já gerados, usar só clipes que não giram a mão (Idle, Walking, LookingAround);
