@@ -135,7 +135,7 @@ namespace FS.Core
                 new StationDef("fornalha", Kind.Furnace, 1.5f, 4.0f, "Fornalha", -1f, 0f, null, "fornalha"),
                 new StationDef("forja_laminas", Kind.Furnace, 1.5f, 6.5f, "Forja lâminas", -1f, 0f, null, "forja_laminas", arte: "forja_laminas"),
                 new StationDef("bancada_kits", Kind.Crafter, 1.5f, 9.0f, "Bancada kits", -1f, 0f, null, "bancada_kits", arte: "bancada_kits"),
-                new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f),
+                new StationDef("balcao", Kind.Counter, 4.5f, 13f, "Balcão", 0f, -1f, arte: "balcao"),
                 new StationDef("patio_cotas", Kind.Quota, 10.5f, 13f, "Pátio de cotas", 0f, -1f, arte: "patio_cotas"),
                 new StationDef("carroca_couro", Kind.Deposit, 4.5f, 1.0f, "Carroça couro", 0f, 1f, null, null, CouroRA, "carroca"),
                 new StationDef("bancada_kits2", Kind.Crafter, 4.5f, 9.0f, "Bancada kits 2", -1f, 0f, "bancada_kits2", "bancada_kits", arte: "bancada_kits"),
