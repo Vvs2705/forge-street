@@ -13,7 +13,7 @@
 set -uo pipefail
 export MSYS_NO_PATHCONV=1 DOTNET_CLI_UI_LANGUAGE=en   # caminhos do Windows passam intactos; saída do dotnet em inglês para o grep
 
-ROOT="$(cd "$(dirname "$0")/../.." && { pwd -W 2>/dev/null || pwd; })"   # pwd -W: caminho do Windows no Git Bash; no Linux do CI, o normal; CLIENT="$ROOT/client"; OUT="$CLIENT/Builds/verify"
+ROOT="$(cd "$(dirname "$0")/../.." && { pwd -W 2>/dev/null || pwd; })"; CLIENT="$ROOT/client"; OUT="$CLIENT/Builds/verify"   # pwd -W: caminho do Windows no Git Bash; no Linux do CI, o normal
 UNITY="${UNITY_EXE:-C:/Program Files/Unity/Hub/Editor/6000.3.23f1/Editor/Unity.exe}"
 SDK="${LOCALAPPDATA:-}/Android/Sdk"; ADB="${ADB:-$SDK/platform-tools/adb.exe}"; EMU="${EMULATOR:-$SDK/emulator/emulator.exe}"
 AVD="${AVD:-fs_playstore}"; PKG=br.com.vstack.forgestreet
