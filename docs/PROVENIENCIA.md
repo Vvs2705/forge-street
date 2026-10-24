@@ -631,6 +631,7 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 
 - Nada gerado por IA nem baixado: `chapeu_couro` e `barrete_mestre` modelados por script em `client/tools/props_blender.py` (primitivas, paleta do arquivo; `veludo` e `pluma` novos) e presos ao osso `mixamorig:Head` do ferreiro (`arte/tripo/ferreiro`, licença do Lote 1, §2) pelo `render_sprites.py`. Clipes de `client/Builds/anims_sets/ferreiro` (Mixamo, §3). Blender 5.2 headless.
 - Folhas novas em `client/Assets/_FS/Resources/Sprites/`: `ferreiro_e2`, `ferreiro_e3`, `ferreiro_e2_mochila`, `ferreiro_e3_mochila` (Idle, Walking e Cheering; `.meta` copiados do `ferreiro` com GUID novo).
+- Estágios 4 e 5 (2026-10-24, mesmo processo, 0 crédito, nada baixado): `cinto_ferramentas` (osso `mixamorig:Hips`), `capa_real` (`mixamorig:Spine2`) e `barrete_real` (`mixamorig:Head`) modelados por script no `props_blender.py` (`carmesim` e `arminho` novos na paleta). Folhas `ferreiro_e4`, `ferreiro_e4_mochila`, `ferreiro_e5`, `ferreiro_e5_mochila` (`.meta` copiados do `ferreiro_e3` com GUID novo).
 
 ## 21. Arte dos produtos da loja (auditoria visual item 5, 2026-10-23, 0 crédito)
 
