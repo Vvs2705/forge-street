@@ -174,6 +174,9 @@ static class EconSim
             Console.WriteLine($"| {p.Name} | {string.Join(" | ", cols)} | {g.Average(r => r.Morta):0.#} ({seq.MortaSeq} a partir do min {seq.MortaIni}) | {g.Average(r => r.PosProd):0} | " +
                               $"{g.Average(r => r.Luxo):0.#}/3 | {g.Average(r => r.Parado):0} | {g.Average(r => r.SemDestinoMin):0.#} | {g.Average(r => r.Vips):0.#} ({g.Average(r => r.AdsVip):0.#}/{g.Average(r => r.AdsBoost):0.#}) | {g.Average(r => r.Segundos):0.0} |");
         }
+        // GDD §164 item 1 / ECONOMIA_WAVE_B §10: deadlock = 10+ min de relogio seguidos sem ganhar ouro depois do 1o minuto (o bot preso; o
+        // Steer da Wave A dava 0 vendas). ponytail: so o modo sem --distrito; o RunD nao guarda o ouro por minuto
+        Console.WriteLine("deadlock (10+ min seguidos sem ouro): " + string.Join(", ", perfis.Select(p => $"{p.Name} {runs.Count(r => r.Perfil == p.Name && Parada(r.EarnedMin) >= 10)}/{runs.Count(r => r.Perfil == p.Name)}")));
         // B-CORE-03 (ECONOMIA_WAVE_B §10): premio de qualidade e golpe em % da receita de vendas; niveis de estacao (ralo Meta)
         Console.WriteLine();
         Console.WriteLine("| perfil | premio de qualidade (% da receita) | golpe de mestre (% da receita; golpes) | niveis de estacao (comprados/8; gasto; 1o) |");
@@ -307,6 +310,9 @@ static class EconSim
             Console.WriteLine($"| {ps.Id} | {LiveOpsDefs.XpDiaF2P(ps, LiveOpsDefs.Eventos, LiveOpsDefs.EncomendasDiaF2P):0} | {LiveOpsDefs.DiaFechamento(ps, LiveOpsDefs.Eventos, LiveOpsDefs.EncomendasDiaF2P):0.0} | " +
                               $"{LiveOpsDefs.XpDiaF2P(ps, LiveOpsDefs.Eventos, enc, true):0} | {LiveOpsDefs.DiaFechamento(ps, LiveOpsDefs.Eventos, enc, true):0.0} |");
     }
+
+    /// <summary>Maior sequencia de minutos (do 2o em diante) sem ouro novo.</summary>
+    static int Parada(long[] earned) { int seq = 0, max = 0; for (int m = 2; m < earned.Length; m++) { seq = earned[m] == earned[m - 1] ? seq + 1 : 0; max = Math.Max(max, seq); } return max; }
 
     static Run Play(BotProfile p, float hz, int minutos, float anuncioSeg, Tuning t, float? workerSeg, EventDef evento = null, bool pacote = false)
     {
