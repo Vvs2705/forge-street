@@ -157,7 +157,7 @@ Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-23, 
 | Save | 92 | Save 2.0 + schema 3; multi-distrito; linhas opcionais da bancada, das famílias, das cotas, do medidor dos altares e das rotas e lotes (#78, #83, #97, #98) | cloud save (opcional) |
 | Release pipeline | 55 | AAB assinado por env, `verify release`, 16 KB, API 36 | chave real (aval), Unity no CI, release automatizada |
 | Arte final | 84 | estações dos 6 distritos com arte própria (#75, #79, #84, #102, #107); ícones de todos os itens (#105); programa de arte: interface v2 (#87), recompensa com vida (#88), cabeçalho dos painéis (#91), HUD v2, selos em fita, placas nos rótulos e chão (#103); arte e selo nos cartões da loja (#116); herói em 3 estágios (#115) | estágios 4 e 5 do herói; No Placeholder Gate (DM §178) com 0 item; Visual Robustness Gate 8/8 |
-| Áudio final | 55 | 15 efeitos CC0 da Kenney no lugar dos sintetizados, no mesmo nível (#109, `AUDIO.md` §9, `PROVENIENCIA.md` §19); 3 grupos, mix com prioridade, orçamento de vozes e distância (#59) | 5 músicas (CC0 ou licença comercial); ambiente em camadas; ouvir no POCO |
+| Áudio final | 68 | 15 efeitos CC0 da Kenney no lugar dos sintetizados, no mesmo nível (#109, `AUDIO.md` §9, `PROVENIENCIA.md` §19); **5 músicas CC0 do RandomMind** (tema, oficina, royal, arcane e evento) por distrito e por evento, no nível da antiga (`AUDIO.md` §10, `PROVENIENCIA.md` §23); 3 grupos, mix com prioridade, orçamento de vozes e distância (#59) | fanfarras e fornalha ainda sintetizadas; ambiente em camadas real; ouvir no POCO |
 | Store assets | 78 | marca v2 (#86); 8 screenshots × pt/en/es (#92) e a 2ª sequência "Ache o gargalo" (#108); vídeo de gameplay de 35 s 9:16 (#108); 37 criativos, ASO pt/en/es | teste de ícones na Play Console; cortar o vídeo para 30 s se a Play pedir |
 | **Média** | **~82** | | |
 
@@ -190,7 +190,7 @@ Fila para chegar a 90% (um PR por item; ver o plano em https://claude.ai/artifac
 2. **Ads:** tela de idade movida para quando o 1º botão de anúncio aparece (GDD, Conflito 1); consentimento antes do SDK testado. Ad units dos outros 4 placements e Unity Ads no painel do LevelPlay (Vinicius).
 3. **Events:** V27, encomenda Event contada à parte das vagas, e reafinar os 10 eventos com o bot.
 4. **Pass:** teste de que o bot F2P fecha a trilha free e validator "nada obrigatório só no premium".
-5. **Áudio:** 5 músicas (CC0 ou licença comercial) e ambiente em camadas.
+5. **Áudio:** ~~5 músicas~~ (feat/musicas, `AUDIO.md` §10); falta o ambiente em camadas real e as fanfarras.
 6. **Arte:** estágios 4 e 5 do herói (Renome 5 e 7, Blender); auditoria do No Placeholder Gate.
 7. **Metas:** `dly_golpe_superior1`.
 8. **Release pipeline:** Unity no CI (P15) e release tag → AAB → faixa interna; precisa de licença/segredo do Unity e da chave real (Vinicius).

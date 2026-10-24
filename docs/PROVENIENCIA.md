@@ -645,3 +645,17 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 | asset | uso no jogo | imagem escolhida | task | créditos | faces | zip (SHA-256) | fbx (SHA-256) | folha (SHA-256) |
 |---|---|---|---|---|---|---|---|---|
 | felix | grand_forge: worker Félix, o Mensageiro (Courier) | #2 de 4 (mensageiro barbado de capa azul-noite com fecho de bronze, boné com pena branca, sacola de pergaminhos, caixote com aros de bronze nas costas; pose T) | `306f9f36-e2e3-47ed-902e-f8f2695d185f` | 65 (45 + rig 20) | 7438 | `arte/tripo/felix/felix_mixamo.zip` 27126615 · `5722a77e7abdadff6f01f2a124ed7f660e5068386e04f99e73061e4c0c0f3a74` | `tripo_convert_ff0c03a9-a140-49ea-a627-ea4f44404db0.fbx` 13911056 · `5e7ea8981c135b89e6db46e4a86b73654180beedaea350d4317020aa610f0a2d` | `Idle.png` c5c93da170b67b7a68d57ef38a735143ca731263f08c59b25399bda149a2dcb6 |
+
+## 23. As 5 músicas — RandomMind no OpenGameArt (feat/musicas, 2026-10-24)
+
+- **Licença:** Creative Commons Zero (CC0 1.0, domínio público), conforme a página de cada faixa no OpenGameArt ("credits are appreciated but not required"; "can be used for any commercial project"). Uso comercial livre, sem atribuição obrigatória; o jogo credita "Música: RandomMind (opengameart.org/users/randommind)" mesmo assim, quando houver tela de créditos. Autor: [RandomMind](https://opengameart.org/users/randommind), coleção [CC0 Audio - Uploader: RandomMind](https://opengameart.org/content/cc0-audio-uploader-randommind) (as 5 do mesmo autor: o jogo soa como uma trilha só).
+- **Origem:** versão completa (não o loop: o jogo toca 1 volta e pausa 30 s) baixada das páginas abaixo com o aval permanente do Vinicius de 2026-10-23 para downloads; mp3 fora do git.
+- **Tratamento:** `client/tools/audio_musica.py` (ffmpeg): estéreo 44 100 Hz, corte do silêncio das pontas, RMS médio da faixa a −18 dBFS (o da `Sintese.Musica`, para o `MusicaVol` 0,18 seguir dando os −33 dB do `AUDIO.md` §2) com joelho suave nos picos (teto 0,95), 20 ms de entrada e saída, Vorbis q4. Conferido pelo `MixagemTests.Musica_ArquivosReais` (Vorbis, estéreo, 44 100 Hz, 1 a 6 min).
+
+| arquivo (`client/Assets/_FS/Resources/Musica/`) | trilha (`Mixagem.Trilhas`) | página e arquivo de origem | fonte (bytes · SHA-256) | duração | RMS médio / pico | .ogg (bytes · SHA-256) |
+|---|---|---|---|---|---|---|
+| `main.ogg` | tema: abre a sessão e volta a cada 4 voltas | [Medieval: The Old Tower Inn](https://opengameart.org/content/medieval-the-old-tower-inn) · `The_Old_Tower_Inn.mp3` | ⟨main-fonte⟩ | ⟨main-dur⟩ | ⟨main-nivel⟩ | ⟨main-ogg⟩ |
+| `workshop.ogg` | oficina: Old Forge, Rua dos Armeiros, Artisan Quarter | [Medieval: Market Day](https://opengameart.org/content/medieval-market-day) · `Market_Day.mp3` | ⟨workshop-fonte⟩ | ⟨workshop-dur⟩ | ⟨workshop-nivel⟩ | ⟨workshop-ogg⟩ |
+| `royal.ogg` | Royal Arsenal e Grand Forge | [Medieval: King's Feast](https://opengameart.org/content/medieval-kings-feast) · `Kings_Feast_0.mp3` | ⟨royal-fonte⟩ | ⟨royal-dur⟩ | ⟨royal-nivel⟩ | ⟨royal-ogg⟩ |
+| `arcane.ogg` | Arcane Foundry | [Fantasy: Rising Moon](https://opengameart.org/content/fantasy-rising-moon) · `Rising_Moon_0.mp3` | ⟨arcane-fonte⟩ | ⟨arcane-dur⟩ | ⟨arcane-nivel⟩ | ⟨arcane-ogg⟩ |
+| `event.ogg` | evento ativo (voltas ímpares) | [Medieval: Rejoicing](https://opengameart.org/content/medieval-rejoicing) · `Rejoicing_0.mp3` | ⟨event-fonte⟩ | ⟨event-dur⟩ | ⟨event-nivel⟩ | ⟨event-ogg⟩ |
