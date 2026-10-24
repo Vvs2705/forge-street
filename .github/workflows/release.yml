@@ -1,0 +1,93 @@
+# Release (docs/RELEASE.md): o AAB não-development do Setup.BuildAndroidRelease + o client/tools/verify.sh release-check, como artifact.
+# Nunca sobe à Play e nunca cria tag nem Release. Roda à mão (Actions > release > Run workflow) ou numa tag v* (o gatilho fica pronto; criar a
+# tag é decisão do Vinicius). Chave: a de upload real pelos secrets FS_KEYSTORE_B64, FS_KEYSTORE_PASS, FS_KEY_ALIAS e FS_KEY_PASS; sem eles,
+# uma keystore de TESTE gerada nesta execução e jogada fora (prova o pipeline; AAB com ela nunca vai à Play).
+name: release
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+  pull_request:   # PR que mexe no caminho do release prova o pipeline antes do merge (a chave de teste; nada sobe)
+    paths: ['.github/workflows/release.yml', 'client/Assets/_FS/Editor/Setup.cs', 'client/tools/verify.sh']
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+env:
+  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+  UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+  UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+jobs:
+  aab:
+    name: AAB de release + release-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      # a imagem android + IL2CPP + Gradle não cabem nos ~14 GB livres do runner (como o unity.yml)
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          large-packages: false
+      - uses: actions/checkout@v7
+      - name: licença do Unity
+        run: |
+          [ -n "$UNITY_EMAIL" ] && [ -n "$UNITY_PASSWORD" ] || { echo "::error::sem os secrets UNITY_EMAIL e UNITY_PASSWORD (docs/CI_UNITY.md)"; exit 1; }
+      - name: tag = Setup.Version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          v=$(grep -oP 'const string Version = "\K[0-9.]+' client/Assets/_FS/Editor/Setup.cs)
+          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "::error::a tag $GITHUB_REF_NAME não é a versão do Setup ($v): suba o Setup.Version antes de marcar"; exit 1; }
+      - name: keystore (a de upload pelos secrets; sem eles, uma de teste)
+        id: ks
+        env:
+          KS_B64: ${{ secrets.FS_KEYSTORE_B64 }}
+          KS_PASS: ${{ secrets.FS_KEYSTORE_PASS }}
+          KS_ALIAS: ${{ secrets.FS_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.FS_KEY_PASS }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            { echo "b64=$KS_B64"; echo "pass=$KS_PASS"; echo "alias=$KS_ALIAS"; echo "keypass=$KEY_PASS"; echo "tipo=upload"; } >> "$GITHUB_OUTPUT"
+          else
+            p=$(openssl rand -hex 16); echo "::add-mask::$p"
+            keytool -genkeypair -keystore "$RUNNER_TEMP/teste.jks" -alias teste -keyalg RSA -keysize 2048 -validity 2 \
+              -storepass "$p" -keypass "$p" -dname "CN=Forge Street CI teste" -noprompt
+            { echo "b64=$(base64 -w0 "$RUNNER_TEMP/teste.jks")"; echo "pass=$p"; echo "alias=teste"; echo "keypass=$p"; echo "tipo=teste"; } >> "$GITHUB_OUTPUT"
+            rm -f "$RUNNER_TEMP/teste.jks"
+            echo "::warning::keystore de TESTE (sem os secrets FS_KEYSTORE_*): o AAB prova o pipeline e não vai à Play (docs/RELEASE.md §3.2)"
+          fi
+      - uses: actions/cache@v6
+        with:
+          path: client/Library
+          key: library-android-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-${{ hashFiles('client/Assets/**/*.meta') }}
+          restore-keys: library-android-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-
+      - uses: game-ci/unity-builder@v6
+        env:
+          GITHUB_TOKEN: ${{ github.token }}   # sem ele a consulta da versão do game-ci/cli dá 403 e o build morre em 0 s (#135)
+        with:
+          projectPath: client
+          targetPlatform: Android
+          buildMethod: FS.EditorTools.Setup.BuildAndroidRelease
+          versioning: None
+          allowDirtyBuild: true
+          androidExportType: androidAppBundle
+          androidKeystoreName: release.keystore
+          androidKeystoreBase64: ${{ steps.ks.outputs.b64 }}
+          androidKeystorePass: ${{ steps.ks.outputs.pass }}
+          androidKeyaliasName: ${{ steps.ks.outputs.alias }}
+          androidKeyaliasPass: ${{ steps.ks.outputs.keypass }}
+      - name: ferramentas do release-check (bundletool, readelf, gawk)
+        run: |
+          sudo apt-get install -y -qq gawk binutils > /dev/null
+          curl -sSLo "$RUNNER_TEMP/bundletool.jar" https://github.com/google/bundletool/releases/download/1.17.2/bundletool-all-1.17.2.jar
+          { echo "RC_JAVA=$(command -v java)"; echo "RC_JARSIGNER=$(command -v jarsigner)"; echo "RC_READELF=$(command -v readelf)"; echo "RC_BUNDLETOOL=$RUNNER_TEMP/bundletool.jar"; } >> "$GITHUB_ENV"
+      - name: release-check
+        run: |
+          rm -f client/release.keystore
+          aab=$(ls client/Builds/android/ForgeStreet-*.aab | head -1)
+          [ -n "$aab" ] || { echo "::error::o build não deixou client/Builds/android/ForgeStreet-*.aab"; exit 1; }
+          bash client/tools/verify.sh release-check "$aab"
+          echo "AAB: $aab ($(du -h "$aab" | cut -f1)), chave de ${{ steps.ks.outputs.tipo }}" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: aab-${{ steps.ks.outputs.tipo }}
+          path: client/Builds/android/ForgeStreet-*.aab
+          retention-days: 7
