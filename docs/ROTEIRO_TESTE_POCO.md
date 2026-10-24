@@ -69,14 +69,14 @@ Cada item: **Fazer** · **Medir** · **PASS** · **FAIL / BLOCKED**.
 ### Fase A — APK dev do candidato por cima do save atual
 
 **G1. Migração por cima da 0.5.1/0.6.0** (§113/§151 "migration"; Save 2.0 e schema 2)
-- **Fazer:** com a 0.5.1 ou 0.6.0 instalada e com progresso (o backup do §2 feito), `adb install -r client/Builds/android/ForgeStreet-dev.apk`; abrir pelo ícone; responder a tela de idade; jogar 1 min; HOME. Sem versão antiga no aparelho: `adb install -r <pasta principal>/client/Builds/android/ForgeStreet-0.6.0.apk`, jogar 5 min, HOME e seguir.
+- **Fazer:** com a 0.5.1 ou 0.6.0 instalada e com progresso (o backup do §2 feito), `adb install -r client/Builds/android/ForgeStreet-dev.apk`; abrir pelo ícone; jogar até a 1ª melhoria e responder a tela de idade quando ela abrir (#125: abre quando o 1º botão de anúncio apareceria, ou no Cofre 2×); jogar 1 min; HOME. Sem versão antiga no aparelho: `adb install -r <pasta principal>/client/Builds/android/ForgeStreet-0.6.0.apk`, jogar 5 min, HOME e seguir.
 - **Medir:**
   ```
   grep -oiE '(^|%0A|>)(up|gold)(=|%3D)[0-9]+' $G/antes_prefs.xml      # up = flags 0/1 das compras, gold = ouro (com ou sem URL encoding)
   adb exec-out cat $F/save.txt > $G/depois_save.txt; grep -E '^(schema|gold|ups)=' $G/depois_save.txt
   adb exec-out cat $F/diario.csv | grep -E 'save_(prefs|corrupt|error|newer)'
   ```
-- **PASS:** `schema=2`; o `ups=` novo tem tantas compras quanto os `1` do `up=` antigo; ouro igual ou maior (o cofre pode pagar o tempo fora); a oficina abre com as mesmas estações, ajudantes e vagas do balcão; o diário tem `save_prefs` com `Legacy` e nenhum `save_corrupt`/`save_error`; a tela de idade aparece (quem atualiza nunca respondeu).
+- **PASS:** `schema=2`; o `ups=` novo tem tantas compras quanto os `1` do `up=` antigo; ouro igual ou maior (o cofre pode pagar o tempo fora); a oficina abre com as mesmas estações, ajudantes e vagas do balcão; o diário tem `save_prefs` com `Legacy` e nenhum `save_corrupt`/`save_error`; a tela de idade aparece quando o 1º botão de anúncio apareceria, por cima do painel do cofre se ele estiver aberto (quem atualiza nunca respondeu).
 - **FAIL:** compra ou ajudante a menos, ouro menor sem compra, `schema=1`, `save_corrupt`, crash na abertura. **BLOCKED:** nenhum APK antigo disponível.
 
 **G2. Câmera a 9 m e leitura a 1080×2400** (A-ART-03, V23; HUD e cartões v2)
@@ -96,11 +96,11 @@ Trocar de build: `adb uninstall $P` (apaga o save do aparelho; o backup está em
 **G3. Instalação limpa** (§113/§151 "clean install")
 - **Fazer:** com o AAB instalado, `adb logcat -c` e abrir: `adb shell am start -W -n $ACT | tee $G/abertura.txt`.
 - **Medir:** `adb shell dumpsys package $P | grep -E 'versionName|versionCode|targetSdk|flags=' > $G/instalado.txt` e `adb shell getconf PAGE_SIZE >> $G/instalado.txt` (anotar; o 16 KB em si é o `release-check`). `TotalTime` do `am start -W` = abertura a frio (anotar; ainda não há base).
-- **PASS:** instala sem erro; versionName, versionCode e targetSdk iguais aos do `release-check`; sem `DEBUGGABLE` nas flags; a 1ª tela é a de idade; depois da resposta, a oficina do zero (sem compras, sem cofre, dica apontando a 1ª ação).
+- **PASS:** instala sem erro; versionName, versionCode e targetSdk iguais aos do `release-check`; sem `DEBUGGABLE` nas flags; a 1ª tela é a oficina do zero (sem compras, sem cofre, dica apontando a 1ª ação), sem tela de idade antes do 1º toque; ela abre uma vez logo depois da 1ª melhoria.
 - **FAIL:** erro de instalação, crash na 1ª abertura, progresso de outra instalação, `DEBUGGABLE` no release.
 
-**G4. Tela de idade na 1ª abertura e SDK só depois da resposta** (E-PLAT-01, DM §94)
-- **Fazer:** na abertura do G3, ficar 30 s na tela de idade sem responder; apertar voltar (não pode fechar); responder "Menos de 13"; jogar 1 min. Depois, Configurações > Privacidade > "18 ou mais" > Aceitar; `adb shell am force-stop $P` e abrir de novo.
+**G4. Tela de idade no 1º botão de anúncio e SDK só depois da resposta** (E-PLAT-01, DM §94)
+- **Fazer:** na abertura do G3, comprar a 1ª melhoria; quando a tela de idade abrir (diário `consent_ask hud`), conferir que ela fica por cima da bandeja e que o toque da compra não vazou para nenhum botão; ficar 30 s nela sem responder; apertar voltar (não pode fechar); responder "Menos de 13"; jogar 1 min. Depois, Configurações > Privacidade > "18 ou mais" > Aceitar; `adb shell am force-stop $P` e abrir de novo.
 - **Medir:** depois de reabrir (o buffer do logcat guarda as duas aberturas desde o `logcat -c` do G3):
   ```
   adb logcat -d > $G/logcat_idade.txt

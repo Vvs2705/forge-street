@@ -243,6 +243,8 @@ namespace FS
             _metas = new PainelMetas(_safe, _raiz, Pago, () => _projetos.Abrir(), () => _hall.Abrir(), Contrato);   // D-CORE-04: a aba de contratos le os da raiz
             _projetos = new PainelProjetos(_safe, _sim);   // C-CORE-05: projetos, Hall e Colecao do distrito ativo (cada um tem os dele: a Row,
             _hall = new PainelHall(_safe, _sim);           // o projeto de mestre e as 10 obras dela); no Old Forge e' a raiz, como antes
+            _hall.AbaVista = k => Log(k == 1 ? "collection_view" : "hall_view", _sim.Distrito?.Id ?? Distritos.OldForgeId,
+                (k == 1 ? Array.FindAll(_sim.Colecao.Marcos, _sim.Colecao.Pago).Length : _sim.Hall.Count).ToString(CultureInfo.InvariantCulture));   // GDD §164 item 10
             if (_loja != null) _lojaUi = new PainelLoja(_safe, _raiz, _loja, Comprar, Restaurar);
             // E-PLAT-01 (GDD "Conflitos" item 1, decidido: movida): nada antes do 1o toque. Sem resposta (ou com texto novo) a tela de idade
             // abre no 1o instante em que um botao de anuncio apareceria (PedidoIdade, no RefreshAdUi: depois da 1a melhoria, D6); ate la
