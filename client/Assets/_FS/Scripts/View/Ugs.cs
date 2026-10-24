@@ -17,8 +17,17 @@ namespace FS
     static class Ugs
     {
         static Task _init;
+        /// <summary>Ambiente do UGS (null = o padrao do projeto, production). So o build dev o troca, por -ugsenv nome (o Game le antes da
+        /// 1a chamada): o teste das flags pelo painel publica no ambiente `teste` sem mexer no de producao.</summary>
+        public static string Ambiente;
         /// <summary>UnityServices.InitializeAsync uma vez por processo (analytics e config dividem).</summary>
-        public static Task Iniciar() => _init ?? (_init = UnityServices.InitializeAsync());
+        public static Task Iniciar()
+        {
+            if (_init != null) return _init;
+            var op = new InitializationOptions();
+            if (!string.IsNullOrEmpty(Ambiente)) op.SetOption("com.unity.services.core.environment-name", Ambiente);   // = SetEnvironmentName, sem o assembly Environments
+            return _init = UnityServices.InitializeAsync(op);
+        }
     }
 
     /// <summary>
