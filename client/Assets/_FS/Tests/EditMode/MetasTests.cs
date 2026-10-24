@@ -675,6 +675,30 @@ namespace FS.Tests
             UmaVez(r, "ach_mw30");
         }
 
+        /// <summary>ach_workers20 conta os workers de todo distrito aberto (a contratacao do distrito nao sobe a raiz): o Old Forge sozinho
+        /// nao fecha (13), o Imperio com os distritos contratados fecha, e o save do Imperio sem metas ganha pelo retroativo, 1x.</summary>
+        [Test]
+        public void Imperio_WorkersDeTodoDistrito_FechaAchWorkers20()
+        {
+            Imperio imp = Imperio.Chegada(Distritos.All[Distritos.All.Length - 1]);
+            foreach (Sim x in imp.Abertos)
+            {
+                x.Gold += 1_000_000_000;
+                for (int i = 0; i < x.UpgradeDefs.Length; i++) x.Buy((Upgrade)i);
+                for (int k = 0; k < x.Equipe.Defs.Length; k++) { x.Gold += x.Equipe.Custo(k); x.Equipe.Comprar(k); }
+            }
+            Sim raiz = imp.Raiz;
+            int soRaiz = raiz.Workers.Count + raiz.Equipe.Contratados();
+            Assert.That(soRaiz, Is.LessThan(20), "premissa: o Old Forge sozinho nao fecha");
+            Assert.IsTrue(raiz.Metas.Conquista(A("ach_workers20")).Pronta, "os distritos contam");
+            Assert.IsFalse(new Sim().Metas.Conquista(A("ach_workers20")).Pronta, "sem Imperio = so a raiz");
+            string velho = imp.Save(1000);
+            StringAssert.DoesNotContain("mt.", velho);
+            Sim r = Imperio.Load(velho).Raiz;
+            r.Metas.Agora(Em(D, 10), Fuso);
+            UmaVez(r, "ach_workers20");
+        }
+
         [Test]
         public void Volume_E_ConteudoReal_SemViolacao()
         {
