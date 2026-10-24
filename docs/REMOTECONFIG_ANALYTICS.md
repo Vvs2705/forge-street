@@ -109,12 +109,50 @@ Coerência entre chaves diferentes (por exemplo `VipMin` < `VipMax`) fica com qu
 | `rc_fetch` | `ok` / `invalido` / `falha` | bytes ou erro (só com a URL preenchida) |
 | `ad_init` | `desligado` | `remoteconfig` (chave mestra) |
 | `excecao` | mensagem sem caminho privado | 1ª linha da pilha |
+| `collection_view` / `hall_view` | distrito | marcos da coleção pagos / obras no Hall | cada aba do Hall que o jogador passa a ver (GDD §164 item 10: "≥ 30% abrem a coleção sem dica" no Closed = sessões com `collection_view` antes de qualquer aviso de marco) |
 | `event_enter` | ID do evento | — |
 | `event_points` | ID do evento | total de pontos da trilha |
 | `event_complete` | ID do evento | limiar cruzado (pontos) |
 | `pass_level` | ID da temporada | nível do Passe |
 
 Os quatro do LiveOps (GDD §13, `LIVEOPS_V1.md` §4.6) saem de `LiveOps.Diario`, a mesma linha que o `Game.LiveOpsAgora` loga; `LiveOpsTests.Telemetria_EntradaEMarcoDoEvento_ChegamAoRemoto` confere que `event_enter` e `event_complete` chegam ao provedor remoto pela `Telemetria`, só depois da tela de idade e na ordem.
+
+### Dicionário dos 31 eventos do DM §86 (2026-10-24)
+
+Todos saem pelo `Game.Log` → diário (`diario.csv`) e, depois do aceite da tela de idade (18+), pelo UGS no `fs_evento` (`nome`, `a`, `b`). Nomes do DM §86 desde 2026-10-24; os antigos estão entre parênteses e o `diario_report.py` ainda lê os de pedido.
+
+| evento | a | b | onde |
+|---|---|---|---|
+| `session_start` | versão do app | modelo do aparelho | `Game.Start` |
+| `session_end` | s em primeiro plano | `pausa` ou `saiu` | `Game.EndSession` |
+| `tutorial_step` | dica | passo | pílula de dica, até a 1ª venda |
+| `tutorial_complete` | s da 1ª venda | passos | 1ª venda |
+| `first_sale` | s da 1ª venda | — | `Ev.Sold`, a 1ª |
+| `product_crafted` | item | estação | `Ev.Crafted` |
+| `product_sold` | item | ouro | `Ev.Sold` |
+| `upgrade_buy` | melhoria (ID) | preço | compra |
+| `worker_hired` / `worker_upgrade` | worker | nível | `Equipe` e ajudantes |
+| `station_unlock` | estação | — | `Ev.Unlocked` |
+| `district_unlock` (`district_open`) | distrito | — | ABRIR no mapa |
+| `order_start` (`order_new`) | item | quantidade | `Ev.OrderNew` |
+| `order_complete` | tipo (ou `rush_prazo`) | item | `Ev.OrderDone` |
+| `royal_contract_start` (`contract_accept`) | contrato | — | ACEITAR; `royal_contract_abandon` no ABANDONAR |
+| `royal_contract_complete` (`contract_complete`) | contrato | ouro | `Ev.ContractDone` |
+| `masterwork_unlock` (`masterwork`) | item | obra (`mw_*`) ou `-` | `Ev.Masterwork` |
+| `blueprint_unlock` | projeto | fonte | `Ev.Blueprint` |
+| `offline_claim` | ouro | ouro mostrado | cofre |
+| `rewarded_offer` | placement | prévia | botão de anúncio que fica tocável, 1× por aparição |
+| `rewarded_start` | placement | ID de transação | toque que abre o vídeo (o Pacote do Mestre pula o vídeo e não loga) |
+| `rewarded_complete` (`ad_paid`) | placement | ID de transação e valor | recompensa paga pelo núcleo (1×) |
+| `interstitial_show` | `intersticial` | — | intersticial liberado pelo núcleo (flag desligada no build) |
+| `iap_view` | origem (`configuracoes`) | — | LOJA aberta |
+| `iap_purchase` (`iap_delivered`) | produto | `confirmada` | compra entregue e gravada |
+| `pass_view` | temporada | nível | tela do Passe aberta |
+| `pass_purchase` | produto do Passe | `confirmada` | o premium entregue e gravado |
+| `currency_source` / `currency_sink` | fonte ou ralo | ouro | agregados, no `session_end` |
+| `event_enter` / `event_complete` | evento | — / limiar | `LiveOps.Diario` |
+
+Além dos 31: `ad_*` (SDK: pedido, mostrado, impressão com receita, recompensa, falha), `iap_start/pending/restore/fail`, `consent_answer`, `settings`, `excecao`, `charter`, `district_switch`, `event_points`, `pass_level`.
 
 ## 3. Como plugar o provedor quando a P8 for decidida
 

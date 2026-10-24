@@ -156,9 +156,13 @@ namespace FS
             PintaEvento();
         }
 
+        /// <summary>DM §86 pass_view: o Game loga cada abertura da tela do Passe.</summary>
+        public Action PasseAberto;
+
         public void AbrirPasse()
         {
             if (_sim.LiveOps.Passe == null) return;
+            PasseAberto?.Invoke();
             _ps.gameObject.SetActive(true);
             _ps.SetAsLastSibling();
             _scroll.StopMovement(); _lista.anchoredPosition = Vector2.zero;

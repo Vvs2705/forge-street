@@ -1,9 +1,10 @@
 #!/bin/bash
 # Ponto de entrada único de verificação do Forge Street (ticket A-PLAT-04). Git Bash no Windows.
-# uso: client/tools/verify.sh quick | full | android-emulator [--migracao <apk-antigo>] | release | release-check <arquivo.aab|apk>
+# uso: client/tools/verify.sh quick | full | android-emulator [--medir S] [--migracao <apk-antigo>] | release | release-check <arquivo.aab|apk>
 #   quick             núcleo (dotnet test) + viewcheck do PC e do Android, sem abrir o Unity
 #   full              quick + Unity batchmode: EditMode, Setup.BuildWindows e o .exe com -autoplay 10
 #   android-emulator  Setup.BuildAndroidEmu + emulador + adb install + abre com '-bot -speed 4' + BACK/HOME + logcat sem exceção;
+#                     --medir S: depois, abertura a frio (am start -W) e medir_aparelho.sh com o bot jogando S s (linha de base pré-POCO);
 #                     --migracao: instala o APK antigo (x86_64), joga 90 s, instala o novo por cima e confere o save (schema 2, mesmas compras)
 #   release           quick + Setup.BuildAndroidRelease (AAB assinado; exige FS_KEYSTORE, FS_KEYSTORE_PASS, FS_KEY_ALIAS, FS_KEY_PASS) + release-check
 #   release-check     só confere um artefato pronto: targetSdk, versionCode, debuggable, ABI, 16 KB, assinatura e permissões
@@ -12,9 +13,9 @@
 set -uo pipefail
 export MSYS_NO_PATHCONV=1 DOTNET_CLI_UI_LANGUAGE=en   # caminhos do Windows passam intactos; saída do dotnet em inglês para o grep
 
-ROOT="$(cd "$(dirname "$0")/../.." && pwd -W)"; CLIENT="$ROOT/client"; OUT="$CLIENT/Builds/verify"
+ROOT="$(cd "$(dirname "$0")/../.." && { pwd -W 2>/dev/null || pwd; })"   # pwd -W: caminho do Windows no Git Bash; no Linux do CI, o normal; CLIENT="$ROOT/client"; OUT="$CLIENT/Builds/verify"
 UNITY="${UNITY_EXE:-C:/Program Files/Unity/Hub/Editor/6000.3.23f1/Editor/Unity.exe}"
-SDK="$LOCALAPPDATA/Android/Sdk"; ADB="${ADB:-$SDK/platform-tools/adb.exe}"; EMU="${EMULATOR:-$SDK/emulator/emulator.exe}"
+SDK="${LOCALAPPDATA:-}/Android/Sdk"; ADB="${ADB:-$SDK/platform-tools/adb.exe}"; EMU="${EMULATOR:-$SDK/emulator/emulator.exe}"
 AVD="${AVD:-fs_playstore}"; PKG=br.com.vstack.forgestreet
 T0=$SECONDS
 
@@ -113,7 +114,8 @@ disco() {
 # - o /sdcard monta depois do sys.boot_completed: esperar gravar nele e mais ~25 s antes de abrir o app
 # - MSYS_NO_PATHCONV=1 em todo adb (no adb() acima) e >= 6 GB livres no C: (disco())
 android_emulator() {
-  local velho=
+  local velho= medir=
+  if [ "${1:-}" = --medir ]; then medir="${2:-120}"; shift 2; fi   # linha de base pre-POCO: abertura a frio e medir_aparelho.sh com o bot
   if [ "${1:-}" = --migracao ]; then   # confere antes do build, que leva minutos
     [ -f "${2:-}" ] || fail "uso: $0 android-emulator --migracao <apk-antigo> (não achado: '${2:-}')"
     unzip -Z1 "$2" | grep '^lib/x86_64/' > /dev/null || fail "$2 sem lib/x86_64: o APK ARM64 cai no emulador (use um ForgeStreet-emu-*.apk)"
@@ -151,6 +153,12 @@ android_emulator() {
   logcat_limpo "$OUT/logcat.txt"
   grep -q "ADS ad_init" "$OUT/logcat.txt" || fail "sem 'ADS ad_init' no logcat: o Game não chegou ao Awake"
   ok "abriu com -bot -speed 4, BACK e HOME, logcat sem exceção"
+  if [ -n "$medir" ]; then
+    adb shell am force-stop $PKG; sleep 3
+    adb shell "am start -W -n $PKG/com.unity3d.player.UnityPlayerGameActivity -e unity '-bot'" | tr -d '\r' | tee "$OUT/abertura.txt" | grep -E 'TotalTime|WaitTime'
+    bash "$CLIENT/tools/medir_aparelho.sh" "$OUT/medida" "$medir" | tee "$OUT/medida.txt"
+    ok "medida: $OUT/medida.txt e $OUT/abertura.txt (emulador: só linha de base, o POCO segue valendo)"
+  fi
   [ -z "$velho" ] || migracao "$velho" "$apk"
 }
 
@@ -195,9 +203,12 @@ PERMS="android.permission.INTERNET android.permission.ACCESS_NETWORK_STATE andro
 release_check() {
   local f="$1" A="${UNITY%/*}/Data/PlaybackEngines/AndroidPlayer" n=0 t
   [ -f "$f" ] || fail "artefato não achado: $f"
-  local java="$A/OpenJDK/bin/java.exe" bt=("$A"/Tools/bundletool-all-*.jar) bin=("$A"/SDK/build-tools/*)
-  local elf="$A/NDK/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-readelf.exe"; bin="${bin[-1]}"
-  for t in "$java" "${bt[0]}" "$elf" "$bin/aapt2.exe"; do [ -f "$t" ] || fail "ferramenta do Unity não achada: $t"; done
+  # as ferramentas do Unity do PC; no CI (Linux) vêm por variável: RC_JAVA, RC_JARSIGNER, RC_BUNDLETOOL e RC_READELF (só AAB: o aapt2 é do APK)
+  local java="${RC_JAVA:-$A/OpenJDK/bin/java.exe}" jsign="${RC_JARSIGNER:-$A/OpenJDK/bin/jarsigner.exe}" bt=("$A"/Tools/bundletool-all-*.jar) bin=("$A"/SDK/build-tools/*)
+  local elf="${RC_READELF:-$A/NDK/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-readelf.exe}"; bin="${bin[-1]}"
+  [ -n "${RC_BUNDLETOOL:-}" ] && bt=("$RC_BUNDLETOOL")
+  for t in "$java" "${bt[0]}" "$elf"; do [ -f "$t" ] || command -v "$t" > /dev/null || fail "ferramenta não achada: $t"; done
+  [[ "$f" == *.aab ]] || [ -f "$bin/aapt2.exe" ] || fail "ferramenta do Unity não achada: $bin/aapt2.exe"
   bad() { echo "REPROVA: $*"; n=$((n + 1)); }
 
   # manifesto: o AAB guarda em protobuf (bundletool devolve XML); o APK sai pelo aapt2 badging
@@ -227,7 +238,7 @@ release_check() {
   [ "$abis" = arm64-v8a ] && ok "ABI só arm64-v8a" || bad "ABIs '${abis:-nenhuma}' (só arm64-v8a)"
 
   # 16 KB: todo segmento LOAD de todo .so com Align >= 0x4000 (o unzip do Git Bash não casa curinga: extrai pelo nome exato)
-  local tmp s ruins=(); tmp=$(cygpath -m "$(mktemp -d)"); mapfile -t s < <(echo "$so" | grep .)   # C:/...: o readelf é .exe nativo
+  local tmp s ruins=(); tmp=$(mktemp -d); command -v cygpath > /dev/null && tmp=$(cygpath -m "$tmp"); mapfile -t s < <(echo "$so" | grep .)   # C:/...: o readelf é .exe nativo
   [ ${#s[@]} = 0 ] || unzip -qo "$f" "${s[@]}" -d "$tmp" || fail "unzip dos .so"
   for t in "${s[@]}"; do
     "$elf" -lW "$tmp/$t" | awk '$1 == "LOAD" { n++; if (strtonum($NF) < 16384) b = 1 } END { exit !n || b }' || ruins+=("${t##*/}")
@@ -243,10 +254,14 @@ release_check() {
     "$bin/zipalign.exe" -c -P 16 4 "$f" > /dev/null && ok "zipalign -c -P 16: ok" || bad "zipalign -c -P 16 4 reprovou"
   fi
 
+  # Play: o módulo base do AAB (comprimido) até 200 MB; o APK inteiro, o mesmo teto
+  local mb; mb=$(unzip -v "$f" | awk -v aab=$aab 'NF >= 8 && $NF !~ /^-/ && (aab == 0 || $NF ~ /^base\//) { c += $3 } END { printf "%.1f", c / 1048576 }')
+  awk -v m="$mb" 'BEGIN { exit !(m <= 200) }' && ok "tamanho: ${mb} MB $([ $aab = 1 ] && echo "no módulo base") (teto da Play: 200)" || bad "tamanho: ${mb} MB passa do teto de 200 MB da Play"
+
   # assinatura: AAB é jar (jarsigner); APK v2/v3 (apksigner). A chave de debug reprova
   local sig
   if [ $aab = 1 ]; then
-    sig=$("$A/OpenJDK/bin/jarsigner.exe" -J-Duser.language=en -verify -verbose:summary -certs "$f" 2>&1); [[ "$sig" == *"jar verified."* ]] || sig=
+    sig=$("$jsign" -J-Duser.language=en -verify -verbose:summary -certs "$f" 2>&1); [[ "$sig" == *"jar verified."* ]] || sig=
   else
     sig=$("$java" -jar "$bin/lib/apksigner.jar" verify --print-certs "$f" 2>&1) || sig=
   fi
