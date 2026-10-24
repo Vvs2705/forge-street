@@ -153,6 +153,8 @@ Todos saem pelo `Game.Log` → diário (`diario.csv`) e, depois do aceite da tel
 | `currency_source` / `currency_sink` | fonte ou ralo | ouro | agregados, no `session_end` |
 | `event_enter` / `event_complete` | evento | — / limiar | `LiveOps.Diario` |
 
+**Funis para os dashboards (G-UA-05), validados no diário antes do UGS:** `python client/tools/diario_report.py <pasta com os diario.csv>` imprime, no fim, a retenção D1/D7 (dia UTC da 1ª `session_start` de cada testador) e três funis por testador: FTUE e progressão (abriu > 1ª venda > tutorial > 1ª melhoria > contratou > encomenda > contrato real > obra-prima > distrito novo), anúncio (`rewarded_offer` > `rewarded_start` > `rewarded_complete`) e compra (`iap_view` > `iap_purchase` > `pass_view` > `pass_purchase`). Os nomes antigos contam, para o diário de antes do #137. O `--autoteste` confere a conta com 3 testadores sintéticos. São as mesmas etapas que o painel do UGS deve montar sobre o `fs_evento` (`fsNome`).
+
 Além dos 31: `ad_*` (SDK: pedido, mostrado, impressão com receita, recompensa, falha), `iap_start/pending/restore/fail`, `consent_answer`, `settings`, `excecao`, `charter`, `district_switch`, `event_points`, `pass_level`.
 
 ## 3. Como plugar o provedor quando a P8 for decidida
