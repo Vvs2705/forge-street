@@ -266,7 +266,8 @@ namespace FS
         SpriteSheet _nobre;
         /// <summary>B-ART-05: as folhas do heroi por estagio (RenomeDefs.EstagioHeroi) sem e com a mochila; null = sem a folha da mochila (icone).
         /// Folha de estagio que faltar repete a do estagio de baixo.</summary>
-        static readonly string[] FolhasHeroi = { "ferreiro", "ferreiro_mochila", "ferreiro_e2", "ferreiro_e2_mochila", "ferreiro_e3", "ferreiro_e3_mochila" };
+        static readonly string[] FolhasHeroi = { "ferreiro", "ferreiro_mochila", "ferreiro_e2", "ferreiro_e2_mochila", "ferreiro_e3", "ferreiro_e3_mochila",
+                                                 "ferreiro_e4", "ferreiro_e4_mochila", "ferreiro_e5", "ferreiro_e5_mochila" };
         SpriteSheet[] _heroi;
         SpriteRenderer _street, _streetWash, _shopTeaser; Text _streetLabel, _shopLabel;
         readonly List<(GameObject Shut, GameObject Open)> _gates = new List<(GameObject, GameObject)>();   // portao e porta de servico

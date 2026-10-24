@@ -473,7 +473,7 @@ Resolve os itens 2, 3, 4, 7 e 8 da `AUDITORIA_VISUAL.md` (painéis chapados, fon
 
 **Ligação no jogo:** os `arte:` da Foundry em `Distritos.ArcaneFoundry.cs` trocam a arte emprestada (crisol do Quarter nas cubas e nos fornos rúnicos, mesa do gravador do Arsenal nos 7 altares e no cadinho, gemas e ouro nos depósitos) pela própria; o `DistritosTests.Arte_TodaEstacaoTemAFolha` (§19) cobre as folhas. A Vulcana (`wk_vulcana`, `Distritos.cs`) troca a folha do Fundidor pela `vulcana`, com `WorldView.CharScale` **1,03** pela conta do §11: Idle S quadro 0 com 78 px a ppu 118,9 = 0,656 m, alvo 1,15 (viseira erguida, como o fundidor). O `fundidor` fica no repositório para o Smelter dos distritos seguintes.
 
-## 21. Herói em 3 estágios pelo Renome (B-ART-05, 2026-10-23, 0 crédito)
+## 21. Herói em 5 estágios pelo Renome (B-ART-05, 2026-10-23 e 24, 0 crédito)
 
 Decisão do ticket (crédito ou adereço no Blender): **adereço no Blender**, 0 crédito. O herói continua o mesmo modelo (`arte/tripo/ferreiro`) e os mesmos clipes (`client/Builds/anims_sets/ferreiro`: Idle, Walking, Cheering); o que muda é o que vai na cabeça, preso ao osso `mixamorig:Head` pelo `render_sprites.py --attach` (que agora aceita vários `--attach`/`--bone`, um por adereço):
 
@@ -481,11 +481,15 @@ Decisão do ticket (crédito ou adereço no Blender): **adereço no Blender**, 0
 |---|---|---|---|
 | 1 | 0–2 | — (a bandana vermelha de sempre) | `ferreiro`, `ferreiro_mochila` |
 | 2 | 3 (Mestre artesão) | `chapeu_couro`: chapéu de couro de aba larga (0,47 m), fita e fivela de latão | `ferreiro_e2`, `ferreiro_e2_mochila` |
-| 3 | 4+ (Fornecedor do reino) | `barrete_mestre`: barrete alto de veludo azul com faixa e broche de ouro e pluma vermelha | `ferreiro_e3`, `ferreiro_e3_mochila` |
+| 3 | 4 (Fornecedor do reino) | `barrete_mestre`: barrete alto de veludo azul com faixa e broche de ouro e pluma vermelha | `ferreiro_e3`, `ferreiro_e3_mochila` |
+| 4 | 5–6 (Armeiro da Coroa; "cinto" do GDD §151) | `barrete_mestre` + `cinto_ferramentas` (osso `mixamorig:Hips`): cinto largo de couro com fivela de ouro, bolsas nos dois quadris, tenaz pendurada à direita e martelo de mão à esquerda | `ferreiro_e4`, `ferreiro_e4_mochila` |
+| 5 | 7+ (Fornecedor real; "uniforme real") | `barrete_real` (carmesim, aba de arminho, coroa de ouro de 6 pontas, rubi e pluma branca) + `cinto_ferramentas` + `capa_real` (osso `mixamorig:Spine2`): capa carmesim com barras de ouro e gola de arminho | `ferreiro_e5`, `ferreiro_e5_mochila` |
 
-Render com os parâmetros do `ferreiro` (`--size 192 --max-frames 21 --scale 164.82 --pivot-y 53.4`, 4 direções), então o tamanho e o pivô são iguais e a troca de folha não pula; nas `_mochila` a mochila vai junto (`--attach chapeu --bone mixamorig:Head --attach mochila_ferreiro --bone mixamorig:Spine2`). Silhuetas (preto, alfa ≥ 128, Idle quadro 0 nas 4 direções): o disco da aba larga no estágio 2 e o barrete alto com a pluma no 3 separam dos três de longe; a folha de conferência fica em `arte/auditoria/2026-10-23/heroi_estagios.jpg`.
+A cintura do `cinto_ferramentas` foi medida no FBX em repouso (`CINTURA` no script: centro z 0,44 no osso Hips, meios-eixos 0,155 × 0,14 m); a capa cai das costas (y 0,15 em z 0,64) até z 0,18, abrindo para trás até y 0,22 sem bater nas pernas no Walking. Na `_mochila` do estágio 5 a mochila fica por cima da capa.
 
-**Ligação no jogo:** `RenomeDefs.EstagioHeroi(nivel)` (0/1/2 pelo Renome do Império) e a `WorldView` troca a folha do corpo pelo estágio e pela mochila (`FolhasHeroi`; folha que faltar repete a do estágio de baixo), com a poeira da troca. Teste: `RenomeTests.Heroi_TresEstagiosPeloRenome_ComAsFolhas`. O cinto do estágio 4 (Renome 5) e o uniforme recolorido ficam para depois (GDD §151: o resto entre gameplay e cosmético).
+Render com os parâmetros do `ferreiro` (`--size 192 --max-frames 21 --scale 164.82 --pivot-y 53.4`, 4 direções), então o tamanho e o pivô são iguais e a troca de folha não pula; nas `_mochila` a mochila vai junto (`--attach chapeu --bone mixamorig:Head --attach mochila_ferreiro --bone mixamorig:Spine2`). Silhuetas (preto, alfa ≥ 128, Idle quadro 0 nas 4 direções): o disco da aba larga no estágio 2 e o barrete alto com a pluma no 3 separam dos três de longe; a folha de conferência fica em `arte/auditoria/2026-10-23/heroi_estagios.jpg`. Estágios 4 e 5 (2026-10-24): a tenaz e o martelo saindo dos dois lados da cintura no 4 e o trapézio da capa atrás do corpo no 5 separam do 3; folha em `arte/auditoria/2026-10-24/heroi_estagios_4_5.jpg` (Idle q0 e Walking q4 nas 4 direções, cor e silhueta, estágios 1, 3, 4 e 5).
+
+**Ligação no jogo:** `RenomeDefs.EstagioHeroi(nivel)` (0 a 4 pelo Renome do Império) e a `WorldView` troca a folha do corpo pelo estágio e pela mochila (`FolhasHeroi`; folha que faltar repete a do estágio de baixo), com a poeira da troca. Teste: `RenomeTests.Heroi_CincoEstagiosPeloRenome_ComAsFolhas` (estágio por nível 0–10 e as 10 folhas). Luvas e o visual de guilda (o resto do GDD §151) ficam entre gameplay e cosmético.
 
 ## 22. Arte dos produtos da loja (auditoria visual item 5, 2026-10-23, 0 crédito)
 
