@@ -630,6 +630,7 @@ namespace FS
             }
             else
             {
+                if (SystemInfo.graphicsDeviceType != UnityEngine.Rendering.GraphicsDeviceType.Null) SpriteSheet.Faltas.Add("estacao:" + s.Id);   // No Placeholder Gate
                 Color c = Art.StationColor(s);
                 v.Base = Art.NewSprite(v.Root, "Base", Art.Rounded(), c, 2, Vector2.zero, new Vector2(1.5f, 1.1f));
                 Sprite icon = s.Kind == Kind.Counter ? Art.Star() : s.Kind == Kind.Deposit ? Art.Rock() : Art.ItemSprite(s.OutItem);

@@ -341,6 +341,7 @@ namespace FS
             if (Cache.TryGetValue(key, out Sprite s)) return s;
             Texture2D tex = Resources.Load<Texture2D>("UI/" + nome);
             s = tex == null ? null : Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
+            if (tex == null) SpriteSheet.Faltas.Add(key);
             Cache[key] = s;
             return s;
         }
@@ -474,7 +475,7 @@ namespace FS
             string key = "chao:" + name;
             if (Cache.TryGetValue(key, out Sprite s) && s != null) return s;
             Texture2D tex = Resources.Load<Texture2D>("Textures/" + name);
-            if (tex == null) tex = name == "grama" ? Grass() : Blocks(name);
+            if (tex == null) { SpriteSheet.Faltas.Add(key); tex = name == "grama" ? Grass() : Blocks(name); }
             tex.wrapMode = TextureWrapMode.Repeat;
             tex.filterMode = FilterMode.Bilinear;
             s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), tex.width / GroundTileM, 0, SpriteMeshType.FullRect);
