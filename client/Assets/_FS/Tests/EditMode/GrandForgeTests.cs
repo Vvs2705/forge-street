@@ -332,6 +332,21 @@ namespace FS.Tests
                 Assert.IsTrue(imp.Raiz.Contratos.Aberto(Array.Find(ContratosDefs.All, d => d.Id == id)), id);
         }
 
+        /// <summary>BALANCE §41 achado 15: a Oferta da lista e' de outro distrito (nunca andaria aqui); o bot da Grand Forge pega o 1o contrato
+        /// aberto que ela vende inteiro, e o Aceitar recusa o que nao daria para aceitar.</summary>
+        [Test]
+        public void Bot_PegaOContratoQueODistritoVende()
+        {
+            Imperio imp = Imperio.Chegada(GF);
+            imp.Raiz.Renome.Ganha(GF.Charter.Renome);
+            Sim s = imp.Ativo;
+            Assert.AreNotEqual(GF.Id, s.Contratos.Oferta?.District, "o 1o da lista nao e' da Grand Forge");
+            new Bot().Step(s, Dt);
+            Assert.AreEqual("ctr_sinos_catedral", s.Contratos.Ativo?.Def.Id);
+            Assert.IsFalse(s.Contratos.Aceitar(s.Contratos.Ativo.Def), "ja ativo");
+            Assert.IsFalse(s.Contratos.Aceitar(null));
+        }
+
         /// <summary>Golpe de mestre numa peca que o acumulador ja manda Superior (QAcc 99): Masterwork se ha obra pendente.</summary>
         static Quality Golpe(Sim s, Station st)
         {

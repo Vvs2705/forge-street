@@ -60,7 +60,14 @@ namespace FS.Core
         public ContractDef Proximo => Array.Find(Defs, d => !Concluido(d.Id) && (Ativo == null || Ativo.Def != d) && (Ativo2 == null || Ativo2.Def != d));
 
         /// <summary>O contrato que da para aceitar agora: o Proximo, com uma vaga livre e aberto.</summary>
-        public ContractDef Oferta { get { ContractDef d = Proximo; return d != null && (Ativo == null || MesaReal && Ativo2 == null) && Aberto(d) ? d : null; } }
+        public ContractDef Oferta { get { ContractDef d = Proximo; return Livre(d) ? d : null; } }
+
+        /// <summary>Bot/econsim (BALANCE §41 achado 15): o 1o da lista que daria para aceitar agora e que `serve` aceita, fora da ordem fixa
+        /// (o bot de um distrito so pega o que ele vende). O jogador continua vendo so a Oferta.</summary>
+        public ContractDef OfertaQue(Predicate<ContractDef> serve) => Array.Find(Defs, d => serve(d) && Livre(d));
+
+        /// <summary>Da para aceitar `d` agora: vaga livre, nao concluido, nao ativo e aberto.</summary>
+        bool Livre(ContractDef d) => d != null && (Ativo == null || MesaReal && Ativo2 == null) && !Concluido(d.Id) && Ativo?.Def != d && Ativo2?.Def != d && Aberto(d);
 
         /// <summary>Flag ligada, depois das Ferramentas, distrito no build, Renome que a tabela pede e todo item das etapas vendido neste build.</summary>
         public bool Aberto(ContractDef d)
@@ -71,10 +78,12 @@ namespace FS.Core
             return true;
         }
 
-        public bool Aceitar()
+        public bool Aceitar() => Aceitar(Oferta);
+
+        /// <summary>Aceita `d` se da (Livre); o bot passa o da OfertaQue.</summary>
+        public bool Aceitar(ContractDef d)
         {
-            ContractDef d = Oferta;
-            if (d == null) return false;
+            if (!Livre(d)) return false;
             if (Ativo == null) Ativo = new Contrato(d, d.BonusMin * 60f); else Ativo2 = new Contrato(d, d.BonusMin * 60f);   // C-CORE-07: a 2a vaga
             Aceitos++;
             return true;

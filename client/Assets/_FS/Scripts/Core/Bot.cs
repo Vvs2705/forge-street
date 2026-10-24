@@ -83,7 +83,11 @@ namespace FS.Core
                 if (s.BoostLeft <= 0f && s.StartBoost() > 0f) AdsBoost++;    // ponytail: so o 1o anuncio (2x); o 2o (3x) e' mais uma condicao
             }
             if (Strike && !EsperaSuperior(s)) Golpe(s, dt);
-            if (s.Contratos.Oferta != null) s.Contratos.Aceitar();   // D-CORE-04: aceita o contrato oferecido (ja tem o Renome) e vende como sempre
+            // D-CORE-04: aceita o 1o contrato aberto que este distrito vende inteiro e vende como sempre (BALANCE §41 achado 15: o 1o da lista
+            // podia ser de outro distrito e ficar parado para sempre)
+            Contratos c = s.Contratos;
+            if (c.Ativo == null || c.MesaReal && c.Ativo2 == null)
+                c.Aceitar(c.OfertaQue(d => Array.TrueForAll(d.Etapas, e => s.IsProduct((Item)Items.IndexOf(e.Item, s.ItemDefs)))));
             ConfiguraBancadas(s);   // C-CORE-06: receita das bancadas configuraveis (Bot.Bancada; sem elas, nada)
             Cotas(s);   // C-CORE-07: a regra fixa das faixas do patio (Bot.Cotas.cs; sem patio, nada)
             Arcano(s);   // C-CORE-08: o modo de cada altar (Bot.Arcano.cs; sem altar, nada)
