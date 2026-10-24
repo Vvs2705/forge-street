@@ -132,7 +132,7 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 
 ## 8. Progresso rumo ao 100% (definição de jogo completo, DM §164)
 
-Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-24: #121, #126, #127 sobre a leva #99–#119). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
+Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-24: #121–#142 desta frente; #136, #137, #139, #141 e #142 entram junto com este). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
 
 | Item (§164) | % | Onde está | Próximo passo |
 |---|---|---|---|
@@ -142,24 +142,24 @@ Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-24: 
 | Workers | 90 | Old Forge (13), Ferraz e Vulcana (Row), Dourado e Lúcia (Quarter), Cadetes e Matias (Arsenal), Aprendizes e Ísis (Foundry), Estrela e Félix (Grand Forge); managers 2–5 dos 6; arte própria da Vulcana (#107), do Félix (#119) e do herói em 3 estágios pelo Renome (#115) | estágios 4 e 5 do herói (Renome 5 e 7, Blender, 0 crédito); teste de silhueta |
 | Quality | 92 | 4 níveis, níveis II–V, golpe, técnica, oficiais, Masterwork; liga na Row, lapidação no Quarter (#78), peça energizada na Foundry (#97) e bênção da forja na Grand Forge (#98) | conferir com jogador real |
 | Orders | 86 | Orders 2.0 (#60); encomendas dos 6 distritos (Amara, Tibério, Zélia, Kael; a Royal nunca vira Common) | V27 (Event e vagas) |
-| Royal Contracts | 84 | os 12 em dados abrem no build (os da Foundry e da Grand Forge entram com elas); 2ª vaga pela `mesa_real`; Charters do Arsenal, da Foundry e a Carta aceitam contrato ou Royal | contratos que andam no bot (hoje a lista oferece o 1º não concluído; §41 achado 15) |
+| Royal Contracts | 90 | os 12 em dados abrem no build (os da Foundry e da Grand Forge entram com elas); 2ª vaga pela `mesa_real`; Charters do Arsenal, da Foundry e a Carta aceitam contrato ou Royal; no distrito ativo a oferta é o 1º contrato aberto dele (#136): Foundry e Grand Forge passam a fechar contratos no bot | calibrar com jogador real |
 | Blueprints | 88 | 19 do Old Forge + 14 por distrito nos outros 5 (#83, #97, #98) | conferir a fila com jogador real |
 | Masterworks | 92 | 60 de 60 nos 6 distritos, Hall por distrito; bot F2P que golpeia mede a 1ª obra aos 80 min (portão 4 h, #106) | calibrar o acerto "1 em 2" do bot com jogador real |
-| Collection | 86 | marcos dos 6 distritos | conferir com jogador real |
+| Collection | 88 | marcos dos 6 distritos; `collection_view`/`hall_view` no diário e no UGS para a métrica "≥ 30% abrem a coleção" (#139) | medir no Closed |
 | Reputation | 85 | Renome 10 níveis do Império (#65); o 8 e o 9 abrem a Foundry e a Grand Forge; teste de que nunca cai (#100); F2P chega ao 2/3/4 em 0:51 / 1:41 / 3:11 | calibrar 5–10 com jogador real (Renome 9 = knob da Carta) |
 | Daily / Weekly / Achievements | 97 | 41 diárias (9 do pool C no #118, `BALANCE.md` §42), 17 semanais, 106 conquistas (3/6 distritos e 30/60 obras no #100), login de 7 dias; retroativo | `dly_golpe_superior1` (o golpe não sabe o nível da peça) |
 | Events (LiveOps) | 86 | 10 `EventDef`, os 10 rodando (Rare Ore Rush no #100); `event_enter`/`event_complete` chegam ao UGS Analytics (#112) | V27: encomenda Event contada à parte das vagas e reafinar os eventos |
 | Pass | 85 | 30 níveis, temporada de 35 dias, trilha free; premium como produto da loja (`iap_pass_s1_royal_commission`/`s2_ember_festival`, R$ 44,90 definitivo, Vinicius 2026-10-24) e coluna premium no Passe, tudo atrás da flag `PassePremium` desligada (#113, #117, #121); bot F2P fecha a trilha free no dia 23 de 35 e o validator recusa requisito que só o premium dá (#126) | produto na Play Console; reafinar o XP com jogador real (o bot fecha antes da faixa 26–30, `LIVEOPS_V1.md` §3.3) |
 | Ads | 70 | 6 placements por config, teto diário, ID de transação, intersticial atrás de flag, `ad_impression` (#52) | conta da V-STACK com VIP e Velocidade (#67); ad units dos outros 4 placements e Unity Ads no painel (Vinicius); A/B do intersticial no Limited Release |
 | IAP | 75 | Unity IAP 5.4.4 com a `LojaUnity` (Google Play Billing 9), estados, recibos, restore e Pacote do Mestre; desligada até a chave da Play (#58, #111; `IAP.md` §5.1) | Play Console: perfil de pagamento, AAB numa faixa de teste, produto `iap_pacote_mestre` e chave RSA (Vinicius) |
-| Analytics | 78 | UGS Analytics só para 18+ com aceite, evento `fs_evento` com 5 parâmetros ativo no Event Manager de production (#112; projeto Unity Cloud 05962639-e02d-4f7c-8293-0ff2089e5144) | dashboards de retenção/monetização; crash reporting com símbolos |
-| RemoteConfig | 80 | UGS Remote Config (chave JSON `fs_config`) com as travas do núcleo (#112); `econsim --rc config.json` (#114) | snapshot de config em todo A/B; flags do DM §130 testadas pelo painel |
+| Analytics | 84 | UGS Analytics só para 18+ com aceite, evento `fs_evento` com 5 parâmetros ativo no Event Manager de production (#112; projeto Unity Cloud 05962639-e02d-4f7c-8293-0ff2089e5144); os 31 eventos do DM §86 com o nome da taxonomia e o dicionário publicado (`REMOTECONFIG_ANALYTICS.md` §2, #137) | dashboards de retenção/monetização no painel; crash reporting com símbolos |
+| RemoteConfig | 85 | UGS Remote Config (chave JSON `fs_config`) com as travas do núcleo (#112); `econsim --rc config.json` (#114); as 6 flags do DM §130 desligam pelo remoto, com teste (`DistritosNovos` nova, #141) | snapshot de config em todo A/B; testar as flags pelo painel |
 | Save | 92 | Save 2.0 + schema 3; multi-distrito; linhas opcionais da bancada, das famílias, das cotas, do medidor dos altares e das rotas e lotes (#78, #83, #97, #98) | cloud save (opcional) |
 | Release pipeline | 55 | AAB assinado por env, `verify release`, 16 KB, API 36 | chave real (aval), Unity no CI, release automatizada |
-| Arte final | 84 | estações dos 6 distritos com arte própria (#75, #79, #84, #102, #107); ícones de todos os itens (#105); programa de arte: interface v2 (#87), recompensa com vida (#88), cabeçalho dos painéis (#91), HUD v2, selos em fita, placas nos rótulos e chão (#103); arte e selo nos cartões da loja (#116); herói em 3 estágios (#115) | estágios 4 e 5 do herói; No Placeholder Gate (DM §178) com 0 item; Visual Robustness Gate 8/8 |
-| Áudio final | 55 | 15 efeitos CC0 da Kenney no lugar dos sintetizados, no mesmo nível (#109, `AUDIO.md` §9, `PROVENIENCIA.md` §19); 3 grupos, mix com prioridade, orçamento de vozes e distância (#59) | 5 músicas (CC0 ou licença comercial); ambiente em camadas; ouvir no POCO |
-| Store assets | 78 | marca v2 (#86); 8 screenshots × pt/en/es (#92) e a 2ª sequência "Ache o gargalo" (#108); vídeo de gameplay de 35 s 9:16 (#108); 37 criativos, ASO pt/en/es | teste de ícones na Play Console; cortar o vídeo para 30 s se a Play pedir |
-| **Média** | **~83** | | |
+| Arte final | 87 | estações dos 6 distritos com arte própria (#75, #79, #84, #102, #107); ícones de todos os itens (#105); programa de arte: interface v2 (#87), recompensa com vida (#88), cabeçalho dos painéis (#91), HUD v2, selos em fita, placas nos rótulos e chão (#103); arte e selo nos cartões da loja (#116); herói em 3 estágios (#115); No Placeholder Gate com 0 falta em 14 rodadas, grama CC0 (#132) e balcão com folha nos 5 distritos novos (#133) | herói 4–5 (outra raia); Visual Robustness Gate por tela |
+| Áudio final | 60 | 15 efeitos CC0 da Kenney no lugar dos sintetizados, no mesmo nível (#109, `AUDIO.md` §9, `PROVENIENCIA.md` §19); 3 grupos, mix com prioridade, orçamento de vozes e distância (#59); os 8 efeitos que faltavam também CC0 (#132): nenhum efeito sintetizado | 5 músicas (CC0 ou licença comercial); ambiente em camadas; ouvir no POCO |
+| Store assets | 82 | marca v2 (#86); 8 screenshots × pt/en/es (#92) e a 2ª sequência "Ache o gargalo" (#108); vídeo de gameplay de 35 s 9:16 (#108); 37 criativos, ASO pt/en/es; descrições completas pt/en/es com o jogo de hoje (#142) | teste de ícones na Play Console; cortar o vídeo para 30 s se a Play pedir |
+| **Média** | **~84** | | |
 
 ## 9. Retomada (atualizada em 2026-10-23)
 
