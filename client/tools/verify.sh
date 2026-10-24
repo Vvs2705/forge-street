@@ -1,9 +1,10 @@
 #!/bin/bash
 # Ponto de entrada único de verificação do Forge Street (ticket A-PLAT-04). Git Bash no Windows.
-# uso: client/tools/verify.sh quick | full | android-emulator [--migracao <apk-antigo>] | release | release-check <arquivo.aab|apk>
+# uso: client/tools/verify.sh quick | full | android-emulator [--medir S] [--migracao <apk-antigo>] | release | release-check <arquivo.aab|apk>
 #   quick             núcleo (dotnet test) + viewcheck do PC e do Android, sem abrir o Unity
 #   full              quick + Unity batchmode: EditMode, Setup.BuildWindows e o .exe com -autoplay 10
 #   android-emulator  Setup.BuildAndroidEmu + emulador + adb install + abre com '-bot -speed 4' + BACK/HOME + logcat sem exceção;
+#                     --medir S: depois, abertura a frio (am start -W) e medir_aparelho.sh com o bot jogando S s (linha de base pré-POCO);
 #                     --migracao: instala o APK antigo (x86_64), joga 90 s, instala o novo por cima e confere o save (schema 2, mesmas compras)
 #   release           quick + Setup.BuildAndroidRelease (AAB assinado; exige FS_KEYSTORE, FS_KEYSTORE_PASS, FS_KEY_ALIAS, FS_KEY_PASS) + release-check
 #   release-check     só confere um artefato pronto: targetSdk, versionCode, debuggable, ABI, 16 KB, assinatura e permissões
@@ -113,7 +114,8 @@ disco() {
 # - o /sdcard monta depois do sys.boot_completed: esperar gravar nele e mais ~25 s antes de abrir o app
 # - MSYS_NO_PATHCONV=1 em todo adb (no adb() acima) e >= 6 GB livres no C: (disco())
 android_emulator() {
-  local velho=
+  local velho= medir=
+  if [ "${1:-}" = --medir ]; then medir="${2:-120}"; shift 2; fi   # linha de base pre-POCO: abertura a frio e medir_aparelho.sh com o bot
   if [ "${1:-}" = --migracao ]; then   # confere antes do build, que leva minutos
     [ -f "${2:-}" ] || fail "uso: $0 android-emulator --migracao <apk-antigo> (não achado: '${2:-}')"
     unzip -Z1 "$2" | grep '^lib/x86_64/' > /dev/null || fail "$2 sem lib/x86_64: o APK ARM64 cai no emulador (use um ForgeStreet-emu-*.apk)"
@@ -151,6 +153,12 @@ android_emulator() {
   logcat_limpo "$OUT/logcat.txt"
   grep -q "ADS ad_init" "$OUT/logcat.txt" || fail "sem 'ADS ad_init' no logcat: o Game não chegou ao Awake"
   ok "abriu com -bot -speed 4, BACK e HOME, logcat sem exceção"
+  if [ -n "$medir" ]; then
+    adb shell am force-stop $PKG; sleep 3
+    adb shell "am start -W -n $PKG/com.unity3d.player.UnityPlayerGameActivity -e unity '-bot'" | tr -d '\r' | tee "$OUT/abertura.txt" | grep -E 'TotalTime|WaitTime'
+    bash "$CLIENT/tools/medir_aparelho.sh" "$OUT/medida" "$medir" | tee "$OUT/medida.txt"
+    ok "medida: $OUT/medida.txt e $OUT/abertura.txt (emulador: só linha de base, o POCO segue valendo)"
+  fi
   [ -z "$velho" ] || migracao "$velho" "$apk"
 }
 
