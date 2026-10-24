@@ -278,6 +278,9 @@ namespace FS.Tests
             raiz.Gold = Row.Abertura - 1;
             Assert.IsFalse(imp.Abrir(Row.Id), "sem ouro");
             raiz.Gold = Row.Abertura + 7;
+            Assert.IsTrue(RemoteConfig.Aplicar(raiz.T, "{\"DistritosNovos\": false}", false).Valido);
+            Assert.IsFalse(imp.Abrir(Row.Id), "DM §130: a flag do RemoteConfig desliga distrito novo sem build");
+            raiz.T.DistritosNovos = true;
             Assert.IsTrue(imp.Abrir(Row.Id));
             Assert.AreEqual((7L, 2, true), (raiz.Gold, imp.Abertos.Count, imp.Aberto(Row.Id)));
             Assert.IsFalse(imp.Abrir(Row.Id), "ja aberto");

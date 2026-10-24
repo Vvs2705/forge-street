@@ -105,10 +105,24 @@ namespace FS.EditorTools
             return p[0] * 10000 + p[1] * 100 + p[2];
         }
 
-        // sem a variavel o build falha: o release nunca cai na chave de debug. O valor nunca vai para log
+        // sem a variavel o build falha: o release nunca cai na chave de debug. O valor nunca vai para log. No CI (docs/RELEASE.md) o
+        // game-ci/unity-builder entrega a keystore pelos dele: ANDROID_KEYSTORE_NAME/_PASS e ANDROID_KEYALIAS_NAME/_PASS, ou -androidKeystoreName etc.
+        static readonly System.Collections.Generic.Dictionary<string, (string Env, string Arg)> GameCi = new System.Collections.Generic.Dictionary<string, (string, string)>
+        {
+            { "FS_KEYSTORE", ("ANDROID_KEYSTORE_NAME", "-androidKeystoreName") }, { "FS_KEYSTORE_PASS", ("ANDROID_KEYSTORE_PASS", "-androidKeystorePass") },
+            { "FS_KEY_ALIAS", ("ANDROID_KEYALIAS_NAME", "-androidKeyaliasName") }, { "FS_KEY_PASS", ("ANDROID_KEYALIAS_PASS", "-androidKeyaliasPass") },
+        };
+
         static string Env(string name)
         {
             string v = System.Environment.GetEnvironmentVariable(name);
+            if (string.IsNullOrEmpty(v) && GameCi.TryGetValue(name, out var ci))
+            {
+                v = System.Environment.GetEnvironmentVariable(ci.Env);
+                string[] args = System.Environment.GetCommandLineArgs();
+                int i = System.Array.IndexOf(args, ci.Arg);
+                if (string.IsNullOrEmpty(v) && i >= 0 && i + 1 < args.Length) v = args[i + 1];
+            }
             if (string.IsNullOrEmpty(v)) throw new System.Exception($"release sem assinatura: defina {name} (FS_KEYSTORE, FS_KEYSTORE_PASS, FS_KEY_ALIAS, FS_KEY_PASS)");
             return v;
         }

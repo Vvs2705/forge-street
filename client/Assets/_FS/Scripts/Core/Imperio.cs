@@ -172,7 +172,7 @@ namespace FS.Core
         public bool Abrir(string id)
         {
             DistrictDef d = Distritos.Find(id);
-            if (d == null || Aberto(id) || !Liberado(id) || Ativo.Gold < d.Abertura) return false;
+            if (d == null || !Raiz.T.DistritosNovos || Aberto(id) || !Liberado(id) || Ativo.Gold < d.Abertura) return false;   // DM §130
             Ativo.Gold -= d.Abertura;
             Adiciona(new Sim(_tuning(), distrito: d));
             return true;

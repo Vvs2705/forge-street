@@ -1909,7 +1909,7 @@ namespace FS
                 else if (_imp.Liberado(d.Id))
                 {
                     linhas.Add(Loc.T("mapa.abrir", nome, Textos.Ouro(d.Abertura)));
-                    if (_sim.Gold >= d.Abertura) Poe(1, Loc.T("mapa.btn_abrir"), () => { if (_imp.Abrir(d.Id)) { Log("district_unlock", d.Id); Renascer(d.Id); } });
+                    if (_sim.Gold >= d.Abertura && _raiz.T.DistritosNovos) Poe(1, Loc.T("mapa.btn_abrir"), () => { if (_imp.Abrir(d.Id)) { Log("district_unlock", d.Id); Renascer(d.Id); } });
                 }
                 else linhas.Add(Loc.T("mapa.fechado", nome));
                 // C-CORE-03: o manager vem com o Charter; o nivel sobe a renda de fundo (25 -> 40% da taxa), nunca o teto de 2 h
