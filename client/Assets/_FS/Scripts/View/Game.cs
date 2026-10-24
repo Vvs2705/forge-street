@@ -198,7 +198,7 @@ namespace FS
             IProvedorAnalytics remoto = Arg("-analyticslog") != null ? new ProvedorNulo(s => Debug.Log("ANALYTICS " + s))
                 : ugs ? new ProvedorUgs() : (IProvedorAnalytics)new ProvedorNulo(null);
             _diario = new Telemetria(diario, remoto,
-                diario.Sessao, Application.version, _rcr.Rotulo, dir, Application.dataPath);
+                diario.Sessao, Application.version, _rcr.Snapshot, dir, Application.dataPath);
             Application.logMessageReceived += Excecao;
             _save = new Salvamento(new SaveStore(Path.Combine(dir, "save.txt")), new SaveEspelho(SaveKey), _diario);
             Sfx.Init(gameObject);
@@ -277,7 +277,7 @@ namespace FS
             Log("session_info", "os", SystemInfo.operatingSystem);
             Log("session_info", "ram", Diario.FaixaRam(SystemInfo.systemMemorySize));
             Log("session_info", "idioma", Loc.Codigo);
-            Log("session_info", "config", _rcr.Rotulo + " " + _rcOrigem);   // A-PLAT-08 (DM §89): o snapshot do config desta abertura
+            Log("session_info", "config", _rcr.Snapshot + " " + _rcOrigem);   // A-PLAT-08 (DM §89): o snapshot do config desta abertura
             if (!_sim.T.AnunciosLigados) Log("ad_init", "desligado", "remoteconfig");
             foreach (string w in _rcr.Avisos) Log("rc_aviso", w);   // valor preso ou ignorado pelas travas
             _started = true;   // A-PLAT-07: Loading -> Playing; o save grava daqui em diante (o resgate do cofre logo abaixo ja grava)
