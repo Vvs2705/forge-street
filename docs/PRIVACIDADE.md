@@ -45,7 +45,7 @@ Peças (`LEVELPLAY.md` §1): Ads Mediation `com.unity.services.levelplay` 9.5.1,
 
 ### 1.5 Unity Gaming Services: Analytics e Remote Config (P8, 2026-10-23)
 
-- **Projeto:** "Forge Street" no Unity Cloud, organização `vsouz009`, ambiente `production` (`cloudProjectId` 05962639-e02d-4f7c-8293-0ff2089e5144 no `ProjectSettings.asset`). Pacotes `com.unity.services.analytics` 6.3.0 e `com.unity.remote-config` 4.2.5 (`Ugs.cs`).
+- **Projeto:** "Forge Street" no Unity Cloud, organização `vinicius_unity980` (ID 4674267143380, a conta empresarial; até 2026-10-24 era a `vsouz009`, projeto 05962639-e02d-4f7c-8293-0ff2089e5144), ambiente `production` (`cloudProjectId` 305e7176-73fa-4e2d-8095-3340d3986b75 no `ProjectSettings.asset`). Na criação, a pergunta do COPPA ("direcionado principalmente a crianças?") foi respondida **Não**: o público-alvo na Play será 13+, e o menor de 13 segue a regra da tela de idade (§1.4, nada sai pelo UGS). Pacotes `com.unity.services.analytics` 6.3.0 e `com.unity.remote-config` 4.2.5 (`Ugs.cs`).
 - **Quando:** nada inicia antes da resposta da tela de idade (`Game.Liberar`). Fora do Editor e do `-testsession`.
 - **Analytics:** só com `Privacidade.Flags(...).Consentimento` = 18+ que aceitou. Liga o `AnalyticsIntent` do `EndUserConsent` e manda o evento `fs_evento` (nome, `a`, `b`, segundos de jogo e o `id@versao` do config; o ID de transação nunca). O SDK acrescenta os eventos padrão dele (sessão, aparelho, `newPlayer`) e um **ID de instalação**. Menor de 18 e quem recusou: nada sai, só o diário local.
 - **Remote Config:** baixa para todos depois da tela de idade (é funcionamento do jogo, não analytics), com o **ID de instalação** e o IP. O JSON vai ao cache e vale na próxima abertura, com as travas do núcleo.

@@ -129,6 +129,8 @@ cd client/Builds
 
 O `Player.log` (ou o `-logFile`) mostra `ADS ad_init|ad_request|ad_shown|ad_reward ...`. No Windows o simulado sai mesmo sem `-fakeads`.
 
+**Os 6 placements de ponta a ponta, sem SDK (2026-10-24):** `./win/ForgeStreet.exe -batchmode -nographics -autoplay 10 -anuncios` joga 10 min com o bot que assiste tudo pelo núcleo (oferta → recompensa, 1× por ID, o teto do dia), mais um resgate do cofre offline no minuto 5, e loga `AUTOPLAY ANUNCIOS vip=… velocidade=… supply=… bonus=… troca=… cofre=… total=N/teto intersticial=…`. Sai 1 se algum placement ficar em 0 ou o total passar do teto. Na `main` de hoje: vip 2, velocidade 2, supply 1, bonus 6, troca 5, cofre 1, total 17/30, intersticial vetado pela flag. O mesmo caminho é teste no núcleo (`AnunciosTests.PontaAPonta_OsSeisPlacements_NoTetoESemIntersticial`), ao lado dos de sempre: teto diário (`TetoDiario_TotalEPorPlacement_RelogioParaTrasEReabrirNaoZeram`), recarga de 5 min do VIP (`VipEVelocidade_PeloNucleo_MesmasRegrasDoSim`), ID de transação pago 1× (`CadaPlacement_Paga1xPorId_NemDepoisDeReabrir`) e intersticial desligado por padrão (`Intersticial_FlagDesligadaPorPadrao_Nunca`). O que só o painel fecha: as ad units dos 4 placements novos (hoje usam a da Velocidade) e o Unity Ads como rede (§8).
+
 Tela de idade (E-PLAT-01). O `-testsession` não mostra a tela nem grava a resposta; o `-privacidade` força. O `-shot` exige caminho **absoluto**:
 
 ```bash

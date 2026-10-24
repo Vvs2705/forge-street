@@ -36,7 +36,7 @@ using FS.Core;
 /// bancada configuravel, a 4a tabela: trocas de receita, clientes ricos (RichClients), clientes que deram meia-volta e a politica do bot nas
 /// bancadas (--bancadas regra|volume|margem; --histerese N = Bot.Histerese). Sem bancada, nada disso imprime.
 /// </summary>
-static class EconSim
+static partial class EconSim
 {
     const string Header = "perfil,ticks_s,min,ouro,renda_min,compras_min,upgrades,ouro_sem_destino,ouro_so_luxo,producao_completa_s,encomendas,premio_encomendas,vip_atendidos,anuncios_vip,anuncios_boost";
     static readonly string[] MarcoNome = { "1a venda", "Fole", "Esteira", "Corredor", "Ajud.3", "Joalheria", "Producao", "Fachada" };
@@ -105,6 +105,7 @@ static class EconSim
         bool gerente = true;   // C-CORE-03: --gerente 0 = o bot nunca sobe manager
         long renome = 0;       // C-CORE-05: --renome N = o Renome do Imperio na chegada (500 = o do Charter do Old Forge: 400 + 100)
         PoliticaBancada bancadas = PoliticaBancada.Regra; int? histerese = null;   // C-CORE-06
+        int campanha = 0;      // BALANCE §46: --campanha H = o Imperio inteiro do zero por H horas de relogio (Campanha.cs)
         for (int i = 0; i < args.Length; i += 2)
         {
             string v = i + 1 < args.Length ? args[i + 1] : null;
@@ -137,6 +138,7 @@ static class EconSim
                 case "--renome" when ok: ok = long.TryParse(v, out renome) && renome >= 0; break;
                 case "--bancadas" when ok: ok = Enum.TryParse(v, true, out bancadas) && Enum.IsDefined(typeof(PoliticaBancada), bancadas); break;
                 case "--histerese" when ok: ok = int.TryParse(v, out int h); histerese = h; break;
+                case "--campanha" when ok: ok = int.TryParse(v, out campanha) && campanha > 0; break;
                 case "--arcano" when ok: ok = Enum.TryParse(v, true, out _altares) && Enum.IsDefined(typeof(PoliticaArcana), _altares); break;   // C-CORE-08
                 default: ok = false; break;
             }
@@ -146,6 +148,7 @@ static class EconSim
                 return 2;
             }
         }
+        if (campanha > 0) return Campanha(perfis, campanha, partidas, anuncioSeg, knobs);
         if (distrito != null && distrito.Indice > 0) return Distrito(distrito, perfis, minutos, partidas, anuncioSeg, knobs, workerSeg, fundoOF, gerente, saida, renome, bancadas, histerese);
 
         var jobs = new List<(BotProfile P, float Hz)>();
