@@ -23,6 +23,8 @@ namespace FS
         void Iniciar(ProductDef[] produtos, Action<Recibo> recibo, Action<string, string> falha);
         /// <summary>Preco localizado que a loja devolveu ("R$ 14,90"); null = ainda nao carregou (o botao fica apagado).</summary>
         string Preco(string produto);
+        /// <summary>Preco e moeda para o analytics ("14.90 BRL", ponto decimal e ISO 4217); null = a loja ainda nao carregou.</summary>
+        string Valor(string produto);
         void Comprar(string produto);
         /// <summary>Confirma (Google: acknowledge/consume) a transacao ja entregue e GRAVADA. Repetir e' inofensivo.</summary>
         void Confirmar(string tx);
@@ -81,6 +83,11 @@ namespace FS
         }
 
         public string Preco(string produto) => Compras.Def(produto)?.PrecoPlaceholder;
+        public string Valor(string produto) => ValorDe(Preco(produto));
+
+        /// <summary>"R$ 14,90" -> "14.90 BRL" (os placeholders sao todos em real); outro formato = null.</summary>
+        public static string ValorDe(string preco) =>
+            preco != null && preco.StartsWith("R$ ", StringComparison.Ordinal) ? preco.Substring(3).Replace(".", "").Replace(',', '.') + " BRL" : null;
 
         public void Comprar(string produto)
         {

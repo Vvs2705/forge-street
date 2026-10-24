@@ -149,9 +149,9 @@ Todos saem pelo `Game.Log` → diário (`diario.csv`) e, depois do aceite da tel
 | `rewarded_complete` (`ad_paid`) | placement | ID de transação e valor | recompensa paga pelo núcleo (1×) |
 | `interstitial_show` | `intersticial` | — | intersticial liberado pelo núcleo (flag desligada no build) |
 | `iap_view` | origem (`configuracoes`) | — | LOJA aberta |
-| `iap_purchase` (`iap_delivered`) | produto | `confirmada` | compra entregue e gravada |
+| `iap_purchase` (`iap_delivered`) | produto | `confirmada 14.90 BRL` (preço e moeda ISO da loja; sem preço carregado, só `confirmada`) | compra entregue e gravada; também sai como `transaction` padrão do UGS |
 | `pass_view` | temporada | nível | tela do Passe aberta |
-| `pass_purchase` | produto do Passe | `confirmada` | o premium entregue e gravado |
+| `pass_purchase` | produto do Passe | `confirmada 14.90 BRL` | o premium entregue e gravado; também sai como `transaction` |
 | `currency_source` / `currency_sink` | fonte ou ralo | ouro | agregados, no `session_end` |
 | `event_enter` / `event_complete` | evento | — / limiar | `LiveOps.Diario` |
 
@@ -173,7 +173,22 @@ Projeto 305e7176-73fa-4e2d-8095-3340d3986b75, ambiente `production`, em Analytic
 
 Além deles, os painéis prontos do UGS (Painéis de controle > Desempenho do jogo, Retenção etc.) já mostram DAU, retenção e sessões sem configurar nada.
 
-**Espera o jogo (pendência):** o FS Receita e pagadores lê o evento padrão `transaction` do UGS, que o jogo ainda não manda (a compra vai só no `fs_evento` como `iap_purchase`). Até lá, ele fica vazio e a contagem de compras sai do FS Compras por produto. A receita de anúncio (eCPM, `adImpression`) também não sobe: a impressão com receita do LevelPlay fica no diário (`ad_*`). Os dois entram juntos com o IAP real (chave da Play), num ticket próprio. Para ver os nomes de `fsNome` que chegam, use o Navegador de eventos.
+**Eventos padrão (2026-10-24):** além do `fs_evento`, o `ProvedorUgs` grava dois eventos padrão do UGS, pelo mesmo `Enviar`. Por isso só saem depois da tela de idade, de 18+ com aceite (`EventoPadrao`, testado no `TelemetriaTests`).
+
+- **`transaction`**, da `iap_purchase`/`pass_purchase` confirmada:
+  - `transactionName` e `productID` = produto, `transactionType` = `PURCHASE`;
+  - `spentRealCurrency` = moeda ISO e valor em unidades menores (`ConvertCurrencyToMinorUnits`), lidos de `metadata.localizedPrice` e `isoCurrencyCode` da loja (`IStore.Valor`; na loja falsa, o placeholder `R$ 14,90` → `14.90 BRL`);
+  - `receivedItems` = o produto ×1;
+  - o ID de transação **não** vai.
+  - Sem preço carregado, a compra fica só no `fs_evento`.
+- **`adImpression`**, do `ad_impression`:
+  - `placementId` e `placementName` = placement;
+  - `placementType` = `INTERSTITIAL` ou `REWARDED`;
+  - `adProvider` = a rede do ILRD do LevelPlay, mapeada ao enum do UGS (fora da lista e `simulado`: `OTHER`), com `adSource` = o nome cru;
+  - `adEcpmUsd` = receita da impressão × 1000, só quando o LevelPlay manda a receita;
+  - `adCompletionStatus` = `COMPLETED`.
+
+Com isso, o **FS Receita e pagadores** passa a desenhar quando a 1ª compra real chegar, e a receita de anúncio entra nos painéis prontos de monetização.
 
 ## 3. Como plugar o provedor quando a P8 for decidida
 

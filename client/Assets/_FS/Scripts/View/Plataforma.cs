@@ -86,6 +86,34 @@ namespace FS
             + ",\"sessao\":" + Json.Aspas(Sessao) + ",\"app\":" + Json.Aspas(App) + ",\"config\":" + Json.Aspas(Config) + "}";
     }
 
+    /// <summary>
+    /// Eventos padrao do UGS tirados do esquema 1, alem do fs_evento: a compra confirmada (iap_purchase/pass_purchase, b = "confirmada 14.90
+    /// BRL") vira o `transaction` e a impressao (ad_impression, b = Ads.Receita: "receita_usd precisao rede") vira o `adImpression`. Saem pelo
+    /// mesmo Enviar, entao so com o aceite da tela de idade. Sem preco ou moeda, a compra fica so no fs_evento.
+    /// </summary>
+    public static class EventoPadrao
+    {
+        public static bool Compra(Evento e, out string produto, out double preco, out string moeda)
+        {
+            produto = e.A; preco = 0; moeda = null;
+            if (e.Nome != "iap_purchase" && e.Nome != "pass_purchase" || string.IsNullOrEmpty(produto)) return false;
+            string[] p = (e.B ?? "").Split(' ');
+            if (p.Length != 3 || p[0] != "confirmada" || p[2].Length != 3) return false;
+            moeda = p[2];
+            return double.TryParse(p[1], NumberStyles.Float, CultureInfo.InvariantCulture, out preco) && preco > 0;
+        }
+
+        public static bool Impressao(Evento e, out string placement, out string rede, out double? receitaUsd)
+        {
+            placement = e.A; rede = ""; receitaUsd = null;
+            if (e.Nome != "ad_impression" || string.IsNullOrEmpty(placement)) return false;
+            string[] p = (e.B ?? "").Split(new[] { ' ' }, 3);
+            if (p.Length == 3) rede = p[2];
+            if (double.TryParse(p[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double usd)) receitaUsd = usd;
+            return true;
+        }
+    }
+
     /// <summary>A-PLAT-09: provedor remoto de analytics e crash (decisao P8). Iniciar = 1x, depois da resposta da tela de idade;
     /// idPublicidade = pode usar o ID de publicidade (so 18+ com aceite; V21: menor de 18 nunca). Enviar = um evento (o SDK faz lote e reenvio).</summary>
     public interface IProvedorAnalytics

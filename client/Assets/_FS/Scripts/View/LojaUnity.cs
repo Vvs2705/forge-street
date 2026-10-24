@@ -83,6 +83,13 @@ namespace FS
 
         public string Preco(string produto) => _store.GetProductById(produto)?.metadata?.localizedPriceString;
 
+        public string Valor(string produto)
+        {
+            ProductMetadata m = _store.GetProductById(produto)?.metadata;
+            return m == null || string.IsNullOrEmpty(m.isoCurrencyCode) ? null
+                : m.localizedPrice.ToString(System.Globalization.CultureInfo.InvariantCulture) + " " + m.isoCurrencyCode;
+        }
+
         public void Comprar(string produto)
         {
             Product p = _store.GetProductById(produto);

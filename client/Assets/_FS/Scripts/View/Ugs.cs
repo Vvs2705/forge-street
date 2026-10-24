@@ -71,10 +71,52 @@ namespace FS
             else if (_pedido && _espera.Count < Espera) _espera.Enqueue(e);
         }
 
-        static void Grava(Evento e) => AnalyticsService.Instance.RecordEvent(new CustomEvent(Evento)
+        static void Grava(Evento e)
         {
-            { "fsNome", e.Nome ?? "" }, { "fsA", e.A ?? "" }, { "fsB", e.B ?? "" }, { "fsT", e.T }, { "fsConfig", e.Config ?? "" },
-        });
+            IAnalyticsService a = AnalyticsService.Instance;
+            a.RecordEvent(new CustomEvent(Evento)
+            {
+                { "fsNome", e.Nome ?? "" }, { "fsA", e.A ?? "" }, { "fsB", e.B ?? "" }, { "fsT", e.T }, { "fsConfig", e.Config ?? "" },
+            });
+            if (EventoPadrao.Compra(e, out string produto, out double preco, out string moeda))
+            {
+                // o ID de transacao nao vai (dado de compra, docs/IAP.md); o painel le transactionName e o realCurrency gasto
+                var t = new TransactionEvent
+                {
+                    TransactionName = produto, TransactionType = TransactionType.PURCHASE, ProductId = produto,
+                    SpentRealCurrency = new TransactionRealCurrency { RealCurrencyType = moeda, RealCurrencyAmount = a.ConvertCurrencyToMinorUnits(moeda, preco) },
+                };
+                t.ReceivedItems.Add(new TransactionItem { ItemName = produto, ItemType = "iap", ItemAmount = 1 });
+                a.RecordEvent(t);
+            }
+            else if (EventoPadrao.Impressao(e, out string placement, out string rede, out double? usd))
+            {
+                var i = new AdImpressionEvent
+                {
+                    AdCompletionStatus = AdCompletionStatus.Completed, AdProvider = Rede(rede), PlacementId = placement, PlacementName = placement,
+                    PlacementType = placement == Ads.Intersticial ? AdPlacementType.INTERSTITIAL : AdPlacementType.REWARDED, AdSource = rede,
+                };
+                if (usd.HasValue) i.AdEcpmUsd = usd.Value * 1000.0;   // o ILRD do LevelPlay da a receita da impressao; o eCPM e' por mil
+                a.RecordEvent(i);
+            }
+        }
+
+        /// <summary>Rede do ILRD do LevelPlay ("ironSource", "UnityAds", "AdMob", ...) -> o enum do UGS; fora da lista (e "simulado") = Other.</summary>
+        static AdProvider Rede(string r)
+        {
+            r = (r ?? "").ToLowerInvariant();
+            if (r.Contains("ironsource")) return AdProvider.IrnSource;
+            if (r.Contains("unity")) return AdProvider.UnityAds;
+            if (r.Contains("admob") || r.Contains("google")) return AdProvider.AdMob;
+            if (r.Contains("applovin")) return AdProvider.AppLovin;
+            if (r.Contains("facebook") || r.Contains("meta")) return AdProvider.Facebook;
+            if (r.Contains("vungle") || r.Contains("liftoff")) return AdProvider.Vungle;
+            if (r.Contains("pangle")) return AdProvider.Pangle;
+            if (r.Contains("inmobi")) return AdProvider.Inmobi;
+            if (r.Contains("chartboost")) return AdProvider.ChartBoost;
+            if (r.Contains("fyber") || r.Contains("digitalturbine")) return AdProvider.Fyber;
+            return AdProvider.Other;
+        }
     }
 
     /// <summary>
