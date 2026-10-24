@@ -2667,3 +2667,14 @@ Ganho de renda com o evento nos 3 perfis: +3,7% a +11,8% (antes +4,6% a +12,8%).
 - **Rodízio da C com 10:** `(dia × 5 + 2) mod 10` só visita 2 posições (mdc 5), e as Finas de escudo nunca apareciam. `Metas.Passo`: pool com tamanho múltiplo de 5 anda de 7 em 7. A (19) e B (14) seguem com o passo 5, ao byte; a C muda de sequência a partir do dia seguinte (a vaga do dia está no save). Golden novo de 10 dias com a Joalheria e uma Fina de escudo: `fina10, renome5, renome5, fina10, fina10, renome5, fina_escudos10, fina10, renome5, renome5`.
 
 **Bot:** o `econsim` não muda (o bot não resgata metas; o `Grade` só ganhou a contagem). **Testes:** `QualidadeTests.GolpeSuperior_ContaSoQuandoAPecaSaiSuperior` (q 0 não conta, q 100 e 200 contam, por item, errar não conta) e `MetasTests.GolpeSuperior_DiariaEConquista_PeloGolpeReal` (espera a 1ª Fina, entra na C, o golpe real fecha e paga, a conquista soma; golpe que só faz Fina não conta).
+
+## 44. Pass: XP das conquistas pela metade (LIVEOPS_V1 §3.3 e §8, 2026-10-24)
+
+Bot F2P de 20 min por dia desde o 1º dia da S1, resgatando diárias, semanais, login, conquistas e a trilha no fim de cada sessão (`LiveOpsTests.BotF2P_FechaATrilhaFreeDentroDaTemporada`). XP do Pass por fonte, acumulado (medição com um teste temporário, fora do repositório):
+
+| | dia 4 | dia 10 | dia 23 | fecha a trilha (18.000) |
+|---|---|---|---|---|
+| antes (conquista com o XP cheio) | 6.760 (conquistas 3.600) | 10.660 | 18.000 (conquistas 5.750; diárias 5.100; semanais 3.500; jogo 1.650; resto, encomendas e eventos) | **dia 23** |
+| depois (XP de cada conquista ÷ 2) | — | — | 15.385 (conquistas 2.875) | **dia 28** (27 no fim da sessão) |
+
+Faixa do LIVEOPS_V1 §8: dia 26–30. O teste trava 26 ≤ dia ≤ `Dias − 7` (28). A conta estática do §3.3 (651 XP/dia, dia 27,6) e o validator não contam conquista e não mudam. Nada vem do premium (flag desligada), e o validator "nada obrigatório só no premium" segue verde.

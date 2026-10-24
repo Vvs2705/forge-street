@@ -61,3 +61,18 @@ Perguntas do DM §73: 1 entende em screenshot · 2 entende em vídeo 9:16 (o jog
 | Loja | sim | sim | — | — | — | — | sim | sim | arte e selo nos cartões (#116) |
 
 Resultado: 15 de 15 telas aprovadas depois da correção do mapa. Fora do alcance desta rodada: as telas de recompensa animadas (cofre, baú; conferidas na etapa 6) e a tela de idade nova (#125), que só abre com o 1º botão de anúncio.
+
+## Teste de silhueta dos personagens (Workers, 2026-10-24)
+
+`python client/tools/silhuetas.py arte/auditoria/2026-10-24/silhuetas.png`: o 1º quadro do Idle virado para o sul de cada folha, em cor, em silhueta preta na escala do jogo (60 px/m, a tela de 540 px com 9 m de largura; a escala de cada folha é a do `WorldView.CharScale`) e ampliada 2×. Entram o herói nos 5 estágios e as 7 folhas de worker do build (os Porters de todos os distritos usam a `ajudante`, tingida pela linha; os Smiths, a `oficial`).
+
+| Quem divide a tela | Silhuetas | Resultado |
+|---|---|---|
+| Old Forge: herói, ajudantes, oficiais (Bruna, Iara, Joaquim, Tomé), Baltazar (almoxarife), Otávio (mestre de obras), Celeste (balconista) | herói maior (92 px) com boné ou chapéu; ajudante pequeno e redondo; oficial com a ferramenta na diagonal; almoxarife com a caixa quadrada nas costas; mestre de obras com o martelo erguido; balconista baixa com a vareta | **distintas** |
+| Rua dos Armeiros: herói, Ferraz (ajudante), Vulcana | Vulcana com a ferramenta na diagonal e o capacete | **distintas** |
+| Bairro Artesão: herói, Dourado (ajudante), Lúcia (oficial) | | **distintas** |
+| Arsenal Real: herói, cadetes (ajudante), Matias (almoxarife) | | **distintas** |
+| Fundição Arcana: herói, aprendizes (ajudante), Ísis (oficial) | | **distintas** |
+| Grande Forja: herói, Estrela (ajudante), Félix | Félix com o caixote nas costas e a pena | **distintas** |
+
+Parecidas, mas nunca na mesma tela: a `oficial` e a Vulcana (ferramenta na diagonal; a Vulcana só existe na Row, onde não há oficial) e a `almoxarife` e o Félix (volume quadrado nas costas; Arsenal ou Old Forge × Grande Forja). **Herói:** os estágios 1, 2 e 3 têm silhueta própria (boné, chapéu largo, pena); o 4 e o 5 têm a mesma (pena e as ferramentas no cinto), e a leitura do 5 vem da cor (capa branca e vermelha) e da coroa. Como são o mesmo personagem em momentos diferentes, nunca lado a lado, fica como está. Se o POCO mostrar que a subida para o 5 passa despercebida, o acessório que muda a silhueta é a capa aberta nas costas (Blender, 0 crédito).
