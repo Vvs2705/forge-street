@@ -292,6 +292,26 @@ namespace FS.Tests
             return s;
         }
 
+        /// <summary>ADS (os 6 placements de ponta a ponta, como o autoplay -anuncios): o bot que assiste tudo, com um cofre offline no minuto 5,
+        /// paga cada placement pelo nucleo (oferta -> recompensa, 1x por ID), fica no teto do dia e nunca ve intersticial (flag desligada).</summary>
+        [Test]
+        public void PontaAPonta_OsSeisPlacements_NoTetoESemIntersticial()
+        {
+            var s = new Sim();
+            Bot bot = Bot.From(BotProfile.AdWatcherE); bot.AdsTodos = true;
+            for (float t = 0f; t < 30 * 60f; t += 1f / 30f)
+            {
+                bot.Step(s, 1f / 30f);
+                if (s.Time >= 300f && s.LastClaim == 0) s.ApplyOffline(600, 1);   // o "Cofre 2x" so existe depois de um resgate
+            }
+            foreach (Anuncio a in new[] { Anuncio.Vip, Anuncio.Velocidade, Anuncio.Supply, Anuncio.EncomendaBonus, Anuncio.EncomendaTroca, Anuncio.Cofre })
+                Assert.Greater(s.Anuncios.Hoje[(int)a], 0, a + ": pago pelo menos 1x");
+            Assert.AreEqual(bot.AdsTotal, s.Anuncios.HojeTotal(), "cada anuncio do bot = 1 pagamento no nucleo");
+            Assert.LessOrEqual(s.Anuncios.HojeTotal(), s.T.AnunciosTetoDia, "teto do dia");
+            Assert.AreEqual("flag", s.Anuncios.VetoIntersticial(true, false, 9999f), "intersticial desligado por padrao");
+            Assert.AreEqual(-1L, s.Anuncios.Pagar(s.Anuncios.Oferta(Anuncio.Cofre) ?? "cofre:1"), "o mesmo resgate nao dobra 2x");
+        }
+
         [Test]
         public void Intersticial_FlagDesligadaPorPadrao_Nunca()
         {

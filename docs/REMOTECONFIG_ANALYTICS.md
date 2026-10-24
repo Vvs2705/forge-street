@@ -159,6 +159,22 @@ Todos saem pelo `Game.Log` → diário (`diario.csv`) e, depois do aceite da tel
 
 Além dos 31: `ad_*` (SDK: pedido, mostrado, impressão com receita, recompensa, falha), `iap_start/pending/restore/fail`, `consent_answer`, `settings`, `client_error`, `charter`, `district_switch`, `event_points`, `pass_level`.
 
+### Painéis do UGS (2026-10-24)
+
+Projeto 305e7176-73fa-4e2d-8095-3340d3986b75, ambiente `production`, em Analytics > Painéis personalizados. Montados antes do 1º evento: os relatórios salvam sem dados e passam a desenhar quando o `fs_evento` chegar (o jogo só envia de 18+ com aceite). Todos vêm do Explorador de Dados (experiência nova), nunca do SQL Data Explorer, que cobra por consulta.
+
+| Painel | Relatório (Explorador de Dados) | O que usa |
+|---|---|---|
+| **FS Retencao** | FS Retencao D1/D7/D30 | métricas padrão Retenção D1, D7 e D30, por dia (vêm do `newPlayer`/sessão que o SDK manda sozinho) |
+| | FS Sessoes por usuario | métricas padrão Sessões por usuário, Número de sessões, Duração média da sessão e DAU, por dia |
+| **FS Monetizacao** | FS Anuncios por placement | `fs_evento` (soma) com filtro `fsNome` = `rewarded_complete`, por dia e por `fsA` (placement: `vip`, `velocidade`, `cofre2x`, `encomenda_bonus`, `encomenda_troca`, `supply`) |
+| | FS Compras por produto | `fs_evento` (soma) com filtro `fsNome` = `iap_purchase`, por dia e por `fsA` (produto) |
+| | FS Receita e pagadores | métricas padrão Receita total, Receita do IAP, Pagadores, ARPDAU e Total de transações, por dia |
+
+Além deles, os painéis prontos do UGS (Painéis de controle > Desempenho do jogo, Retenção etc.) já mostram DAU, retenção e sessões sem configurar nada.
+
+**Espera o jogo (pendência):** o FS Receita e pagadores lê o evento padrão `transaction` do UGS, que o jogo ainda não manda (a compra vai só no `fs_evento` como `iap_purchase`). Até lá, ele fica vazio e a contagem de compras sai do FS Compras por produto. A receita de anúncio (eCPM, `adImpression`) também não sobe: a impressão com receita do LevelPlay fica no diário (`ad_*`). Os dois entram juntos com o IAP real (chave da Play), num ticket próprio. Para ver os nomes de `fsNome` que chegam, use o Navegador de eventos.
+
 ## 3. Como plugar o provedor quando a P8 for decidida
 
 **P8 decidida em 2026-10-23: Unity Gaming Services** (o Vinicius: "PODE SEGUIR O RECOMENDADO Unity Gaming Services"). Feito no `feat/analytics-rc`: projeto "Forge Street" no Unity Cloud (org `vsouz009`, `production`, `cloudProjectId` no `ProjectSettings.asset`); pacotes `com.unity.services.analytics` 6.3.0 e `com.unity.remote-config` 4.2.5; `client/Assets/_FS/Scripts/View/Ugs.cs` com o `ProvedorUgs` (só 18+ com aceite: `EndUserConsent` com `AnalyticsIntent`; evento `fs_evento` com `fsNome`, `fsA`, `fsB`, `fsT`, `fsConfig`; espera até 256 enquanto o SDK inicia) e o `RemoteConfigUgs` (baixa a chave JSON `fs_config` depois da tela de idade e grava no cache local; Ler continua o cache). Fora do Editor e do `-testsession`; `-analyticslog` continua trocando pelo eco no Player.log. Analytics e Remote Config ativos no painel (aval do Vinicius, 2026-10-23).

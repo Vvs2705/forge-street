@@ -2060,12 +2060,16 @@ namespace FS
             string m = Arg("-autoplay");
             float minutes = !string.IsNullOrEmpty(m) && float.TryParse(m, NumberStyles.Float, CultureInfo.InvariantCulture, out float v) ? v : 10f;
             var sim = new Sim();
-            var bot = new Bot();
+            // ADS (-anuncios): o bot que assiste os 6 placements pelo nucleo (oferta -> recompensa, teto do dia), com um cofre offline no minuto 5
+            bool ads = Arg("-anuncios") != null;
+            Bot bot = ads ? Bot.From(BotProfile.AdWatcherE) : new Bot();
+            bot.AdsTodos = ads;
             const float dt = 1f / 30f;
             int next = 1;
             for (float t = 0f; t < minutes * 60f; t += dt)
             {
                 bot.Step(sim, dt);
+                if (ads && sim.Time >= 300f && sim.LastClaim == 0) sim.ApplyOffline(600, 1);
                 if (sim.Time < next * 60f) continue;
                 Debug.Log(string.Format(CultureInfo.InvariantCulture, "AUTOPLAY t={0} gold={1} earned={2} upgrades={3} sales={4} lost={5} away={6} walk={7:0}s ema={8:0.00}/s",
                     Clock(sim.Time), sim.Gold, sim.GoldEarned, sim.UpgradesBought, sim.Sales, sim.ClientsLost, sim.ClientsTurnedAway, sim.WalkNoDecision, sim.RateEma));
@@ -2074,6 +2078,13 @@ namespace FS
             for (int i = 0; i < Upgrades.Count; i++)
                 if (sim.UpgradeTime[i] >= 0f) Debug.Log($"AUTOPLAY upgrade {(Upgrade)i} em {Clock(sim.UpgradeTime[i])}");
             bool ok = sim.FirstSaleTime > 0f && sim.FirstSaleTime < 90f && sim.UpgradesBought >= 1;
+            if (ads)
+            {
+                int[] h = sim.Anuncios.Hoje;
+                Debug.Log($"AUTOPLAY ANUNCIOS vip={h[(int)Anuncio.Vip]} velocidade={h[(int)Anuncio.Velocidade]} supply={h[(int)Anuncio.Supply]} bonus={h[(int)Anuncio.EncomendaBonus]} " +
+                          $"troca={h[(int)Anuncio.EncomendaTroca]} cofre={h[(int)Anuncio.Cofre]} total={sim.Anuncios.HojeTotal()}/{sim.T.AnunciosTetoDia} intersticial={sim.Anuncios.VetoIntersticial(true, false, 9999f) ?? "liberado"}");
+                ok &= Array.TrueForAll(h, n => n > 0) && sim.Anuncios.HojeTotal() <= sim.T.AnunciosTetoDia;
+            }
             Debug.Log(string.Format(CultureInfo.InvariantCulture, "AUTOPLAY {0} venda1={1:0}s upgrades={2} ouro={3}", ok ? "OK" : "FALHOU", sim.FirstSaleTime, sim.UpgradesBought, sim.GoldEarned));
             Application.Quit(ok ? 0 : 1);
         }

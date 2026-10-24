@@ -2598,6 +2598,8 @@ A lâmina estelar passa a pedir a lâmina rúnica, o relicário a lanterna arcan
 
 A Carta melhora porque as receitas de síntese ficam mais lentas e o bot passa mais tempo nos níveis V e no golpe (a 5ª obra sai aos 316 min contra 359). As Royal Superiores também andam mais (41 contra 30). O fundo tirado das origens triplica (5,8 mi contra 2,0 mi em 480 min), mas a maior fração num minuto cai, porque a Foundry divide a conta. **Old Forge, Row, Quarter, Arsenal e Foundry idênticos ao byte** (os SHAs do §40.6 e o do econsim padrão `a7d9e6c9…`). Revisar: 359 min fica na borda de baixo da coluna 6–8 h; se o jogador real fechar mais cedo, o knob é o Renome 9 (4.200 → 4.500 do catálogo).
 
+**Remedido em 2026-10-24 (`main` 94aa788; `--distrito grand_forge --perfis Ideal --minutos 480 --partidas 8 --renome 3100`):** com o que entrou depois (Pass, eventos, metas, golpe que faz Superior), a Carta do Ideal fecha em **8 de 8 aos 373 min** (6 h 13; Renome do Charter aos 367 min, 5ª obra aos 305 min, 37,1 Royal), já dentro da coluna 6–8 h. O knob não ajuda: com o Renome 9 em 4.350 ou 4.500 a Carta sai aos 358 min, mas em 7 de 8 (as Royal Superiores abrem em outra ordem e uma rodada fica sem a 5ª obra). **Decidido: Renome 9 fica em 4.200**, sem mudança de código. Revisar com o jogador real no POCO.
+
 ## 42. Diárias do pool C: qualidade, golpe, Renome e evento (LIVEOPS_V1 §4.2 #25–34, 2026-10-23)
 
 **Vigente** (`Core/MetasDefs.cs`, `Core/Metas.cs`, `View/Loc.cs`; branch `feat/diarias-pool-c`). A 3ª vaga diária deixa de cair sempre no pool A: entram 9 diárias do pool C com a recompensa padrão (XP 100 + 20 s de ouro): `dly_fina10`, `dly_fina_escudos10`, `dly_superior3`, `dly_golpe3`, `dly_fina_joias5`, `dly_renome5`, `dly_fina30`, `dly_evento100` e `dly_enc_evento`. Regras do slot C (`Metas.LivreC`): a de Fina de um item só depois da 1ª peça Fina daquele item (a "1ª fonte de qualidade" da tabela, lida do contador `quality_crafted`); Superior e golpe com a Quality aberta (como as semanais); Renome depois da Joalheria (o "Renome 1" desta tabela) e a de 30 Finas depois da Vitrine de joias ("Renome 2"); com um evento ativo, **só** as 2 de evento, alternando por dia (`dia mod 2`). Sem nenhuma aberta, a vaga cai no pool A como antes. `reputation_gain` (Renome ganho desde a vaga) e `event_points` (pontos do evento ativo) são derivados do estado: nada novo no save. Fora: `dly_golpe_superior1` (o golpe não sabe o nível com que a peça saiu).
@@ -2718,3 +2720,26 @@ Perfis:
 - Se o Closed confirmar o começo rápido, o primeiro candidato é o **limiar do Renome 4** (400 → ~550, `RenomeDefs.Niveis`), que puxa o Charter do Old Forge para ~3 h.
 - O segundo é a **obra-prima do Charter do Old Forge** (`CharterDef.Masterworks` 1 → 2).
 - Mexer só depois de medir o F2P sem golpe com jogador real: o F2P que não golpeia faz o Renome 4 às 3:11 (§8 do `PROJETO.md`), dentro da faixa.
+
+## 47. Blueprints e Coleção por dia do F2P (Blueprints e Collection, 2026-10-24)
+
+`econsim --campanha 12 --perfis F2PGolpe,F2P --partidas 4` (a campanha do §46; 15 s): no fim de cada dia do F2P de referência (20 min de relógio, `LIVEOPS_V1.md` §1), somando os distritos abertos. Média das 4 partidas.
+
+| dia | F2PGolpe: Blueprints (posse / dos abertos) | Coleção (marcos / dos abertos) | obras no Hall | F2P sem golpe: Blueprints | Coleção | obras |
+|---|---|---|---|---|---|---|
+| 1 | 2 / 19 | 0 / 9 | 0 | 2 / 19 | 0 / 9 | 0 |
+| 3 | 13,3 / 19 | 4,3 / 9 | 0 | 12,5 / 19 | 4 / 9 | 0 |
+| 5 | 18 / 19 | 6,5 / 9 | 2 | 17,3 / 19 | 6,3 / 9 | 0 |
+| 7 | 19,3 / 33 | 7,5 / 16 | 4,3 | 19 / 19 | 7 / 9 | 0 |
+| 14 | 30 / 33 | 12,5 / 16 | 5,5 | 19 / 19 | 7 / 9 | 0 |
+| 21 | 32,8 / 44 | 13 / 21 | 9,5 | 19 / 19 | 7 / 9 | 0 |
+| 28 | 45,5 / 47 | 18 / 23 | 10 | 19 / 19 | 7 / 9 | 0 |
+| 35 | 46,5 / 51 | 19 / 25 | 14,5 | 19 / 19 | 7 / 9 | 0 |
+
+**Leitura:**
+- **A fila de Blueprints acompanha a campanha.** Quem golpeia fecha os 19 do Old Forge no dia 5–7 e chega a ~90% dos distritos abertos em cada degrau (30/33 no dia 14, 45,5/47 no dia 28). Cada distrito novo traz 14 e o salto aparece no dia em que abre.
+- **A Coleção anda mais devagar:** 7,5/16 no dia 7 e 19/25 no dia 35, porque os marcos de obra-prima pedem obras, e a obra pede golpe.
+- **O F2P que nunca golpeia para no Old Forge para sempre:** 0 obras, então o Charter não sai (ele pede 1 obra-prima), e trava em 19/19 e 7/9 a partir do dia 7.
+  - É o mesmo achado do §46 por outro lado: o golpe é o caminho do Charter.
+  - O tutorial ensina o golpe no 1º anel (`Golpe`, GDD §9), então o jogador real deve golpear; conferir no Closed quantos nunca golpeiam (`master_strike` no diário).
+  - Se forem muitos, o knob é a obra-prima do Charter do Old Forge virar "obra **ou** N Superiores" (como os Charters que aceitam contrato **ou** Royal).
