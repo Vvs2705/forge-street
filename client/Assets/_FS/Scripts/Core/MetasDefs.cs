@@ -162,135 +162,135 @@ namespace FS.Core
             // Crafting (vendas e fabricacao)
             C("ach_primeira_forja", Craft, Espada, 1, ouroS: 30),
             C("ach_primeira_venda", Sold, -1, 1, ouroS: 30),
-            C("ach_vende100", Sold, -1, 100, xp: 50),
-            C("ach_vende1k", Sold, -1, 1000, xp: 100, renome: 5),
-            C("ach_vende10k", Sold, -1, 10000, xp: 200, renome: 10),
+            C("ach_vende100", Sold, -1, 100, xp: 25),
+            C("ach_vende1k", Sold, -1, 1000, xp: 50, renome: 5),
+            C("ach_vende10k", Sold, -1, 10000, xp: 100, renome: 10),
             C("ach_vende100k", Sold, -1, 100000, insignia: "mao_de_ouro"),
-            C("ach_espadas500", Craft, Espada, 500, xp: 100),
-            C("ach_escudos500", Craft, Escudo, 500, xp: 100),
-            C("ach_ferram500", Craft, Ferram, 500, xp: 100),
-            C("ach_joias200", Craft, Joia, 200, xp: 100),
-            C("ach_lingotes5k", Craft, Lingote, 5000, xp: 100, renome: 5),
+            C("ach_espadas500", Craft, Espada, 500, xp: 50),
+            C("ach_escudos500", Craft, Escudo, 500, xp: 50),
+            C("ach_ferram500", Craft, Ferram, 500, xp: 50),
+            C("ach_joias200", Craft, Joia, 200, xp: 50),
+            C("ach_lingotes5k", Craft, Lingote, 5000, xp: 50, renome: 5),
             C("ach_quatro_linhas", Sold, -1, 4, renome: 5, c: Conta.Distintos),
-            C("ach_vende500", Sold, -1, 500, xp: 50),                  // novo
-            C("ach_vende50k", Sold, -1, 50000, xp: 200),               // novo
+            C("ach_vende500", Sold, -1, 500, xp: 25),                  // novo
+            C("ach_vende50k", Sold, -1, 50000, xp: 100),               // novo
             C("ach_primeiro_escudo", Craft, Escudo, 1, ouroS: 30),     // novo
             C("ach_primeira_ferramenta", Craft, Ferram, 1, ouroS: 30), // novo
             C("ach_primeira_joia", Craft, Joia, 1, ouroS: 30),         // novo
-            C("ach_lingotes500", Craft, Lingote, 500, xp: 50),         // novo
-            C("ach_lingotes50k", Craft, Lingote, 50000, xp: 150),      // novo
-            C("ach_espadas5k", Craft, Espada, 5000, xp: 150),          // novo
-            C("ach_espadas_venda100", Sold, Espada, 100, xp: 50),      // novo
-            C("ach_espadas_venda1k", Sold, Espada, 1000, xp: 100),     // novo
-            C("ach_espadas_venda10k", Sold, Espada, 10000, xp: 150),   // novo
-            C("ach_escudos_venda100", Sold, Escudo, 100, xp: 50),      // novo
-            C("ach_escudos_venda1k", Sold, Escudo, 1000, xp: 100),     // novo
-            C("ach_ferram_venda100", Sold, Ferram, 100, xp: 50),       // novo
-            C("ach_ferram_venda1k", Sold, Ferram, 1000, xp: 100),      // novo
-            C("ach_joias_venda100", Sold, Joia, 100, xp: 50),          // novo
-            C("ach_joias_venda1k", Sold, Joia, 1000, xp: 150),         // novo
+            C("ach_lingotes500", Craft, Lingote, 500, xp: 25),         // novo
+            C("ach_lingotes50k", Craft, Lingote, 50000, xp: 75),      // novo
+            C("ach_espadas5k", Craft, Espada, 5000, xp: 75),          // novo
+            C("ach_espadas_venda100", Sold, Espada, 100, xp: 25),      // novo
+            C("ach_espadas_venda1k", Sold, Espada, 1000, xp: 50),     // novo
+            C("ach_espadas_venda10k", Sold, Espada, 10000, xp: 75),   // novo
+            C("ach_escudos_venda100", Sold, Escudo, 100, xp: 25),      // novo
+            C("ach_escudos_venda1k", Sold, Escudo, 1000, xp: 50),     // novo
+            C("ach_ferram_venda100", Sold, Ferram, 100, xp: 25),       // novo
+            C("ach_ferram_venda1k", Sold, Ferram, 1000, xp: 50),      // novo
+            C("ach_joias_venda100", Sold, Joia, 100, xp: 25),          // novo
+            C("ach_joias_venda1k", Sold, Joia, 1000, xp: 75),         // novo
             // Orders
             C("ach_enc1", Ord, -1, 1, ouroS: 30),
-            C("ach_enc10", Ord, -1, 10, xp: 50),                       // novo
-            C("ach_enc50", Ord, -1, 50, xp: 100),
-            C("ach_enc250", Ord, -1, 250, xp: 150, renome: 5),
-            C("ach_enc500", Ord, -1, 500, xp: 150),                    // novo
-            C("ach_enc1000", Ord, -1, 1000, xp: 200, insignia: "livro_caixa"),
+            C("ach_enc10", Ord, -1, 10, xp: 25),                       // novo
+            C("ach_enc50", Ord, -1, 50, xp: 50),
+            C("ach_enc250", Ord, -1, 250, xp: 75, renome: 5),
+            C("ach_enc500", Ord, -1, 500, xp: 75),                    // novo
+            C("ach_enc1000", Ord, -1, 1000, xp: 100, insignia: "livro_caixa"),
             // B-CORE-05 (LIVEOPS_V1 §5.5 #35-38)
-            C("ach_enc_royal1", Tipo, (int)OrderType.Royal, 1, xp: 100),
-            C("ach_enc_tipos7", Tipo, -1, 7, xp: 150, renome: 10, c: Conta.Distintos),
-            C("ach_rush_prazo10", Rush, -1, 10, xp: 100),
-            C("ach_bulk25", Tipo, (int)OrderType.Bulk, 25, xp: 100),
+            C("ach_enc_royal1", Tipo, (int)OrderType.Royal, 1, xp: 50),
+            C("ach_enc_tipos7", Tipo, -1, 7, xp: 75, renome: 10, c: Conta.Distintos),
+            C("ach_rush_prazo10", Rush, -1, 10, xp: 50),
+            C("ach_bulk25", Tipo, (int)OrderType.Bulk, 25, xp: 50),
             // Workers
             C("ach_ajudante1", Hire, -1, 1, ouroS: 30),
-            C("ach_ajudante3", Hire, -1, 3, xp: 50),                   // novo
-            C("ach_ajudantes6", Hire, -1, Metas.AjudantesOldForge, xp: 100, renome: 5),
+            C("ach_ajudante3", Hire, -1, 3, xp: 25),                   // novo
+            C("ach_ajudantes6", Hire, -1, Metas.AjudantesOldForge, xp: 50, renome: 5),
             // B-CORE-04 (LIVEOPS_V1 §5.5 #41-44): filtro de worker_hired = papel; de worker_upgrade = nivel alcancado (cada worker chega 1x)
-            C("ach_oficial1", Hire, (int)WorkerRole.Smith, 1, xp: 50),
-            C("ach_worker_n5", Nivel, 5, 1, xp: 100),
-            C("ach_workers13", Hire, -1, WorkersOldForge, xp: 150, renome: 10),
+            C("ach_oficial1", Hire, (int)WorkerRole.Smith, 1, xp: 25),
+            C("ach_worker_n5", Nivel, 5, 1, xp: 50),
+            C("ach_workers13", Hire, -1, WorkersOldForge, xp: 75, renome: 10),
             C("ach_workers13_n5", Nivel, 5, WorkersOldForge, insignia: "mestre_oficio"),
             // B-CORE-08 (LIVEOPS_V1 §4.5 #20-25): Masterworks registradas no Hall. O Renome ja vem da obra (Hall): a conquista da so XP ou insignia.
             // ach_mw30/60 contam as do Imperio (masterwork_empire; requiresContent: o validator recusa alvo acima das do build)
-            C("ach_mw1", Mw, -1, 1, xp: 100),
-            C("ach_mw5", Mw, -1, 5, xp: 150),
-            C("ach_mw10_oldforge", Mw, -1, 10, xp: 200, insignia: "hall_completo"),
-            C("ach_mw30", "masterwork_empire", -1, 30, xp: 200),   // LIVEOPS_V1 #26 (la, +Renome 10: aqui so XP, a obra ja deu o Renome)
+            C("ach_mw1", Mw, -1, 1, xp: 50),
+            C("ach_mw5", Mw, -1, 5, xp: 75),
+            C("ach_mw10_oldforge", Mw, -1, 10, xp: 100, insignia: "hall_completo"),
+            C("ach_mw30", "masterwork_empire", -1, 30, xp: 100),   // LIVEOPS_V1 #26 (la, +Renome 10: aqui so XP, a obra ja deu o Renome)
             C("ach_mw60", "masterwork_empire", -1, 60, insignia: "lenda_da_forja"),   // LIVEOPS_V1 #27
-            C("ach_familia_espada", MwFamilia, Espada, 3, xp: 100),
+            C("ach_familia_espada", MwFamilia, Espada, 3, xp: 50),
             C("ach_sunblade", Mw, MasterworksDefs.IndexOf("mw_sunblade"), 1, insignia: "sol_do_rei"),
             C("ach_ember_crown", Mw, MasterworksDefs.IndexOf("mw_ember_crown"), 1, insignia: "coroa_de_brasa"),
             // Automation (melhorias)
             C("ach_melhoria1", Buy, -1, 1, ouroS: 30),                 // novo
-            C("ach_melhorias10", Buy, -1, 10, xp: 50),                 // novo
-            C("ach_melhorias20", Buy, -1, 20, xp: 100),                // novo
+            C("ach_melhorias10", Buy, -1, 10, xp: 25),                 // novo
+            C("ach_melhorias20", Buy, -1, 20, xp: 50),                // novo
             C("ach_esteira", Buy, (int)Upgrade.Conveyor, 1, ouroS: 45),
-            C("ach_corredor", Buy, (int)Upgrade.SideCorridor, 1, xp: 50),      // novo
-            C("ach_joalheria", Buy, (int)Upgrade.Jewelry, 1, xp: 50),
-            C("ach_vitrine", Buy, (int)Upgrade.CounterCapacity, 1, xp: 50),    // novo
-            C("ach_fornalha2", Buy, (int)Upgrade.Furnace2, 1, xp: 50),         // novo
-            C("ach_mineiro", Buy, (int)Upgrade.Miner, 1, xp: 50),
-            C("ach_balcao8", Buy, (int)Upgrade.Counter8, 1, xp: 50),
+            C("ach_corredor", Buy, (int)Upgrade.SideCorridor, 1, xp: 25),      // novo
+            C("ach_joalheria", Buy, (int)Upgrade.Jewelry, 1, xp: 25),
+            C("ach_vitrine", Buy, (int)Upgrade.CounterCapacity, 1, xp: 25),    // novo
+            C("ach_fornalha2", Buy, (int)Upgrade.Furnace2, 1, xp: 25),         // novo
+            C("ach_mineiro", Buy, (int)Upgrade.Miner, 1, xp: 25),
+            C("ach_balcao8", Buy, (int)Upgrade.Counter8, 1, xp: 25),
             // luxo so com toda a producao (Sim.Buy): sem ela so cabem os niveis de estacao (Meta, B-CORE-03), entao ProductionCount + Meta
             // compras = producao completa (nunca antes; quem pula um nivel fecha na 1a compra de luxo). B-CORE-07: so os Meta sem projeto (II-III);
             // com projeto (bigorna longa pelo marco de 300 espadas) ela pode fechar 1 compra antes
-            C("ach_producao_completa", Buy, -1, Upgrades.ProductionCount + Array.FindAll(Upgrades.All, u => u.Meta && u.Blueprint == null).Length, xp: 200, renome: 10),
-            C("ach_luxo1", Buy, (int)Upgrade.WorkshopFacade, 1, xp: 50),
+            C("ach_producao_completa", Buy, -1, Upgrades.ProductionCount + Array.FindAll(Upgrades.All, u => u.Meta && u.Blueprint == null).Length, xp: 100, renome: 10),
+            C("ach_luxo1", Buy, (int)Upgrade.WorkshopFacade, 1, xp: 25),
             C("ach_luxo3", Buy, (int)Upgrade.JewelryDecor, 1, insignia: "oficina_nobre"),
             // Economy
-            C("ach_ouro10k", Src, -1, 10000, xp: 50),
-            C("ach_ouro100k", Src, -1, 100000, xp: 100),               // novo
-            C("ach_ouro1m", Src, -1, 1000000, xp: 200, renome: 10),
-            C("ach_ouro10m", Src, -1, 10000000, xp: 200),              // novo
+            C("ach_ouro10k", Src, -1, 10000, xp: 25),
+            C("ach_ouro100k", Src, -1, 100000, xp: 50),               // novo
+            C("ach_ouro1m", Src, -1, 1000000, xp: 100, renome: 10),
+            C("ach_ouro10m", Src, -1, 10000000, xp: 100),              // novo
             C("ach_gasto1k", Sink, -1, 1000, ouroS: 30),               // novo
-            C("ach_gasto50k", Sink, -1, 50000, xp: 100),
-            C("ach_gasto500k", Sink, -1, 500000, xp: 150),             // novo
+            C("ach_gasto50k", Sink, -1, 50000, xp: 50),
+            C("ach_gasto500k", Sink, -1, 500000, xp: 75),             // novo
             C("ach_cofre1", Cofre, -1, 1, ouroS: 30),                  // novo
-            C("ach_cofre30", Cofre, -1, 30, xp: 100),
-            C("ach_cofre100", Cofre, -1, 100, xp: 150),                // novo
+            C("ach_cofre30", Cofre, -1, 30, xp: 50),
+            C("ach_cofre100", Cofre, -1, 100, xp: 75),                // novo
             C("ach_bau1", Bau, -1, 1, ouroS: 30),                      // novo
-            C("ach_baus4", Bau, -1, 4, xp: 50),
+            C("ach_baus4", Bau, -1, 4, xp: 25),
             C("ach_vip1", Vip, -1, 1, ouroS: 30),                      // novo
-            C("ach_vip10", Vip, -1, 10, xp: 50),
-            C("ach_vip50", Vip, -1, 50, xp: 100),                      // novo
-            C("ach_vip100", Vip, -1, 100, xp: 150, renome: 5),
+            C("ach_vip10", Vip, -1, 10, xp: 25),
+            C("ach_vip50", Vip, -1, 50, xp: 50),                      // novo
+            C("ach_vip100", Vip, -1, 100, xp: 75, renome: 5),
             // LiveOps
-            C("ach_login7", Login, -1, 7, xp: 50),
-            C("ach_login30", Login, -1, 30, xp: 100),                  // novo
+            C("ach_login7", Login, -1, 7, xp: 25),
+            C("ach_login30", Login, -1, 30, xp: 50),                  // novo
             C("ach_diarias1", Missao, 0, 1, ouroS: 30),                // novo
-            C("ach_diarias30", Missao, 0, 30, xp: 100),
-            C("ach_diarias100", Missao, 0, 100, xp: 150),              // novo
-            C("ach_semanais1", Missao, 1, 1, xp: 50),                  // novo
-            C("ach_semanais10", Missao, 1, 10, xp: 150),
-            C("ach_semanais50", Missao, 1, 50, xp: 200),               // novo
+            C("ach_diarias30", Missao, 0, 30, xp: 50),
+            C("ach_diarias100", Missao, 0, 100, xp: 75),              // novo
+            C("ach_semanais1", Missao, 1, 1, xp: 25),                  // novo
+            C("ach_semanais10", Missao, 1, 10, xp: 75),
+            C("ach_semanais50", Missao, 1, 50, xp: 100),               // novo
             // metas de sistemas (raia H, LIVEOPS_V1 §4.5): os gatilhos que esperavam um sistema que ja existe. Conquista de Renome nunca da
             // Renome; a de Charter, Collection e Masterwork da so XP ou insignia (a fonte ja deu o Renome). Districts:
-            C("ach_charter1", Charter, -1, 1, xp: 200, refId: Distritos.OldForgeId),   // a insignia e' do proprio Charter (GDD §11)
-            C("ach_distritos3", Charter, -1, 3, xp: 200),   // LIVEOPS_V1 #55 (la, +Renome 10: aqui so XP, o Charter ja deu o Renome)
+            C("ach_charter1", Charter, -1, 1, xp: 100, refId: Distritos.OldForgeId),   // a insignia e' do proprio Charter (GDD §11)
+            C("ach_distritos3", Charter, -1, 3, xp: 100),   // LIVEOPS_V1 #55 (la, +Renome 10: aqui so XP, o Charter ja deu o Renome)
             C("ach_distritos6", Charter, -1, 6, insignia: "senhor_das_ruas"),   // LIVEOPS_V1 #56
-            C("ach_elmos100", Sold, -1, 100, xp: 100, refId: "elmo"),                   // a venda da Rua dos Armeiros chega pela raiz (C-CORE-03)
-            C("ach_contrato1", Ctr, -1, 1, xp: 150),
+            C("ach_elmos100", Sold, -1, 100, xp: 50, refId: "elmo"),                   // a venda da Rua dos Armeiros chega pela raiz (C-CORE-03)
+            C("ach_contrato1", Ctr, -1, 1, xp: 75),
             C("ach_contratos12", Ctr, -1, 12, insignia: "arsenal_do_reino"),            // 9 dos 12 abrem com os distritos 3-6 (Wave C)
             // Quality (B-CORE-03): Fina+ / Superior+ fabricada (Ev.Graded) e golpe de mestre acertado (Sim.Strike)
             C("ach_primeira_fina", Fina, -1, 1, ouroS: 30),
-            C("ach_primeira_superior", Sup, -1, 1, xp: 50, renome: 3),
-            C("ach_fina100", Fina, -1, 100, xp: 100),
+            C("ach_primeira_superior", Sup, -1, 1, xp: 25, renome: 3),
+            C("ach_fina100", Fina, -1, 100, xp: 50),
             C("ach_superior1k", Sup, -1, 1000, insignia: "olho_de_mestre"),
             C("ach_golpe1", Golpe, -1, 1, ouroS: 30),
-            C("ach_golpe100", Golpe, -1, 100, xp: 100, renome: 5),
-            C("ach_golpe_superior50", GolpeSup, -1, 50, xp: 150),
+            C("ach_golpe100", Golpe, -1, 100, xp: 50, renome: 5),
+            C("ach_golpe_superior50", GolpeSup, -1, 50, xp: 75),
             // Blueprints (B-CORE-07), niveis de estacao (filtro = nivel), Renome (nivel) e Collection (marco por ID)
             C("ach_bp1", Bp, -1, 1, ouroS: 30),
-            C("ach_bp10", Bp, -1, 10, xp: 100, renome: 5),
-            C("ach_bp18", Bp, -1, 18, xp: 200, insignia: "arquivista"),
-            C("ach_estacao_n3", Est, 3, 1, xp: 50),
-            C("ach_estacoes_n5", Est, 5, Estacoes(5), xp: 200, insignia: "oficina_de_ferro"),
-            C("ach_renome1", Ren, -1, 1, xp: 50),
+            C("ach_bp10", Bp, -1, 10, xp: 50, renome: 5),
+            C("ach_bp18", Bp, -1, 18, xp: 100, insignia: "arquivista"),
+            C("ach_estacao_n3", Est, 3, 1, xp: 25),
+            C("ach_estacoes_n5", Est, 5, Estacoes(5), xp: 100, insignia: "oficina_de_ferro"),
+            C("ach_renome1", Ren, -1, 1, xp: 25),
             C("ach_renome4", Ren, -1, 4, insignia: "fornecedor_do_reino"),
-            C("ach_colecao_produtos", Col, -1, 1, xp: 100, refId: "col_produtos_old_forge_100"),
+            C("ach_colecao_produtos", Col, -1, 1, xp: 50, refId: "col_produtos_old_forge_100"),
             // LiveOps (D-CORE-03/04): trilha de evento fechada, eventos em que entrou, trilha free do Passe fechada (o nivel 30 resgatado)
-            C("ach_evento1", EvFim, -1, 1, xp: 100),
-            C("ach_eventos4", EvEntra, -1, 4, xp: 150),
+            C("ach_evento1", EvFim, -1, 1, xp: 50),
+            C("ach_eventos4", EvEntra, -1, 4, xp: 75),
             C("ach_passe_free", Passe, -1, 1, insignia: "veterano_de_temporada"),
         };
 
