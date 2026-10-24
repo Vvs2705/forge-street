@@ -35,3 +35,29 @@ Fotos: `arte/auditoria/2026-10-16/folha_1.jpg` (abertura, início, 1ª venda, me
 - **5. Nitidez:** re-render dos personagens com mais ppu (teto 4096 px por folha) e escala de exibição no `meta.json`; item na mão gerado separado e preso ao osso no Blender.
 - **6. Recompensa com vida:** baú/cofre que abre de verdade, luz, partículas e moedas voando no cofre offline, no Renome, nos marcos e no Charter.
 - **7.** Build Windows e fotos antes/depois ao fim de cada etapa; POCO só com o "pode testar".
+
+## Visual Robustness Gate (DM §73) e No Placeholder Gate na `main` de 2026-10-24
+
+Fotos: `python client/tools/placeholder_gate.py` (15 rodadas com janela 540×960, `-testsession -shot`); folha em `arte/auditoria/2026-10-24/visual_robustness.jpg`. No Placeholder Gate: **OK**, 0 arte no procedural, 0 efeito sintetizado e 0 achado estático, inclusive com o herói no estágio 5 (`-renome 2000`, depois do #134).
+
+Perguntas do DM §73: 1 entende em screenshot · 2 entende em vídeo 9:16 (o jogo já é retrato 9:16; o vídeo do #108 é a mesma tela) · 3 jogador visível · 4 gargalo visível · 5 estado da estação claro · 6 a UI não cobre o jogo · 7 não parece genérico · 8 parece Forge Street. "—" = não se aplica (painel modal cobre o mundo de propósito).
+
+| Tela | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | Nota |
+|---|---|---|---|---|---|---|---|---|---|
+| Old Forge | sim | sim | sim | sim | sim | sim | sim | sim | HUD só em cima e na barra de baixo; placas e selos ("Só Normal", preço) nas estações |
+| Old Forge, herói estágio 5 | sim | sim | sim | sim | sim | sim | sim | sim | capa, coroa e pena lidos a 540 px |
+| Rua dos Armeiros | sim | sim | sim | sim | sim | sim | sim | sim | prensa, rebitadeira e montagem distintas |
+| Bairro Artesão | sim | sim | sim | sim | sim | sim | sim | sim | "Loja fina" com a folha `loja_rica` (#133) |
+| Arsenal Real | sim | sim | sim | sim | sim | sim | sim | sim | carroça de couro e bancadas de kits |
+| Fundição Arcana | sim | sim | sim | sim | sim | sim | sim | sim | altar e cuba de cristal com cor própria |
+| Grande Forja | sim | sim | sim | sim | sim | sim | sim | sim | fundição de sinos e crateras estelares |
+| Metas | sim | sim | — | — | — | — | sim | sim | na foto de teste as 3 diárias dizem "Nova meta amanhã" (relógio do `-testsession`), não é o caso do jogador |
+| Passe | sim | sim | — | — | — | — | sim | sim | trilha free com os ícones de prêmio |
+| Cartão do evento | sim | sim | — | — | — | — | sim | sim | missões com barra e pontos |
+| Hall | sim | sim | — | — | — | — | sim | sim | abas Obras-primas e Coleção |
+| Projetos | sim | sim | — | — | — | — | sim | sim | selos TEM em verde |
+| **Mapa (Distritos)** | **não → sim** | sim | — | — | — | — | sim | sim | **reprovava:** as 6 linhas passavam por cima do título e encostavam no OK (o best-fit do corpo do painel não encolhia com `Overflow`). Corrigido: `verticalOverflow = Truncate` no corpo do painel, o mesmo do HUD |
+| Configurações | sim | sim | — | — | — | — | sim | sim | interruptores com rótulo |
+| Loja | sim | sim | — | — | — | — | sim | sim | arte e selo nos cartões (#116) |
+
+Resultado: 15 de 15 telas aprovadas depois da correção do mapa. Fora do alcance desta rodada: as telas de recompensa animadas (cofre, baú; conferidas na etapa 6) e a tela de idade nova (#125), que só abre com o 1º botão de anúncio.

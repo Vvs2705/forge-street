@@ -28,7 +28,10 @@ DISTRITOS = [
 ]
 # (nome, args): o mundo de cada distrito e os painéis que pedem ícones (com -buy 9: Ferramentas e metas abertas)
 RODADAS = (
-    [("old_forge", [])]
+    [
+        ("old_forge", []),
+        ("heroi_estagio5", ["-renome", "2000"]),
+    ]  # Renome 7: o herói no último estágio
     + [(d, ["-distrito", d]) for d in DISTRITOS]
     + [
         (p, ["-buy", "9", "-" + p] + extra)

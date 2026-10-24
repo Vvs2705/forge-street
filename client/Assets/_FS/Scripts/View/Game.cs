@@ -992,6 +992,7 @@ namespace FS
             _panelBody = Art.NewText(card.transform, "Corpo", 26, new Vector2(0.06f, 0.33f), new Vector2(0.94f, 0.46f));
             _panelBody.color = Art.ComAlfa(MenuBar.Brown, 0.8f);
             _panelBody.resizeTextForBestFit = true; _panelBody.resizeTextMinSize = 22; _panelBody.resizeTextMaxSize = 40;   // mapa e qualidade: legivel no aparelho
+            _panelBody.verticalOverflow = VerticalWrapMode.Truncate;   // o best-fit so encolhe com Truncate: as 6 linhas do mapa passavam por cima do titulo e do OK (Visual Robustness Gate, 2026-10-24)
             Button ok = Art.NewButton(card.transform, Loc.T("ui.ok"), 46, MenuBar.Leather, new Vector2(0.25f, 0.06f), new Vector2(0.75f, 0.26f), () => _panelAction?.Invoke());
             _panelBtn = ok.GetComponentInChildren<Text>();
             _panelBtn.color = MenuBar.Cream;
