@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **IAP testado nos 3 produtos:** o premium das duas temporadas do Passe passa pelo mesmo teste de fluxo da loja que o Pacote do Mestre (compra, recibo repetido, restore e reinstalar, recibo inválido); o `IAP.md` §5.2 separa o que os testes cobrem do que só a Play Console fecha.
 - **Snapshot do config em todo evento com o conteúdo:** o rótulo do RemoteConfig que vai em todo evento do diário e do UGS (`fsConfig`) e no `session_info` passa a ser `id@versao#hash` (FNV-1a do JSON recebido), para dois configs de A/B com o mesmo `id@versao` e valores diferentes não se confundirem (DM §89).
 - **Crash reporting com símbolos:** o AAB de release leva a tabela de símbolos do IL2CPP (a Play simboliza o crash nativo) e o `.symbols.zip` sai no artifact do workflow `release` (`docs/RELEASE.md`).
 - **Visual Robustness Gate (DM §73) na `main` atual:** 15 telas conferidas nas 8 perguntas (`AUDITORIA_VISUAL.md`); o mapa dos distritos reprovava (as 6 linhas passavam por cima do título e do OK) e foi corrigido com o best-fit que encolhe de verdade no corpo dos painéis. O No Placeholder Gate ganhou a rodada do herói no estágio 5 e segue com 0 falta.
