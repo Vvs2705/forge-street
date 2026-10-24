@@ -1907,7 +1907,7 @@ namespace FS
                 if (d.Id == _sim.Distrito.Id)
                 {
                     string falta = _imp.CharterFalta(d.Id);
-                    linhas.Add(Loc.T(falta == null ? "mapa.charter_pronto" : falta == "concedido" ? "mapa.aqui" : "mapa.falta." + falta, nome));
+                    linhas.Add(falta == null ? Loc.T("mapa.charter_pronto", nome) : falta == "concedido" ? Loc.T("mapa.aqui", nome) : FaltaCharter(d, falta, nome));
                     if (falta == null) Poe(0, Loc.T("mapa.charter"), () => { _imp.Charter(d.Id); Log("charter", d.Id); Save(); AbrirMapa(); });
                 }
                 else if (_imp.Aberto(d.Id))
@@ -1937,6 +1937,19 @@ namespace FS
             }
             (string Texto, Action Fazer) acao = Array.Find(acoes, x => x.Fazer != null);
             ShowPanel(Loc.T("mapa.titulo"), string.Join("\n", linhas), acao.Texto ?? Loc.T("ui.ok"), acao.Fazer ?? ClosePanel);
+        }
+
+        /// <summary>BALANCE §48: a linha "falta X" do Charter com o progresso (Renome a/b; obra-prima a/b e, se o Charter aceita, OU Superiores a/b).</summary>
+        string FaltaCharter(DistrictDef d, string falta, string nome)
+        {
+            CharterDef c = d.Charter;
+            Sim s = _imp.Distrito(d.Id);
+            string N(long v) => v.ToString(CultureInfo.InvariantCulture);
+            if (falta == "renome") return Loc.T("mapa.falta.renome", nome, N(_imp.Raiz.Renome.Total), N(c.Renome));
+            if (falta != "masterwork") return Loc.T("mapa.falta." + falta, nome);
+            string mw = N(Math.Max(s.Masterworks, s.Hall.Count)) + "/" + N(c.Masterworks);
+            return c.Superiores > 0 ? Loc.T("mapa.falta.masterwork_ou", nome, mw, N(System.Linq.Enumerable.Sum(s.Colecao.Superiores)) + "/" + N(c.Superiores))
+                : Loc.T("mapa.falta.masterwork", nome, mw);
         }
 
         /// <summary>Foco no distrito `id` e a cena renasce com o mesmo Imperio (grava antes): o mundo, a HUD e o menu nascem do Sim dele.</summary>
