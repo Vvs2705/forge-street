@@ -63,7 +63,7 @@ Coerência entre chaves diferentes (por exemplo `VipMin` < `VipMax`) fica com qu
 
 ### Snapshot para A/B (DM §89)
 
-`Resultado.Rotulo` = `id@versao` (`padrao@0` sem config, `sem_id@0` se o JSON não tem `id`). Ele vai:
+`Resultado.Snapshot` = `id@versao#hash` (`Rotulo` = `id@versao`; `padrao@0` sem config, `sem_id@0` se o JSON não tem `id`; `hash` = FNV-1a de 32 bits, em hex, do JSON recebido sem os espaços das pontas). O hash separa dois configs publicados com o mesmo `id@versao` e valores diferentes (erro comum no A/B), e o mesmo JSON dá sempre o mesmo snapshot (`RemoteConfigTests.Snapshot_IdVersaoEHashDoConteudo`). Ele vai:
 
 - no diário, na linha `session_info,config,<rotulo> <origem>` (o `diario_report.py` agrupa por ele);
 - em todo evento remoto, no campo `config`.
@@ -91,7 +91,7 @@ Coerência entre chaves diferentes (por exemplo `VipMin` < `VipMax`) fica com qu
 | `t` | segundos de jogo (`Sim.Time`) |
 | `sessao` | 8 caracteres aleatórios por processo (o mesmo do diário) |
 | `app` | `Application.version` |
-| `config` | `id@versao` do RemoteConfig |
+| `config` | `id@versao#hash` do RemoteConfig (no UGS, o parâmetro `fsConfig` do `fs_evento`) |
 
 ### Exceções (DM §90)
 

@@ -55,8 +55,13 @@ namespace FS.Core
             public long Versao;
             public int Aplicadas;
             public readonly List<string> Avisos = new List<string>();
-            /// <summary>"id@versao": o snapshot do config que vai em todo evento (DM §89).</summary>
+            /// <summary>"id@versao" do config (o que quem publica escreve).</summary>
             public string Rotulo => Id + "@" + Versao.ToString(CultureInfo.InvariantCulture);
+            /// <summary>FNV-1a de 32 bits do JSON recebido, em hex (vazio sem config): dois configs com o mesmo id@versao e valores diferentes
+            /// nao se confundem no A/B.</summary>
+            public string Hash = "";
+            /// <summary>O snapshot que vai em todo evento e no session_info (DM §89): "id@versao#hash" ("padrao@0" sem config).</summary>
+            public string Snapshot => Hash.Length == 0 ? Rotulo : Rotulo + "#" + Hash;
         }
 
         /// <summary>Aplica `json` sobre `t` (null ou vazio = sem config, nada muda). `intersticialNoBuild` = este build pode ligar o intersticial.</summary>
@@ -64,6 +69,9 @@ namespace FS.Core
         {
             var r = new Resultado();
             if (string.IsNullOrWhiteSpace(json)) return r;
+            uint h = 2166136261;
+            foreach (char c in json.Trim()) { h ^= c; h *= 16777619; }
+            r.Hash = h.ToString("x8", CultureInfo.InvariantCulture);
             if (!(Json.Ler(json) is Dictionary<string, object> o)) { r.Avisos.Add("json: nao abre (valem os padroes)"); return r; }
             r.Valido = true;
             if (o.TryGetValue("id", out object id) && id is string s && s.Length > 0) r.Id = s.Length > 40 ? s.Substring(0, 40) : s;

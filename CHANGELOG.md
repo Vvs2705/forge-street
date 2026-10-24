@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Snapshot do config em todo evento com o conteúdo:** o rótulo do RemoteConfig que vai em todo evento do diário e do UGS (`fsConfig`) e no `session_info` passa a ser `id@versao#hash` (FNV-1a do JSON recebido), para dois configs de A/B com o mesmo `id@versao` e valores diferentes não se confundirem (DM §89).
 - **Flag de distritos novos (DM §130):** `DistritosNovos` no `Tuning` e no RemoteConfig; com `false`, nenhum distrito abre (o mapa esconde o ABRIR e o `Imperio.Abrir` recusa), e os já abertos seguem. Teste das 6 flags do DM §130 desligando pelo remoto.
 - **`docs/RELEASE.md`:** como uma versão sai (SemVer → versionCode, AAB, release-check, workflow `release` com keystore de teste e tag `v*` preparada) e o passo a passo do que falta do Vinicius para a loja (chave de upload com backup, secrets do GitHub, Play App Signing, 1º upload à mão, conta de serviço).
 - **Workflow `release` no CI:** gera o AAB não-development pelo `Setup.BuildAndroidRelease` com a keystore de upload dos secrets (ou, sem eles, uma de teste gerada na hora), passa o `release-check` no Linux e publica o AAB como artifact; roda à mão e fica pronto para tag `v*` (confere que a tag é a `Setup.Version`). Não sobe à Play nem cria tag. O `Setup` aceita a keystore pelos nomes do game-ci (`ANDROID_KEYSTORE_*` ou `-androidKeystoreName` etc).
