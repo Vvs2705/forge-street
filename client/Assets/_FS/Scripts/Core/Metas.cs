@@ -56,6 +56,7 @@ namespace FS.Core
             "master_strike_superior",   // golpe cuja peca saiu Superior ou melhor (Sim.GolpeSuperior; filtro = item)
             "district_unlock", "collection_milestone", "blueprint_unlock", "reputation_level", "station_level", "event_complete", "pass_level",
             "masterwork_empire",   // obras de todo distrito (o ledger mw: do Imperio); o masterwork_unlock conta so o Hall da raiz
+            "worker_empire",   // workers contratados em todo distrito aberto (ach_workers20); o worker_hired conta so os da raiz
             "reputation_gain", "event_points",   // pool C das diarias: Renome ganho (total) e pontos do evento ativo, derivados (Valor)
         };
 
@@ -146,6 +147,8 @@ namespace FS.Core
             Cont[k] = v + n;
         }
 
+        static long Contratados(Sim s) => s.Workers.Count + s.Equipe.Contratados();
+
         int Prefixados(string prefixo)
         {
             int n = 0;
@@ -161,6 +164,10 @@ namespace FS.Core
                 case "district_unlock":   // Ref = distrito (Renome.OnCharter); sem Ref = distritos abertos (o Old Forge + 1 por Charter)
                     return d.Ref != null ? (_sim.Renome.Ledger.Contains("charter:" + d.Ref) ? 1 : 0) : 1 + Prefixados("charter:");
                 case "masterwork_empire": return Prefixados(Hall.Prefixo);
+                case "worker_empire":   // a contratacao do distrito nao sobe a raiz (Sim.Emit): soma o estado de cada Sim aberto, entao o save antigo ja conta
+                    if (_sim.Imp == null) return Contratados(_sim);
+                    long w = 0; foreach (Sim x in _sim.Imp.Abertos) w += Contratados(x);
+                    return w;
                 case "collection_milestone": return _sim.Renome.Ledger.Contains(Colecao.Prefixo + d.Ref) ? 1 : 0;   // Ref = marco (Colecao.Tx)
                 case "blueprint_unlock": return _sim.Projetos.Count;
                 case "reputation_level": return _sim.Renome.Nivel;
