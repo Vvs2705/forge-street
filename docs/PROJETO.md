@@ -187,7 +187,7 @@ Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões
 
 Fila para chegar a 90% (um PR por item; ver o plano em https://claude.ai/artifact/1PQAo9PBHazpwQLdNn6K6y):
 1. ~~**Core:** `Sim` em partes (refatoração, econsim ao byte e mutações vivas); 1.000 partidas do econsim por perfil sem deadlock.~~ #127 (2026-10-24).
-2. **Ads:** ~~tela de idade movida para quando o 1º botão de anúncio aparece (GDD, Conflito 1); consentimento antes do SDK testado~~ (#125; falta ajustar o G3/G4 do `ROTEIRO_TESTE_POCO.md`, que ainda dizem "a 1ª tela é a de idade"). Ad units dos outros 4 placements e Unity Ads no painel do LevelPlay (Vinicius).
+2. **Ads:** ~~tela de idade movida para quando o 1º botão de anúncio aparece (GDD, Conflito 1); consentimento antes do SDK testado~~ (#125; G3/G4 do `ROTEIRO_TESTE_POCO.md` ajustados). Ad units dos outros 4 placements e Unity Ads no painel do LevelPlay (Vinicius).
 3. ~~**Events:** V27, encomenda Event contada à parte das vagas, e reafinar os 10 eventos com o bot~~ (#131, `BALANCE.md` §44: 17 pontos nos 10, que fecham no dia 4–5 do F2P).
 4. ~~**Pass:** teste de que o bot F2P fecha a trilha free e validator "nada obrigatório só no premium".~~ #126 (2026-10-24); preço do premium definitivo em R$ 44,90 no #121.
 5. **Áudio:** 5 músicas (CC0 ou licença comercial) e ambiente em camadas.
