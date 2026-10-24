@@ -430,6 +430,13 @@ namespace FS.Core
                     yield return $"{at} o F2P de referencia faz {dia:0} XP/dia e nao fecha {p.XpTotal} XP em {p.Dias - 7} dias (LIVEOPS_V1 §5.4)";
             }
 
+            // nada obrigatorio so no premium (LIVEOPS_V1 §3.5): o que so a trilha paga da nunca e' requisito de evento nem alvo de meta
+            var pagos = new HashSet<string>();
+            foreach (PassDef p in ps) if (p.Premium != null) foreach (RewardDef r in p.Premium) if (r?.Ref != null) pagos.Add(r.Ref);
+            foreach (EventDef e in eventos) foreach (string r in e.Requer) if (pagos.Contains(r)) yield return $"evento {e.Id}: requisito {r} so sai na trilha premium (nada obrigatorio so no premium)";
+            foreach (MetaDef[] g in new[] { MetasDefs.Diarias, MetasDefs.Semanais, MetasDefs.Conquistas }) foreach (MetaDef m in g)
+                if (m.Ref != null && pagos.Contains(m.Ref)) yield return $"meta {m.Id}: pede {m.Ref}, que so sai na trilha premium (nada obrigatorio so no premium)";
+
             var evs = new List<EventDef>(eventos);
             evs.Sort((a, b) => a.Inicio.CompareTo(b.Inicio));
             double ouroEvento = 0;
