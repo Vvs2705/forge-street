@@ -228,7 +228,7 @@ namespace FS.Tests
         {
             var raiz = new Sim();
             for (int i = 0; i < Upgrades.Count; i++) if (Upgrades.IsProduction(i)) raiz.Buy((Upgrade)i);
-            raiz.Renome.Ganha(400);
+            raiz.Renome.Ganha(Distritos.OldForge.Charter.Renome);
             raiz.Hall.Feitas[MasterworksDefs.All[0].Id] = 1;
             Imperio back = Imperio.Load(new Imperio(raiz).Save(100));
             Assert.AreEqual(0, back.Raiz.Masterworks, "o contador da sessao nao vai no save");

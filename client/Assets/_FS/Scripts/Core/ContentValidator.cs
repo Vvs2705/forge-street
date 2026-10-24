@@ -217,7 +217,10 @@ namespace FS.Core
             long topo = RenomeDefs.Niveis[RenomeDefs.Niveis.Length - 1].Limiar;
             if (c.Renome <= 0 || c.Renome > topo) yield return $"{at} pede Renome {c.Renome} (1 ate {topo})";
             int n = RenomeDefs.NivelQueLibera("charter_" + d.Id);
-            if (n >= 0 && RenomeDefs.Niveis[n].Limiar != c.Renome) yield return $"{at} pede Renome {c.Renome}, mas o nivel {n} (o que libera charter_{d.Id}) comeca em {RenomeDefs.Niveis[n].Limiar}";
+            // BALANCE §48: o Renome do Charter fica DENTRO do nivel que o libera (do limiar dele ate antes do seguinte): o Old Forge pede 700 no nivel 4
+            long ate = n >= 0 && n + 1 < RenomeDefs.Niveis.Length ? RenomeDefs.Niveis[n + 1].Limiar : long.MaxValue;
+            if (n >= 0 && (c.Renome < RenomeDefs.Niveis[n].Limiar || c.Renome >= ate))
+                yield return $"{at} pede Renome {c.Renome}, fora do nivel {n} (o que libera charter_{d.Id}: de {RenomeDefs.Niveis[n].Limiar} ate antes de {ate})";
             if (c.Masterworks < 0) yield return $"{at} pede {c.Masterworks} Masterworks";
             if (c.Proximo != null && !Array.Exists(mapa, o => o.Id == c.Proximo)) yield return $"{at} libera \"{c.Proximo}\", que nao esta no mapa";
             if (c.Proximo == d.Id) yield return $"{at} libera o proprio distrito";

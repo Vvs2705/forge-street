@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Charter do Old Forge na faixa de 3–6 h:** pede Renome 700 (dentro do nível 4; o limiar dos níveis não muda) e aceita 1 obra-prima **ou** 80 peças Superiores vendidas, então quem nunca golpeia também sai do Old Forge (5,0 h; antes nunca); quem golpeia fecha às 3,5 h (antes 2,1 h) e a Carta às 24,8 h (`BALANCE.md` §48).
 - **Renome 1–10 medido na campanha inteira:** `econsim --campanha H` joga o Império do zero (Charters de verdade, abertura dos distritos, fundo e managers) e mede o relógio de cada nível de Renome e de cada Charter; o começo está ~2× mais rápido que o alvo e o fim converge (`BALANCE.md` §46, com o knob proposto sem mexer na economia).
 - **IAP testado nos 3 produtos:** o premium das duas temporadas do Passe passa pelo mesmo teste de fluxo da loja que o Pacote do Mestre (compra, recibo repetido, restore e reinstalar, recibo inválido); o `IAP.md` §5.2 separa o que os testes cobrem do que só a Play Console fecha.
 - **Blueprints e Coleção por dia no econsim:** a `--campanha` imprime, para cada dia de 20 min do F2P, os Blueprints, os marcos da Coleção e as obras no Hall somando os distritos abertos; quem golpeia acompanha a campanha, e o F2P que nunca golpeia para no Old Forge (`BALANCE.md` §47).
