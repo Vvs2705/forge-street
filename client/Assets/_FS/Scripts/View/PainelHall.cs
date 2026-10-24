@@ -1,3 +1,4 @@
+using System;
 using FS.Core;
 using UnityEngine;
 using UnityEngine.UI;
@@ -85,6 +86,9 @@ namespace FS
             _root.gameObject.SetActive(false);
         }
 
+        /// <summary>GDD §164 item 10 ("abrem a colecao sem dica"): o Game loga cada aba que o jogador passa a ver (0 obras-primas, 1 colecao).</summary>
+        public Action<int> AbaVista;
+
         /// <param name="aba">0 obras-primas, 1 colecao.</param>
         public void Abrir(int aba = 0)
         {
@@ -104,7 +108,7 @@ namespace FS
                 _abas[i].color = i == k ? MenuBar.Leather : MenuBar.Gray;
                 _abasTxt[i].color = i == k ? MenuBar.Cream : Tinta;
             }
-            if (k != _aba) { _scroll.content = _listas[k]; _scroll.StopMovement(); _listas[k].anchoredPosition = Vector2.zero; }
+            if (k != _aba) { _scroll.content = _listas[k]; _scroll.StopMovement(); _listas[k].anchoredPosition = Vector2.zero; AbaVista?.Invoke(k); }
             _aba = k;
             _contaV = _resumoV = null;
             _t = 0f;
