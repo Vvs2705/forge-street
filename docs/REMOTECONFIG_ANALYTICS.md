@@ -109,6 +109,7 @@ Coerência entre chaves diferentes (por exemplo `VipMin` < `VipMax`) fica com qu
 | `rc_fetch` | `ok` / `invalido` / `falha` | bytes ou erro (só com a URL preenchida) |
 | `ad_init` | `desligado` | `remoteconfig` (chave mestra) |
 | `excecao` | mensagem sem caminho privado | 1ª linha da pilha |
+| `collection_view` / `hall_view` | distrito | marcos da coleção pagos / obras no Hall | cada aba do Hall que o jogador passa a ver (GDD §164 item 10: "≥ 30% abrem a coleção sem dica" no Closed = sessões com `collection_view` antes de qualquer aviso de marco) |
 | `event_enter` | ID do evento | — |
 | `event_points` | ID do evento | total de pontos da trilha |
 | `event_complete` | ID do evento | limiar cruzado (pontos) |
