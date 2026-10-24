@@ -1306,10 +1306,20 @@ namespace FS.Core
             l = Math.Min(l, (int)Quality.Superior);
             if (!s.Strike) return (Quality)l;
             s.Strike = false;
+            GolpeSuperior(s, l + 1);   // dly_golpe_superior1: a peca do golpe saiu Superior (ou obra-prima)
             if (l == (int)Quality.Superior && MasterworkPending != null && MasterworkPending(s)) return Quality.Masterwork;
             int up = Math.Min(l + 1, (int)Quality.Superior);
             StrikeGold += PriceOf(s.OutItem, (Quality)up) - PriceOf(s.OutItem, (Quality)l);
             return (Quality)up;
+        }
+
+        /// <summary>Golpe que faz Superior (LIVEOPS_V1 §4.2 #27, §4.5 #19): a peca golpeada sai Superior ou melhor (`nivel` = o de antes + 1).
+        /// So conta nas metas (a do Imperio tambem, como o master_strike): o Sim segue identico.</summary>
+        void GolpeSuperior(Station s, int nivel)
+        {
+            if (nivel < (int)Quality.Superior) return;
+            Metas.Registra("master_strike_superior", (int)s.OutItem);
+            Heroi?.Metas.Registra("master_strike_superior", NaRaiz((int)s.OutItem));
         }
 
         /// <summary>

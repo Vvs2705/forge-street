@@ -2191,7 +2191,7 @@ F2P × 8: produção completa 47:14, zona morta 19,6, saldo 619 — os do §34.2
 
 **Validator (`ContentValidator.Missoes`):** alvo de conquista dentro do conteúdo do build (`requiresContent`: 12 contratos, 1 Charter por distrito, 19 projetos, nível 10 do Renome, 4 famílias com nível V, 10 eventos, 2 Passes), filtro de item/nível nos gatilhos novos, `Ref` só onde vale e que exista (produto de algum distrito, distrito com Charter, marco da Collection), Renome que não dá Renome. **Decisão por padrão (revisar):** os 9 contratos dormentes (distritos 3–6) contam como conteúdo, então `ach_contratos12` aparece "x/12" até a Wave C; para escondê-la, a régua vira `ContratosDefs.NoBuild`.
 
-**Ficaram de fora (registrado):** as 10 diárias do pool C (qualidade, golpe, Renome, evento: mudam o slot C de todo jogador com a Quality aberta; ticket próprio com o golden do rodízio), `wkl_evento350` (regra "slot 1 do evento"), `dly_golpe_superior1`/`ach_golpe_superior50` (o golpe não sabe o nível com que a peça saiu), `ach_workers20` (contratação do distrito não sobe à raiz), `ach_distritos3/6`, `ach_mw30/60` e `ach_colecao_clientes` (conteúdo ou aba que não existe), e nenhuma de manager (o catálogo não lista).
+**Ficaram de fora (registrado):** as 10 diárias do pool C (qualidade, golpe, Renome, evento: mudam o slot C de todo jogador com a Quality aberta; ticket próprio com o golden do rodízio), `wkl_evento350` (regra "slot 1 do evento"), `dly_golpe_superior1`/`ach_golpe_superior50` (o golpe não sabe o nível com que a peça saiu; entraram no §43), `ach_workers20` (contratação do distrito não sobe à raiz), `ach_distritos3/6`, `ach_mw30/60` e `ach_colecao_clientes` (conteúdo ou aba que não existe), e nenhuma de manager (o catálogo não lista).
 
 ### 36.1 econsim antes (`main` a8e693b) → depois (este branch), `cmp` dos CSVs
 
@@ -2605,3 +2605,13 @@ A Carta melhora porque as receitas de síntese ficam mais lentas e o bot passa m
 **Bot (`econsim --perfis F2P,Ideal,Slow --minutos 120 --partidas 4`):** CSV **idêntico** ao byte (`805079bc…69798`, `md5`) na `main` 1f83293 e neste branch: o bot não resgata diárias, então o rodízio novo não muda produção, renda nem Renome. O efeito no jogador real é só o prêmio da diária (o mesmo de antes: XP 100 + 20 s) vindo de outra tarefa.
 
 **Testes:** `MetasTests.PoolC_RenomeFinaEEvento_GoldenERegras` (fallback para a A sem nada aberto; Renome pelo ganho desde a vaga, pago 1x; a 1ª Fina de escudo abre as de Fina e o golden de 6 dias `fina10, renome5, fina10, renome5, fina_escudos10, fina10`; com o Forge Frenzy ativo, só as 2 de evento, alternando) e `Rodizio_60Dias_…` ajustado (com a Joalheria, o slot C é o `dly_renome5`).
+
+## 43. Golpe que faz Superior: `dly_golpe_superior1` e `ach_golpe_superior50` (LIVEOPS_V1 §4.2 #27, §4.5 #19, 2026-10-24)
+
+**Vigente** (`Core/Sim.cs` `GolpeSuperior`, `Core/Metas.cs`, `Core/MetasDefs.cs`, `View/Textos.cs`, `View/Loc.cs`; branch `feat/diaria-golpe-superior`). O que faltava (§42, "o golpe não sabe o nível com que a peça saiu"): o `Sim.Grade`, onde o golpe é consumido na saída da peça, agora registra `master_strike_superior` (filtro = item; o do distrito também na raiz, como o `master_strike`) quando a peça golpeada sai Superior ou melhor (nível de antes + 1 ≥ Superior: Fina + golpe, Superior + golpe, e a obra-prima). Só conta nas metas: produção, preço e `StrikeGold` não mudam.
+
+- `dly_golpe_superior1` (pool C, recompensa padrão XP 100 + 20 s): entra no rodízio da C com a Quality aberta **e** depois da 1ª peça Fina ou melhor (`quality_crafted` > 0); antes disso o golpe só sobe a peça até Fina e a diária não fecharia no dia.
+- `ach_golpe_superior50` (Quality, XP 150), como no catálogo.
+- **Rodízio da C com 10:** `(dia × 5 + 2) mod 10` só visita 2 posições (mdc 5), e as Finas de escudo nunca apareciam. `Metas.Passo`: pool com tamanho múltiplo de 5 anda de 7 em 7. A (19) e B (14) seguem com o passo 5, ao byte; a C muda de sequência a partir do dia seguinte (a vaga do dia está no save). Golden novo de 10 dias com a Joalheria e uma Fina de escudo: `fina10, renome5, renome5, fina10, fina10, renome5, fina_escudos10, fina10, renome5, renome5`.
+
+**Bot:** o `econsim` não muda (o bot não resgata metas; o `Grade` só ganhou a contagem). **Testes:** `QualidadeTests.GolpeSuperior_ContaSoQuandoAPecaSaiSuperior` (q 0 não conta, q 100 e 200 contam, por item, errar não conta) e `MetasTests.GolpeSuperior_DiariaEConquista_PeloGolpeReal` (espera a 1ª Fina, entra na C, o golpe real fecha e paga, a conquista soma; golpe que só faz Fina não conta).

@@ -1259,6 +1259,8 @@ namespace FS
             { "missao.peca", L("peça|peças", "item|items", "pieza|piezas") },
             { "missao.golpe", L("Acerte {0} golpe de mestre|Acerte {0} golpes de mestre", "Land {0} master strike|Land {0} master strikes",
                 "Acierta {0} golpe maestro|Acierta {0} golpes maestros") },
+            { "meta.golpe_superior", L("Faça {0} Superior no golpe|Faça {0} Superiores no golpe", "Strike {0} piece to Superior|Strike {0} pieces to Superior",
+                "Haz {0} Superior con golpe|Haz {0} Superiores con golpe") },
             { "missao.golpe_item", L("Acerte {0} golpe em {1}|Acerte {0} golpes em {1}", "Land {0} strike on {1}|Land {0} strikes on {1}",
                 "Acierta {0} golpe en {1}|Acierta {0} golpes en {1}") },
             { "cos.cos_ev_s1w1_selo", L("Selo do Emissário", "Envoy's Seal", "Sello del Emisario") },

@@ -44,7 +44,7 @@ namespace FS.Core
     /// <summary>
     /// D-CORE-02: os modelos. So entram os que tem gatilho que o Sim (ou o Metas) emite HOJE; os do LIVEOPS_V1 com evento ✗ entram com o
     /// sistema deles (raia H: contrato, Charter, Collection, projetos, Renome, nivel de estacao, qualidade, golpe, evento e Passe ja entraram;
-    /// esperam: o golpe que faz Superior (dly_golpe_superior1) e ach_workers20; o pool C entrou no feat/diarias-pool-c). Os extras sobre eventos que ja existem
+    /// espera: ach_workers20; o pool C entrou no feat/diarias-pool-c). Os extras sobre eventos que ja existem
     /// (marcados "novo") completam os minimos do GDD §23 #12.
     /// Renome ainda nao existe: "abre com Renome 1" usa a Joalheria (12-25 min ~ 23 min no F2P) e "Renome 2" a Vitrine de joias, ate o B-CORE-06.
     /// </summary>
@@ -59,7 +59,7 @@ namespace FS.Core
             // metas de sistemas (raia H): contratos (#64), Charter (#61), Collection (#63), projetos (#55), Renome, niveis de estacao, qualidade e golpe
             // (B-CORE-03), eventos e Passe (D-CORE-03/04)
             Ctr = "contract_complete", Charter = "district_unlock", Col = "collection_milestone", Bp = "blueprint_unlock", Ren = "reputation_level",
-            Est = "station_level", Fina = "quality_crafted", Sup = "quality_superior", Golpe = "master_strike", EvFim = "event_complete",
+            Est = "station_level", Fina = "quality_crafted", Sup = "quality_superior", Golpe = "master_strike", GolpeSup = "master_strike_superior", EvFim = "event_complete",
             EvEntra = "event_enter", Passe = "pass_level",
             // pool C das diarias (LIVEOPS_V1 §4.2 #25-34): derivados do estado (Metas.Valor), nada novo no save
             RenGanho = "reputation_gain", EvPontos = "event_points";
@@ -118,11 +118,12 @@ namespace FS.Core
             D("dly_worker_nivel", B, Nivel, -1, 1, Ferr),              // B-CORE-04 (LIVEOPS_V1 §4.2 #24)
             // pool C (LIVEOPS_V1 §4.2 #25-34; Metas.LivreC): a de Fina so depois da 1a peca Fina daquele item (a "1a fonte de qualidade"),
             // Superior e golpe com a Quality aberta, Renome depois da Joalheria (o "Renome 1" desta tabela), e as 2 de evento so com um evento
-            // ativo (e ai so elas, alternando por dia). Fora: dly_golpe_superior1 (o golpe nao sabe o nivel com que a peca saiu)
+            // ativo (e ai so elas, alternando por dia). O golpe que faz Superior so depois da 1a Fina (Metas.LivreC)
             D("dly_fina10", PoolC, Fina, -1, 10, Ferr),
             D("dly_fina_escudos10", PoolC, Fina, Escudo, 10, Ferr),
             D("dly_superior3", PoolC, Sup, -1, 3, Ferr),
             D("dly_golpe3", PoolC, Golpe, -1, 3, Ferr),
+            D("dly_golpe_superior1", PoolC, GolpeSup, -1, 1, Ferr),
             D("dly_fina_joias5", PoolC, Fina, Joia, 5, Joal),
             D("dly_renome5", PoolC, RenGanho, -1, 5, Joal),
             D("dly_fina30", PoolC, Fina, -1, 30, Ren2),
@@ -277,6 +278,7 @@ namespace FS.Core
             C("ach_superior1k", Sup, -1, 1000, insignia: "olho_de_mestre"),
             C("ach_golpe1", Golpe, -1, 1, ouroS: 30),
             C("ach_golpe100", Golpe, -1, 100, xp: 100, renome: 5),
+            C("ach_golpe_superior50", GolpeSup, -1, 50, xp: 150),
             // Blueprints (B-CORE-07), niveis de estacao (filtro = nivel), Renome (nivel) e Collection (marco por ID)
             C("ach_bp1", Bp, -1, 1, ouroS: 30),
             C("ach_bp10", Bp, -1, 10, xp: 100, renome: 5),

@@ -412,7 +412,7 @@ Totais da trilha free por temporada: **ouro 1.170 s** (17 níveis), **Renome +44
 | 24 | `dly_worker_nivel` | Subir 1 nível de worker | B | Wave B (níveis) | `worker_upgrade` ✗ |
 | 25 | `dly_fina_escudos10` | Fabricar 10 escudos Fina ou melhor | C | 1ª fonte de qualidade nos escudos | `quality_crafted` (escudo) ✓ |
 | 26 | `dly_fina_joias5` | Fabricar 5 joias Fina ou melhor | C | 1ª fonte de qualidade nas joias | `quality_crafted` (joia) ✓ |
-| 27 | `dly_golpe_superior1` | Acertar 1 golpe que faz Superior | C | Quality aberta | `master_strike` (superior) ✗ |
+| 27 | `dly_golpe_superior1` | Acertar 1 golpe que faz Superior | C | Quality aberta e 1ª Fina | `master_strike_superior` ✓ |
 | 28 | `dly_fina30` | Fabricar 30 peças Fina ou melhor | C | Renome 2 | `quality_crafted` ✓ |
 | 29 | `dly_fina10` | Fabricar 10 peças Fina ou melhor | C | 1ª fonte de qualidade | `quality_crafted` ✓ |
 | 30 | `dly_superior3` | Fabricar 3 peças Superiores (golpe numa peça Fina) | C | Quality aberta | `quality_crafted` ✓ |
@@ -488,7 +488,7 @@ Todas visíveis (nenhuma escondida), progresso **derivado dos contadores do núc
 | 16 | `ach_superior1k` | 1.000 peças Superiores | Quality | `quality_crafted` ✗ | insígnia "Olho de Mestre" |
 | 17 | `ach_golpe1` | 1º golpe de mestre | Quality | `master_strike` ✗ | ouro 30 s |
 | 18 | `ach_golpe100` | 100 golpes de mestre | Quality | `master_strike` ✗ | XP 100 + Renome +5 |
-| 19 | `ach_golpe_superior50` | 50 golpes que fazem Superior | Quality | `master_strike` ✗ | XP 150 |
+| 19 | `ach_golpe_superior50` | 50 golpes que fazem Superior | Quality | `master_strike_superior` ✓ | XP 150 |
 | 20 | `ach_mw1` | 1ª Masterwork registrada | Masterworks | `masterwork_unlock` ✗ | XP 100 |
 | 21 | `ach_mw5` | 5 Masterworks | Masterworks | `masterwork_unlock` ✗ | XP 150 |
 | 22 | `ach_mw10_oldforge` | As 10 Masterworks do Old Forge | Masterworks | `masterwork_unlock` ✗ | XP 200 + insígnia "Hall Completo" |
