@@ -677,3 +677,14 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 | `royal.ogg` | Royal Arsenal e Grand Forge | [Medieval: King's Feast](https://opengameart.org/content/medieval-kings-feast) · `Kings_Feast_0.mp3` | 5206482 · `62be996d03d996fb72e2d395613ca3c83851b889fca1b13ecd6bba730ce72a34` | 128.9 s | -18.0 dBFS / 0.81 | 2065299 · `f9860b5735dfd66f3d784532d6e21eb50e361f0da137ad09b1467b4ce2fb38d6` |
 | `arcane.ogg` | Arcane Foundry | [Fantasy: Rising Moon](https://opengameart.org/content/fantasy-rising-moon) · `Rising_Moon_0.mp3` | 5397782 · `0e56e864d19ea50cf78851baa2edbeab319fc75527140c7be7ade6ecb4c8f4d2` | 220.3 s | -18.0 dBFS / 0.81 | 3026075 · `f930dab1a0d6d6383f37f5356993f4aba6f9e115b893c9e856a2c66cc5849ae3` |
 | `event.ogg` | evento ativo (voltas ímpares) | [Medieval: Rejoicing](https://opengameart.org/content/medieval-rejoicing) · `Rejoicing_0.mp3` | 4117555 · `00c08c2c7f1bab4720b387fc0a54edd54a6c618e5159b8724b766f0a02338304` | 100.0 s | -18.0 dBFS / 0.71 | 1755008 · `6815e57ac5cef8f7685f73f66a5d841e3cacf98ad8e1affe0a9f92804cc352ab` |
+
+## 25. Ambiente em camadas: fogo e multidão CC0 (OpenGameArt, 2026-10-24)
+
+Baixados com o aval permanente do Vinicius para downloads, fora do git (`%LOCALAPPDATA%\Temp\fs_amb_cc0`); tratamento em `client/tools/audio_ambiente.py` (`AUDIO.md` §11).
+
+| arquivo (`client/Assets/_FS/Resources/Audio/`) | origem | licença | arquivo baixado (bytes · SHA-256) | saída (SHA-256) |
+|---|---|---|---|---|
+| `amb_fogo.wav` (28,26 s, RMS −14,0 dBFS) | "Fireplace Sound loop", PagDev, opengameart.org/content/fireplace-sound-loop | CC0 1.0 (crédito opcional) | `fire.wav` 10 324 410 · `85ca0cc60d0c037fff8b185e31ad1fcdbda6ce45eee17c3ee1318d1b8f59e330` | `216b64b113d98f1276e8e58d580acc184764ac10586ffe62cc7cff6bc1441d3a` |
+| `amb_multidao.wav` (26,38 s, RMS −19,0 dBFS) | "Crowd Shouting/Speaking Ambience", StarNinjas, opengameart.org/node/124568 | CC0 1.0 (o autor pede um link para o perfil dele nos créditos: opengameart.org/users/starninjas) | `crowd_shouting.ogg` 335 526 · `a2c23a64c127c77717cbe4abb21f138bac9d9aa6cb3cc89d62bab5d0d96dd7ca` | `34146fcf117b2a4db51b9570ccecb6c37048e557c3cf510e4211937338e2c9f4` |
+
+Também baixado e não usado: "Fire Crackling", AntumDeluge (CC0), `fire-1.wav` 253 232 · `26702de8a195bcbafeae72034861d875a1b7917168a25106f4e1957ecdddf7e5` (a lareira já tem os estalos).
