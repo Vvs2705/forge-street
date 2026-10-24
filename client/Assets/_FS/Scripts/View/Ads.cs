@@ -242,9 +242,10 @@ namespace FS
         {
             var f = Privacidade.Flags(faixa, aceitou);
             string resposta = Privacidade.Gravar(faixa, aceitou);
-            if (_resposta != null)
+            PassoSdk passo = Privacidade.Sdk(_resposta, resposta);   // PrivacidadeTests: sem resposta, nunca Inicia
+            if (passo == PassoSdk.Espera || passo == PassoSdk.Mantem) return;
+            if (passo == PassoSdk.Para)
             {
-                if (resposta == _resposta) return;
                 LevelPlayPrivacySettings.SetGDPRConsent(f.Consentimento);
                 LevelPlayPrivacySettings.SetCCPA(f.NaoVender);
                 _parado = true;
