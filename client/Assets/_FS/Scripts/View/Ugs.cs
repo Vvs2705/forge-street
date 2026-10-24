@@ -20,6 +20,12 @@ namespace FS
         /// <summary>Ambiente do UGS (null = o padrao do projeto, production). So o build dev o troca, por -ugsenv nome (o Game le antes da
         /// 1a chamada): o teste das flags pelo painel publica no ambiente `teste` sem mexer no de producao.</summary>
         public static string Ambiente;
+        /// <summary>O Remote Config sem o Authentication nao segue o environment-name do Core: pede o ID (painel > Ambientes).</summary>
+        static readonly System.Collections.Generic.Dictionary<string, string> Ids = new System.Collections.Generic.Dictionary<string, string>
+        {
+            { "teste", "98334f17-686d-4073-8fec-34faf3599119" },
+        };
+        public static string AmbienteId => Ambiente != null && Ids.TryGetValue(Ambiente, out string id) ? id : null;
         /// <summary>UnityServices.InitializeAsync uma vez por processo (analytics e config dividem).</summary>
         public static Task Iniciar()
         {
@@ -90,6 +96,7 @@ namespace FS
             try
             {
                 await Ugs.Iniciar();
+                if (Ugs.AmbienteId != null) RemoteConfigService.Instance.SetEnvironmentID(Ugs.AmbienteId);
                 RuntimeConfig c = await RemoteConfigService.Instance.FetchConfigsAsync(new Vazio(), new Vazio());
                 if (c == null || !c.HasKey(Chave)) { log("rc_fetch", "vazio", ""); return; }
                 string json = c.GetJson(Chave);
