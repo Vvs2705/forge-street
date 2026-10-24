@@ -392,7 +392,7 @@ Validator: q máximo da família no distrito > 100 (Superior alcançável); toda
 | Renome nível 3 / 4 | — | 1,5–3 h / 3–6 h acumuladas (F2P) | limiares |
 | 1ª Masterwork | — | Perfect ≤ 2,5 h; F2P ≤ 4 h acumuladas | custos L4/L5 |
 | AdWatcher, produção completa | 24:46 (−44%) | ≥ 0,75 × F2P (com a recarga do VIP, V11) | recarga |
-| Deadlock em 1.000 partidas por perfil | 1 (Steer, corrigido na Wave A) | 0 | — |
+| Deadlock em 1.000 partidas por perfil | **0** (2026-10-24: 5 perfis × 1.000 partidas × 60 min, `BALANCE.md` §43; o Steer da Wave A dava 1) | 0 | — |
 | Ajudantes ociosos (`Ocioso_15Min`) | ≥ 150 vendas parado | ≥ 150 | — |
 
 ## 11. Ordem de implementação
