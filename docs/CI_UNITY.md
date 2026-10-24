@@ -9,6 +9,10 @@ O workflow `.github/workflows/unity.yml` roda no GitHub, com GameCI (docker `uni
 | `autoplay 10 min` | baixa o build e roda `ForgeStreet.exe -batchmode -nographics -autoplay 10` num runner Windows; exige `AUTOPLAY OK` e saída 0 | o `.exe` com `-autoplay 10` |
 | `build Android` | `FS.EditorTools.Setup.BuildAndroidDev` (IL2CPP ARM64) e guarda o APK como artefato por 3 dias | não está no `full`; cobre o `#if UNITY_ANDROID` que o viewcheck android cobre no PC |
 
+**Tamanho do APK:** o `BuildSummary` do Unity (e o "Complete build size" do Build Report, ~1 GB) soma o conteúdo **sem compressão**; não é o tamanho do arquivo. O job `build Android` mede o APK de verdade, escreve no resumo do job o peso por grupo e os 10 maiores arquivos, **reprova acima de 200 MB** (limite do módulo base da Play) e avisa acima de 160 MB. Medido em 2026-10-24 (#135): APK de dev com **134 MB**; texturas (`assets/bin/Data`) são a maior parte, `libil2cpp.so` + `libunity.so` somam ~30 MB comprimidos (o build de release encolhe essa parte). A saída registrada se apertar é ASTC 8×8 nas folhas de clientes (`ASSETS.md` §16).
+
+O `unity-builder@v6` consulta a API do GitHub para achar a versão do `game-ci/cli`; o passo recebe `GITHUB_TOKEN`, senão o limite de 60 req/h por IP do runner dá 403 e o build morre em 0 s (visto no #124).
+
 O `nucleo.yml` continua com o `dotnet test` do núcleo. O viewcheck (`view`/`android`) não roda no CI: ele compila contra as DLLs do Unity do PC, e o EditMode e o build Android já compilam o mesmo código com o Unity de verdade.
 
 Cada job guarda o `client/Library` em cache (uma chave por alvo). A 1ª rodada importa o projeto inteiro (~20–40 min por job); as seguintes reaproveitam o cache.

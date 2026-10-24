@@ -152,8 +152,12 @@ jobs:
           test -f "$apk"
           mb=$(( $(stat -c %s "$apk") / 1048576 ))
           { echo "### APK de dev: $mb MB (limite da Play no módulo base: 200 MB)"; echo '```'
-            unzip -lv "$apk" | awk 'NR > 3 && $1 ~ /^[0-9]+$/ { printf "%8.1f MB  %8.1f MB  %s\n", $3 / 1048576, $1 / 1048576, $8 }' | sort -rn | head -15
-            echo '```'; echo "colunas: comprimido no APK, sem compressão, arquivo"; } | tee -a "$GITHUB_STEP_SUMMARY"
+            unzip -lv "$apk" > lista.txt
+            # por grupo: assets/bin/Data = texturas e cenas; lib = IL2CPP e Unity; dex = Java dos plugins
+            awk 'NR > 3 && $1 ~ /^[0-9]+$/ { g = $8; sub(/\/[^\/]*$/, "", g); if ($8 ~ /\.dex$/) g = "*.dex"; c[g] += $3; n[g]++ }
+                 END { for (g in c) printf "%8.1f MB  %5d arquivos  %s\n", c[g] / 1048576, n[g], g }' lista.txt | sort -rn | head -8
+            echo; awk 'NR > 3 && $1 ~ /^[0-9]+$/ { printf "%8.1f MB  %8.1f MB  %s\n", $3 / 1048576, $1 / 1048576, $8 }' lista.txt | sort -rn | head -10
+            echo '```'; echo "MB comprimido no APK (no 2º bloco: comprimido, sem compressão, arquivo)"; } | tee -a "$GITHUB_STEP_SUMMARY"
           [ "$mb" -lt 200 ] || { echo "::error::APK com $mb MB: passa do limite de 200 MB da Play"; exit 1; }
           [ "$mb" -lt 160 ] || echo "::warning::APK com $mb MB, perto do limite de 200 MB da Play"
       - uses: actions/upload-artifact@v7
