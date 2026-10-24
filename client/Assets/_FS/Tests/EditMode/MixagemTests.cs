@@ -202,6 +202,56 @@ namespace FS.Tests
             Assert.GreaterOrEqual(Mixagem.MusicaPausa, 20f);
         }
 
+        /// <summary>AUDIO.md §10: a 1a volta e o tema, o evento ativo toma as voltas impares, o tema volta a cada 4 e o resto e a da casa.</summary>
+        [Test]
+        public void Musica_TrilhaPorDistritoEEvento()
+        {
+            Assert.AreEqual(5, Mixagem.Trilhas.Length, "GDD v2 §22: 5 musicas");
+            Assert.AreEqual("workshop", Mixagem.TrilhaDoDistrito(Distritos.OldForgeId));
+            Assert.AreEqual("workshop", Mixagem.TrilhaDoDistrito(Distritos.ArmorersRowId));
+            Assert.AreEqual("workshop", Mixagem.TrilhaDoDistrito(Distritos.ArtisanQuarterId));
+            Assert.AreEqual("royal", Mixagem.TrilhaDoDistrito(Distritos.RoyalArsenalId));
+            Assert.AreEqual("royal", Mixagem.TrilhaDoDistrito(Distritos.GrandForgeId));
+            Assert.AreEqual("arcane", Mixagem.TrilhaDoDistrito(Distritos.ArcaneFoundryId));
+
+            string Seq(string d, bool ev) { var b = new StringBuilder(); for (int v = 0; v < 9; v++) b.Append(Mixagem.Trilha(v, d, ev)).Append(' '); return b.ToString().Trim(); }
+            Assert.AreEqual("main workshop workshop workshop main workshop workshop workshop main", Seq(Distritos.OldForgeId, false));
+            Assert.AreEqual("main event royal event main event royal event main", Seq(Distritos.RoyalArsenalId, true));
+            Assert.AreEqual("main arcane arcane arcane main arcane arcane arcane main", Seq(Distritos.ArcaneFoundryId, false));
+            var tocadas = new HashSet<string>();
+            foreach (string d in new[] { Distritos.OldForgeId, Distritos.RoyalArsenalId, Distritos.ArcaneFoundryId })
+                for (int v = 0; v < 8; v++) { tocadas.Add(Mixagem.Trilha(v, d, false)); tocadas.Add(Mixagem.Trilha(v, d, true)); }
+            CollectionAssert.AreEquivalent(Mixagem.Trilhas, tocadas, "toda trilha toca e so as 5 tocam");
+        }
+
+        /// <summary>AUDIO.md §10: os 5 arquivos (Resources/Musica/&lt;trilha&gt;.ogg) existem, sao Vorbis estereo 44 100 Hz e tem de 1 a 6 min
+        /// (1 volta e a pausa: curta demais repete, longa demais pesa no APK). O nivel (-18 dBFS de RMS medio) e o audio_musica.py que garante.</summary>
+        [Test]
+        public void Musica_ArquivosReais()
+        {
+            string dir = MusicaDir();
+            if (!System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(dir))) Assert.Ignore("Resources fora do alcance: " + dir);
+            foreach (string t in Mixagem.Trilhas)
+            {
+                string f = System.IO.Path.Combine(dir, t + ".ogg");
+                Assert.IsTrue(System.IO.File.Exists(f), f);
+                byte[] b = System.IO.File.ReadAllBytes(f);
+                Assert.AreEqual("OggS", Encoding.ASCII.GetString(b, 0, 4), f);
+                int h = 27 + b[26];   // 1a pagina: cabecalho de identificacao do Vorbis
+                Assert.AreEqual("\u0001vorbis", Encoding.ASCII.GetString(b, h, 7), f + ": Vorbis");
+                Assert.AreEqual(2, (int)b[h + 11], f + ": estereo");
+                int taxa = BitConverter.ToInt32(b, h + 12);
+                Assert.AreEqual(44100, taxa, f + ": taxa");
+                int u = b.Length - 4;   // ultima pagina: a posicao do ultimo sample
+                while (u > 0 && Encoding.ASCII.GetString(b, u, 4) != "OggS") u--;
+                double s = BitConverter.ToInt64(b, u + 6) / (double)taxa;
+                Assert.That(s, Is.InRange(60.0, 360.0), f + ": duracao (s)");
+            }
+        }
+
+        static string MusicaDir([System.Runtime.CompilerServices.CallerFilePath] string aqui = "") =>
+            System.IO.Path.GetFullPath(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(aqui), "../../Resources/Musica"));
+
         [Test]
         public void SomLog_LinhaPorMinutoZera()
         {
