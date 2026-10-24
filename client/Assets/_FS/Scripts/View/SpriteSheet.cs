@@ -19,6 +19,8 @@ namespace FS
         [Serializable] public sealed class Meta { public int size, dirs; public string[] dir_order; public float ppu; public float[] pivot, encaixes; public List<ClipMeta> clips; }
 
         static readonly Dictionary<string, SpriteSheet> Cache = new Dictionary<string, SpriteSheet>();
+        /// <summary>No Placeholder Gate (DM §178): folhas pedidas que cairam no procedural (com grafico; o -nographics nao conta). O Game loga ao sair.</summary>
+        public static readonly SortedSet<string> Faltas = new SortedSet<string>();
         static readonly string[] Compass4 = { "S", "W", "N", "E" }, Compass8 = { "S", "SW", "W", "NW", "N", "NE", "E", "SE" };
 
         public readonly int Size, Dirs;
@@ -47,7 +49,11 @@ namespace FS
         /// <summary>Carrega (1 vez por nome, inclusive a falha) e devolve a folha.</summary>
         public static bool TryGet(string name, out SpriteSheet sheet)
         {
-            if (!Cache.TryGetValue(name, out sheet)) Cache[name] = sheet = Load(name);
+            if (!Cache.TryGetValue(name, out sheet))
+            {
+                Cache[name] = sheet = Load(name);
+                if (sheet == null && SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null) Faltas.Add(name);
+            }
             return sheet != null;
         }
 

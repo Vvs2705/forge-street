@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **No Placeholder Gate (DM §178):** `client/tools/placeholder_gate.py` abre o jogo em cada distrito e painel e lista toda arte que caiu no procedural e todo efeito sintetizado. A 1ª rodada achou o chão de grama e 8 efeitos, e os dois saíram: grama CC0 (ambientCG Grass004, no verde-oliva da paleta) e os 8 efeitos com gravação CC0 da Kenney no mesmo nível (sino, porta, lingote e 5 jingles).
 - **Núcleo em partes:** o `Sim.cs` (1.886 linhas) vira o estado e o construtor (468) mais 7 parciais por assunto (`Sim.Tick`, `Sim.Ajudantes`, `Sim.Trocas`, `Sim.Producao`, `Sim.Qualidade`, `Sim.Consultas`, `Sim.Save`), só movendo código: o econsim sai idêntico ao byte nos 5 distritos e com evento, e as mutações apontam para os arquivos novos (4 trechos que já estavam velhos na `main` corrigidos). O econsim ganha a linha de deadlock (10+ min seguidos sem ouro): 0 em 1.000 partidas por perfil (`BALANCE.md` §43).
 - **Pass medido com o bot:** teste novo em que o bot F2P joga 20 min por dia e fecha a trilha free no dia 23 da temporada de 35, sem nada do premium; o validator do LiveOps recusa requisito de evento ou alvo de meta que só a trilha premium dá ("nada obrigatório só no premium").
 - **Preço do Pass premium definitivo:** R$ 44,90 por temporada (`iap_pass_s1_royal_commission`, `iap_pass_s2_ember_festival`), aprovado pelo Vinicius em 2026-10-24; sai a marca de provisório do código e dos docs (`IAP.md` §1, `PROJETO.md` §8 e §9).

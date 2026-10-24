@@ -47,6 +47,15 @@ MAPA = {
             "kenney_rpg-audio/Audio/handleCoins2.ogg",
         ],
     ),
+    # No Placeholder Gate (2026-10-24): os 8 que ainda tocavam a Sintese
+    "furnace": (-11.0, ["kenney_impact-sounds/Audio/impactPlate_heavy_000.ogg"]),
+    "client": (-11.7, ["kenney_impact-sounds/Audio/impactBell_heavy_002.ogg"]),
+    "leave": (-12.0, ["kenney_rpg-audio/Audio/doorClose_2.ogg"]),
+    "upgrade": (-12.2, ["kenney_music-jingles/Audio/Pizzicato jingles/jingles_PIZZI10.ogg"]),
+    "hire": (-12.1, ["kenney_music-jingles/Audio/Pizzicato jingles/jingles_PIZZI04.ogg"]),
+    "order": (-11.6, ["kenney_music-jingles/Audio/Pizzicato jingles/jingles_PIZZI01.ogg"]),
+    "vip": (-10.7, ["kenney_music-jingles/Audio/Steel jingles/jingles_STEEL00.ogg"]),
+    "offline": (-12.7, ["kenney_music-jingles/Audio/Steel jingles/jingles_STEEL04.ogg"]),
 }
 
 
