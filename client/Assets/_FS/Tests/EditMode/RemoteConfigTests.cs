@@ -99,6 +99,20 @@ namespace FS.Tests
             Assert.AreEqual(10, new Tuning().Price[(int)Item.Sword], "o array do config e' copia: o padrao de ninguem muda");
         }
 
+        /// <summary>DM §89: o snapshot do A/B separa dois configs com o mesmo id@versao e valores diferentes; o mesmo JSON da o mesmo.</summary>
+        [Test]
+        public void Snapshot_IdVersaoEHashDoConteudo()
+        {
+            RemoteConfig.Resultado a = Aplica(new Tuning(), "{\"id\":\"ab\",\"versao\":2,\"VipMin\":3}");
+            RemoteConfig.Resultado b = Aplica(new Tuning(), "{\"id\":\"ab\",\"versao\":2,\"VipMin\":4}");
+            RemoteConfig.Resultado c = Aplica(new Tuning(), "  {\"id\":\"ab\",\"versao\":2,\"VipMin\":3}\n");
+            Assert.AreEqual(a.Rotulo, b.Rotulo);
+            Assert.AreNotEqual(a.Snapshot, b.Snapshot, "mesmo id@versao, valores diferentes");
+            Assert.AreEqual(a.Snapshot, c.Snapshot, "espaco nas pontas nao muda o snapshot");
+            StringAssert.IsMatch("^ab@2#[0-9a-f]{8}$", a.Snapshot);
+            Assert.AreEqual("padrao@0", Aplica(new Tuning(), null).Snapshot, "sem config: sem hash");
+        }
+
         [Test]
         public void SemIdNemVersao_RotuloSemId()
         {
