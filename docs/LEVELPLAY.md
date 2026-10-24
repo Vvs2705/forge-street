@@ -112,6 +112,7 @@ O `Ads.Init` recebe o `log` do `Game`, que grava pelo mesmo `IAnalytics` dos out
 | `ad_reward` | placement | `VIP x1 <rede>` / `... simulado` |
 | `ad_fail` | placement | `sem_anuncio`, `ocupado`, `fechou_sem_recompensa`, `exibicao <código> <msg>`… |
 | `ad_load_fail` | placement | `<código> <msg> retry Ns` |
+| `consent_ask` | onde: `hud` / `cofre` | — (a tela de idade abriu sozinha, no 1º botão de anúncio) |
 | `consent_answer` | faixa: `<13` / `13-17` / `18+` | personalizado: `sim` / `nao` (sai do `Game.Responder`, a cada resposta da tela) |
 
 Trecho real, de uma sessão no PC sem `-testsession` (o save e o diário do PC foram restaurados do backup depois): `client/Builds/validation_levelplay/diario_trecho.csv`.
@@ -136,7 +137,7 @@ Tela de idade (E-PLAT-01). O `-testsession` não mostra a tela nem grava a respo
 ./win/ForgeStreet.exe -testsession -settings -shot "C:/caminho/absoluto/config_privacidade.png" -shotdelay 1.5     # botão PRIVACIDADE
 ```
 
-Sem `-testsession`, a tela aparece na 1ª abertura de verdade. Para ver de novo no PC, use Configurações > PRIVACIDADE ou apague o valor `fs_privacidade` do PlayerPrefs (no registro, em `HKCU\Software\<empresa>\<produto>`).
+Sem `-testsession`, a tela aparece sozinha quando o 1º botão de anúncio apareceria (depois da 1ª melhoria). Para ver de novo no PC, use Configurações > PRIVACIDADE ou apague o valor `fs_privacidade` do PlayerPrefs (no registro, em `HKCU\Software\<empresa>\<produto>`).
 
 ### Editor
 
@@ -194,7 +195,7 @@ Até a 0.6 o `AdsLevelPlay` fixava COPPA false, GDPR false e CCPA true para todo
 
 ### Fluxo
 
-1. **1ª abertura** (sem resposta, ou resposta com versão de texto antiga): o `AdsLevelPlay` **não toca no LevelPlay** (nem os eventos, nem o `SetAdaptersDebug`), loga `ad_init espera consentimento`, e o `Ready` é false (os botões de anúncio somem, inclusive o simulado do dev). O jogo funciona, e a oficina fica parada enquanto a tela está aberta (o `-bot` continua jogando por baixo).
+1. **Sem resposta** (ou resposta com versão de texto antiga): nada antes do 1º toque; a tela abre 1x no 1º instante em que um botão de anúncio apareceria (depois da 1ª melhoria, D6; regra em `PedidoIdade`, ver `PRIVACIDADE.md` §1.2). Até lá o `AdsLevelPlay` **não toca no LevelPlay** (nem os eventos, nem o `SetAdaptersDebug`), loga `ad_init espera consentimento`, e o `Ready` é false (os botões de anúncio somem, inclusive o simulado do dev). O jogo funciona, e a oficina fica parada enquanto a tela está aberta (o `-bot` continua jogando por baixo).
 2. **Passo 1, "Qual é a sua idade?"**: 3 botões iguais, um embaixo do outro, na ordem da idade ("Menos de 13", "13 a 17", "18 ou mais"), nenhum pré-marcado. Não tem como fechar sem responder (o voltar do Android não faz nada aqui).
 3. **"Menos de 13" e "13 a 17"** fecham a tela: nada é perguntado sobre personalização, porque a resposta é sempre não.
 4. **"18 ou mais"** vai ao passo 2, **"Anúncios personalizados?"**: Recusar e Aceitar lado a lado, com o mesmo tamanho, a mesma cor (face `HudEdge`, texto `HudFace`) e a mesma fonte. VOLTAR (ou o voltar do Android) volta para a idade.

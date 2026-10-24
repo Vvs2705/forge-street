@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace FS
 {
-    /// <summary>Faixa de idade da tela da 1a abertura (E-PLAT-01); a ordem do enum e' a ordem dos botoes.</summary>
+    /// <summary>Faixa de idade da tela de idade (E-PLAT-01; abre no 1o botao de anuncio, PedidoIdade); a ordem do enum e' a ordem dos botoes.</summary>
     public enum Faixa { Menor13 = 1, De13a17 = 2, Adulto = 3 }
 
     /// <summary>
@@ -68,6 +68,52 @@ namespace FS
 
         /// <summary>Parametro "a" do consent_answer no diario (sem virgula nem dado pessoal).</summary>
         public static string Diario(Faixa f) => f == Faixa.Menor13 ? "<13" : f == Faixa.De13a17 ? "13-17" : "18+";
+
+        /// <summary>E-PLAT-01: o que o SDK de anuncio faz com a resposta. `aplicada` = Gravar da resposta que ja iniciou o SDK neste processo
+        /// (null = SDK parado); `nova` = Gravar da resposta de agora (null = sem resposta). Sem resposta o SDK nunca inicia.</summary>
+        public static PassoSdk Sdk(string aplicada, string nova) =>
+            nova == null ? (aplicada == null ? PassoSdk.Espera : PassoSdk.Mantem)
+            : aplicada == null ? PassoSdk.Inicia : aplicada == nova ? PassoSdk.Mantem : PassoSdk.Para;
+    }
+
+    /// <summary>Espera = nao toca no LevelPlay; Inicia = flags e LevelPlay.Init (1x por processo); Mantem = nada muda; Para = resposta
+    /// mudou depois do Init: GDPR/CCPA na hora e nenhum anuncio ate reabrir o jogo (COPPA, ID e Familias so valem antes do Init).</summary>
+    public enum PassoSdk { Espera, Inicia, Mantem, Para }
+
+    /// <summary>
+    /// E-PLAT-01 (GDD "Conflitos com o GDD atual" item 1, decidido: movida): QUANDO a tela de idade abre sozinha. Nada antes do 1o toque:
+    /// ela abre 1x, no 1o instante em que um botao de anuncio apareceria (o nucleo deixa algum placement, Anuncios.Pode, o que pela D6 so
+    /// acontece depois da 1a melhoria comprada), e so onde o botao e' tocavel (HUD jogando, Estados.Anuncia, ou o "Cofre 2x" no painel do
+    /// cofre). Sem resposta nao ha botao de anuncio nem rede (SDK, analytics remoto, RemoteConfig, loja real): Botoes = false. O -testsession
+    /// (fotos, smoke) nunca a abre sozinha e mostra os botoes do anuncio simulado, como antes; o SDK real continua parado sem resposta.
+    /// </summary>
+    public sealed class PedidoIdade
+    {
+        readonly bool _teste;
+        bool _pediu;
+
+        public bool Respondida { get; private set; }
+        /// <summary>Os botoes de anuncio podem aparecer (alem do Anuncios.Pode e do IAds.Ready).</summary>
+        public bool Botoes => Respondida || _teste;
+
+        /// <param name="respondida">Ads.Resposta: resposta gravada com a versao atual do texto.</param>
+        /// <param name="teste">-testsession, -record ou -autoplay.</param>
+        public PedidoIdade(bool respondida, bool teste) { Respondida = respondida; _teste = teste; }
+
+        /// <summary>true = abrir a tela agora (1x por sessao). `hud` = algum botao de anuncio da HUD apareceria (VIP, velocidade, Supply,
+        /// bonus/trocar da encomenda); `cofre` = o "Cofre 2x" apareceria no painel do cofre aberto.</summary>
+        public bool Abrir(bool hud, bool cofre, Estado e)
+        {
+            if (Respondida || _pediu || _teste) return false;
+            if (!(hud && Estados.Anuncia(e) || cofre && e == Estado.Modal)) return false;
+            _pediu = true;
+            return true;
+        }
+
+        /// <summary>A tela abriu por outro caminho (-privacidade no Awake): nao abre de novo sozinha.</summary>
+        public void Aberta() => _pediu = true;
+
+        public void Responder() => Respondida = true;
     }
 
 #if !FS_CORETESTS
