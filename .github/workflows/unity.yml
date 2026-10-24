@@ -79,6 +79,8 @@ jobs:
           key: library-win-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-${{ hashFiles('client/Assets/**/*.meta') }}
           restore-keys: library-win-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-
       - uses: game-ci/unity-builder@v6
+        env:   # o builder busca a última versão do game-ci/cli na API do GitHub; sem token o limite de 60/h por IP do runner dá 403
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           projectPath: client
           targetPlatform: StandaloneWindows64
@@ -136,14 +138,24 @@ jobs:
           key: library-android-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-${{ hashFiles('client/Assets/**/*.meta') }}
           restore-keys: library-android-${{ hashFiles('client/Packages/packages-lock.json', 'client/ProjectSettings/ProjectVersion.txt') }}-
       - uses: game-ci/unity-builder@v6
+        env:   # o builder busca a última versão do game-ci/cli na API do GitHub; sem token o limite de 60/h por IP do runner dá 403
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           projectPath: client
           targetPlatform: Android
           buildMethod: FS.EditorTools.Setup.BuildAndroidDev
           versioning: None
           allowDirtyBuild: true
-      - name: APK gerado
-        run: ls -la client/Builds/android && test -f client/Builds/android/ForgeStreet-dev.apk
+      - name: tamanho do APK (o BuildSummary soma o conteúdo sem compressão; o que vale é o arquivo)
+        run: |
+          apk=client/Builds/android/ForgeStreet-dev.apk
+          test -f "$apk"
+          mb=$(( $(stat -c %s "$apk") / 1048576 ))
+          { echo "### APK de dev: $mb MB (limite da Play no módulo base: 200 MB)"; echo '```'
+            unzip -lv "$apk" | awk 'NR > 3 && $1 ~ /^[0-9]+$/ { printf "%8.1f MB  %8.1f MB  %s\n", $3 / 1048576, $1 / 1048576, $8 }' | sort -rn | head -15
+            echo '```'; echo "colunas: comprimido no APK, sem compressão, arquivo"; } | tee -a "$GITHUB_STEP_SUMMARY"
+          [ "$mb" -lt 200 ] || { echo "::error::APK com $mb MB: passa do limite de 200 MB da Play"; exit 1; }
+          [ "$mb" -lt 160 ] || echo "::warning::APK com $mb MB, perto do limite de 200 MB da Play"
       - uses: actions/upload-artifact@v7
         with:
           name: apk-dev
