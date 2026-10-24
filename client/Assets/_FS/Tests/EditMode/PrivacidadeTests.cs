@@ -86,5 +86,73 @@ namespace FS.Tests
             StringAssert.Contains("18 ou mais, anúncios personalizados", Privacidade.Atual(Faixa.Adulto, true));
             StringAssert.Contains("13 a 17, anúncios não personalizados", Privacidade.Atual(Faixa.De13a17, true));
         }
+        // ---- quando pedir a idade (GDD "Conflitos" item 1, decidido: movida para o 1o botao de anuncio) ----
+
+        static readonly Estado[] Estados_ = (Estado[])System.Enum.GetValues(typeof(Estado));
+
+        [Test]
+        public void Pedido_1aAbertura_NadaAntesDoBotao_NemBotoesNemSdk()
+        {
+            var p = new PedidoIdade(false, false);
+            Assert.IsFalse(p.Botoes, "sem resposta: nenhum botao de anuncio");
+            foreach (Estado e in Estados_) Assert.IsFalse(p.Abrir(false, false, e), $"{e}: sem botao de anuncio, nenhuma tela");
+            Assert.AreEqual(PassoSdk.Espera, Privacidade.Sdk(null, null), "sem resposta o SDK espera");
+            Assert.IsFalse(p.Botoes);
+        }
+
+        [Test]
+        public void Pedido_AbreNo1oBotao_Tocavel_1xPorSessao()
+        {
+            foreach (Estado e in Estados_)
+            {
+                Assert.AreEqual(Estados.Anuncia(e), new PedidoIdade(false, false).Abrir(true, false, e), $"HUD em {e}: so onde o botao e' tocavel");
+                Assert.AreEqual(e == Estado.Modal, new PedidoIdade(false, false).Abrir(false, true, e), $"Cofre 2x em {e}: so com o painel aberto");
+            }
+            var p = new PedidoIdade(false, false);
+            Assert.IsTrue(p.Abrir(true, false, Estado.Playing));
+            Assert.IsFalse(p.Abrir(true, false, Estado.Playing), "abre 1x (a tela da 1a vez nao fecha sem resposta)");
+            Assert.IsFalse(p.Botoes, "aberta e sem resposta: os botoes continuam escondidos");
+            p.Responder();
+            Assert.IsTrue(p.Botoes, "respondeu: os botoes aparecem");
+            Assert.IsFalse(p.Abrir(true, true, Estado.Playing));
+        }
+
+        [Test]
+        public void Pedido_Respondida_TesteEPrivacidadeArg_NaoAbremSozinha()
+        {
+            var r = new PedidoIdade(true, false);
+            Assert.IsTrue(r.Botoes);
+            Assert.IsFalse(r.Abrir(true, true, Estado.Playing), "respondida numa abertura anterior");
+            var t = new PedidoIdade(false, true);
+            Assert.IsTrue(t.Botoes, "-testsession: fotos e smoke com os botoes do anuncio simulado");
+            Assert.IsFalse(t.Abrir(true, true, Estado.Playing), "-testsession nunca abre sozinha");
+            var a = new PedidoIdade(false, false);
+            a.Aberta();   // -privacidade [18] abriu no Awake
+            Assert.IsFalse(a.Abrir(true, false, Estado.Playing));
+            Assert.IsFalse(a.Botoes);
+        }
+
+        [Test]
+        public void Gatilho_D6_NenhumPlacementAntesDa1aMelhoria()
+        {
+            var s = new FS.Core.Sim();
+            foreach (FS.Core.Anuncio x in (FS.Core.Anuncio[])System.Enum.GetValues(typeof(FS.Core.Anuncio)))
+                Assert.IsFalse(s.Anuncios.Pode(x), $"{x} antes da 1a melhoria: a tela nao abre");
+            Assert.IsTrue(s.Buy(FS.Core.Upgrade.Tools));
+            Assert.IsTrue(s.Anuncios.Pode(FS.Core.Anuncio.Velocidade), "1a melhoria: o 2x apareceria, a tela abre");
+            Assert.IsTrue(new PedidoIdade(false, false).Abrir(s.Anuncios.Pode(FS.Core.Anuncio.Velocidade), false, Estado.Playing));
+        }
+
+        [Test]
+        public void Sdk_ConsentimentoAntesDoInit()
+        {
+            string menor = Privacidade.Gravar(Faixa.Menor13, false), adulto = Privacidade.Gravar(Faixa.Adulto, true);
+            Assert.AreEqual(PassoSdk.Espera, Privacidade.Sdk(null, null), "sem resposta: nada de Init");
+            Assert.AreEqual(PassoSdk.Inicia, Privacidade.Sdk(null, menor), "1a resposta (qualquer faixa): Init");
+            Assert.AreEqual(PassoSdk.Mantem, Privacidade.Sdk(menor, menor), "mesma resposta: nada muda");
+            Assert.AreEqual(PassoSdk.Mantem, Privacidade.Sdk(menor, null));
+            Assert.AreEqual(PassoSdk.Para, Privacidade.Sdk(menor, adulto), "mudou depois do Init: sem anuncio ate reabrir");
+            Assert.IsFalse(Privacidade.Ler("", out _, out _), "PlayerPrefs vazio = sem resposta = Espera");
+        }
     }
 }
