@@ -646,3 +646,21 @@ Vulcana (`wk_vulcana`) passa a usar a folha `fundidor` do Lote 5A (§9), feita p
 | asset | uso no jogo | imagem escolhida | task | créditos | faces | zip (SHA-256) | fbx (SHA-256) | folha (SHA-256) |
 |---|---|---|---|---|---|---|---|---|
 | felix | grand_forge: worker Félix, o Mensageiro (Courier) | #2 de 4 (mensageiro barbado de capa azul-noite com fecho de bronze, boné com pena branca, sacola de pergaminhos, caixote com aros de bronze nas costas; pose T) | `306f9f36-e2e3-47ed-902e-f8f2695d185f` | 65 (45 + rig 20) | 7438 | `arte/tripo/felix/felix_mixamo.zip` 27126615 · `5722a77e7abdadff6f01f2a124ed7f660e5068386e04f99e73061e4c0c0f3a74` | `tripo_convert_ff0c03a9-a140-49ea-a627-ea4f44404db0.fbx` 13911056 · `5e7ea8981c135b89e6db46e4a86b73654180beedaea350d4317020aa610f0a2d` | `Idle.png` c5c93da170b67b7a68d57ef38a735143ca731263f08c59b25399bda149a2dcb6 |
+
+
+## 23. No Placeholder Gate: os 8 efeitos que faltavam e a grama (2026-10-24, 0 crédito)
+
+- **Efeitos (CC0, Kenney):** mesma licença, tratamento e script da §19 (`audio_cc0.py`, entradas novas no `MAPA`). Pacote novo, do mesmo lote baixado em 2026-10-23: `kenney_music-jingles.zip` 1 239 525 bytes · `729ba57959bd58793d2c5cafa348aaf2655d354f3da35ec4729e03ec77197b`. Os 18 arquivos da §19 saíram idênticos ao byte na regravação.
+
+| arquivo (`client/Assets/_FS/Resources/Audio/`) | som da Sintese | origem no pacote | duração | alvo RMS 50 ms (dBFS) | SHA-256 |
+|---|---|---|---|---|---|
+| `furnace/furnace_0.wav` | `furnace` | `kenney_impact-sounds/Audio/impactPlate_heavy_000.ogg` | 0.35 s | -11.0 | `d21585fb683ecb36c17e66d9005e4724d411ef65e35a19f590af850e2807e431` |
+| `client/client_0.wav` | `client` | `kenney_impact-sounds/Audio/impactBell_heavy_002.ogg` | 0.42 s | -11.7 | `737c884f4b5b62e99847d6bd39a96bee6aa62779782fe5e93d6c187690f465ac` |
+| `leave/leave_0.wav` | `leave` | `kenney_rpg-audio/Audio/doorClose_2.ogg` | 0.46 s | -12.0 | `16e4cc7149b9a7dd9f9e2ea9a2f369c84fba6e30b8d99538170dbdc3ffb57484` |
+| `upgrade/upgrade_0.wav` | `upgrade` | `kenney_music-jingles/Audio/Pizzicato jingles/jingles_PIZZI10.ogg` | 0.71 s | -12.2 | `87ae253b4e74c4d1e21855fcbfbf611f78b9d330139cf247b3caf0aa00de3a62` |
+| `hire/hire_0.wav` | `hire` | `kenney_music-jingles/Audio/Pizzicato jingles/jingles_PIZZI04.ogg` | 0.48 s | -12.1 | `d27bff15e97629f5b3e5ea0b2e05311f399195ef099a44fa6dee5b64f787608e` |
+| `order/order_0.wav` | `order` | `kenney_music-jingles/Audio/Pizzicato jingles/jingles_PIZZI01.ogg` | 0.94 s | -11.6 | `4cc9714b40fa903ffe793917ce24273c160e3478b6926682903238493c322a25` |
+| `vip/vip_0.wav` | `vip` | `kenney_music-jingles/Audio/Steel jingles/jingles_STEEL00.ogg` | 0.83 s | -10.7 | `e8558fe445e1791d746cb63b906326a62f265f2e6851611ffd938716dc04ddf1` |
+| `offline/offline_0.wav` | `offline` | `kenney_music-jingles/Audio/Steel jingles/jingles_STEEL04.ogg` | 0.91 s | -12.7 | `662111e96a4559265629d35b29296c9884b248b06e31de082e268491c999f2a3` |
+
+- **Grama do exterior (`Resources/Textures/grama.png`, 256²):** ambientCG **Grass004** (CC0 1.0, ambientcg.com, uso comercial livre sem atribuição), `Grass004_1K-JPG.zip` 11 003 149 bytes · `4b63495f459db8481f4d5144e4e9069345c81cf898cc71f2216f5dd3bb344469`, baixado com o aval permanente do Vinicius para downloads. Tratamento (Pillow): mapa `_Color` com mediana 5 px, 256² (Lanczos), saturação 0,85, contraste 0,80 e média levada ao verde-oliva da ART_BIBLE (`#3F6B3A`). Já é sem emenda. SHA-256 `5940c9d7bba6ff89824140937172765dabb8443af8047b165cc0fb077295ec14`; `.meta` com as configurações da `rua.png`. Substitui o procedural `Art.Grass()`, que fica só como reserva sem o arquivo.
