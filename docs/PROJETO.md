@@ -132,7 +132,7 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 
 ## 8. Progresso rumo ao 100% (definição de jogo completo, DM §164)
 
-Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-24: #121, #126, #127 sobre a leva #99–#119). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
+Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-24: #121, #124–#127 e #131 sobre a leva #99–#119). 100% = o item do §164 pronto para Release Candidate (Wave H), não "começado". Só conta o que está na `main`; branches pendentes no §9.
 
 | Item (§164) | % | Onde está | Próximo passo |
 |---|---|---|---|
@@ -141,16 +141,16 @@ Estimativa honesta do coordenador, atualizada a cada leva (última: 2026-10-24: 
 | 35–45 produtos | 90 | 38 de 38 vendáveis em jogo nos 6 distritos; os 58 itens com ícone (5 insumos novos no #105); textos pt/en/es (1.227 chaves) | chave de analytics por produto conferida no painel do UGS |
 | Workers | 90 | Old Forge (13), Ferraz e Vulcana (Row), Dourado e Lúcia (Quarter), Cadetes e Matias (Arsenal), Aprendizes e Ísis (Foundry), Estrela e Félix (Grand Forge); managers 2–5 dos 6; arte própria da Vulcana (#107), do Félix (#119) e do herói em 3 estágios pelo Renome (#115) | estágios 4 e 5 do herói (Renome 5 e 7, Blender, 0 crédito); teste de silhueta |
 | Quality | 92 | 4 níveis, níveis II–V, golpe, técnica, oficiais, Masterwork; liga na Row, lapidação no Quarter (#78), peça energizada na Foundry (#97) e bênção da forja na Grand Forge (#98) | conferir com jogador real |
-| Orders | 86 | Orders 2.0 (#60); encomendas dos 6 distritos (Amara, Tibério, Zélia, Kael; a Royal nunca vira Common) | V27 (Event e vagas) |
+| Orders | 90 | Orders 2.0 (#60); encomendas dos 6 distritos (Amara, Tibério, Zélia, Kael; a Royal nunca vira Common); V27: a encomenda Event tem vaga própria e não disputa as normais (#131, `BALANCE.md` §44) | conferir com jogador real |
 | Royal Contracts | 84 | os 12 em dados abrem no build (os da Foundry e da Grand Forge entram com elas); 2ª vaga pela `mesa_real`; Charters do Arsenal, da Foundry e a Carta aceitam contrato ou Royal | contratos que andam no bot (hoje a lista oferece o 1º não concluído; §41 achado 15) |
 | Blueprints | 88 | 19 do Old Forge + 14 por distrito nos outros 5 (#83, #97, #98) | conferir a fila com jogador real |
 | Masterworks | 92 | 60 de 60 nos 6 distritos, Hall por distrito; bot F2P que golpeia mede a 1ª obra aos 80 min (portão 4 h, #106) | calibrar o acerto "1 em 2" do bot com jogador real |
 | Collection | 86 | marcos dos 6 distritos | conferir com jogador real |
 | Reputation | 85 | Renome 10 níveis do Império (#65); o 8 e o 9 abrem a Foundry e a Grand Forge; teste de que nunca cai (#100); F2P chega ao 2/3/4 em 0:51 / 1:41 / 3:11 | calibrar 5–10 com jogador real (Renome 9 = knob da Carta) |
-| Daily / Weekly / Achievements | 97 | 41 diárias (9 do pool C no #118, `BALANCE.md` §42), 17 semanais, 106 conquistas (3/6 distritos e 30/60 obras no #100), login de 7 dias; retroativo | `dly_golpe_superior1` (o golpe não sabe o nível da peça) |
-| Events (LiveOps) | 86 | 10 `EventDef`, os 10 rodando (Rare Ore Rush no #100); `event_enter`/`event_complete` chegam ao UGS Analytics (#112) | V27: encomenda Event contada à parte das vagas e reafinar os eventos |
+| Daily / Weekly / Achievements | 99 | 42 diárias (10 do pool C: #118 e `dly_golpe_superior1` no #124, `BALANCE.md` §42 e §45), 17 semanais, 107 conquistas (3/6 distritos e 30/60 obras no #100), login de 7 dias; retroativo | `ach_workers20` (contratação do distrito não sobe à raiz) |
+| Events (LiveOps) | 89 | 10 `EventDef`, os 10 rodando (Rare Ore Rush no #100); `event_enter`/`event_complete` chegam ao UGS Analytics (#112); Event à parte e 17 pontos nos 10 eventos, que fecham a trilha no dia 4–5 do F2P (#131) | reafinar com jogador real |
 | Pass | 85 | 30 níveis, temporada de 35 dias, trilha free; premium como produto da loja (`iap_pass_s1_royal_commission`/`s2_ember_festival`, R$ 44,90 definitivo, Vinicius 2026-10-24) e coluna premium no Passe, tudo atrás da flag `PassePremium` desligada (#113, #117, #121); bot F2P fecha a trilha free no dia 23 de 35 e o validator recusa requisito que só o premium dá (#126) | produto na Play Console; reafinar o XP com jogador real (o bot fecha antes da faixa 26–30, `LIVEOPS_V1.md` §3.3) |
-| Ads | 70 | 6 placements por config, teto diário, ID de transação, intersticial atrás de flag, `ad_impression` (#52) | conta da V-STACK com VIP e Velocidade (#67); ad units dos outros 4 placements e Unity Ads no painel (Vinicius); A/B do intersticial no Limited Release |
+| Ads | 74 | 6 placements por config, teto diário, ID de transação, intersticial atrás de flag, `ad_impression` (#52); tela de idade só quando o 1º botão de anúncio apareceria, nada antes do 1º toque (#125, GDD Conflito 1) | conta da V-STACK com VIP e Velocidade (#67); ad units dos outros 4 placements e Unity Ads no painel (Vinicius); A/B do intersticial no Limited Release |
 | IAP | 75 | Unity IAP 5.4.4 com a `LojaUnity` (Google Play Billing 9), estados, recibos, restore e Pacote do Mestre; desligada até a chave da Play (#58, #111; `IAP.md` §5.1) | Play Console: perfil de pagamento, AAB numa faixa de teste, produto `iap_pacote_mestre` e chave RSA (Vinicius) |
 | Analytics | 78 | UGS Analytics só para 18+ com aceite, evento `fs_evento` com 5 parâmetros ativo no Event Manager de production (#112; projeto Unity Cloud 05962639-e02d-4f7c-8293-0ff2089e5144) | dashboards de retenção/monetização; crash reporting com símbolos |
 | RemoteConfig | 80 | UGS Remote Config (chave JSON `fs_config`) com as travas do núcleo (#112); `econsim --rc config.json` (#114) | snapshot de config em todo A/B; flags do DM §130 testadas pelo painel |
@@ -187,12 +187,12 @@ Para um chat novo continuar sem perder nada. Leia este §9, o §8 e as decisões
 
 Fila para chegar a 90% (um PR por item; ver o plano em https://claude.ai/artifact/1PQAo9PBHazpwQLdNn6K6y):
 1. ~~**Core:** `Sim` em partes (refatoração, econsim ao byte e mutações vivas); 1.000 partidas do econsim por perfil sem deadlock.~~ #127 (2026-10-24).
-2. **Ads:** tela de idade movida para quando o 1º botão de anúncio aparece (GDD, Conflito 1); consentimento antes do SDK testado. Ad units dos outros 4 placements e Unity Ads no painel do LevelPlay (Vinicius).
-3. **Events:** V27, encomenda Event contada à parte das vagas, e reafinar os 10 eventos com o bot.
+2. **Ads:** ~~tela de idade movida para quando o 1º botão de anúncio aparece (GDD, Conflito 1); consentimento antes do SDK testado~~ (#125; falta ajustar o G3/G4 do `ROTEIRO_TESTE_POCO.md`, que ainda dizem "a 1ª tela é a de idade"). Ad units dos outros 4 placements e Unity Ads no painel do LevelPlay (Vinicius).
+3. ~~**Events:** V27, encomenda Event contada à parte das vagas, e reafinar os 10 eventos com o bot~~ (#131, `BALANCE.md` §44: 17 pontos nos 10, que fecham no dia 4–5 do F2P).
 4. ~~**Pass:** teste de que o bot F2P fecha a trilha free e validator "nada obrigatório só no premium".~~ #126 (2026-10-24); preço do premium definitivo em R$ 44,90 no #121.
 5. **Áudio:** 5 músicas (CC0 ou licença comercial) e ambiente em camadas.
 6. **Arte:** estágios 4 e 5 do herói (Renome 5 e 7, Blender); auditoria do No Placeholder Gate.
-7. **Metas:** `dly_golpe_superior1`.
+7. ~~**Metas:** `dly_golpe_superior1`~~ (#124, com `ach_golpe_superior50`; `BALANCE.md` §45).
 8. **Release pipeline:** Unity no CI (P15) e release tag → AAB → faixa interna; precisa de licença/segredo do Unity e da chave real (Vinicius).
 9. **Dependem do Vinicius:** Play Console (perfil de pagamento, AAB em faixa de teste, `iap_pacote_mestre`, chave RSA; `IAP.md` §5.1), teste de ícones na Play; depois o POCO F4 (só com "pode testar").
 
