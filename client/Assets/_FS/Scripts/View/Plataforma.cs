@@ -112,7 +112,9 @@ namespace FS
     public sealed class Telemetria : IAnalytics
     {
         public const int FilaMax = 256;      // ~1a abertura inteira ate a resposta (session_info + tutorial + fps por minuto)
-        public const int ExcecoesMax = 5;    // um erro em loop nao enche o diario nem a cota do provedor
+        public const int ExcecoesMax = 5;    // erros DISTINTOS por sessao: um erro em loop nao enche o diario nem a cota do provedor
+        public const string EventoErro = "client_error";   // DM §90 (era "excecao" ate 2026-10-24)
+        readonly HashSet<string> _erros = new HashSet<string>();
         public const int TextoMax = 120;     // a e b no remoto
         readonly IAnalytics _local;
         readonly IProvedorAnalytics _remoto;
@@ -124,6 +126,8 @@ namespace FS
         public bool Liberada { get; private set; }
         public int Descartados { get; private set; }
         public int Excecoes { get; private set; }
+        /// <summary>Repeticoes de um erro ja enviado (mesmo hash) que nao viraram evento: a amostra e' 1 por erro distinto.</summary>
+        public int Repetidas { get; private set; }
 
         public Telemetria(IAnalytics local, IProvedorAnalytics remoto, string sessao, string app, string config, params string[] caminhos)
         {
@@ -150,13 +154,20 @@ namespace FS
             while (_fila.Count > 0) Envia(_fila.Dequeue());
         }
 
-        /// <summary>Excecao nao tratada -> evento "excecao" (a = mensagem, b = 1a linha da pilha), ate ExcecoesMax; false = passou do teto.</summary>
+        /// <summary>Excecao nao tratada -> evento "client_error" (a = mensagem, b = "hash8 topo da pilha"), 1x por erro distinto (hash FNV-1a da
+        /// mensagem e da 1a linha da pilha, sem os caminhos privados) e ate ExcecoesMax distintos por sessao; false = repetido ou passou do teto.
+        /// O remoto so recebe depois da tela de idade e so com o aceite (Liberar), como todo evento.</summary>
         public bool Excecao(string msg, string pilha, float t)
         {
+            string m = Anonimo(msg), topo = Anonimo((pilha ?? "").Split('\n')[0]);
+            uint h = 2166136261;
+            foreach (char c in m + "\n" + topo) { h ^= c; h *= 16777619; }
+            string id = h.ToString("x8", CultureInfo.InvariantCulture);
+            if (_erros.Contains(id)) { Repetidas++; return false; }
             if (Excecoes >= ExcecoesMax) return false;
+            _erros.Add(id);
             Excecoes++;
-            string topo = (pilha ?? "").Split('\n')[0];
-            Log("excecao", t, Corta(Anonimo(msg)), Corta(Anonimo(topo)));
+            Log(EventoErro, t, Corta(m), Corta(id + " " + topo));
             return true;
         }
 
