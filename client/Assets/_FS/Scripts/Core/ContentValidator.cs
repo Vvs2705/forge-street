@@ -551,6 +551,7 @@ namespace FS.Core
                 case "contract_complete": return ContratosDefs.All.Length;
                 case "district_unlock": return d.Ref == null ? FS.Core.Distritos.All.Length : 1;
                 case "collection_milestone": return 1;
+                case "worker_empire": { long n = 0; foreach (DistrictDef x in FS.Core.Distritos.All) n += x.Workers.Length; return n; }   // ach_workers20
                 case "masterwork_empire": { long n = 0; foreach (DistrictDef x in FS.Core.Distritos.All) n += x.Masterworks.Length; return n; }
                 case "blueprint_unlock": return ProjetosDefs.All.Length;
                 case "reputation_level": return RenomeDefs.Niveis.Length - 1;

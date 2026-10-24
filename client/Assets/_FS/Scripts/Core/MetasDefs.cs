@@ -44,7 +44,7 @@ namespace FS.Core
     /// <summary>
     /// D-CORE-02: os modelos. So entram os que tem gatilho que o Sim (ou o Metas) emite HOJE; os do LIVEOPS_V1 com evento ✗ entram com o
     /// sistema deles (raia H: contrato, Charter, Collection, projetos, Renome, nivel de estacao, qualidade, golpe, evento e Passe ja entraram;
-    /// espera: ach_workers20; o pool C entrou no feat/diarias-pool-c). Os extras sobre eventos que ja existem
+    /// o pool C entrou no feat/diarias-pool-c). Os extras sobre eventos que ja existem
     /// (marcados "novo") completam os minimos do GDD §23 #12.
     /// Renome ainda nao existe: "abre com Renome 1" usa a Joalheria (12-25 min ~ 23 min no F2P) e "Renome 2" a Vitrine de joias, ate o B-CORE-06.
     /// </summary>
@@ -210,6 +210,7 @@ namespace FS.Core
             C("ach_worker_n5", Nivel, 5, 1, xp: 50),
             C("ach_workers13", Hire, -1, WorkersOldForge, xp: 75, renome: 10),
             C("ach_workers13_n5", Nivel, 5, WorkersOldForge, insignia: "mestre_oficio"),
+            C("ach_workers20", "worker_empire", -1, 20, xp: 200),   // LIVEOPS_V1 #45: os 13 do Old Forge + 7 nos outros distritos
             // B-CORE-08 (LIVEOPS_V1 §4.5 #20-25): Masterworks registradas no Hall. O Renome ja vem da obra (Hall): a conquista da so XP ou insignia.
             // ach_mw30/60 contam as do Imperio (masterwork_empire; requiresContent: o validator recusa alvo acima das do build)
             C("ach_mw1", Mw, -1, 1, xp: 50),
