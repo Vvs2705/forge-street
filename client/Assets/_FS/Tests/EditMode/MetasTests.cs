@@ -127,7 +127,7 @@ namespace FS.Tests
 
             s.Metas.On(Ev.Graded, s.ShieldBench.Index, (int)Quality.Fine);   // a 1a Fina (escudo): abre dly_fina10 e dly_fina_escudos10
             var c = new List<string>();
-            for (long d = D + 1; d <= D + 6; d++) { s.Metas.Agora(Em(d, 10), Fuso); c.Add(Ids(s)[2]); }
+            for (long d = D + 1; d <= D + 10; d++) { s.Metas.Agora(Em(d, 10), Fuso); c.Add(Ids(s)[2]); }
             CollectionAssert.IsSubsetOf(new[] { "dly_fina10", "dly_fina_escudos10" }, c, "as de Fina entram no rodizio da C");
             Assert.IsFalse(c.Contains("dly_fina_joias5"), "sem Fina de joia, a de joias espera");
             CollectionAssert.AreEqual(GoldenC, c);
@@ -142,8 +142,38 @@ namespace FS.Tests
             for (int k = 1; k < e2.Count; k++) Assert.AreNotEqual(e2[k - 1], e2[k], "alterna por dia");
         }
 
-        // (dia x 5 + 2) mod 9 sobre a C, pulando as travadas (superior e golpe sem a Quality, joias sem Fina de joia, fina30 sem a Vitrine, evento)
-        static readonly string[] GoldenC = { "dly_fina10", "dly_renome5", "dly_fina10", "dly_renome5", "dly_fina_escudos10", "dly_fina10" };
+        // (dia x 7 + 2) mod 10 sobre a C (Metas.Passo: com 10 o passo 5 so visitaria 2 posicoes), pulando as travadas (superior e golpes sem a
+        // Quality, joias sem Fina de joia, fina30 sem a Vitrine, evento)
+        static readonly string[] GoldenC = { "dly_fina10", "dly_renome5", "dly_renome5", "dly_fina10", "dly_fina10", "dly_renome5", "dly_fina_escudos10",
+            "dly_fina10", "dly_renome5", "dly_renome5" };
+
+        /// <summary>dly_golpe_superior1 (LIVEOPS_V1 §4.2 #27) e ach_golpe_superior50: a diaria so entra na C com a Quality aberta e depois da 1a
+        /// Fina; o golpe numa Superior (q 200) fecha a diaria e soma 1 na conquista; um golpe que so faz Fina (q 0) nao.</summary>
+        [Test]
+        public void GolpeSuperior_DiariaEConquista_PeloGolpeReal()
+        {
+            Sim s = QualidadeTests.ComQ(200);
+            s.RateEma = 2.0;
+            long dia = D;
+            bool Aparece(Sim x)
+            {
+                for (long fim = dia + 30; dia < fim; dia++) { x.Metas.Agora(Em(dia, 10), Fuso); if (Ids(x)[2] == "dly_golpe_superior1") return true; }
+                return false;
+            }
+            Assert.IsFalse(Aparece(s), "sem nenhuma Fina ainda, espera");
+            Assert.AreEqual(Quality.Superior, QualidadeTests.Peca(s));   // a 1a Superior conta como Fina ou melhor
+            Assert.IsTrue(Aparece(s), "com a Quality aberta e uma Fina, entra no rodizio da C");
+            Assert.IsFalse(s.Metas.Diaria(2).Pronta);
+            Assert.AreEqual(Quality.Superior, MasterworksTests.ComGolpe(s, s.AnvilA));
+            Assert.IsTrue(s.Metas.Diaria(2).Pronta, "o golpe saiu Superior");
+            Assert.Greater(s.Metas.ResgatarDiaria(2), 0L);
+            Assert.AreEqual(1L, s.Metas.Conquista(A("ach_golpe_superior50")).Feito);
+
+            Sim f = QualidadeTests.ComQ(0);
+            Assert.AreEqual(Quality.Fine, MasterworksTests.ComGolpe(f, f.AnvilA));
+            f.Metas.Agora(Em(D, 10), Fuso);
+            Assert.AreEqual(0L, f.Metas.Conquista(A("ach_golpe_superior50")).Feito, "golpe que so faz Fina nao conta");
+        }
 
         [Test]
         public void PrimeirosMinutos_AntesDasFerramentas_NadaAbreNemPaga()
