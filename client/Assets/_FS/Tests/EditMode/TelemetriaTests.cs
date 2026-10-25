@@ -144,6 +144,42 @@ namespace FS.Tests
         }
 
         [Test]
+        public void EventoPadrao_CompraConfirmadaComPrecoEMoeda()
+        {
+            Assert.AreEqual("14.90 BRL", LojaFalsa.ValorDe("R$ 14,90"));
+            Assert.AreEqual("1490.00 BRL", LojaFalsa.ValorDe("R$ 1.490,00"));
+            Assert.IsNull(LojaFalsa.ValorDe("US$ 2.99"));
+            Assert.IsNull(LojaFalsa.ValorDe(null));
+            Assert.AreEqual("14.90 BRL", new LojaFalsa(null).Valor("iap_pacote_mestre"));
+            Assert.IsTrue(EventoPadrao.Compra(new Evento { Nome = "iap_purchase", A = "iap_pacote_mestre", B = "confirmada 14.90 BRL" }, out string p, out double v, out string m));
+            Assert.AreEqual(("iap_pacote_mestre", 14.9, "BRL"), (p, v, m));
+            Assert.IsTrue(EventoPadrao.Compra(new Evento { Nome = "pass_purchase", A = "iap_pass", B = "confirmada 2.99 USD" }, out _, out v, out m));
+            Assert.AreEqual((2.99, "USD"), (v, m));
+            Assert.IsFalse(EventoPadrao.Compra(new Evento { Nome = "iap_purchase", A = "x", B = "confirmada" }, out _, out _, out _), "sem preco: so o fs_evento");
+            Assert.IsFalse(EventoPadrao.Compra(new Evento { Nome = "iap_pending", A = "x", B = "confirmada 1 BRL" }, out _, out _, out _));
+            Assert.IsFalse(EventoPadrao.Compra(new Evento { Nome = "iap_purchase", A = "x", B = "confirmada 0 BRL" }, out _, out _, out _));
+        }
+
+        [Test]
+        public void EventoPadrao_ImpressaoComReceitaOuSem()
+        {
+            Assert.IsTrue(EventoPadrao.Impressao(new Evento { Nome = "ad_impression", A = "vip", B = "0.0123 BID ironSource" }, out string pl, out string r, out double? usd));
+            Assert.AreEqual(("vip", "ironSource", (double?)0.0123), (pl, r, usd));
+            Assert.IsTrue(EventoPadrao.Impressao(new Evento { Nome = "ad_impression", A = "intersticial", B = " UNDISCLOSED UnityAds" }, out _, out r, out usd));
+            Assert.AreEqual(("UnityAds", (double?)null), (r, usd), "receita ausente: a impressao vai sem eCPM");
+            Assert.IsFalse(EventoPadrao.Impressao(new Evento { Nome = "ad_shown", A = "vip", B = "simulado" }, out _, out _, out _));
+        }
+
+        [Test]
+        public void EventoPadrao_SoDepoisDaTelaDeIdade()
+        {
+            _t.Log("iap_purchase", 5f, "iap_pacote_mestre", "confirmada 14.90 BRL");
+            Assert.AreEqual(0, _remoto.Enviados.Count, "a compra espera a resposta como todo evento");
+            _t.Liberar(Faixa.Adulto, true);
+            Assert.IsTrue(EventoPadrao.Compra(_remoto.Enviados[0], out _, out _, out _), "o texto que chega ao provedor ainda tem o preco (TextoMax)");
+        }
+
+        [Test]
         public void ProvedorQueLanca_NaoDerrubaOJogo()
         {
             _remoto.Lanca = true;

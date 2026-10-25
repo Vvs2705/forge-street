@@ -811,7 +811,8 @@ namespace FS
         {
             if (_loja == null) return 0;
             System.Collections.Generic.List<Recibo> feitos = _raiz.Compras.Concluir(Save, _loja.Confirmar);
-            foreach (Recibo r in feitos) Log(Array.Exists(Compras.CatalogoPasse, d => d.Id == r.Produto) ? "pass_purchase" : "iap_purchase", r.Produto, "confirmada");   // DM §86
+            foreach (Recibo r in feitos) Log(Array.Exists(Compras.CatalogoPasse, d => d.Id == r.Produto) ? "pass_purchase" : "iap_purchase", r.Produto,
+                ("confirmada " + _loja.Valor(r.Produto)).TrimEnd());   // DM §86; o preco vira o `transaction` do UGS (EventoPadrao)
             if (_raiz.Compras.Pendentes) Log("iap_fail", "", "save");
             return feitos.Count;
         }
