@@ -187,6 +187,7 @@ namespace FS
             // A-PLAT-08: o RemoteConfig vale antes do Sim nascer (-rcfile so no build dev; fotos e smoke sem o cache baixado). Travas no nucleo
             // P8 = UGS (Ugs.cs): fora do Editor e das fotos; no Editor e no -testsession so o local (nada vai ao projeto de producao)
             bool ugs = !_testSession && !Application.isEditor;
+            if (Debug.isDebugBuild) Ugs.Ambiente = Arg("-ugsenv");   // teste das flags pelo painel (ambiente `teste`); release = production
             var rcLocal = new RemoteConfigLocal(dir, Debug.isDebugBuild ? Arg("-rcfile") : null, !_testSession);
             _rc = ugs ? new RemoteConfigUgs(rcLocal) : (IRemoteConfig)rcLocal;
             var tuning = new Tuning();

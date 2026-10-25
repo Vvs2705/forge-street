@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **`-ugsenv teste` (build dev) leva o Remote Config ao ambiente de teste:** o RC sem o Authentication ignora o environment-name do Core e caía no production, então o ambiente agora vai por ID (`SetEnvironmentID`). Provado no exe: `teste_painel@1` aplicado, anúncios desligados pelo painel (`docs/REMOTECONFIG_ANALYTICS.md` §4). Substitui a `fix/rc-flags-painel`.
 - **Cloud Save, o resolver (flag `CloudSave` desligada):** `CloudSave.Resolver` decide entre subir, baixar ou nada com o save inteiro do aparelho e o da nuvem. Vence o maior Renome; no empate, o mais novo. Nunca baixa save que não abre nem sobrescreve o de um build mais novo. 5 testes; o SDK fica para o próximo ticket (`docs/CLOUD_SAVE.md`).
 - **Charter do Old Forge na faixa de 3–6 h:** pede Renome 700 (dentro do nível 4; o limiar dos níveis não muda) e aceita 1 obra-prima **ou** 80 peças Superiores vendidas, então quem nunca golpeia também sai do Old Forge (5,0 h; antes nunca); quem golpeia fecha às 3,5 h (antes 2,1 h) e a Carta às 24,8 h (`BALANCE.md` §48). O mapa mostra o progresso: "falta Renome (a/b)" e "falta obra-prima (a/b) OU Superiores (a/b)", em pt/en/es.
 - **Erros do cliente (`client_error`):** exceção de qualquer thread (som e save rodam em threads de fundo) chega ao diário e, com o aceite, ao UGS; 1 evento por erro distinto (hash da mensagem e do topo da pilha) e até 5 distintos por sessão, sem caminho privado. O evento se chamava `excecao`.
