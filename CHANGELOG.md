@@ -4,6 +4,10 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Cloud Save ligado ao UGS atrás da flag `CloudSave` (desligada):** pacotes Cloud Save 3.4.2 e Authentication 3.7.4 (login anônimo).
+  - Só 18+ com aceite, depois da tela de idade. Abre 1× por sessão pelo `CloudSave.Resolver`; sobe depois do save, no máximo 1 a cada 60 s; em `Baixar`, grava e recarrega a cena.
+  - O `SincroniaNuvem` nunca lança e solta a abertura em 8 s sem rede.
+  - 3 testes com nuvem falsa; rascunho de privacidade e Data Safety em `docs/CLOUD_SAVE.md` (não publicado).
 - **Uma ad unit do LevelPlay por placement:** `rewarded_cofre2x`, `rewarded_encomenda_bonus`, `rewarded_encomenda_troca` e `rewarded_supply` criadas no painel (recompensa ×1, como VIP e Velocidade), no lugar da unit da Velocidade que os 4 dividiam; e a `interstitial_transicao` em `Ads.InterstitialUnit` (só carrega com a flag `Tuning.Interstitial`, desligada). IDs no `LEVELPLAY.md` §2; o Unity Ads como rede ainda espera o Game ID (§8).
 - **`-ugsenv teste` (build dev) leva o Remote Config ao ambiente de teste:** o RC sem o Authentication ignora o environment-name do Core e caía no production, então o ambiente agora vai por ID (`SetEnvironmentID`). Provado no exe: `teste_painel@1` aplicado, anúncios desligados pelo painel (`docs/REMOTECONFIG_ANALYTICS.md` §4). Substitui a `fix/rc-flags-painel`.
 - **Cloud Save, o resolver (flag `CloudSave` desligada):** `CloudSave.Resolver` decide entre subir, baixar ou nada com o save inteiro do aparelho e o da nuvem. Vence o maior Renome; no empate, o mais novo. Nunca baixa save que não abre nem sobrescreve o de um build mais novo. 5 testes; o SDK fica para o próximo ticket (`docs/CLOUD_SAVE.md`).
