@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
+using FS.Core;
 using Unity.Services.Analytics;
+using Unity.Services.Authentication;
+using Unity.Services.CloudSave;
 using Unity.Services.Core;
 using Unity.Services.RemoteConfig;
 using UnityEngine;
@@ -90,5 +93,33 @@ namespace FS
         }
 
         struct Vazio { }
+    }
+
+    /// <summary>
+    /// Cloud Save do UGS (docs/CLOUD_SAVE.md): a chave `save` do Player Data guarda o envelope inteiro. Login anonimo (o jogador do UGS e' um
+    /// ID aleatorio deste aparelho; sem conta). Erros lancam: o SincroniaNuvem do nucleo segura (offline, timeout) e o jogo segue no local.
+    /// </summary>
+    public sealed class NuvemUgs : INuvemSave
+    {
+        public const string Chave = "save";
+
+        static async Task Entrar()
+        {
+            await Ugs.Iniciar();
+            if (!AuthenticationService.Instance.IsSignedIn) await AuthenticationService.Instance.SignInAnonymouslyAsync();
+        }
+
+        public async Task<string> Ler()
+        {
+            await Entrar();
+            Dictionary<string, Unity.Services.CloudSave.Models.Item> d = await CloudSaveService.Instance.Data.Player.LoadAsync(new HashSet<string> { Chave });
+            return d.TryGetValue(Chave, out Unity.Services.CloudSave.Models.Item i) ? i.Value.GetAsString() : null;
+        }
+
+        public async Task Gravar(string texto)
+        {
+            await Entrar();
+            await CloudSaveService.Instance.Data.Player.SaveAsync(new Dictionary<string, object> { { Chave, texto } });
+        }
     }
 }

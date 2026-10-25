@@ -119,6 +119,9 @@ namespace FS
         /// <summary>Save de versao mais nova ou disco ilegivel: a sessao inteira nao grava.</summary>
         public bool Bloqueado { get; private set; }
 
+        /// <summary>Cloud Save: o envelope do ultimo save gravado nesta sessao; antes do 1o, o que abriu (null = estado novo ou legado).</summary>
+        public string Atual { get; private set; }
+
         /// <param name="tuning">o Tuning da partida, ja com o RemoteConfig (A-PLAT-08); null = padrao.</param>
         public Sim Carregar(Tuning tuning = null) => CarregarImperio(tuning).Raiz;
 
@@ -138,6 +141,7 @@ namespace FS
             bool ok = r.Status == SaveEnvelope.Status.Ok || r.Status == SaveEnvelope.Status.Legacy;
             Bloqueado |= r.Status == SaveEnvelope.Status.NewerSchema;
             Imperio imp = Imperio.Load(ok ? r.Payload : null, novo, tuning);
+            if (r.Status == SaveEnvelope.Status.Ok) Atual = SaveEnvelope.Wrap(r.Payload, r.Content, r.WrittenAt);
             Sim sim = imp.Raiz;
             if (err != null) _log.Log("save_error", sim.Time, err);
             if (corrupt > 0) _log.Log("save_corrupt", sim.Time, corrupt.ToString(CultureInfo.InvariantCulture), r.Status.ToString());   // Ok/Legacy = recuperado; outro = estado novo
@@ -157,13 +161,22 @@ namespace FS
         bool Grava(Sim sim, string payload, long agora, string versao)
         {
             if (Bloqueado) return false;
-            string text = SaveEnvelope.Wrap(payload, versao, agora);
+            string text = Atual = SaveEnvelope.Wrap(payload, versao, agora);
             if (sim.ClockWentBack > 0) _log.Log("clock_back", sim.Time, sim.ClockWentBack.ToString(CultureInfo.InvariantCulture), sim.SavedAt.ToString(CultureInfo.InvariantCulture));   // A-CORE-02
             bool ok = true;
             try { _arquivo.Write(text); }
             catch (Exception e) { ok = false; _log.Log("save_error", sim.Time, e.GetType().Name); }   // disco cheio nao derruba o jogo; o espelho segura o progresso
             _espelho.Write(text);   // espelho na chave antiga: um downgrade para a 0.6 le o mesmo texto
             return ok;
+        }
+
+        /// <summary>Cloud Save (Baixar): o envelope da nuvem vira o save do aparelho (arquivo com .bak + espelho); quem chama recarrega a cena.</summary>
+        public void GravarTexto(string envelope)
+        {
+            if (Bloqueado || string.IsNullOrEmpty(envelope)) return;
+            _arquivo.Write(envelope);
+            _espelho.Write(envelope);
+            Atual = envelope;
         }
 
         /// <summary>-reset (dev): apaga o save do arquivo, o .bak e o espelho; a quarentena fica.</summary>

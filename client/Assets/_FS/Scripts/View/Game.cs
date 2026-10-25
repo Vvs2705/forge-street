@@ -1693,6 +1693,26 @@ namespace FS
             _diario.Liberar(f, aceitou);
             if (!_testSession) _rc.Buscar((e, a, b) => Log(e, a, b));
             if (_started && _loja != null && !(_loja is LojaFalsa)) IniciarLoja();   // respondida agora; numa abertura anterior, o Start ja iniciou
+            // Cloud Save (docs/CLOUD_SAVE.md): flag desligada por padrao; so 18+ com aceite (menor nunca), fora do Editor e das fotos
+            if (!_testSession && !Application.isEditor && _raiz.T.CloudSave && Privacidade.Flags(f, aceitou).Consentimento) AbrirNuvem();
+        }
+
+        SincroniaNuvem _nuvem;
+
+        /// <summary>1x por sessao: resolve o save do aparelho com o da nuvem (CloudSave.Resolver). Offline ou lento = segue no local (timeout no
+        /// nucleo). Baixar = grava o da nuvem e renasce a cena com ele.</summary>
+        async void AbrirNuvem()
+        {
+            _nuvem = new SincroniaNuvem(new NuvemUgs());
+            (CloudSave.Acao a, string texto) = await _nuvem.Abrir(_save.Atual, Time.realtimeSinceStartupAsDouble);
+            if (this == null) return;
+            Log("cloud_save", a.ToString().ToLowerInvariant(), _nuvem.Erro ?? "");
+            if (a != CloudSave.Acao.Baixar || _headless) return;
+            _save.GravarTexto(texto);
+            _proximo = null;
+            _headless = true;   // este Game para de gravar: a cena nova le o save baixado
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += Renasceu;
+            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
         }
 
         /// <summary>A-PLAT-09 (DM §90): excecao nao tratada (e Debug.LogException) de qualquer thread -> fila; o Update entrega ao Telemetria.Excecao
@@ -1744,7 +1764,10 @@ namespace FS
         bool Save()
         {
             if (_headless || !Estados.Grava(EstadoAtual)) return false;
-            return _testSession || _save.Gravar(_imp, Now(), Application.version);   // E-PLAT-04: o -testsession nao persiste nada (nem a loja falsa): vale
+            if (_testSession) return true;
+            bool ok = _save.Gravar(_imp, Now(), Application.version);
+            if (ok && _nuvem != null) _ = _nuvem.Subir(_save.Atual, Time.realtimeSinceStartupAsDouble);   // Cloud Save: 1 a cada 60 s, nunca espera
+            return ok;   // E-PLAT-04: o -testsession nao persiste nada (nem a loja falsa): vale
         }
 
         // Voltar de outro app tambem paga o cofre (antes so a abertura pagava: quem trocava de app perdia o tempo fora).
