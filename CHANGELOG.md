@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Soak de 60 min no emulador aprovado:** PSS +1,9% e heap mono +2,4% depois do minuto 10 (medianas), 0 exceção. Novos: `-soak` (1 linha SOAK por minuto no log) e `client/tools/soak_emulador.sh` + `soak_relatorio.py`. Achados (fps cai de ~52 para ~35 na hora a 4×; ~14 GCs/min; o Vulkan do emulador derruba o build dev) em `docs/SOAK.md`.
 - **Charter do Old Forge na faixa de 3–6 h:** pede Renome 700 (dentro do nível 4; o limiar dos níveis não muda) e aceita 1 obra-prima **ou** 80 peças Superiores vendidas, então quem nunca golpeia também sai do Old Forge (5,0 h; antes nunca); quem golpeia fecha às 3,5 h (antes 2,1 h) e a Carta às 24,8 h (`BALANCE.md` §48). O mapa mostra o progresso: "falta Renome (a/b)" e "falta obra-prima (a/b) OU Superiores (a/b)", em pt/en/es.
 - **Erros do cliente (`client_error`):** exceção de qualquer thread (som e save rodam em threads de fundo) chega ao diário e, com o aceite, ao UGS; 1 evento por erro distinto (hash da mensagem e do topo da pilha) e até 5 distintos por sessão, sem caminho privado. O evento se chamava `excecao`.
 - **Blueprints e Coleção por dia no econsim:** a `--campanha` imprime, para cada dia de 20 min do F2P, os Blueprints, os marcos da Coleção e as obras no Hall somando os distritos abertos; quem golpeia acompanha a campanha, e o F2P que nunca golpeia para no Old Forge (`BALANCE.md` §47).
