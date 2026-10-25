@@ -326,6 +326,7 @@ namespace FS
             foreach ((string flag, Anuncio a) in new[] { ("-adcofre", Anuncio.Cofre), ("-adencomenda", Anuncio.EncomendaBonus), ("-adsupply", Anuncio.Supply) })
                 if (Arg(flag) != null && !_sim.Anuncios.Pode(a)) { Falha($"AD: {flag} sem o placement {a} (D6 pede -buy 1; encomenda e cofre, vendas no -warmup)"); return; }
             _botDrive = Arg("-bot") != null;
+            _soak = Arg("-soak") != null;   // 1 linha SOAK por minuto no log (memoria, GC, fps) para o soak_emulador.sh
             string shot = Arg("-shot");
             if (!string.IsNullOrEmpty(shot)) StartCoroutine(Shot(shot));
             string rec = Arg("-record");
@@ -522,9 +523,14 @@ namespace FS
             {
                 float fps = _fpsN / _fpsT;
                 Log("fps_bucket", Diario.FaixaFps(fps), fps.ToString("0", CultureInfo.InvariantCulture));
+                if (_soak) Debug.Log(string.Format(CultureInfo.InvariantCulture, "SOAK t={0:0} fps={1:0.0} mono_mb={2:0.0} reservado_mb={3:0.0} gc0={4} gc_total_mb={5:0.0}",   // soak_emulador.sh
+                    Time.realtimeSinceStartup, fps, UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong() / 1048576.0,
+                    UnityEngine.Profiling.Profiler.GetTotalReservedMemoryLong() / 1048576.0, GC.CollectionCount(0), GC.GetTotalMemory(false) / 1048576.0));
                 _fpsN = 0; _fpsT = 0f;
             }
         }
+
+        bool _soak;
 
         void HandleEvents()
         {

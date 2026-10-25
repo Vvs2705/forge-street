@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Soak de 60 min no emulador aprovado:** PSS +1,9% e heap mono +2,4% depois do minuto 10 (medianas), 0 exceção. Novos: `-soak` (1 linha SOAK por minuto no log) e `client/tools/soak_emulador.sh` + `soak_relatorio.py`. Achados (fps cai de ~52 para ~35 na hora a 4×; ~14 GCs/min; o Vulkan do emulador derruba o build dev) em `docs/SOAK.md`.
 - **Cloud Save ligado ao UGS atrás da flag `CloudSave` (desligada):** pacotes Cloud Save 3.4.2 e Authentication 3.7.4 (login anônimo).
   - Só 18+ com aceite, depois da tela de idade. Abre 1× por sessão pelo `CloudSave.Resolver`; sobe depois do save, no máximo 1 a cada 60 s; em `Baixar`, grava e recarrega a cena.
   - O `SincroniaNuvem` nunca lança e solta a abertura em 8 s sem rede.
