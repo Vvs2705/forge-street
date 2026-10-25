@@ -6,6 +6,8 @@
     <!-- UGS (Ugs.cs, P8): Analytics e Remote Config -->
     <Reference Include="$(ProjClient)\Library\ScriptAssemblies\Unity.Services.Core.dll" Private="false" />
     <Reference Include="$(ProjClient)\Library\ScriptAssemblies\Unity.Services.Analytics.dll" Private="false" />
+    <Reference Include="$(ProjClient)\Library\ScriptAssemblies\Unity.Services.Authentication.dll" Private="false" />
+    <Reference Include="$(ProjClient)\Library\ScriptAssemblies\Unity.Services.CloudSave.dll" Private="false" />
     <Reference Include="$(ProjClient)\Library\ScriptAssemblies\Unity.Services.RemoteConfig.dll" Private="false" />
   </ItemGroup>
 </Project>
