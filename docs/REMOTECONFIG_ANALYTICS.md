@@ -234,6 +234,26 @@ Checklist da troca:
 
 O `Aplicar` usa reflexão nos campos públicos do `Tuning` e do `AdPlacementDef`. No IL2CPP isso funciona porque o Sim lê todos esses campos e porque o stripping padrão (`managedStrippingLevel` vazio) não remove código do jogo. Se o stripping subir para High, rode o `-rcfile` no aparelho antes de publicar.
 
+### Testar pelo painel, no ambiente `teste` (`-ugsenv`)
+
+`-ugsenv teste` vale só no build de desenvolvimento e faz o exe falar com o ambiente `teste` do projeto (ID `98334f17-686d-4073-8fec-34faf3599119`) em vez do `production`. O Core recebe o nome do ambiente. O Remote Config, que **não segue esse nome sem o Authentication** (ele tira o ambiente do token, que o jogo não usa), recebe o ID por `SetEnvironmentID`. A tabela `Ugs.Ids` liga os nomes aos IDs: ambiente novo no painel = uma linha nela. O release não lê o argumento e fica sempre no `production`.
+
+**Prova (2026-10-24, exe dev do Windows, PC do Vinicius, resposta 18+ com aceite no PlayerPrefs):**
+
+| Run | O que aconteceu |
+|---|---|
+| 1. só com o environment-name do Core (a primeira versão do `-ugsenv`) | `rc_fetch ok 38`. O `RemoteConfigCache.json` do SDK veio com `environmentId 787c92f2…` (**production**) e `{"id":"padrao","versao":1}`. O bug que motivou o `SetEnvironmentID`. |
+| 2. com o `SetEnvironmentID` | `rc_fetch ok 101`, com `environmentId 98334f17…` (**teste**). O cache local passou a ser `{"id":"teste_painel","versao":1,"DistritosNovos":false,"AnunciosLigados":false}`, o config publicado no `teste` (Remote Config > `teste` > chave `fs_config`). Essa sessão ainda abriu com o config anterior, que vale na próxima abertura. |
+| 3. a abertura seguinte | `session_info,config,teste_painel@1#239c1d48 cache`, `ad_init,desligado,remoteconfig`, nenhum `rc_aviso` (as 2 chaves valeram) e nenhum botão de anúncio na tela. |
+
+![exe com o config do teste](img/rc_teste_mapa.png)
+
+- **`AnunciosLigados=false`:** o efeito está no diário e na tela (sem os botões de vídeo).
+- **`DistritosNovos=false`:** valeu no `Tuning` (sem aviso). O efeito, o botão Abrir do mapa sumir, só aparece com outro distrito liberado. O save do PC ainda está no Old Forge sem Charter, e o `-distrito` exige `-testsession`, que desliga o UGS de propósito. Fica para o teste no aparelho com um save adiantado.
+- **Para voltar ao normal:** rode sem o `-ugsenv`. A 1ª abertura baixa o `fs_config` do production e a 2ª volta a `padrao@1`. Nada foi publicado no `production`.
+- **O painel do Analytics** (Navegador de eventos do `teste`) não foi conferido nesta rodada. O Chrome do PC estava minimizado (viewport 0×0, sem print e sem menu lateral) e a página do Navegador de eventos não abriu pelas URLs diretas.
+  - Os eventos dessa sessão foram ao ambiente `teste`, que não tem o `fs_evento` declarado no Event Manager (só o `production` tem). Para ver um `fs_evento` chegar, declare o evento também no `teste`, ou rode sem o `-ugsenv` (aí ele vai ao `production`).
+
 ### Rodar o bot com o config antes de publicar (`econsim --rc`)
 
 ```
