@@ -54,6 +54,10 @@ namespace FS.Tests
         [Test]
         public void FlagDesligadaPorPadrao() => Assert.IsFalse(new Tuning().CloudSave);
 
+        /// <summary>Espera o Task numa thread sem o contexto do Unity: .Result na thread principal do EditMode trava (o await do timeout volta
+        /// para o contexto que o proprio .Result esta segurando). No dotnet nao ha contexto e o .Result direto passa.</summary>
+        static T Sinc<T>(System.Func<Task<T>> f) => Task.Run(f).Result;
+
         /// <summary>Nuvem de teste: Texto = o que esta la; Falha = lanca (sem rede); Trava = nunca responde.</summary>
         sealed class NuvemFalsa : INuvemSave
         {
@@ -73,11 +77,11 @@ namespace FS.Tests
         {
             var n = new NuvemFalsa();
             string local = Save(100, 10);
-            var r = new SincroniaNuvem(n).Abrir(local, 0).Result;
+            var r = Sinc(() => new SincroniaNuvem(n).Abrir(local, 0));
             Assert.AreEqual((CloudSave.Acao.Subir, (string)null), r);
             Assert.AreEqual(local, n.Texto, "a nuvem recebe o envelope inteiro");
             n.Texto = Save(900, 5);   // outro aparelho jogou mais
-            r = new SincroniaNuvem(n).Abrir(local, 0).Result;
+            r = Sinc(() => new SincroniaNuvem(n).Abrir(local, 0));
             Assert.AreEqual(CloudSave.Acao.Baixar, r.Acao);
             Assert.AreEqual(n.Texto, r.Texto, "o Game grava este texto e recarrega");
         }
@@ -87,14 +91,14 @@ namespace FS.Tests
         {
             string local = Save(100, 10);
             var falha = new SincroniaNuvem(new NuvemFalsa { Falha = true });
-            Assert.AreEqual(CloudSave.Acao.Nada, falha.Abrir(local, 0).Result.Acao);
+            Assert.AreEqual(CloudSave.Acao.Nada, Sinc(() => falha.Abrir(local, 0)).Acao);
             Assert.AreEqual("WebException", falha.Erro);
             var lenta = new SincroniaNuvem(new NuvemFalsa { Trava = true }, 50);
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            Assert.AreEqual(CloudSave.Acao.Nada, lenta.Abrir(local, 0).Result.Acao);
+            Assert.AreEqual(CloudSave.Acao.Nada, Sinc(() => lenta.Abrir(local, 0)).Acao);
             Assert.Less(sw.ElapsedMilliseconds, 5000, "o timeout solta a abertura");
             Assert.AreEqual("timeout", lenta.Erro);
-            Assert.IsFalse(lenta.Subir(local, 100).Result);
+            Assert.IsFalse(Sinc(() => lenta.Subir(local, 100)));
         }
 
         [Test]
@@ -102,14 +106,14 @@ namespace FS.Tests
         {
             var n = new NuvemFalsa();
             var s = new SincroniaNuvem(n);
-            Assert.IsTrue(s.Subir(Save(1, 1), 0).Result);
-            Assert.IsFalse(s.Subir(Save(2, 2), 30).Result, "dentro de 60 s: espera o proximo save");
-            Assert.IsTrue(s.Subir(Save(3, 3), 60).Result);
+            Assert.IsTrue(Sinc(() => s.Subir(Save(1, 1), 0)));
+            Assert.IsFalse(Sinc(() => s.Subir(Save(2, 2), 30)), "dentro de 60 s: espera o proximo save");
+            Assert.IsTrue(Sinc(() => s.Subir(Save(3, 3), 60)));
             Assert.AreEqual(2, n.Gravacoes);
             n.Falha = true;
-            Assert.IsFalse(s.Subir(Save(4, 4), 200).Result, "sem rede: false, e o proximo save tenta de novo");
+            Assert.IsFalse(Sinc(() => s.Subir(Save(4, 4), 200)), "sem rede: false, e o proximo save tenta de novo");
             n.Falha = false;
-            Assert.IsTrue(s.Subir(Save(5, 5), 201).Result);
+            Assert.IsTrue(Sinc(() => s.Subir(Save(5, 5), 201)));
         }
     }
 }
