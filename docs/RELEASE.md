@@ -1,6 +1,6 @@
 # Release — Forge Street (pipeline e o que falta do Vinicius)
 
-Atualizado: 2026-10-24 · Estado: **pipeline sem segredo pronto no repositório; nada publicado, nenhuma tag criada.** A conta da Play espera o D-U-N-S (previsão 2026-11-25, §3.5). O AAB de verdade (chave de upload real) e a subida à Play dependem dos passos do §3, que são do Vinicius.
+Atualizado: 2026-10-25 · Estado: **chave de upload real gerada e secrets do GitHub configurados (§3.1, §3.2); nada publicado, nenhuma tag criada.** A conta da Play espera o D-U-N-S (previsão 2026-11-25, §3.5). A subida à Play depende dos passos do §3.3 em diante, que são do Vinicius.
 
 ## 1. Como uma versão sai
 
@@ -10,7 +10,7 @@ Atualizado: 2026-10-24 · Estado: **pipeline sem segredo pronto no repositório;
 | AAB | `Setup.BuildAndroidRelease` | build não-development, IL2CPP arm64, targetSdk 36, assinado pelas variáveis `FS_KEYSTORE`, `FS_KEYSTORE_PASS`, `FS_KEY_ALIAS`, `FS_KEY_PASS`. Sem elas o build **falha** (nunca cai na chave de debug) |
 | conferência | `client/tools/verify.sh release-check <aab>` | targetSdk ≥ 36, versionCode coerente e > 1, não-debuggable, só arm64-v8a, 16 KB, módulo base ≤ 200 MB, assinatura que não é a de debug, permissões da lista aprovada |
 | no PC | `client/tools/verify.sh release` | quick + o AAB + o release-check, com as 4 variáveis no ambiente do Vinicius |
-| no CI | workflow `release` (`.github/workflows/release.yml`) | o mesmo build com uma **keystore de teste gerada na hora** (descartável, só prova que o pipeline funciona) + release-check + o AAB como artifact. Roda à mão (`workflow_dispatch`) e numa tag `v*`. **Não sobe à Play** |
+| no CI | workflow `release` (`.github/workflows/release.yml`) | o mesmo build com a **chave de upload real** pelos secrets `FS_*` (sem eles, uma keystore de teste gerada na hora, que só prova o pipeline) + release-check + o AAB como artifact. Roda à mão (`workflow_dispatch`) e numa tag `v*`. **Não sobe à Play** |
 | símbolos | `Setup.BuildAndroidRelease` (só `#if UNITY_ANDROID`) | a tabela de símbolos do IL2CPP (`DebugSymbolLevel.SymbolTable`) **dentro do AAB** (a Play simboliza o crash nativo sozinha, GDD §164 item 17) e num `.symbols.zip` ao lado, que o workflow `release` guarda no artifact |
 | loja | Play Console | o 1º AAB vai à mão (a Play exige); os seguintes podem ir pela conta de serviço (§3.3) |
 
@@ -26,6 +26,21 @@ A tag `v*` (ex.: `v0.7.0`) é o gatilho preparado para a release automática; cr
 Nada aqui é pedido agora; é o roteiro para quando chegar a hora da loja.
 
 ### 3.1 Chave de upload real (uma vez)
+**Feita em 2026-10-25.** O Vinicius rodou o `gerar_chave_upload.ps1`, que fica fora do repositório, em `%USERPROFILE%\.forgestreet\`.
+- **Arquivo:** `%USERPROFILE%\.forgestreet\upload.jks`, alias `forgestreet-upload`, RSA 4096, 10000 dias, `CN=Vstack Solutions, O=Vstack Solutions, C=BR`.
+- **Certificado (público):**
+  - **SHA-1** `75:20:35:E8:BD:07:A5:59:A7:0C:16:4C:FE:9C:36:B3:1D:CD:D6:83` (é o que a Play Console mostra como certificado da chave de upload);
+  - **SHA-256** `EA:CB:C5:EA:CE:32:05:EA:52:7D:1C:10:16:58:98:F8:EC:DC:FD:13:E3:73:C0:A9:97:9D:41:EB:11:F6:60:9E`.
+- **Senhas:** só no PC (`upload-senhas.txt` ao lado do `.jks`), com backup em outra pasta do PC e uma cópia fora do PC. As 4 variáveis de usuário `FS_*` estão criadas.
+- **O keystore é PKCS12** (padrão do keytool do JDK novo). Ele ignora o `-keypass`, então a senha da chave é a **mesma** da keystore: `FS_KEY_PASS` = `FS_KEYSTORE_PASS`.
+  - Com senhas diferentes, o Gradle falha no `signReleaseBundle` com "Get Key failed: Given final block not properly padded".
+  - O `corrigir_senha_chave.ps1` acertou isso em 2026-10-25.
+- **Prova:**
+  - o `verify.sh release` no PC gerou o `ForgeStreet-0.6.0.aab` (124,4 MB no módulo base), com todo o release-check OK;
+  - o `keytool -printcert -jarfile` no AAB deu o SHA-1 acima.
+
+O passo a passo original, para uma chave nova:
+
 1. No PC, fora do repositório (regra do estúdio: segredo em `%USERPROFILE%\.forgestreet\`):
    ```bash
    keytool -genkeypair -v -keystore "$USERPROFILE/.forgestreet/upload.jks" -alias forgestreet-upload -keyalg RSA -keysize 4096 -validity 10000
@@ -35,6 +50,8 @@ Nada aqui é pedido agora; é o roteiro para quando chegar a hora da loja.
 3. Variáveis do usuário no Windows: `FS_KEYSTORE` (caminho do `.jks`), `FS_KEYSTORE_PASS`, `FS_KEY_ALIAS` (`forgestreet-upload`), `FS_KEY_PASS`. Com elas, `client/tools/verify.sh release` gera e confere o AAB no PC.
 
 ### 3.2 Secrets do GitHub para o AAB real no CI (opcional)
+**Configurados em 2026-10-25:** `FS_KEYSTORE_B64`, `FS_KEYSTORE_PASS`, `FS_KEY_ALIAS` e `FS_KEY_PASS`. O workflow `release` disparado à mão (`gh workflow run release.yml --ref main`) usa a chave real; o resumo do run diz "chave de upload". Nada de tag, Release ou Play.
+
 Em Settings > Secrets and variables > Actions do repositório:
 - `FS_KEYSTORE_B64`: o `.jks` em base64 (`base64 -w0 upload.jks`);
 - `FS_KEYSTORE_PASS`, `FS_KEY_ALIAS`, `FS_KEY_PASS`.
