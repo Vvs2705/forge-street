@@ -14,8 +14,8 @@ namespace FS
     /// AdsLevelPlay (SDK real, so' no aparelho Android/iOS e sem -fakeads) e AdsSimulado (~5 s, "Anuncio de teste", recompensa no fim:
     /// Editor, Windows e -fakeads; tambem o fallback do LevelPlay em build de desenvolvimento quando o SDK nao tem anuncio pronto).
     /// Build de release no aparelho sem anuncio pronto: Ready = false (o botao some).
-    /// Placements do jogo = os Id do Tuning.Placements (E-PLAT-02); no painel, ad units "vip" e "velocidade" (os novos usam a da Velocidade
-    /// ate o painel ter as deles: AdsLevelPlay.Units). Intersticial (E-PLAT-03): so com a flag Tuning.Interstitial ligada no Init.
+    /// Placements do jogo = os Id do Tuning.Placements (E-PLAT-02); no painel, uma ad unit rewarded por placement
+    /// (AdsLevelPlay.Units). Intersticial (E-PLAT-03): so com a flag Tuning.Interstitial ligada no Init.
     /// Diario: ad_init, ad_request, ad_shown, ad_impression (receita da impressao, DM §95), ad_reward, ad_reward_late, ad_fail e ad_load_fail
     /// saem pelo `log` do Init (o Game grava; rewarded_start, rewarded_complete e ad_veto sao do Game).
     /// Este MonoBehaviour so' hospeda as corrotinas das duas implementacoes.
@@ -27,9 +27,8 @@ namespace FS
     {
         public const string AppKey = "28bbd582d";   // Android, app "Forge Street" na conta LevelPlay da V-STACK (nao e' segredo: vai no APK)
         public const string Vip = "vip", Velocidade = "velocidade", Intersticial = "intersticial";
-        /// <summary>E-PLAT-03: ad unit do intersticial no painel. TODO (Vinicius, no painel LevelPlay): criar "interstitial_transicao" e colar o ID
-        /// aqui; vazio = nada a carregar mesmo com a flag ligada (o build de desenvolvimento cai no simulado).</summary>
-        public const string InterstitialUnit = "";
+        /// <summary>E-PLAT-03: ad unit "interstitial_transicao" do painel; so' carrega com a flag Tuning.Interstitial ligada.</summary>
+        public const string InterstitialUnit = "69ng97evbre6swm4";
         /// <summary>Placements de rewarded que o jogo conhece (os Id do Tuning, E-PLAT-02).</summary>
         internal static readonly string[] Placements = Array.ConvertAll(FS.Core.Tuning.Padrao.Placements, d => d.Id);
         static readonly Dictionary<string, string> RewardName = new Dictionary<string, string> { [Vip] = "VIP", [Velocidade] = "Velocidade" };
@@ -197,15 +196,16 @@ namespace FS
     /// pedido lembra o placement, que e' o que o nucleo paga. Intersticial so com a flag ligada e com ad unit (Ads.InterstitialUnit).</summary>
     sealed class AdsLevelPlay : IAds
     {
-        const string UnitVip = "bagjqgdg52eedh66", UnitVelocidade = "3xcxwsgu2wz215oe";
-        /// <summary>Placement -> ad unit. E-PLAT-02: os placements novos usam a unit da Velocidade ate o painel ter as deles. TODO (Vinicius, no
-        /// painel LevelPlay): criar rewarded_cofre2x, rewarded_encomenda e rewarded_supply e trocar aqui. O nome da recompensa do painel nao
-        /// importa: o nucleo aplica pelo placement do pedido (Anuncios.Pagar).</summary>
+        /// <summary>Placement -> ad unit (E-PLAT-02: uma unit por placement). O nome da recompensa do painel nao importa: o nucleo aplica
+        /// pelo placement do pedido (Anuncios.Pagar).</summary>
         static readonly Dictionary<string, string> Units = new Dictionary<string, string>
         {
-            [Ads.Vip] = UnitVip,                 // rewarded_vip: recompensa "VIP" x1
-            [Ads.Velocidade] = UnitVelocidade,   // rewarded_velocidade: recompensa "Velocidade" x1
-            ["cofre2x"] = UnitVelocidade, ["encomenda_bonus"] = UnitVelocidade, ["encomenda_troca"] = UnitVelocidade, ["supply"] = UnitVelocidade,
+            [Ads.Vip] = "bagjqgdg52eedh66",          // rewarded_vip: recompensa "VIP" x1
+            [Ads.Velocidade] = "3xcxwsgu2wz215oe",   // rewarded_velocidade: recompensa "Velocidade" x1
+            ["cofre2x"] = "yuwuxatngj5nre45",         // rewarded_cofre2x: recompensa "Cofre2x" x1
+            ["encomenda_bonus"] = "qfifdr4hjqu6rqb6", // rewarded_encomenda_bonus: recompensa "EncomendaBonus" x1
+            ["encomenda_troca"] = "25cuxs1aio7p3wbh", // rewarded_encomenda_troca: recompensa "EncomendaTroca" x1
+            ["supply"] = "os8pzvpcedohuk31",          // rewarded_supply: recompensa "Supply" x1
         };
         const float RewardGrace = 2f;
         sealed class Request { public string P; public Action Ok, Fail; public bool Done; }
