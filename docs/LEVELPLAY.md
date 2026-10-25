@@ -55,8 +55,13 @@ Commite essa mudança junto da próxima alteração no projeto.
 | App Key Android, app "Forge Street" (Not live yet, COPPA "Not directed") | `28bbd582d` |
 | Ad unit `rewarded_vip`, recompensa "VIP" ×1, placement do jogo `vip` | `bagjqgdg52eedh66` |
 | Ad unit `rewarded_velocidade`, recompensa "Velocidade" ×1, placement do jogo `velocidade` | `3xcxwsgu2wz215oe` |
+| Ad unit `rewarded_cofre2x`, recompensa "Cofre2x" ×1, placement do jogo `cofre2x` | `yuwuxatngj5nre45` |
+| Ad unit `rewarded_encomenda_bonus`, recompensa "EncomendaBonus" ×1, placement do jogo `encomenda_bonus` | `qfifdr4hjqu6rqb6` |
+| Ad unit `rewarded_encomenda_troca`, recompensa "EncomendaTroca" ×1, placement do jogo `encomenda_troca` | `25cuxs1aio7p3wbh` |
+| Ad unit `rewarded_supply`, recompensa "Supply" ×1, placement do jogo `supply` | `os8pzvpcedohuk31` |
+| Ad unit `interstitial_transicao` (intersticial; só carrega com a flag `Tuning.Interstitial`, desligada) | `69ng97evbre6swm4` |
 
-**Conta (2026-10-14):** a conta LevelPlay da empresa, `vinicius@vstack-solutions.com.br`, com os dados da empresa e os termos assinados. O app e as 2 ad units foram recriados nela com os mesmos nomes e recompensas; as chaves antigas (`28953c84d`, `7dxdva13pxaovoae`, `gple3wvhz7xm3qk7`) eram da conta anterior e saíram do código. Na conta nova só a rede ironSource Ads está ligada; o Unity Ads entra pelo **Connect your account** do painel (ligar a conta Unity).
+**Conta (2026-10-14):** a conta LevelPlay da empresa, `vinicius@vstack-solutions.com.br`, com os dados da empresa e os termos assinados. O app e as 2 ad units foram recriados nela com os mesmos nomes e recompensas; as chaves antigas (`28953c84d`, `7dxdva13pxaovoae`, `gple3wvhz7xm3qk7`) eram da conta anterior e saíram do código. **2026-10-25:** as ad units dos 4 placements novos e a do intersticial foram criadas no painel, no mesmo padrão (recompensa ×1, sem capping nem pacing), e o código usa uma unit por placement (`AdsLevelPlay.Units`, `Ads.InterstitialUnit`). Rede: o **Connect your account** já mostra "Unity Ads" conectado, mas a instância Unity Ads do app está vazia: pede o **Game ID** e os IDs de placement do Unity Ads. A conta Unity conectada é a org `20066366428320`, à qual o login do Unity Cloud de hoje não tem acesso, e a org que ele acessa não tem app no Unity Ads. Até o Vinicius resolver isso, só a rede ironSource Ads serve (§8).
 
 Não foram criados placements no painel. Cada recompensa tem a sua ad unit, e o `ShowAd()` sai sem nome de placement. O capping por placement do painel, portanto, não se aplica.
 
@@ -85,7 +90,7 @@ public sealed class Ads : MonoBehaviour   // fábrica: AdsLevelPlay (aparelho) o
 - `Show` chama **exatamente um** dos dois callbacks, sempre na thread principal. `onReward` vem do `OnAdRewarded` do SDK, ou do fim do simulado. `onFail` cobre: placement desconhecido, outro anúncio na tela, sem anúncio, erro de exibição, e "fechou sem recompensa".
 - No SDK, o `OnAdRewarded` pode chegar depois do `OnAdClosed`. Por isso a falha por fechamento espera 2 s antes de valer. Se a recompensa chegar depois desses 2 s, ela não paga e fica no log e no diário como `ad_reward_late`. É um caso raro.
 - **Uso esperado pelo coordenador:** `botao.SetActive(ads.Ready(Ads.Vip))` e, no toque, `ads.Show(Ads.Vip, DarVip, () => {})` (com `ads` = o `IAds` do `Ads.Init`). A recompensa é aplicada **só** no `onReward`.
-- A pré-carga é feita de propósito: as 2 ad units carregam logo depois do init e recarregam ao fechar. Sem isso, o `Ready` nunca ficaria true a tempo de o botão aparecer. Uma falha de carga tenta de novo em 30 s, 60 s, 120 s… até o teto de 300 s.
+- A pré-carga é feita de propósito: as 6 ad units rewarded carregam logo depois do init e recarregam ao fechar. Sem isso, o `Ready` nunca ficaria true a tempo de o botão aparecer. Uma falha de carga tenta de novo em 30 s, 60 s, 120 s… até o teto de 300 s.
 - Se o init falhar, ele tenta de novo em 10 s, 20 s… até o teto de 300 s.
 
 ### Quando o anúncio é real e quando é simulado
@@ -129,7 +134,7 @@ cd client/Builds
 
 O `Player.log` (ou o `-logFile`) mostra `ADS ad_init|ad_request|ad_shown|ad_reward ...`. No Windows o simulado sai mesmo sem `-fakeads`.
 
-**Os 6 placements de ponta a ponta, sem SDK (2026-10-24):** `./win/ForgeStreet.exe -batchmode -nographics -autoplay 10 -anuncios` joga 10 min com o bot que assiste tudo pelo núcleo (oferta → recompensa, 1× por ID, o teto do dia), mais um resgate do cofre offline no minuto 5, e loga `AUTOPLAY ANUNCIOS vip=… velocidade=… supply=… bonus=… troca=… cofre=… total=N/teto intersticial=…`. Sai 1 se algum placement ficar em 0 ou o total passar do teto. Na `main` de hoje: vip 2, velocidade 2, supply 1, bonus 6, troca 5, cofre 1, total 17/30, intersticial vetado pela flag. O mesmo caminho é teste no núcleo (`AnunciosTests.PontaAPonta_OsSeisPlacements_NoTetoESemIntersticial`), ao lado dos de sempre: teto diário (`TetoDiario_TotalEPorPlacement_RelogioParaTrasEReabrirNaoZeram`), recarga de 5 min do VIP (`VipEVelocidade_PeloNucleo_MesmasRegrasDoSim`), ID de transação pago 1× (`CadaPlacement_Paga1xPorId_NemDepoisDeReabrir`) e intersticial desligado por padrão (`Intersticial_FlagDesligadaPorPadrao_Nunca`). O que só o painel fecha: as ad units dos 4 placements novos (hoje usam a da Velocidade) e o Unity Ads como rede (§8).
+**Os 6 placements de ponta a ponta, sem SDK (2026-10-24):** `./win/ForgeStreet.exe -batchmode -nographics -autoplay 10 -anuncios` joga 10 min com o bot que assiste tudo pelo núcleo (oferta → recompensa, 1× por ID, o teto do dia), mais um resgate do cofre offline no minuto 5, e loga `AUTOPLAY ANUNCIOS vip=… velocidade=… supply=… bonus=… troca=… cofre=… total=N/teto intersticial=…`. Sai 1 se algum placement ficar em 0 ou o total passar do teto. Na `main` de hoje: vip 2, velocidade 2, supply 1, bonus 6, troca 5, cofre 1, total 17/30, intersticial vetado pela flag. O mesmo caminho é teste no núcleo (`AnunciosTests.PontaAPonta_OsSeisPlacements_NoTetoESemIntersticial`), ao lado dos de sempre: teto diário (`TetoDiario_TotalEPorPlacement_RelogioParaTrasEReabrirNaoZeram`), recarga de 5 min do VIP (`VipEVelocidade_PeloNucleo_MesmasRegrasDoSim`), ID de transação pago 1× (`CadaPlacement_Paga1xPorId_NemDepoisDeReabrir`) e intersticial desligado por padrão (`Intersticial_FlagDesligadaPorPadrao_Nunca`). O que só o painel fecha: o Unity Ads como rede (§8); as ad units dos 6 placements e a do intersticial existem desde 2026-10-25 (§2).
 
 Tela de idade (E-PLAT-01). O `-testsession` não mostra a tela nem grava a resposta; o `-privacidade` força. O `-shot` exige caminho **absoluto**:
 
@@ -271,7 +276,7 @@ Todas entram no formulário Data safety e na revisão da Play. Para tirar alguma
 
 ## 8. Pendências e riscos
 
-- **Conta:** desde 2026-10-14 é a conta da V-STACK, com os dados da empresa salvos (seção 2). Só a rede ironSource Ads está ligada até o Unity Ads ser conectado no painel. Sem anúncio real, o build de desenvolvimento cai no simulado e o de release esconde o botão.
+- **Conta:** desde 2026-10-14 é a conta da V-STACK, com os dados da empresa salvos (seção 2). Ad units: as 6 rewarded e a do intersticial estão no painel e no código (seção 2). Só a rede ironSource Ads serve: a instância Unity Ads do app pede o Game ID e os placements do Unity Ads, de uma org Unity (`20066366428320`) que o login atual do Unity Cloud não acessa (Vinicius: dar acesso, ou criar o app no Unity Ads na org certa e colar o Game ID na instância). Sem anúncio real, o build de desenvolvimento cai no simulado e o de release esconde o botão.
 - O **test device** é cadastrado pelo Vinicius (seção 5).
 - **Privacidade:** a tela de idade e o consentimento estão feitos (seção 6). Faltam a política de privacidade com URL, o Data safety, o IARC e a decisão do público-alvo na Play Console (G-PLAT-02, G-PROD-04). Também falta conferir no POCO, pelo logcat, que nada do SDK roda antes da resposta: um `ContentProvider` de rede que se inicie sozinho apareceria aí.
 - O app está **"Not live yet"** no painel. Na publicação, o app precisa estar ligado à loja (package `br.com.vstack.forgestreet`). O AppId ainda é provisório e "não muda nunca" depois de publicado (veja o `Setup.cs`).
