@@ -2844,6 +2844,17 @@ Depois (v3), ritmo por distrito:
 
 As missões estão dentro dos portões; o desequilíbrio estava no ritmo dos Charters e na carteira parada, não nas recompensas.
 
+### 49.4b Por cima do operador (PR #197, `feat/estacao-operador` ec7fc74, merge local com este branch)
+
+`--campanha 40 --perfis F2PGolpe,F2P,Ideal --partidas 4`, Charters acumulados (h):
+
+| | F2PGolpe | F2P sem golpe | Ideal |
+|---|---|---|---|
+| só o operador | 3,7 / 5,3 / 11,0 / 16,5 / 19,8 / 27,0 | para na Row | 2,9 / 4,7 / 10,7 / 16,7 / 19,8 / 26,9 |
+| operador + §49 | 3,7 / 6,2 / 12,0 / 17,1 / 21,1 / 25,4 | 5,1 / 8,7 / 16,2 / 24,7 / — | 2,9 / 7,2 / 12,3 / 18,0 / 21,0 / 26,4 |
+
+Os dois juntos não criam muro: a Row e a Foundry seguem no alvo e o sem golpe segue até o Arsenal; a Carta varia ±1,5 h entre rodadas (espera de obra na Grand Forge). `coretests` com os dois: 631 verdes.
+
 ### 49.5 Testes e prova vermelha
 
 `DistritosTests.Charter_Ritmo_RenomeNaoChegaPagoESuperioresNoLugarDasObras` (na cadeia dos Charters, o Renome de cada um passa do anterior + 100; todo Charter com obra aceita Superiores, crescendo) e `DistritosTests.Charter_DaRow_SuperioresNoLugarDasObras` (na Row de verdade: a chegada não paga o Renome; 149 Superiores não bastam, 150 fecham). **Vistos vermelhos** com a Row de antes (750, sem Superiores). Ajustados: `ArcaneTests.Kit` (3.500), `ArcaneTests.Charter_PeloCaminhoReal_*` e `LigaTests.Charter_DaRow_*` (Renome pelo `Charter.Renome`). `coretests` 617 verdes.

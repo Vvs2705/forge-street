@@ -822,7 +822,7 @@ Posição = `OrderCount % 10` do distrito; tipo travado vira Common. Cada distri
 ## 8. Royal Contracts (12)
 
 Regra (GDD §11, Wave D): objetivo de médio prazo do império, em paralelo ao loop. **1 vaga** de contrato ativo (2 com a `mesa_real`); a lista é fixa e ordenada; o próximo disponível é o 1º da lista cujo "abre" foi cumprido (sem sorteio).
-- **Entrega por cota:** em qualquer distrito, cada linha cujo produto o contrato pede ganha um seletor de cota **0 / 25 / 50 / 100%**. Acumulador inteiro por linha (como a qualidade): soma a cota a cada peça pronta; ao passar de 100, aquela peça vai à mesa do contrato em vez do balcão. A decisão é vender agora ou cumprir.
+- **Entrega (V30, 2026-11-21):** a peça vendida no balcão, no lote ou no bloco de cota conta para o contrato e também para a encomenda; o seletor abaixo **não** entra antes do Limited Release (ata `conselho/2026-11-21-cota-do-contrato.md`). Registro da proposta original, para revisitar com dados: ~~**Entrega por cota:** em qualquer distrito, cada linha cujo produto o contrato pede ganha um seletor de cota **0 / 25 / 50 / 100%**. Acumulador inteiro por linha (como a qualidade): soma a cota a cada peça pronta; ao passar de 100, aquela peça vai à mesa do contrato em vez do balcão. A decisão é vender agora ou cumprir.~~
 - **Prazo-bônus** em minutos de jogo ativo desde o aceite: no prazo, ouro +50% e Renome +5; fora, o prêmio normal. Nunca falha, nunca expira.
 - **Ouro** em segundos da **taxa do império** (`RateEma` do distrito ativo + soma das rendas de fundo) no momento da entrega, fora do `GoldEarned`, ID de transação `ctr:{id}`. Renome +15 a +40 (`ECONOMIA_WAVE_B.md` §5.1). Blueprint (posse; V9) e baú de **conteúdo fixo mostrado antes**. Recompensa 1×.
 
