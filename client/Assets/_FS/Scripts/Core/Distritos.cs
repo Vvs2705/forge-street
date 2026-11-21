@@ -330,8 +330,11 @@ namespace FS.Core
                 t.QueueCap0 = 6; t.CounterCap0 = t.CounterCap1 = 10;
                 t.OrderRewardMin = 75;   // §7.2: Common da Row, 75 de minimo (x3 o do Old Forge)
             },
-            Abertura = 140000,
-            Charter = new CharterDef(true, 750, 2, ArtisanQuarterId),   // §2.2: producao completa + Renome 5 (750) + 2 Masterworks; C-CORE-06: libera o Quarter
+            // BALANCE §49: abertura 140.000 -> 450.000 (o ouro que sobra no Charter do Old Forge comprava a Row inteira na chegada) e Renome
+            // 750 -> 1.100 dentro do nivel 5 (o 750 ja vinha pago pelo Charter do Old Forge: 700 + 100)
+            Abertura = 450000,
+            // §2.2: producao completa + Renome 1.100 + 2 Masterworks OU 150 Superiores (BALANCE §49: quem nunca golpeia tambem fecha); libera o Quarter
+            Charter = new CharterDef(true, 1100, 2, ArtisanQuarterId, superiores: 150),
         };
 
         // Propriedade (montada no 1o uso), nao campo: os distritos 3-6 moram em arquivos proprios (partial) e a ordem dos inicializadores
