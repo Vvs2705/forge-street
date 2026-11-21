@@ -128,6 +128,7 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 | Row: a liga chega a só ~5% das peças (um Ferraz leva todos os intermediários); Rebitadeira 2 quase sem demanda; Vulcana e fornalha de liga com arte emprestada | P2 | `BALANCE.md` §35 | Ferraz 4 nos intermediários (+32% de renda, reafinar o preço × 3,5); arte da Row (C-ART-13) |
 | Encomenda Event disputa as vagas com as normais: a trilha do evento depende de quantas vagas o jogador tem (calibrada para 3) | design | `BALANCE.md` §30.6 | decisão: contar a Event à parte e reafinar os 9 eventos |
 | ~~Contrato EM BREVE da Row mostra o elmo pelo ID; rótulo "Achievements" pequeno~~ | — | `PainelMetas.cs` | resolvidos no #66 e no #70 (abas largas, Projetos e Hall no rodapé) |
+| Ouro sem destino em todo distrito: a produção completa sai ~0,5–0,9 h depois da chegada e as 2–5 h seguintes até o Charter só esperam Renome ou obras; no Charter sobram 510 mil (Old Forge) … 129 mi (Carta) na carteira do F2PGolpe | design (P1 para a experiência) | `BALANCE.md` §49.3 | Obras do Reino abrindo no Charter do Old Forge, com custo pela renda do distrito ativo (thread do fim de jogo, `BALANCE.md` §50) |
 | Contrato conta a mesma peça para a encomenda e para o contrato (sem o seletor de cota do CONTEUDO_V1 §8) | design | `Contratos.cs` | decidir se a cota entra antes do Limited Release |
 
 ## 8. Progresso rumo ao 100% (definição de jogo completo, DM §164)

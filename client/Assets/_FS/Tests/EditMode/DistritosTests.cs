@@ -255,7 +255,7 @@ namespace FS.Tests
         // ------------------------------------------------------------------ C-CORE-02: Imperio
 
         /// <summary>V15: Charter do Old Forge = producao completa + Renome 400 + 1 Masterwork; 1x (o 2o recusa), sem reset (nada do distrito muda),
-        /// +100 de Renome uma vez, e libera a Row para abrir com 140.000 de ouro (abrir de novo recusa).</summary>
+        /// +100 de Renome uma vez, e libera a Row para abrir com a abertura dela (450.000, BALANCE §49) (abrir de novo recusa).</summary>
         [Test]
         public void Charter_CondicoesUmaVezSemReset_LiberaAAbertura()
         {
@@ -294,6 +294,43 @@ namespace FS.Tests
             Assert.AreEqual((7L, 2, true), (raiz.Gold, imp.Abertos.Count, imp.Aberto(Row.Id)));
             Assert.IsFalse(imp.Abrir(Row.Id), "ja aberto");
             Assert.AreEqual("fechado", imp.CharterFalta("distrito_que_nao_existe"));
+        }
+
+        /// <summary>BALANCE §49 (ritmo da campanha): o Renome do Charter de cada distrito passa do Renome do Charter anterior mais o +100 que esse
+        /// Charter paga (senao a condicao chega paga e o distrito fecha so com as obras: a Row, com 750 contra os 700 + 100 do Old Forge, saia em
+        /// 1,6 h, alvo 3-5); e todo Charter que pede obra-prima aceita N Superiores no lugar, N crescendo na cadeia (quem nunca golpeia nao trava).</summary>
+        [Test]
+        public void Charter_Ritmo_RenomeNaoChegaPagoESuperioresNoLugarDasObras()
+        {
+            int sup = 0;
+            for (DistrictDef d = Distritos.OldForge, p = null; d != null; p = d, d = Distritos.Find(d.Charter.Proximo ?? ""))
+            {
+                CharterDef c = d.Charter;
+                if (p != null)
+                    Assert.Greater(c.Renome, p.Charter.Renome + RenomeDefs.Charter, d.Id + ": o Renome do Charter ja chega pago pelo Charter anterior");
+                if (c.Masterworks > 0) Assert.Greater(c.Superiores, 0, d.Id + ": sem caminho para quem nunca golpeia");
+                Assert.GreaterOrEqual(c.Superiores, sup, d.Id + ": as Superiores crescem na cadeia");
+                sup = c.Superiores;
+            }
+        }
+
+        /// <summary>BALANCE §49: na Row de verdade, as 150 Superiores vendidas no distrito valem as 2 obras-primas do Charter (a 149a nao basta).</summary>
+        [Test]
+        public void Charter_DaRow_SuperioresNoLugarDasObras()
+        {
+            Imperio imp = Imperio.Chegada(Row);
+            Sim s = imp.Ativo;
+            Assert.AreEqual(Row.Id, s.Distrito.Id);
+            for (int i = 0; i < s.UpgradeDefs.Length; i++) if (s.IsProduction(i)) { s.Gold += s.T.Cost(i); s.Buy((Upgrade)i); }
+            Assert.AreEqual("renome", imp.CharterFalta(Row.Id), "a chegada nao paga o Renome da Row");
+            imp.Raiz.Renome.Ganha(Row.Charter.Renome - imp.Raiz.Renome.Total);
+            Assert.AreEqual("masterwork", imp.CharterFalta(Row.Id));
+            s.Colecao.Superiores[0] = Row.Charter.Superiores - 1;
+            Assert.AreEqual("masterwork", imp.CharterFalta(Row.Id), "uma Superior a menos");
+            s.Colecao.Superiores[0]++;
+            Assert.IsNull(imp.CharterFalta(Row.Id));
+            Assert.IsTrue(imp.Charter(Row.Id));
+            Assert.IsTrue(imp.Liberado(Distritos.ArtisanQuarterId));
         }
 
         /// <summary>V9: carteira por ID de moeda, so ouro; trocar de distrito leva o saldo inteiro; ouro que cai num distrito fora de foco
