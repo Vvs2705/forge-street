@@ -34,6 +34,15 @@ jobs:
           mkdir -p saves-de-marco
           dotnet run -c Release --project client/tools/econsim -- --marcos saves-de-marco \
             --perfis "$PERFIL" --horas "$HORAS" --versao "marcos-${GITHUB_SHA::7}" | tee saves-de-marco/resumo.txt
+      - name: bot observador (ajudantes parados, estacoes com fome, compras sem efeito sentido)
+        shell: bash
+        env:
+          PERFIL: ${{ inputs.perfil || 'F2PGolpe' }}
+          HORAS: ${{ inputs.horas || '40' }}
+        run: |
+          dotnet run -c Release --no-build --project client/tools/econsim -- --observador saves-de-marco/observador.md --perfis "$PERFIL" --horas "$HORAS" > /dev/null
+          tail -n 1 saves-de-marco/observador.md
+          cat saves-de-marco/observador.md >> "$GITHUB_STEP_SUMMARY"
       - name: prova do pipefail (perfil que nao existe tem de ficar vermelho mesmo com o tee)
         shell: bash
         run: |
