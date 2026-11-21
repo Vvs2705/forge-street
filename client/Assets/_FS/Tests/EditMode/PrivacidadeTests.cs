@@ -154,5 +154,17 @@ namespace FS.Tests
             Assert.AreEqual(PassoSdk.Para, Privacidade.Sdk(menor, adulto), "mudou depois do Init: sem anuncio ate reabrir");
             Assert.IsFalse(Privacidade.Ler("", out _, out _), "PlayerPrefs vazio = sem resposta = Espera");
         }
+
+        [Test]
+        public void Politica_UrlPorIdioma()
+        {
+            // D-PUB-3: HTTPS (a Play recusa outra), sem login, e cai na secao do idioma do docs/politica/index.html (ids pt-BR, en, es)
+            StringAssert.StartsWith("https://", Privacidade.UrlPolitica);
+            Assert.AreEqual(Privacidade.UrlPolitica + "#pt-BR", Privacidade.Url(Idioma.Pt));
+            Assert.AreEqual(Privacidade.UrlPolitica + "#en", Privacidade.Url(Idioma.En));
+            Assert.AreEqual(Privacidade.UrlPolitica + "#es", Privacidade.Url(Idioma.Es));
+            StringAssert.DoesNotContain(Loc.Em(Idioma.Pt, "priv.politica"), Privacidade.Texto, "o botao nao entra no Texto: a Versao fica");
+            foreach (Idioma l in new[] { Idioma.Pt, Idioma.En, Idioma.Es }) StringAssert.DoesNotStartWith("[", Loc.Em(l, "priv.politica"));
+        }
     }
 }

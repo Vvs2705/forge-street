@@ -1472,6 +1472,7 @@ namespace FS
             { "priv.atual.nao", L("{0}, anúncios não personalizados", "{0}, non-personalized ads", "{0}, anuncios no personalizados") },
             { "priv.voltar", L("VOLTAR", "BACK", "VOLVER") },
             { "priv.cancelar", L("CANCELAR", "CANCEL", "CANCELAR") },
+            { "priv.politica", L("POLÍTICA DE PRIVACIDADE", "PRIVACY POLICY", "POLÍTICA DE PRIVACIDAD") },   // D-PUB-3: fora do Texto (nao sobe a Versao)
 
             // ---------- FTUE: tutorial guiado (PainelTutorial, Tutorial.cs). Dica (pilula) <= Textos.DicaMax; corpo do passo <= 64; cartao <= 120 ----------
             { "tut.boas.titulo", L("Bem-vindo à forja!", "Welcome to the forge!", "¡Bienvenido a la forja!") },

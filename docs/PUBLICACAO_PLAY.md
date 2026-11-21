@@ -23,7 +23,7 @@ O objetivo é que, no dia, o Vinicius só copie e cole. Cada campo da Play Conso
 | Dados da conta de comerciante (perfil de pagamentos, para vender IAP): conta bancária PJ em nome da empresa, CNPJ e endereço fiscal iguais aos do D-U-N-S, e um responsável com documento | banco / contador | `<<VINICIUS>>`. O Google verifica a organização e o banco, e isso pode levar **dias**: o app e o teste interno andam enquanto isso, mas os produtos só ficam à venda depois |
 | AAB assinado com a chave de upload real | workflow `release` à mão (`gh workflow run release.yml --ref main`) ou `client/tools/verify.sh release` no PC | pipeline pronto (#178). Gerar **depois** dos PRs do bloco "Antes do dia" (§8), a partir da `main`. Conferir a assinatura antes de subir (§1 passo 7) |
 | SHA-1 do certificado de upload | `RELEASE.md` §3.1: `75:20:35:E8:BD:07:A5:59:A7:0C:16:4C:FE:9C:36:B3:1D:CD:D6:83` | pronto |
-| URL pública da política de privacidade | §5 deste doc | **falta hospedar** (decisão D-PUB-1) |
+| URL pública da política de privacidade | §5 deste doc | `https://vstack-solutions.com.br/forgestreet/privacidade/` (D-PUB-1, decidida 21/11: site da VStack). **Falta subir** o `docs/politica/index.html` nesse endereço e abrir no celular antes do passo 6.1 |
 | Ícone 512 × 512 | `arte/marca/icone_loja_512.png` (512 × 512, RGB, 298 KB) | pronto |
 | Feature graphic 1024 × 500 | `arte/marca/feature_graphic.png` (1024 × 500, RGB, 613 KB) | pronto |
 | Screenshots de celular | `arte/loja/screenshots/<pt\|en\|es>/1…8_*.jpg` (8 por idioma, 1080 × 1920) | valem para o **teste interno**. São de 24/10 e só mostram o Old Forge: refazer antes do teste aberto ou da produção, com pelo menos 3 distritos, uma obra-prima e um contrato (a es/7 tem um rótulo cortado) |
@@ -105,7 +105,7 @@ Título `Forge Street: Herrero Tycoon`. Curta: `Empieza con un yunque y conviert
 | Tags (até 5) | escolher na lista do console as mais próximas de: Idle, Magnata, Gerenciamento, Medieval, Estilizado |
 | E-mail de contato (obrigatório, público) | `<<VINICIUS: contato@vstack-solutions.com.br?>>` |
 | Telefone | vazio (opcional; se preencher, fica público) |
-| Site | o domínio da D-PUB-1 (o mesmo do `app-ads.txt`) |
+| Site | `https://vstack-solutions.com.br` (D-PUB-1; o mesmo domínio do `app-ads.txt`) |
 | Inscrever-se em ofertas e notícias | a critério |
 
 ## 3. Produtos únicos (IAP)
@@ -249,12 +249,12 @@ Antes de enviar, rode `client/tools/verify.sh release-check <o AAB>`. Se aparece
 
 - Textos atualizados neste PR: [`politica/privacidade.pt-BR.md`](politica/privacidade.pt-BR.md), [`.en.md`](politica/privacidade.en.md) e [`.es.md`](politica/privacidade.es.md). Eles cobrem UGS Analytics, Remote Config, relatório de erros e compras, e batem com o §4.4.
 - A **página pronta para hospedar** é [`politica/index.html`](politica/index.html): um arquivo só, com as 3 línguas, sem script externo, legível no celular. É só subir e usar a URL.
-- A Play exige uma URL pública em HTTPS, sem login, que não seja PDF. Exige também **o link dentro do app**: "You must link to a privacy policy on your store listing and within your app" (ajuda "Prepare your app for review"). **O jogo ainda não tem esse link** (D-PUB-3).
+- A Play exige uma URL pública em HTTPS, sem login, que não seja PDF. Exige também **o link dentro do app**: "You must link to a privacy policy on your store listing and within your app" (ajuda "Prepare your app for review"). O jogo abre `https://vstack-solutions.com.br/forgestreet/privacidade/` (na seção do idioma) pelo botão **POLÍTICA DE PRIVACIDADE** da tela de privacidade, que aparece na 1ª pergunta de idade e em Configurações > Privacidade (D-PUB-3).
 - Antes de publicar: preencher os `<<CONFIRMAR>>` com os dados do D-U-N-S (razão social, CNPJ, endereço) e o e-mail; depois, a revisão jurídica (D-PRIV-5). A página tem um aviso de rascunho no topo para não ir ao ar sem isso.
 
 ## 6. `app-ads.txt`
 
-O arquivo fica na raiz do domínio do campo "Site" (D-PUB-1). O rascunho está no `PRIVACIDADE.md` §5. Hoje, as linhas saem:
+O arquivo fica na raiz do domínio do campo "Site": `https://vstack-solutions.com.br/app-ads.txt` (D-PUB-1). O rascunho está no `PRIVACIDADE.md` §5. Hoje, as linhas saem:
 - do painel do LevelPlay (app `28bbd582d`);
 - do Unity Ads da org empresarial `4674267143380` (Game ID `800410373`).
 
@@ -277,9 +277,9 @@ Primera versión de prueba de Forge Street: los 6 distritos, pedidos, contratos,
 ## 8. Checklist curto do Vinicius
 
 **Antes do dia (até 24/11), para o dia não travar:**
-1. [ ] Escolher onde a política e o `app-ads.txt` vão morar e mandar na thread (D-PUB-1). Quem sobe a página no site é você ou quem cuida do site; a sessão entrega o arquivo pronto.
+1. [x] Onde a política mora: o site da VStack (D-PUB-1, 21/11). Falta **subir** o `docs/politica/index.html` em `https://vstack-solutions.com.br/forgestreet/privacidade/` (você ou quem cuida do site; o arquivo está pronto) e abrir o endereço no celular. O `app-ads.txt` vai na raiz do mesmo domínio depois que a ficha tiver o site.
 2. [ ] Preencher na política os dados da empresa do D-U-N-S (razão social, CNPJ, endereço, e-mail), ou mandá-los na thread para a sessão preencher (D-PUB-6, decidida: vai sem o quadro de rascunho no teste interno).
-3. [ ] Nada a fazer: a D-PRIV-2 (Topics) e a D-PRIV-8 (`submitAnalytics`) já estão na `main`; a sessão faz a D-PUB-3 (link da política no jogo) assim que a D-PUB-1 der a URL. O AAB do dia sai **depois** dela.
+3. [ ] Nada a fazer: a D-PRIV-2 (Topics) e a D-PRIV-8 (`submitAnalytics`) já estão na `main`; a D-PUB-3 (link da política no jogo) também. O AAB do dia sai da `main` com as três.
 4. [ ] Separar os dados da conta de comerciante: conta bancária PJ, CNPJ e endereço fiscal (§0).
 
 **No dia do D-U-N-S:**
@@ -295,11 +295,11 @@ Primera versión de prueba de Forge Street: los 6 distritos, pedidos, contratos,
 
 | # | Decisão | Dono | Recomendação | Bloqueia |
 |---|---|---|---|---|
-| D-PUB-1 | Onde hospedar a política e o `app-ads.txt` (o "Site" da ficha) | Vinicius | o site da empresa, em `https://<domínio da VStack>/forgestreet/privacidade`, com o `index.html` deste PR, e o `app-ads.txt` na raiz do mesmo domínio. Assim fica tudo em nome da empresa. Alternativa grátis e imediata: o GitHub Pages deste repositório, que é público (`https://vvs2705.github.io/forge-street/...`). Funciona para a Play, mas a URL fica no nome do usuário do GitHub, não da empresa, e ligar o Pages é publicação. A nuvem não conseguiu abrir o site da VStack (proxy 403), então não foi verificado se ele existe | o passo 6.1 do dia, a D-PUB-3, o `app-ads.txt` |
+| D-PUB-1 | Onde hospedar a política e o `app-ads.txt` (o "Site" da ficha) | Vinicius | **decidida** (Vinicius, 21/11: "seguir o recomendado VSTACK"): `https://vstack-solutions.com.br/forgestreet/privacidade/` e `https://vstack-solutions.com.br/app-ads.txt`. Falta subir a página; a nuvem não abre o site (proxy 403), então a URL só vale depois de aberta no celular | o passo 6.1 do dia, a D-PUB-3, o `app-ads.txt` |
 | D-PUB-6 | A política no teste interno | **decidida pelo time** (2026-11-21, o Vinicius delegou as decisões ao Conselho) | publicar a versão sem o quadro de rascunho, com os dados do D-U-N-S preenchidos, antes da revisão jurídica (o teste interno só chega aos testadores). A D-PRIV-5 continua bloqueando o teste aberto e a produção | o passo 6.1 do dia |
 | D-PRIV-2 | Tirar `ACCESS_ADSERVICES_TOPICS` (segmentação por interesse) do manifesto | **feita** (2026-11-21): `Editor/ManifestPrivacidade.cs` põe `tools:node="remove"` no manifesto do launcher, e o `release-check` reprova o AAB que ainda a tiver | tirar, com `tools:node="remove"` (`PRIVACIDADE.md` §4). | o texto público da política e o AAB do dia |
 | D-PRIV-8 | `submitAnalytics: 1` (estatísticas de hardware do motor Unity, de todos) | **feita** (2026-11-21): `submitAnalytics: 0` no `ProjectSettings.asset`. Se a licença Personal ignorar a opção, só a captura de rede no POCO mostra; até lá o marcador fica na política | desligar no `ProjectSettings` (mais protetivo que medir, e não tira nada do jogo) | o texto público da política e o AAB do dia |
-| D-PUB-3 | Link da política dentro do jogo | sessão | botão "Política de privacidade" em Configurações > Privacidade (`Application.OpenURL`), num PR pequeno assim que a D-PUB-1 der a URL. Não sobe a `Privacidade.Versao` (`PRIVACIDADE.md` §6) | o AAB do dia; a revisão da Play exige o link |
+| D-PUB-3 | Link da política dentro do jogo | sessão | **feita** (21/11): botão POLÍTICA DE PRIVACIDADE na tela de privacidade (1ª pergunta e Configurações > Privacidade), `Application.OpenURL(Privacidade.Url(idioma))` com a seção do idioma. Não entra no `Privacidade.Texto`, então a `Privacidade.Versao` fica | o AAB do dia; a revisão da Play exige o link |
 | D-PUB-5 | Loja do jogo só com o que está à venda | sessão | no PR que liga a `LojaUnity` (depois da chave RSA): esconder o produto que a Play não devolve, como o Pacote em rascunho, e mostrar só o Passe da temporada ativa | ligar a `LojaUnity` |
 | D-PUB-2 | Pacote do Mestre: preço e conteúdo | Vinicius | não ativar no lançamento. Decidir junto com a P3 (A/B do intersticial). Se for ativar antes, tirar `remove_ads` do conteúdo ou a linha "Sem anúncio entre telas" do cartão | ativar `iap_pacote_mestre` |
 | D-PRIV-5 | Revisão jurídica da política | Vinicius e jurídico | antes do teste aberto ou da produção | o teste aberto e a produção |
