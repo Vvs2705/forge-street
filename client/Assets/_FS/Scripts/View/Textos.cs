@@ -377,8 +377,9 @@ namespace FS
 
         /// <summary>Nome do evento (aviso "Evento: X" &lt;= AvisoMax) e o chip da HUD ("1.000 pts · 6d 23h").</summary>
         public const int EventoMax = 22, ChipMax = 20;
-        public static string NomeEvento(EventDef e) => Loc.T("ev." + e.Id);
-        public static string NomePasse(PassDef p) => Loc.T("passe." + p.Id);
+        /// <summary>2026-11-21: a reprise do calendario infinito leva o nome da origem (o tema e as missoes sao os mesmos).</summary>
+        public static string NomeEvento(EventDef e) => Loc.T("ev." + e.Base);
+        public static string NomePasse(PassDef p) => Loc.T("passe." + p.Base);
 
         /// <summary>"Venda 100 espadas", "Fabrique 20 escudos (Fina+)", "Acerte 5 golpes em escudos", "Suba 1 nível: Escudos", "Jogue em 3 dias do
         /// evento": a frase sai do gatilho + filtro + alvo, como a das metas.</summary>
@@ -420,6 +421,34 @@ namespace FS
                 if (p != null) t += (t.Length > 0 ? "  ·  " : "") + p;
             }
             return t;
+        }
+
+        /// <summary>2026-11-21: o degrau `n` das Obras do Reino: "Ponte do Vau Cinzento I · etapa 1/3" (nivel em romano, a cada volta das 10).</summary>
+        public static string ObraNome(int n) =>
+            Loc.T("obras.obra", Loc.T("obra." + Obras.ObraDe(n).Id), Romano(Obras.NivelDe(n)), Obras.EtapaDe(n) + "/" + Obras.Etapas);
+
+        /// <summary>1..3999 em romano (acima disso, o numero).</summary>
+        public static string Romano(int n)
+        {
+            if (n < 1 || n > 3999) return n.ToString(CultureInfo.InvariantCulture);
+            int[] v = { 1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1 };
+            string[] r = { "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I" };
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < v.Length; i++) while (n >= v[i]) { sb.Append(r[i]); n -= v[i]; }
+            return sb.ToString();
+        }
+
+        /// <summary>2026-11-21: a linha do decreto ("Venda 3.000 peças", "Venda 400 espadas", "Fature 864 mil em vendas").</summary>
+        public static string Decreto(Decretos.Slot v)
+        {
+            if (v == null) return "";
+            string a = v.Alvo.ToString(CultureInfo.InvariantCulture);
+            switch (v.Def.Conta)
+            {
+                case ContaDecreto.Item: return Loc.T("dcr." + v.Def.Id, a, ItemOuId(v.Ref, v.Alvo));
+                case ContaDecreto.Renda: return Loc.T("dcr." + v.Def.Id, Ouro(v.Alvo));
+                default: return Loc.T("dcr." + v.Def.Id, a);
+            }
         }
 
         /// <summary>"6d 23h", "5h 12m", "8m" (o que falta do evento ou da temporada).</summary>
