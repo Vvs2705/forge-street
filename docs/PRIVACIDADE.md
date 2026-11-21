@@ -217,7 +217,7 @@ unity3d.com, <<PREENCHER: ID da organização/publisher no painel Unity Ads>>, D
 
 - Textos prontos para revisão: [`politica/privacidade.pt-BR.md`](politica/privacidade.pt-BR.md), [`.en.md`](politica/privacidade.en.md), [`.es.md`](politica/privacidade.es.md).
 - **URL pública** `https://vstack-solutions.com.br/forgestreet/privacidade/` (D-PRIV-3 = D-PUB-1, decidida em 2026-11-21: site da VStack): a página `politica/index.html`, com as 3 línguas (seções `#pt-BR`, `#en`, `#es`). Falta subir. A Play exige URL ativa, pública, sem login e que não seja PDF.
-- **Link dentro do jogo** (D-PUB-3, feito): botão POLÍTICA DE PRIVACIDADE na tela de privacidade, na 1ª pergunta e em Configurações > Privacidade (`Application.OpenURL(Privacidade.Url(Loc.Atual))`). O botão não muda o `Privacidade.Texto`, então não sobe a `Privacidade.Versao`. Já mudar o texto da tela (revisão jurídica) **sobe** a versão, e a pergunta volta para todo mundo.
+- **Link dentro do jogo** (D-PUB-3, feito): botão VER POLÍTICA (PRIVACY POLICY em inglês) na tela de privacidade, na 1ª pergunta e em Configurações > Privacidade (`Application.OpenURL(Privacidade.Url(Loc.Atual))`). O botão não muda o `Privacidade.Texto`, então não sobe a `Privacidade.Versao`. Já mudar o texto da tela (revisão jurídica) **sobe** a versão, e a pergunta volta para todo mundo.
 - A política entra também na ficha da loja (campo obrigatório) e no painel do LevelPlay, se ele pedir.
 
 ---
