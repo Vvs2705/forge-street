@@ -184,7 +184,7 @@ namespace FS
                 () => Application.OpenURL(Privacidade.Url(Loc.Atual)));
             Text polTxt = pol.GetComponentInChildren<Text>();
             polTxt.color = MenuBar.Cream;
-            polTxt.resizeTextForBestFit = true; polTxt.resizeTextMinSize = 22; polTxt.resizeTextMaxSize = 36;
+            polTxt.resizeTextForBestFit = true; polTxt.resizeTextMinSize = 20; polTxt.resizeTextMaxSize = 26;   // 26: "POLÍTICA DE PRIVACIDADE" em 1 linha (em 36 quebrava em 2 e a 1a caia no brilho do botao; fotos do #199)
             _politicaRt = (RectTransform)pol.transform;
             _root.gameObject.SetActive(false);
         }
