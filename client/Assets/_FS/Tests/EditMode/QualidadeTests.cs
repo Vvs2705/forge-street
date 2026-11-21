@@ -337,7 +337,7 @@ namespace FS.Tests
             Assert.AreEqual(mw, s.Masterworks, "uma Ev.Masterwork por obra-prima");
             Assert.AreEqual(vendas, s.GoldEarned, "a receita sao as vendas, nenhuma Masterwork");
             int noHall = 0;   // ponytail: o Hall (B-CORE-08) ainda nao guarda qual; a conta fecha no total
-            for (int i = (int)Item.Sword; i <= (int)Item.Jewel; i++)
+            for (int i = (int)Item.Sword; i <= (int)Item.LongSword; i++)   // 2026-11: a espada longa (bigorna longa) tambem faz obra-prima
             {
                 Assert.LessOrEqual(Vistas(s, i), s.Crafted[i], Items.All[i].Id);
                 noHall += s.Crafted[i] - Vistas(s, i);

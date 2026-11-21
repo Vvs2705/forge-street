@@ -25,6 +25,7 @@ namespace FS.Core
                 t = w.Target >= 0 ? Stations[w.Target] : null;
                 bool valid = t != null && t.Unlocked && (w.State == 0 ? IsSourceFor(w, t) : IsDestFor(w, t));
                 if (!valid) t = w.State == 0 ? PickSource(w) : PickDest(w);
+                else t = Reavalia(w, t);   // BALANCE §51: alvo sem demanda cede ao que tem cliente esperando
             }
             w.Target = t != null ? t.Index : -1;
             if (t == null) { w.Moving = false; return; }
@@ -65,7 +66,8 @@ namespace FS.Core
                 if (w.Role == 2 && !Fits(w, s)) continue;
                 if (s.Out == 0 && w.Count == 0 && !(s.Busy && s.Progress > 0.5f)) continue;   // vale esperar o que esta quase pronto
                 if (!FonteDeInsumo(w, s)) continue;   // row-pendencias (Sim.Transporte.cs): so com 2+ insumos
-                float score = s.Out * 10f - V2.Dist(w.Pos, s.Pos) + (w.Role == 1 && Distrito.InsumoPorEspera ? 10f * Esperam(s.OutItem) : 0f);   // C-CORE-07
+                float score = s.Out * 10f - V2.Dist(w.Pos, s.Pos) + (w.Role == 1 && Distrito.InsumoPorEspera ? 10f * Esperam(s.OutItem) : 0f)   // C-CORE-07
+                    + (w.Role == 2 ? PesoDemandaProduto * Demanda(s.OutItem) : 0f);   // BALANCE §51: o produto que a fila espera passa a frente
                 if (score > bestScore) { bestScore = score; best = s; }
             }
             return best;
@@ -105,9 +107,24 @@ namespace FS.Core
         }
 
         /// <summary>
+        /// BALANCE §51 (histerese): o alvo valido dos papeis 1 e 2 so e' trocado quando o produto dele nao tem Demanda e outro tem (papel 2 de
+        /// maos vazias buscando; papel 1 levando insumo). Alvo com demanda segue ate ficar invalido: o boneco nao fica indo e voltando entre
+        /// dois pedidos. Sem fila: o alvo de antes, sempre.
+        /// </summary>
+        Station Reavalia(Carrier w, Station t)
+        {
+            bool busca = w.Role == 2 && w.State == 0 && w.Count == 0, leva = w.Role == 1 && w.State == 1;
+            if (!busca && !leva || Demanda(t.OutItem) > 0f) return t;
+            Station alt = busca ? PickSource(w) : PickDest(w);
+            return alt != null && alt != t && Demanda(alt.OutItem) > 0f ? alt : t;
+        }
+
+        /// <summary>
         /// Joalheiro (papel 3): vazio (ou ja com joia), joia pronta e espaco na loja -> bancada de joias; senao, enquanto a
         /// bancada de joias ainda cabe lingote, a fornalha com mais lingote (a atual ganha empate: nao fica indo e voltando).
         /// Bancada abastecida = null: nao tira lingote das outras linhas. Action so deixa ele mexer no proprio alvo.
+        /// BALANCE §51: ja e' "a fila primeiro" (joia pronta vai a loja antes de tudo; a bancada so faz joia). Medido e descartado: esperar a
+        /// joia quase pronta com nobre na fila em vez de buscar lingote (-4% de renda/min: a bancada parava sem lingote depois).
         /// </summary>
         Station JewelerSource(Carrier w)
         {
@@ -124,15 +141,13 @@ namespace FS.Core
             return best;
         }
 
-        /// <summary>Quanto o balcao que vende o produto desta bancada precisa dele (cliente da frente esperando pesa muito).</summary>
+        /// <summary>Quanto o balcao que vende o produto desta bancada precisa dele: a prateleira vazia e, acima de tudo, a Demanda (fila e
+        /// encomendas, BALANCE §51; antes so o cliente da frente sem estoque, +12).</summary>
         float Need(Station crafter)
         {
             if (crafter.Kind != Kind.Crafter) return 0f;
             Item it = crafter.OutItem;
-            List<Client> q = QueueFor(it);
-            float n = (CounterCap - Stock[(int)it]) * 2f;
-            if (q.Count > 0 && q[0].Want == it && Stock[(int)it] == 0) n += 12f;
-            return n;
+            return (CounterCap - Stock[(int)it]) * 2f + PesoDemandaInsumo * Demanda(it);
         }
     }
 }
