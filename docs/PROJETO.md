@@ -98,7 +98,7 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 
 ## 7. Known issues
 
-**Conferido no código em 2026-11-21:** 0 P0 e 0 P1 abertos. Abertos: 2 P2 (nome "Ajudantes ágeis", fome da Bigorna 2) e 1 decisão de design (cota do contrato).
+**Conferido no código em 2026-11-21:** 0 P0 e 0 P1 abertos. Abertos: 2 P2 (nome "Ajudantes ágeis", fome da Bigorna 2) e 2 itens de design (zona morta reduzida, cota do contrato).
 
 | Problema | Prioridade (§132) | Fonte | Correção |
 |---|---|---|---|
@@ -121,7 +121,7 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 | ~~Textos no código, sem localização~~ | — | `Loc.cs` | resolvido: pt/en/es em chaves (`Loc.T`, 1.227 chaves; `LocTests`) |
 | Bandeja mostra o cartão travado primeiro; "Ajudantes ágeis" fora do padrão "Ajudantes rápidos" | P2 | `VALIDACAO_V05.md` | a ordem está resolvida (`MenuBar`: disponível, sem ouro, travado); falta só o nome do upgrade (texto, `up.ajudantes_ageis.nome`) |
 | Fome da Bigorna 2 (2.582 s em 60 min no bot) | P2 | `BACKLOG_V07.md` | — |
-| ~~Zona morta ~53% da curva até a produção completa; ouro sem destino depois dela~~ **fechado** | — | `BALANCE.md` §46–§48 | Orders 2.0 (#60), Blueprints (#55), 6 distritos e Império (#61, #65); campanha do Império no bot sem impasse (#165, #170); falta sentir com jogador real (POCO e Closed) |
+| Zona morta: era ~53% da curva até a produção completa, com ouro sem destino depois dela. **Reduzida**: o ouro tem destino (Orders 2.0 #60, Blueprints #55, 6 distritos e Império #61/#65, campanha do Império sem impasse #165/#170), mas o bot F2P de 60 min ainda mede ~19,6 min de zona morta (`BALANCE.md` §22 e §46–§48) | design | `BALANCE.md` | sentir com jogador real (POCO e Closed) |
 | ~~**Barulheira:** muitos sons ao mesmo tempo (Vinicius no POCO, 2026-10-13)~~ | — | `Som.cs` | resolvido no #59 (categorias, orçamento de vozes, distância, ducking); falta ouvir no POCO |
 | ~~**Mochila parece item solto** colado no ferreiro (Vinicius no POCO, 2026-10-13)~~ | — | `WorldView.cs` | resolvido no #62 (folha `ferreiro_mochila`, mochila presa às costas); falta ver no POCO |
 | ~~Conta LevelPlay aguardando aprovação~~ | — | `LEVELPLAY.md` | resolvido no #67 (conta da V-STACK); as ad units dos 6 placements e do intersticial existem desde 2026-10-25; Unity Ads ligado como rede em 2026-10-25 (Game ID `800410373`, `LEVELPLAY.md` §2) |
