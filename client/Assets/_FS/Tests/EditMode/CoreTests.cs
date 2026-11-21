@@ -1147,6 +1147,7 @@ namespace FS.Tests
             // 2026-11 (Vinicius: "as evolucoes finais como chao nao fizeram sentido"): o luxo passou a valer +Tuning.LuxoPct% no preco de
             // venda cada; producao, demanda e capacidade continuam iguais
             var plain = CompleteProduction();
+            foreach (Station st in plain.Stations) if (plain.PrecisaOperador(st)) { plain.Gold += plain.CustoOperador(st); Assert.IsTrue(plain.ContratarOperador(st)); }   // BALANCE §52: sem operador a estacao para
             var luxury = Sim.Load(plain.Save(1));
             foreach (Upgrade u in Luxury) luxury.Buy(u);
             Assert.AreEqual((0, 3 * Tuning.Padrao.LuxoPct), (plain.LuxoPct, luxury.LuxoPct));

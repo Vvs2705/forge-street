@@ -3036,3 +3036,6 @@ Custos no Old Forge:
 
 - O Charter do Old Forge segue dentro de 3–6 h (`CONTEUDO_V1.md` §1), e todos os perfis que chegavam à Grand Forge continuam chegando.
 - O custo cresce nos distritos tardios, porque cada estação nova pede o operador pelo preço de cerca de um produto. O Ideal perde cerca de 4,6 h no Charter da Grand Forge; se o Closed mostrar isso como muro, o primeiro ajuste é baixar o `OperadorKit` da Grand Forge.
+
+**Depois do #196 (fila de pedidos), no merge com a main:** a Royal Week do F2P de referência fechava no dia 6, porque as Finas saem mais tarde com o operador. Passamos 50 pontos das "40 Finas" para as "300 vendas", e o total continua em 700. Agora os 10 eventos fecham no dia 4 a 5. A produção completa do bot padrão passou de cerca de 50 min para menos de 75 min, e o teste dos workers agora joga 75 min. O teste do luxo contrata os operadores antes de medir: sem eles nada vende e a razão dava 0/0.
+
