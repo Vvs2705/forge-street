@@ -365,10 +365,10 @@ namespace FS.Tests
         public void LiveOps_MissaoContractComplete_ContaNoEventoAtivo_ARoyalWeekPagaPeloContrato()
         {
             Assert.Contains("contract_complete", LiveOpsDefs.Gatilhos);
-            // raia H: a Royal Week de verdade tem a missao (no lugar dos 10 golpes de mestre; 8 linhas no cartao) e paga 100 pontos pelo contrato
+            // raia H: a Royal Week de verdade tem a missao (no lugar dos 10 golpes de mestre; 8 linhas no cartao) e paga 50 pontos pelo contrato (eram 100 ate a esteira sair, BALANCE §50)
             EventDef rw = Array.Find(LiveOpsDefs.Eventos, e => e.Id == "ev_s1w1_royal_week");
             MissaoEvento contrato = rw.Missoes.First(x => x.Id == "contrato1");
-            Assert.AreEqual(("contract_complete", 1L, 100), (contrato.Evento, contrato.Alvo, contrato.Pontos));
+            Assert.AreEqual(("contract_complete", 1L, 50), (contrato.Evento, contrato.Alvo, contrato.Pontos));
             Assert.IsFalse(rw.Missoes.Any(x => x.Evento == "master_strike"));
             Assert.IsNull(LiveOpsDefs.Falta(rw, Items.All));
             Sim w = Oficina();
@@ -382,7 +382,7 @@ namespace FS.Tests
             int antes = w.LiveOps.Pontos;
             w.LiveOps.Agora(tw + 10);
             Assert.IsTrue(w.LiveOps.Paga(contrato));
-            Assert.AreEqual(antes + 100, w.LiveOps.Pontos, "pontos de evento, nunca moeda (V16)");
+            Assert.AreEqual(antes + 50, w.LiveOps.Pontos, "pontos de evento, nunca moeda (V16)");
             // filtro pelo ID do contrato (evento injetado)
             var ev = new EventDef
             {

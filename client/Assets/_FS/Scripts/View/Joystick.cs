@@ -31,7 +31,8 @@ namespace FS
 
     /// <summary>
     /// Joystick FLUTUANTE de um dedo: toque em qualquer lugar fora da faixa da HUD de cima e a base nasce ali;
-    /// arrasta para andar; solta e some. Le o Input System direto (Pointer.current: mouse no PC, toque no Android),
+    /// arrasta para andar; solta e some. 2026-11 (Vinicius: "o icone ocupa espaco, pode deixar oculto, apenas sinalizar"): a base e o miolo
+    /// ficam INVISIVEIS (Visivel = false); o toque so e' sinalizado por um anel pequeno que nasce no dedo e some em SinalDur s. Le o Input System direto (Pointer.current: mouse no PC, toque no Android),
     /// sem EventSystem, porque o alvo e' a tela inteira. Vive num Canvas de escala 1 (px = px) para usar dp.
     /// </summary>
     public sealed class Joystick
@@ -49,7 +50,12 @@ namespace FS
         readonly JoystickLogica _logic = new JoystickLogica(0.12f, 1f);
         readonly RectTransform _base, _knob;
         readonly Image _ring;
+        readonly RectTransform _sinal; readonly Image _sinalImg;
         Vector2 _anchor;
+        float _sinalT = -1f;
+        /// <summary>Mostrar a base e o miolo (o visual antigo). Desligado por padrao: so o sinal do toque.</summary>
+        public bool Visivel;
+        const float SinalDur = 0.35f;
         float RadiusPx => Dp.Px(52f);
 
         public Joystick(Transform canvasEscala1)
@@ -69,10 +75,28 @@ namespace FS
             Image miolo = _knob.gameObject.AddComponent<Image>();
             miolo.sprite = Art.Disc(); miolo.color = Art.ComAlfa(MenuBar.Cream, 0.9f); miolo.raycastTarget = false;
             _base.gameObject.SetActive(false);
+            _sinal = Art.Node(canvasEscala1, "SinalToque", Vector2.zero, Vector2.zero);
+            _sinal.pivot = new Vector2(0.5f, 0.5f);
+            _sinal.sizeDelta = new Vector2(Dp.Px(30f), Dp.Px(30f));
+            _sinalImg = _sinal.gameObject.AddComponent<Image>();
+            _sinalImg.sprite = Art.Ring(); _sinalImg.color = Art.ComAlfa(MenuBar.Cream, 0f); _sinalImg.raycastTarget = false;
+            _sinal.gameObject.SetActive(false);
+        }
+
+        /// <summary>Anel do toque: cresce de 0,6x a 1,2x e some em SinalDur s (unscaled: pausa e boost nao mexem nele).</summary>
+        void TickSinal()
+        {
+            if (_sinalT < 0f) return;
+            _sinalT += Time.unscaledDeltaTime;
+            float f = Mathf.Clamp01(_sinalT / SinalDur);
+            _sinal.localScale = Vector3.one * Mathf.Lerp(0.6f, 1.2f, f);
+            _sinalImg.color = Art.ComAlfa(MenuBar.Cream, 0.7f * (1f - f));
+            if (f >= 1f) { _sinalT = -1f; _sinal.gameObject.SetActive(false); }
         }
 
         public void Tick()
         {
+            TickSinal();
             Pointer p = Pointer.current;
             if (p == null || Blocked) { Release(); return; }
             Vector2 pos = p.position.ReadValue();
@@ -83,7 +107,8 @@ namespace FS
                 Active = true;
                 _anchor = pos;
                 _base.anchoredPosition = pos;
-                _base.gameObject.SetActive(true);
+                _base.gameObject.SetActive(Visivel);
+                _sinal.anchoredPosition = pos; _sinal.gameObject.SetActive(true); _sinalT = 0f;
             }
             if (!pressed) { Release(); return; }
             Vector2 d = pos - _anchor;

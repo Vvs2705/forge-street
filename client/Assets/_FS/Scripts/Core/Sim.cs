@@ -116,7 +116,7 @@ namespace FS.Core
         {
             foreach (Upgrade u in Chain)
             {
-                if (s.Bought[(int)u]) continue;
+                if (s.Bought[(int)u] || Sim.Aposentado(s.UpgradeDefs[(int)u])) continue;   // 2026-11: o aposentado nunca aparece
                 if (s.UpgradeDefs[(int)u].InMenu) return -1;   // FASE6: vendido no menu inferior; cadeia so de menu = pad invisivel para sempre
                 if (s.UpgradeDefs[(int)u].Luxury && !s.ProductionComplete) return -1;
                 if (!s.TemProjeto((int)u)) return -1;   // B-CORE-07: a bigorna longa so aparece com o projeto
@@ -238,7 +238,7 @@ namespace FS.Core
             }
         }
         /// <summary>Produtivo = nem luxo nem Meta, na tabela deste distrito (Upgrades.IsProduction e' a do Old Forge).</summary>
-        public bool IsProduction(int u) => !UpgradeDefs[u].Luxury && !UpgradeDefs[u].Meta;
+        public bool IsProduction(int u) => !UpgradeDefs[u].Luxury && !UpgradeDefs[u].Meta && !Aposentado(UpgradeDefs[u]);
         public readonly int[] Crafted;
         public double RateEma;                 // ouro/s online, media movel (base do offline)
         public long SavedAt, LastClaim;        // unix s; o claim offline e' idempotente por SavedAt, que nunca recua (Save)
@@ -340,6 +340,12 @@ namespace FS.Core
             if (i >= 0) return Bought[i];
             return Heroi != null && (e == Upgrade.PlayerCapacity || e == Upgrade.PlayerSpeed) && Heroi.Has(e);
         }
+
+        /// <summary>2026-11 (Vinicius: "remover do jogo a esteira, nao faz sentido"): upgrade que saiu do jogo. Fica na lista (o save grava por
+        /// indice e por ID) mas nunca fica a venda (Pad.Current pula, Buy recusa), nao conta como produtivo (producao completa, luxo, metas)
+        /// e, num save antigo que ja tinha, nao liga nada: nenhum distrito tem mais as pontas da esteira (EsteiraDe/Para). Hoje: a esteira
+        /// do Old Forge e o trilho de placas da Rua dos Armeiros (o efeito Conveyor); os ajudantes fazem esse transporte.</summary>
+        public static bool Aposentado(UpgradeDef d) => d.Efeito == Upgrade.Conveyor;
 
         /// <summary>Algum upgrade deste distrito tem o efeito generico `e` (a View so monta o prop/decoracao de quem existe).</summary>
         public bool TemEfeito(Upgrade e) => _ef[(int)e] >= 0;

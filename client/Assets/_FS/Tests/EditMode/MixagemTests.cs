@@ -347,13 +347,9 @@ namespace FS.Tests
             var d = new Medida { Min = minutos };
             var prog = new float[sim.Stations.Count];
             for (int i = 0; i < prog.Length; i++) prog[i] = sim.Stations[i].Busy ? sim.Stations[i].Progress : 0f;
-            float[] est = { -1f, -1f, -1f };   // EsteiraView: lingotes na faixa, fase das divisas, comprimento e passo
-            float fase = 0f, len = V2.Dist(sim.FurnaceA.Pos, sim.AnvilA.Pos) - 1.2f, passo = len / Math.Max(1, (int)Math.Round(len / 0.7f));
-            var estPos = new V2((sim.FurnaceA.Pos.X + sim.AnvilA.Pos.X) / 2f + 0.45f, (sim.FurnaceA.Pos.Y + sim.AnvilA.Pos.Y) / 2f);
             int renome = sim.Renome.Nivel;
             for (int k = 0, n = (int)(minutos * 60f / Dt); k < n; k++)
             {
-                float t0 = sim.Time;
                 bot.Step(sim, Dt);
                 float t = sim.Time;
                 float direita = sim.Bought[(int)Upgrade.SideCorridor] ? Balance.WorldW : Balance.WorkshopW;
@@ -372,7 +368,6 @@ namespace FS.Tests
                         mix.Pedir(novo ? "contrata" : "compra", t, out _);
                         old.Play(novo ? "hire" : "upgrade", 1f, 0.05f, Cat.Importante, t);
                     }
-                    if (e.Kind == Ev.Deposited && e.B == 9 && sim.HasConveyor) EsteiraView.Entra(est);
                 }
                 if (sim.Renome.Nivel > renome) { renome = sim.Renome.Nivel; mix.Pedir("renome", t, out _); old.Play("vip", 0.9f, 0.05f, Cat.Importante, t); }   // Game.SubiuRenome
                 for (int i = 0; i < prog.Length; i++)   // StationView.Bate: o compasso das bancadas na tela
@@ -385,17 +380,6 @@ namespace FS.Tests
                         old.Play("martelo", s.OutItem == Item.Jewel ? 1.5f : StationView.AlturaMartelo(s.OutItem), 0.1f, Cat.Mundo, t);
                     }
                     prog[i] = pr;
-                }
-                if (sim.HasConveyor)   // EsteiraView.Refresh: um clac por divisa que passa no tambor, so com lingote em cima
-                {
-                    float dt = t - t0, ciclo = sim.T.ConveyorTime, boost = sim.BoostMul;
-                    int lev = EsteiraView.Anda(est, dt * boost / ciclo);
-                    fase = EsteiraView.Avanca(fase, EsteiraView.Velocidade(len, ciclo, boost, lev) * dt, passo, out bool clac);
-                    if (lev > 0 && clac && mix.NaTela(estPos))
-                    {
-                        mix.Pedir("esteira", t, out _, estPos, 0.9f + 0.1f * boost);
-                        old.Play("esteira", 0.9f + 0.1f * boost, 0.1f, Cat.Mundo, t);
-                    }
                 }
                 d.Amostra(mix.Soando(t));
                 old.M.Amostra(old.Soando(t));

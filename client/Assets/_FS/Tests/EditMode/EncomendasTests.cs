@@ -535,7 +535,7 @@ namespace FS.Tests
         public void PrimeirosDezMinutos_IguaisAosDeAntes_GoldenDoMain()
         {
             const string golden = "2011:4:0:50 2031:16:2:5 3400:17:2:25 3478:4:1:65 4000:16:2:12 5301:4:2:85 6790:17:2:25 6886:4:3:110 7390:16:2:9 8946:4:4:145 " +
-                "10928:17:2:25 11124:4:5:185 11528:16:3:8 12563:4:6:240 13196:4:7:315 14259:17:3:25 14859:16:2:30 15588:4:8:410 18895:4:9:530";
+                "10928:17:2:25 11124:4:5:185 11528:16:3:8 12508:4:7:315 13673:17:3:25 14243:4:8:410 14273:16:2:30 17638:17:2:45 18183:4:9:670";   // 2026-11-21: sem a esteira (6) e Ferramentas +140; ate 11528 igual ao main
             var s = new Sim(); var bot = new Bot();
             var ev = new List<string>();
             int tick = 0;
@@ -547,15 +547,15 @@ namespace FS.Tests
                 Assert.LessOrEqual(s.Encomendas.Vagas.Count, 1, "1 vaga so");
                 Assert.IsTrue(s.Encomendas.Vagas.TrueForAll(v => v.Tipo == OrderType.Common && v.Def.ClientId == null), "so Common");
             }
-            Assert.AreEqual(18895, tick);
+            Assert.AreEqual(18183, tick);
             Assert.AreEqual(golden, string.Join(" ", ev));
-            Assert.AreEqual(5L, s.Gold);
-            Assert.AreEqual(1730L, s.GoldEarned);
-            Assert.AreEqual(116, s.Sales);
-            Assert.AreEqual(4, s.OrderCount);
-            Assert.AreEqual(100L, s.OrderGold);
-            Assert.AreEqual(14L, s.Renome.Total);
-            Assert.AreEqual("7.30,5.67", s.Player.Pos.ToString());
+            Assert.AreEqual(30L, s.Gold);
+            Assert.AreEqual(1610L, s.GoldEarned);
+            Assert.AreEqual(113, s.Sales);
+            Assert.AreEqual(5, s.OrderCount);
+            Assert.AreEqual(145L, s.OrderGold);
+            Assert.AreEqual(15L, s.Renome.Total);
+            Assert.AreEqual("7.38,5.80", s.Player.Pos.ToString());
         }
 
         /// <summary>O bot F2P aceita e entrega os tipos novos sozinho (as vagas abrem pelo rodizio): em 100 min entrega Common, Bulk, Quality,

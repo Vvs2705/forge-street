@@ -79,10 +79,10 @@ namespace FS.Tests
             Assert.IsTrue(s.Cais.Unlocked && s.Exportacao.Unlocked);
             Assert.IsFalse(s.HasConveyor);
             Compra(s, "cratera_estelar");
-            Assert.IsTrue(s.HasConveyor);
+            Assert.IsFalse(s.HasConveyor, "2026-11: a cratera nao traz mais o trilho (a esteira saiu do jogo)");
             s.Est("fornalha_ferro").Out = 2;
             Roda(s, 2.5f);
-            Assert.AreEqual(2, s.Est("forja_estelar").Ins[0] + (s.Est("forja_estelar").Busy ? 1 : 0), "o trilho levou os 2 lingotes");
+            Assert.AreEqual(2, s.Est("fornalha_ferro").Out, "sem trilho, o lingote espera o ajudante");
         }
 
         // ------------------------------------------------------------------ rotas
