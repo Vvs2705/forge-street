@@ -2777,7 +2777,7 @@ Perfis:
 - **O resto não muda:** o econsim padrão (Old Forge, sem Charter) sai **idêntico ao byte** à `main` (`--minutos 60 --partidas 20`), então o Renome 2/3 do F2P (0:51 / 1:41) e o 0 deadlock em 1.000 partidas (§43) ficam como estavam.
 - **Próximo degrau do F2P sem golpe:** ele para na Row, cujo Charter pede 2 obras. Se o Closed mostrar muitos jogadores sem golpe, a mesma regra ("obra ou N Superiores") serve para a Row.
 
-## 49. IA dos ajudantes prioriza a fila (2026-11-21)
+## 51. IA dos ajudantes prioriza a fila (2026-11-21)
 
 **Pedido do dono:** "os bonecos param de criar ou pegar itens aleatoriamente e começam a priorizar a fila de pedidos dos clientes".
 
