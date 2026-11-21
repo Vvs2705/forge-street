@@ -951,6 +951,13 @@ namespace FS
             { "dica.placa", L("Pise na placa {1} {0}", "Step on the {0} pad", "Pisa la placa {1} {0}") },
             { "dica.placa.curta", L("Pise na placa: {0}", "Step on: {0}", "Pisa la placa: {0}") },
             { "dica.placa.min", L("Placa: {0}", "Pad: {0}", "Placa: {0}") },
+            // ---------- estacao precisa de operador (Sim.Operador.cs; Vinicius 2026-11-21) ----------
+            // placa do pad ao lado da estacao (Station.OperadorPos; {0} = preco, Textos.Ouro), estado da estacao e dica do FTUE
+            { "operador.placa", L("Contratar operador", "Hire operator", "Contratar operario") },
+            { "operador.placa.preco", L("Contratar operador: {0}", "Hire operator: {0}", "Contratar operario: {0}") },
+            { "operador.parada", L("Parada: sem operador", "Idle: no operator", "Parada: sin operario") },
+            { "operador.mao", L("Fique na estação e forje", "Stay here to forge", "Quédate y forja aquí") },   // a pilula da dica: Textos.DicaMax
+            { "operador.contratado", L("Operador contratado!", "Operator hired!", "¡Operario contratado!") },
             // melhoria do menu: {0} = nome, {1} = artigo (art.o.*)
             { "dica.menu", L("Compre {1} {0} em Melhorias", "Buy {0} in Upgrades", "Compra {1} {0} en Mejoras") },
             { "dica.menu.curta", L("Compre {1} {0}", "Buy {0}", "Compra {1} {0}") },

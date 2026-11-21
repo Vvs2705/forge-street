@@ -69,6 +69,7 @@ namespace FS
         public static List<(int u, float t)> Compras(Sim s, string buyids)
         {
             var at = new List<(int u, float t)>();
+            int antes = s.UpgradesBought;
             foreach (string tok in (buyids ?? "").Split(','))
             {
                 string[] p = tok.Split('@');
@@ -77,6 +78,7 @@ namespace FS
                 if (p.Length == 1) s.Buy((Upgrade)id);
                 else if (float.TryParse(p[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float t)) at.Add((id, t));
             }
+            if (s.UpgradesBought > antes) Operados(s);   // estado montado: sem compra (o preset "start") o FTUE fica o de verdade
             return at;
         }
 
@@ -93,8 +95,17 @@ namespace FS
                 if (nao != null) return $"-buyids {u}@{t.ToString(CultureInfo.InvariantCulture)}: {nao}";
                 s.Buy((Upgrade)u);
                 s.Gold -= s.T.Cost(u);
+                Operados(s);   // a estacao comprada no criativo ja abre operada (o pad do operador nao entra na gravacao)
             }
             return null;
+        }
+
+        /// <summary>Estacao precisa de operador (Sim.Operador.cs): no estado montado das fotos e criativos (-buy, -buyids, -qualidade, -equipe,
+        /// -cotas, -arcano, -exportacao) toda estacao aberta que produz ja tem operador, de graca como as compras montadas; sem isso a fabrica
+        /// da foto ficava parada.</summary>
+        public static void Operados(Sim s)
+        {
+            foreach (Station st in s.Stations) if (st.Produces && st.Unlocked && st.Operador <= 0) st.Operador = 1;
         }
 
         /// <summary>Por que a compra `u` nao seria possivel agora no jogo (pad ou menu), ou null (antes o -buyids id@t, sem ouro, levava o
@@ -119,6 +130,7 @@ namespace FS
         {
             for (int i = 0; i <= (int)Upgrade.Tools; i++) s.Buy((Upgrade)i);
             foreach (Upgrade u in new[] { Upgrade.AnvilsLv2, Upgrade.AnvilsLv3, Upgrade.ShieldsLv2, Upgrade.ToolsLv2 }) s.Buy(u);
+            Operados(s);
             foreach (Station st in s.Stations)
             {
                 if (!st.Unlocked || st.Kind != Kind.Crafter) continue;
@@ -148,6 +160,7 @@ namespace FS
                 "vitrine", "fornalha2", "ajudante3", "ajudantes_ageis", "martelo_veloz", "corredor", "joalheria", "joalheiro1", "mineiro", "joalheiro2",
                 "balcao5", "balcao6", "bigornas_nivel2", "escudos_nivel2", "ferramentas_nivel2", "joalheria_nivel2" })
                 s.Buy((Upgrade)Upgrades.IndexOf(id));
+            Operados(s);
             s.Renome.Ganha(RenomeDefs.Niveis[2].Limiar - s.Renome.Total);
             long ouro = s.Gold;
             for (int k = 0; k < s.Equipe.Defs.Length; k++)
@@ -167,6 +180,7 @@ namespace FS
         {
             if (s.Patio == null) return;
             for (int u = 0; u < s.UpgradeDefs.Length; u++) if (s.IsProduction(u)) s.Buy((Upgrade)u);
+            Operados(s);
             int kb = Items.IndexOf("kit_batedor", s.ItemDefs), kg = Items.IndexOf("kit_guarda", s.ItemDefs), ins = Items.IndexOf("insignia_real", s.ItemDefs);
             s.CotaBlocos[kg] = 1;
             s.EscolheCota(0, kb); s.EscolheCota(1, kg); s.EscolheCota(2, ins);
@@ -182,6 +196,7 @@ namespace FS
         {
             if (!s.TemArcano) return;
             for (int u = 0; u < s.UpgradeDefs.Length; u++) if (s.IsProduction(u)) s.Buy((Upgrade)u);
+            Operados(s);
             Station l = s.Est("altar_lanternas"), a = s.Est("altar_aneis"), m = s.Est("altar_amuletos"), b = s.Est("altar_laminas");
             l.Medidor = 3000; a.Medidor = 9500; m.Medidor = 7000; b.Medidor = 4000; b.Pausa = 7f;
             s.ModoArcano(m, true); s.ModoArcano(b, true);
@@ -196,6 +211,7 @@ namespace FS
         {
             if (s.Exportacao == null) return;
             for (int u = 0; u < s.UpgradeDefs.Length; u++) if (s.IsProduction(u)) s.Buy((Upgrade)u);
+            Operados(s);
             int f = Array.FindIndex(s.Equipe.Defs, d => d.Papel == WorkerRole.Courier);
             for (int n = 0; n < 2 && f >= 0; n++) { s.Gold += s.Equipe.Custo(f); s.Equipe.Comprar(f); }
             int sino = Items.IndexOf("sino_catedral", s.ItemDefs);
