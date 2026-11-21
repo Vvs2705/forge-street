@@ -260,7 +260,12 @@ namespace FS.Core
         public float HammerTime0 = 5f, HammerTime1 = 3f;        // bigorna mais lenta que a fornalha com fole: a 2a bigorna "reduz a fila" (§3 3:30)
         public float ShieldTimeMul = 1.5f, JewelTimeMul = 2f, LongSwordTimeMul = 1.5f;   // B-CORE-07: espada longa 7,5 s na bancada (CONTEUDO_V1 §3.1)
         public float JewelSpeedMul = 0.6f;                      // Lupa: tempo da bancada de joias x0,6
-        public float ConveyorTime = 1f;                         // s por lingote na esteira
+        public float ConveyorTime = 1f;                         // s por lingote na esteira (2026-11: a esteira saiu do jogo; Sim.Aposentado)
+        /// <summary>2026-11 (Vinicius: "as evolucoes finais como chao nao fizeram sentido"): cada luxo comprado no distrito soma LuxoPct% ao
+        /// preco de toda venda dele (PriceOf, como o bonus do Hall). Antes o luxo era so decoracao, sem numero nenhum.</summary>
+        public int LuxoPct = 5;
+        /// <summary>2026-11: ouro a mais nas Ferramentas (a esteira saiu; Tuning.Cost) para a Qualidade continuar abrindo ~10:45 no bot F2P.</summary>
+        public int FerramentasExtra = 140;
 
         // clientes, paciencia e vagas
         public int CounterCap0 = 5, CounterCap1 = 10;           // estoque do balcao por produto; a Vitrine dobra
@@ -419,8 +424,16 @@ namespace FS.Core
                 case Upgrade.Counter5: case Upgrade.Counter6: case Upgrade.Counter7: case Upgrade.Counter8:
                     return CounterSlotCost[tier - (int)Upgrade.Counter5];
                 case Upgrade.LongAnvil: return BigornaLongaCusto;
+                // 2026-11: a esteira saiu (Sim.Aposentado) e parte do ouro dela (FerramentasExtra) passou para as Ferramentas, para a revelacao da Qualidade
+                // continuar depois dos 10 min (GDD §3, Wave B: "nenhum sistema novo mexe nos primeiros 10 min"; BALANCE.md §50)
+                case Upgrade.Tools: return Formula((int)Upgrade.Tools) + FerramentasExtra;
             }
             if (tier >= (int)Upgrade.AnvilsLv2 && tier <= (int)Upgrade.JewelsLv5) return NivelEstacaoCusto[tier - (int)Upgrade.AnvilsLv2];
+            return Formula(tier);
+        }
+
+        long Formula(int tier)
+        {
             double c = Math.Min(CostBase * Math.Pow(CostGrowth, tier), Upgrades.CostMax);
             return Math.Max(5, (long)Math.Round(c / 5.0) * 5);   // x5 em long: em double, acima de 2^53 o produto perdia o multiplo de 5
         }
@@ -468,12 +481,14 @@ namespace FS.Core
 
     public static class Upgrades
     {
-        public const int ProductionCount = 26, Count = 46;   // ProductionCount = quantos NAO sao luxo nem Meta (os IDs nao precisam ser contiguos)
+        public const int ProductionCount = 25, Count = 46;   // ProductionCount = quantos NAO sao luxo nem Meta nem aposentados (2026-11: a esteira saiu; 26 -> 25)
 
         /// <summary>Marca por upgrade, nao por ID: um produtivo anexado depois dos luxos continua produtivo.</summary>
         public static bool IsLuxury(int u) => All[u].Luxury;
         /// <summary>Produtivo = nem luxo nem Meta: o que a producao completa (Sim.ProductionComplete) e o teto offline contam.</summary>
-        public static bool IsProduction(int u) => !All[u].Luxury && !All[u].Meta;
+        /// <summary>2026-11: quantos upgrades do Old Forge se compram de fato (todos menos os aposentados, Sim.Aposentado: a esteira).</summary>
+        public static int Compraveis => Count - Array.FindAll(All, Sim.Aposentado).Length;
+        public static bool IsProduction(int u) => !All[u].Luxury && !All[u].Meta && !Sim.Aposentado(All[u]);
 
         /// <summary>B-CORE-03: nivel de estacao que o upgrade `u` da (2, 3...; 1 = nao e' nivel): 1 + os niveis da cadeia de requisitos dele.</summary>
         public static int StationLevel(int u)

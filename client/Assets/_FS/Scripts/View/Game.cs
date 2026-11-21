@@ -97,9 +97,9 @@ namespace FS
         Telemetria _diario;   // A-PLAT-09: diario local + analytics remoto (so depois da tela de idade)
         IRemoteConfig _rc; RemoteConfig.Resultado _rcr; string _rcOrigem;   // A-PLAT-08: o config desta abertura
         Salvamento _save;
-        // A-PLAT-06 (taxonomia s86/s87): s em primeiro plano da sessao, quadros e s reais da janela de fps, passos do tutorial ja logados,
+        // A-PLAT-06 (taxonomia s86/s87): s em primeiro plano da sessao, quadros e s reais da janela de fps,
         // oferta de anuncio ja contada nesta aparicao do botao e ouro que entrou/saiu desde a ultima linha currency_* (por origem/destino)
-        float _sessionT, _fpsT, _compraT = -10f; int _fpsN, _tutorial;
+        float _sessionT, _fpsT, _compraT = -10f; int _fpsN;
         readonly bool[] _ofertado = new bool[Anuncios.N];   // rewarded_offer ja contado nesta aparicao do botao, por placement
         readonly System.Collections.Generic.Dictionary<string, long> _source = new System.Collections.Generic.Dictionary<string, long>(),
             _sink = new System.Collections.Generic.Dictionary<string, long>();
@@ -125,6 +125,8 @@ namespace FS
         long _relogioEv;         // -evento/-pass (dev): s somados ao relogio do LiveOps
         IStore _loja;            // E-PLAT-04: null = build sem loja (release sem SDK): nada de loja aparece
         PainelLoja _lojaUi;
+        PainelTutorial _tut;     // FTUE: tutorial guiado do 1o ciclo e cartoes "o que e' isto" (Tutorial.cs)
+        string _hintTut;         // texto do passo na pilula da dica (null = a dica de sempre)
         Action _panelAction;
         Image _coinIcon;
         sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
@@ -153,7 +155,7 @@ namespace FS
 
         /// <summary>A-PLAT-07: o estado do jogo, so derivado dos flags (Estados.De; tabela em Estado.cs). O voltar, o Save e os anuncios
         /// consultam aqui.</summary>
-        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, Painel || Config || Priv || MetasAberto || RenomeAberto || LiveOpsAberto || ProjetosAberto || HallAberto || LojaAberta,
+        Estado EstadoAtual => Estados.De(_sim != null, _started, _ads != null && _ads.Busy, _paused, OutroModal || TutAberto,
             _cards != null && _cards.Saindo);
         bool Painel => _panel != null && _panel.gameObject.activeSelf;
         bool Config => _cfg != null && _cfg.gameObject.activeSelf;
@@ -164,6 +166,10 @@ namespace FS
         bool RenomeAberto => _renome != null && _renome.Aberto;
         bool LiveOpsAberto => _liveops != null && _liveops.Aberto;
         bool LojaAberta => _lojaUi != null && _lojaUi.Aberto;
+        /// <summary>Algum modal que nao e' o do tutorial (a boas-vindas e o cartao "o que e' isto" so aparecem sem nenhum destes).</summary>
+        bool OutroModal => Painel || Config || Priv || MetasAberto || RenomeAberto || LiveOpsAberto || ProjetosAberto || HallAberto || LojaAberta;
+        /// <summary>FTUE: boas-vindas ou cartao "o que e' isto" na tela (PainelTutorial).</summary>
+        bool TutAberto => _tut != null && _tut.Aberto;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
@@ -211,6 +217,8 @@ namespace FS
             else _imp = _testSession ? new Imperio(new Sim(tuning), novoTuning) : _save.CarregarImperio(tuning, novoTuning);
             _sim = _imp.Ativo; _raiz = _imp.Raiz;
             if (!renasceu) DistritoArg(novoTuning);   // -distrito id (dev, fotos)
+            // FTUE: fotos e smoke (-testsession, -record, -autoplay) sem tutorial nem cartoes; -tutorial o liga (save novo de teste)
+            if (!renasceu && _testSession && Arg("-tutorial") == null) _raiz.Tutorial.Desligar();
             Textos.Distrito(_sim.Distrito); Art.Distrito(_sim.ItemDefs);   // C-CORE-01: textos e arte dos itens do distrito ativo
             DevArgs();
             // E-PLAT-04: loja so com SDK; hoje so a falsa, no build de desenvolvimento com -lojafalsa (no -testsession, so na memoria). A posse
@@ -236,6 +244,8 @@ namespace FS
             _cam.backgroundColor = Art.Bg;
             _cam.transform.position = new Vector3(_sim.Distrito.Largura / 2f, Balance.WorldH / 2f, -10f);
             BuildHud();
+            // FTUE: o painel do passo nasce aqui (abaixo dos paineis montados depois: metas, projetos...); o modal sobe no fim do Awake
+            _tut = new PainelTutorial(_safe, HudBand, _raiz, (e, a, b) => Log(e, a, b));
             _view = new GameObject("Mundo").AddComponent<WorldView>();
             _view.Init(_sim, _cam, _labels);
             _menu = new MenuBar(_safe, _sim, u => Bought(u, _sim.T.Cost(u), _sim.Player.Pos), () => _metas.Abrir(), WorkerComprado, _raiz);
@@ -263,7 +273,8 @@ namespace FS
             if (cfg != null) _cfg.gameObject.SetActive(true);
             _joy = new Joystick(_joyCanvas.transform);
             _joy.TopBand = HudBand;
-            _joy.Ignora = p => _view.NoAnel(p) || _view.BarraEm(p) != null || _view.FaixaEm(p) >= 0 || _view.LoteEm(p);   // B-CORE-03: anel e barra de qualidade; C-CORE-07: faixa do patio; C-CORE-09: o lote
+            _joy.Ignora = p => _view.NoAnel(p) || _view.BarraEm(p) != null || _view.FaixaEm(p) >= 0 || _view.LoteEm(p) || _tut.Em(p);   // B-CORE-03: anel e barra de qualidade; C-CORE-07: faixa do patio; C-CORE-09: o lote; FTUE: botoes do passo
+            _tut.PorCima();   // boas-vindas e cartoes por cima de todo painel
             Fit();
             FollowCamera(100f);
         }
@@ -326,6 +337,7 @@ namespace FS
             foreach ((string flag, Anuncio a) in new[] { ("-adcofre", Anuncio.Cofre), ("-adencomenda", Anuncio.EncomendaBonus), ("-adsupply", Anuncio.Supply) })
                 if (Arg(flag) != null && !_sim.Anuncios.Pode(a)) { Falha($"AD: {flag} sem o placement {a} (D6 pede -buy 1; encomenda e cofre, vendas no -warmup)"); return; }
             _botDrive = Arg("-bot") != null;
+            _tut.Bot = _botDrive;   // FTUE: com o -bot, COMECAR, ENTENDI e os cartoes se apertam sozinhos em 2 s
             _soak = Arg("-soak") != null;   // 1 linha SOAK por minuto no log (memoria, GC, fps) para o soak_emulador.sh
             string shot = Arg("-shot");
             if (!string.IsNullOrEmpty(shot)) StartCoroutine(Shot(shot));
@@ -439,6 +451,7 @@ namespace FS
                 // voltar do Android (revisao da v0.6; A-PLAT-07 pelo estado): fecha o que estiver aberto, de cima para baixo; no anuncio
                 // (o simulado recebe o voltar) nada; so com nada aberto grava e sai
                 if (Priv) _priv.Voltar();   // E-PLAT-01: consentimento -> idade; revisao fecha; 1a abertura fica
+                else if (TutAberto) _tut.Voltar();   // FTUE: boas-vindas comeca, cartao fecha
                 else if (MetasAberto) _metas.Fechar();
                 else if (ProjetosAberto) _projetos.Fechar();
                 else if (HallAberto) _hall.Fechar();
@@ -455,7 +468,7 @@ namespace FS
             }
             if (_screen.x != Screen.width || _screen.y != Screen.height) Fit();
 
-            bool modal = Painel || Config || Priv || MetasAberto || RenomeAberto || LiveOpsAberto || ProjetosAberto || HallAberto || LojaAberta;
+            bool modal = OutroModal || TutAberto;
             Pointer ptr = Pointer.current;   // B-CORE-03: toque no anel do golpe ou na barra de qualidade (antes do joystick, que os ignora)
             if (!modal && ptr != null && ptr.press.wasPressedThisFrame) Toque(ptr.position.ReadValue());
             _joy.Blocked = modal;
@@ -476,7 +489,8 @@ namespace FS
             _adHold = ad ? _adHold + Mathf.Min(Time.unscaledDeltaTime, 0.1f) : 0f;
             // E-PLAT-01: a tela de idade tambem para a oficina (na 1a abertura o cliente nao vai embora enquanto o jogador le); o -bot
             // segue jogando por baixo (smoke do emulador num APK recem-instalado)
-            float dt = (ad && _adHold < 15f) || (Priv && !_botDrive) ? 0f : Mathf.Min(Time.deltaTime, 0.1f) * _speed;
+            // FTUE (GDD §Onboarding: "tour sem matar cliente"): a boas-vindas e o cartao "o que e' isto" tambem
+            float dt = (ad && _adHold < 15f) || ((Priv || TutAberto) && !_botDrive) ? 0f : Mathf.Min(Time.deltaTime, 0.1f) * _speed;
             while (dt > 0f)
             {
                 float step = Mathf.Min(dt, MaxStep);
@@ -493,6 +507,8 @@ namespace FS
             Sfx.Tick(_sim, _cam, Time.unscaledDeltaTime, _raiz.LiveOps.Evento != null);   // A-AUD-23: musica (a do distrito e a do evento) e ambiente que cresce com estacoes trabalhando e fila; fix/mix-audio: ouvinte, tela e fila da Mixagem
             FollowCamera(Time.deltaTime);
             RefreshHud();
+            // FTUE: passo pelo estado do Sim, boas-vindas e cartoes (so sem outro modal nem anuncio); o painel do passo muda a faixa da camera
+            if (_tut.Refresh(_sim, _started && !OutroModal && !ad, _menu.IsOpen, Time.unscaledDeltaTime)) Fit();
             _menu.Refresh(Time.deltaTime);
             _metasT -= Time.unscaledDeltaTime;
             if (_metasT <= 0f) { _metasT = 1f; MetasAgora(true); }
@@ -654,9 +670,7 @@ namespace FS
             if (!_firstSaleLogged && _sim.FirstSaleTime >= 0f)
             {
                 _firstSaleLogged = true;
-                Log("first_sale", _sim.FirstSaleTime.ToString("0.0", CultureInfo.InvariantCulture));
-                // tutorial = as dicas da 1a volta ate a 1a venda (RefreshHud); so fecha na sessao em que ele aconteceu
-                if (_tutorial > 0) Log("tutorial_complete", _sim.FirstSaleTime.ToString("0.0", CultureInfo.InvariantCulture), _tutorial.ToString(CultureInfo.InvariantCulture));
+                Log("first_sale", _sim.FirstSaleTime.ToString("0.0", CultureInfo.InvariantCulture));   // FTUE: tutorial_step/complete/skip saem do PainelTutorial
             }
         }
 
@@ -876,7 +890,8 @@ namespace FS
             _screen = new Vector2Int(Screen.width, Screen.height);
             AreaSegura.AncorarDentro(_safe, AreaSegura.Atual());
             Rect sa = Screen.safeArea;
-            _view.HudBottomPx = sa.yMin + sa.height * (1f - HudBand);   // v0.6d: o balao do 1o da fila fica 24 px abaixo da faixa de cima
+            // v0.6d: o balao do 1o da fila fica 24 px abaixo da faixa de cima; FTUE: com o painel do passo, abaixo dele
+            _view.HudBottomPx = sa.yMin + sa.height * (1f - HudBand - (_tut != null && _tut.PainelVisivel ? PainelTutorial.Faixa : 0f));
             // pela area segura, como a HUD: com recorte no topo (POCO) a faixa desce e a camera reserva o que ela cobre de verdade
             float h = Mathf.Max(1, Screen.height);
             _hudFrac = 1f - _view.HudBottomPx / h;
@@ -1100,12 +1115,20 @@ namespace FS
             _hintT = 0.25f;
             bool mapa = MapaVisivel;   // C-CORE-02: 4x/s, como a dica
             if (_mapaBtn != null && _mapaBtn.gameObject.activeSelf != mapa) _mapaBtn.gameObject.SetActive(mapa);
+            // FTUE: nos passos do tutorial a pilula diz o passo e a seta aponta o alvo dele (Tutorial.Alvo; sem alvo = BuyMenu, sem seta)
+            string passo = _tut.Dica();
+            if (passo != null)
+            {
+                if (passo != _hintTut) { _hintTut = passo; _hint.text = passo; }
+                Hint? alvo = _raiz.Tutorial.Alvo(_sim, out int ta);
+                _view.ShowHint(alvo ?? Hint.BuyMenu, ta);
+                return;
+            }
+            if (_hintTut != null) { _hintTut = null; _hintArg = -2; }   // fim dos passos: a dica de sempre volta na hora
             Hint h = _sim.CurrentHint();
             int arg = _sim.HintArg, u = h == Hint.BuyPad ? _sim.Pads[arg].Current(_sim) : -1;   // a placa pode trocar de upgrade com a mesma dica
             if (h != _hintH || arg != _hintArg || u != _hintU)
             {
-                // s86 tutorial_step: cada dica nova antes da 1a venda (a dica inicial e' o tutorial); a = dica, b = passo
-                if (_sim.FirstSaleTime < 0f && (h != _hintH || _tutorial == 0)) Log("tutorial_step", h.ToString(), (++_tutorial).ToString(CultureInfo.InvariantCulture));
                 _hintH = h; _hintArg = arg; _hintU = u; _hint.text = Textos.Dica(h, arg, _sim);
             }
             _view.ShowHint(h, arg);   // seta no mundo sobre o alvo (P1-1)
@@ -1295,7 +1318,7 @@ namespace FS
         /// </summary>
         void RefreshAdUi()
         {
-            if (!_pedido.Botoes)
+            if (!_pedido.Botoes && !_raiz.Tutorial.Ativo)   // FTUE: nos passos, nenhum botao de anuncio (nem a tela de idade que ele abre)
             {
                 // E-PLAT-01: o 1o botao de anuncio que apareceria (so o nucleo: sem resposta o SDK nem iniciou) abre a tela de idade, 1x
                 Anuncios an = _sim.Anuncios;
@@ -1451,7 +1474,7 @@ namespace FS
 
         /// <summary>Botao do placement disponivel: a tela de idade respondida (E-PLAT-01, PedidoIdade.Botoes), o nucleo deixa (Anuncios.Pode)
         /// e o IAds tem anuncio (ou o Pacote do Mestre dispensa o video).</summary>
-        bool Pode(Anuncio a) => _pedido.Botoes && _sim.Anuncios.Pode(a) && (_raiz.Compras.SemVideoEm(a) || _ads.Ready(_sim.T.Ad(a).Id));
+        bool Pode(Anuncio a) => _pedido.Botoes && !_raiz.Tutorial.Ativo && _sim.Anuncios.Pode(a) && (_raiz.Compras.SemVideoEm(a) || _ads.Ready(_sim.T.Ad(a).Id));   // FTUE: nada de anuncio nos passos
 
         /// <summary>s86 rewarded_offer: uma por aparicao do botao disponivel (cinza da recarga nao e' oferta), contada quando da para tocar.</summary>
         void Ofertou(Anuncio a, bool pode, bool tocavel, string b = "")

@@ -83,7 +83,7 @@ namespace FS.Tests
             Marco(s, Upgrade.Anvil2, 210f, 0.50f, "2:30-3:30 2a bigorna");
             Marco(s, Upgrade.Helper1, 270f, 0.50f, "3:30-4:30 ajudante");
             Marco(s, Upgrade.Shields, 330f, 0.50f, "4:30-5:30 escudos");
-            Marco(s, Upgrade.Conveyor, 510f, 0.50f, "8:30 esteira");
+            // 2026-11: o marco das 8:30 (esteira) saiu com ela (Sim.Aposentado)
             Assert.Less(s.UpgradesBought, Upgrades.Count, "em 10 min nao pode ter comprado tudo: sobra razao para voltar");
             Assert.Less(s.WalkNoDecision / s.Time, 0.5f, "kill criterion: 'andar entre pilhas sem decisao' nao pode dominar");
         }
@@ -282,12 +282,13 @@ namespace FS.Tests
             // parado na Reaction em cima dele no caminho do pad do operador da Bigorna longa, paga parcial (o desvio do bot que o resto mede)
             for (int m = 1; m * 60f <= tProd; m++)
                 Assert.AreEqual((earnedP[m], salesP[m]), (earnedL[m], salesL[m]), $"identicas ate a producao completa (minuto {m})");
-            Assert.That(gL / gP, Is.InRange(0.97f, 1.03f), "luxo nao altera ouro/min (medido +0,5%)");
+            // 2026-11: cada luxo soma Tuning.LuxoPct (5%) ao preco das vendas do distrito; antes o luxo era so decoracao (medido +0,5%)
+            Assert.That(gL / gP, Is.InRange(1.02f, 1.20f), "luxo sobe o ouro/min (ate +15% com os 3)");
             Assert.That(sL / sP, Is.InRange(0.97f, 1.03f), "luxo nao altera vendas/min (medido +0,1%)");
             long luxuryCost = lux.T.Cost(Upgrade.WorkshopFacade) + lux.T.Cost(Upgrade.WorkshopFloor) + lux.T.Cost(Upgrade.JewelryDecor);
             Assert.AreEqual(plain.Gold + (lux.GoldEarned - plain.GoldEarned) + (lux.OrderGold - plain.OrderGold) - luxuryCost, lux.Gold,
                 "o luxo cobra exatamente o preco, uma vez, sem devolver ouro (premio das encomendas fica fora do GoldEarned)");
-            Assert.AreEqual((Upgrades.Count, Upgrades.Count - Luxos), (lux.UpgradesBought, plain.UpgradesBought), "sem luxo: os produtivos e os niveis de estacao (Meta)");
+            Assert.AreEqual((Upgrades.Count - 1, Upgrades.Count - 1 - Luxos), (lux.UpgradesBought, plain.UpgradesBought), "sem luxo: os produtivos e os niveis de estacao (Meta); a esteira aposentada nunca (2026-11)");
             Assert.AreEqual(plain.OfflineMaxGold(), lux.OfflineMaxGold(), "luxo nao mexe no teto offline");
         }
 

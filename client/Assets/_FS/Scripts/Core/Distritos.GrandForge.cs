@@ -69,7 +69,7 @@ namespace FS.Core
             U(0, "fole_grande", -1, "Fole da catedral", "Crisóis e fornalhas", menu: true, efeito: Upgrade.FurnaceSpeed1),
             U(1, "crisol_bronze2", -1, "Crisol 2", "Mais barras de bronze"),
             U(2, "estrela1", -1, "Estrela 1", "Leva minérios aos crisóis"),
-            U(3, "cratera_estelar", -1, "Cratera estelar", "Aço e nova linha: estátua", efeito: Upgrade.Conveyor),
+            U(3, "cratera_estelar", -1, "Cratera estelar", "Aço e nova linha: estátua"),   // 2026-11: sem o trilho (o efeito Conveyor saiu do jogo)
             U(4, "estrela2", 2, "Estrela 2", "Leva bronze e aço"),
             U(5, Sim.Mensageiro, -1, "Mensageiro", "Rotas e exportação"),
             U(6, "forja_sintese", 5, "Lâmina estelar", "Nova linha: lâmina estelar"),
@@ -186,9 +186,8 @@ namespace FS.Core
             },
             Obstaculos = new ObstacleDef[0], Marcos = new MilestoneDef[0],
             Inicio = new V2(4.5f, 2.6f), Contratacao = new V2(4.5f, 1.2f), Largura = Balance.WorldW, Parede = false,
-            // Desvio do §5.6 (revisar; BALANCE.md §41): a cratera estelar traz o trilho fornalha -> forja estelar (o efeito Conveyor, como o
-            // trilho de placas da Row): sem ele o lingote ficava na fornalha e lamina, estatua e panoplia quase nao saiam
-            EsteiraDe = "fornalha_ferro", EsteiraPara = "forja_estelar",
+            // 2026-11: a cratera estelar trazia o trilho fornalha -> forja estelar (o efeito Conveyor); a esteira saiu do jogo (Sim.Aposentado)
+            // e o lingote vai a forja pelos ajudantes (BALANCE.md, secao da retirada da esteira)
             Ajuste = t =>
             {
                 // §3 precos (Normal) x 0,85, desvio do catalogo (revisar; BALANCE.md §41): ao contrario da Row, do Quarter e do Arsenal, a Grand

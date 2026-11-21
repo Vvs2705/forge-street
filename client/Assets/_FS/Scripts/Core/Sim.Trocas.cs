@@ -127,7 +127,7 @@ namespace FS.Core
         /// <summary>Compra direta (pad completo, teste ou cheat). Idempotente: ja comprado devolve false.</summary>
         public bool Buy(Upgrade u)
         {
-            if (Bought[(int)u]) return false;
+            if (Bought[(int)u] || Aposentado(UpgradeDefs[(int)u])) return false;   // 2026-11: aposentado nunca se compra
             if (UpgradeDefs[(int)u].Luxury && (!ProductionComplete || !Bought[UpgradeDefs[(int)u].Requires])) return false;
             if (!TemProjeto((int)u)) return false;   // B-CORE-07: nivel IV-V e bigorna longa so com o projeto
             int workersBefore = Workers.Count;
@@ -171,6 +171,9 @@ namespace FS.Core
         /// <summary>Deriva TUDO dos flags Bought (idempotente: vale depois de Buy e depois de Load).</summary>
         public void Recompute()
         {
+            int luxos = 0;
+            for (int i = 0; i < UpgradeDefs.Length; i++) if (UpgradeDefs[i].Luxury && Bought[i]) luxos++;
+            LuxoPct = luxos * T.LuxoPct;   // 2026-11: o luxo vale em preco (Sim.PriceOf)
             // C-CORE-01: os efeitos pelo Has (no Old Forge, Has(u) = Bought[u]: os mesmos numeros, bit a bit)
             float ft = Has(Upgrade.FurnaceSpeed2) ? T.FurnaceTime2 : Has(Upgrade.FurnaceSpeed1) ? T.FurnaceTime1 : T.FurnaceTime0;
             float ht = Has(Upgrade.HammerSpeed) ? T.HammerTime1 : T.HammerTime0;

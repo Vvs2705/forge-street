@@ -85,7 +85,7 @@ namespace FS.Tests
             for (int i = 0; i < cadeias.Length; i++) CollectionAssert.AreEqual(cadeias[i], s.Pads[i].Chain, "pad " + i);
             Assert.AreEqual("0.50,6.50 8.30,1.50 5.00,1.50", s.Pads[0].Pos + " " + s.Pads[5].Pos + " " + s.Pads[22].Pos);
             Assert.AreEqual((Sim.HireSpot.ToString(), "4.50,3.50", Balance.WorkshopW - 0.3f), (s.Contratacao.ToString(), s.Player.Pos.ToString(), s.MaxX));
-            Assert.AreSame(s.FurnaceA, s.EsteiraDe); Assert.AreSame(s.AnvilA, s.EsteiraPara);
+            Assert.IsNull(s.EsteiraDe); Assert.IsNull(s.EsteiraPara);   // 2026-11: a esteira saiu (Sim.Aposentado)
             Assert.AreEqual(Balance.Milestones.Length, s.Chests.Count);
             Assert.AreEqual(9, s.Solids.Count, "deposito, fornalha, bigorna e os 2 balcoes + carroca e os 3 trechos da parede (a decoracao so com o luxo)");
         }
@@ -123,7 +123,7 @@ namespace FS.Tests
             CollectionAssert.AreEqual(new[] { "deposito", "fornalha", "prensa", "rebitadeira", "montagem_elmo", "balcao" }, s.Stations.FindAll(x => x.Unlocked).ConvertAll(x => x.Id));
             Assert.AreEqual((6, 10, Balance.WorldW - 0.3f, true, false), (s.QueueCap, s.CounterCap, s.MaxX, s.QualityRevealed, s.HasConveyor));
             // row-pendencias (BALANCE.md §39): custos do §5.2 x 1,1 e precos do §3 x 2,4 (eram x 1,55 e x 3,5)
-            Assert.AreEqual((530L, 46000L, 18), (s.T.Cost(0), s.T.Cost(U(s, "rebitadeira2")), Enumerable.Range(0, s.UpgradeDefs.Length).Count(s.IsProduction)), "C-CORE-05: os 18 do §5.2 (a fornalha de liga)");
+            Assert.AreEqual((530L, 46000L, 17), (s.T.Cost(0), s.T.Cost(U(s, "rebitadeira2")), Enumerable.Range(0, s.UpgradeDefs.Length).Count(s.IsProduction)), "C-CORE-05: os 18 do §5.2 (a fornalha de liga), menos o Trilho de placas aposentado (2026-11)");
             Assert.AreEqual((335, 550, 0), (s.PriceOf(I(s, "elmo")), s.PriceOf(I(s, "peitoral")), s.T.Price[(int)I(s, "placa")]));
             Assert.IsNull(s.JewelShop); Assert.IsNull(s.AnvilA);
             Assert.AreEqual(0, s.Workers.Count, "nenhum ajudante no kit");
@@ -145,12 +145,13 @@ namespace FS.Tests
             Compra(s, "fole_couro_duplo", "gabaritos");
             Assert.AreEqual(1.6f, E(s, "fornalha").Time, 1e-5f);
             Assert.AreEqual(3.6f, E(s, "montagem_elmo").Time, 1e-5f);
-            Compra(s, "trilho_placas");
-            Assert.IsTrue(s.HasConveyor);
-            Station p = E(s, "prensa"), m = E(s, "montagem_elmo");
+            // 2026-11: o Trilho de placas foi aposentado com a esteira: nunca se compra e as placas ficam na prensa ate o Ferraz levar
+            Assert.IsFalse(s.Buy((Upgrade)U(s, "trilho_placas")));
+            Assert.IsFalse(s.HasConveyor);
+            Station p = E(s, "prensa");
             p.Out = 2;
             for (float t = 0f; t < 2.05f; t += Dt) s.Tick(Dt, 0f, 0f);
-            Assert.AreEqual((0, 2), (p.Out, m.Ins[m.InIndex(I(s, "placa"))]), "2 placas pela esteira em 2 s");
+            Assert.AreEqual(2, p.Out, "sem trilho as placas ficam na prensa");
         }
 
         /// <summary>Montagem (CONTEUDO_V1 §2.2 regra 1, teste negativo): a peca so comeca com TODOS os componentes na quantidade da receita e
@@ -483,7 +484,7 @@ namespace FS.Tests
             Acusa(v, "vende \"upgrade_fantasma\"");
 
             d = Copia(Row);
-            d.EsteiraPara = "bigorna_pesada";   // usa lingote e rebite; a prensa faz placa
+            d.EsteiraDe = "prensa"; d.EsteiraPara = "bigorna_pesada";   // usa lingote e rebite; a prensa faz placa (2026-11: a Row nao tem mais esteira; o validator ainda confere uma)
             d.Inicio = new V2(1.5f, 4.0f);      // dentro da fornalha
             v = ContentValidator.Distrito(d).ToList();
             Acusa(v, "esteira prensa -> bigorna_pesada nao liga");

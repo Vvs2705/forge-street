@@ -116,7 +116,7 @@ namespace FS.Core
         {
             foreach (Upgrade u in Chain)
             {
-                if (s.Bought[(int)u]) continue;
+                if (s.Bought[(int)u] || Sim.Aposentado(s.UpgradeDefs[(int)u])) continue;   // 2026-11: o aposentado nunca aparece
                 if (s.UpgradeDefs[(int)u].InMenu) return -1;   // FASE6: vendido no menu inferior; cadeia so de menu = pad invisivel para sempre
                 if (s.UpgradeDefs[(int)u].Luxury && !s.ProductionComplete) return -1;
                 if (!s.TemProjeto((int)u)) return -1;   // B-CORE-07: a bigorna longa so aparece com o projeto
@@ -166,6 +166,10 @@ namespace FS.Core
         /// <summary>B-CORE-08: o Hall das obras-primas e a Collection (Masterworks.cs). Ganchos: MasterworkPending e o Produce (Hall), o Tick
         /// (marcos), o Sell (Superiores por item), o PriceOf (+5% da familia completa); save nas linhas hall=/colq=.</summary>
         public readonly Hall Hall; public readonly Colecao Colecao;
+        /// <summary>FTUE: tutorial guiado do 1o ciclo e cartoes "o que e' isto" (Tutorial.cs), do Imperio como o Renome: o da raiz (Heroi) num
+        /// distrito. So a View chama Atualiza (o bot nao); save na linha tut=, so no payload da raiz.</summary>
+        public Tutorial Tutorial => Heroi != null ? Heroi.Tutorial : _tutorial;
+        readonly Tutorial _tutorial = new Tutorial();
         /// <summary>B-CORE-01: itens e receitas desta partida (padrao Items.All e Recipes.All; so o teste injeta outro). Handle de item = posicao
         /// em ItemDefs; os arrays por item (Stock, SoldItems, Crafted, Held) tem esse tamanho.</summary>
         public readonly ItemDef[] ItemDefs; public readonly RecipeDef[] RecipeDefs;
@@ -238,7 +242,7 @@ namespace FS.Core
             }
         }
         /// <summary>Produtivo = nem luxo nem Meta, na tabela deste distrito (Upgrades.IsProduction e' a do Old Forge).</summary>
-        public bool IsProduction(int u) => !UpgradeDefs[u].Luxury && !UpgradeDefs[u].Meta;
+        public bool IsProduction(int u) => !UpgradeDefs[u].Luxury && !UpgradeDefs[u].Meta && !Aposentado(UpgradeDefs[u]);
         public readonly int[] Crafted;
         public double RateEma;                 // ouro/s online, media movel (base do offline)
         public long SavedAt, LastClaim;        // unix s; o claim offline e' idempotente por SavedAt, que nunca recua (Save)
@@ -341,6 +345,12 @@ namespace FS.Core
             if (i >= 0) return Bought[i];
             return Heroi != null && (e == Upgrade.PlayerCapacity || e == Upgrade.PlayerSpeed) && Heroi.Has(e);
         }
+
+        /// <summary>2026-11 (Vinicius: "remover do jogo a esteira, nao faz sentido"): upgrade que saiu do jogo. Fica na lista (o save grava por
+        /// indice e por ID) mas nunca fica a venda (Pad.Current pula, Buy recusa), nao conta como produtivo (producao completa, luxo, metas)
+        /// e, num save antigo que ja tinha, nao liga nada: nenhum distrito tem mais as pontas da esteira (EsteiraDe/Para). Hoje: a esteira
+        /// do Old Forge e o trilho de placas da Rua dos Armeiros (o efeito Conveyor); os ajudantes fazem esse transporte.</summary>
+        public static bool Aposentado(UpgradeDef d) => d.Efeito == Upgrade.Conveyor;
 
         /// <summary>Algum upgrade deste distrito tem o efeito generico `e` (a View so monta o prop/decoracao de quem existe).</summary>
         public bool TemEfeito(Upgrade e) => _ef[(int)e] >= 0;

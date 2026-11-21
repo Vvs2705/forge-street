@@ -649,7 +649,7 @@ namespace FS.Core
             {
                 UpgradeDef d = all[u];
                 if (d.Requires < -1 || d.Requires >= n || d.Requires >= 0 && !bought[d.Requires]) return false;
-                if (d.Luxury) for (int i = 0; i < n; i++) if (!all[i].Luxury && !all[i].Meta && !bought[i]) return false;   // luxo espera so os produtivos
+                if (d.Luxury) for (int i = 0; i < n; i++) if (!all[i].Luxury && !all[i].Meta && !Sim.Aposentado(all[i]) && !bought[i]) return false;   // luxo espera so os produtivos
                 if (d.InMenu) return true;
                 foreach (Pad p in w.Pads)
                     foreach (Upgrade c in p.Chain)
@@ -666,7 +666,7 @@ namespace FS.Core
             }
             for (int u = 0; u < n; u++)
             {
-                if (bought[u]) continue;
+                if (bought[u] || Sim.Aposentado(all[u])) continue;   // 2026-11: o aposentado nunca fica a venda, de proposito
                 Upgrade id = all[u].Up;
                 bool hasPad = w.Pads.Exists(p => Array.IndexOf(p.Chain, id) >= 0);
                 yield return all[u].InMenu || hasPad
@@ -681,7 +681,7 @@ namespace FS.Core
             int prod = 0;
             foreach (UpgradeDef d in all)
             {
-                if (!d.Luxury) { if (!d.Meta) prod++; continue; }   // Meta (B-CORE-03) nao e' produtivo nem luxo
+                if (!d.Luxury) { if (!d.Meta && !Sim.Aposentado(d)) prod++; continue; }   // Meta (B-CORE-03) e aposentado (2026-11) nao sao produtivos nem luxo
                 if (d.InMenu) yield return $"luxo: {d.Up} no menu (luxo e' de pad, depois de toda a producao)";
                 if (d.Requires < 0) yield return $"luxo: {d.Up} sem requisito (o Sim.Buy le Bought[Requires] do luxo)";
             }

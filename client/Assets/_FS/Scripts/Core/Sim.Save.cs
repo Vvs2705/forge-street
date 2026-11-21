@@ -256,6 +256,7 @@ namespace FS.Core
             Hall.Save(sb); Colecao.Save(sb);   // B-CORE-08: hall= e colq= (so com algo dentro)
             _contratos.Save(sb);   // D-CORE-04: ctr= e ctr.v= (so com contrato; num distrito que nao e' a raiz, nunca)
             Metas.Save(sb);   // D-CORE-01/02: linhas mt.* (nada antes da 1a Agora)
+            if (Heroi == null) _tutorial.Save(sb, FirstSaleTime >= 0f || Sales > 0 || UpgradesBought > 0);   // FTUE: tut= (save novo sem progresso: nada)
             LiveOps.Save(sb); // D-CORE-03/04: linhas ev.*/ps.* (nada antes da 1a Agora)
             Compras.Save(sb);   // E-PLAT-04: linhas iap.* (so com compra)
             return sb.ToString();
@@ -428,6 +429,7 @@ namespace FS.Core
             sim.Hall.Load(text);    // B-CORE-08: depois do Renome (o mw: do ledger sem hall= volta registrado)
             sim.LiveOps.Load(text); // D-CORE-03/04: save sem ev.*/ps.* = nenhum evento, Pass do zero (o XP das metas entra 1x na 1a temporada)
             sim.Compras.Load(text);   // E-PLAT-04: save sem iap.* = nada comprado; posse so no Compras.Conectar (a loja valida)
+            if (heroi == null) sim._tutorial.Load(text, sim);   // FTUE, por ultimo (le o estado inteiro): sem tut= e com venda ou compra = concluido
             return sim;
         }
 
