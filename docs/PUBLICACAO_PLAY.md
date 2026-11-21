@@ -278,8 +278,8 @@ Primera versión de prueba de Forge Street: los 6 distritos, pedidos, contratos,
 
 **Antes do dia (até 24/11), para o dia não travar:**
 1. [ ] Escolher onde a política e o `app-ads.txt` vão morar e mandar na thread (D-PUB-1). Quem sobe a página no site é você ou quem cuida do site; a sessão entrega o arquivo pronto.
-2. [ ] Decidir como a política vai ao ar no teste interno (D-PUB-6).
-3. [ ] Dar o ok para a sessão abrir e mesclar os PRs da D-PRIV-2 (Topics), da D-PRIV-8 (`submitAnalytics`) e da D-PUB-3 (link da política no jogo). Os três mudam o AAB, então o AAB do dia sai **depois** deles.
+2. [ ] Preencher na política os dados da empresa do D-U-N-S (razão social, CNPJ, endereço, e-mail), ou mandá-los na thread para a sessão preencher (D-PUB-6, decidida: vai sem o quadro de rascunho no teste interno).
+3. [ ] Nada a fazer: a sessão abre e mescla os PRs da D-PRIV-2 (Topics), da D-PRIV-8 (`submitAnalytics`) e, com a URL da D-PUB-1, da D-PUB-3 (link da política no jogo). Os três mudam o AAB, então o AAB do dia sai **depois** deles.
 4. [ ] Separar os dados da conta de comerciante: conta bancária PJ, CNPJ e endereço fiscal (§0).
 
 **No dia do D-U-N-S:**
@@ -296,9 +296,9 @@ Primera versión de prueba de Forge Street: los 6 distritos, pedidos, contratos,
 | # | Decisão | Dono | Recomendação | Bloqueia |
 |---|---|---|---|---|
 | D-PUB-1 | Onde hospedar a política e o `app-ads.txt` (o "Site" da ficha) | Vinicius | o site da empresa, em `https://<domínio da VStack>/forgestreet/privacidade`, com o `index.html` deste PR, e o `app-ads.txt` na raiz do mesmo domínio. Assim fica tudo em nome da empresa. Alternativa grátis e imediata: o GitHub Pages deste repositório, que é público (`https://vvs2705.github.io/forge-street/...`). Funciona para a Play, mas a URL fica no nome do usuário do GitHub, não da empresa, e ligar o Pages é publicação. A nuvem não conseguiu abrir o site da VStack (proxy 403), então não foi verificado se ele existe | o passo 6.1 do dia, a D-PUB-3, o `app-ads.txt` |
-| D-PUB-6 | A política no teste interno | Vinicius | publicar a versão sem o quadro de rascunho, com os dados do D-U-N-S preenchidos, antes da revisão jurídica (o teste interno só chega aos testadores). A D-PRIV-5 continua bloqueando o teste aberto e a produção | o passo 6.1 do dia |
-| D-PRIV-2 | Tirar `ACCESS_ADSERVICES_TOPICS` (segmentação por interesse) do manifesto | sessão, com o ok do Vinicius | tirar, com `tools:node="remove"` (`PRIVACIDADE.md` §4). Enquanto estiver lá, a política não pode garantir "sem personalização para menores", e as frases têm `<<CONFIRMAR: D-PRIV-2>>` | o texto público da política e o AAB do dia |
-| D-PRIV-8 | `submitAnalytics: 1` (estatísticas de hardware do motor Unity, de todos) | sessão, com o ok do Vinicius | desligar no `Setup.cs` ou medir com captura de rede | o texto público da política e o AAB do dia |
+| D-PUB-6 | A política no teste interno | **decidida pelo time** (2026-11-21, o Vinicius delegou as decisões ao Conselho) | publicar a versão sem o quadro de rascunho, com os dados do D-U-N-S preenchidos, antes da revisão jurídica (o teste interno só chega aos testadores). A D-PRIV-5 continua bloqueando o teste aberto e a produção | o passo 6.1 do dia |
+| D-PRIV-2 | Tirar `ACCESS_ADSERVICES_TOPICS` (segmentação por interesse) do manifesto | **decidida pelo time**: tirar. A sessão abre o PR logo depois deste | tirar, com `tools:node="remove"` (`PRIVACIDADE.md` §4). Enquanto estiver lá, a política não pode garantir "sem personalização para menores", e as frases têm `<<CONFIRMAR: D-PRIV-2>>` | o texto público da política e o AAB do dia |
+| D-PRIV-8 | `submitAnalytics: 1` (estatísticas de hardware do motor Unity, de todos) | **decidida pelo time**: desligar. A sessão abre o PR junto com o da D-PRIV-2 | desligar no `ProjectSettings` (mais protetivo que medir, e não tira nada do jogo) | o texto público da política e o AAB do dia |
 | D-PUB-3 | Link da política dentro do jogo | sessão | botão "Política de privacidade" em Configurações > Privacidade (`Application.OpenURL`), num PR pequeno assim que a D-PUB-1 der a URL. Não sobe a `Privacidade.Versao` (`PRIVACIDADE.md` §6) | o AAB do dia; a revisão da Play exige o link |
 | D-PUB-5 | Loja do jogo só com o que está à venda | sessão | no PR que liga a `LojaUnity` (depois da chave RSA): esconder o produto que a Play não devolve, como o Pacote em rascunho, e mostrar só o Passe da temporada ativa | ligar a `LojaUnity` |
 | D-PUB-2 | Pacote do Mestre: preço e conteúdo | Vinicius | não ativar no lançamento. Decidir junto com a P3 (A/B do intersticial). Se for ativar antes, tirar `remove_ads` do conteúdo ou a linha "Sem anúncio entre telas" do cartão | ativar `iap_pacote_mestre` |
@@ -344,7 +344,8 @@ O time não estava instalado no repo nesta sessão. Os papéis foram simulados p
   - O §9 não tinha dono.
   - Faltavam os dados da conta de comerciante.
   - A política no teste interno não tinha decisão.
-- Todas as correções estão neste PR. A 2ª rodada fica registrada no PR.
+- Todas as correções estão neste PR. **2ª rodada: os 4 APROVARAM** (lead-programmer, technical-director, creative-director e producer).
+- Depois da delegação do Vinicius (2026-11-21), o time decidiu a D-PUB-6, a D-PRIV-2 e a D-PRIV-8 pela recomendação (§9).
 
 ## 11. Fontes (ajuda da Play Console, lidas em 2026-11-21)
 
