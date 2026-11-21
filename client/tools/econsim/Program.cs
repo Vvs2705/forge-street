@@ -106,7 +106,7 @@ static partial class EconSim
         long renome = 0;       // C-CORE-05: --renome N = o Renome do Imperio na chegada (500 = o do Charter do Old Forge: 400 + 100)
         PoliticaBancada bancadas = PoliticaBancada.Regra; int? histerese = null;   // C-CORE-06
         int campanha = 0;      // BALANCE §46: --campanha H = o Imperio inteiro do zero por H horas de relogio (Campanha.cs)
-        string marcos = null; int horas = 40; string versao = "econsim";   // §8 (2026-11-21): --marcos pasta [--horas 40] [--versao x] = saves de marco (Marcos.cs)
+        string marcos = null, observador = null; int horas = 40; string versao = "econsim";   // §8 (2026-11-21): --marcos pasta [--horas 40] [--versao x] = saves de marco (Marcos.cs)
         for (int i = 0; i < args.Length; i += 2)
         {
             string v = i + 1 < args.Length ? args[i + 1] : null;
@@ -141,6 +141,7 @@ static partial class EconSim
                 case "--histerese" when ok: ok = int.TryParse(v, out int h); histerese = h; break;
                 case "--campanha" when ok: ok = int.TryParse(v, out campanha) && campanha > 0; break;
                 case "--marcos" when ok: marcos = v; break;
+                case "--observador" when ok: observador = v; break;
                 case "--horas" when ok: ok = int.TryParse(v, out horas) && horas > 0; break;
                 case "--versao" when ok: versao = v; break;
                 case "--arcano" when ok: ok = Enum.TryParse(v, true, out _altares) && Enum.IsDefined(typeof(PoliticaArcana), _altares); break;   // C-CORE-08
@@ -152,6 +153,7 @@ static partial class EconSim
                 return 2;
             }
         }
+        if (observador != null) return Observador(observador, perfis.Length == 1 ? perfis[0] : BotProfile.F2PGolpe, horas, anuncioSeg, knobs);
         if (marcos != null) return Marcos(marcos, perfis.Length == 1 ? perfis[0] : BotProfile.F2PGolpe, horas, anuncioSeg, knobs, versao);
         if (campanha > 0) return Campanha(perfis, campanha, partidas, anuncioSeg, knobs);
         if (distrito != null && distrito.Indice > 0) return Distrito(distrito, perfis, minutos, partidas, anuncioSeg, knobs, workerSeg, fundoOF, gerente, saida, renome, bancadas, histerese);
