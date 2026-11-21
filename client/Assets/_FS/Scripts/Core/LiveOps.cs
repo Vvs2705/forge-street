@@ -214,7 +214,7 @@ namespace FS.Core
         {
             if (x.Evento == "worker_any") return _sim.Workers.Count >= Metas.AjudantesOldForge && !_sim.Equipe.FaltaContratar && !_sim.Equipe.FaltaNivel;
             if (x.Evento != "upgrade_buy") return false;
-            if (x.Filtro.Length == 0) return _sim.UpgradesBought >= Upgrades.Count;
+            if (x.Filtro.Length == 0) return _sim.UpgradesBought >= Upgrades.Compraveis;   // 2026-11: a esteira aposentada nunca se compra
             foreach (string f in x.Filtro) if (!_sim.Bought[Upgrades.IndexOf(f)]) return false;
             return true;
         }
