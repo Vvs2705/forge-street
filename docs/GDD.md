@@ -319,7 +319,7 @@ Estado: Encomendas (1 tipo, 1 vaga) IMPLEMENTADO · 8 tipos PROPOSTO · Wave B �
 
 Estado: PROPOSTO · Charter Wave C (C-CORE-03) · Contracts Wave D (D-CORE-04).
 
-**Royal Contract (DM §19):** objetivo de médio prazo, em paralelo ao loop. Ex.: "Equipar 20 guardas" = 20 espadas + 20 escudos + 20 elmos. Entregar desvia produto do balcão: a decisão é vender agora ou cumprir o contrato.
+**Royal Contract (DM §19):** objetivo de médio prazo, em paralelo ao loop. Ex.: "Equipar 20 guardas" = 20 espadas + 20 escudos + 20 elmos. A peça vendida conta para o contrato (e para a encomenda): o contrato é o reconhecimento da Coroa sobre o que a oficina já produz, não um desvio do balcão. A decisão "vender agora ou cumprir" fica no pátio de cotas do Royal Arsenal e em aceitar ou abandonar o contrato (V30, `PROJETO.md` §4).
 - Recompensas: ouro, **Blueprint (desbloqueio, não token, V9)**, Renome e, se houver baú, **conteúdo fixo mostrado antes**. A "cosmetic chance/controlada" do DM §19 sai: nada de chance (P5).
 - Prazo só como bônus; contrato nunca bloqueia o core loop (o bot fecha todos os distritos sem nenhum contrato).
 - Meta da v1.0: 12 Royal Contracts (DM §7). Recompensa 1×, com ID de transação.
