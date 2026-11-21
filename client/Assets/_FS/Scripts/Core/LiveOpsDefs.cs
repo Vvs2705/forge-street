@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 
 namespace FS.Core
@@ -59,6 +60,11 @@ namespace FS.Core
         public MissaoEvento[] Missoes;
         public Marco[] Trilha;
         public Modificador[] Modificadores = new Modificador[0];
+        /// <summary>Calendario infinito (2026-11-21): reprise = o evento `Origem` (o do calendario em dados) no ciclo `Ciclo` (1.., 70 dias
+        /// cada) com ID novo; o evento em dados tem Origem null e Ciclo 0. A encomenda Event e o nome sao os da origem (Base).</summary>
+        public string Origem;
+        public int Ciclo;
+        public string Base => Origem ?? Id;
         public long Comeca => LiveOpsDefs.T0 + Inicio * LiveOpsDefs.Dia;
         public long Termina => Comeca + Dias * LiveOpsDefs.Dia;
     }
@@ -70,6 +76,10 @@ namespace FS.Core
         public string Id, Temporada, Tema;
         public int Inicio, Dias = 35, XpNivel = 600, XpEncomenda = 10, TetoEncomendaDia = 100;
         public RewardDef[] Free, Premium;
+        /// <summary>Calendario infinito: reprise da temporada `Origem` no ciclo `Ciclo` (como o EventDef); a em dados tem Origem null.</summary>
+        public string Origem;
+        public int Ciclo;
+        public string Base => Origem ?? Id;
         public int Niveis => Free.Length;
         public long XpTotal => (long)Niveis * XpNivel;
         public long Comeca => LiveOpsDefs.T0 + Inicio * LiveOpsDefs.Dia;
@@ -315,6 +325,162 @@ namespace FS.Core
                     "cos_ps2p_arco_fitas", "cos_ps2p_coroa_fogo"),
             },
         };
+
+        // ------------------------------------------------------------------ calendario infinito (2026-11-21, known issue P1 do PROJETO §7)
+
+        /// <summary>Dias de um ciclo do calendario em dados: as 2 temporadas de 35 (S1 + S2) e os 10 eventos dentro delas. Depois do dia 70
+        /// (2027-01-11) o calendario nunca fica vazio: o ciclo c (1, 2, ...) repete o ciclo 0 em rodizio, dia a dia, com ID novo (reprise =
+        /// ID novo: a trilha paga de novo e o ledger nunca confunde). Mesmas regras: um evento por vez, 6 dias, temporadas emendadas.</summary>
+        public const int CicloDias = 70;
+
+        static readonly Dictionary<(object, int), object> _reprises = new Dictionary<(object, int), object>();
+
+        /// <summary>Sufixo do ID da reprise no ciclo `c` (ev_s1w1_royal_week -> ev_s1w1_royal_week_r1).</summary>
+        public static string Sufixo(int c) => "_r" + c.ToString(CultureInfo.InvariantCulture);
+
+        /// <summary>So entra no rodizio o que cabe inteiro no ciclo 0 (o evento ou passe que um teste injeta depois do dia 70 nao se repete).</summary>
+        public static bool Repete(EventDef e) => e.Origem == null && e.Inicio >= 0 && e.Inicio + e.Dias <= CicloDias;
+        public static bool Repete(PassDef p) => p.Origem == null && p.Inicio >= 0 && p.Inicio + p.Dias <= CicloDias;
+
+        /// <summary>A reprise de `e` no ciclo `c` (>= 1): sempre a mesma instancia (o LiveOps compara por referencia), deterministica.</summary>
+        public static EventDef Reprise(EventDef e, int c)
+        {
+            lock (_reprises)
+            {
+                if (_reprises.TryGetValue((e, c), out object o)) return (EventDef)o;
+                var r = new EventDef
+                {
+                    Id = e.Id + Sufixo(c), Temporada = e.Temporada + Sufixo(c), Abre = e.Abre, Tema = e.Tema, Encomenda = e.Encomenda, Template = e.Template,
+                    Inicio = e.Inicio + c * CicloDias, Dias = e.Dias, Renome = e.Renome, Encomendas = e.Encomendas, Reserva = e.Reserva, Requer = e.Requer,
+                    Ofertas = e.Ofertas, Missoes = e.Missoes, Trilha = e.Trilha, Modificadores = e.Modificadores, Origem = e.Id, Ciclo = c,
+                };
+                _reprises[(e, c)] = r;
+                return r;
+            }
+        }
+
+        public static PassDef Reprise(PassDef p, int c)
+        {
+            lock (_reprises)
+            {
+                if (_reprises.TryGetValue((p, c), out object o)) return (PassDef)o;
+                var r = new PassDef
+                {
+                    Id = p.Id + Sufixo(c), Temporada = p.Temporada + Sufixo(c), Tema = p.Tema, Inicio = p.Inicio + c * CicloDias, Dias = p.Dias,
+                    XpNivel = p.XpNivel, XpEncomenda = p.XpEncomenda, TetoEncomendaDia = p.TetoEncomendaDia, Free = p.Free, Premium = p.Premium,
+                    Origem = p.Id, Ciclo = c,
+                };
+                _reprises[(p, c)] = r;
+                return r;
+            }
+        }
+
+        /// <summary>Ciclo do instante `t` (0 = o calendario em dados; antes do T0 tambem 0).</summary>
+        public static int CicloDe(long t) => t < T0 ? 0 : (int)Math.Min(int.MaxValue, (t - T0) / (CicloDias * Dia));
+
+        /// <summary>O evento de `eventos` (ou a reprise dele) cuja janela contem `t` e que `pronto` aceita; o em dados primeiro.</summary>
+        public static EventDef EventoEm(EventDef[] eventos, long t, Func<EventDef, bool> pronto)
+        {
+            EventDef e = Array.Find(eventos, x => x.Comeca <= t && t < x.Termina && pronto(x));
+            int c = CicloDe(t);
+            if (e != null || c < 1) return e;
+            foreach (EventDef b in eventos)
+            {
+                if (!Repete(b)) continue;
+                EventDef r = Reprise(b, c);
+                if (r.Comeca <= t && t < r.Termina && pronto(r)) return r;
+            }
+            return null;
+        }
+
+        /// <summary>A temporada (ou a reprise) cuja janela contem `t`; a em dados primeiro. Do dia 0 em diante nunca e' null.</summary>
+        public static PassDef PasseEm(PassDef[] passes, long t)
+        {
+            PassDef p = Array.Find(passes, x => x.Comeca <= t && t < x.Termina);
+            int c = CicloDe(t);
+            if (p != null || c < 1) return p;
+            foreach (PassDef b in passes)
+            {
+                if (!Repete(b)) continue;
+                PassDef r = Reprise(b, c);
+                if (r.Comeca <= t && t < r.Termina) return r;
+            }
+            return null;
+        }
+
+        /// <summary>Le o ID do save: o em dados ou a reprise ("{id}_r{c}"); ID que sumiu dos dados = null.</summary>
+        public static EventDef EventoPorId(EventDef[] eventos, string id)
+        {
+            EventDef e = Array.Find(eventos, x => x.Id == id);
+            if (e != null || !Reprisado(id, out string b, out int c)) return e;
+            e = Array.Find(eventos, x => x.Id == b);
+            return e != null && Repete(e) ? Reprise(e, c) : null;
+        }
+
+        public static PassDef PassePorId(PassDef[] passes, string id)
+        {
+            PassDef p = Array.Find(passes, x => x.Id == id);
+            if (p != null || !Reprisado(id, out string b, out int c)) return p;
+            p = Array.Find(passes, x => x.Id == b);
+            return p != null && Repete(p) ? Reprise(p, c) : null;
+        }
+
+        static bool Reprisado(string id, out string b, out int c)
+        {
+            b = null; c = 0;
+            int k = id == null ? -1 : id.LastIndexOf("_r", StringComparison.Ordinal);
+            if (k <= 0 || !int.TryParse(id.Substring(k + 2), NumberStyles.None, CultureInfo.InvariantCulture, out c) || c < 1) return false;
+            b = id.Substring(0, k);
+            return true;
+        }
+
+        /// <summary>O calendario em dados inteiro e as reprises dos ciclos 1..CicloDe(t), na ordem (metas event_complete e pass_level).</summary>
+        public static List<EventDef> EventosAte(EventDef[] eventos, long t)
+        {
+            var l = new List<EventDef>(eventos);
+            for (int c = 1; c <= CicloDe(t); c++) foreach (EventDef b in eventos) if (Repete(b)) l.Add(Reprise(b, c));
+            return l;
+        }
+
+        public static List<PassDef> PassesAte(PassDef[] passes, long t)
+        {
+            var l = new List<PassDef>(passes);
+            for (int c = 1; c <= CicloDe(t); c++) foreach (PassDef b in passes) if (Repete(b)) l.Add(Reprise(b, c));
+            return l;
+        }
+
+        /// <summary>Regras do calendario gerado ate o ciclo `ciclos` (o Validar cobre o ciclo 0): IDs unicos e no formato, temporadas emendadas
+        /// sem buraco ate o fim do ultimo ciclo, eventos sem sobreposicao (um slot) e dentro da temporada deles, e a reprise pronta exatamente
+        /// quando a origem esta pronta.</summary>
+        public static IEnumerable<string> ValidarCalendario(EventDef[] eventos, PassDef[] passes, int ciclos)
+        {
+            var ids = new HashSet<string>();
+            var ps = new List<PassDef>();
+            var es = new List<EventDef>();
+            for (int c = 0; c <= ciclos; c++)
+            {
+                foreach (PassDef b in passes) if (c == 0 || Repete(b)) ps.Add(c == 0 ? b : Reprise(b, c));
+                foreach (EventDef b in eventos) if (c == 0 || Repete(b)) es.Add(c == 0 ? b : Reprise(b, c));
+            }
+            ps.Sort((a, b) => a.Inicio.CompareTo(b.Inicio));
+            es.Sort((a, b) => a.Inicio.CompareTo(b.Inicio));
+            for (int k = 0; k < ps.Count; k++)
+            {
+                if (!IdOk(ps[k].Id, "pass_") || !ids.Add(ps[k].Id)) yield return $"passe {ps[k].Id}: ID fora do formato ou repetido";
+                if (k > 0 && ps[k].Inicio != ps[k - 1].Inicio + ps[k - 1].Dias) yield return $"passe {ps[k].Id}: nao emenda com {ps[k - 1].Id}";
+            }
+            if (ps.Count == 0 || ps[ps.Count - 1].Inicio + ps[ps.Count - 1].Dias < (ciclos + 1) * CicloDias) yield return $"calendario: o Pass acaba antes do dia {(ciclos + 1) * CicloDias}";
+            for (int k = 0; k < es.Count; k++)
+            {
+                EventDef e = es[k];
+                if (!IdOk(e.Id, "ev_") || !ids.Add(e.Id)) yield return $"evento {e.Id}: ID fora do formato ou repetido";
+                if (k > 0 && e.Inicio < es[k - 1].Inicio + es[k - 1].Dias) yield return $"evento {e.Id}: sobrepoe {es[k - 1].Id} (um evento por vez)";
+                PassDef p = ps.Find(x => x.Temporada == e.Temporada);
+                if (p == null || e.Inicio < p.Inicio || e.Inicio + e.Dias > p.Inicio + p.Dias) yield return $"evento {e.Id}: fora da temporada {e.Temporada}";
+                if (e.Origem != null && (Falta(e, Items.All) == null) != (Falta(Array.Find(eventos, x => x.Id == e.Origem), Items.All) == null))
+                    yield return $"evento {e.Id}: pronto diferente da origem";
+            }
+        }
 
         /// <summary>Campo publico e gravavel do Tuning com este nome (o knob existe), ou null.</summary>
         public static FieldInfo Campo(string knob)
