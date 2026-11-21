@@ -392,7 +392,7 @@ namespace FS.Tests
             Assert.AreEqual((long)s.UpgradesBought, r.Metas.Cont["upgrade_buy"]);
             Assert.AreEqual(s.GoldEarned, r.Metas.Cont["currency_source"]);
             Assert.IsTrue(r.Metas.Conquista(MetasDefs.Achar("ach_vende100")).Pronta);
-            Assert.IsTrue(r.Metas.Conquista(MetasDefs.Achar("ach_esteira")).Pronta, "comprou a Esteira antes das metas");
+            Assert.IsTrue(r.Metas.Conquista(MetasDefs.Achar("ach_esteira")).Pronta, "comprou o Ajudante 2 (a antiga meta da Esteira) antes das metas");
             for (int i = 0; i < Metas.NDiarias; i++) Assert.AreEqual(0L, r.Metas.Diaria(i).Feito, "diaria comeca do zero");
             StringAssert.Contains("mt.cal=", r.Save(Em(D, 10)));
         }
@@ -783,7 +783,7 @@ namespace FS.Tests
                 Assert.AreEqual("Venda 50 produtos", Textos.Meta(MetasDefs.Achar("dly_vende50"), 50));
                 Assert.AreEqual("Fabrique 1 escudo", Textos.Meta(MetasDefs.Achar("ach_primeiro_escudo"), 1));
                 Assert.AreEqual("Ganhe 1.500 em vendas", Textos.Meta(MetasDefs.Achar("dly_renda5min"), 1500));
-                Assert.AreEqual("Compre: Esteira", Textos.Meta(MetasDefs.Achar("ach_esteira"), 1));
+                Assert.AreEqual("Compre: Ajudante 2", Textos.Meta(MetasDefs.Achar("ach_esteira"), 1));
                 Assert.AreEqual("+120 de ouro  ·  +100 XP", Textos.Premio(120, 100, 0, null));
                 Loc.Atual = Idioma.En;
                 Assert.AreEqual("Deliver 2 orders", Textos.Meta(MetasDefs.Achar("dly_enc2"), 2));

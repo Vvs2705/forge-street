@@ -303,8 +303,8 @@ namespace FS.Tests
         [Test]
         public void Curva_DeCusto_Dos25Upgrades_22ProdutivosELuxo()
         {
-            Assert.AreEqual(26, Upgrades.ProductionCount);
-            Assert.AreEqual(46, Upgrades.Count);   // 26 produtivos + 3 luxos + 8 niveis II-III (B-CORE-03) + 8 IV-V e a bigorna longa (B-CORE-07), Meta
+            Assert.AreEqual(25, Upgrades.ProductionCount);   // 2026-11: a esteira (aposentada) saiu da conta
+            Assert.AreEqual(46, Upgrades.Count);   // 25 produtivos + a esteira aposentada + 3 luxos + 8 niveis II-III (B-CORE-03) + 8 IV-V e a bigorna longa (B-CORE-07), Meta
             Assert.AreEqual(46, Upgrades.All.Length);
             Assert.AreEqual(46, Enum.GetValues(typeof(Upgrade)).Length);
             Assert.AreEqual((3000L, 2400L), (Tuning.Padrao.Cost(Upgrade.Miner), Tuning.Padrao.Cost(Upgrade.Jeweler2)), "fase 4: medido na Leva 10 (BALANCE.md §14)");
@@ -328,6 +328,7 @@ namespace FS.Tests
             {
                 Assert.AreEqual(0, Tuning.Padrao.Cost(i) % 5, "preco legivel");
                 if (i >= (int)Upgrade.SideCorridor) continue;   // so os 15 do v0.1 seguem a formula
+                if (i == (int)Upgrade.Tools || i == (int)Upgrade.Tools + 1) continue;   // 2026-11: Ferramentas com o FerramentasExtra (esteira aposentada)
                 double ratio = Tuning.Padrao.Cost(i) / (double)Tuning.Padrao.Cost(i - 1);
                 Assert.That(ratio, Is.InRange(1.15, 1.5), $"tier {i}: {Tuning.Padrao.Cost(i - 1)} -> {Tuning.Padrao.Cost(i)}");
             }
@@ -341,6 +342,7 @@ namespace FS.Tests
                 for (int i = 0; i < Upgrades.Count; i++) if (Upgrades.IsLuxury(i) == (pass == 1)) order.Add(i);
             foreach (int i in order)
             {
+                if (Sim.Aposentado(Upgrades.All[i])) continue;   // 2026-11: a esteira nunca aparece
                 bool visible = false;
                 foreach (Pad p in s.Pads) visible |= p.Current(s) == i;
                 Assert.AreEqual(!Upgrades.All[i].InMenu, visible, $"{(Upgrade)i}: pad visivel quando chega a vez dele, so se nao for do menu");
@@ -481,18 +483,21 @@ namespace FS.Tests
         }
 
         [Test]
-        public void Esteira_MoveLingotesSemCaminhar()
+        public void Esteira_Aposentada_NuncaAVendaENaoMoveLingote()
         {
-            var s = new Sim();
-            s.Buy(Upgrade.Conveyor);
+            // 2026-11 (Vinicius: "remover do jogo a esteira"): o upgrade fica na tabela (save), mas nunca se compra nem aparece no pad
+            var s = Rich();
+            Assert.IsTrue(Sim.Aposentado(Upgrades.All[(int)Upgrade.Conveyor]));
+            Assert.IsFalse(s.Buy(Upgrade.Conveyor), "Buy recusa o aposentado");
+            Assert.AreEqual(-1, PadFor(s, Upgrade.Conveyor).Current(s), "o pad da esteira nunca mostra nada");
+            Assert.IsFalse(Upgrades.IsProduction((int)Upgrade.Conveyor), "nao conta na producao completa");
             s.FurnaceA.Out = 3;
             Run(s, 3.5f);
-            Assert.AreEqual(0, s.FurnaceA.Out);
-            Assert.Greater(s.AnvilA.In + (s.AnvilA.Busy ? 1 : 0) + s.AnvilA.Out, 2, "os 3 lingotes chegaram a bigorna sem ninguem andar");
-            var without = new Sim();
-            without.FurnaceA.Out = 3;
-            Run(without, 3.5f);
-            Assert.AreEqual(3, without.FurnaceA.Out, "sem esteira o lingote fica na fornalha");
+            Assert.AreEqual(3, s.FurnaceA.Out, "sem esteira o lingote fica na fornalha");
+            // save antigo que ja tinha a esteira: o flag fica, mas nao liga nada
+            var velho = new Sim();
+            velho.Bought[(int)Upgrade.Conveyor] = true; velho.Recompute();
+            Assert.IsFalse(velho.HasConveyor, "save antigo com a esteira comprada: nenhum distrito tem mais as pontas");
         }
 
         [Test]
@@ -1046,7 +1051,7 @@ namespace FS.Tests
         [Test]
         public void Marca_ProdutivoAnexadoDepoisDosLuxos_ETratadoComoProdutivo()
         {
-            Assert.AreEqual(Upgrades.ProductionCount, Array.FindAll(Upgrades.All, d => !d.Luxury && !d.Meta).Length, "ProductionCount = quantos sem marca de luxo nem Meta");
+            Assert.AreEqual(Upgrades.ProductionCount, Array.FindAll(Upgrades.All, d => !d.Luxury && !d.Meta && !Sim.Aposentado(d)).Length, "ProductionCount = quantos sem marca de luxo nem Meta (nem aposentados)");
             foreach (Upgrade u in Luxury) Assert.IsTrue(Upgrades.IsLuxury((int)u), u + " e' luxo");
             int sim = (int)Upgrade.JewelryDecor;
             UpgradeDef real = Upgrades.All[sim];
@@ -1137,13 +1142,19 @@ namespace FS.Tests
         }
 
         [Test]
-        public void Luxo_NaoMudaProducaoDemandaReceitaOuCapacidade()
+        public void Luxo_SoMudaOPrecoDaVenda_NaoAProducaoDemandaOuCapacidade()
         {
+            // 2026-11 (Vinicius: "as evolucoes finais como chao nao fizeram sentido"): o luxo passou a valer +Tuning.LuxoPct% no preco de
+            // venda cada; producao, demanda e capacidade continuam iguais
             var plain = CompleteProduction();
             var luxury = Sim.Load(plain.Save(1));
             foreach (Upgrade u in Luxury) luxury.Buy(u);
+            Assert.AreEqual((0, 3 * Tuning.Padrao.LuxoPct), (plain.LuxoPct, luxury.LuxoPct));
             foreach (Item item in new[] { Item.Sword, Item.Shield, Item.Tool, Item.Jewel })
-                Assert.AreEqual((plain.PriceOf(item), plain.ClientInterval(item)), (luxury.PriceOf(item), luxury.ClientInterval(item)));
+            {
+                Assert.AreEqual((plain.PriceOf(item), plain.ClientInterval(item)), (luxury.PriceOf(item), luxury.ClientInterval(item)), "preco de tabela e demanda iguais");
+                Assert.Greater(luxury.PriceOf(item, Quality.Normal), plain.PriceOf(item, Quality.Normal), item + ": a venda paga mais com o luxo");
+            }
             Assert.AreEqual((plain.Player.Speed, plain.Player.Cap, plain.CounterCap, plain.QueueCap, plain.JewelQueueCap, plain.HasConveyor, plain.MaxX),
                             (luxury.Player.Speed, luxury.Player.Cap, luxury.CounterCap, luxury.QueueCap, luxury.JewelQueueCap, luxury.HasConveyor, luxury.MaxX));
             for (int i = 0; i < plain.Stations.Count; i++)
@@ -1159,8 +1170,8 @@ namespace FS.Tests
             CollectionAssert.AreEqual(plain.Crafted, luxury.Crafted);
             CollectionAssert.AreEqual(plain.Stock, luxury.Stock);
             CollectionAssert.AreEqual(plain.SoldItems, luxury.SoldItems);
-            Assert.AreEqual((plain.Gold, plain.GoldEarned, plain.Sales, plain.ClientsLost, plain.ClientsTurnedAway, plain.RateEma),
-                            (luxury.Gold, luxury.GoldEarned, luxury.Sales, luxury.ClientsLost, luxury.ClientsTurnedAway, luxury.RateEma));
+            Assert.AreEqual((plain.Sales, plain.ClientsLost, plain.ClientsTurnedAway), (luxury.Sales, luxury.ClientsLost, luxury.ClientsTurnedAway), "mesmas vendas");
+            Assert.That(luxury.GoldEarned / (double)plain.GoldEarned, Is.InRange(1.10, 1.20), "as mesmas vendas pagam ~+15% (3 luxos)");
             Assert.AreEqual(6, luxury.Workers.Count, "luxo nao contrata (4 ajudantes + Mineiro + Joalheiro 2)");
         }
 
@@ -1760,11 +1771,12 @@ namespace FS.Tests
         {
             const string old = SaveAntesLeva11;
             Sim s = Sim.Load(old);
-            Assert.AreEqual(1000 + 40 + 100 + 120 + 30 + 900 + 600 + 5000 + 8000, s.Gold, "o parcial dos pads do menu volta inteiro para o ouro");
-            Assert.AreEqual(55, PadFor(s, Upgrade.Conveyor).Paid, "o parcial de pad que continua no mundo fica no pad");
+            // 2026-11: a esteira foi aposentada, entao o parcial dela (55) tambem volta, como o de um pad que virou menu
+            Assert.AreEqual(1000 + 40 + 100 + 120 + 30 + 900 + 600 + 5000 + 8000 + 55, s.Gold, "o parcial dos pads do menu (e da esteira aposentada) volta inteiro para o ouro");
+            Assert.AreEqual(0, PadFor(s, Upgrade.Conveyor).Paid, "o parcial da esteira aposentada volta para o ouro");
             foreach (Upgrade u in Menu) Assert.AreEqual(0, PadFor(s, u).Paid, u + ": pad do menu zerado");
             string again = s.Save(2);
-            StringAssert.Contains("upp=esteira:55\n", again);
+            StringAssert.DoesNotContain("esteira:55", again);
             Assert.AreEqual(again, Sim.Load(again).Save(2), "save estavel: o ouro devolvido nao se repete no proximo Load");
             Assert.IsTrue(s.TryBuyMenu(Upgrade.FurnaceSpeed1), "o ouro devolvido compra no menu");
             Sim rich = Sim.Load("gold=2147483000\npads=5000,\n");
@@ -1861,7 +1873,7 @@ namespace FS.Tests
             Assert.AreEqual((Item.Jewel, 1), (j.Player.Item, j.Player.Count), "recolheu na saida");
             j.FurnaceA.Out = 2;
             StandAt(j, new V2(6f, 2f), 2.5f);
-            Assert.AreEqual(0, j.FurnaceA.Out, "esteira Fornalha -> Bigorna sem ninguem nas bocas");
+            Assert.AreEqual(2, j.FurnaceA.Out, "2026-11: sem esteira (aposentada), o lingote fica na fornalha ate alguem levar");
         }
 
         // ------------------------------------------------------------------ FASE7: balcao evolutivo e carga no save (docs/archive/FASE7_CARGA_BALCAO.md)

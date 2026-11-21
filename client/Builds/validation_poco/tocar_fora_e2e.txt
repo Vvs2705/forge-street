@@ -1,0 +1,94 @@
+[-tutorial] TOQUEFORA ok     boas-vindas do tutorial na tela
+[-tutorial] TOQUEFORA ok     tap fora da boas-vindas: nao fecha e nao chega ao mundo
+[-tutorial] TOQUEFORA ok     COMECAR abre o painel do passo
+[-tutorial] TOQUEFORA ok     tap no painel do passo nao fecha a bandeja
+[-tutorial] TOQUEFORA ok     tap no painel do passo nao chega ao mundo
+[-tutorial] TOQUEFORA ok     PULAR do tutorial clica com a bandeja aberta
+[-tutorial] TOQUEFORA ok     o PULAR nao conta como toque fora
+[-tutorial] TOQUEFORA ok     tap no mundo fecha a bandeja de melhorias
+[-tutorial] TOQUEFORA ok     o tap que fechou nao agiu no mundo (Game.Toque)
+[-tutorial] TOQUEFORA ok     arrastar (joystick) nao fecha a bandeja
+[-tutorial] TOQUEFORA ok     tocar dentro da bandeja nao fecha
+[-tutorial] TOQUEFORA ok     com bloqueio registrado (tutorial) o tap nao fecha
+[-tutorial] TOQUEFORA ok     tap dentro do cartao de Metas nao fecha
+[-tutorial] TOQUEFORA ok     tap no veu fecha Metas
+[-tutorial] TOQUEFORA ok     arrastar no veu nao fecha Metas
+[-tutorial] TOQUEFORA ok     Fechar com escorregao de 15 px clica (o veu nao rouba o arraste do botao)
+[-tutorial] TOQUEFORA ok     tap fora fecha as configuracoes
+[-tutorial] TOQUEFORA ok     tap fora fecha o painel informativo
+[-tutorial] TOQUEFORA ok     cofre com ouro pendente NAO fecha por toque fora
+[-tutorial] TOQUEFORA ok     PEGAR do cofre com escorregao de 15 px clica
+[-tutorial] TOQUEFORA ok     painel de escolha NAO fecha por toque fora
+[-tutorial] TOQUEFORA ok     sem bandeja/painel o tap chega ao mundo
+[-tutorial] TOQUEFORA OK
+[sem tutorial] TOQUEFORA ok     tap no mundo fecha a bandeja de melhorias
+[sem tutorial] TOQUEFORA ok     o tap que fechou nao agiu no mundo (Game.Toque)
+[sem tutorial] TOQUEFORA ok     arrastar (joystick) nao fecha a bandeja
+[sem tutorial] TOQUEFORA ok     tocar dentro da bandeja nao fecha
+[sem tutorial] TOQUEFORA ok     com bloqueio registrado (tutorial) o tap nao fecha
+[sem tutorial] TOQUEFORA ok     tap dentro do cartao de Metas nao fecha
+[sem tutorial] TOQUEFORA ok     tap no veu fecha Metas
+[sem tutorial] TOQUEFORA ok     arrastar no veu nao fecha Metas
+[sem tutorial] TOQUEFORA ok     Fechar com escorregao de 15 px clica (o veu nao rouba o arraste do botao)
+[sem tutorial] TOQUEFORA ok     tap fora fecha as configuracoes
+[sem tutorial] TOQUEFORA ok     tap fora fecha o painel informativo
+[sem tutorial] TOQUEFORA ok     cofre com ouro pendente NAO fecha por toque fora
+[sem tutorial] TOQUEFORA ok     PEGAR do cofre com escorregao de 15 px clica
+[sem tutorial] TOQUEFORA ok     painel de escolha NAO fecha por toque fora
+[sem tutorial] TOQUEFORA ok     sem bandeja/painel o tap chega ao mundo
+[sem tutorial] TOQUEFORA OK
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     boas-vindas do tutorial na tela
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     tap fora da boas-vindas: nao fecha e nao chega ao mundo
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     COMECAR abre o painel do passo
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA FALHOU tap no painel do passo nao fecha a bandeja
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     tap no painel do passo nao chega ao mundo
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     PULAR do tutorial clica com a bandeja aberta
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA FALHOU o PULAR nao conta como toque fora
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     tap no mundo fecha a bandeja de melhorias
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     o tap que fechou nao agiu no mundo (Game.Toque)
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     arrastar (joystick) nao fecha a bandeja
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     tocar dentro da bandeja nao fecha
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     com bloqueio registrado (tutorial) o tap nao fecha
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     tap dentro do cartao de Metas nao fecha
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     tap no veu fecha Metas
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     arrastar no veu nao fecha Metas
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     Fechar com escorregao de 15 px clica (o veu nao rouba o arraste do botao)
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     tap fora fecha as configuracoes
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     tap fora fecha o painel informativo
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     cofre com ouro pendente NAO fecha por toque fora
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     PEGAR do cofre com escorregao de 15 px clica
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     painel de escolha NAO fecha por toque fora
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA ok     sem bandeja/painel o tap chega ao mundo
+[-tutorial, antes das excecoes do FTUE] TOQUEFORA FALHOU: tap no painel do passo nao fecha a bandeja | o PULAR nao conta como toque fora
+[ciclo 1] TOQUEFORA ok     tap no mundo fecha a bandeja de melhorias
+[ciclo 1] TOQUEFORA ok     o tap que fechou nao agiu no mundo (Game.Toque)
+[ciclo 1] TOQUEFORA ok     arrastar (joystick) nao fecha a bandeja
+[ciclo 1] TOQUEFORA ok     tocar dentro da bandeja nao fecha
+[ciclo 1] TOQUEFORA ok     com bloqueio registrado (tutorial) o tap nao fecha
+[ciclo 1] TOQUEFORA ok     tap dentro do cartao de Metas nao fecha
+[ciclo 1] TOQUEFORA ok     tap no veu fecha Metas
+[ciclo 1] TOQUEFORA ok     arrastar no veu nao fecha Metas
+[ciclo 1] TOQUEFORA ok     Fechar com escorregao de 15 px clica (o veu nao rouba o arraste do botao)
+[ciclo 1] TOQUEFORA ok     tap fora fecha as configuracoes
+[ciclo 1] TOQUEFORA ok     tap fora fecha o painel informativo
+[ciclo 1] TOQUEFORA ok     cofre com ouro pendente NAO fecha por toque fora
+[ciclo 1] TOQUEFORA ok     PEGAR do cofre com escorregao de 15 px clica
+[ciclo 1] TOQUEFORA ok     painel de escolha NAO fecha por toque fora
+[ciclo 1] TOQUEFORA ok     sem bandeja/painel o tap chega ao mundo
+[ciclo 1] TOQUEFORA OK
+[ciclo 1] [antes do conserto do veu] TOQUEFORA ok     tap no mundo fecha a bandeja de melhorias
+[ciclo 1] [antes do conserto do veu] TOQUEFORA ok     o tap que fechou nao agiu no mundo (Game.Toque)
+[ciclo 1] [antes do conserto do veu] TOQUEFORA ok     arrastar (joystick) nao fecha a bandeja
+[ciclo 1] [antes do conserto do veu] TOQUEFORA ok     tocar dentro da bandeja nao fecha
+[ciclo 1] [antes do conserto do veu] TOQUEFORA ok     com bloqueio registrado (tutorial) o tap nao fecha
+[ciclo 1] [antes do conserto do veu] TOQUEFORA ok     tap dentro do cartao de Metas nao fecha
+[ciclo 1] [antes do conserto do veu] TOQUEFORA ok     tap no veu fecha Metas
+[ciclo 1] [antes do conserto do veu] TOQUEFORA ok     arrastar no veu nao fecha Metas
+[ciclo 1] [antes do conserto do veu] TOQUEFORA FALHOU Fechar com escorregao de 15 px clica (o veu nao rouba o arraste do botao)
+[ciclo 1] [antes do conserto do veu] TOQUEFORA ok     tap fora fecha as configuracoes
+[ciclo 1] [antes do conserto do veu] TOQUEFORA ok     tap fora fecha o painel informativo
+[ciclo 1] [antes do conserto do veu] TOQUEFORA ok     cofre com ouro pendente NAO fecha por toque fora
+[ciclo 1] [antes do conserto do veu] TOQUEFORA FALHOU PEGAR do cofre com escorregao de 15 px clica
+[ciclo 1] [antes do conserto do veu] TOQUEFORA ok     painel de escolha NAO fecha por toque fora
+[ciclo 1] [antes do conserto do veu] TOQUEFORA ok     sem bandeja/painel o tap chega ao mundo
+[ciclo 1] [antes do conserto do veu] TOQUEFORA FALHOU: Fechar com escorregao de 15 px clica (o veu nao rouba o arraste do botao) | PEGAR do cofre com escorregao de 15 px clica
