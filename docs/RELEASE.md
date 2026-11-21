@@ -75,7 +75,7 @@ O processo foi registrado no Dungeon Courier (`docs/LOJA.md` §1 e `docs/LICOES_
 - **D-U-N-S grátis pela CIAL** (pedido para cadastro Apple/Google, ~30 dias úteis), feito em 2026-10-15, **previsão 2026-11-25**. O plano pago (Basic, ~R$ 1.700/ano, 2 dias úteis) foi descartado.
 - **Conta pessoal descartada** pelo Vinicius (2026-10-24): ela exige teste fechado com 12+ testadores por 14 dias antes da produção e deixaria o app fora do nome da empresa. Tudo (Play Console, perfil de pagamentos, produtos) é cadastrado em nome da V-STACK.
 
-**Enquanto o D-U-N-S não sai**, nada do §3.3 anda, e o resto segue: GDD até 90%, AAB pelo workflow `release` com a chave de teste, página da loja e criativos, teste no POCO, e a chave de upload do §3.1 (gerar e guardar com cópia fora do PC). **Quando o número chegar (~2026-11-25):** retomar o cadastro em "Perfil para pagamentos" na mesma conta, criar o app `br.com.vstack.forgestreet` e seguir o §3.3 em ordem.
+**Enquanto o D-U-N-S não sai**, nada do §3.3 anda, e o resto segue: GDD até 90%, AAB pelo workflow `release` com a chave de teste, página da loja e criativos, teste no POCO, e a chave de upload do §3.1 (gerar e guardar com cópia fora do PC). **Quando o número chegar (~2026-11-25):** seguir o kit `docs/PUBLICACAO_PLAY.md` (ordem do dia, valores de cada campo e checklist). Em resumo: retomar o cadastro em "Perfil para pagamentos" na mesma conta, criar o app `br.com.vstack.forgestreet` e seguir o §3.3 em ordem.
 
 ## 4. Regras
 - Tag, Release do GitHub, publicação na loja e a chave real: só com o aval do Vinicius (`PROJETO.md` §9).

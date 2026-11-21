@@ -31,6 +31,10 @@ quick() {
   for d in UnityEngine.UI Unity.InputSystem Unity.LevelPlay; do
     [ -f "$sa/$d.dll" ] || fail "falta $sa/$d.dll. Abra o projeto no Unity 1 vez; numa worktree, copie as 3 DLLs de client/Library/ScriptAssemblies da pasta principal"
   done
+  # a pagina da politica (docs/politica/index.html) e gerada dos 3 .md: mexeu num, rode client/tools/politica_html.py
+  local py=python3; command -v python3 >/dev/null 2>&1 || py=python
+  log=$("$py" "$CLIENT/tools/politica_html.py" --check 2>&1) || { echo "$log"; fail "politica_html"; }
+  ok "$log"
   log=$(dotnet test "$CLIENT/tools/coretests" -nologo 2>&1) || { echo "$log"; fail "dotnet test do núcleo"; }
   ok "núcleo: $(echo "$log" | grep -m1 -oE 'Failed: +[0-9]+, Passed: +[0-9]+, Skipped: +[0-9]+, Total: +[0-9]+' | tr -s ' ')"
   # view = caminho do PC/Editor; android = os #if UNITY_ANDROID (Ads.cs/LevelPlay, JNI) que o view/ nunca compila
