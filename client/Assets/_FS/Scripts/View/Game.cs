@@ -608,6 +608,11 @@ namespace FS
                         Log("export_lot", e.A.ToString(CultureInfo.InvariantCulture), e.B.ToString(CultureInfo.InvariantCulture));
                         break;
                     case Ev.Bought: Bought(e.A, e.B, e.Pos); break;
+                    case Ev.OperadorContratado:   // 2026-11 (Sim.Operador.cs): A = estacao, B = custo; o aprendiz aparece com poeira no WorldView
+                        _view.Float(e.Pos, Loc.T("operador.contratado"), Art.Good);
+                        Ajustes.Pulso(30, 160);
+                        Log("operator_hired", _sim.Stations[e.A].Id, e.B.ToString(CultureInfo.InvariantCulture));
+                        break;
                     case Ev.ClientLeft:
                         if (e.B == 0) _view.Float(e.Pos, "...", Art.Bad);
                         else _view.TurnedAway(e.Pos, _sim.CounterFor((Item)e.A) == _sim.JewelShop);   // fila cheia: aparece passando e vai embora
