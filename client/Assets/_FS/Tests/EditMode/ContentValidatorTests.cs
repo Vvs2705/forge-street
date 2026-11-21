@@ -110,8 +110,8 @@ namespace FS.Tests
             Acusa(v, "alcance: WorkshopFacade nunca fica a venda");
             // upgrade de pad sem pad
             Sim w = ContentValidator.World();
-            w.Pads.RemoveAll(p => Array.IndexOf(p.Chain, Upgrade.Conveyor) >= 0);
-            Acusa(ContentValidator.Validate(world: w), "alcance: Conveyor sem pad e fora do menu");
+            w.Pads.RemoveAll(p => Array.IndexOf(p.Chain, Upgrade.Anvil2) >= 0);   // 2026-11: era a Esteira (aposentada, de proposito sem venda)
+            Acusa(ContentValidator.Validate(world: w), "alcance: Anvil2 sem pad e fora do menu");
         }
 
         [Test]

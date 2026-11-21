@@ -2858,3 +2858,46 @@ Os dois juntos não criam muro: a Row e a Foundry seguem no alvo e o sem golpe s
 ### 49.5 Testes e prova vermelha
 
 `DistritosTests.Charter_Ritmo_RenomeNaoChegaPagoESuperioresNoLugarDasObras` (na cadeia dos Charters, o Renome de cada um passa do anterior + 100; todo Charter com obra aceita Superiores, crescendo) e `DistritosTests.Charter_DaRow_SuperioresNoLugarDasObras` (na Row de verdade: a chegada não paga o Renome; 149 Superiores não bastam, 150 fecham). **Vistos vermelhos** com a Row de antes (750, sem Superiores). Ajustados: `ArcaneTests.Kit` (3.500), `ArcaneTests.Charter_PeloCaminhoReal_*` e `LigaTests.Charter_DaRow_*` (Renome pelo `Charter.Renome`). `coretests` 617 verdes.
+
+## 50. Esteira aposentada, luxos com +5% na venda e Ferramentas +140 (2026-11-21)
+
+Pedido do Vinicius depois de jogar até o fim: a esteira "não faz sentido" e os luxos finais (piso, estandarte, fachada) "não melhoraram nada". Mudanças:
+
+- **Esteira aposentada** (`Sim.Aposentado`): nunca entra à venda, não conta como produtiva (`Upgrades.Compraveis`, `ProductionCount` 26 → 25) e o save mantém o índice. Quem já tinha comprado continua com o bit e fica com o ouro. Um parcial no pad volta como ouro, como os pads que viraram menu. Old Forge, Rua dos Armeiros e a Cratera Estelar perderam `EsteiraDe/Para`.
+- **Luxo = +5% em todas as vendas** (`Tuning.LuxoPct`, somado ao bônus do Hall em `PriceOf(item, qualidade)`). O cartão e a placa mostram "+5% vendas". Assim, o luxo passa a valer o ouro que custa sem mexer em produção, demanda ou capacidade.
+- **Ferramentas +140 de ouro** (`Tuning.FerramentasExtra`): sem a esteira, o bot chegava às Ferramentas antes dos 10 min e a revelação de qualidade escapava do FTUE. Com +140, as Ferramentas saem por volta de 10:06 (+120 dava 601,5 s).
+
+Bot (`econsim`, 120 min, 1 partida, anúncio de 30 s), main → este PR:
+
+| perfil | Produção completa | Fachada | renda/min (0-60) | pós-produção | saldo final | zona morta |
+|---|---|---|---|---|---|---|
+| Ideal | 47:13 → 48:58 | 76:34 → 79:42 | 1148 → 1057 | 222642 → 239204 | 156609 → 173170 | 19 → 24 |
+| F2P | 49:23 → 50:30 | 79:24 → 81:42 | 1049 → 972 | 202611 → 211469 | 136614 → 145437 | 22 → 25 |
+| Slow | 50:07 → 52:18 | 80:50 → 83:31 | 1013 → 925 | 202544 → 206550 | 136572 → 140611 | 22 → 24 |
+| AdWatcher | 44:50 → 47:14 | 73:59 → 76:39 | 1256 → 1156 | 222049 → 244880 | 156066 → 178891 | 18 → 21 |
+
+Leitura:
+- Sem a esteira, o começo fica cerca de 8% mais lento (é o tempo que a esteira poupava de caminhada) e a produção completa chega 1 a 2 min depois.
+- Não há deadlock em nenhum perfil.
+- Depois da produção, o +5% dos luxos rende cerca de 4% a 10% a mais.
+- A zona morta cresceu 3 a 5 min. Quem resolve isso é o fim de jogo (Obras do Reino e Decretos), não este ajuste.
+- Os números do balanceamento de missões e ganhos ficam com a thread própria, que vai partir desta base.
+
+**Trilha de evento (raia H, `TrilhaDeEvento_...FechaNoDia4a5`):** sem a esteira, 3 eventos passavam a fechar no dia 6. Na Royal Week (main 541 → 524 pontos em 60 min), o contrato depende do Renome 3, que agora sai mais tarde. Nos dois Hunts (772 → 738), o F2P de referência nunca faz a missão de golpe. Ajuste com o total das missões mantido em 700:
+- Royal Week: o contrato passa de 100 para 50 pontos e as Finas de 100 para 150.
+- Hunts: o golpe passa de 100 para 70 pontos e os 3 dias de 100 para 130.
+
+Os 10 eventos voltam a fechar no dia 4 a 5, e nenhum fecha numa sessão de 60 min (máximo de 805 pontos):
+
+| evento | dia em que fecha (main → este PR) |
+|---|---|
+| Royal Week | 5 → 5 |
+| Forge Frenzy | 4 → 4 |
+| Armorers | 5 → 5 |
+| Hunt Sunblade | 5 → 5 |
+| Frenzy B | 4 → 4 |
+| Festival | 4 → 5 |
+| Ore Rush | 4 → 4 |
+| Caravan | 4 → 4 |
+| Hunt Ember | 5 → 5 |
+| Royal Week B | 4 → 4 |
