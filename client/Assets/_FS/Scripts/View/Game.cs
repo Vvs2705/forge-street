@@ -61,7 +61,7 @@ namespace FS
     /// v0.6d (revisao de UX, docs/VALIDACAO_V06A.md s v0.6d): dica de 1 linha (Textos), botoes a 32 px das bordas, cartao "Venda 5
     /// espadas", compra no aviso da encomenda, moedas por baixo da dica, chaves e cofre no cartao creme.
     /// </summary>
-    public sealed class Game : MonoBehaviour
+    public sealed partial class Game : MonoBehaviour
     {
         const string SaveKey = "fs.save";
         /// <summary>P3/V10 (A-PLAT-08): este build deixa o RemoteConfig ligar o intersticial. false ate o build do A/B no Limited Release.</summary>
@@ -128,6 +128,9 @@ namespace FS
         PainelTutorial _tut;     // FTUE: tutorial guiado do 1o ciclo e cartoes "o que e' isto" (Tutorial.cs)
         string _hintTut;         // texto do passo na pilula da dica (null = a dica de sempre)
         Action _panelAction;
+        long _panelOuro;         // fix/ui-fechar-ao-tocar-fora: cofre (recompensa pendente) nao fecha por toque fora
+        readonly BandejaFora _bandeja = new BandejaFora();   // fix/ui-fechar-ao-tocar-fora: tap no mundo fecha a bandeja de melhorias
+        Action _fechaMenu; Func<Vector2, bool> _noAnel, _noPainel;   // os delegates da bandeja, criados 1x (no Update seriam 3 alocacoes por quadro)
         Image _coinIcon;
         sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
         readonly System.Collections.Generic.List<Coin> _coins = new System.Collections.Generic.List<Coin>();
@@ -341,6 +344,8 @@ namespace FS
             _soak = Arg("-soak") != null;   // 1 linha SOAK por minuto no log (memoria, GC, fps) para o soak_emulador.sh
             string shot = Arg("-shot");
             if (!string.IsNullOrEmpty(shot)) StartCoroutine(Shot(shot));
+            string toque = Arg("-testetoque");   // fix/ui-fechar-ao-tocar-fora: teste de ponta a ponta (Game.TesteToque.cs)
+            if (!string.IsNullOrEmpty(toque) && _testSession && Debug.isDebugBuild) StartCoroutine(TesteToqueFora(toque));
             string rec = Arg("-record");
             if (!string.IsNullOrEmpty(rec)) StartCoroutine(Record(rec));
             string ad = Ads.Arg("-adtest");   // Ads.Arg tambem le o extra "unity" do intent no Android
@@ -470,7 +475,21 @@ namespace FS
 
             bool modal = OutroModal || TutAberto;
             Pointer ptr = Pointer.current;   // B-CORE-03: toque no anel do golpe ou na barra de qualidade (antes do joystick, que os ignora)
-            if (!modal && ptr != null && ptr.press.wasPressedThisFrame) Toque(ptr.position.ReadValue());
+            // fix/ui-fechar-ao-tocar-fora: com a bandeja aberta, o toque no mundo e' dela (fecha num tap) e nao age no mundo
+            bool daBandeja = false;
+            if (modal) _bandeja.Cancela();
+            // FTUE (#188): o passo "abra as Melhorias" segura a bandeja; o painel do passo e' "dentro" (nem fecha, nem vai ao mundo)
+            else
+            {
+                _fechaMenu ??= _menu.Toggle; _noAnel ??= _view.NoAnel; _noPainel ??= _tut.NoPainel;
+                daBandeja = _bandeja.Tick(ptr, ToqueFora.FechaMenu(EstadoAtual, _menu.IsOpen, _raiz.Tutorial.Ativo && _raiz.Tutorial.Passo == PassoTutorial.Menu),
+                    _menu.TopPx, _fechaMenu, _noAnel, _noPainel);
+            }
+            if (!modal && !daBandeja && ptr != null && ptr.press.wasPressedThisFrame)
+            {
+                Vector2 p = ptr.position.ReadValue();
+                if (!_tut.NoPainel(p) || _view.NoAnel(p)) Toque(p);   // o painel do passo nao vai ao mundo, salvo o anel do golpe por baixo dele
+            }
             _joy.Blocked = modal;
             _joy.BottomPx = _menu.TopPx;
             _joy.Tick();
@@ -985,7 +1004,8 @@ namespace FS
 
             // painel modal (cofre; no dev tambem o -adtest). v0.6d: cartao creme das configuracoes; "+N" grande com a moeda so no cofre
             _panel = Art.Node(_safe, "Painel", Vector2.zero, Vector2.one);
-            Art.Veu(_panel.gameObject);
+            // fix/ui-fechar-ao-tocar-fora: so o informativo (o botao so fecha) sem ouro fecha por toque fora; escolha e cofre so pelo botao
+            Art.Veu(_panel.gameObject, fecha: ClosePanel, pode: () => ToqueFora.FechaPainel(_panelAction == null || _panelAction == (Action)ClosePanel, _panelOuro));
             Image box = Art.Panel(_panel, "Caixa", MenuBar.Leather, new Vector2(0.08f, 0.35f), new Vector2(0.92f, 0.65f));
             Image card = Art.Panel(box.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             card.rectTransform.offsetMin = new Vector2(6f, 14f); card.rectTransform.offsetMax = new Vector2(-6f, -6f);   // chanfro de couro embaixo
@@ -1419,6 +1439,7 @@ namespace FS
         /// </summary>
         void Toque(Vector2 px)
         {
+            _toques++;
             if (_view.NoAnel(px))
             {
                 Station at = _sim.StrikeStation;
@@ -1587,7 +1608,7 @@ namespace FS
             }
 
             _cfg = Art.Node(_safe, "Configuracoes", Vector2.zero, Vector2.one);
-            Art.Veu(_cfg.gameObject);   // escurece e segura os toques do resto
+            Art.Veu(_cfg.gameObject, fecha: () => _cfg.gameObject.SetActive(false));   // escurece e segura os toques do resto; tap fora fecha
             // DM §109: 4 linhas (o Idioma entrou): 0,40 -> 0,46 da tela, com linhas, titulo e botoes do mesmo tamanho em px
             Image edge = Art.Panel(_cfg, "Cartao", MenuBar.Leather, new Vector2(0.1f, 0.27f), new Vector2(0.9f, 0.73f));
             Image face = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
@@ -1770,6 +1791,7 @@ namespace FS
             _panelBody.text = body;
             _panelBtn.text = button;
             _panelAction = action;
+            _panelOuro = gold;
             _panelRow.gameObject.SetActive(gold > 0);
             _festaRaios.enabled = gold > 0;
             _festaT = gold > 0 ? 0f : -1f; _festaOuro = gold;
