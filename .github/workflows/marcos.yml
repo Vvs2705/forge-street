@@ -1,0 +1,51 @@
+name: saves-de-marco
+# PROJETO.md §8 (régua S/E, 2026-11-21): o econsim joga a campanha do Império do zero e grava os saves de marco para o playtest humano
+# no build Windows (artifact build-win do workflow unity). Roteiro: docs/ROTEIRO_PLAYTEST_MARCOS.md. Roda à mão (Actions > saves-de-marco),
+# em todo push na main e no PR que mexe no gerador.
+on:
+  workflow_dispatch:
+    inputs:
+      perfil:
+        description: "perfil do bot (F2PGolpe, Ideal, F2P...)"
+        default: F2PGolpe
+      horas:
+        description: "teto de horas de relógio"
+        default: "40"
+  push:
+    branches: [main]
+  pull_request:
+    paths: ['client/tools/econsim/**', 'client/tools/playtest/**', '.github/workflows/marcos.yml', 'client/Assets/_FS/Scripts/Core/Imperio.cs', 'client/Assets/_FS/Scripts/Core/SaveEnvelope.cs']
+jobs:
+  marcos:
+    name: saves de marco (econsim --marcos)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: gerar e conferir os saves
+        shell: bash   # bash -eo pipefail: o tee nao esconde o exit 1 de um save que nao reabre igual
+        env:
+          PERFIL: ${{ inputs.perfil || 'F2PGolpe' }}
+          HORAS: ${{ inputs.horas || '40' }}
+        run: |
+          mkdir -p saves-de-marco
+          dotnet run -c Release --project client/tools/econsim -- --marcos saves-de-marco \
+            --perfis "$PERFIL" --horas "$HORAS" --versao "marcos-${GITHUB_SHA::7}" | tee saves-de-marco/resumo.txt
+      - name: prova do pipefail (perfil que nao existe tem de ficar vermelho mesmo com o tee)
+        shell: bash
+        run: |
+          if dotnet run -c Release --no-build --project client/tools/econsim -- --marcos /tmp/x --perfis NaoExiste | tee /dev/null; then
+            echo "::error::o pipe engoliu o erro do econsim"; exit 1
+          fi
+          echo "ok: o erro do econsim chega ao job"
+      - name: atalhos de clique duplo (usar_save.bat, do_zero.bat, voltar.bat)
+        run: cp client/tools/playtest/* saves-de-marco/
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: saves-de-marco
+          path: saves-de-marco
+          retention-days: 30
