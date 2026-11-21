@@ -107,7 +107,7 @@ namespace FS.Core
 
         /// <summary>BALANCE §54: o ajudante de linha (WorkerDef.Station = a familia que ele abastece; o Forjador da Grand Forge, no lugar da
         /// esteira) ou null. Ele so busca onde sai um insumo dessa familia e so entrega nela.</summary>
-        internal string Linha(Carrier w) => w.Wk >= 0 && w.Role == 1 ? Equipe.Defs[w.Wk].Station : null;
+        public string Linha(Carrier w) => w.Wk >= 0 && w.Role == 1 ? Equipe.Defs[w.Wk].Station : null;
 
         bool AbasteceLinha(string linha, Station fonte)
         {
