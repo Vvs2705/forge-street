@@ -423,9 +423,12 @@ namespace FS
             }
         }
 
+        long _foraS, _foraClaim;   // fix/anuncio-sem-retorno: cofre da volta adiado ate o anuncio acabar
+
         void Update()
         {
             EntregaExcecoes();   // DM 90: os erros que chegaram de qualquer thread
+            if (_foraS > 0 && EstadoAtual != Estado.Ad) { long fora = _foraS; _foraS = 0; PagaCofre(fora, _foraClaim); }
             if (_headless) return;
             // Input.GetKeyDown: com o GameActivity o voltar do Android nao chega ao Input System, so ao Input Manager legado (Setup: Both)
             bool back = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
@@ -1796,7 +1799,13 @@ namespace FS
                 _fpsN = 0; _fpsT = 0f;   // a janela de fps nao mede o tempo fora
                 // fix/anuncio-sem-retorno: Home no meio do anuncio + muito tempo fora tambem paga (antes a pausa no anuncio nunca pagava e o
                 // autosave seguinte avancava o SavedAt: a hora fora se perdia)
-                if (_sim != null && _sim.SavedAt > 0 && CicloAnuncio.PagaCofreNaVolta(_started, _pausedByAd, Now() - _sim.SavedAt)) Offline();
+                if (_sim != null && _sim.SavedAt > 0 && CicloAnuncio.PagaCofreNaVolta(_started, _pausedByAd, Now() - _sim.SavedAt))
+                {
+                    // Conselho do #190: com o anuncio ainda aberto (o 2x do cofre, por exemplo), o cofre novo espera ele acabar; pagar agora
+                    // trocava o LastClaim e o 2x ja assistido caia em Pagar = -1. O tempo fora e o claim ficam guardados (o autosave avanca o SavedAt)
+                    if (EstadoAtual == Estado.Ad) { _foraS = Now() - _sim.SavedAt; _foraClaim = _sim.SavedAt; }
+                    else Offline();
+                }
                 _metasT = 0f;   // D-CORE-01: voltar do segundo plano olha a virada do dia no proximo quadro
             }
         }

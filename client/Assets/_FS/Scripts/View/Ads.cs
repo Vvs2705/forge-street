@@ -208,7 +208,7 @@ namespace FS
             ["supply"] = "os8pzvpcedohuk31",          // rewarded_supply: recompensa "Supply" x1
         };
         const float RewardGrace = 2f;
-        sealed class Request { public string P; public Action Ok, Fail; public bool Done; }
+        sealed class Request { public string P, U; public Action Ok, Fail; public bool Done; }   // U: ad unit (callback de outra unit = de um pedido velho)
 
         readonly MonoBehaviour _host;
         readonly AdsSimulado _fake;   // so' em build de desenvolvimento
@@ -285,7 +285,7 @@ namespace FS
             Ads.Emit("ad_request", p, real ? "real" : "simulado");
             string why = !Units.ContainsKey(p) ? "placement_desconhecido" : Busy ? "ocupado" : !real ? "sem_anuncio" : null;
             if (why != null) { Ads.Emit("ad_fail", p, why); onFail?.Invoke(); return; }
-            _req = new Request { P = p, Ok = onReward, Fail = onFail };
+            _req = new Request { P = p, U = Units[p], Ok = onReward, Fail = onFail };
             _shown = p;
             _host.StartCoroutine(Vigia(_req));   // fix/anuncio-sem-retorno: SDK que nunca responde nao prende o jogo em Estado.Ad
             _ads[Units[p]].ShowAd();
@@ -301,7 +301,7 @@ namespace FS
             if (why != null) { Ads.Emit("ad_fail", Ads.Intersticial, why); done?.Invoke(); return; }
             _interDone = done ?? (() => { });
             _shown = Ads.Intersticial;
-            _host.StartCoroutine(VigiaInter(_interDone));   // fix/anuncio-sem-retorno
+            _host.StartCoroutine(VigiaInter(++_interN));   // fix/anuncio-sem-retorno: o numero da exibicao (o delegate pode ser o mesmo)
             _inter.ShowAd();
         }
 
@@ -343,9 +343,15 @@ namespace FS
                 ad.OnAdLoadFailed += e => LoadFailed(u, p0, e);
                 ad.OnAdDisplayed += info => Ads.Emit("ad_shown", _req?.P ?? p0, info?.AdNetwork);
                 ad.OnAdImpressionDataReady += d => Ads.Emit("ad_impression", _shown ?? p0, Ads.Receita(d?.Revenue, d?.Precision, d?.AdNetwork));   // DM §95
-                ad.OnAdDisplayFailed += (info, e) => { Finish(false, $"exibicao {e?.ErrorCode} {e?.ErrorMessage}"); Load(u); };
-                ad.OnAdRewarded += (info, r) => Finish(true, $"{r?.Name} x{r?.Amount} {info?.AdNetwork}");
-                ad.OnAdClosed += _ => { Load(u); _host.StartCoroutine(ClosedWithoutReward(_req)); };
+                // fix/anuncio-sem-retorno (Conselho do #190): depois de um "sem_retorno" um Show novo pode estar aberto; callback atrasado de
+                // OUTRA unit e' do pedido velho: nao fecha, nao derruba e nao paga o pedido novo
+                ad.OnAdDisplayFailed += (info, e) => { if (DoPedido(u)) Finish(false, $"exibicao {e?.ErrorCode} {e?.ErrorMessage}"); Load(u); };
+                ad.OnAdRewarded += (info, r) =>
+                {
+                    if (DoPedido(u)) Finish(true, $"{r?.Name} x{r?.Amount} {info?.AdNetwork}");
+                    else Ads.Emit("ad_reward_late", "", $"outra_unit {u}");
+                };
+                ad.OnAdClosed += _ => { Load(u); if (DoPedido(u)) _host.StartCoroutine(ClosedWithoutReward(_req)); };
                 _ads[u] = ad;
                 _retry[u] = 30f;
                 Load(u);   // pre-carga de proposito: Ready precisa do anuncio pronto antes de o botao aparecer
@@ -395,22 +401,27 @@ namespace FS
 
         /// <summary>fix/anuncio-sem-retorno: com o jogo na frente (o anuncio real tira o foco) e sem Closed/DisplayFailed por
         /// VigiaAnuncio.LimiteSeg, o pedido vira falha "sem_retorno" (antes: Estado.Ad pelo resto da sessao).</summary>
+        /// <summary>O callback da unit `u` e' do pedido aberto? Sem pedido aberto, sim (o Finish trata a recompensa tardia).</summary>
+        bool DoPedido(string u) => _req == null || _req.U == u;
+
         IEnumerator Vigia(Request r)
         {
             var v = new VigiaAnuncio();
             v.Inicia();
             while (_req == r && !r.Done)
             {
-                if (v.Tick(Time.unscaledDeltaTime, Application.isFocused)) { Finish(false, "sem_retorno"); yield break; }
+                if (v.Tick(Time.unscaledDeltaTime, Application.isFocused)) { Finish(false, "sem_retorno"); Load(r.U); yield break; }   // recarrega: a unit nao fica sem anuncio
                 yield return null;
             }
         }
 
-        IEnumerator VigiaInter(Action d)
+        int _interN;   // exibicoes do intersticial; o vigia de uma exibicao velha nao encerra a nova
+
+        IEnumerator VigiaInter(int n)
         {
             var v = new VigiaAnuncio();
             v.Inicia();
-            while (_interDone == d)
+            while (_interDone != null && _interN == n)
             {
                 if (v.Tick(Time.unscaledDeltaTime, Application.isFocused)) { InterFim("sem_retorno"); yield break; }
                 yield return null;
