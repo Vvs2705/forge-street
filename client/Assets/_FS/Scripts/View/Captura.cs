@@ -27,7 +27,7 @@ namespace FS
             ("first_worker", "-bot -buyids 0,1,3,4,9 -hold 0,3,3,3,0,0 -recordhire -recordsec 10"),    // FS-C-11: o bot contrata aos 29,7 s
             ("conveyor", "-bot -buyids 0,1,2,3,4,5,6 -warmup 20 -cam 7 -recordsec 12"),               // camera perto seguindo o ferreiro
             ("vip", "-buyids 1,2,3,5,6,10,12,14 -warmup 200 -px 4.5,8.2 -vipnow -recordsec 30"),      // FS-C-24: 1a venda real aos 18,5 s
-            ("order", "-buyids 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14 -warmup 60 -px 4.5,8.2 -recordorder -recordsec 26"),   // 5 espadas: 59 s -> 83,5 s (BALANCE §49: antes 76,9 s; os ajudantes atendem o escudo da fila primeiro)
+            ("order", "-buyids 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14 -warmup 60 -px 4.5,8.2 -recordorder -recordsec 26"),   // 5 espadas: 59 s -> 83,5 s (BALANCE §51: antes 76,9 s; os ajudantes atendem o escudo da fila primeiro)
             ("offline", "-buyids " + Oficina + " -warmup 120 -px 4.5,8.2 -offline 7200 -recordsec 4"),   // +1380 (teto = 2x o Corredor)
             ("full_district", "-buy 29 -warmup 120 -px 4.5,8.2 -recordsec 15"),                       // interino ate a Wave C: a oficina inteira
             ("district_unlock", "-buyids " + Oficina + ",15@100 -warmup 98 -px 8,8.2 -recordsec 8"),   // interino: Corredor aos 100 s (ouro 704)

@@ -148,7 +148,7 @@ namespace FS.Tests
         }
 
         /// <summary>Fontes de hoje pelo fluxo do Sim: encomenda entregue pelo tipo (B-CORE-05: Common +1 ... Royal +10), bau aberto +5, +1 a cada
-        /// 10 Superiores vendidas, os marcos da Collection (B-CORE-08) e as metas; nada mais muda o total. BALANCE §49: com os ajudantes
+        /// 10 Superiores vendidas, os marcos da Collection (B-CORE-08) e as metas; nada mais muda o total. BALANCE §51: com os ajudantes
         /// priorizando a fila o bot paga o marco col_produtos_old_forge_50 (+5) dentro dos 30 min; a soma conta as duas fontes que faltavam.</summary>
         [Test]
         public void Fontes_EncomendaBauESuperior_PeloFluxoDoSim()

@@ -3,7 +3,7 @@ using System;
 namespace FS.Core
 {
     /// <summary>
-    /// IA dos ajudantes prioriza a fila (BALANCE.md §49): quanto falta de cada produto para quem esta esperando. Pedido do dono: "os bonecos
+    /// IA dos ajudantes prioriza a fila (BALANCE.md §51): quanto falta de cada produto para quem esta esperando. Pedido do dono: "os bonecos
     /// param de criar ou pegar itens aleatoriamente e comecam a priorizar a fila de pedidos dos clientes". Antes o papel 2 escolhia a fonte
     /// so por `Out * 10 - distancia` e o papel 1 so olhava o cliente da frente; agora os dois leem a Demanda.
     /// Funcao pura (so le o estado) e sem alocacao: roda nos ajudantes a cada tick, no celular.
@@ -12,7 +12,7 @@ namespace FS.Core
     {
         /// <summary>Pesos da Demanda: cada unidade que um cliente da fila quer vale 1, +DemandaFrente no 1o da fila e ate +DemandaUrgencia
         /// quando a paciencia acaba; cada peca que falta numa encomenda aberta vale DemandaEncomenda, ate CounterCap pecas por vaga, mas so
-        /// com cliente do item na fila (a encomenda so anda com venda; contando sozinha ela tirava o boneco da prateleira: Ideal -2%, §49).</summary>
+        /// com cliente do item na fila (a encomenda so anda com venda; contando sozinha ela tirava o boneco da prateleira: Ideal -2%, §51).</summary>
         public const float DemandaFrente = 0.5f, DemandaUrgencia = 0.5f, DemandaEncomenda = 0.2f;
         /// <summary>Quanto 1 unidade de Demanda pesa na escolha: na fonte do papel 2 (contra Out x 10 - distancia: passa sempre a frente) e no
         /// destino do papel 1 (contra espaco x 4 + prateleira x 2 - distancia).</summary>

@@ -4,7 +4,7 @@ using FS.Core;
 namespace FS.Tests
 {
     /// <summary>
-    /// IA dos ajudantes prioriza a fila (BALANCE.md §49, Sim.Demanda.cs). Pedido do dono: "os bonecos param de criar ou pegar itens
+    /// IA dos ajudantes prioriza a fila (BALANCE.md §51, Sim.Demanda.cs). Pedido do dono: "os bonecos param de criar ou pegar itens
     /// aleatoriamente e comecam a priorizar a fila de pedidos dos clientes". Os que mudam de comportamento foram vistos VERMELHOS com o
     /// Sim.Ajudantes.cs de antes (papel 2 por Out x 10 - distancia; papel 1 so com o cliente da frente).
     /// </summary>

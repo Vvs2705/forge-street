@@ -531,7 +531,7 @@ namespace FS.Tests
 
         /// <summary>Os primeiros minutos do bot F2P (ate comprar as Ferramentas, 10:30) iguais ao main antes do Orders 2.0, tick a tick: o golden
         /// foi gerado pelo codigo de antes (mesmos eventos de encomenda e compra no mesmo tick, mesmo ouro, vendas e Renome no fim).
-        /// BALANCE §49 (IA dos ajudantes prioriza a fila): regerado. Ate os Escudos (tick 11124) sai igual ao byte (um produto so: a Demanda
+        /// BALANCE §51 (IA dos ajudantes prioriza a fila): regerado. Ate os Escudos (tick 11124) sai igual ao byte (um produto so: a Demanda
         /// nao escolhe nada); depois os ajudantes levam escudo a quem espera escudo e as Ferramentas saem no tick 19702 (10:57, antes 10:30),
         /// com mais ouro ganho (1850, antes 1730) e menos vendas (104, antes 116: mais escudos, que valem mais). As regras do teste (1 vaga,
         /// so Common) seguem.</summary>
@@ -574,7 +574,7 @@ namespace FS.Tests
             Assert.GreaterOrEqual(s.OrderCount, 25, "ECONOMIA_WAVE_B §10: >= 25 em 60 min");
             long colecao = s.Colecao.Marcos.Where(m => s.Colecao.Pago(m)).Sum(m => (long)m.Renome)   // B-CORE-08: marcos da Collection e obras do Hall
                 + s.Hall.Defs.Where(d => s.Hall.Tem(d.Id)).Sum(d => (long)d.Renome);
-            // BALANCE §49: com os ajudantes priorizando a fila o bot fecha uma meta com Renome (Metas.Renome, +20) dentro dos 100 min; a soma
+            // BALANCE §51: com os ajudantes priorizando a fila o bot fecha uma meta com Renome (Metas.Renome, +20) dentro dos 100 min; a soma
             // passa a contar essa fonte (ja existia: Metas.Paga -> Renome.Ganha), em vez de supor que nenhuma meta paga Renome ate la
             Assert.AreEqual(s.Encomendas.RenomeGanho + 5L * s.Chests.Count(c => c.State == 2) + s.Renome.Superiores / RenomeDefs.SuperiorACada + colecao
                 + s.Metas.Renome, s.Renome.Total, "o Renome vem das encomendas (pelo tipo), dos baus, da Collection e das metas");
