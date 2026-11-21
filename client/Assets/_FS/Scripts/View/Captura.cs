@@ -27,10 +27,10 @@ namespace FS
             ("first_worker", "-bot -buyids 0,1,3,4,9 -hold 0,3,3,3,0,0 -recordhire -recordsec 10"),    // FS-C-11: o bot contrata aos 29,7 s
             ("conveyor", "-bot -buyids 0,1,2,3,4,5 -warmup 20 -cam 7 -recordsec 12"),                 // camera perto seguindo o ferreiro (2026-11: sem a esteira aposentada; os ajudantes levam; o nome fica pelos arquivos da loja)
             ("vip", "-buyids 1,2,3,5,6,10,12,14 -warmup 200 -px 4.5,8.2 -vipnow -recordsec 30"),      // FS-C-24: 1a venda real aos 18,5 s
-            ("order", "-buyids 0,1,2,3,4,5,7,8,9,10,11,12,13,14 -warmup 66 -px 4.5,8.2 -recordorder -recordsec 20"),   // 5 espadas (2026-11, sem a esteira: o cartao abre aos 62,9 s)
+            ("order", "-buyids 0,1,2,3,4,5,7,8,9,10,11,12,13,14 -warmup 66 -px 4.5,8.2 -recordorder -recordsec 26"),   // 5 espadas (2026-11: sem a esteira e com os ajudantes atendendo a fila primeiro, BALANCE §50/§51)
             ("offline", "-buyids " + Oficina + " -warmup 120 -px 4.5,8.2 -offline 7200 -recordsec 4"),   // +1380 (teto = 2x o Corredor)
             ("full_district", "-buy 29 -warmup 120 -px 4.5,8.2 -recordsec 15"),                       // interino ate a Wave C: a oficina inteira
-            ("district_unlock", "-buyids " + Oficina + ",15@104 -warmup 102 -px 8,8.2 -recordsec 8"),   // interino: Corredor aos 104 s (2026-11: sem a esteira o ouro chega mais tarde)
+            ("district_unlock", "-buyids " + Oficina + ",15@108 -warmup 106 -px 8,8.2 -recordsec 8"),   // interino: Corredor aos 108 s (2026-11: sem a esteira e com a IA da fila o ouro chega mais tarde)
             // G-UA-03, sequencia B "Ache o gargalo" (CRIATIVOS_BANCO_V1 §c): o ajudante enche a fornalha e ninguem leva o lingote (lampada vermelha);
             // o menu com os cartoes; as fornalhas a 3x
             ("gargalo", "-buyids 0,2 -warmup 60 -px 3.2,6 -cam 8 -recordsec 6"),

@@ -323,8 +323,10 @@ namespace FS.Tests
         public void Ocioso_15Min_AjudantesVendemSozinhos()
         {
             var s = new Sim();
-            Play(s, 1500f);   // bot monta a oficina (Ajudante 3 sai aos ~19 min) e larga o jogo
-            Assert.IsTrue(s.Bought[(int)Upgrade.Helper3], "Ajudante 3 comprado");
+            var bot = new Bot();   // bot monta a oficina ate o Ajudante 3 (2026-11, sem a esteira e com a IA da fila: ~25 min; era ~19) e larga o jogo
+            for (float t = 0f; t < 1800f && !s.Bought[(int)Upgrade.Helper3]; t += Dt) bot.Step(s, Dt);
+            Assert.IsTrue(s.Bought[(int)Upgrade.Helper3], "Ajudante 3 comprado em 30 min");
+            TestContext.WriteLine($"Ajudante 3 aos {s.Time / 60f:0.0} min");
             int sales = s.Sales;
             for (float t = 0f; t < 900f; t += Dt) s.Tick(Dt, 0f, 0f);
             TestContext.WriteLine($"ocioso 15 min depois de 25 min de bot: vendas={s.Sales - sales} perdidos={s.ClientsLost} estoque={string.Join(",", s.Stock)}");
