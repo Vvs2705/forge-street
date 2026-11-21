@@ -277,7 +277,8 @@ Primera versión de prueba de Forge Street: los 6 distritos, pedidos, contratos,
 5. [ ] Conteúdo do app (§4), na ordem do passo 6.
 6. [ ] Subir o AAB no teste interno (§1 passo 7).
 7. [ ] Criar os 2 Passes ativos e o Pacote do Mestre em rascunho (§3).
-8. [ ] Mandar na thread a chave RSA pública (§1 passo 9) e adicionar os testadores de licença.
+8. [ ] Antes de a política ir ao ar: fechar a D-PRIV-2 (Topics) e a D-PRIV-8 (`submitAnalytics`), §9. São PRs pequenos que a sessão faz com o seu ok.
+9. [ ] Mandar na thread a chave RSA pública (§1 passo 9) e adicionar os testadores de licença.
 
 ## 9. Decisões abertas
 
@@ -287,6 +288,8 @@ Primera versión de prueba de Forge Street: los 6 distritos, pedidos, contratos,
 | D-PUB-2 | Pacote do Mestre: preço e conteúdo | não ativar no lançamento. Decidir junto com a P3 (A/B do intersticial). Se for ativar antes, tirar `remove_ads` do conteúdo ou a linha "Sem anúncio entre telas" do cartão | ativar `iap_pacote_mestre` |
 | D-PUB-3 | Link da política dentro do jogo | botão "Política de privacidade" em Configurações > Privacidade (`Application.OpenURL`), num PR pequeno assim que a D-PUB-1 der a URL. Não sobe a `Privacidade.Versao` (`PRIVACIDADE.md` §6) | aprovação da revisão da Play |
 | D-PUB-4 | Vídeo no YouTube (não listado) | opcional. A ficha vai ao ar sem ele | — |
+| D-PRIV-2 | Tirar `ACCESS_ADSERVICES_TOPICS` (segmentação por interesse) do manifesto | tirar, com `tools:node="remove"` (`PRIVACIDADE.md` §4). Enquanto estiver lá, a política não pode garantir "sem personalização para menores": as frases têm `<<CONFIRMAR: D-PRIV-2>>` | página pública da política; envio do Data safety |
+| D-PRIV-8 | `submitAnalytics: 1` (estatísticas de hardware do motor Unity, de todos) | desligar no `Setup.cs` ou medir com captura de rede | página pública da política; envio do Data safety |
 | D-PRIV-5 | Revisão jurídica da política | antes do teste aberto ou da produção. O teste interno não tem página pública | página pública |
 
 ## 10. Ata do TIME DE JOGOS (plano B)

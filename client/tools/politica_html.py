@@ -51,6 +51,8 @@ def md(texto):
             out.append(f"<li>{inline(l[2:])}</li>"); continue
         fecha()
         if l.strip(): out.append(f"<p>{inline(l)}</p>")
+    if cit:
+        out.append('<aside class="rascunho">' + "<br>".join(inline(c) for c in cit if c) + "</aside>")
     fecha()
     return "\n".join(out)
 

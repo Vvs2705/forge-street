@@ -36,9 +36,9 @@ code { font-size:.92em; }
 <li>O Forge Street não tem conta, login nem chat. Não pedimos nome, e-mail nem data de nascimento.</li>
 <li>O seu progresso fica <strong>no seu aparelho</strong>. Nós não temos servidor próprio.</li>
 <li>O jogo mostra anúncios <strong>que você escolhe assistir</strong> em troca de um bônus. Quem entrega esses anúncios é a Unity (LevelPlay e Unity Ads), que coleta alguns dados do aparelho, como explicado abaixo.</li>
-<li>Para ajustar o jogo e corrigir erros usamos serviços da Unity (Unity Gaming Services). <strong>Estatísticas de uso e relatórios de erro só saem do aparelho de quem tem 18 anos ou mais e aceitou.</strong></li>
+<li>Para ajustar o jogo e corrigir erros usamos serviços da Unity (Unity Gaming Services). <strong>O jogo só envia estatísticas de uso e relatórios de erro de quem tem 18 anos ou mais e aceitou.</strong></li>
 <li>Compras são opcionais, feitas pelo Google Play, e o conteúdo de cada uma é fixo e mostrado antes de pagar.</li>
-<li>Na primeira vez que um bônus por anúncio aparece, o jogo pergunta a sua <strong>faixa de idade</strong>. Menores de 18 anos nunca recebem anúncio personalizado.</li>
+<li>Na primeira vez que um bônus por anúncio aparece, o jogo pergunta a sua <strong>faixa de idade</strong>. Para menores de 18 anos, o jogo pede aos parceiros anúncios não personalizados e não usa o ID de publicidade.</li>
 <li>Desinstalar o jogo apaga tudo o que ele guardou no aparelho.</li>
 </ul>
 <h3>1. Quem é o responsável</h3>
@@ -67,8 +67,8 @@ code { font-size:.92em; }
 <h3>4. Configuração do jogo, estatísticas e erros (Unity Gaming Services)</h3>
 <p>Usamos o <strong>Unity Gaming Services</strong> como prestador de serviço (ele trata os dados em nosso nome):</p>
 <ul>
-<li><strong>Configuração remota</strong> (para todos, depois da tela de idade): o jogo baixa os ajustes do momento, como eventos e equilíbrio. Para isso a Unity recebe um <strong>identificador de instalação</strong> gerado pelo próprio serviço e o endereço IP.</li>
-<li><strong>Estatísticas de uso e relatórios de erro</strong> (<strong>só 18+ que aceitou</strong>): eventos do jogo (por exemplo, distrito aberto, encomenda entregue, compra concluída, sem o número da transação), a versão do jogo, dados técnicos do aparelho, o identificador de instalação e, se o jogo der erro, uma descrição técnica do erro. Servem para entender o que melhorar e corrigir falhas. Quem tem menos de 18 anos ou recusou não envia nada disso.</li>
+<li><strong>Configuração remota</strong> (para todos, depois da tela de idade): o jogo baixa os ajustes do momento, como eventos e equilíbrio. Para isso a Unity recebe um <strong>identificador de instalação</strong> gerado pelo próprio serviço, dados técnicos do aparelho e do app (modelo, sistema, versão do jogo) e o endereço IP.</li>
+<li><strong>Estatísticas de uso e relatórios de erro</strong> (<strong>só 18+ que aceitou</strong>): eventos do jogo (por exemplo, distrito aberto, encomenda entregue, compra concluída, sem o número da transação), a versão do jogo, dados técnicos do aparelho, o identificador de instalação e, se o jogo der erro, uma descrição técnica do erro. Servem para entender o que melhorar e corrigir falhas. Quem tem menos de 18 anos ou recusou não envia nada disso. <code>&lt;&lt;CONFIRMAR: D-PRIV-8, o motor Unity pode enviar estatísticas técnicas de hardware de todos&gt;&gt;</code></li>
 </ul>
 <h3>5. Compras no jogo</h3>
 <p>As compras são opcionais e passam pelo <strong>Google Play</strong>. Quem processa o pagamento é o Google: nós não vemos cartão, Pix nem dados bancários. O jogo recebe do Google Play só o recibo da compra, que fica no aparelho (seção 2), para entregar o conteúdo e permitir <strong>Restaurar compras</strong>. O conteúdo de cada compra é fixo e aparece antes de pagar. Não há caixa surpresa nem sorteio pago. Para compras de menores, valem os controles de aprovação da própria conta Google (Family Link).</p>
@@ -82,7 +82,7 @@ code { font-size:.92em; }
 <h3>7. Crianças e adolescentes</h3>
 <p>O jogo é para maiores de 13 anos, e quem informar menos de 13 recebe a proteção da tabela acima. Seguimos o Estatuto Digital da Criança e do Adolescente (Lei 15.211/2025), a LGPD (art. 14) e a COPPA (EUA):</p>
 <ul>
-<li>nada de anúncio personalizado, nenhum ID de publicidade e nenhuma estatística de uso para menores de 18 anos;</li>
+<li>para menores de 18 anos, o jogo pede aos parceiros anúncios não personalizados, não usa o ID de publicidade e não envia estatísticas de uso <code>&lt;&lt;CONFIRMAR: D-PRIV-2, permissão Topics no manifesto&gt;&gt;</code>;</li>
 <li><strong>nada aleatório pago</strong>: o jogo não tem caixa de prêmio surpresa (loot box), e o que cada compra ou recompensa dá é fixo;</li>
 <li>sem chat e sem contato entre jogadores;</li>
 <li>não pedimos nem guardamos nome, contato, foto ou localização de ninguém.</li>
@@ -124,9 +124,9 @@ code { font-size:.92em; }
 <li>Forge Street has no account, no login and no chat. We don't ask for your name, email or date of birth.</li>
 <li>Your progress stays <strong>on your device</strong>. We don't run a server of our own.</li>
 <li>The game shows ads <strong>that you choose to watch</strong> in exchange for a bonus. Those ads are delivered by Unity (LevelPlay and Unity Ads), which collects some device data, as explained below.</li>
-<li>To tune the game and fix bugs we use Unity services (Unity Gaming Services). <strong>Usage statistics and error reports only leave the device of players who are 18 or older and agreed.</strong></li>
+<li>To tune the game and fix bugs we use Unity services (Unity Gaming Services). <strong>The game only sends usage statistics and error reports from players who are 18 or older and agreed.</strong></li>
 <li>Purchases are optional, go through Google Play, and the content of each one is fixed and shown before you pay.</li>
-<li>The first time an ad bonus shows up, the game asks for your <strong>age range</strong>. Players under 18 never get personalized ads.</li>
+<li>The first time an ad bonus shows up, the game asks for your <strong>age range</strong>. For players under 18, the game asks partners for non-personalized ads and doesn't use the advertising ID.</li>
 <li>Uninstalling the game deletes everything it stored on the device.</li>
 </ul>
 <h3>1. Who is responsible</h3>
@@ -155,8 +155,8 @@ code { font-size:.92em; }
 <h3>4. Game configuration, statistics and errors (Unity Gaming Services)</h3>
 <p>We use <strong>Unity Gaming Services</strong> as a service provider (it processes data on our behalf):</p>
 <ul>
-<li><strong>Remote configuration</strong> (for everyone, after the age screen): the game downloads the current settings, such as events and balance. For this, Unity receives an <strong>installation identifier</strong> created by the service itself and the IP address.</li>
-<li><strong>Usage statistics and error reports</strong> (<strong>only 18+ who agreed</strong>): game events (for example, district opened, order delivered, purchase completed, without the transaction number), the game version, technical device data, the installation identifier and, if the game hits an error, a technical description of it. They help us understand what to improve and fix bugs. Players under 18 or who declined send none of this.</li>
+<li><strong>Remote configuration</strong> (for everyone, after the age screen): the game downloads the current settings, such as events and balance. For this, Unity receives an <strong>installation identifier</strong> created by the service itself, technical device and app data (model, OS, game version) and the IP address.</li>
+<li><strong>Usage statistics and error reports</strong> (<strong>only 18+ who agreed</strong>): game events (for example, district opened, order delivered, purchase completed, without the transaction number), the game version, technical device data, the installation identifier and, if the game hits an error, a technical description of it. They help us understand what to improve and fix bugs. Players under 18 or who declined send none of this. <code>&lt;&lt;CONFIRMAR: D-PRIV-8, the Unity engine may send technical hardware statistics from everyone&gt;&gt;</code></li>
 </ul>
 <h3>5. In-game purchases</h3>
 <p>Purchases are optional and go through <strong>Google Play</strong>. Google processes the payment: we never see your card or bank details. The game only receives the purchase receipt from Google Play, which stays on the device (section 2), to deliver the content and allow <strong>Restore purchases</strong>. The content of each purchase is fixed and shown before you pay. There are no mystery boxes or paid random draws. For purchases by minors, the approval controls of the Google account itself apply (Family Link).</p>
@@ -170,7 +170,7 @@ code { font-size:.92em; }
 <h3>7. Children and teenagers</h3>
 <p>The game is meant for ages 13 and up, and anyone who answers under 13 gets the protection in the table above. We follow Brazil's Digital Statute of Children and Adolescents (Law 15.211/2025), the LGPD (art. 14) and COPPA (US):</p>
 <ul>
-<li>no personalized ads, no advertising ID and no usage statistics for anyone under 18;</li>
+<li>for anyone under 18, the game asks partners for non-personalized ads, doesn't use the advertising ID and sends no usage statistics <code>&lt;&lt;CONFIRMAR: D-PRIV-2, Topics permission in the manifest&gt;&gt;</code>;</li>
 <li><strong>no paid randomness</strong>: the game has no mystery prize boxes (loot boxes), and what each purchase or reward gives is fixed;</li>
 <li>no chat and no contact between players;</li>
 <li>we don't ask for or store anyone's name, contact details, photo or location.</li>
@@ -212,9 +212,9 @@ code { font-size:.92em; }
 <li>Forge Street no tiene cuenta, inicio de sesión ni chat. No pedimos nombre, correo ni fecha de nacimiento.</li>
 <li>Tu progreso se queda <strong>en tu dispositivo</strong>. No tenemos servidor propio.</li>
 <li>El juego muestra anuncios <strong>que tú eliges ver</strong> a cambio de un bonus. Esos anuncios los entrega Unity (LevelPlay y Unity Ads), que recoge algunos datos del dispositivo, como se explica abajo.</li>
-<li>Para ajustar el juego y corregir errores usamos servicios de Unity (Unity Gaming Services). <strong>Las estadísticas de uso y los informes de error solo salen del dispositivo de quien tiene 18 años o más y aceptó.</strong></li>
+<li>Para ajustar el juego y corregir errores usamos servicios de Unity (Unity Gaming Services). <strong>El juego solo envía estadísticas de uso e informes de error de quien tiene 18 años o más y aceptó.</strong></li>
 <li>Las compras son opcionales, pasan por Google Play, y el contenido de cada una es fijo y se muestra antes de pagar.</li>
-<li>La primera vez que aparece un bonus por anuncio, el juego pregunta tu <strong>rango de edad</strong>. Los menores de 18 nunca reciben anuncios personalizados.</li>
+<li>La primera vez que aparece un bonus por anuncio, el juego pregunta tu <strong>rango de edad</strong>. Para los menores de 18, el juego pide a los socios anuncios no personalizados y no usa el ID de publicidad.</li>
 <li>Desinstalar el juego borra todo lo que guardó en el dispositivo.</li>
 </ul>
 <h3>1. Quién es el responsable</h3>
@@ -243,8 +243,8 @@ code { font-size:.92em; }
 <h3>4. Configuración del juego, estadísticas y errores (Unity Gaming Services)</h3>
 <p>Usamos <strong>Unity Gaming Services</strong> como proveedor de servicios (trata los datos en nuestro nombre):</p>
 <ul>
-<li><strong>Configuración remota</strong> (para todos, después de la pantalla de edad): el juego descarga los ajustes del momento, como eventos y equilibrio. Para eso Unity recibe un <strong>identificador de instalación</strong> creado por el propio servicio y la dirección IP.</li>
-<li><strong>Estadísticas de uso e informes de error</strong> (<strong>solo 18+ que aceptó</strong>): eventos del juego (por ejemplo, distrito abierto, pedido entregado, compra completada, sin el número de transacción), la versión del juego, datos técnicos del dispositivo, el identificador de instalación y, si el juego falla, una descripción técnica del error. Sirven para entender qué mejorar y corregir fallos. Quien tiene menos de 18 o rechazó no envía nada de esto.</li>
+<li><strong>Configuración remota</strong> (para todos, después de la pantalla de edad): el juego descarga los ajustes del momento, como eventos y equilibrio. Para eso Unity recibe un <strong>identificador de instalación</strong> creado por el propio servicio, datos técnicos del dispositivo y de la app (modelo, sistema, versión del juego) y la dirección IP.</li>
+<li><strong>Estadísticas de uso e informes de error</strong> (<strong>solo 18+ que aceptó</strong>): eventos del juego (por ejemplo, distrito abierto, pedido entregado, compra completada, sin el número de transacción), la versión del juego, datos técnicos del dispositivo, el identificador de instalación y, si el juego falla, una descripción técnica del error. Sirven para entender qué mejorar y corregir fallos. Quien tiene menos de 18 o rechazó no envía nada de esto. <code>&lt;&lt;CONFIRMAR: D-PRIV-8, el motor Unity puede enviar estadísticas técnicas de hardware de todos&gt;&gt;</code></li>
 </ul>
 <h3>5. Compras en el juego</h3>
 <p>Las compras son opcionales y pasan por <strong>Google Play</strong>. Google procesa el pago: nunca vemos tu tarjeta ni tus datos bancarios. El juego solo recibe de Google Play el recibo de la compra, que se queda en el dispositivo (sección 2), para entregar el contenido y permitir <strong>Restaurar compras</strong>. El contenido de cada compra es fijo y aparece antes de pagar. No hay cajas sorpresa ni sorteos pagados. Para compras de menores, valen los controles de aprobación de la propia cuenta de Google (Family Link).</p>
@@ -258,7 +258,7 @@ code { font-size:.92em; }
 <h3>7. Niños y adolescentes</h3>
 <p>El juego es para mayores de 13 años, y quien indique menos de 13 recibe la protección de la tabla anterior. Seguimos el Estatuto Digital del Niño y del Adolescente de Brasil (Ley 15.211/2025), la LGPD (art. 14) y la COPPA (EE. UU.):</p>
 <ul>
-<li>nada de anuncios personalizados, ningún ID de publicidad y ninguna estadística de uso para menores de 18;</li>
+<li>para los menores de 18, el juego pide a los socios anuncios no personalizados, no usa el ID de publicidad y no envía estadísticas de uso <code>&lt;&lt;CONFIRMAR: D-PRIV-2, permiso Topics en el manifiesto&gt;&gt;</code>;</li>
 <li><strong>nada aleatorio pagado</strong>: el juego no tiene cajas de premio sorpresa (loot boxes), y lo que da cada compra o recompensa es fijo;</li>
 <li>sin chat y sin contacto entre jugadores;</li>
 <li>no pedimos ni guardamos nombre, contacto, foto ni ubicación de nadie.</li>

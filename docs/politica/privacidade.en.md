@@ -10,9 +10,9 @@ Version `<<PREENCHER: 1.0>>` · effective `<<PREENCHER: date>>`
 - Forge Street has no account, no login and no chat. We don't ask for your name, email or date of birth.
 - Your progress stays **on your device**. We don't run a server of our own.
 - The game shows ads **that you choose to watch** in exchange for a bonus. Those ads are delivered by Unity (LevelPlay and Unity Ads), which collects some device data, as explained below.
-- To tune the game and fix bugs we use Unity services (Unity Gaming Services). **Usage statistics and error reports only leave the device of players who are 18 or older and agreed.**
+- To tune the game and fix bugs we use Unity services (Unity Gaming Services). **The game only sends usage statistics and error reports from players who are 18 or older and agreed.**
 - Purchases are optional, go through Google Play, and the content of each one is fixed and shown before you pay.
-- The first time an ad bonus shows up, the game asks for your **age range**. Players under 18 never get personalized ads.
+- The first time an ad bonus shows up, the game asks for your **age range**. For players under 18, the game asks partners for non-personalized ads and doesn't use the advertising ID.
 - Uninstalling the game deletes everything it stored on the device.
 
 ## 1. Who is responsible
@@ -48,8 +48,8 @@ We don't sell personal data. For players who didn't accept personalized ads (and
 
 We use **Unity Gaming Services** as a service provider (it processes data on our behalf):
 
-- **Remote configuration** (for everyone, after the age screen): the game downloads the current settings, such as events and balance. For this, Unity receives an **installation identifier** created by the service itself and the IP address.
-- **Usage statistics and error reports** (**only 18+ who agreed**): game events (for example, district opened, order delivered, purchase completed, without the transaction number), the game version, technical device data, the installation identifier and, if the game hits an error, a technical description of it. They help us understand what to improve and fix bugs. Players under 18 or who declined send none of this.
+- **Remote configuration** (for everyone, after the age screen): the game downloads the current settings, such as events and balance. For this, Unity receives an **installation identifier** created by the service itself, technical device and app data (model, OS, game version) and the IP address.
+- **Usage statistics and error reports** (**only 18+ who agreed**): game events (for example, district opened, order delivered, purchase completed, without the transaction number), the game version, technical device data, the installation identifier and, if the game hits an error, a technical description of it. They help us understand what to improve and fix bugs. Players under 18 or who declined send none of this. `<<CONFIRMAR: D-PRIV-8, the Unity engine may send technical hardware statistics from everyone>>`
 
 ## 5. In-game purchases
 
@@ -69,7 +69,7 @@ To change your answer: **Settings > Privacy** in the game. The change fully appl
 
 The game is meant for ages 13 and up, and anyone who answers under 13 gets the protection in the table above. We follow Brazil's Digital Statute of Children and Adolescents (Law 15.211/2025), the LGPD (art. 14) and COPPA (US):
 
-- no personalized ads, no advertising ID and no usage statistics for anyone under 18;
+- for anyone under 18, the game asks partners for non-personalized ads, doesn't use the advertising ID and sends no usage statistics `<<CONFIRMAR: D-PRIV-2, Topics permission in the manifest>>`;
 - **no paid randomness**: the game has no mystery prize boxes (loot boxes), and what each purchase or reward gives is fixed;
 - no chat and no contact between players;
 - we don't ask for or store anyone's name, contact details, photo or location.

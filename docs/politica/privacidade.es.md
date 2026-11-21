@@ -10,9 +10,9 @@ Versión `<<PREENCHER: 1.0>>` · vigente desde `<<PREENCHER: fecha>>`
 - Forge Street no tiene cuenta, inicio de sesión ni chat. No pedimos nombre, correo ni fecha de nacimiento.
 - Tu progreso se queda **en tu dispositivo**. No tenemos servidor propio.
 - El juego muestra anuncios **que tú eliges ver** a cambio de un bonus. Esos anuncios los entrega Unity (LevelPlay y Unity Ads), que recoge algunos datos del dispositivo, como se explica abajo.
-- Para ajustar el juego y corregir errores usamos servicios de Unity (Unity Gaming Services). **Las estadísticas de uso y los informes de error solo salen del dispositivo de quien tiene 18 años o más y aceptó.**
+- Para ajustar el juego y corregir errores usamos servicios de Unity (Unity Gaming Services). **El juego solo envía estadísticas de uso e informes de error de quien tiene 18 años o más y aceptó.**
 - Las compras son opcionales, pasan por Google Play, y el contenido de cada una es fijo y se muestra antes de pagar.
-- La primera vez que aparece un bonus por anuncio, el juego pregunta tu **rango de edad**. Los menores de 18 nunca reciben anuncios personalizados.
+- La primera vez que aparece un bonus por anuncio, el juego pregunta tu **rango de edad**. Para los menores de 18, el juego pide a los socios anuncios no personalizados y no usa el ID de publicidad.
 - Desinstalar el juego borra todo lo que guardó en el dispositivo.
 
 ## 1. Quién es el responsable
@@ -48,8 +48,8 @@ No vendemos datos personales. Para quien no aceptó anuncios personalizados (y p
 
 Usamos **Unity Gaming Services** como proveedor de servicios (trata los datos en nuestro nombre):
 
-- **Configuración remota** (para todos, después de la pantalla de edad): el juego descarga los ajustes del momento, como eventos y equilibrio. Para eso Unity recibe un **identificador de instalación** creado por el propio servicio y la dirección IP.
-- **Estadísticas de uso e informes de error** (**solo 18+ que aceptó**): eventos del juego (por ejemplo, distrito abierto, pedido entregado, compra completada, sin el número de transacción), la versión del juego, datos técnicos del dispositivo, el identificador de instalación y, si el juego falla, una descripción técnica del error. Sirven para entender qué mejorar y corregir fallos. Quien tiene menos de 18 o rechazó no envía nada de esto.
+- **Configuración remota** (para todos, después de la pantalla de edad): el juego descarga los ajustes del momento, como eventos y equilibrio. Para eso Unity recibe un **identificador de instalación** creado por el propio servicio, datos técnicos del dispositivo y de la app (modelo, sistema, versión del juego) y la dirección IP.
+- **Estadísticas de uso e informes de error** (**solo 18+ que aceptó**): eventos del juego (por ejemplo, distrito abierto, pedido entregado, compra completada, sin el número de transacción), la versión del juego, datos técnicos del dispositivo, el identificador de instalación y, si el juego falla, una descripción técnica del error. Sirven para entender qué mejorar y corregir fallos. Quien tiene menos de 18 o rechazó no envía nada de esto. `<<CONFIRMAR: D-PRIV-8, el motor Unity puede enviar estadísticas técnicas de hardware de todos>>`
 
 ## 5. Compras en el juego
 
@@ -69,7 +69,7 @@ Para cambiar tu respuesta: **Ajustes > Privacidad** en el juego. El cambio vale 
 
 El juego es para mayores de 13 años, y quien indique menos de 13 recibe la protección de la tabla anterior. Seguimos el Estatuto Digital del Niño y del Adolescente de Brasil (Ley 15.211/2025), la LGPD (art. 14) y la COPPA (EE. UU.):
 
-- nada de anuncios personalizados, ningún ID de publicidad y ninguna estadística de uso para menores de 18;
+- para los menores de 18, el juego pide a los socios anuncios no personalizados, no usa el ID de publicidad y no envía estadísticas de uso `<<CONFIRMAR: D-PRIV-2, permiso Topics en el manifiesto>>`;
 - **nada aleatorio pagado**: el juego no tiene cajas de premio sorpresa (loot boxes), y lo que da cada compra o recompensa es fijo;
 - sin chat y sin contacto entre jugadores;
 - no pedimos ni guardamos nombre, contacto, foto ni ubicación de nadie.
