@@ -127,6 +127,8 @@ namespace FS
     {
         readonly Action<string> _eco;
         public ProvedorNulo(Action<string> eco = null) { _eco = eco; }
+        /// <summary>Sem eco: nada sai daqui (a Telemetria sabe que o remoto nao le os parametros).</summary>
+        public bool Mudo => _eco == null;
         public void Iniciar(bool idPublicidade) => _eco?.Invoke("{\"iniciar\":{\"id_publicidade\":" + (idPublicidade ? "true" : "false") + "}}");
         public void Enviar(Evento e) => _eco?.Invoke(e.ParaJson());
     }
@@ -150,6 +152,7 @@ namespace FS
         readonly string _sessao, _app, _config;
         readonly string[] _caminhos;
         long _seq;
+        readonly bool _remotoMudo;
 
         public bool Liberada { get; private set; }
         public int Descartados { get; private set; }
@@ -160,10 +163,20 @@ namespace FS
         public Telemetria(IAnalytics local, IProvedorAnalytics remoto, string sessao, string app, string config, params string[] caminhos)
         {
             _local = local; _remoto = remoto; _sessao = sessao; _app = app; _config = config; _caminhos = caminhos;
+            _remotoMudo = remoto is ProvedorNulo n && n.Mudo;
         }
+
+        /// <summary>fix/gc-alocacao-por-quadro: false = ninguem le o evento (diario desligado E remoto = provedor nulo sem eco: -testsession,
+        /// Editor/Windows release sem -playtest). O Game pula a montagem dos parametros (ToString de int/enum) dos eventos frequentes. Com o
+        /// UGS (release no aparelho) e' sempre true: quem decide o consentimento e' o provedor, e a fila pode sair depois da tela de idade.</summary>
+        public bool Ativo => !_remotoMudo || !(_local is Diario d) || d.Ativo;
+
+        /// <summary>Grava o lote pendente do diario local (segundo plano, sair, troca de cena).</summary>
+        public void Flush() { if (_local is Diario d) d.Flush(); }
 
         public void Log(string evt, float t, string a = "", string b = "")
         {
+            if (!Ativo) return;   // nada le: nem o Evento nasce (o _seq so numera o que vai ao remoto)
             _local.Log(evt, t, a, b);
             var e = new Evento { Seq = ++_seq, Nome = evt, A = Corta(a), B = Corta(b), T = t, Sessao = _sessao, App = _app, Config = _config };
             if (Liberada) { Envia(e); return; }
