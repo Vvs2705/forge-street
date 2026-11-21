@@ -128,8 +128,10 @@ Todos saem pelo `Game.Log` → diário (`diario.csv`) e, depois do aceite da tel
 |---|---|---|---|
 | `session_start` | versão do app | modelo do aparelho | `Game.Start` |
 | `session_end` | s em primeiro plano | `pausa` ou `saiu` | `Game.EndSession` |
-| `tutorial_step` | dica | passo | pílula de dica, até a 1ª venda |
-| `tutorial_complete` | s da 1ª venda | passos | 1ª venda |
+| `tutorial_step` | id do passo (`boas_vindas`, `andar`, `minerio`, `fornalha`, `lingotes`, `bigorna`, `espada`, `venda`, `melhoria`, `menu`) | número (0 = boas-vindas, 1–9) | `PainelTutorial`, cada passo novo do tutorial guiado (até 2026-11: a dica da pílula até a 1ª venda) |
+| `tutorial_complete` | s de jogo ao concluir | passos (9) | último passo concluído jogando (não sai no pular; até 2026-11: s da 1ª venda) |
+| `tutorial_skip` | id do passo | número | "Pular tutorial" / PULAR |
+| `tutorial_card` | sistema (`ajudante`, `fila`, `vip`, `qualidade`, `encomendas`, `metas`, `distrito`) | — | cartão "o que é isto" mostrado (1× por save) |
 | `first_sale` | s da 1ª venda | — | `Ev.Sold`, a 1ª |
 | `product_crafted` | item | estação | `Ev.Crafted` |
 | `product_sold` | item | ouro | `Ev.Sold` |
@@ -157,7 +159,7 @@ Todos saem pelo `Game.Log` → diário (`diario.csv`) e, depois do aceite da tel
 
 **Funis para os dashboards (G-UA-05), validados no diário antes do UGS:** `python client/tools/diario_report.py <pasta com os diario.csv>` imprime, no fim, a retenção D1/D7 (dia UTC da 1ª `session_start` de cada testador) e três funis por testador: FTUE e progressão (abriu > 1ª venda > tutorial > 1ª melhoria > contratou > encomenda > contrato real > obra-prima > distrito novo), anúncio (`rewarded_offer` > `rewarded_start` > `rewarded_complete`) e compra (`iap_view` > `iap_purchase` > `pass_view` > `pass_purchase`). Os nomes antigos contam, para o diário de antes do #137. O `--autoteste` confere a conta com 3 testadores sintéticos. São as mesmas etapas que o painel do UGS deve montar sobre o `fs_evento` (`fsNome`).
 
-Além dos 31: `ad_*` (SDK: pedido, mostrado, impressão com receita, recompensa, falha), `iap_start/pending/restore/fail`, `consent_answer`, `settings`, `client_error`, `charter`, `district_switch`, `event_points`, `pass_level`.
+Além dos 31: `tutorial_skip` e `tutorial_card` (FTUE, nomes novos no mesmo `fs_evento`: nada a cadastrar no painel do UGS), `ad_*` (SDK: pedido, mostrado, impressão com receita, recompensa, falha), `iap_start/pending/restore/fail`, `consent_answer`, `settings`, `client_error`, `charter`, `district_switch`, `event_points`, `pass_level`.
 
 ### Painéis do UGS (2026-10-24)
 
