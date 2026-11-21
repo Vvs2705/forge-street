@@ -3039,3 +3039,49 @@ Custos no Old Forge:
 
 **Depois do #196 (fila de pedidos), no merge com a main:** a Royal Week do F2P de referência fechava no dia 6, porque as Finas saem mais tarde com o operador. Passamos 50 pontos das "40 Finas" para as "300 vendas", e o total continua em 700. Agora os 10 eventos fecham no dia 4 a 5. A produção completa do bot padrão passou de cerca de 50 min para menos de 75 min, e o teste dos workers agora joga 75 min. O teste do luxo contrata os operadores antes de medir: sem eles nada vende e a razão dava 0/0.
 
+## 53. Obras do Reino, Decretos semanais e calendário de LiveOps infinito (fim de jogo, 2026-11-21)
+
+**Por quê.** O Vinicius jogou até o fim e "o jogo morre" (os 2 P1 do `PROJETO.md` §7). Na campanha, em todo distrito a produção completa sai ~0,5–0,9 h depois da chegada e o resto é ouro na carteira esperando Renome, obra-prima ou contrato; depois da Carta tudo é finito, e o calendário de LiveOps acaba no dia 70 (2027-01-11). Decisão do Conselho: as Obras do Reino como ralo sem fim (abrem já no Charter do Old Forge), 3 Decretos por semana e o calendário que nunca fica vazio.
+
+**Regras (núcleo, `Obras.cs`, `Decretos.cs`, `LiveOpsDefs.cs`):**
+- **Degrau n** (0, 1, 2...): obra `Defs[(n / 3) % 10]`, etapa `n % 3 + 1`, nível `n / 30 + 1`. São 10 obras de 3 etapas cada; a 11ª obra é a Ponte de novo, no nível II. Sempre há um próximo degrau.
+- **Custo** = (15 + 5n) min da **renda alvo** do distrito mais avançado aberto (2.400/min × 3^índice, o modelo do `CONTEUDO_V1.md` §1), múltiplo de 5. Com a Row aberta: 108 mil, 144 mil, 180 mil... Na Grand Forge (583 mil/min): 8,7 mi no degrau 0 e 37,9 mi no degrau 10. Trocar de foco, ficar parado ou ligar o 2× não muda o preço.
+- **Recompensa** (nunca ouro, nenhuma moeda nova, nada aleatório): Renome, 10 por etapa e +30 ao fechar a obra (50 por obra, 1x pelo ID `obra:{n}`). E o **Prestígio do Reino**: +⌊2√n⌋% na renda de fundo, com curva decrescente e teto de +20% no degrau 100. O fundo máximo vai a 0,25 × 1,6 × 1,2 = 0,48 da taxa, ainda abaixo de 1; o offline segue com o teto de 2 h.
+- **Decretos:** semana = semanas inteiras desde o `T0`. A vaga 0 é uma das Obras (1 etapa, 20 de Renome e 200 XP; ou 2 etapas, 30 de Renome e 300 XP). As vagas 1 e 2 vêm do rodízio de vendas 3.000, encomendas 30, VIP 20, 400 do item mais avançado do distrito ativo e faturar 120 min da renda alvo (20 de Renome e 200 XP cada). Base = o contador quando aparece. Concluído, paga sozinho 1x (`dc:{semana}:{vaga}`).
+- **Calendário infinito:** o ciclo de 70 dias se repete com ID novo (`ev_s1w2_forge_frenzy_r3`, `pass_s1_royal_commission_r1`): um evento por vez, 6 dias, temporadas emendadas. A reprise usa o nome e a encomenda Event da origem. `LiveOpsDefs.ValidarCalendario` confere 30 ciclos (~5,8 anos).
+- **Bot (`Bot.Obras`):** só constrói com nada mais à venda no distrito ativo (produção completa, nenhum pad, nada no menu nem na Equipe). Antes, guarda o manager mais barato que falta e a abertura do próximo distrito.
+
+**Medida** (`econsim --campanha 40 --obras 0|1`, mesmo build; `--obras 0` é o antes). Cada célula traz produção completa → Charter (h), entre parênteses a espera (h), depois o ouro na carteira no Charter e os degraus das Obras no Charter.
+
+Perfis F2PGolpe, F2P e Ideal com 2 partidas (mais o Pagante):
+
+| perfil | Royal Arsenal | Arcane Foundry | Grand Forge (a Carta) | no fim (40 h): degraus / gasto nas obras / Renome delas / fundo / carteira |
+|---|---|---|---|---|
+| F2PGolpe, antes | 13,6→16,1 (2,5); 4,6 mi; 0 | 17,5→19,7 (2,2); 10,5 mi; 0 | 21,0→25,2 (4,2); **104,9 mi**; 0 | 0 / 0 / 0 / +0% / **772,9 mi** |
+| F2PGolpe, depois | 13,6→16,1 (2,5); 3,5 mi; 1 | 17,6→19,8 (2,2); 10,3 mi; 1 | 21,2→25,8 (4,6); **6,7 mi**; 7 | 17,5 / 568,3 mi / 340 / +8% / **24,4 mi** |
+| Ideal, antes | 14,0→16,1 (2,1); 3,2 mi; 0 | 17,7→19,5 (1,8); 9,1 mi; 0 | 21,3→24,6 (3,2); 53,9 mi; 0 | 0 / 0 / 0 / +0% / 624,8 mi |
+| Ideal, depois | 14,0→16,1 (2,1); 2,7 mi; 0,5 | 17,7→20,0 (2,2); 9,4 mi; 1 | 21,5→30,2 (8,7); 22,0 mi; 11,5 | 18 / 602,6 mi / 345 / +8% / 59,9 mi |
+| Pagante, antes | 13,1→15,6 (2,5); 5,0 mi; 0 | 16,7→19,6 (2,8); 13,7 mi; 0 | 20,3→24,8 (4,5); 97,2 mi; 0 | 0 / 0 / 0 / +0% / 565,3 mi |
+| Pagante, depois | 13,1→15,6 (2,5); 3,1 mi; 1,5 | 17,0→19,7 (2,8); 11,0 mi; 2 | 21,2→24,3 (3,0); 14,5 mi; 3,5 | 17,5 / 558,9 mi / 340 / +8% / 9,0 mi |
+| F2P (para na Row) | — | — | — | antes 18,2 mi na carteira; depois 28,5 degraus, 17,2 mi gastos, 1,2 mi na carteira |
+
+Old Forge, Row e Quarter ficam iguais, com 0 degrau no Charter. Ali o ouro na carteira (49–876 mil) é menor que a abertura seguinte (140 mil, 430 mil, 1,3 mi): é poupança para abrir o próximo distrito, não ouro parado. O F2P sem golpe, preso na Row, passa a gastar o que juntava (28,5 degraus em 40 h).
+
+**Variância da Carta:** o Charter da Grand Forge varia muito entre partidas (a 5ª obra-prima sai das encomendas Royal e Blueprint da fila). Com 6 partidas e os perfis Ideal, F2PGolpe e Pagante:
+
+| perfil | Charter da Foundry (h), antes → depois | Charter da Grand Forge (h), antes → depois | carteira no Charter da GF | carteira no fim (40 h) |
+|---|---|---|---|---|
+| Ideal | 19,0 → 19,1 | 25,6 → 26,8 | 106,2 mi → 13,8 mi | 598,3 mi → 43,8 mi |
+| F2PGolpe | 19,8 → 20,3 | 26,3* → 27,2* | 126,7 mi → 9,5 mi | 621,6 mi → 22,3 mi |
+| Pagante | 18,9 → 19,4 | 29,6* → 25,8* | 284,5 mi → 16,7 mi | 575,8 mi → 27,6 mi |
+
+- Nos perfis que fecham a campanha, o Renome 1–9 não muda (±0,3 h): as Obras dão ~320–345 de Renome em 40 h, pouco perto dos degraus de 500–1.200 entre os Charters. O F2P preso na Row ganha 555 de Renome delas, e o Renome 6, 7 e 8 dele sai antes (11,0 → 9,2 h, 25,6 → 19,2 h e 38,7* → 35,5 h); o Charter da Row continua esperando a obra-prima.
+- A Carta fica entre −3,8 h e +1,2 h, dentro do ruído da 5ª obra-prima. Ela continua abaixo das 31,5 h do `CONTEUDO_V1.md` §1.
+
+**O resto não muda:** o econsim padrão (`--perfis Ideal,F2P,Slow,AdWatcher --minutos 120 --partidas 1 --anuncio-seg 30`, Old Forge sem Charter) sai idêntico ao byte; só o tempo de parede por partida muda.
+
+**Achados e próximos degraus:**
+1. As Obras viram o destino de ~85–95% do ouro da campanha depois do Arsenal: a carteira no fim cai de 565–773 mi para 9–60 mi. O degrau seguinte custa 1–4 h de renda ativa e sobe 5 min por degrau, para sempre.
+2. O ouro do Old Forge até o Quarter é poupança da abertura seguinte. A espera de 2–3 h até o Charter continua: ela vem do Renome e das obras-primas, não do ouro. As Obras dão destino ao ouro, não encurtam a espera; para isso, o lugar certo são os Decretos (Renome) e o playtest.
+3. Falta a fantasia na tela: a Capital com os props das obras (leva de arte). Até lá, o painel e o aviso "Obra concluída" são o retorno visível.
+4. As reprises repetem tema, missões e cosméticos (quem perdeu um cosmético o ganha na reprise). Temas novos entram como dados, e o gerador só repete o que não for substituído.

@@ -56,6 +56,9 @@ namespace FS.Core
         public static WorkerDef ManagerDe(string id) => Array.Find(Managers, m => m.Distrito == id);
 
         public readonly Sim Raiz;
+        /// <summary>2026-11-21: o ralo sem fim (Obras do Reino) e os 3 decretos da semana; abrem com o Charter do Old Forge.</summary>
+        public readonly Obras Obras;
+        public readonly Decretos Decretos;
         public Sim Ativo { get; private set; }
         /// <summary>Distritos abertos, na ordem do mapa (Distritos.All).</summary>
         public readonly List<Sim> Abertos = new List<Sim>();
@@ -89,6 +92,7 @@ namespace FS.Core
         public Imperio(Sim raiz, Func<Tuning> tuning = null)
         {
             Raiz = raiz; Ativo = raiz; _tuning = tuning ?? (() => new Tuning());
+            Obras = new Obras(this); Decretos = new Decretos(this);
             Abertos.Add(raiz);
             raiz.Imp = this;   // C-CORE-09: as rotas da Grand Forge descontam do fundo (Importou) e a condicao DistrictCharters le os Charters
         }
@@ -204,8 +208,9 @@ namespace FS.Core
         /// <summary>Ouro/s de fundo do distrito `s` (0 = ativo ou sem Charter): FundoFator x a RateEma dele (congelada desde que saiu).</summary>
         public double FundoPorSegundo(Sim s) => s == Ativo || !Charters.Contains(s.Distrito.Id) ? 0.0 : s.RateEma * FundoFator(s.Distrito.Id);
 
-        /// <summary>C-CORE-03: fracao da taxa que o distrito `id` rende em fundo com o manager de agora (0 = sem Charter).</summary>
-        public double FundoFator(string id) => Manager(id) == 0 ? 0.0 : Distritos.Find(id).FundoFator * FundoNivel[Manager(id) - 1];
+        /// <summary>C-CORE-03: fracao da taxa que o distrito `id` rende em fundo com o manager de agora (0 = sem Charter). 2026-11-21: x (1 +
+        /// Obras.BonusPct%), o Prestigio do Reino (teto +20%: 0,4 x 1,2 = 0,48, ainda &lt; 1 vez a taxa).</summary>
+        public double FundoFator(string id) => Manager(id) == 0 ? 0.0 : Distritos.Find(id).FundoFator * FundoNivel[Manager(id) - 1] * (1.0 + Obras.BonusPct / 100.0);
 
         /// <summary>C-CORE-03: nivel do manager do distrito `id`: 0 = sem Charter (sem manager), 1 = o que vem com ele, ate 5.</summary>
         public int Manager(string id) => !Charters.Contains(id) ? 0 : _managers.TryGetValue(id, out int n) ? n : 1;
@@ -233,6 +238,7 @@ namespace FS.Core
         public void Fundo(float dt)
         {
             Recolhe();
+            Decretos.Tick();   // 2026-11-21: semana nova monta os 3 decretos; concluido paga (sem relogio, nada)
             if ((_janela += dt) >= 60f) { _janela -= 60f; _divida.Clear(); }   // C-CORE-09: o que as rotas nao tiraram no minuto, perdoado
             foreach (Sim s in Abertos)
             {
@@ -295,6 +301,7 @@ namespace FS.Core
                 }
                 foreach (Sim s in Abertos)
                     if (s != Raiz) sb.Append("dist.").Append(s.Distrito.Id).Append('=').Append(Convert.ToBase64String(Encoding.UTF8.GetBytes(s.Save(nowUnix)))).Append('\n');
+                Obras.Save(sb); Decretos.Save(sb);   // 2026-11-21: so depois do Charter do Old Forge (sempre dentro deste bloco)
                 foreach (string l in _desconhecidos) sb.Append(l).Append('\n');
             }
             Raiz.Gold = 0; Ativo.Gold = w;
@@ -316,6 +323,8 @@ namespace FS.Core
                 if (eq <= 0) continue;
                 string key = raw.Substring(0, eq).Trim(), val = raw.Substring(eq + 1).Trim();
                 if (key == "imp") ativo = val;
+                else if (key == "obras") imp.Obras.Load(val);   // 2026-11-21: Obras do Reino e Decretos (sem a linha = 0 / nenhuma semana)
+                else if (key == "dcr") imp.Decretos.Load(val);
                 else if (key == "charter") foreach (string c in val.Split(',')) { if (c.Trim().Length > 0) imp.Charters.Add(c.Trim()); }
                 else if (key == "mgr")   // C-CORE-03: lixo fica de fora; nivel entre 2 e o maximo
                     foreach (string p in val.Split(','))

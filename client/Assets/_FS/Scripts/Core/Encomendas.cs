@@ -121,7 +121,7 @@ namespace FS.Core
         {
             if (_sim.FirstSaleTime < 0f) return;
             foreach (Encomenda e in Vagas) if (e.Prazo > 0f) e.Prazo = Math.Max(0f, e.Prazo - dt);   // tempo de jogo: o offline nao conta
-            string ev = _sim.LiveOps.Evento?.Id;   // D-CORE-03: o evento em que o jogador entrou (null = nenhum)
+            string ev = _sim.LiveOps.Evento?.Base;   // 2026-11-21: a reprise usa a encomenda da origem. D-CORE-03: o evento em que o jogador entrou (null = nenhum)
             for (int i = Vagas.Count - 1; i >= 0; i--) if (Vagas[i].Tipo == OrderType.Event && Vagas[i].Def.EventId != ev) Vagas.RemoveAt(i);   // o evento acabou: sai sem pagar
             bool entregou = false;
             for (int i = 0; i < Vagas.Count;) if (Vagas[i].Pronta) { Entregar(Vagas[i]); entregou = true; } else i++;

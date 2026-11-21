@@ -293,6 +293,7 @@ namespace FS.Tests
             s.Contratos.Aceitar();
             s.Contratos.Ativo.Etapa = 3;
             s.Tick(Dt, 0f, 0f);
+            s.LiveOps.Agora(Agora);   // 2026-11-21: o calendario infinito tem reprise no dia 73 (Agora); a missao contrato1 dela paga aqui, antes da foto
             long gold = s.Gold, rn = s.Renome.Total;
             s.Metas.Agora(Agora - 3 * 86400, 0); s.LiveOps.Agora(Agora - 3 * 86400);
             Run(s, 5f);

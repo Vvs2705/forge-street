@@ -47,7 +47,7 @@ namespace FS.Core
         /// event_points (evento, total de pontos), event_complete (evento, limiar), pass_level (temporada, nivel). O Game loga exatamente isto.</summary>
         public (string A, string B) Diario((string Tipo, string Id, string Arg, long Ouro) n)
         {
-            EventDef e = n.Tipo == "event_points" ? Array.Find(Eventos, x => x.Id == n.Id) : null;
+            EventDef e = n.Tipo == "event_points" ? LiveOpsDefs.EventoPorId(Eventos, n.Id) : null;
             return (n.Id, e != null ? PontosDe(e).ToString(CultureInfo.InvariantCulture) : n.Arg);
         }
 
@@ -67,7 +67,7 @@ namespace FS.Core
         }
 
         /// <summary>Evento pronto cuja janela contem `t`, ou null.</summary>
-        public EventDef NoCalendario(long t) => Array.Find(Eventos, e => e.Comeca <= t && t < e.Termina && Falta(e) == null);
+        public EventDef NoCalendario(long t) => LiveOpsDefs.EventoEm(Eventos, t, e => Falta(e) == null);   // 2026-11-21: depois do dia 70, a reprise
 
         public string Falta(EventDef e) => LiveOpsDefs.Falta(e, _sim.ItemDefs);
 
@@ -175,7 +175,7 @@ namespace FS.Core
         /// <summary>B-CORE-05 (Encomendas.Entregar): encomenda Event do evento `evento` entregue. Os pontos entram na trilha no proximo Avanca.</summary>
         public void PontosEncomenda(string evento, int pontos)
         {
-            if (Evento != null && Evento.Id == evento && pontos > 0) Add(PontosEnc, pontos);
+            if (Evento != null && Evento.Base == evento && pontos > 0) Add(PontosEnc, pontos);   // a reprise usa a encomenda da origem
         }
 
         /// <summary>B-CORE-05: encomenda entregue por tipo (o Ev.OrderDone nao leva o tipo): order_complete.{common|bulk|...} das missoes.</summary>
@@ -275,7 +275,7 @@ namespace FS.Core
 
         // ------------------------------------------------------------------ Pass
 
-        public PassDef PasseEm(long t) => Array.Find(Passes, p => p.Comeca <= t && t < p.Termina);
+        public PassDef PasseEm(long t) => LiveOpsDefs.PasseEm(Passes, t);   // 2026-11-21: depois do dia 70, a reprise
 
         /// <summary>Temporada nova (diferente da guardada): o que ficou alcancado e nao resgatado na anterior paga sozinho e o XP recomeca. Sem
         /// temporada (antes do T0, entre dados) o XP das metas espera no Metas.PassXp e entra na proxima (o retroativo).</summary>
@@ -387,7 +387,7 @@ namespace FS.Core
                 {
                     case "ev.relogio": Relogio = Math.Max(0, L(val, 0)); break;
                     case "ev.ativo":
-                        Evento = Array.Find(Eventos, e => e.Id == p[0]);
+                        Evento = LiveOpsDefs.EventoPorId(Eventos, p[0]);
                         _dia = p.Length > 1 ? L(p[1], long.MinValue) : long.MinValue;
                         break;
                     case "ev.c":
@@ -399,7 +399,7 @@ namespace FS.Core
                         break;
                     case "ps.passe":
                         if (p.Length < 5) break;
-                        Passe = Array.Find(Passes, x => x.Id == p[0]);
+                        Passe = LiveOpsDefs.PassePorId(Passes, p[0]);
                         Xp = Passe == null ? 0 : Math.Max(0, Math.Min(Passe.XpTotal, L(p[1], 0)));
                         XpVisto = Math.Max(0, L(p[2], 0)); XpEncHoje = Math.Max(0, L(p[3], 0)); DiaEnc = L(p[4], long.MinValue);
                         break;
