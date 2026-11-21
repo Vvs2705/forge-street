@@ -142,7 +142,7 @@ jobs:
                      -logFile "fotos/$n.log" "$@" -shot "$d\\$n.png" || echo "::warning::foto $n saiu $?"; grep -m1 'SHOT' "fotos/$n.log" || true; }
           foto 01_bancada_nivel1 -shotdelay 4
           # niveis controlados (revisao do CD no #186): a oficina base (-buy 29 = indices 0-28, ate o balcao 8) e cada familia num nivel
-          base="-projetos todos -buy 29 -warmup 20 -shotdelay 4"
+          base="-projetos dar -buy 29 -warmup 20 -shotdelay 4"
           foto 02_bancada_niveis_2_3_4 $base -buyids bigornas_nivel2,bigornas_nivel3,bigornas_nivel4,escudos_nivel2,escudos_nivel3,ferramentas_nivel2
           foto 03_bancada_nivel5 $base -buyids bigornas_nivel2,bigornas_nivel3,bigornas_nivel4,bigornas_nivel5,escudos_nivel2,escudos_nivel3,escudos_nivel4,escudos_nivel5,ferramentas_nivel2,ferramentas_nivel3,ferramentas_nivel4,ferramentas_nivel5
           ls -la fotos
