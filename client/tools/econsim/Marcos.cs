@@ -13,6 +13,7 @@ using FS.Core;
 ///   NN_charter_&lt;distrito&gt;  logo depois de cada Charter concedido (o Royal Charter que abre o proximo)
 ///   NN_carta_mais_30min     30 min de relogio depois do Charter da Grand Forge (a Carta)
 ///   NN_tudo_comprado        todas as melhorias de todos os distritos abertos compradas (o fim de jogo que o Vinicius jogou)
+/// Os numeros seguem a ordem do relogio; a partida so para quando o tudo_comprado e o carta_mais_30min sairam (ou no teto de --horas).
 /// Cada save e' relido (SaveEnvelope.Unwrap + Imperio.Load) e conferido: Charters, distritos abertos e Renome iguais ao da partida; senao
 /// sai 1. Nada aqui muda o jogo nem o econsim de antes. O `at=` do envelope e' o agora: ao abrir dias depois, o cofre offline paga ate 2 h
 /// (o teto do nucleo), como para qualquer jogador.
@@ -43,7 +44,9 @@ static partial class EconSim
             SaveEnvelope.Result r = SaveEnvelope.Unwrap(File.ReadAllText(arq));
             Imperio lido = r.Status == SaveEnvelope.Status.Ok ? Imperio.Load(r.Payload, tuning, tuning()) : null;
             bool ok = lido != null && lido.Charters.SetEquals(imp.Charters) && lido.Abertos.Count == imp.Abertos.Count
-                      && lido.Raiz.Renome.Total == imp.Raiz.Renome.Total;
+                      && lido.Raiz.Renome.Total == imp.Raiz.Renome.Total
+                      && (lido.Ativo.Distrito?.Id ?? Distritos.OldForgeId) == (imp.Ativo.Distrito?.Id ?? Distritos.OldForgeId)
+                      && lido.Ativo.Gold == imp.Ativo.Gold;
             if (!ok) falhas++;
             string ativo = imp.Ativo.Distrito?.Id ?? Distritos.OldForgeId;
             linhas.Add($"| {n:00}_{nome} | {relogio / 3600f:0.0} | {ativo} | {imp.Raiz.Renome.Nivel} ({imp.Raiz.Renome.Total}) | {imp.Charters.Count} | {imp.Abertos.Count} | {Ouro(imp.Ativo.Gold)} | {(ok ? "ok" : "FALHOU")} |");
@@ -70,7 +73,8 @@ static partial class EconSim
             string prox = Distritos.Find(id)?.Charter?.Proximo;
             if (prox != null && !imp.Aberto(prox) && imp.Abrir(prox) && imp.Trocar(prox)) { bot = Novo(perfil); ads = 0; }
             if (carta >= 0f && relogio - carta >= 1800f) Grava("carta_mais_30min");
-            if (TudoComprado()) { Grava("tudo_comprado"); break; }
+            if (TudoComprado()) Grava("tudo_comprado");   // sem sair: o fim de jogo pode vir antes da Carta (achado do #185), e os dois marcos contam
+            if (feitos.Contains("tudo_comprado") && feitos.Contains("carta_mais_30min")) break;
         }
         if (!feitos.Contains("tudo_comprado")) Grava("fim_" + horas + "h");   // nao chegou ao "tudo comprado": o fim da partida, com o nome dizendo isso
 

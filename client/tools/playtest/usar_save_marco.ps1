@@ -10,13 +10,20 @@ $dir = Join-Path $env:USERPROFILE 'AppData\LocalLow\V-STACK\Forge Street'
 $principal = Join-Path $dir 'save.txt'
 if (Get-Process -Name 'ForgeStreet*' -ErrorAction SilentlyContinue) { throw 'Feche o Forge Street antes (o autosave de 5 s regravaria o save).' }
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
+$original = Join-Path $dir 'save.txt.original'   # o save de antes do PRIMEIRO marco: gravado uma vez so; e' para ele que o -Voltar volta
+if (-not $Voltar -and -not (Test-Path $original)) {
+    if (Test-Path $principal) { Copy-Item $principal $original } else { Set-Content -Path $original -Value '' -NoNewline }
+}
 if ($Voltar) {
-    $ultimo = Get-ChildItem $dir -Filter 'save.txt.antes-do-marco-*' | Sort-Object Name | Select-Object -Last 1
-    if (-not $ultimo) { throw "Nenhum save guardado em $dir." }
+    if (-not (Test-Path $original)) { throw "Nenhum save original guardado em $dir." }
+    $ultimo = Get-Item $original
     if (Test-Path $principal) { Copy-Item $principal "$principal.marco-$(Get-Date -Format yyyyMMdd-HHmmss)" }
-    Copy-Item $ultimo.FullName $principal -Force
     if (Test-Path "$principal.bak") { Rename-Item "$principal.bak" "save.txt.bak.marco-$(Get-Date -Format yyyyMMdd-HHmmss)" }
-    Write-Host "Devolvido: $($ultimo.Name) -> save.txt"
+    if ($ultimo.Length -eq 0) {
+        if (Test-Path $principal) { Rename-Item $principal "save.txt.marco-fim-$(Get-Date -Format yyyyMMdd-HHmmss)" }
+        Write-Host 'Voce nao tinha save antes: o jogo abre do zero.'
+    } else { Copy-Item $ultimo.FullName $principal -Force; Write-Host 'Devolvido: o save que voce tinha antes do primeiro marco.' }
+    Rename-Item $original "save.txt.original.usado-$(Get-Date -Format yyyyMMdd-HHmmss)"   # a proxima rodada de playtest guarda o original de novo
     exit 0
 }
 if ($DoZero) {

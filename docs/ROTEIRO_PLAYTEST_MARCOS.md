@@ -18,10 +18,10 @@ A **ordem mínima são 4 sessões (cerca de 1 h)**. Os outros Charters são opci
 | **1** | `00` = `do_zero.bat` | o primeiro minuto do jogo | Entendeu o que fazer nos primeiros 60 s sem ler nada? O joystick respondeu como esperado (andar, parar, virar)? |
 | **2** | `01_old_forge_completo` | o Old Forge com a produção inteira, antes do Charter | Algum ajudante ou funcionário ficou parado mais de 5 s sem motivo visível? A esteira fez alguma diferença? A estação mudou de cara ao subir de nível? |
 | opcional | `NN_charter_<distrito>` | logo depois de cada Royal Charter: o mapa e o próximo distrito | O distrito novo parece diferente do anterior? Os ajudantes parecem saber o que fazem? |
-| **3** | o último `NN_charter_…` (ou `NN_carta_mais_30min`, se existir) | o meio-fim: Masterworks, Collection, Events, Pass | As evoluções finais parecem um avanço ou "como chão"? |
+| **3** | `NN_carta_mais_30min` (ou, se não saiu, o último `NN_charter_…`) | o meio-fim: Masterworks, Collection, Events, Pass | As evoluções finais parecem um avanço ou "como chão"? |
 | **4** | `NN_tudo_comprado` (ou `fim_40h`) | o fim de jogo: tudo comprado em todos os distritos | Ao comprar a última melhoria, algo mudou na tela? Depois disso, há algo que você queira fazer? |
 
-Nota do gerador (run de 2026-11-21, perfil F2PGolpe): o bot compra tudo nos 6 distritos com **21,5 h** de relógio e 5 Charters, antes da Carta da Grande Forja. Por isso não sai o `carta_mais_30min`. Isso confirma o P1 "fim de jogo morre" do §7: a sessão 4 deve medir esse vazio, não contorná-lo.
+Nota do gerador (run de 2026-11-21, perfil F2PGolpe): o bot compra tudo nos 6 distritos com **21,5 h** de relógio e 5 Charters, **antes** da Carta da Grande Forja. O gerador segue jogando até a Carta + 30 min, então os dois saves saem, e os números seguem a ordem do relógio. Isso confirma o P1 "fim de jogo morre" do §7: a sessão 4 deve medir esse vazio, não contorná-lo.
 
 Ao abrir um save, o cofre offline pode pagar até 2 h, como para qualquer jogador que volta.
 
