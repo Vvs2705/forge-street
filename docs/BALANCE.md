@@ -2776,3 +2776,64 @@ Perfis:
 - A Carta segue abaixo dos 31,5 h. O Renome 9 do F2PGolpe agora sai em todas as 4 partidas: os 300 a mais do Charter adiantam o Renome do Império.
 - **O resto não muda:** o econsim padrão (Old Forge, sem Charter) sai **idêntico ao byte** à `main` (`--minutos 60 --partidas 20`), então o Renome 2/3 do F2P (0:51 / 1:41) e o 0 deadlock em 1.000 partidas (§43) ficam como estavam.
 - **Próximo degrau do F2P sem golpe:** ele para na Row, cujo Charter pede 2 obras. Se o Closed mostrar muitos jogadores sem golpe, a mesma regra ("obra ou N Superiores") serve para a Row.
+
+## 49. IA dos ajudantes prioriza a fila (2026-11-21)
+
+**Pedido do dono:** "os bonecos param de criar ou pegar itens aleatoriamente e começam a priorizar a fila de pedidos dos clientes".
+
+**Antes** (`Sim.Ajudantes.cs`):
+- o papel 2 (produto → balcão) escolhia a fonte por `Out x 10 − distância`, sem olhar a fila: com a bigorna cheia de espadas e um cliente esperando escudo, ia buscar espada;
+- o papel 1 (insumo → bancada) só dava +12 à bancada cujo produto o cliente **da frente** queria sem estoque;
+- o alvo escolhido só era trocado quando ficava inválido: um cliente que chegava no meio da ida não mudava nada.
+
+**Mudança:**
+- `Sim.Demanda(item)` (`Sim.Demanda.cs`, pura e sem alocação por tick). Ela soma:
+  - os clientes da fila que querem o item (o pacote inteiro do VIP e do mercador), +0,5 para o 1º da fila e até +0,5 para quem está com a paciência acabando;
+  - 0,2 por peça que falta nas encomendas abertas do item, até a prateleira, **só com cliente do item na fila** (a encomenda só anda com venda);
+  - e desconta o estoque do balcão e o que os ajudantes já levam na mão. Nunca é negativa; sem fila, dá 0.
+- **Papel 2:** a fonte soma `100 x Demanda`, então o produto que a fila espera passa à frente. O filtro "só o que cabe na prateleira" (`Fits`) continua.
+- **Papel 1:** o `Need` da bancada vira `prateleira x 2 + 30 x Demanda` (o +12 do cliente da frente saiu, porque a Demanda já o cobre).
+- **Histerese (`Reavalia`):** um alvo válido só é trocado quando o produto dele não tem demanda e o de outro tem (papel 2 de mãos vazias, papel 1 levando insumo). O alvo com demanda segue até ficar inválido, então o boneco não fica indo e voltando entre dois pedidos. **Sem fila, o alvo é o de antes.**
+- **Joalheiro:** sem mudança. Ele já leva a joia pronta à loja antes de tudo, e a bancada dele só faz joia.
+- **Bancada configurável (Artisan Quarter):** o Sim não escolhe a receita. Quem escolhe é o toque do jogador ou o `Bot.ConfiguraBancadas`, que já usa a fila (`Falta`, §37). Sem mudança.
+
+**Variantes medidas** (econsim Old Forge, Ideal/F2P/Slow, 60 min, 8 partidas; renda/min de 0–60 min):
+
+| variante | Ideal | F2P | Slow | por que fica ou sai |
+|---|---|---|---|---|
+| antes (`main`) | 1090 | 1144 | 998 | — |
+| tudo com peso 0 | 1090 | 1144 | 998 | prova: igual ao byte à `main` |
+| joalheiro espera a joia quase pronta com nobre na fila | 1047 | 1090 | 956 | **descartada** (−4%): a bancada de joias fica sem lingote depois |
+| encomenda conta mesmo sem cliente (0,2/peça) | 1071 | 1156 | 1028 | **descartada**: tira o boneco da prateleira por um pedido que só anda com venda (Ideal −2%) |
+| só o papel 2 (100 x Demanda) | 1113 | 1149 | 1021 | — |
+| papel 2 + histerese | 1116 | 1150 | 1052 | — |
+| **escolhida: papel 2 + papel 1 (30 x Demanda) + histerese + encomenda só com cliente** | **1100** | **1142** | **1014** | dentro do ruído do bot; faz o que o dono pediu |
+
+**Econsim padrão** (`--minutos 60 --partidas 20`, todos os perfis; antes → depois):
+
+| perfil | renda/min (0–60) | Produção completa | Ajud.3 | Joalheria | deadlock |
+|---|---|---|---|---|---|
+| Ideal | 1116 → 1094 (−2,0%) | 48:03 → 48:52 | 24:44 → 24:44 | 29:18 → 29:16 | 0/20 → 0/20 |
+| F2P | 1124 → 1130 (+0,5%) | 47:40 → 47:44 | 22:54 → 22:42 | 28:19 → 28:00 | 0/20 → 0/20 |
+| Slow | 995 → 1015 (+2,0%) | 50:38 → 50:57 | 25:44 → 25:45 | 31:06 → 30:41 | 0/20 → 0/20 |
+| AdWatcher | 1281 → 1270 (−0,9%) | 44:35 → 44:56 | 21:31 → 21:39 | 25:51 → 25:56 | 0/20 → 0/20 |
+| AdWatcherE | 1134 → 1133 (−0,1%) | 43:11 → 43:39 | 22:09 → 21:58 | 25:59 → 25:40 | 0/20 → 0/20 |
+
+- Os pisos do §3 não mudam: Fole, 2ª bigorna, Ajudante e Escudos saem iguais, e a Esteira sai 1 s mais cedo. Até os Escudos há um produto só e a Demanda não escolhe nada.
+- O golden dos 10 primeiros minutos sai igual ao byte até o tick 11124 (Escudos comprados).
+
+**Campanha** (`--campanha 40 --perfis F2PGolpe,F2P,Ideal --partidas 4`, Charter em h acumuladas; antes → depois):
+
+| perfil | Old Forge | Row | Quarter | Arsenal | Foundry | Grand Forge | Renome 9 |
+|---|---|---|---|---|---|---|---|
+| F2PGolpe | 3,5 → 3,5 | 5,1 → 5,2 | 10,5 → 10,6 | 15,9 → 15,4 | 19,0 → 19,3 | 24,8 → 24,0 | 23,5 → 22,5 |
+| F2P sem golpe | 5,0 → 4,8 | — | — | — | — | — | — |
+| Ideal | 2,9 → 2,9 | 4,7 → 5,0 | 10,4 → 10,1 | 16,2 → 15,8 | 19,2 → 19,2 | 23,8 → 23,3 | 22,2 → 21,9 |
+| Pagante | 3,3 → 3,4 | 5,4 → 5,2 | 10,4 → 10,1 | 15,3 → 15,9 | 18,9 → 19,5 | 25,4* → 26,2 | 25,0* → 23,1 |
+
+- Nenhum perfil trava. A Carta (Grand Forge) segue abaixo dos 31,5 h, e o Pagante agora chega lá nas 4 partidas.
+- O F2P sem golpe continua parando na Row, que pede obra-prima (achado do §48).
+
+**Limites conhecidos (ponytail):**
+- A Demanda desconta o estoque inteiro do balcão. O colecionador do Quarter só aceita Fina ou melhor: com Normal no balcão, ele conta como atendido.
+- No Royal Arsenal o produto ainda vai primeiro ao pátio de cotas quando há faixa com vaga (`Destino`, CONTEUDO_V1 §2.4 regra 2), mesmo com cliente esperando no balcão. É regra de design, então não foi mexida.
