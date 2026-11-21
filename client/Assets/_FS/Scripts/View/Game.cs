@@ -130,6 +130,7 @@ namespace FS
         Action _panelAction;
         long _panelOuro;         // fix/ui-fechar-ao-tocar-fora: cofre (recompensa pendente) nao fecha por toque fora
         readonly BandejaFora _bandeja = new BandejaFora();   // fix/ui-fechar-ao-tocar-fora: tap no mundo fecha a bandeja de melhorias
+        Action _fechaMenu; Func<Vector2, bool> _noAnel, _noPainel;   // os delegates da bandeja, criados 1x (no Update seriam 3 alocacoes por quadro)
         Image _coinIcon;
         sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
         readonly System.Collections.Generic.List<Coin> _coins = new System.Collections.Generic.List<Coin>();
@@ -478,9 +479,17 @@ namespace FS
             bool daBandeja = false;
             if (modal) _bandeja.Cancela();
             // FTUE (#188): o passo "abra as Melhorias" segura a bandeja; o painel do passo e' "dentro" (nem fecha, nem vai ao mundo)
-            else daBandeja = _bandeja.Tick(ptr, ToqueFora.FechaMenu(EstadoAtual, _menu.IsOpen, _raiz.Tutorial.Ativo && _raiz.Tutorial.Passo == PassoTutorial.Menu),
-                _menu.TopPx, _menu.Toggle, _view.NoAnel, _tut.NoPainel);
-            if (!modal && !daBandeja && ptr != null && ptr.press.wasPressedThisFrame && !_tut.NoPainel(ptr.position.ReadValue())) Toque(ptr.position.ReadValue());
+            else
+            {
+                _fechaMenu ??= _menu.Toggle; _noAnel ??= _view.NoAnel; _noPainel ??= _tut.NoPainel;
+                daBandeja = _bandeja.Tick(ptr, ToqueFora.FechaMenu(EstadoAtual, _menu.IsOpen, _raiz.Tutorial.Ativo && _raiz.Tutorial.Passo == PassoTutorial.Menu),
+                    _menu.TopPx, _fechaMenu, _noAnel, _noPainel);
+            }
+            if (!modal && !daBandeja && ptr != null && ptr.press.wasPressedThisFrame)
+            {
+                Vector2 p = ptr.position.ReadValue();
+                if (!_tut.NoPainel(p) || _view.NoAnel(p)) Toque(p);   // o painel do passo nao vai ao mundo, salvo o anel do golpe por baixo dele
+            }
             _joy.Blocked = modal;
             _joy.BottomPx = _menu.TopPx;
             _joy.Tick();
