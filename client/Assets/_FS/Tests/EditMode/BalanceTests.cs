@@ -83,7 +83,7 @@ namespace FS.Tests
             Marco(s, Upgrade.Anvil2, 210f, 0.50f, "2:30-3:30 2a bigorna");
             Marco(s, Upgrade.Helper1, 270f, 0.50f, "3:30-4:30 ajudante");
             Marco(s, Upgrade.Shields, 330f, 0.50f, "4:30-5:30 escudos");
-            Marco(s, Upgrade.Conveyor, 510f, 0.50f, "8:30 esteira");
+            // 2026-11: o marco das 8:30 (esteira) saiu com ela (Sim.Aposentado)
             Assert.Less(s.UpgradesBought, Upgrades.Count, "em 10 min nao pode ter comprado tudo: sobra razao para voltar");
             Assert.Less(s.WalkNoDecision / s.Time, 0.5f, "kill criterion: 'andar entre pilhas sem decisao' nao pode dominar");
         }
@@ -280,12 +280,13 @@ namespace FS.Tests
             Assert.That(tJ, Is.InRange(tW, M * 60f), "Joalheria real depois do Piso, dentro dos 90 min");
             for (int m = 1; m * 60f <= tF; m++)
                 Assert.AreEqual((earnedP[m], salesP[m]), (earnedL[m], salesL[m]), $"identicas ate a 1a compra de luxo (minuto {m})");
-            Assert.That(gL / gP, Is.InRange(0.97f, 1.03f), "luxo nao altera ouro/min (medido +0,5%)");
+            // 2026-11: cada luxo soma Tuning.LuxoPct (5%) ao preco das vendas do distrito; antes o luxo era so decoracao (medido +0,5%)
+            Assert.That(gL / gP, Is.InRange(1.02f, 1.20f), "luxo sobe o ouro/min (ate +15% com os 3)");
             Assert.That(sL / sP, Is.InRange(0.97f, 1.03f), "luxo nao altera vendas/min (medido +0,1%)");
             long luxuryCost = lux.T.Cost(Upgrade.WorkshopFacade) + lux.T.Cost(Upgrade.WorkshopFloor) + lux.T.Cost(Upgrade.JewelryDecor);
             Assert.AreEqual(plain.Gold + (lux.GoldEarned - plain.GoldEarned) + (lux.OrderGold - plain.OrderGold) - luxuryCost, lux.Gold,
                 "o luxo cobra exatamente o preco, uma vez, sem devolver ouro (premio das encomendas fica fora do GoldEarned)");
-            Assert.AreEqual((Upgrades.Count, Upgrades.Count - Luxos), (lux.UpgradesBought, plain.UpgradesBought), "sem luxo: os produtivos e os niveis de estacao (Meta)");
+            Assert.AreEqual((Upgrades.Count - 1, Upgrades.Count - 1 - Luxos), (lux.UpgradesBought, plain.UpgradesBought), "sem luxo: os produtivos e os niveis de estacao (Meta); a esteira aposentada nunca (2026-11)");
             Assert.AreEqual(plain.OfflineMaxGold(), lux.OfflineMaxGold(), "luxo nao mexe no teto offline");
         }
 
@@ -322,8 +323,10 @@ namespace FS.Tests
         public void Ocioso_15Min_AjudantesVendemSozinhos()
         {
             var s = new Sim();
-            Play(s, 1500f);   // bot monta a oficina (Ajudante 3 sai aos ~19 min) e larga o jogo
-            Assert.IsTrue(s.Bought[(int)Upgrade.Helper3], "Ajudante 3 comprado");
+            var bot = new Bot();   // bot monta a oficina ate o Ajudante 3 (2026-11, sem a esteira e com a IA da fila: ~25 min; era ~19) e larga o jogo
+            for (float t = 0f; t < 1800f && !s.Bought[(int)Upgrade.Helper3]; t += Dt) bot.Step(s, Dt);
+            Assert.IsTrue(s.Bought[(int)Upgrade.Helper3], "Ajudante 3 comprado em 30 min");
+            TestContext.WriteLine($"Ajudante 3 aos {s.Time / 60f:0.0} min");
             int sales = s.Sales;
             for (float t = 0f; t < 900f; t += Dt) s.Tick(Dt, 0f, 0f);
             TestContext.WriteLine($"ocioso 15 min depois de 25 min de bot: vendas={s.Sales - sales} perdidos={s.ClientsLost} estoque={string.Join(",", s.Stock)}");

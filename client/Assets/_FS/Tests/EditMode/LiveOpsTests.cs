@@ -336,7 +336,7 @@ namespace FS.Tests
             foreach (BlueprintDef d in s.Projetos.Defs) s.Projetos.Ganha(d.Id, d.Sources[0].Kind);   // B-CORE-07: niveis IV-V e bigorna longa
             for (int pass = 0; pass < 2; pass++)   // o luxo so depois da producao completa
                 for (int u = 0; u < Upgrades.Count; u++) if (Upgrades.IsLuxury(u) == (pass == 1)) s.Buy((Upgrade)u);
-            Assert.AreEqual(Upgrades.Count, s.UpgradesBought);
+            Assert.AreEqual(Upgrades.Count - 1, s.UpgradesBought, "tudo menos a esteira aposentada (2026-11)");
             s.OrderCount = 10; s.RateEma = 2.0;
             Agora(s, FF.Comeca + H);
             Assert.IsTrue(s.LiveOps.Paga(FF.Missoes.First(x => x.Id == "melhoria3")), "nada mais a comprar");

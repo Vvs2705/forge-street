@@ -107,7 +107,7 @@ Find the bottleneck
 Every station shows when it's stuck: it turns grey when it runs out of input and lights up red when its output is full. Find what's holding production back and invest in the right place.
 
 Six districts, a new mechanic in each
-• Old Forge: swords, shields, tools and jewelry, with a conveyor and helpers
+• Old Forge: swords, shields, tools and jewelry, with helpers at every station
 • Armorer's Row: alloys and goods assembled from several parts
 • Artisan Quarter: workbenches you configure and customers by family
 • Royal Arsenal: quotas with deadlines for the king's army

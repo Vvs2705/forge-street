@@ -539,7 +539,7 @@ namespace FS.Tests
         public void PrimeirosDezMinutos_IguaisAosDeAntes_GoldenDoMain()
         {
             const string golden = "2011:4:0:50 2031:16:2:5 3400:17:2:25 3478:4:1:65 4000:16:2:12 5301:4:2:85 6790:17:2:25 6886:4:3:110 7390:16:2:9 8946:4:4:145 " +
-                "10928:17:2:25 11124:4:5:185 11528:16:3:8 12444:4:6:240 13115:4:7:315 13712:17:3:25 14312:16:2:28 16202:4:8:410 19702:4:9:530";
+                "10928:17:2:25 11124:4:5:185 11528:16:3:8 12389:4:7:315 13633:17:3:25 14071:4:8:410 14233:16:2:30 19053:4:9:670";   // 2026-11-21: sem a esteira (6), Ferramentas +140 (§50) e ajudantes pela fila (§51); ate 11528 igual ao main
             var s = new Sim(); var bot = new Bot();
             var ev = new List<string>();
             int tick = 0;
@@ -551,11 +551,11 @@ namespace FS.Tests
                 Assert.LessOrEqual(s.Encomendas.Vagas.Count, 1, "1 vaga so");
                 Assert.IsTrue(s.Encomendas.Vagas.TrueForAll(v => v.Tipo == OrderType.Common && v.Def.ClientId == null), "so Common");
             }
-            Assert.AreEqual(19702, tick);
+            Assert.AreEqual(19053, tick);
             Assert.AreEqual(golden, string.Join(" ", ev));
-            Assert.AreEqual(125L, s.Gold);
-            Assert.AreEqual(1850L, s.GoldEarned);
-            Assert.AreEqual(104, s.Sales);
+            Assert.AreEqual(55L, s.Gold);
+            Assert.AreEqual(1680L, s.GoldEarned);
+            Assert.AreEqual(108, s.Sales);
             Assert.AreEqual(4, s.OrderCount);
             Assert.AreEqual(100L, s.OrderGold);
             Assert.AreEqual(14L, s.Renome.Total);

@@ -144,7 +144,7 @@ namespace FS.Core
             },
             Obstaculos = Balance.Obstacles, Marcos = Balance.Milestones,
             Inicio = new V2(4.5f, 3.5f), Contratacao = Sim.HireSpot, Largura = Balance.WorkshopW, Parede = true,
-            EsteiraDe = "fornalha", EsteiraPara = "bigorna",
+            // 2026-11: sem esteira (Sim.Aposentado); o pad "esteira" fica na lista (slot do save) e nunca aparece
             Charter = new CharterDef(true, 700, 1, ArmorersRowId, superiores: 80),   // V15 + BALANCE §48: producao completa + Renome 700 + 1 Masterwork OU 80 Superiores vendidas
         };
 
@@ -315,7 +315,7 @@ namespace FS.Core
             },
             Obstaculos = new ObstacleDef[0], Marcos = new MilestoneDef[0],
             Inicio = new V2(4.5f, 2.6f), Contratacao = new V2(8.3f, 1.5f), Largura = Balance.WorldW, Parede = false,
-            EsteiraDe = "prensa", EsteiraPara = "montagem_elmo",
+            // 2026-11: sem trilho de placas (Sim.Aposentado); o Ferraz 2 leva os lingotes e o Ferraz 3 os produtos
             Ajuste = t =>
             {
                 // §3 precos (Normal) x 2,4, desvio do catalogo (revisar; BALANCE.md §39, era x 3,5 no §33): o modelo do §1 supoe a vazao das

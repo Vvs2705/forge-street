@@ -153,8 +153,8 @@ namespace FS.Core
                     // raia H: o Royal Contract (D-CORE-04) no lugar dos 10 golpes de mestre (8 linhas no cartao). A referencia (D0, sem golpe)
                     // so chega ao Renome 3 no dia 5 e cumpre o ronda na sessao em que a trilha ja fecharia sem ele (BALANCE §36)
                     M("vip5", "vip_served", 5, 100), M("royal2", "order_complete", 2, 120, "royal"), M("vende300", "product_sold", 300, 60),
-                    M("fina40", "quality_crafted", 40, 100), M("escudos50", "product_sold", 50, 60, "escudo"), M("dias3", "play_day", 3, 100),
-                    M("cofre2", "offline_claim", 2, 60), M("contrato1", "contract_complete", 1, 100),
+                    M("fina40", "quality_crafted", 40, 150), M("escudos50", "product_sold", 50, 60, "escudo"), M("dias3", "play_day", 3, 100),
+                    M("cofre2", "offline_claim", 2, 60), M("contrato1", "contract_complete", 1, 50),   // 2026-11-21 (BALANCE §50): sem a esteira o Renome 3 sai mais tarde; 50 pontos do contrato foram para as Finas
                 },
                 Trilha = Trilha(Cos("cos_ev_s1w1_selo"), "cos_ev_s1w1_tapete"), Encomenda = "ord_ev_royal_week", Tema = "royal", Modificadores = Vip75(),
             },
@@ -189,9 +189,9 @@ namespace FS.Core
                 Missoes = new[]
                 {
                     M("espadas400", "product_sold", 400, 70, "espada"), M("superior_espadas10", "quality_superior", 10, 120, "espada"),
-                    M("golpe_espadas15", "master_strike", 15, 100, "espada"), M("royal2", "order_complete", 2, 100, "royal"),
+                    M("golpe_espadas15", "master_strike", 15, 70, "espada"), M("royal2", "order_complete", 2, 100, "royal"),
                     M("quality2", "order_complete", 2, 90, "quality"), M("nivel_bigornas", "upgrade_buy", 1, 70, "bigornas_nivel2", "bigornas_nivel3"),
-                    M("vende1000", "product_sold", 1000, 50), M("dias3", "play_day", 3, 100),
+                    M("vende1000", "product_sold", 1000, 50), M("dias3", "play_day", 3, 130),   // 2026-11-21 (BALANCE §50): 30 do golpe para os dias
                 },
                 Trilha = Trilha(Bp("bp_mw_sunblade"), "cos_ev_s1w4_tocha"), Encomenda = "ord_ev_hunt_sunblade", Tema = "hunt",
                 Modificadores = new[] { new Modificador("QualidadeEvento", 15f, "espada", true), new Modificador("GolpeRecarga", 0.75f) },
@@ -227,7 +227,7 @@ namespace FS.Core
                 {
                     M("lingotes600", "product_crafted", 600, 150, "lingote"), M("vende300", "product_sold", 300, 80), M("bulk2", "order_complete", 2, 100, "bulk"),
                     M("melhoria2", "upgrade_buy", 2, 60), M("ferram60", "product_sold", 60, 80, "ferramenta"), M("contrata1", "worker_any", 1, 80),
-                    M("dias3", "play_day", 3, 150),
+                    M("dias4", "play_day", 4, 150),   // 2026-11-21 (BALANCE §51): com a IA da fila o F2P de referencia fechava no dia 3; eram 3 dias
                 },
                 Trilha = Trilha(Cos("cos_ev_s2w2_emblema"), "cos_ev_s2w2_carrinho"), Encomenda = "ord_ev_rare_ore_rush", Tema = "minerio",
                 Modificadores = Mais(new[] { new Modificador("GrabTime", 0.7f) }, Fornalha(0.9f)),
@@ -250,9 +250,9 @@ namespace FS.Core
                 Id = "ev_s2w4_hunt_ember_crown", Template = Template.MasterworkHunt, Temporada = S2, Inicio = 56, Abre = "joalheria", Renome = 1,
                 Missoes = new[]
                 {
-                    M("joias80", "product_sold", 80, 70, "joia"), M("fina_joias20", "quality_crafted", 20, 120, "joia"), M("golpe_joias10", "master_strike", 10, 100, "joia"),
+                    M("joias80", "product_sold", 80, 70, "joia"), M("fina_joias20", "quality_crafted", 20, 120, "joia"), M("golpe_joias10", "master_strike", 10, 70, "joia"),
                     M("royal2", "order_complete", 2, 100, "royal"), M("nivel_joalheria", "upgrade_buy", 1, 70, "joalheria_nivel2", "joalheria_nivel3"),
-                    M("vende800", "product_sold", 800, 50), M("enc_joia3", "order_done", 3, 90, "joia"), M("dias3", "play_day", 3, 100),
+                    M("vende800", "product_sold", 800, 50), M("enc_joia3", "order_done", 3, 90, "joia"), M("dias3", "play_day", 3, 130),   // 2026-11-21 (BALANCE §50): 30 do golpe para os dias
                 },
                 Trilha = Trilha(Bp("bp_mw_ember_crown"), "cos_ev_s2w4_vitrine"), Encomenda = "ord_ev_hunt_ember_crown", Tema = "hunt_brasa",
                 Modificadores = new[] { new Modificador("QualidadeEvento", 15f, "joia", true), new Modificador("GolpeRecarga", 0.75f) },

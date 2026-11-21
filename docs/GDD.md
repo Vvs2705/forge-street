@@ -319,7 +319,7 @@ Estado: Encomendas (1 tipo, 1 vaga) IMPLEMENTADO · 8 tipos PROPOSTO · Wave B �
 
 Estado: PROPOSTO · Charter Wave C (C-CORE-03) · Contracts Wave D (D-CORE-04).
 
-**Royal Contract (DM §19):** objetivo de médio prazo, em paralelo ao loop. Ex.: "Equipar 20 guardas" = 20 espadas + 20 escudos + 20 elmos. Entregar desvia produto do balcão: a decisão é vender agora ou cumprir o contrato.
+**Royal Contract (DM §19):** objetivo de médio prazo, em paralelo ao loop. Ex.: "Equipar 20 guardas" = 20 espadas + 20 escudos + 20 elmos. A peça vendida conta para o contrato (e para a encomenda): o contrato é o reconhecimento da Coroa sobre o que a oficina já produz, não um desvio do balcão. A decisão "vender agora ou cumprir" fica no pátio de cotas do Royal Arsenal e em aceitar ou abandonar o contrato (V30, `PROJETO.md` §4).
 - Recompensas: ouro, **Blueprint (desbloqueio, não token, V9)**, Renome e, se houver baú, **conteúdo fixo mostrado antes**. A "cosmetic chance/controlada" do DM §19 sai: nada de chance (P5).
 - Prazo só como bônus; contrato nunca bloqueia o core loop (o bot fecha todos os distritos sem nenhum contrato).
 - Meta da v1.0: 12 Royal Contracts (DM §7). Recompensa 1×, com ID de transação.
@@ -667,10 +667,12 @@ Caminhos de origem: DC = `06_DUNGEON_COURIER/arte/mixamo/` (tabela e SHA em `doc
 
 ### Onboarding
 **Tour guiado (obrigatório, pedido do Vinicius no DC).**
+
+> **Feito (branch `feat/tutorial-inicial`, 2026-11-21) — 1ª versão:** `Core/Tutorial.cs` (puro, `TutorialTests`) + `View/PainelTutorial.cs`. Save novo (sem venda nem compra) abre o cartão de boas-vindas (objetivo em 2 frases, COMEÇAR, "Pular tutorial"); depois 9 passos que avançam **pelo estado real do Sim** (andou 1,5 m → minério na mão → minério na fornalha → lingote na mão → lingote na bigorna → espada na mão → 1ª venda → 1ª melhoria na placa → barra de Melhorias aberta ou ENTENDI), com "Passo N de 9", PULAR sempre visível, o texto do passo na pílula da dica e a seta do mundo no alvo. Depois, um cartão "o que é isto" por sistema na 1ª vez (ajudante, fila/paciência, VIP, golpe de mestre, encomendas, metas diárias, distrito novo), um de cada vez, fecha com um toque. Boas-vindas e cartões param a oficina (o "tour sem matar cliente" do item 1 de Código e testes); nenhum anúncio nos passos (botões escondidos, tela de idade adiada, veto `tutorial` do intersticial). Save `tut=`; save antigo com venda ou compra = concluído. `-testsession` sem tutorial; `-tutorial` o liga e, com `-bot`, os toques se apertam em 2 s. **Ainda não:** véu com buraco no alvo, retrato do mentor, "REVER TUTORIAL" nas Configurações, os passos 6 (estação parada) e 9 (VIP como anúncio) da tabela abaixo.
 - **Como funciona:** a tela congela e só o alvo fica aceso (véu com buraco, contorno dourado e seta). Um cartão diz o que é, quando usar e por quê. Nos passos de ação, só o alvo responde. Cada passo aparece uma vez; há "Pular tutorial", e "REVER TUTORIAL" nas Configurações. Fica desligado no `-testsession`. Passo de botão se cancela se a tela mudar.
 - **Relação com a dica:** a pílula de dica de 1 linha continua como lembrete depois do tour.
 - **Revelação progressiva:** os gatilhos seguem o §19 e a regra da Wave B (nada novo nos primeiros 10 min).
-- **Telemetria:** o `tutorial_step` do diário passa a contar os passos do tour.
+- **Telemetria:** o `tutorial_step` do diário passa a contar os passos do tour (feito: `a` = id do passo, `b` = número; mais `tutorial_skip` e `tutorial_card`, ver `REMOTECONFIG_ANALYTICS.md`).
 
 | # | Passo (tipo) | Quando | O que diz · por quê |
 |---|---|---|---|
