@@ -1269,10 +1269,10 @@ namespace FS
             if (!corridor)
             {
                 PlaceLabel(_streetLabel, new Vector3(Balance.WorkshopW + 0.6f, (Balance.SideWallOpenings[1] + Balance.SideWallOpenings[2]) / 2f, 0f), Vector2.zero);   // na parede entre a porta e o arco, nao em cima da porta
-                // v0.6d: inteiro dentro de x <= 1032 (px na largura 1080); o "lateral" saia pela borda direita
+                // v0.6d: inteiro dentro de x <= 1032 (px na largura 1080); o "lateral" saia pela borda direita. fix/rotulo-rua-lateral: so
+                // quando ja aparece em parte; inteiro fora da tela fica fora (antes caia em cima da placa de Escudos com a camera no inicio)
                 Vector2 at = _streetLabel.rectTransform.anchoredPosition;
-                float max = _labels.rect.width * (1032f / 1080f - 0.5f) - _streetHalfW;
-                if (at.x > max) _streetLabel.rectTransform.anchoredPosition = new Vector2(max, at.y);
+                _streetLabel.rectTransform.anchoredPosition = new Vector2(Enquadramento.RotuloNaBorda(at.x, _streetHalfW, _labels.rect.width), at.y);
             }
             if (_shopTeaser != null && _shopTeaser.transform.parent.gameObject.activeSelf != teaser) _shopTeaser.transform.parent.gameObject.SetActive(teaser);
             _shopLabel.enabled = teaser;

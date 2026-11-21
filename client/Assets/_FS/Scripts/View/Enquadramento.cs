@@ -46,5 +46,17 @@ namespace FS
             y = minY > maxY ? (minY + maxY) / 2f : Math.Max(minY, Math.Min(y, maxY));
             return new V2(x, y);
         }
-    }
+    
+        /// <summary>
+        /// fix/rotulo-rua-lateral: x (px, centro no meio da tela) do rotulo "Rua lateral" perto da borda direita. A v0.6d prendia o rotulo
+        /// dentro de 1032/1080 da largura SEMPRE; com a camera longe da rua (inicio, ferreiro na esquerda) isso puxava o rotulo 2 m para
+        /// dentro e ele caia em cima da placa de Escudos (fotos 9:20 do POCO). Agora: inteiro fora da tela = fica fora (a camera mostra
+        /// quando o ferreiro anda para a direita); so o que ja aparece em parte e' puxado para dentro.
+        /// </summary>
+        public static float RotuloNaBorda(float x, float meiaLargura, float larguraTela)
+        {
+            float borda = larguraTela / 2f, max = larguraTela * (1032f / 1080f - 0.5f) - meiaLargura;
+            return x - meiaLargura >= borda ? x : Math.Min(x, max);
+        }
+}
 }
