@@ -98,19 +98,21 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 
 ## 7. Known issues
 
+**Conferido no código em 2026-11-21:** 0 P0 e 0 P1 abertos. Abertos: 2 P2 (nome "Ajudantes ágeis", fome da Bigorna 2) e 1 decisão de design (cota do contrato).
+
 | Problema | Prioridade (§132) | Fonte | Correção |
 |---|---|---|---|
-| Save corrompido vira estado inicial e o autosave de 5 s grava por cima, sem volta | **P0** (perda de save) | `Sim.cs:1061`, `Game.cs:36,234,909` | PR #16 (Save 2.0) |
-| Save grava `v=1` e nunca lê; sem envelope, checksum, backup nem migração explícita | P0 antes de IAP | `Sim.cs:1063-1209` | PR #16 |
-| Release lia flags do extra do intent: `-fakeads` dava recompensa com anúncio simulado | P1 (exploit de anúncio) | `Ads.cs:46,103,125-140` | PR #12 |
-| Recompensa que chega depois da janela de 2 s é descartada sem log | P1 (ad reward fail) | `Ads.cs:107-108,266-271` | PR #12 (`ad_reward_late`) |
-| Recarga da Velocidade não vai no save: reabrir o app libera outro boost | P1 (exploit de anúncio) | `Sim.cs:117-119,252-263` | PR #20 |
-| Ciclo de relógio (adiantar → resgatar → voltar → adiantar) repete o cofre | P1 (exploit de economia) | `Sim.cs:1028-1039`, `Game.cs:909` | PR #20 (`SavedAt` monotônico, `clock_back`) |
-| Custo de upgrade estoura `int` a partir do tier 67 e volta para 5; ouro em `int` | P1 com 120+ upgrades / distritos | `Defs.cs:290-291`, `Sim.cs:92` | PR #20 (`long`, HUD "1,23 mi") |
-| "Chamar VIP" sem recarga fura os pisos do §3 | P1 (exploit de economia) | `BALANCE.md` §22 | decidido (V11): recarga de 5 min — Leva 5 |
+| ~~Save corrompido vira estado inicial e o autosave de 5 s grava por cima, sem volta~~ **fechado** | — | `SaveStore.cs` (principal + `.bak`, quarentena do arquivo que não abre), `SaveEnvelope.cs` (`sha256=`, status `Corrupt`) | PR #16 (Save 2.0); conferido em 2026-11-21 |
+| ~~Save grava `v=1` e nunca lê; sem envelope, checksum, backup nem migração explícita~~ **fechado** | — | `SaveEnvelope.cs` (schema 3, `NewerSchema` não sobrescreve), migração das 3 versões publicadas (#100) | PR #16; conferido em 2026-11-21 |
+| ~~Release lia flags do extra do intent: `-fakeads` dava recompensa com anúncio simulado~~ **fechado** | — | `Ads.Args()` só lê o extra `unity` do intent com `Debug.isDebugBuild` | PR #12; conferido em 2026-11-21 |
+| ~~Recompensa que chega depois da janela de 2 s é descartada sem log~~ **fechado** | — | `Ads.cs` emite `ad_reward_late` no diário | PR #12; conferido em 2026-11-21 |
+| ~~Recarga da Velocidade não vai no save: reabrir o app libera outro boost~~ **fechado** | — | `BoostCooldown` gravado no save (`Sim.Save.cs`) | PR #20; conferido em 2026-11-21 |
+| ~~Ciclo de relógio (adiantar → resgatar → voltar → adiantar) repete o cofre~~ **fechado** | — | `SavedAt = max(SavedAt, agora)` (`Sim.Save.cs`, A-CORE-02) e `clock_back` no diário (`Servicos.cs`) | PR #20; conferido em 2026-11-21 |
+| ~~Custo de upgrade estoura `int` a partir do tier 67 e volta para 5; ouro em `int`~~ **fechado** | — | `Gold`, `GoldEarned` e `OfflineEarned` em `long` (`Sim.cs`) | PR #20; conferido em 2026-11-21 |
+| ~~"Chamar VIP" sem recarga fura os pisos do §3~~ **fechado** | — | `BALANCE.md` §22 | recarga de 5 min (V11, P14) na `main` |
 | ~~Impasse de navegação: 1 em 1.000 partidas o `Sim.Steer` alterna entre duas direções a caminho do pad do Mineiro~~ **fechado**: `Carrier.MoveTo` conta o tempo sem progresso e o `Steer` dá a quina como contornada (bot e ajudantes; 0 impasses em 1.000 partidas) | — | `BALANCE.md` §22.1, CHANGELOG | testes `Steer_QuinaDeFrente_*` e `Ajudantes_CicloLongo_*` |
-| Vibra em toda venda (§72 pede só eventos importantes) | P2 | `Game.cs:262` | PR #19 |
-| Sem AAB, chave de release, `versionCode` monotônico nem build não-development; targetSdk automático | antes da loja | `ProjectSettings.asset:181,183`, `Setup.cs:97` | PR #18 (falta a chave real: decisão) |
+| ~~Vibra em toda venda (§72 pede só eventos importantes)~~ **fechado** | — | `Game.cs` (A-AUD-22: venda comum não vibra; só a grande, no máximo 1 a cada 1,5 s) e chave Vibração nas configurações | PR #19; conferido em 2026-11-21 |
+| ~~Sem AAB, chave de release, `versionCode` monotônico nem build não-development; targetSdk automático~~ **fechado** | — | `RELEASE.md` | PR #18, workflow `release` (#146) e chave de upload real (#178) |
 | ~~viewcheck não compila o caminho `#if UNITY_ANDROID` e só roda com o Unity local~~ | — | `client/tools/viewcheck` | resolvido: viewcheck Android no #13 e Unity no CI (GameCI) no #122 |
 | `dotnet test` (NUnit 3.14) aceita tupla `int` × `long`; o EditMode do Unity (NUnit 3.5) não | portão | `FSCore.Tests.csproj` | regra: `verify.sh full` antes de todo PR de jogo |
 | 0.6.0 sem aparelho físico | — | `VALIDACAO_V06A.md` | gate de Feature Complete (POCO só em marcos) |
@@ -119,14 +121,14 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 | ~~Textos no código, sem localização~~ | — | `Loc.cs` | resolvido: pt/en/es em chaves (`Loc.T`, 1.227 chaves; `LocTests`) |
 | Bandeja mostra o cartão travado primeiro; "Ajudantes ágeis" fora do padrão "Ajudantes rápidos" | P2 | `VALIDACAO_V05.md` | a ordem está resolvida (`MenuBar`: disponível, sem ouro, travado); falta só o nome do upgrade (texto, `up.ajudantes_ageis.nome`) |
 | Fome da Bigorna 2 (2.582 s em 60 min no bot) | P2 | `BACKLOG_V07.md` | — |
-| Zona morta ~53% da curva até a produção completa; ouro sem destino depois dela | design | `BALANCE.md` §22 | Waves B (Orders 2.0, Blueprints) e C (distritos) |
+| ~~Zona morta ~53% da curva até a produção completa; ouro sem destino depois dela~~ **fechado** | — | `BALANCE.md` §46–§48 | Orders 2.0 (#60), Blueprints (#55), 6 distritos e Império (#61, #65); campanha do Império no bot sem impasse (#165, #170) |
 | ~~**Barulheira:** muitos sons ao mesmo tempo (Vinicius no POCO, 2026-10-13)~~ | — | `Som.cs` | resolvido no #59 (categorias, orçamento de vozes, distância, ducking); falta ouvir no POCO |
 | ~~**Mochila parece item solto** colado no ferreiro (Vinicius no POCO, 2026-10-13)~~ | — | `WorldView.cs` | resolvido no #62 (folha `ferreiro_mochila`, mochila presa às costas); falta ver no POCO |
 | ~~Conta LevelPlay aguardando aprovação~~ | — | `LEVELPLAY.md` | resolvido no #67 (conta da V-STACK); as ad units dos 6 placements e do intersticial existem desde 2026-10-25; Unity Ads ligado como rede em 2026-10-25 (Game ID `800410373`, `LEVELPLAY.md` §2) |
 | ~~Rua dos Armeiros: rótulo "Depósito" encosta no "Fornalha"~~ | — | `Distritos.cs` | resolvido no #66 (depósito 0,5 m mais baixo) |
 | ~~Rua dos Armeiros sem obras-primas; Charter dela travado~~ | — | `BALANCE.md` §35 | resolvido no #71 (liga, Vulcana, 10 obras; bot Ideal faz o Charter em ~3:30 h de Row) |
-| Row: a liga chega a só ~5% das peças (um Ferraz leva todos os intermediários); Rebitadeira 2 quase sem demanda; Vulcana e fornalha de liga com arte emprestada | P2 | `BALANCE.md` §35 | Ferraz 4 nos intermediários (+32% de renda, reafinar o preço × 3,5); arte da Row (C-ART-13) |
-| Encomenda Event disputa as vagas com as normais: a trilha do evento depende de quantas vagas o jogador tem (calibrada para 3) | design | `BALANCE.md` §30.6 | decisão: contar a Event à parte e reafinar os 9 eventos |
+| ~~Row: a liga chega a só ~5% das peças; Rebitadeira 2 quase sem demanda; Vulcana e fornalha de liga com arte emprestada~~ **fechado** | — | `BALANCE.md` §35 | Ferraz 4, Rebitadeira 2 e preço ×2,4 no #76; arte das estações da Row no #75 e da Vulcana no #107 |
+| ~~Encomenda Event disputa as vagas com as normais~~ **fechado** | — | `BALANCE.md` §44 | V27 no #131 (vaga própria, 17 pontos nos 10 eventos) |
 | ~~Contrato EM BREVE da Row mostra o elmo pelo ID; rótulo "Achievements" pequeno~~ | — | `PainelMetas.cs` | resolvidos no #66 e no #70 (abas largas, Projetos e Hall no rodapé) |
 | Contrato conta a mesma peça para a encomenda e para o contrato (sem o seletor de cota do CONTEUDO_V1 §8) | design | `Contratos.cs` | decidir se a cota entra antes do Limited Release |
 
