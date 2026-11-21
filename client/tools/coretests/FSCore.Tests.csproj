@@ -25,6 +25,7 @@
     <Compile Include="../../Assets/_FS/Scripts/View/Plataforma.cs" />
     <!-- E-PLAT-04: IStore e a loja falsa (puras); o painel fica atras de #if !FS_CORETESTS -->
     <Compile Include="../../Assets/_FS/Scripts/View/Loja.cs" />
+    <Compile Include="../../Assets/_FS/Scripts/View/CicloAnuncio.cs" />
     <!-- A-PLAT-07: tabela dos estados do jogo (pura) -->
     <Compile Include="../../Assets/_FS/Scripts/View/Estado.cs" />
     <Compile Include="../../Assets/_FS/Scripts/View/ToqueFora.cs" />

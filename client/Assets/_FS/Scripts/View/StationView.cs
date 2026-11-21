@@ -55,6 +55,21 @@ namespace FS
             return c < 0f ? 0f : c > 1f ? 1f : c;
         }
 
+        /// <summary>
+        /// Nivel da bancada visivel (queixa 7 de 2026-11-21: "estacoes sem melhoria visivel"; PROJETO.md §7). So os produtores de
+        /// montagem tem nivel (Station.Level 1..5, um por "Bigornas II..V" da familia). Cada nivel acrescenta uma camada de FORMA, nao so
+        /// cor (DM §52: le numa foto em cinza): II = pedestal sob a bancada; III = + aro claro em volta do pedestal; IV = + brilho no
+        /// chao; V = + o brilho pulsa e sobem brasas. Nivel I (o comeco) nao desenha nada.
+        /// </summary>
+        public static int Camadas(int nivel) => nivel <= 1 ? 0 : nivel >= 5 ? 4 : nivel - 1;
+
+        /// <summary>O numero do nivel como no menu ("Bigornas III"): I..V; fora disso, o numero.</summary>
+        public static string Romano(int nivel) => nivel >= 1 && nivel <= 5 ? new[] { "I", "II", "III", "IV", "V" }[nivel - 1] : nivel.ToString();
+
+        /// <summary>Cravos na frente do pedestal: um por nivel (II = 2 ... V = 5), a contagem que se le sem cor nem texto. Nivel I: nenhum
+        /// (revisao do CD no #186: so as camadas sumiam em 432x768).</summary>
+        public static int Pinos(int nivel) => nivel <= 1 ? 0 : nivel >= 5 ? 5 : nivel;
+
 #if !FS_CORETESTS
         // Pontos medidos no PNG (celula 1,95 m / 256 px, a partir do pivo): chamine e boca acesa (v0.6a), brasa pintada na boca (x -0,31
         // a -0,08, y -0,18 a -0,14; a tampa de cinza a cobre parada) e o vao de cima a direita, fora do corpo (x > 0,35), onde fica a
@@ -89,6 +104,16 @@ namespace FS
         // bigorna/bancada: escala e posicao de repouso da arte, progresso do quadro anterior, relogio do golpe (-1 parado)
         readonly Vector3 _rest, _restPos; readonly Vector2 _top; readonly float _pitch;
         float _prog, _hitT = -1f; bool _blow;
+        // nivel da bancada: pedestal (II), aro (III), brilho (IV), pulso e brasas (V); _nivelT = relogio da festa de subida (-1 parado)
+        static readonly Color[] NivelC = { Art.Hex(0xD9944F), Art.Hex(0xC9D1DC), Art.Gold, Art.Hex(0x9B6BFF) };   // bronze, prata, ouro, arcano
+        const float SobeS = 0.6f, BrasaEvery = 0.5f;
+        SpriteRenderer _pedestal, _aro, _nivelGlow;
+        readonly SpriteRenderer[] _pinos = new SpriteRenderer[5];
+        const float PedH = 0.46f, PinoS = 0.13f, PinoDx = 0.2f;   // CD #186: pedestal mais alto (0,34 -> 0,46) para ~0,25 u aparecerem sob a arte
+        Vector3 _pedestalS;
+        Vector2 _pe;   // centro do pedestal (pe da arte)
+        int _nivel;
+        float _nivelT = -1f, _brasaT;
         /// <summary>Estado do ultimo quadro (linha SHOT do -shot).</summary>
         public Fornalha Atual { get; private set; }
 
@@ -102,6 +127,7 @@ namespace FS
                 _top = s.OutItem == Item.Sword ? AnvilTop : BenchTop;
                 _pitch = AlturaMartelo(s.OutItem);
                 _prog = s.Busy ? s.Progress : 0f;   // save carregado no meio da peca: nao bate de saida
+                MontaNivel(art);
                 return;
             }
             _calor = s.Busy && s.Progress < 1f ? 1f : 0f;   // save carregado trabalhando: sem rampa
@@ -142,7 +168,7 @@ namespace FS
         /// </summary>
         public void Refresh(float dt, bool boost, float pulse)
         {
-            if (_s.Kind == Kind.Crafter) { Bate(dt); return; }
+            if (_s.Kind == Kind.Crafter) { Bate(dt); Nivel(dt); return; }
             bool work = _s.Busy && _s.Progress < 1f;
             _calor = Calor(_calor, work, Mathf.Min(dt, 0.1f));   // quadro longo (carregamento) nao pula a rampa
             Fornalha e = Atual = Estado(_s, boost, _calor);
@@ -232,6 +258,100 @@ namespace FS
                 _w.Spawn(Art.Sparkle(), WorldView.SparkA, m, m + d * 0.8f + new Vector3(0f, 0.1f, 0f), m + new Vector3(d.x * 1.2f, d.y * 0.5f - 0.3f, 0f),
                     HotSparkLife, HotSparkS, 0.08f, true, 360f, WorldView.SparkB, order + 3);   // por cima da chama
             }
+        }
+
+        /// <summary>Pedestal no pe da bancada (pivo da arte baked; bounds da procedural), aro e brilho; tudo desligado no nivel I.</summary>
+        void MontaNivel(SpriteRenderer art)
+        {
+            // arte baked (folha do Tripo): o pivo do PNG e' o pe da bancada, e o sprite e' a celula de 1,95 m com borda transparente, entao o
+            // bounds mentiria (o pedestal caia solto ao sul, colado na barra). Visivel: 1,07 a 1,46 m de largura, sombra de 1,55 m (revisao
+            // do TD no #186). Arte procedural (Base Rounded com pivo no centro): o pe e' a borda de baixo do bounds.
+            Vector3 sc = art.transform.localScale, p = art.transform.localPosition;
+            float w;
+            if (_baked) { w = 1.4f; _pe = new Vector2(p.x, p.y - 0.16f); }   // CD #186: desce 0,1 u, senao a arte cobria o pedestal
+            else
+            {
+                Bounds b = art.sprite != null ? art.sprite.bounds : new Bounds(Vector3.zero, Vector3.one);
+                w = Mathf.Clamp(b.size.x * Mathf.Abs(sc.x) * 0.92f, 0.9f, 1.6f);
+                _pe = new Vector2(p.x + b.center.x * sc.x, p.y + b.min.y * Mathf.Abs(sc.y) - 0.02f);
+            }
+            const int chao = 0;   // no chao: acima do tapete (-1), abaixo das sombras e dos pads (1-4); quem passa na frente cobre
+            _nivelGlow = Art.NewSprite(_root, "NivelBrilho", Art.Glow(), Color.clear, WorldView.GlowOrder, _pe + new Vector2(0f, 0.15f), new Vector2(w * 1.9f, 1.5f));
+            _aro = Art.NewSprite(_root, "NivelAro", Art.Rounded(), Color.clear, chao, _pe, new Vector2(w + 0.16f, PedH + 0.12f));
+            _pedestal = Art.NewSprite(_root, "NivelPedestal", Art.Rounded(), Color.clear, chao, _pe, new Vector2(w, PedH));
+            // mesmo order 0 das bocas e da moldura do tapete: o z (mais longe da camera ortografica) poe aro < pedestal < bocas, sem empate
+            _aro.transform.localPosition = new Vector3(_pe.x, _pe.y, 0.01f);
+            _pedestal.transform.localPosition = new Vector3(_pe.x, _pe.y, 0.005f);
+            _pedestalS = _pedestal.transform.localScale;
+            // cravos na faixa do pedestal que fica a mostra (abaixo do pe da arte), filhos do pedestal: saltam junto na subida. Order 2: acima da
+            // sombra (1), que cobriria a contagem; quem passa na frente (Depth) continua por cima
+            for (int i = 0; i < _pinos.Length; i++)
+            {
+                _pinos[i] = Art.NewSprite(_pedestal.transform, "NivelCravo", Art.Diamond(), Color.clear, 2, Vector2.zero, Vector2.one);
+                _pinos[i].transform.localScale = new Vector3(PinoS / w, PinoS / PedH, 1f);
+            }
+            _nivel = _s.Level;   // save carregado: o nivel ja esta la, sem festa
+            PintaNivel(1f);
+        }
+
+        void PintaNivel(float festa)
+        {
+            int k = Camadas(_nivel);
+            Color c = k > 0 ? NivelC[k - 1] : Color.clear;
+            _pedestal.enabled = k >= 1;
+            _aro.enabled = k >= 2;
+            _nivelGlow.enabled = k >= 3;
+            if (k >= 1) _pedestal.color = Color.Lerp(Art.Bg, c, 0.8f);   // CD #186: 0,55 sumia no piso; a bancada segue por cima
+            if (k >= 2) _aro.color = Color.Lerp(c, Color.white, 0.35f);
+            if (k >= 3)
+            {
+                float a = k >= 4 ? 0.5f + 0.15f * Mathf.Sin(Time.time * 2.2f + _s.Index) : 0.45f;
+                _nivelGlow.color = Art.ComAlfa(c, Mathf.Min(0.85f, a * festa));
+            }
+            int n = Pinos(_nivel);
+            float y = (-0.5f * PedH + 0.11f) / PedH, x0 = -0.5f * (n - 1) * PinoDx;   // no espaco local do pedestal (escala w x PedH)
+            Color pc = k > 0 ? Color.Lerp(c, Color.white, 0.6f) : Color.clear;
+            for (int i = 0; i < _pinos.Length; i++)
+            {
+                _pinos[i].enabled = i < n;
+                if (i >= n) continue;
+                _pinos[i].color = pc;
+                _pinos[i].transform.localPosition = new Vector3((x0 + i * PinoDx) / _pedestalS.x, y, 0f);
+            }
+        }
+
+        /// <summary>Subiu de nivel (compra no menu): pedestal salta, anel abre, o numero romano sobe. Depois, so o pulso do V e as brasas.</summary>
+        void Nivel(float dt)
+        {
+            if (_s.Level != _nivel)
+            {
+                bool subiu = _s.Level > _nivel;
+                _nivel = _s.Level;
+                if (subiu && _w.NaTela(_root))
+                {
+                    _nivelT = 0f;
+                    Color c = NivelC[Mathf.Max(0, Camadas(_nivel) - 1)];
+                    _w.Float(new V2(_s.Pos.X, _s.Pos.Y + 1.1f), Romano(_nivel), c, 44);
+                    Vector3 o = _root.localPosition + (Vector3)_pe;
+                    _w.Spawn(Art.Ring(), Art.ComAlfa(c, 0.9f), o, o, o, SobeS, 0.5f, 2.6f, true, 0f, null, _front + 2);
+                }
+            }
+            float festa = 1f;
+            if (_nivelT >= 0f)
+            {
+                _nivelT += dt;
+                float k = Mathf.Clamp01(_nivelT / SobeS), q = 0.3f * Mathf.Sin(Mathf.PI * k);
+                _pedestal.transform.localScale = new Vector3(_pedestalS.x * (1f + q), _pedestalS.y * (1f + q), 1f);
+                festa = 1f + 1.5f * (1f - k);
+                if (k >= 1f) { _nivelT = -1f; _pedestal.transform.localScale = _pedestalS; }
+            }
+            PintaNivel(festa);
+            if (Camadas(_nivel) < 4 || (_brasaT -= dt) > 0f) return;   // V: uma brasa sobe do pedestal a cada 0,5 s
+            _brasaT = BrasaEvery;
+            if (!_w.Ambiente(_root, 1)) return;
+            Vector3 b = _root.localPosition + (Vector3)_pe + new Vector3(Random.Range(-0.5f, 0.5f), 0.05f, 0f);
+            _w.Spawn(Art.Sparkle(), NivelC[3], b, b + new Vector3(0.05f, 0.5f, 0f), b + new Vector3(Random.Range(-0.15f, 0.15f), 1.1f, 0f),
+                1.2f, 0.22f, 0.04f, true, 90f, Color.Lerp(NivelC[3], Color.white, 0.5f), _front + 2);
         }
 
         /// <summary>Bigorna/bancada, um quadro: bate quando o Progress cruza uma batida e anima o golpe em curso (achata + tremidinha que morre).</summary>
