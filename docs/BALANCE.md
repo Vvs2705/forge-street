@@ -2852,8 +2852,9 @@ As missões estão dentro dos portões; o desequilíbrio estava no ritmo dos Cha
 |---|---|---|---|
 | só o operador | 3,7 / 5,3 / 11,0 / 16,5 / 19,8 / 27,0 | para na Row | 2,9 / 4,7 / 10,7 / 16,7 / 19,8 / 26,9 |
 | operador + §49 | 3,7 / 6,2 / 12,0 / 17,1 / 21,1 / 25,4 | 5,1 / 8,7 / 16,2 / 24,7 / — | 2,9 / 7,2 / 12,3 / 18,0 / 21,0 / 26,4 |
+| `main` 47c8474 (esteira fora e luxo +5%, §50) + §49 | 3,4 / 5,6 / 10,9 / 15,6 / 20,6 / 25,8* | 5,4 / 9,6 / 15,0 / 23,0 / — | 2,6 / 6,4 / 11,1 / 16,4 / 19,5 / 26,7 |
 
-Os dois juntos não criam muro: a Row e a Foundry seguem no alvo e o sem golpe segue até o Arsenal; a Carta varia ±1,5 h entre rodadas (espera de obra na Grand Forge). `coretests` com os dois: 631 verdes.
+Os dois juntos não criam muro: a Row e a Foundry seguem no alvo e o sem golpe segue até o Arsenal; a Carta varia ±1,5 h entre rodadas (espera de obra na Grand Forge). `coretests` com os dois: 631 verdes. Com a `main` 47c8474 (§50: luxo +5% na venda, sem esteira; o operador ainda não está nela) tudo adianta ~0,5 h e segue na mesma ordem; `coretests` 634 verdes.
 
 ### 49.5 Testes e prova vermelha
 
