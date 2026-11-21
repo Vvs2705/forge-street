@@ -23,7 +23,6 @@ static partial class EconSim
     sealed class Olhar
     {
         public string Id;
-        public float Seg;
         public readonly Dictionary<string, (float total, float parado, float paradoComFome)> Ajudantes = new Dictionary<string, (float, float, float)>();
         public readonly List<(float t, long ganho)> Renda = new List<(float, long)>();
         public readonly List<(float t, int up)> Compras = new List<(float, int)>();
@@ -53,8 +52,7 @@ static partial class EconSim
             Sim s = imp.Ativo;
             bot.Step(s, dt);
             Olhar o = De(s);
-            o.Seg += dt;
-            foreach (SimEvent e in s.Events) if (e.Kind == Ev.Bought) o.Compras.Add((s.Time, e.A));
+            foreach (SimEvent e in s.Events) if (e.Kind == Ev.Bought) { o.Compras.Add((s.Time, e.A)); o.Renda.Add((s.Time, s.GoldEarned)); }   // amostra no instante da compra: as janelas nao se tocam
             bool fome = s.Stations.Any(x => x.Produces && x.Unlocked && !x.Busy && x.Out < x.OutCap);
             for (int i = 0; i < s.Workers.Count; i++)
             {
@@ -101,23 +99,30 @@ static partial class EconSim
         }
 
         sb.AppendLine().AppendLine($"## 3. Compras e renda ({JanelaS:0} s de jogo antes x depois)").AppendLine();
-        sb.AppendLine($"Variacao abaixo de {SemEfeito * 100:0}% = **sem efeito sentido** na renda. Sem janela completa (comprada no fim do distrito) = n/d.").AppendLine();
+        sb.AppendLine($"Variacao abaixo de {SemEfeito * 100:0}% = **sem efeito sentido** na renda. Sem janela completa (comprada no fim do distrito) = n/d. Outra compra a menos de {JanelaS:0} s = **confundida** (o efeito nao e' so dela), fora da conta.").AppendLine();
         sb.AppendLine("| distrito | melhoria | min de jogo | renda/min antes | depois | variacao | |").AppendLine("|---|---|---|---|---|---|---|");
-        int semEfeito = 0, medidas = 0;
+        int semEfeito = 0, medidas = 0, confundidas = 0;
         foreach (Olhar o in olhos.Values)
             foreach (var (t, up) in o.Compras)
             {
                 UpgradeDef d = up >= 0 && up < o.Sim.UpgradeDefs.Length ? o.Sim.UpgradeDefs[up] : null;
                 string nome = d == null ? up.ToString(CultureInfo.InvariantCulture) : d.Name + (d.Luxury ? " (luxo)" : "");
-                double antes = Taxa(o.Renda, t - JanelaS, t), depois = Taxa(o.Renda, t, t + JanelaS);
+                double antes = Taxa(o.Renda, t - JanelaS, t, true), depois = Taxa(o.Renda, t, t + JanelaS, false);
                 if (antes < 0 || depois < 0) { sb.AppendLine($"| {o.Id} | {nome} | {t / 60f:0} | n/d | n/d | n/d | |"); continue; }
+                float tc = t;
+                if (o.Compras.Count(c => Math.Abs(c.t - tc) < JanelaS) > 1)
+                {
+                    confundidas++;
+                    sb.AppendLine($"| {o.Id} | {nome} | {t / 60f:0} | {antes:0} | {depois:0} | - | confundida |");
+                    continue;
+                }
                 medidas++;
                 double v = antes > 0 ? depois / antes - 1 : (depois > 0 ? 1 : 0);
                 bool nada = Math.Abs(v) < SemEfeito;
                 if (nada) semEfeito++;
                 sb.AppendLine($"| {o.Id} | {nome} | {t / 60f:0} | {antes:0} | {depois:0} | {v * 100:+0;-0;0}% | {(nada ? "**sem efeito sentido**" : "")} |");
             }
-        sb.AppendLine().AppendLine($"Resumo: {semEfeito} de {medidas} compras medidas sem efeito sentido na renda.");
+        sb.AppendLine().AppendLine($"Resumo: {semEfeito} de {medidas} compras medidas sem efeito sentido na renda ({confundidas} confundidas com outra compra a menos de {JanelaS:0} s, fora da conta).");
 
         string texto = sb.ToString();
         Console.Write(texto);
@@ -130,11 +135,13 @@ static partial class EconSim
 
     static string Pct(float parte, float total) => (100f * parte / Math.Max(1e-3f, total)).ToString("0", CultureInfo.InvariantCulture) + "%";
 
-    /// <summary>Ouro/min entre `de` e `ate` (tempo de jogo do distrito) pelas amostras de 10 s; -1 se a janela nao cabe nas amostras.</summary>
-    static double Taxa(List<(float t, long ganho)> r, float de, float ate)
+    /// <summary>Ouro/min entre `de` e `ate` (tempo de jogo do distrito) pelas amostras de 10 s e da compra; -1 se a janela nao cabe nas
+    /// amostras. So amostras do proprio lado da compra (revisao do TD no #192): antes = ultimas ate `de`/`ate`; depois = primeiras desde.</summary>
+    static double Taxa(List<(float t, long ganho)> r, float de, float ate, bool antes)
     {
         if (r.Count < 2 || de < r[0].t || ate > r[r.Count - 1].t) return -1;
-        var a = r.Last(x => x.t <= de); var b = r.First(x => x.t >= ate);
+        var a = antes ? r.Last(x => x.t <= de) : r.First(x => x.t >= de);
+        var b = antes ? r.Last(x => x.t <= ate) : r.First(x => x.t >= ate);
         return b.t > a.t ? (b.ganho - a.ganho) * 60.0 / (b.t - a.t) : -1;
     }
 }
