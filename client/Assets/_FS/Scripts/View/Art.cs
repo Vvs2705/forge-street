@@ -379,10 +379,17 @@ namespace FS
         /// <summary>
         /// Interface v2, fundo tematico dos modais: veu escuro quente (segura os toques do resto), brasa laranja no meio e vinheta nas bordas,
         /// como a abertura e o icone. Chamar logo depois de criar o no do modal: a brasa e a vinheta ficam atras do cartao.
+        /// fix/ui-fechar-ao-tocar-fora: com fecha, um tap no veu (fora do cartao) fecha o modal (VeuFecha); pode = so as vezes (escolha,
+        /// recompensa pendente). Sem fecha (idade/consentimento), so segura os toques.
         /// </summary>
-        public static void Veu(GameObject root, float alfa = 0.65f)
+        public static void Veu(GameObject root, float alfa = 0.65f, Action fecha = null, Func<bool> pode = null)
         {
             root.AddComponent<Image>().color = new Color(0.05f, 0.03f, 0.02f, alfa);
+            if (fecha != null)
+            {
+                VeuFecha v = root.AddComponent<VeuFecha>();
+                v.Fecha = fecha; v.Pode = pode;
+            }
             Image brasa = Node(root.transform, "Brasa", new Vector2(-0.35f, 0.1f), new Vector2(1.35f, 0.9f)).gameObject.AddComponent<Image>();
             brasa.sprite = Glow(); brasa.color = new Color(1f, 0.45f, 0.12f, 0.16f); brasa.raycastTarget = false;
             Image vin = Node(root.transform, "Vinheta", Vector2.zero, Vector2.one).gameObject.AddComponent<Image>();

@@ -296,7 +296,7 @@ namespace FS.Core
             if (d.Tipo == TipoMeta.Diaria && d.Pool == PoolC) return LivreC(d);
             switch (d.Evento)   // ponytail: "compre 3" com 2 a venda ainda aparece; o rodizio so pula quando nao ha mais nada
             {
-                case "upgrade_buy": case "currency_sink": return _sim.UpgradesBought < Upgrades.Count;
+                case "upgrade_buy": case "currency_sink": return _sim.UpgradesBought < Upgrades.Compraveis;   // 2026-11: sem a esteira aposentada
                 case "worker_hired": return _sim.Workers.Count < AjudantesOldForge || _sim.Equipe.FaltaContratar;   // B-CORE-04: ou um da Equipe
                 case "worker_upgrade": return _sim.Equipe.FaltaNivel;
                 case "chest_opened": return _sim.Chests.Exists(c => c.State < 2);

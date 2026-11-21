@@ -225,7 +225,7 @@ namespace FS.Core
             C("ach_melhoria1", Buy, -1, 1, ouroS: 30),                 // novo
             C("ach_melhorias10", Buy, -1, 10, xp: 25),                 // novo
             C("ach_melhorias20", Buy, -1, 20, xp: 50),                // novo
-            C("ach_esteira", Buy, (int)Upgrade.Conveyor, 1, ouroS: 45),
+            C("ach_esteira", Buy, (int)Upgrade.Helper2, 1, ouroS: 45),   // 2026-11: a esteira saiu (Sim.Aposentado); o ID fica (save) e a meta vira o Ajudante 2, que leva os lingotes
             C("ach_corredor", Buy, (int)Upgrade.SideCorridor, 1, xp: 25),      // novo
             C("ach_joalheria", Buy, (int)Upgrade.Jewelry, 1, xp: 25),
             C("ach_vitrine", Buy, (int)Upgrade.CounterCapacity, 1, xp: 25),    // novo
