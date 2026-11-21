@@ -3,16 +3,29 @@
 #      powershell -ExecutionPolicy Bypass -File client\tools\playtest\usar_save_marco.ps1 -Voltar   (devolve o save que você tinha antes)
 #      powershell -ExecutionPolicy Bypass -File client\tools\playtest\usar_save_marco.ps1 -DoZero   (guarda o save atual e o jogo abre como primeira vez: marco 00)
 # No artifact saves-de-marco vêm junto os atalhos de clique duplo: arraste um .save.txt sobre usar_save.bat; do_zero.bat; voltar.bat.
-# Nunca apaga nada: o save atual vai para save.txt.antes-do-marco-<data> na mesma pasta, e o .bak do jogo também é guardado.
+# Nunca apaga sem guardar: o save atual vai para save.txt.antes-do-marco-<data> na mesma pasta, o .bak do jogo também, e o espelho do
+# registro (fs.save) vai para save.txt.original.reg antes de ser limpo; o -Voltar o importa de volta.
 param([string]$Save, [switch]$Voltar, [switch]$DoZero)
 $ErrorActionPreference = 'Stop'
 $dir = Join-Path $env:USERPROFILE 'AppData\LocalLow\V-STACK\Forge Street'
 $principal = Join-Path $dir 'save.txt'
 if (Get-Process -Name 'ForgeStreet*' -ErrorAction SilentlyContinue) { throw 'Feche o Forge Street antes (o autosave de 5 s regravaria o save).' }
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
+# Sem save.txt o jogo le o espelho do PlayerPrefs (fs.save; no Windows fica no registro, HKCU\Software\V-STACK\Forge Street): sem
+# limpar o espelho, "do zero" abriria o ultimo save gravado (revisao do TD no #185). O registro original vai para save.txt.original.reg.
+$prefs = 'HKCU:\Software\V-STACK\Forge Street'
+function LimpaEspelho {
+    if (-not (Test-Path $prefs)) { return }
+    (Get-Item $prefs).Property | Where-Object { $_ -like 'fs.save*' } | ForEach-Object { Remove-ItemProperty -Path $prefs -Name $_ }
+}
 $original = Join-Path $dir 'save.txt.original'   # o save de antes do PRIMEIRO marco: gravado uma vez so; e' para ele que o -Voltar volta
 if (-not $Voltar -and -not (Test-Path $original)) {
     if (Test-Path $principal) { Copy-Item $principal $original } else { Set-Content -Path $original -Value '' -NoNewline }
+    if (Test-Path $prefs) {
+        # pelo cmd: no PS 5.1 o texto do reg.exe no stderr viraria erro fatal com o 'Stop'
+        & cmd.exe /c "reg.exe export `"HKCU\Software\V-STACK\Forge Street`" `"$original.reg`" /y >nul 2>&1"
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path "$original.reg")) { Remove-Item $original; throw 'reg export falhou; nada foi mudado.' }
+    }
 }
 if ($Voltar) {
     if (-not (Test-Path $original)) { throw "Nenhum save original guardado em $dir." }
@@ -23,6 +36,12 @@ if ($Voltar) {
         if (Test-Path $principal) { Rename-Item $principal "save.txt.marco-fim-$(Get-Date -Format yyyyMMdd-HHmmss)" }
         Write-Host 'Voce nao tinha save antes: o jogo abre do zero.'
     } else { Copy-Item $ultimo.FullName $principal -Force; Write-Host 'Devolvido: o save que voce tinha antes do primeiro marco.' }
+    LimpaEspelho   # o espelho tem o ultimo marco jogado; volta o de antes (ou nenhum)
+    if (Test-Path "$original.reg") {
+        & cmd.exe /c "reg.exe import `"$original.reg`" >nul 2>&1"
+        if ($LASTEXITCODE -ne 0) { throw "reg import falhou ($LASTEXITCODE); $original.reg ficou intacto." }
+        Rename-Item "$original.reg" "save.txt.original.reg.usado-$(Get-Date -Format yyyyMMdd-HHmmss)"
+    }
     Rename-Item $original "save.txt.original.usado-$(Get-Date -Format yyyyMMdd-HHmmss)"   # a proxima rodada de playtest guarda o original de novo
     exit 0
 }
@@ -30,6 +49,7 @@ if ($DoZero) {
     $carimbo = Get-Date -Format yyyyMMdd-HHmmss
     if (Test-Path $principal) { Rename-Item $principal "save.txt.antes-do-marco-$carimbo" }
     if (Test-Path "$principal.bak") { Rename-Item "$principal.bak" "save.txt.bak.antes-do-marco-$carimbo" }
+    LimpaEspelho   # guardado em save.txt.original.reg na 1a troca
     Write-Host 'Pronto: sem save. O jogo abre como na primeira vez (marco 00). Para voltar ao seu save: voltar.bat'
     exit 0
 }
