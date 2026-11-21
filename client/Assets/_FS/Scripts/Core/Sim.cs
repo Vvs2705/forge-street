@@ -166,6 +166,10 @@ namespace FS.Core
         /// <summary>B-CORE-08: o Hall das obras-primas e a Collection (Masterworks.cs). Ganchos: MasterworkPending e o Produce (Hall), o Tick
         /// (marcos), o Sell (Superiores por item), o PriceOf (+5% da familia completa); save nas linhas hall=/colq=.</summary>
         public readonly Hall Hall; public readonly Colecao Colecao;
+        /// <summary>FTUE: tutorial guiado do 1o ciclo e cartoes "o que e' isto" (Tutorial.cs), do Imperio como o Renome: o da raiz (Heroi) num
+        /// distrito. So a View chama Atualiza (o bot nao); save na linha tut=, so no payload da raiz.</summary>
+        public Tutorial Tutorial => Heroi != null ? Heroi.Tutorial : _tutorial;
+        readonly Tutorial _tutorial = new Tutorial();
         /// <summary>B-CORE-01: itens e receitas desta partida (padrao Items.All e Recipes.All; so o teste injeta outro). Handle de item = posicao
         /// em ItemDefs; os arrays por item (Stock, SoldItems, Crafted, Held) tem esse tamanho.</summary>
         public readonly ItemDef[] ItemDefs; public readonly RecipeDef[] RecipeDefs;
