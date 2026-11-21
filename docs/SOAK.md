@@ -14,7 +14,7 @@ bash client/tools/soak_emulador.sh <pasta de saída> 60
 ```
 
 - **Pré-requisito:** o APK do emulador já construído (`Setup.BuildAndroidEmu` ou `verify.sh android-emulator`) e nenhum processo pesado aberto.
-- **Na partida:** liga o AVD `fs_base` sem Vulkan, instala do zero e abre com `-bot -speed 4 -soak`.
+- **Na partida:** liga o AVD `fs_base` sem Vulkan, fixa o adb no serial `emulator-N` (com só um aparelho físico no USB, aborta antes de instalar ou desinstalar qualquer coisa), instala do zero e abre com `-bot -botgrava -speed 4 -soak`: o `-bot` sozinho não lê nem grava o save, e o soak mede o jogo com o save (autosave de 5 s), como na linha de base de 2026-10-25.
 - **A cada minuto:**
   - `dumpsys meminfo` (PSS);
   - a linha `SOAK` que o jogo põe no logcat com `-soak`: fps do minuto real, heap mono, memória reservada da Unity e GCs.

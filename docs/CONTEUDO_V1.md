@@ -103,11 +103,11 @@ Campos (C-CORE-01): `id`, `index`, `nameKey`, `costBase`, `costGrowth` (1,30), `
 | id | # | pt | en | es | mecânica nova | abertura (ouro) | renda alvo (/min) | Charter | major unlock | missionScale |
 |---|---|---|---|---|---|---|---|---|---|---|
 | `old_forge` | 1 | Old Forge | Old Forge | Vieja Forja | cadeia física, gargalo, ajudantes, esteira, Quality e golpe de mestre (existe / Wave B) | — | 1.600 | produção completa + Renome 4 (400) + 1 Masterwork do distrito | Charter → Armorer's Row (cena: comprar a forja do rival, FS-4) | 1,00 |
-| `armorers_row` | 2 | Rua dos Armeiros | Armorer's Row | Calle Armeros | montagem: bancada com 2–3 componentes; liga opcional = q +30 | 140.000 (90 min × renda do d1) | 4.800 | produção completa + Renome 5 (750) + 2 Masterworks do distrito | `carroca_curtidor` (couro) e `fornalha_liga` (Fundidor) | 0,65 |
+| `armorers_row` | 2 | Rua dos Armeiros | Armorer's Row | Calle Armeros | montagem: bancada com 2–3 componentes; liga opcional = q +30 | 450.000 (o ouro que sobra no Charter do Old Forge; `BALANCE.md` §49; era 140.000 = 90 min × renda do d1) | 4.800 | produção completa + Renome 1.100 (nível 5) + 2 Masterworks do distrito **ou** 150 Superiores | `carroca_curtidor` (couro) e `fornalha_liga` (Fundidor) | 0,65 |
 | `artisan_quarter` | 3 | Bairro Artesão | Artisan Quarter | Barrio Artesano | bancada configurável (margem × volume) e clientes ricos | 430.000 (90 min × renda do d2) | 14.400 | produção completa + Renome 6 (1.250) + 3 Masterworks do distrito | `lapidario` (lapidação de gemas) | 1,00 |
 | `royal_arsenal` | 4 | Arsenal Real | Royal Arsenal | Arsenal Real | pátio de cotas: blocos com prêmio ×1,3 e prazo-bônus; Royal Contracts | 1.300.000 (90 min × renda do d3) | 43.200 | produção completa + Renome 7 (2.000) + 3 Masterworks do distrito + (1 Royal Contract **ou** 10 encomendas Royal no distrito) | `mesa_real` (contratos reais permanentes: 2ª vaga de contrato) | 0,83 |
-| `arcane_foundry` | 5 | Fundição Arcana | Arcane Foundry | Fundición Arcana | medidor de carga arcana por altar (Estável × Forçado), sem sorteio | 3.900.000 (90 min × renda do d4) | 129.600 | produção completa + Renome 8 (3.000) + 4 Masterworks do distrito + (2 Royal Contracts **ou** 20 encomendas Royal no distrito) | `veio_runico` (minério rúnico; o cristal já vem no kit) | 1,09 |
-| `grand_forge` | 6 | Grande Forja | Grand Forge | Gran Forja | síntese com importados (rotas do Mensageiro) e lotes de exportação | 12.000.000 (90 min × renda do d5) | 388.800 | Carta da Grande Forja: produção completa + Renome 9 (4.500) + 5 Masterworks do distrito + (3 Royal Contracts **ou** 30 encomendas Royal no distrito) | `mensageiro` (rotas e exportação); endgame de exportação e Masterworks lendárias | 0,28 |
+| `arcane_foundry` | 5 | Fundição Arcana | Arcane Foundry | Fundición Arcana | medidor de carga arcana por altar (Estável × Forçado), sem sorteio | 3.900.000 (90 min × renda do d4) | 129.600 | produção completa + Renome 3.500 (nível 8) + 4 Masterworks do distrito **ou** 350 Superiores + (2 Royal Contracts **ou** 20 encomendas Royal no distrito) | `veio_runico` (minério rúnico; o cristal já vem no kit) | 1,09 |
+| `grand_forge` | 6 | Grande Forja | Grand Forge | Gran Forja | síntese com importados (rotas do Mensageiro) e lotes de exportação | 12.000.000 (90 min × renda do d5) | 388.800 | Carta da Grande Forja: produção completa + Renome 9 (4.500; 4.200 medido) + 5 Masterworks do distrito **ou** 450 Superiores + (3 Royal Contracts **ou** 30 encomendas Royal no distrito) | `mensageiro` (rotas e exportação); endgame de exportação e Masterworks lendárias | 0,28 |
 
 
 **Regras comuns a todo distrito**
@@ -157,7 +157,7 @@ Rua de armeiros; ferro escuro, couro, rebites, faíscas azuladas da prensa. Fam�
 ```
 
 - **Major unlock:** `carroca_curtidor` (depósito de couro + linha das grevas; libera lança, manoplas, machado e peitoral) e `fornalha_liga` (o Fundidor, `wk_vulcana`).
-- **Charter:** produção completa + Renome 5 (750) + 2 Masterworks do distrito.
+- **Charter:** produção completa + Renome 1.100 (dentro do nível 5) + 2 Masterworks do distrito **ou** 150 Superiores vendidas nele (`BALANCE.md` §49).
 
 ### 2.3 Artisan Quarter (`artisan_quarter`) — margem × volume
 
@@ -179,7 +179,7 @@ Bairro de ourives; ouro, cobre, vitrines, lanternas. Família: fivela, cinzel, c
 ```
 
 - **Major unlock:** `lapidario` (lapidação de gemas: colar e caixa de joias).
-- **Charter:** produção completa + Renome 6 (1.250) + 3 Masterworks do distrito.
+- **Charter:** produção completa + Renome 6 (1.250) + 3 Masterworks do distrito **ou** 250 Superiores (`BALANCE.md` §49).
 - **Medido (C-CORE-06, `BALANCE.md` §37, revisar):** no jogo os preços do §3 valem × 3 e os produtivos do §5.3 × 1,5 (transporte, como a Row); o intervalo da linha é 12 s nas 7 (as famílias do §12 multiplicam); a troca espera a saída esvaziar; o fole de ourives também acelera o lapidário; a ourivesaria II pede o fole de ourives; a técnica da lapidação dá +15 só no colar e na caixa; depois do transporte da Row (`BALANCE.md` §39) os níveis da ourivesaria II–V valem × ~1,5 (36.000 / 105.000 / 290.000 / 630.000) e o alvo das encomendas × 1,2. Produção completa do F2P ~60 min, renda ~16 mil/min, Charter do Ideal em 4:13 h.
 
 ### 2.4 Royal Arsenal (`royal_arsenal`) — cotas reais
@@ -206,7 +206,7 @@ A renda alvo do §1 é a do balcão; o pátio soma até +30% (+62,5% no prazo) n
 ```
 
 - **Major unlock:** `mesa_real` (contratos reais permanentes).
-- **Charter:** produção completa + Renome 7 (2.000) + 3 Masterworks + (1 Royal Contract **ou** 10 encomendas Royal no distrito).
+- **Charter:** produção completa + Renome 7 (2.000) + 3 Masterworks **ou** 250 Superiores (`BALANCE.md` §49) + (1 Royal Contract **ou** 10 encomendas Royal no distrito).
 
 ### 2.5 Arcane Foundry (`arcane_foundry`) — carga arcana
 
@@ -229,7 +229,7 @@ Fundição arcana; roxo, ciano, runas, cristal, zumbido grave. Família: lantern
 ```
 
 - **Major unlock:** `veio_runico` (minério rúnico; o cristal já vem no kit para a mecânica existir desde o início — revisar com o GDD, que lista "minério rúnico e cristal").
-- **Charter:** produção completa + Renome 8 (3.000) + 4 Masterworks + (2 Royal Contracts **ou** 20 encomendas Royal no distrito).
+- **Charter:** produção completa + Renome 3.500 (dentro do nível 8) + 4 Masterworks **ou** 350 Superiores (`BALANCE.md` §49) + (2 Royal Contracts **ou** 20 encomendas Royal no distrito).
 - **Medido (C-CORE-08, `BALANCE.md` §40, revisar):** no jogo os preços do §3 valem × 2,6 (transporte, como a Row e o Arsenal); produtivos, luxo, níveis, cargas, dreno, pausa e q +20 como no catálogo; o rodízio de encomendas da Foundry tem **Royal × 2** (a 2ª posição: Common → Royal; com Royal × 1 as 20 Royal do Charter levavam ~10 h) e a Royal pede 240 s de renda (catálogo 200); Bulk, Mixed, Royal e a Zélia pagam 70% dos segundos do §7.2 e o Quality 13 s (o do Old Forge; catálogo 25); balcão de 4 vagas com estoque 10 (decidido por padrão). Produção completa do F2P ~1 h, renda ~127 mil/min, Charter do Ideal em ~5 h. Os altares passam a maior parte do tempo com fome (presos no transporte): o medidor quase não segura a vazão e o Forçado rende 5–10% mais que o Estável (portão 0,9–1,15×).
 
 ### 2.6 Grand Forge (`grand_forge`) — síntese e exportação
@@ -251,7 +251,7 @@ Catedral de forja; todas as paletas, sinos, vitrais. Família: sino da catedral,
 ```
 
 - **Major unlock:** `mensageiro` (rotas + exportação).
-- **Carta da Grande Forja:** produção completa + Renome 9 (4.500; **4.200 medido**, §11) + 5 Masterworks + (3 Royal Contracts **ou** 30 encomendas Royal no distrito).
+- **Carta da Grande Forja:** produção completa + Renome 9 (4.500; **4.200 medido**, §11) + 5 Masterworks **ou** 450 Superiores (`BALANCE.md` §49) + (3 Royal Contracts **ou** 30 encomendas Royal no distrito).
 - **Medido (C-CORE-09, `BALANCE.md` §41, revisar):** os 9 importados entram (os 4 da Arcane Foundry desde 2026-10-23, `BALANCE.md` §41.7). O Mensageiro entrega direto na entrada da bancada (o cais é a chegada) e a Estrela 4 leva brutos; empate das rotas em rodízio; "+2 por nível do Félix" acima do 1; o desconto na origem sai do fundo que ela credita no minuto (o resto, perdoado). A cratera estelar traz o trilho fornalha → forja estelar. No jogo os preços do §3 valem × 0,85 e os produtivos do §5.6 × 0,9 (13.136.000), o alvo das encomendas × 1/3 e o prêmio × 0,35. Com a chegada da cadeia inteira (o fundo da Foundry): produção completa do F2P ~58 min, renda ~400 mil/min, Carta do Ideal em ~6 h 30.
 
 ---

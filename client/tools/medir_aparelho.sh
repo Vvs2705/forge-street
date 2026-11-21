@@ -17,6 +17,14 @@ while [ $# -gt 0 ]; do
   esac
 done
 [[ "$WAIT" =~ ^[0-9]+$ && "$SERIE" =~ ^[0-9]+$ ]] || { sed -n '4,7p' "$0"; exit 2; }
+# Um aparelho só: com o POCO e um emulador ligados, o adb sem -s mediria (ou falharia em) qualquer um. ANDROID_SERIAL explícito vale
+# (o verify.sh --medir passa o do emulador); sem ele, exige exatamente 1 aparelho pronto. Este script só lê: nunca instala nem desinstala
+if [ -z "${ANDROID_SERIAL:-}" ]; then
+  DEVS=$("$A" devices | tr -d '\r' | awk 'NR > 1 && $2 == "device" { print $1 }'); N=$(echo "$DEVS" | grep -c .)
+  [ "$N" = 1 ] || { echo "FALHOU: $N aparelhos prontos no adb ($(echo $DEVS)): ligue só um ou defina ANDROID_SERIAL"; exit 2; }
+  export ANDROID_SERIAL="$DEVS"
+fi
+echo "aparelho: $ANDROID_SERIAL"
 mkdir -p "$OUT"
 sa() { "$A" shell "$@" | tr -d '\r'; }   # adb shell sem o \r do fim de linha
 

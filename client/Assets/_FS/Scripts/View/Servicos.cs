@@ -1,6 +1,8 @@
 using System;
 using System.Globalization;
+using System.Diagnostics;
 using System.IO;
+using System.Text;
 using FS.Core;
 
 namespace FS
@@ -46,23 +48,42 @@ namespace FS
     /// Diario de playtest (persistentDataPath/diario.csv, lido pelo client/tools/diario_report.py): utc,sessao,evento,t_jogo,a,b sem
     /// cabecalho nem aspas (virgula e quebra de linha nos parametros viram espaco). Best-effort: erro de disco nunca derruba o jogo.
     /// Path null = desligado (o Game so liga no build de desenvolvimento ou com -playtest). Rotacao: passou de `max` bytes (ao abrir ou
-    /// escrevendo), fica so a cauda mais nova que cabe em max/2, em linhas inteiras: o arquivo nao cresce sem limite e continua um
+    /// gravando), fica so a cauda mais nova que cabe em max/2, em linhas inteiras: o arquivo nao cresce sem limite e continua um
     /// arquivo = um testador. Sessao = processo, id aleatorio de 8 caracteres (nao identifica o aparelho).
+    /// fix/gc-alocacao-por-quadro: as linhas vao para um StringBuilder reutilizado e o disco recebe o lote a cada FlushS (ou BufferMax
+    /// caracteres), e no Flush explicito (o Game chama ao ir para o segundo plano, ao perder o foco, ao sair e ao trocar de cena). Antes era
+    /// 1 File.AppendAllText (FileStream novo, I/O sincrono) e ~10 strings por evento, 5-15 por segundo no build dev do soak.
     /// </summary>
     public sealed class Diario : IAnalytics
     {
         public const long MaxBytes = 1 << 20;   // ~4 h de fim de jogo (~4 KB/min); um playtest da Camada 0 nunca chega perto
+        public const double FlushS = 5.0;       // o que um kill do sistema pode levar (o segundo plano ja gravou tudo)
+        public const int BufferMax = 16 * 1024; // caracteres: rajada grande grava antes dos 5 s
         readonly string _path, _sid = Guid.NewGuid().ToString("N").Substring(0, 8);
         readonly long _max;
+        readonly Func<double> _relogio;
+        readonly StringBuilder _buf;   // capacidade cheia de uma vez (so com o diario ligado): o lote nao realoca pedacos ao crescer
+        readonly object _trava = new object();
         long _size;
+        double _ultimoFlush;
+        long _seg = long.MinValue;
+        string _utc;
 
         /// <summary>Id da sessao (processo): o mesmo nas linhas do diario e nos eventos da Telemetria.</summary>
         public string Sessao => _sid;
 
-        public Diario(string path, long max = MaxBytes)
+        /// <summary>false = path null (release no aparelho, -testsession): Log nao faz nada, e quem chama pode nem montar os parametros.</summary>
+        public bool Ativo => _path != null;
+
+        /// <param name="relogio">segundos monotonicos para o lote (teste); null = Stopwatch.</param>
+        public Diario(string path, long max = MaxBytes, Func<double> relogio = null)
         {
             _path = path; _max = max;
+            if (relogio == null) { var sw = Stopwatch.StartNew(); relogio = () => sw.Elapsed.TotalSeconds; }
+            _relogio = relogio;
             if (path == null) return;
+            _buf = new StringBuilder(BufferMax + 1024);
+            _ultimoFlush = _relogio();
             try { _size = File.Exists(path) ? new FileInfo(path).Length : 0; if (_size > _max) Trim(); }
             catch (Exception) { }
         }
@@ -70,17 +91,50 @@ namespace FS
         public void Log(string evt, float t, string a = "", string b = "")
         {
             if (_path == null) return;
-            string line = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture) + "," + _sid + "," + evt + ","
-                + t.ToString("0.0", CultureInfo.InvariantCulture) + "," + Limpa(a) + "," + Limpa(b) + "\n";
-            try
+            lock (_trava)
             {
-                File.AppendAllText(_path, line);
-                if ((_size += line.Length) > _max) Trim();
+                // mesma linha de antes: utc,sessao,evento,t(0.0),a,b\n; o carimbo do segundo e' reaproveitado (5-15 eventos por segundo)
+                DateTime agora = DateTime.UtcNow;
+                long seg = agora.Ticks / TimeSpan.TicksPerSecond;
+                if (seg != _seg) { _seg = seg; _utc = agora.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture); }
+                _buf.Append(_utc).Append(',').Append(_sid).Append(',').Append(evt).Append(',')
+                    .Append(t.ToString("0.0", CultureInfo.InvariantCulture)).Append(',');
+                Limpa(a); _buf.Append(','); Limpa(b); _buf.Append('\n');
+                if (_buf.Length >= BufferMax || _relogio() - _ultimoFlush >= FlushS) Grava();
             }
-            catch (Exception) { }   // ponytail: diario e' best-effort; disco cheio nunca derruba o jogo
         }
 
-        static string Limpa(string s) => (s ?? "").Replace(',', ' ').Replace('\n', ' ').Replace('\r', ' ');
+        /// <summary>Grava o lote pendente. Chame antes de o processo poder morrer (segundo plano, sair) ou de ler o arquivo.</summary>
+        public void Flush()
+        {
+            if (_path == null) return;
+            lock (_trava) Grava();
+        }
+
+        void Grava()
+        {
+            _ultimoFlush = _relogio();
+            if (_buf.Length == 0) return;
+            int n = _buf.Length;
+            try
+            {
+                File.AppendAllText(_path, _buf.ToString());
+                if ((_size += n) > _max) Trim();
+            }
+            catch (Exception) { }   // ponytail: diario e' best-effort; disco cheio nunca derruba o jogo (o lote que falhou cai, como a linha caia)
+            _buf.Clear();
+        }
+
+        // o Replace de antes, sem string nova: virgula e quebra de linha viram espaco
+        void Limpa(string s)
+        {
+            if (s == null) return;
+            for (int i = 0; i < s.Length; i++)
+            {
+                char c = s[i];
+                _buf.Append(c == ',' || c == '\n' || c == '\r' ? ' ' : c);
+            }
+        }
 
         void Trim()
         {

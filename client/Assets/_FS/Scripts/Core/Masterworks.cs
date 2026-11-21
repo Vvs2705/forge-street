@@ -174,7 +174,7 @@ namespace FS.Core
             Superiores = new int[sim.ItemDefs.Length];
         }
 
-        public static string Tx(MarcoColecaoDef m) => Prefixo + m.Id;
+        public static string Tx(MarcoColecaoDef m) => m.Tx;   // = Prefixo + m.Id, pre-montado (era 1 string por marco por passo de sim)
         public bool Pago(MarcoColecaoDef m) => _sim.Renome.Ledger.Contains(Tx(m));
 
         /// <summary>Depois das Ferramentas e com algum projeto de Masterwork (GDD §13, §19: "Collection no 1o projeto de Masterwork").</summary>
