@@ -98,10 +98,15 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 
 ## 7. Known issues
 
-**Conferido no código em 2026-11-21:** 0 P0 e 0 P1 abertos. Abertos: 2 P2 (nome "Ajudantes ágeis", fome da Bigorna 2) e 2 itens de design (zona morta reduzida, cota do contrato).
+**Conferido no código em 2026-11-21:** os P0/P1 antigos da lista estão corrigidos. **Abertos: 2 P1 de experiência**, que vieram do jogo do Vinicius até o fim e da análise GDD × build de 2026-11-21 (`/mnt/project-files/analise/ANALISE_GDD_2026-11-21.md`, F6: todo achado do `BALANCE.md` vira known issue): o fim de jogo sem destino para o ouro e o calendário de LiveOps que acaba. Também abertos: 3 P2 de leitura (luxos invisíveis, nível de estação sem aparência, nome "Ajudantes ágeis"), a fome da Bigorna 2, a zona morta reduzida e a cota do contrato.
 
 | Problema | Prioridade (§132) | Fonte | Correção |
 |---|---|---|---|
+| **Fim de jogo morre:** depois de ~2 h 30 na Grand Forge tudo está comprado e o saldo passa de 200 mi aos 480 min (achado 14); depois da Carta todo sistema é finito e de uma vez só. O Vinicius confirmou jogando até o fim (2026-11-21) | **P1** (retenção D30/D90) | `BALANCE.md` §41 achado 14; análise §3.8 e §7 | ralo infinito com fantasia (análise §7.3: Obras do Reino + Decretos); decisão do Vinicius sobre a opção; thread "Corrigir defeitos e dar sentido ao fim de jogo" |
+| **Calendário de LiveOps acaba:** o último evento (`ev_s2w5_royal_week_b`) começa no dia 63 depois do T0 = 2026-11-02 e o Pass S2 vai até o dia 70; a partir de 2027-01-11 não há evento nem Pass | **P1** (prazo real: ~7 semanas) | `LiveOpsDefs.cs`; análise §3.8 | calendário infinito e determinístico (análise §7.2, opção C) ou temporadas novas em dados antes do Limited Release |
+| Luxos dos distritos 2–6 sem nenhuma representação na tela (15 compras invisíveis; a "Estátua do herói" de 5,3 mi não aparece) | P2 (leitura; GDD §5.2, DM §48) | `WorldView.cs` só desenha os 3 do Old Forge; análise F2 | luxos visíveis e regra `Visual` no validator (análise §8, itens 7 e 10) |
+| Nível de estação II–V não muda a aparência (GDD §5.2 e §18 prometem) | P2 (leitura) | nenhuma leitura de `Station.Level` na View; análise §4 | II–III procedurais (análise §8, item 9) |
+| Relicário quase não sai no bot (0,2–1% da receita da Grand Forge) | P2 (economia) | `BALANCE.md` §41 achado 13 | medir com humano; o placar de destino é por peças de espaço |
 | ~~Save corrompido vira estado inicial e o autosave de 5 s grava por cima, sem volta~~ **fechado** | — | `SaveStore.cs` (principal + `.bak`, quarentena do arquivo que não abre), `SaveEnvelope.cs` (`sha256=`, status `Corrupt`) | PR #16 (Save 2.0); conferido em 2026-11-21 |
 | ~~Save grava `v=1` e nunca lê; sem envelope, checksum, backup nem migração explícita~~ **fechado** | — | `SaveEnvelope.cs` (schema 3, `NewerSchema` não sobrescreve), migração das 3 versões publicadas (#100) | PR #16; conferido em 2026-11-21 |
 | ~~Release lia flags do extra do intent: `-fakeads` dava recompensa com anúncio simulado~~ **fechado** | — | `Ads.Args()` só lê o extra `unity` do intent com `Debug.isDebugBuild` | PR #12; conferido em 2026-11-21 |
