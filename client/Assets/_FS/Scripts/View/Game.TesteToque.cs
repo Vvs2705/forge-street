@@ -68,6 +68,34 @@ namespace FS
             float w = Screen.width, h = Screen.height;
             Vector2 mundo = new Vector2(w * 0.5f, h * 0.5f), veu = new Vector2(w * 0.02f, h * 0.5f);
 
+            // 0. FTUE (#188, com -tutorial): boas-vindas, painel do passo e PULAR nao sao "fora"
+            if (_raiz.Tutorial.Ativo)
+            {
+                yield return new WaitForSecondsRealtime(0.5f);
+                Checa(TutAberto, "boas-vindas do tutorial na tela");
+                int tt = _toques;
+                yield return Gesto(veu, veu, 0.08f);
+                Checa(TutAberto && _toques == tt, "tap fora da boas-vindas: nao fecha e nao chega ao mundo");
+                yield return Foto("tutorial_boas_vindas");
+                Vector2 comecar = CentroDoBotao(Loc.T("tut.comecar"));
+                yield return Gesto(comecar, comecar, 0.08f);
+                for (int i = 0; i < 5; i++) yield return null;
+                Checa(!TutAberto && _tut.PainelVisivel, "COMECAR abre o painel do passo");
+                if (!_menu.IsOpen) _menu.Toggle();
+                Vector2 pular = CentroDoBotao(Loc.T("tut.pular"));
+                Vector2 fundo = new Vector2(w * 0.45f, pular.y);   // o texto do passo, sem botao (o fundo do painel nao tem raycast)
+                tt = _toques;
+                yield return Gesto(fundo, fundo, 0.08f);
+                Checa(_menu.IsOpen, "tap no painel do passo nao fecha a bandeja");
+                Checa(_toques == tt, "tap no painel do passo nao chega ao mundo");
+                yield return Foto("tutorial_passo_com_bandeja");
+                yield return Gesto(pular, pular, 0.08f);
+                Checa(!_raiz.Tutorial.Ativo, "PULAR do tutorial clica com a bandeja aberta");
+                Checa(_menu.IsOpen, "o PULAR nao conta como toque fora");
+                if (_menu.IsOpen) _menu.Toggle();
+                for (int i = 0; i < 5; i++) yield return null;
+            }
+
             // 1. bandeja aberta + TAP no mundo: fecha, e o toque nao chega ao mundo
             if (!_menu.IsOpen) _menu.Toggle();
             yield return Foto("bandeja_aberta");

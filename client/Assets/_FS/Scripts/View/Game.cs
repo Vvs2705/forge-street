@@ -477,8 +477,10 @@ namespace FS
             // fix/ui-fechar-ao-tocar-fora: com a bandeja aberta, o toque no mundo e' dela (fecha num tap) e nao age no mundo
             bool daBandeja = false;
             if (modal) _bandeja.Cancela();
-            else daBandeja = _bandeja.Tick(ptr, ToqueFora.FechaMenu(EstadoAtual, _menu.IsOpen, _sim.FirstSaleTime < 0f && _hintH == Hint.BuyMenu), _menu.TopPx, _menu.Toggle, _view.NoAnel);
-            if (!modal && !daBandeja && ptr != null && ptr.press.wasPressedThisFrame) Toque(ptr.position.ReadValue());
+            // FTUE (#188): o passo "abra as Melhorias" segura a bandeja; o painel do passo e' "dentro" (nem fecha, nem vai ao mundo)
+            else daBandeja = _bandeja.Tick(ptr, ToqueFora.FechaMenu(EstadoAtual, _menu.IsOpen, _raiz.Tutorial.Ativo && _raiz.Tutorial.Passo == PassoTutorial.Menu),
+                _menu.TopPx, _menu.Toggle, _view.NoAnel, _tut.NoPainel);
+            if (!modal && !daBandeja && ptr != null && ptr.press.wasPressedThisFrame && !_tut.NoPainel(ptr.position.ReadValue())) Toque(ptr.position.ReadValue());
             _joy.Blocked = modal;
             _joy.BottomPx = _menu.TopPx;
             _joy.Tick();

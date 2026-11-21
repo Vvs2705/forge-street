@@ -22,7 +22,9 @@ namespace FS
         /// <summary>Chamado todo quadro sem modal. Devolve true quando o toque deste quadro e' da bandeja (o Game nao o passa ao mundo).</summary>
         /// <param name="doMundo">Toque que e' sempre do mundo (o anel do golpe, com janela de tempo): nao e' reservado, age na hora e a
         /// bandeja fica (Conselho do #187: o golpe nao pode custar um 2o toque).</param>
-        public bool Tick(Pointer p, bool podeFechar, float topoBandejaPx, Action fechar, Func<Vector2, bool> doMundo = null)
+        /// <param name="dentro">Toque que e' de um painel nao-modal sem Image de raycast no fundo (o painel do passo do tutorial): nao e'
+        /// "fora", como o toque num botao de UI.</param>
+        public bool Tick(Pointer p, bool podeFechar, float topoBandejaPx, Action fechar, Func<Vector2, bool> doMundo = null, Func<Vector2, bool> dentro = null)
         {
             if (p == null) { _gesto.Cancela(); return false; }
             Vector2 pos = p.position.ReadValue();
@@ -30,7 +32,7 @@ namespace FS
             if (p.press.wasPressedThisFrame)
             {
                 _gesto.Cancela();
-                if (!podeFechar || pos.y <= topoBandejaPx || (doMundo != null && doMundo(pos)) || SobreUi(pos)) return false;
+                if (!podeFechar || pos.y <= topoBandejaPx || (doMundo != null && doMundo(pos)) || (dentro != null && dentro(pos)) || SobreUi(pos)) return false;
                 _gesto.Aperta(pos.x, pos.y, Time.unscaledTime);
                 return true;
             }
