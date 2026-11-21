@@ -80,9 +80,40 @@ namespace FS.Tests
             Assert.IsFalse(s.HasConveyor);
             Compra(s, "cratera_estelar");
             Assert.IsFalse(s.HasConveyor, "2026-11: a cratera nao traz mais o trilho (a esteira saiu do jogo)");
-            s.Est("fornalha_ferro").Out = 2;
-            Roda(s, 2.5f);
-            Assert.AreEqual(2, s.Est("fornalha_ferro").Out, "sem trilho, o lingote espera o ajudante");
+            Assert.AreEqual(2, s.Workers.Count, "BALANCE §54: no lugar do trilho, a cratera traz o Forjador");
+            Carrier fj = s.Workers[1];
+            Assert.AreEqual(("wk_forjador", 1, "forja_estelar"), (s.Equipe.Defs[fj.Wk].Id, fj.Role, s.Linha(fj)));
+            Station fornalha = s.Est("fornalha_ferro"), forja = s.Est("forja_estelar");
+            int lingote = I(s, "lingote");
+            s.Est("deposito_estelar").Unlocked = false;   // sem pedra a forja nao gasta o lingote: da para contar
+            fornalha.Out = 2;
+            Roda(s, 30f);
+            Assert.AreEqual(0, fornalha.Out, "o Forjador leva o lingote da fornalha");
+            Assert.GreaterOrEqual(forja.Ins[forja.InIndex((Item)lingote)], 2, "e entrega na forja estelar (mais o que a fornalha fez do minerio do Estrela 1)");
+            Compra(s, "estrela2");
+            CollectionAssert.AreEquivalent(new[] { "wk_forjador", "wk_estrela2" }, s.Workers.Where(x => x.Role == 1).Select(x => s.Equipe.Defs[x.Wk].Id).ToArray(),
+                "comprado depois da cratera, o Estrela 2 vem mesmo assim (o Forjador nao conta na turma)");
+        }
+
+        /// <summary>BALANCE §54 (o travamento da campanha de 40 h): o carregador de bruto com a mao cheia de um minerio que nenhuma estacao aceita
+        /// devolve ao monte e vai buscar outro, em vez de ficar parado com ele para sempre (a pedra estelar nunca chegava e o distrito parava).</summary>
+        [Test]
+        public void Carregador_MinerioSemDestino_DevolveEBuscaOutro()
+        {
+            Sim s = Novo();
+            Compra(s, "estrela1", "cratera_estelar");
+            Station fornalha = s.Est("fornalha_ferro"), forja = s.Est("forja_estelar");
+            int minerio = I(s, "minerio"), pedra = I(s, "pedra_estelar");
+            foreach (Station f in s.Stations) if (f.Kind == Kind.Furnace && f.InIndex((Item)minerio) >= 0) { f.Ins[f.InIndex((Item)minerio)] = f.InCap; f.Out = f.OutCap; }   // cheias e travadas (a forja sem pedra nao tira o lingote)
+            Carrier w = s.Workers.First(x => x.Role == 0);
+            w.Held[minerio] = w.Cap; w.State = 1; w.Target = -1; w.Pos = fornalha.InAt;
+            s.Est("deposito").Unlocked = false;   // so a cratera e o ferro: o unico outro bruto e' a pedra
+            Roda(s, 0.5f);
+            Assert.AreEqual(2, w.Held[minerio], "nao larga na hora: espera a paciencia (uma vaga pode abrir)");
+            Roda(s, 2f);
+            Assert.AreEqual(0, w.Held[minerio], "devolveu o minerio que nao cabia");
+            Roda(s, 6f);
+            Assert.Greater(forja.Ins[forja.InIndex((Item)pedra)] + w.Held[pedra], 0, "e foi buscar a pedra estelar que a forja espera");
         }
 
         // ------------------------------------------------------------------ rotas
