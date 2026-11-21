@@ -132,15 +132,15 @@ jobs:
         with:
           name: build-win
           path: win
-      - name: fotos dos niveis da bancada (I, III com -buy, V com -projetos todos)
+      - name: fotos dos niveis da bancada (I, III com -buy, V com -projetos dar)
         shell: bash
         run: |
           mkdir -p fotos; d=$(cygpath -w "$PWD/fotos")
-          foto() { n=$1; shift; timeout 180 ./win/ForgeStreet.exe -screen-fullscreen 0 -screen-width 540 -screen-height 960 -testsession \
+          foto() { n=$1; shift; timeout 180 ./win/ForgeStreet.exe -screen-fullscreen 0 -screen-width 432 -screen-height 768 -testsession \
                      -logFile "fotos/$n.log" "$@" -shot "$d\\$n.png" || echo "::warning::foto $n saiu $?"; grep -m1 'SHOT' "fotos/$n.log" || true; }
           foto 01_bancada_nivel1 -shotdelay 4
           foto 02_bancada_nivel3 -buy 99 -warmup 20 -shotdelay 4
-          foto 03_bancada_nivel5 -projetos todos -buy 99 -warmup 20 -shotdelay 4
+          foto 03_bancada_nivel5 -projetos dar -buy 99 -warmup 20 -shotdelay 4
           ls -la fotos
       - uses: actions/upload-artifact@v7
         if: always()

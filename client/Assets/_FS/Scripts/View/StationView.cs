@@ -254,19 +254,28 @@ namespace FS
             }
         }
 
-        /// <summary>Bigorna/bancada, um quadro: bate quando o Progress cruza uma batida e anima o golpe em curso (achata + tremidinha que morre).</summary>
-        /// <summary>Pedestal do tamanho do pe da arte (bounds do sprite, sem medida fixa por PNG), aro e brilho; tudo desligado no nivel I.</summary>
+        /// <summary>Pedestal no pe da bancada (pivo da arte baked; bounds da procedural), aro e brilho; tudo desligado no nivel I.</summary>
         void MontaNivel(SpriteRenderer art)
         {
-            Bounds b = art.sprite != null ? art.sprite.bounds : new Bounds(Vector3.zero, Vector3.one);
+            // arte baked (folha do Tripo): o pivo do PNG e' o pe da bancada, e o sprite e' a celula de 1,95 m com borda transparente, entao o
+            // bounds mentiria (o pedestal caia solto ao sul, colado na barra). Visivel: 1,07 a 1,46 m de largura, sombra de 1,55 m (revisao
+            // do TD no #186). Arte procedural (Base Rounded com pivo no centro): o pe e' a borda de baixo do bounds.
             Vector3 sc = art.transform.localScale, p = art.transform.localPosition;
-            float w = Mathf.Clamp(b.size.x * Mathf.Abs(sc.x) * 0.92f, 0.9f, 2.2f);
-            _pe = new Vector2(p.x + b.center.x * sc.x, p.y + b.min.y * Mathf.Abs(sc.y) + 0.08f);
+            float w;
+            if (_baked) { w = 1.4f; _pe = new Vector2(p.x, p.y - 0.06f); }
+            else
+            {
+                Bounds b = art.sprite != null ? art.sprite.bounds : new Bounds(Vector3.zero, Vector3.one);
+                w = Mathf.Clamp(b.size.x * Mathf.Abs(sc.x) * 0.92f, 0.9f, 1.6f);
+                _pe = new Vector2(p.x + b.center.x * sc.x, p.y + b.min.y * Mathf.Abs(sc.y) + 0.08f);
+            }
             const int chao = 0;   // no chao: acima do tapete (-1), abaixo das sombras e dos pads (1-4); quem passa na frente cobre
             _nivelGlow = Art.NewSprite(_root, "NivelBrilho", Art.Glow(), Color.clear, WorldView.GlowOrder, _pe + new Vector2(0f, 0.15f), new Vector2(w * 1.9f, 1.5f));
             _aro = Art.NewSprite(_root, "NivelAro", Art.Rounded(), Color.clear, chao, _pe, new Vector2(w + 0.14f, 0.46f));
             _pedestal = Art.NewSprite(_root, "NivelPedestal", Art.Rounded(), Color.clear, chao, _pe, new Vector2(w, 0.34f));
-            _aro.transform.localPosition = new Vector3(_pe.x, _pe.y, 0.01f);   // mesmo order do pedestal: o z (mais longe da camera) deixa o aro atras
+            // mesmo order 0 das bocas e da moldura do tapete: o z (mais longe da camera ortografica) poe aro < pedestal < bocas, sem empate
+            _aro.transform.localPosition = new Vector3(_pe.x, _pe.y, 0.01f);
+            _pedestal.transform.localPosition = new Vector3(_pe.x, _pe.y, 0.005f);
             _pedestalS = _pedestal.transform.localScale;
             _nivel = _s.Level;   // save carregado: o nivel ja esta la, sem festa
             PintaNivel(1f);
@@ -322,6 +331,7 @@ namespace FS
                 1.2f, 0.22f, 0.04f, true, 90f, Color.Lerp(NivelC[3], Color.white, 0.5f), _front + 2);
         }
 
+        /// <summary>Bigorna/bancada, um quadro: bate quando o Progress cruza uma batida e anima o golpe em curso (achata + tremidinha que morre).</summary>
         void Bate(float dt)
         {
             float p = _s.Busy ? _s.Progress : 0f;
