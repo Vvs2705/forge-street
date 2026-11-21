@@ -191,7 +191,7 @@ Volume de busca e concorrência por palavra: **a verificar** com ferramenta de A
 
 **Recomendação: Jogos > Simulação.** O jogo é um tycoon de crafting / management casual (GDD §2, DM §168), e a Simulação é onde a Play agrupa tycoon e gerenciamento. "Casual" é mais amplo, mais disputado e descreve menos o loop. Tags da Play Console (até 5): escolher entre as disponíveis algo como Idle, Magnata/Tycoon, Gerenciamento, Medieval e Estilizado `<<CONFIRMAR os nomes exatos na lista do console>>`.
 
-Dados de contato da ficha: e-mail `<<CONFIRMAR: contato@vstack-solutions.com.br>>`, site `https://vstack-solutions.com.br` (o mesmo domínio do `app-ads.txt`) e URL da política `https://vstack-solutions.com.br/forgestreet/privacidade/` (`PRIVACIDADE.md` §6).
+Dados de contato da ficha: e-mail `<<CONFIRMAR: contato@vstack-solutions.com.br>>`, site `https://vstack-solutions.com.br` (o mesmo domínio do `app-ads.txt`) e URL da política `https://vstack-solutions.com.br/forgestreet/privacidade/` (falta subir a página; `PRIVACIDADE.md` §6).
 
 ## 6. Frases que só entram quando a Wave fechar
 

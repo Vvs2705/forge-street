@@ -277,7 +277,8 @@ Primera versión de prueba de Forge Street: los 6 distritos, pedidos, contratos,
 ## 8. Checklist curto do Vinicius
 
 **Antes do dia (até 24/11), para o dia não travar:**
-1. [x] Onde a política mora: o site da VStack (D-PUB-1, 21/11). Falta **subir** o `docs/politica/index.html` em `https://vstack-solutions.com.br/forgestreet/privacidade/` (você ou quem cuida do site; o arquivo está pronto) e abrir o endereço no celular. O `app-ads.txt` vai na raiz do mesmo domínio depois que a ficha tiver o site.
+1. [x] Onde a política mora: o site da VStack (D-PUB-1, decidida em 21/11).
+1a. [ ] **Subir** o `docs/politica/index.html` em `https://vstack-solutions.com.br/forgestreet/privacidade/` (você ou quem cuida do site; o arquivo está pronto) e abrir o endereço no celular **antes** de gerar o AAB do dia: a URL vai fixa no jogo. O `app-ads.txt` vai na raiz do mesmo domínio depois que a ficha tiver o site.
 2. [ ] Preencher na política os dados da empresa do D-U-N-S (razão social, CNPJ, endereço, e-mail), ou mandá-los na thread para a sessão preencher (D-PUB-6, decidida: vai sem o quadro de rascunho no teste interno).
 3. [ ] Nada a fazer: a D-PRIV-2 (Topics) e a D-PRIV-8 (`submitAnalytics`) já estão na `main`; a D-PUB-3 (link da política no jogo) também. O AAB do dia sai da `main` com as três.
 4. [ ] Separar os dados da conta de comerciante: conta bancária PJ, CNPJ e endereço fiscal (§0).
@@ -295,7 +296,7 @@ Primera versión de prueba de Forge Street: los 6 distritos, pedidos, contratos,
 
 | # | Decisão | Dono | Recomendação | Bloqueia |
 |---|---|---|---|---|
-| D-PUB-1 | Onde hospedar a política e o `app-ads.txt` (o "Site" da ficha) | Vinicius | **decidida** (Vinicius, 21/11: "seguir o recomendado VSTACK"): `https://vstack-solutions.com.br/forgestreet/privacidade/` e `https://vstack-solutions.com.br/app-ads.txt`. Falta subir a página; a nuvem não abre o site (proxy 403), então a URL só vale depois de aberta no celular | o passo 6.1 do dia, a D-PUB-3, o `app-ads.txt` |
+| D-PUB-1 | Onde hospedar a política e o `app-ads.txt` (o "Site" da ficha) | Vinicius | **decidida** (Vinicius, 21/11: "seguir o recomendado VSTACK"): `https://vstack-solutions.com.br/forgestreet/privacidade/` e `https://vstack-solutions.com.br/app-ads.txt`. Falta subir a página; a nuvem não abre o site (proxy 403), então a URL só vale depois de aberta no celular | o passo 6.1 do dia, o `app-ads.txt` |
 | D-PUB-6 | A política no teste interno | **decidida pelo time** (2026-11-21, o Vinicius delegou as decisões ao Conselho) | publicar a versão sem o quadro de rascunho, com os dados do D-U-N-S preenchidos, antes da revisão jurídica (o teste interno só chega aos testadores). A D-PRIV-5 continua bloqueando o teste aberto e a produção | o passo 6.1 do dia |
 | D-PRIV-2 | Tirar `ACCESS_ADSERVICES_TOPICS` (segmentação por interesse) do manifesto | **feita** (2026-11-21): `Editor/ManifestPrivacidade.cs` põe `tools:node="remove"` no manifesto do launcher, e o `release-check` reprova o AAB que ainda a tiver | tirar, com `tools:node="remove"` (`PRIVACIDADE.md` §4). | o texto público da política e o AAB do dia |
 | D-PRIV-8 | `submitAnalytics: 1` (estatísticas de hardware do motor Unity, de todos) | **feita** (2026-11-21): `submitAnalytics: 0` no `ProjectSettings.asset`. Se a licença Personal ignorar a opção, só a captura de rede no POCO mostra; até lá o marcador fica na política | desligar no `ProjectSettings` (mais protetivo que medir, e não tira nada do jogo) | o texto público da política e o AAB do dia |
