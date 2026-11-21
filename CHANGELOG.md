@@ -4,6 +4,11 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Fim de jogo com destino: Obras do Reino, Decretos semanais e calendário de LiveOps infinito (`BALANCE.md` §53; os 2 P1 do `PROJETO.md` §7):**
+  - **Obras do Reino** (`Obras.cs`): um ralo de ouro sem fim que abre já no Charter do Old Forge. 10 obras públicas (Ponte do Vau Cinzento, Muralha do Norte, Catedral da Brasa...) de 3 etapas, em rodízio com nível I, II, III...; cada degrau custa (15 + 5n) min da renda alvo do distrito mais avançado aberto (trocar de foco ou ficar parado não baixa o preço). Paga Renome (10 por etapa, +30 ao fechar a obra) e o Prestígio do Reino, +⌊2√n⌋% na renda de fundo com teto de +20%. Nunca ouro, nenhuma moeda nova, nada aleatório.
+  - **Decretos semanais** (`Decretos.cs`): 3 metas por semana desde o `T0` (uma das Obras e duas do rodízio de vendas, encomendas, VIP, item do distrito ativo e faturamento), pagas sozinhas em Renome e XP do Pass, 1x pelo ID `dc:{semana}:{vaga}`.
+  - **Calendário infinito** (`LiveOpsDefs.cs`): depois do dia 70 (2027-01-11) o ciclo de 10 semanas (S1 + S2 e os 10 eventos) se repete com ID novo (`{id}_r{c}`), um evento por vez, temporadas emendadas e sem buraco; a reprise usa o nome e a encomenda Event da origem.
+  - Save: linhas `obras=` e `dcr=` do Império, só depois do Charter do Old Forge (save antigo abre igual). UI mínima: botão OBRAS sob o MAPA e o `PainelObras`. O bot investe nas Obras só com nada mais à venda e guardando o próximo manager e a abertura seguinte (`Bot.Obras.cs`; `econsim --campanha H --obras 0|1`).
 - **Kit de publicação para o dia do D-U-N-S (`docs/PUBLICACAO_PLAY.md`):** o passo a passo do Play Console na ordem certa, com o valor de cada campo para colar.
   - Ficha pt/en/es, Conteúdo do app (anúncios, acesso, público 13+, IARC com compras digitais = Sim, Data safety refeito com UGS, `client_error` e histórico de compras) e os 3 produtos únicos com nome e descrição nos 3 idiomas.
   - O Pacote do Mestre fica em rascunho até a P3: o `remove_ads` não tem efeito com o intersticial desligado.

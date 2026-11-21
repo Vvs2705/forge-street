@@ -139,12 +139,13 @@ static partial class EconSim
                 case "--bancadas" when ok: ok = Enum.TryParse(v, true, out bancadas) && Enum.IsDefined(typeof(PoliticaBancada), bancadas); break;
                 case "--histerese" when ok: ok = int.TryParse(v, out int h); histerese = h; break;
                 case "--campanha" when ok: ok = int.TryParse(v, out campanha) && campanha > 0; break;
+                case "--obras" when ok: ok = v == "0" || v == "1"; _obras = v == "1"; break;   // BALANCE §53: --obras 0 = a campanha sem as Obras do Reino (o antes)
                 case "--arcano" when ok: ok = Enum.TryParse(v, true, out _altares) && Enum.IsDefined(typeof(PoliticaArcana), _altares); break;   // C-CORE-08
                 default: ok = false; break;
             }
             if (!ok || perfis.Any(p => p.Name == null))
             {
-                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--rc config.json] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400] [--gerente 0|1] [--renome 500] [--bancadas regra|volume|margem] [--histerese 3] [--arcano regra|estavel|forcado]");
+                Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--rc config.json] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400] [--gerente 0|1] [--renome 500] [--bancadas regra|volume|margem] [--histerese 3] [--arcano regra|estavel|forcado] [--campanha 40 [--obras 0|1]]");
                 return 2;
             }
         }

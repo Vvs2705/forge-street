@@ -119,6 +119,7 @@ namespace FS
         PainelMetas _metas;      // D-CORE-02: diarias, semanais, conquistas e login (PainelMetas.cs)
         PainelProjetos _projetos;   // B-CORE-07: Blueprints possuidos e bloqueados com a fonte (PainelProjetos.cs)
         PainelHall _hall;           // B-CORE-08: Hall das obras-primas e Collection (PainelHall.cs)
+        PainelObras _obras;         // 2026-11-21: Obras do Reino e Decretos da semana (PainelObras.cs; botao OBRAS sob o MAPA)
         float _metasT; int _prontas;   // relogio da Agora (1 s) e quantas davam para resgatar (aviso de meta concluida)
         SeloRenome _renome;      // B-CORE-06: selo de nivel na HUD e cartao (SeloRenome.cs)
         PainelLiveOps _liveops;  // D-CORE-03/04: chips do evento e do Passe, cartao do evento e painel do Passe (PainelLiveOps.cs)
@@ -163,11 +164,12 @@ namespace FS
         bool MetasAberto => _metas != null && _metas.Aberto;
         bool ProjetosAberto => _projetos != null && _projetos.Aberto;
         bool HallAberto => _hall != null && _hall.Aberto;
+        bool ObrasAberto => _obras != null && _obras.Aberto;
         bool RenomeAberto => _renome != null && _renome.Aberto;
         bool LiveOpsAberto => _liveops != null && _liveops.Aberto;
         bool LojaAberta => _lojaUi != null && _lojaUi.Aberto;
         /// <summary>Algum modal que nao e' o do tutorial (a boas-vindas e o cartao "o que e' isto" so aparecem sem nenhum destes).</summary>
-        bool OutroModal => Painel || Config || Priv || MetasAberto || RenomeAberto || LiveOpsAberto || ProjetosAberto || HallAberto || LojaAberta;
+        bool OutroModal => Painel || Config || Priv || MetasAberto || RenomeAberto || LiveOpsAberto || ProjetosAberto || HallAberto || ObrasAberto || LojaAberta;
         /// <summary>FTUE: boas-vindas ou cartao "o que e' isto" na tela (PainelTutorial).</summary>
         bool TutAberto => _tut != null && _tut.Aberto;
 
@@ -256,6 +258,7 @@ namespace FS
             _hall = new PainelHall(_safe, _sim);           // o projeto de mestre e as 10 obras dela); no Old Forge e' a raiz, como antes
             _hall.AbaVista = k => Log(k == 1 ? "collection_view" : "hall_view", _sim.Distrito?.Id ?? Distritos.OldForgeId,
                 (k == 1 ? Array.FindAll(_sim.Colecao.Marcos, _sim.Colecao.Pago).Length : _sim.Hall.Count).ToString(CultureInfo.InvariantCulture));   // GDD §164 item 10
+            _obras = new PainelObras(_safe, _imp, ObraConstruida);   // 2026-11-21: Obras do Reino e Decretos (o Imperio inteiro)
             if (_loja != null) _lojaUi = new PainelLoja(_safe, _raiz, _loja, Comprar, Restaurar);
             // E-PLAT-01 (GDD "Conflitos" item 1, decidido: movida): nada antes do 1o toque. Sem resposta (ou com texto novo) a tela de idade
             // abre no 1o instante em que um botao de anuncio apareceria (PedidoIdade, no RefreshAdUi: depois da 1a melhoria, D6); ate la
@@ -455,6 +458,7 @@ namespace FS
                 else if (MetasAberto) _metas.Fechar();
                 else if (ProjetosAberto) _projetos.Fechar();
                 else if (HallAberto) _hall.Fechar();
+                else if (ObrasAberto) _obras.Fechar();
                 else if (RenomeAberto) _renome.Fechar();
                 else if (LiveOpsAberto) _liveops.Fechar();
                 else if (LojaAberta) _lojaUi.Fechar();
@@ -516,6 +520,8 @@ namespace FS
             _liveops.Refresh(Time.unscaledDeltaTime);
             _projetos.Refresh(Time.unscaledDeltaTime);
             _hall.Refresh(Time.unscaledDeltaTime);
+            _obras.Refresh(Time.unscaledDeltaTime);
+            DecretosNovos();
             _lojaUi?.Refresh();
 
             _saveT += Time.deltaTime;
@@ -982,6 +988,7 @@ namespace FS
 
             BuildSettings(top);
             BuildMapa(top);   // C-CORE-02
+            BuildObras();   // 2026-11-21
 
             // painel modal (cofre; no dev tambem o -adtest). v0.6d: cartao creme das configuracoes; "+N" grande com a moeda so no cofre
             _panel = Art.Node(_safe, "Painel", Vector2.zero, Vector2.one);
@@ -1115,6 +1122,8 @@ namespace FS
             _hintT = 0.25f;
             bool mapa = MapaVisivel;   // C-CORE-02: 4x/s, como a dica
             if (_mapaBtn != null && _mapaBtn.gameObject.activeSelf != mapa) _mapaBtn.gameObject.SetActive(mapa);
+            bool obras = _imp.Obras.Aberta;   // 2026-11-21: com o Charter do Old Forge
+            if (_obrasBtn != null && _obrasBtn.gameObject.activeSelf != obras) _obrasBtn.gameObject.SetActive(obras);
             // FTUE: nos passos do tutorial a pilula diz o passo e a seta aponta o alvo dele (Tutorial.Alvo; sem alvo = BuyMenu, sem seta)
             string passo = _tut.Dica();
             if (passo != null)
@@ -1944,6 +1953,37 @@ namespace FS
             _mapaBtn = Art.NewButton(_safe, Loc.T("mapa.botao"), 30, MenuBar.Leather, new Vector2(0.8f, 1f - HudBand - 0.045f), new Vector2(0.97f, 1f - HudBand - 0.006f), AbrirMapa);
             _mapaBtn.GetComponentInChildren<Text>().color = MenuBar.Cream;
             _mapaBtn.gameObject.SetActive(false);
+        }
+
+        // ---------- 2026-11-21: Obras do Reino e Decretos (PainelObras; BALANCE §53) ----------
+
+        Button _obrasBtn;
+
+        /// <summary>Botao OBRAS logo abaixo do MAPA: aparece com o Charter do Old Forge (quando as Obras abrem).</summary>
+        void BuildObras()
+        {
+            _obrasBtn = Art.NewButton(_safe, Loc.T("obras.botao"), 30, MenuBar.Leather, new Vector2(0.8f, 1f - HudBand - 0.09f), new Vector2(0.97f, 1f - HudBand - 0.051f), () => _obras.Abrir());
+            _obrasBtn.GetComponentInChildren<Text>().color = MenuBar.Cream;
+            _obrasBtn.gameObject.SetActive(false);
+        }
+
+        void ObraConstruida(int degrau)
+        {
+            Log("kingdom_work", degrau.ToString(CultureInfo.InvariantCulture), _imp.Obras.Gasto.ToString(CultureInfo.InvariantCulture));
+            if (Obras.EtapaDe(degrau) == Obras.Etapas) Notice(Loc.T("obras.aviso", Loc.T("obra." + Obras.ObraDe(degrau).Id)), Art.Star(), Art.Accent);
+            Save();
+        }
+
+        /// <summary>Decreto cumprido (pago sozinho pelo Imperio.Fundo): aviso e diario.</summary>
+        void DecretosNovos()
+        {
+            if (_imp.Decretos.Novidades.Count == 0) return;
+            foreach ((string id, int vaga) in _imp.Decretos.Novidades)
+            {
+                Notice(Loc.T("dcr.aviso"), Art.Star(), Art.Accent);
+                Log("decree_complete", id, vaga.ToString(CultureInfo.InvariantCulture));
+            }
+            _imp.Decretos.Novidades.Clear();
         }
 
         bool MapaVisivel => _imp.Abertos.Count > 1 || _imp.Charters.Count > 0 || _imp.CharterFalta(_sim.Distrito.Id) == null;

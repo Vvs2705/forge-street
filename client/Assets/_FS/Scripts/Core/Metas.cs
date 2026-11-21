@@ -184,9 +184,9 @@ namespace FS.Core
                     }
                     return fam.Count;
                 case "event_complete":   // o ultimo limiar da trilha pago (e:{evento}:{pontos}; o ledger nunca limpa e:)
-                    return Array.FindAll(_sim.LiveOps.Eventos, e => Ledger.Contains("e:" + e.Id + ":" + S(e.Trilha[e.Trilha.Length - 1].Pontos))).Length;
+                    return LiveOpsDefs.EventosAte(_sim.LiveOps.Eventos, _sim.LiveOps.Relogio).FindAll(e => Ledger.Contains("e:" + e.Id + ":" + S(e.Trilha[e.Trilha.Length - 1].Pontos))).Count;   // 2026-11-21: e as reprises
                 case "pass_level":   // o ultimo nivel da trilha free resgatado (RESGATAR ou o fim da temporada, que paga o alcancado)
-                    return Array.FindAll(_sim.LiveOps.Passes, p => Ledger.Contains(LiveOps.TxNivel(p, p.Niveis))).Length;
+                    return LiveOpsDefs.PassesAte(_sim.LiveOps.Passes, _sim.LiveOps.Relogio).FindAll(p => Ledger.Contains(LiveOps.TxNivel(p, p.Niveis))).Count;   // 2026-11-21: e as reprises
             }
             if (d.Conta != Conta.Distintos) { Cont.TryGetValue(d.Chave, out long v); return v; }
             bool tipos = d.Evento == "order_complete";
