@@ -69,6 +69,7 @@ Tycoon de crafting completo (Documento Mestre §193), organizado em Waves A → 
 | V27 | **Collection e encomenda Event (decidido por padrão, B-CORE-08, revisar):** degraus da Collection a +5/+10 de Renome (o §7 pedia +10/+20, que furavam os pisos do Renome 3 e 4 junto com o Orders 2.0; `BALANCE.md` §30.6). **Encomenda Event (decidido: à parte, 2026-10-24):** conta à parte das vagas normais (a peça vendida anda a normal mais antiga que a aceita e também a do evento; o rodízio de produto de cada lado não olha o outro) e dá 17 pontos nos 10 eventos (eram Caravan 12, Royal Week-B 15, Hunts 17/20, afinados para 3 vagas disputando); o F2P de referência fecha os 10 no dia 4–5 (`BALANCE.md` §44). Hall e Collection são por distrito (`DistrictDef`); desde o #71 os painéis do Hall e de projetos mostram o distrito ativo. | padrão do time, 2026-10-14 — revisar |
 | V28 | **Rua dos Armeiros (decidido por padrão, C-CORE-05, revisar):** preços do catálogo × 3,5 e produtivos × 1,55, porque o gargalo da Row é o transporte (4 Ferraz com carga 2), não a demanda; se a turma ganhar carga maior, os preços voltam para perto do catálogo. Contratos de distrito abrem com o distrito no build (não "aberto pelo jogador"); nada bloqueia. Managers sobem a renda de fundo dos distritos fora de foco, não o cofre offline do distrito ativo; botão do mapa na ordem Charter → Abrir → Gerente → Viajar (`BALANCE.md` §33–§34). | padrão do time, 2026-10-14 — revisar |
 | V29 | **Marca e liga (decidido por padrão, C-ART-14 e C-CORE-05, revisar):** ~~ícone do app = variante A (ferreiro + martelo); logo em Inter Black~~ — **substituído pela escolha do Vinicius (2026-10-16, #86): ícone = emblema A3, logo de título = C2** (`client/tools/marca_v2.py`; fontes da UI = Lilita One + Nunito, #87). Na Row, o nível II das montagens/forjas pede a Rebitadeira 2 (o §5.7 pedia a 1ª estação da família; com ele a produção completa do F2P ia a 76 min) e a liga entra por slot opcional (a peça não espera por ela). | padrão do time, 2026-10-15 — revisar |
+| V30 | **Cota do contrato (Conselho do TIME DE JOGOS, 2026-11-21, revisar com o Closed):** a peça vendida conta para a encomenda e para o contrato; o contrato é o reconhecimento da Coroa sobre o que a oficina já produz, não um desvio do balcão. A decisão "vender ou cumprir" fica no pátio de cotas do Arsenal e em aceitar ou abandonar o contrato. O seletor 0/25/50/100% por linha do `CONTEUDO_V1.md` §8 fica descartado antes do Limited Release; se os dados pedirem peso (contrato concluído sem ninguém perceber, ou > 90% dentro do prazo-bônus), a menor versão é um interruptor "Reservar para a Coroa" por contrato | [`conselho/2026-11-21-cota-do-contrato.md`](conselho/2026-11-21-cota-do-contrato.md) |
 
 ## 5. Decisões pendentes (Vinicius)
 
@@ -98,7 +99,7 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 
 ## 7. Known issues
 
-**Conferido no código em 2026-11-21:** 0 P0 e 0 P1 abertos. Abertos: 2 P2 (nome "Ajudantes ágeis", fome da Bigorna 2) e 2 itens de design (zona morta reduzida, cota do contrato).
+**Conferido no código em 2026-11-21:** 0 P0 e 0 P1 abertos. Abertos: 2 P2 (nome "Ajudantes ágeis", fome da Bigorna 2) e 1 item de design (zona morta reduzida); a cota do contrato foi decidida na V30.
 
 | Problema | Prioridade (§132) | Fonte | Correção |
 |---|---|---|---|
@@ -130,7 +131,7 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 | ~~Row: a liga chega a só ~5% das peças; Rebitadeira 2 quase sem demanda; Vulcana e fornalha de liga com arte emprestada~~ **fechado** | — | `BALANCE.md` §35 | Ferraz 4, Rebitadeira 2 e preço ×2,4 no #76; arte das estações da Row no #75 e da Vulcana no #107 |
 | ~~Encomenda Event disputa as vagas com as normais~~ **fechado** | — | `BALANCE.md` §44 | V27 no #131 (vaga própria, 17 pontos nos 10 eventos) |
 | ~~Contrato EM BREVE da Row mostra o elmo pelo ID; rótulo "Achievements" pequeno~~ | — | `PainelMetas.cs` | resolvidos no #66 e no #70 (abas largas, Projetos e Hall no rodapé) |
-| Contrato conta a mesma peça para a encomenda e para o contrato (sem o seletor de cota do CONTEUDO_V1 §8) | design | `Contratos.cs` | decidir se a cota entra antes do Limited Release |
+| ~~Contrato conta a mesma peça para a encomenda e para o contrato (sem o seletor de cota do CONTEUDO_V1 §8)~~ **decidido** | — | `Contratos.cs` | V30 (Conselho, 2026-11-21): a dupla contagem fica; revisitar com dados do Closed |
 
 ## 8. Progresso rumo ao 100% (definição de jogo completo, DM §164)
 
