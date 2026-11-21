@@ -21,7 +21,11 @@ function LimpaEspelho {
 $original = Join-Path $dir 'save.txt.original'   # o save de antes do PRIMEIRO marco: gravado uma vez so; e' para ele que o -Voltar volta
 if (-not $Voltar -and -not (Test-Path $original)) {
     if (Test-Path $principal) { Copy-Item $principal $original } else { Set-Content -Path $original -Value '' -NoNewline }
-    if (Test-Path $prefs) { & reg.exe export 'HKCU\Software\V-STACK\Forge Street' "$original.reg" /y | Out-Null }
+    if (Test-Path $prefs) {
+        # pelo cmd: no PS 5.1 o texto do reg.exe no stderr viraria erro fatal com o 'Stop'
+        & cmd.exe /c "reg.exe export `"HKCU\Software\V-STACK\Forge Street`" `"$original.reg`" /y >nul 2>&1"
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path "$original.reg")) { Remove-Item $original; throw 'reg export falhou; nada foi mudado.' }
+    }
 }
 if ($Voltar) {
     if (-not (Test-Path $original)) { throw "Nenhum save original guardado em $dir." }
@@ -33,7 +37,11 @@ if ($Voltar) {
         Write-Host 'Voce nao tinha save antes: o jogo abre do zero.'
     } else { Copy-Item $ultimo.FullName $principal -Force; Write-Host 'Devolvido: o save que voce tinha antes do primeiro marco.' }
     LimpaEspelho   # o espelho tem o ultimo marco jogado; volta o de antes (ou nenhum)
-    if (Test-Path "$original.reg") { & reg.exe import "$original.reg" 2>$null | Out-Null; Rename-Item "$original.reg" "save.txt.original.reg.usado-$(Get-Date -Format yyyyMMdd-HHmmss)" }
+    if (Test-Path "$original.reg") {
+        & cmd.exe /c "reg.exe import `"$original.reg`" >nul 2>&1"
+        if ($LASTEXITCODE -ne 0) { throw "reg import falhou ($LASTEXITCODE); $original.reg ficou intacto." }
+        Rename-Item "$original.reg" "save.txt.original.reg.usado-$(Get-Date -Format yyyyMMdd-HHmmss)"
+    }
     Rename-Item $original "save.txt.original.usado-$(Get-Date -Format yyyyMMdd-HHmmss)"   # a proxima rodada de playtest guarda o original de novo
     exit 0
 }
