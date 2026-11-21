@@ -1,5 +1,5 @@
 > ## BORRADOR PARA REVISIÓN JURÍDICA — NO PUBLICAR ASÍ
-> Escrito por el equipo a partir del código del juego y de las tablas oficiales de los SDK (`docs/PRIVACIDADE.md`). No es asesoría jurídica. Antes de publicar: revisión de un abogado, completar todo lo marcado `<<PREENCHER>>`/`<<CONFIRMAR>>`, comprobar que las etiquetas del juego citadas aquí coinciden con la versión en español (localización en curso) y borrar este recuadro.
+> Escrito por el equipo a partir del código del juego y de las tablas oficiales de los SDK (`docs/PRIVACIDADE.md`, `docs/PUBLICACAO_PLAY.md` §4.4). No es asesoría legal. Antes de publicar: completar todo lo marcado `<<PREENCHER>>`/`<<CONFIRMAR>>` (los datos de la empresa son los del D-U-N-S), revisión de abogado y borrar este recuadro.
 
 # Política de Privacidad — Forge Street
 
@@ -8,88 +8,103 @@ Versión `<<PREENCHER: 1.0>>` · vigente desde `<<PREENCHER: fecha>>`
 ## Resumen
 
 - Forge Street no tiene cuenta, inicio de sesión ni chat. No pedimos nombre, correo ni fecha de nacimiento.
-- Tu progreso queda **solo en tu dispositivo**. No tenemos servidor y no recibimos tus datos.
+- Tu progreso se queda **en tu dispositivo**. No tenemos servidor propio.
 - El juego muestra anuncios **que tú eliges ver** a cambio de un bonus. Esos anuncios los entrega Unity (LevelPlay y Unity Ads), que recoge algunos datos del dispositivo, como se explica abajo.
-- Al abrirlo por primera vez, el juego pregunta tu **rango de edad**. Los menores de 18 años nunca reciben anuncios personalizados.
+- Para ajustar el juego y corregir errores usamos servicios de Unity (Unity Gaming Services). **Las estadísticas de uso y los informes de error solo salen del dispositivo de quien tiene 18 años o más y aceptó.**
+- Las compras son opcionales, pasan por Google Play, y el contenido de cada una es fijo y se muestra antes de pagar.
+- La primera vez que aparece un bonus por anuncio, el juego pregunta tu **rango de edad**. Los menores de 18 nunca reciben anuncios personalizados.
 - Desinstalar el juego borra todo lo que guardó en el dispositivo.
 
 ## 1. Quién es el responsable
 
-**VStack Solutions** `<<CONFIRMAR: razón social, CNPJ (registro de empresa en Brasil) y dirección>>`, desarrolladora de Forge Street (`br.com.vstack.forgestreet`), con sede en Brasil.
+**`<<CONFIRMAR: razón social>>`** ("VStack Solutions"), CNPJ `<<CONFIRMAR>>`, `<<CONFIRMAR: dirección>>`, desarrolladora de Forge Street (`br.com.vstack.forgestreet`).
 Contacto de privacidad: **`<<CONFIRMAR: contato@vstack-solutions.com.br>>`**. Encargado de datos (LGPD): `<<CONFIRMAR: nombre o canal>>`.
 
 ## 2. Qué guarda el juego en tu dispositivo
 
-- **Progreso** (oro, mejoras compradas, tiempo de juego) y una copia de seguridad.
+- **Progreso** (oro, mejoras, distritos, metas) y una copia de seguridad.
 - **Ajustes** (música, efectos, vibración).
-- **Tu respuesta en la pantalla de edad**: el **rango** ("Menos de 13", "13 a 17" o "18 o más") y, para 18+, si aceptaste anuncios personalizados.
+- **Tu respuesta a la pantalla de edad**: el **rango** ("Menos de 13", "13 a 17" o "18 o más") y, para 18+, si aceptaste anuncios personalizados y estadísticas.
+- **Compras**: el recibo y el número de transacción de cada compra, para que el juego reconozca lo que compraste y pueda restaurarlo.
 
-Estos datos se quedan en el dispositivo y no tenemos acceso a ellos. Sirven para que el juego siga donde lo dejaste y para aplicar las reglas de anuncios de tu edad.
-`<<CONFIRMAR: si la copia de seguridad de Android está activa para la app>>` El propio Android puede copiar estos archivos a tu cuenta de Google mediante el servicio de copia de seguridad del sistema, para que recuperes el progreso al cambiar de móvil. Eso se controla en los ajustes de Android.
+Estos datos se quedan en el dispositivo y no tenemos acceso a ellos. Sirven para continuar donde lo dejaste, aplicar las reglas de tu edad y entregar tus compras.
+`<<CONFIRMAR: si la copia de seguridad de Android está activada en la app>>` El propio Android puede copiar estos archivos a tu cuenta de Google con el servicio de copia de seguridad del sistema, para recuperar el progreso al cambiar de teléfono. Esto se controla en los ajustes de Android.
 
-## 3. Anuncios y lo que recogen nuestros socios
+## 3. Anuncios y lo que recogen los socios
 
 Los anuncios del juego son de **Unity** (mediación **LevelPlay** y red **Unity Ads**). El servicio de anuncios solo empieza **después** de que respondes la pantalla de edad. A partir de ahí, Unity puede recoger:
 
-- datos técnicos del dispositivo y de la app (por ejemplo, modelo, sistema y versión del juego) y diagnósticos de funcionamiento;
+- datos técnicos del dispositivo y de la app (por ejemplo, modelo, sistema y versión del juego) y diagnóstico;
 - ubicación aproximada, estimada por la dirección IP (nunca la ubicación exacta del GPS);
 - identificadores del dispositivo, incluido el **ID de publicidad** de Android, **solo de quien tiene 18 años o más**;
-- cómo interactúas **con el anuncio** (visualizaciones y toques dentro del anuncio, no dentro del juego).
+- cómo interactúas **con el anuncio** (vistas y toques dentro del anuncio);
+- información de compras, según la propia declaración de Unity Ads.
 
-Finalidades: mostrar y medir anuncios, prevenir fraude, mantener la seguridad y, **solo para adultos que aceptaron**, personalizar los anuncios. Unity trata estos datos según su propia política: `<<CONFIRMAR enlace: https://unity.com/legal/game-player-and-app-user-privacy-policy>>`.
+Finalidades: mostrar y medir anuncios, evitar fraude, mantener la seguridad y, **solo para adultos que aceptaron**, personalizar los anuncios. Unity trata estos datos según su política: `<<CONFIRMAR link: https://unity.com/legal/game-player-and-app-user-privacy-policy>>`.
 
-No vendemos datos personales. Para quien no aceptó anuncios personalizados (y para todo menor de 18), el juego avisa a los socios de que esos datos **no se pueden vender ni usar para personalización**.
+No vendemos datos personales. Para quien no aceptó anuncios personalizados (y para todo menor de 18), el juego avisa a los socios que esos datos **no pueden venderse ni usarse para personalización**.
 
-## 4. Tu edad y tus opciones
+## 4. Configuración del juego, estadísticas y errores (Unity Gaming Services)
+
+Usamos **Unity Gaming Services** como proveedor de servicios (trata los datos en nuestro nombre):
+
+- **Configuración remota** (para todos, después de la pantalla de edad): el juego descarga los ajustes del momento, como eventos y equilibrio. Para eso Unity recibe un **identificador de instalación** creado por el propio servicio y la dirección IP.
+- **Estadísticas de uso e informes de error** (**solo 18+ que aceptó**): eventos del juego (por ejemplo, distrito abierto, pedido entregado, compra completada, sin el número de transacción), la versión del juego, datos técnicos del dispositivo, el identificador de instalación y, si el juego falla, una descripción técnica del error. Sirven para entender qué mejorar y corregir fallos. Quien tiene menos de 18 o rechazó no envía nada de esto.
+
+## 5. Compras en el juego
+
+Las compras son opcionales y pasan por **Google Play**. Google procesa el pago: nunca vemos tu tarjeta ni tus datos bancarios. El juego solo recibe de Google Play el recibo de la compra, que se queda en el dispositivo (sección 2), para entregar el contenido y permitir **Restaurar compras**. El contenido de cada compra es fijo y aparece antes de pagar. No hay cajas sorpresa ni sorteos pagados. Para compras de menores, valen los controles de aprobación de la propia cuenta de Google (Family Link).
+
+## 6. Tu edad y tus opciones
 
 | Tu respuesta | Qué pasa |
 |---|---|
-| Menos de 13 | solo anuncios contextuales (según el juego, no según tú), sin ID de publicidad, solo redes aprobadas para el público infantil, y la señal de menor (COPPA) enviada a los socios |
-| 13 a 17 | anuncios no personalizados y sin ID de publicidad |
-| 18 o más | tú eliges: **Aceptar** (anuncios personalizados) o **Rechazar** (anuncios genéricos). Los dos botones son iguales, y rechazar no te quita nada del juego |
+| Menos de 13 | solo anuncios contextuales (por el contenido del juego, no por ti), sin ID de publicidad, solo redes aprobadas para el público infantil, y la señal de menor (COPPA) enviada a los socios; ninguna estadística de uso |
+| 13 a 17 | anuncios no personalizados y sin ID de publicidad; ninguna estadística de uso |
+| 18 o más | tú eliges: **Aceptar** (anuncios personalizados y estadísticas de uso) o **Rechazar** (anuncios genéricos, sin estadísticas). Los dos botones tienen el mismo peso, y rechazar no te quita nada del juego |
 
-Para cambiar tu respuesta: **Ajustes > Privacidad** en el juego. El cambio se aplica por completo la próxima vez que abras el juego. En Android también puedes restablecer o eliminar el ID de publicidad en **Ajustes > Google > Anuncios** (el nombre cambia según el fabricante).
+Para cambiar tu respuesta: **Ajustes > Privacidad** en el juego. El cambio vale por completo la próxima vez que abras el juego. En Android también puedes restablecer o borrar el ID de publicidad en **Ajustes > Google > Anuncios** (el nombre varía según el fabricante).
 
-## 5. Niños y adolescentes
+## 7. Niños y adolescentes
 
-Seguimos la COPPA (EE. UU.), el Estatuto Digital del Niño y del Adolescente de Brasil (Ley 15.211/2025), la LGPD (art. 14) y el RGPD:
+El juego es para mayores de 13 años, y quien indique menos de 13 recibe la protección de la tabla anterior. Seguimos el Estatuto Digital del Niño y del Adolescente de Brasil (Ley 15.211/2025), la LGPD (art. 14) y la COPPA (EE. UU.):
 
-- ningún anuncio personalizado ni ID de publicidad para menores de 18 años;
-- **nada aleatorio de pago**: el juego no tiene cajas sorpresa (loot boxes) y lo que da es fijo;
+- nada de anuncios personalizados, ningún ID de publicidad y ninguna estadística de uso para menores de 18;
+- **nada aleatorio pagado**: el juego no tiene cajas de premio sorpresa (loot boxes), y lo que da cada compra o recompensa es fijo;
 - sin chat y sin contacto entre jugadores;
-- no pedimos ni guardamos el nombre, el contacto, la foto ni la ubicación de nadie.
+- no pedimos ni guardamos nombre, contacto, foto ni ubicación de nadie.
 
-Si eres madre, padre o tutor y crees que se recogieron datos de un menor de forma indebida, escribe al contacto de la sección 1.
+Si eres responsable de un menor y crees que se recogió algún dato suyo indebidamente, escribe al contacto de la sección 1.
 
-## 6. Bases legales (RGPD y LGPD) `<<CONFIRMAR con el jurídico>>`
+## 8. Bases legales (LGPD y RGPD) `<<CONFIRMAR con el jurídico>>`
 
-- Anuncios personalizados: **consentimiento** (solo 18+, revocable en cualquier momento).
-- Anuncios no personalizados, medición y prevención de fraude: **interés legítimo**, siempre con la protección reforzada para menores de la sección 5.
-- Progreso y ajustes en el dispositivo: **ejecución del servicio** que pediste (jugar).
+- Anuncios personalizados y estadísticas de uso: **consentimiento** (solo 18+, revocable en cualquier momento).
+- Anuncios no personalizados, medición y prevención de fraude: **interés legítimo**, siempre con la protección reforzada para menores de la sección 7.
+- Configuración remota, progreso, ajustes y compras: **ejecución del servicio** que pediste (jugar y recibir lo que compraste).
 
-## 7. Cuánto tiempo
+## 9. Por cuánto tiempo
 
 - Lo que está en el dispositivo: hasta que borres los datos del juego o lo desinstales.
-- Lo que recoge Unity: durante el plazo de su política.
-- Nosotros no guardamos nada, porque no recibimos nada.
+- Estadísticas e informes de error en Unity Gaming Services: `<<CONFIRMAR: plazo configurado en el panel>>`.
+- Lo que Unity recoge para anuncios: por el plazo de su política.
 
-## 8. Tus derechos y cómo pedir el borrado
+## 10. Tus derechos y cómo pedir el borrado
 
-Tienes derecho a saber si se tratan tus datos, a acceder a ellos, corregirlos, borrarlos y llevarlos a otro servicio, a retirar el consentimiento y a reclamar ante la autoridad de protección de datos (en Brasil, la ANPD; en la UE, la de tu país).
+Tienes derecho a confirmar el tratamiento, acceder, corregir, borrar, portar tus datos y revocar el consentimiento, además de reclamar ante la autoridad de protección de datos (en Brasil, la ANPD).
 
-- **Borrar lo que guardó el juego:** desinstala Forge Street o usa **Ajustes de Android > Aplicaciones > Forge Street > Almacenamiento > Borrar datos**. Atención: después no se puede recuperar el progreso, salvo desde una copia de seguridad de Android.
-- **Retirar los anuncios personalizados:** Ajustes > Privacidad en el juego.
-- **Datos que recogió Unity:** usa el canal de privacidad de Unity `<<CONFIRMAR enlace>>` o escríbenos y reenviamos tu solicitud. Como no recibimos datos, no podemos identificarte de nuestro lado: la solicitud tiene que llegar a Unity.
-- **Residentes de California (CCPA/CPRA):** rechazar los anuncios personalizados (o ser menor de 18) envía a los socios la señal de "no vender ni compartir".
+- **Borrar lo que guardó el juego:** desinstala Forge Street o usa **Ajustes de Android > Aplicaciones > Forge Street > Almacenamiento > Borrar datos**. Atención: el progreso no se puede recuperar después, salvo con una copia de seguridad de Android. Las compras se pueden restaurar con el botón **Restaurar compras**.
+- **Revocar el consentimiento:** Ajustes > Privacidad en el juego.
+- **Datos que recogió Unity** (anuncios y Unity Gaming Services): escribe al contacto de la sección 1 y reenviamos la solicitud, o usa el canal de privacidad de Unity `<<CONFIRMAR link>>`. Como el juego no pide nombre ni correo, puede hacer falta indicar un identificador del dispositivo para encontrar los datos.
+- **Residentes de California (CCPA/CPRA):** rechazar anuncios personalizados (o tener menos de 18) envía a los socios la señal de "no vender ni compartir".
 
-## 9. Seguridad
+## 11. Seguridad
 
-Nuestros socios de anuncios cifran los datos en tránsito. Los archivos del juego quedan en el almacenamiento propio de la app en tu dispositivo.
+Los datos que salen del dispositivo viajan cifrados (HTTPS). Los archivos del juego se quedan en el área de la app en tu dispositivo.
 
-## 10. Cambios en esta política
+## 12. Cambios en esta política
 
-Si esta política cambia, también cambian la fecha y la versión de arriba. Si el cambio afecta a tus opciones, el juego te preguntará de nuevo.
+Si esta política cambia, también cambian la fecha y la versión de arriba. Si el cambio afecta tus opciones, el juego vuelve a preguntar.
 
-## 11. Contacto
+## 13. Contacto
 
-`<<CONFIRMAR: contato@vstack-solutions.com.br>>` · VStack Solutions `<<CONFIRMAR: dirección>>`
+`<<CONFIRMAR: contato@vstack-solutions.com.br>>` · `<<CONFIRMAR: razón social y dirección>>`

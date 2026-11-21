@@ -6,6 +6,8 @@
 
 **Evidência usada:** `main` em `0af7d10`; `View/Privacidade.cs`, `View/Servicos.cs`, `View/Game.cs`, `View/SaveStore.cs`, `View/Art.cs` (chaves do PlayerPrefs); lista de permissões do APK 0.6.0 no `release_check` do `client/tools/verify.sh` (`PERMS`); `docs/LEVELPLAY.md` §1, §6 e §7; `client/ProjectSettings/UnityConnectSettings.asset`; tabelas oficiais de Data Safety do LevelPlay e do Unity Ads, consultadas em 2026-10-12 (links no §2.6).
 
+**Formulário vigente (2026-11-21):** as respostas para colar na Play Console (Data safety com UGS, `client_error` e compras; IARC com compras digitais = Sim; público-alvo) estão em `docs/PUBLICACAO_PLAY.md` §4. Os §2 e §3.1 abaixo são o histórico de 2026-10-12 e o raciocínio por SDK.
+
 **Portão antes de preencher a Play Console:** rodar `client/tools/verify.sh release-check <o AAB que vai subir>`. Sem `AVISO: permissão fora da lista aprovada` = este inventário vale para aquele AAB. Com aviso, ou com SDK novo/atualizado (LevelPlay, Unity Ads, analytics/crash da decisão P8), revisar o §1 e o §2 antes de enviar. Declaração de loja não se reaproveita de build anterior sem essa conferência.
 
 ---
@@ -154,7 +156,7 @@ Categoria: **Jogo**. O certificado sai do questionário. A expectativa é a clas
 | Linguagem imprópria, humor grosseiro, discriminação | Não | — |
 | Drogas, álcool, tabaco | Não | não há taverna nem bebida |
 | Jogos de azar (simulados ou com dinheiro) | **Não** | nada aleatório: VIP por sequência de Weyl, encomendas em rodízio, baús de marco com ouro fixo |
-| Compras digitais / itens aleatórios pagos (loot box) | **Não** | sem IAP hoje; loot box nunca (V4, ECA Digital art. 20). Refazer o questionário quando o IAP entrar (Wave E) |
+| Compras digitais / itens aleatórios pagos (loot box) | compras **Sim** desde o Unity IAP (2026-10-23, `PUBLICACAO_PLAY.md` §4.3); loot box **Não** |  loot box nunca (V4, ECA Digital art. 20). Refazer o questionário quando o IAP entrar (Wave E) |
 | Interação entre usuários, chat, conteúdo gerado por usuário | **Não** | single-player, sem chat (o art. 21 do ECA Digital não se aplica hoje) |
 | Compartilha a localização do usuário com outros usuários | Não | — |
 | Anúncios | Sim, na declaração "Contém anúncios" da Play Console (o IARC não classifica anúncio) | rewarded opcional |

@@ -4,6 +4,11 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Kit de publicação para o dia do D-U-N-S (`docs/PUBLICACAO_PLAY.md`):** o passo a passo do Play Console na ordem certa, com o valor de cada campo para colar.
+  - Ficha pt/en/es, Conteúdo do app (anúncios, acesso, público 13+, IARC com compras digitais = Sim, Data safety refeito com UGS, `client_error` e histórico de compras) e os 3 produtos únicos com nome e descrição nos 3 idiomas.
+  - O Pacote do Mestre fica em rascunho até a P3: o `remove_ads` não tem efeito com o intersticial desligado.
+  - Política de privacidade pt/en/es atualizada com o UGS e as compras, e `docs/politica/index.html` pronto para hospedar (gerado por `client/tools/politica_html.py`).
+  - Pendências do Vinicius: domínio da política, link dela no jogo e revisão jurídica.
 - **Unity Ads como 2ª rede do LevelPlay:** app "Forge Street" Android no Unity Ads da org empresarial (Game ID `800410373`, placements `BP_Rewarded_Android` e `BP_Interstitial_Android`) e instância Unity Ads no app do LevelPlay, ligada às 6 ad units rewarded e à `interstitial_transicao`. O adaptador já estava no projeto; o jogo não muda (`LEVELPLAY.md` §2).
 - **Soak de 60 min no emulador aprovado:** PSS +1,9% e heap mono +2,4% depois do minuto 10 (medianas), 0 exceção. Novos: `-soak` (1 linha SOAK por minuto no log) e `client/tools/soak_emulador.sh` + `soak_relatorio.py`. Achados (fps cai de ~52 para ~35 na hora a 4×; ~14 GCs/min; o Vulkan do emulador derruba o build dev) em `docs/SOAK.md`.
 - **Cloud Save ligado ao UGS atrás da flag `CloudSave` (desligada):** pacotes Cloud Save 3.4.2 e Authentication 3.7.4 (login anônimo).
