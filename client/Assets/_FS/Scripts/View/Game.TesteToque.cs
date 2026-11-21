@@ -4,6 +4,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.UI;
 
 namespace FS
 {
@@ -15,7 +16,23 @@ namespace FS
     /// </summary>
     public sealed partial class Game
     {
-        int _toques;   // quantas vezes o toque chegou ao mundo (Game.Toque): o tap que fecha nao pode contar
+        int _toques;
+
+        /// <summary>Centro (px de tela) do botao ativo cuja legenda e' `rotulo` (o de cima, se houver mais de um).</summary>
+        static Vector2 CentroDoBotao(string rotulo)
+        {
+            Vector2 c = new Vector2(-1f, -1f);
+            foreach (Button b in Object.FindObjectsByType<Button>(FindObjectsSortMode.None))
+            {
+                if (!b.isActiveAndEnabled) continue;
+                Text t = b.GetComponentInChildren<Text>();
+                if (t == null || t.text != rotulo) continue;
+                var k = new Vector3[4];
+                ((RectTransform)b.transform).GetWorldCorners(k);   // canvas overlay: canto do mundo = px de tela
+                c = (k[0] + k[2]) / 2f;
+            }
+            return c;
+        }   // quantas vezes o toque chegou ao mundo (Game.Toque): o tap que fecha nao pode contar
 
         IEnumerator TesteToqueFora(string pasta)
         {
@@ -91,7 +108,11 @@ namespace FS
             _metas.Abrir();
             yield return Gesto(veu, veu + new Vector2(0f, h * 0.1f), 0.3f);
             Checa(MetasAberto, "arrastar no veu nao fecha Metas");
-            _metas.Fechar();
+            // 6b. Conselho do #187: o botao Fechar apertado com um escorregao de 15 px (dedo de verdade) ainda clica
+            Vector2 fechar = CentroDoBotao(Loc.T("cfg.fechar"));
+            yield return Gesto(fechar, fechar + new Vector2(15f, 6f), 0.12f);
+            Checa(!MetasAberto, "Fechar com escorregao de 15 px clica (o veu nao rouba o arraste do botao)");
+            if (MetasAberto) _metas.Fechar();
 
             // 7. configuracoes: tap fora fecha
             _cfg.gameObject.SetActive(true);
@@ -107,7 +128,10 @@ namespace FS
             yield return Gesto(veu, veu, 0.08f);
             Checa(Painel, "cofre com ouro pendente NAO fecha por toque fora");
             yield return Foto("cofre_continua_aberto");
-            ClosePanel();
+            Vector2 pegar = CentroDoBotao(Loc.T("cofre.pegar"));
+            yield return Gesto(pegar, pegar + new Vector2(-15f, 5f), 0.12f);
+            Checa(!Painel, "PEGAR do cofre com escorregao de 15 px clica");
+            if (Painel) ClosePanel();
             ShowPanel("Teste", "escolha", "Trocar", () => ClosePanel());
             yield return Gesto(veu, veu, 0.08f);
             Checa(Painel, "painel de escolha NAO fecha por toque fora");

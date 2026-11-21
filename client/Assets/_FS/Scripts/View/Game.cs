@@ -332,7 +332,7 @@ namespace FS
             string shot = Arg("-shot");
             if (!string.IsNullOrEmpty(shot)) StartCoroutine(Shot(shot));
             string toque = Arg("-testetoque");   // fix/ui-fechar-ao-tocar-fora: teste de ponta a ponta (Game.TesteToque.cs)
-            if (!string.IsNullOrEmpty(toque) && _testSession) StartCoroutine(TesteToqueFora(toque));
+            if (!string.IsNullOrEmpty(toque) && _testSession && Debug.isDebugBuild) StartCoroutine(TesteToqueFora(toque));
             string rec = Arg("-record");
             if (!string.IsNullOrEmpty(rec)) StartCoroutine(Record(rec));
             string ad = Ads.Arg("-adtest");   // Ads.Arg tambem le o extra "unity" do intent no Android
@@ -464,7 +464,7 @@ namespace FS
             // fix/ui-fechar-ao-tocar-fora: com a bandeja aberta, o toque no mundo e' dela (fecha num tap) e nao age no mundo
             bool daBandeja = false;
             if (modal) _bandeja.Cancela();
-            else daBandeja = _bandeja.Tick(ptr, ToqueFora.FechaMenu(EstadoAtual, _menu.IsOpen, _sim.FirstSaleTime < 0f && _hintH == Hint.BuyMenu), _menu.TopPx, _menu.Toggle);
+            else daBandeja = _bandeja.Tick(ptr, ToqueFora.FechaMenu(EstadoAtual, _menu.IsOpen, _sim.FirstSaleTime < 0f && _hintH == Hint.BuyMenu), _menu.TopPx, _menu.Toggle, _view.NoAnel);
             if (!modal && !daBandeja && ptr != null && ptr.press.wasPressedThisFrame) Toque(ptr.position.ReadValue());
             _joy.Blocked = modal;
             _joy.BottomPx = _menu.TopPx;

@@ -1,0 +1,32 @@
+TOQUEFORA ok     tap no mundo fecha a bandeja de melhorias
+TOQUEFORA ok     o tap que fechou nao agiu no mundo (Game.Toque)
+TOQUEFORA ok     arrastar (joystick) nao fecha a bandeja
+TOQUEFORA ok     tocar dentro da bandeja nao fecha
+TOQUEFORA ok     com bloqueio registrado (tutorial) o tap nao fecha
+TOQUEFORA ok     tap dentro do cartao de Metas nao fecha
+TOQUEFORA ok     tap no veu fecha Metas
+TOQUEFORA ok     arrastar no veu nao fecha Metas
+TOQUEFORA ok     Fechar com escorregao de 15 px clica (o veu nao rouba o arraste do botao)
+TOQUEFORA ok     tap fora fecha as configuracoes
+TOQUEFORA ok     tap fora fecha o painel informativo
+TOQUEFORA ok     cofre com ouro pendente NAO fecha por toque fora
+TOQUEFORA ok     PEGAR do cofre com escorregao de 15 px clica
+TOQUEFORA ok     painel de escolha NAO fecha por toque fora
+TOQUEFORA ok     sem bandeja/painel o tap chega ao mundo
+TOQUEFORA OK
+[antes do conserto do veu] TOQUEFORA ok     tap no mundo fecha a bandeja de melhorias
+[antes do conserto do veu] TOQUEFORA ok     o tap que fechou nao agiu no mundo (Game.Toque)
+[antes do conserto do veu] TOQUEFORA ok     arrastar (joystick) nao fecha a bandeja
+[antes do conserto do veu] TOQUEFORA ok     tocar dentro da bandeja nao fecha
+[antes do conserto do veu] TOQUEFORA ok     com bloqueio registrado (tutorial) o tap nao fecha
+[antes do conserto do veu] TOQUEFORA ok     tap dentro do cartao de Metas nao fecha
+[antes do conserto do veu] TOQUEFORA ok     tap no veu fecha Metas
+[antes do conserto do veu] TOQUEFORA ok     arrastar no veu nao fecha Metas
+[antes do conserto do veu] TOQUEFORA FALHOU Fechar com escorregao de 15 px clica (o veu nao rouba o arraste do botao)
+[antes do conserto do veu] TOQUEFORA ok     tap fora fecha as configuracoes
+[antes do conserto do veu] TOQUEFORA ok     tap fora fecha o painel informativo
+[antes do conserto do veu] TOQUEFORA ok     cofre com ouro pendente NAO fecha por toque fora
+[antes do conserto do veu] TOQUEFORA FALHOU PEGAR do cofre com escorregao de 15 px clica
+[antes do conserto do veu] TOQUEFORA ok     painel de escolha NAO fecha por toque fora
+[antes do conserto do veu] TOQUEFORA ok     sem bandeja/painel o tap chega ao mundo
+[antes do conserto do veu] TOQUEFORA FALHOU: Fechar com escorregao de 15 px clica (o veu nao rouba o arraste do botao) | PEGAR do cofre com escorregao de 15 px clica
