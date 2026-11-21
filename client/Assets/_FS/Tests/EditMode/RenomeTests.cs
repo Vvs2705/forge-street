@@ -148,7 +148,8 @@ namespace FS.Tests
         }
 
         /// <summary>Fontes de hoje pelo fluxo do Sim: encomenda entregue pelo tipo (B-CORE-05: Common +1 ... Royal +10), bau aberto +5, +1 a cada
-        /// 10 Superiores vendidas; nada mais muda o total.</summary>
+        /// 10 Superiores vendidas, os marcos da Collection (B-CORE-08) e as metas; nada mais muda o total. BALANCE §49: com os ajudantes
+        /// priorizando a fila o bot paga o marco col_produtos_old_forge_50 (+5) dentro dos 30 min; a soma conta as duas fontes que faltavam.</summary>
         [Test]
         public void Fontes_EncomendaBauESuperior_PeloFluxoDoSim()
         {
@@ -156,7 +157,8 @@ namespace FS.Tests
             Assert.Greater(s.OrderCount, 0, "premissa: encomendas entregues");
             Assert.Greater(BausAbertos(s), 0L, "premissa: baus abertos");
             Assert.Greater(s.Encomendas.RenomeGanho, (long)s.OrderCount, "premissa: tipos com mais de +1 (Bulk, Quality, Mixed)");
-            Assert.AreEqual(s.Encomendas.RenomeGanho + 5L * BausAbertos(s) + s.Renome.Superiores / RenomeDefs.SuperiorACada, s.Renome.Total);
+            long colecao = s.Colecao.Marcos.Where(m => s.Colecao.Pago(m)).Sum(m => (long)m.Renome);
+            Assert.AreEqual(s.Encomendas.RenomeGanho + 5L * BausAbertos(s) + s.Renome.Superiores / RenomeDefs.SuperiorACada + colecao + s.Metas.Renome, s.Renome.Total);
         }
 
         /// <summary>A venda de verdade no balcao (Sim.Sell) conta a Superior, nao a Fina nem a Normal.</summary>
