@@ -72,7 +72,9 @@ dirty() {
 }
 
 build() {  # build <método> <log> <BuildTarget>
-  run_unity "$2" -quit -executeMethod "FS.EditorTools.Setup.$1"; local rc=$?
+  # Android: abre já no alvo, senão o domínio do Editor compila sem o UNITY_ANDROID e o hook ManifestPrivacidade (D-PRIV-2) fica de fora
+  local alvo=(); [[ "$3" == Android ]] && alvo=(-buildTarget Android)
+  run_unity "$2" "${alvo[@]}" -quit -executeMethod "FS.EditorTools.Setup.$1"; local rc=$?
   local sum; sum=$(grep -m1 -o "BuildSummary($3): .*" "$OUT/$2")
   [ $rc -eq 0 ] && [[ "$sum" == *result=Succeeded* ]] || fail "$1 (saída $rc, '${sum:-sem BuildSummary}', ver $OUT/$2)"
   ok "$1: $sum"
