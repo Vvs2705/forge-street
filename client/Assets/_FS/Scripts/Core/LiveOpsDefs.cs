@@ -237,7 +237,7 @@ namespace FS.Core
                 {
                     M("lingotes600", "product_crafted", 600, 150, "lingote"), M("vende300", "product_sold", 300, 80), M("bulk2", "order_complete", 2, 100, "bulk"),
                     M("melhoria2", "upgrade_buy", 2, 60), M("ferram60", "product_sold", 60, 80, "ferramenta"), M("contrata1", "worker_any", 1, 80),
-                    M("dias3", "play_day", 3, 150),
+                    M("dias4", "play_day", 4, 150),   // 2026-11-21 (BALANCE §51): com a IA da fila o F2P de referencia fechava no dia 3; eram 3 dias
                 },
                 Trilha = Trilha(Cos("cos_ev_s2w2_emblema"), "cos_ev_s2w2_carrinho"), Encomenda = "ord_ev_rare_ore_rush", Tema = "minerio",
                 Modificadores = Mais(new[] { new Modificador("GrabTime", 0.7f) }, Fornalha(0.9f)),

@@ -530,12 +530,16 @@ namespace FS.Tests
         }
 
         /// <summary>Os primeiros minutos do bot F2P (ate comprar as Ferramentas, 10:30) iguais ao main antes do Orders 2.0, tick a tick: o golden
-        /// foi gerado pelo codigo de antes (mesmos eventos de encomenda e compra no mesmo tick, mesmo ouro, vendas e Renome no fim).</summary>
+        /// foi gerado pelo codigo de antes (mesmos eventos de encomenda e compra no mesmo tick, mesmo ouro, vendas e Renome no fim).
+        /// BALANCE §51 (IA dos ajudantes prioriza a fila): regerado. Ate os Escudos (tick 11124) sai igual ao byte (um produto so: a Demanda
+        /// nao escolhe nada); depois os ajudantes levam escudo a quem espera escudo e as Ferramentas saem no tick 19702 (10:57, antes 10:30),
+        /// com mais ouro ganho (1850, antes 1730) e menos vendas (104, antes 116: mais escudos, que valem mais). As regras do teste (1 vaga,
+        /// so Common) seguem.</summary>
         [Test]
         public void PrimeirosDezMinutos_IguaisAosDeAntes_GoldenDoMain()
         {
             const string golden = "2011:4:0:50 2031:16:2:5 3400:17:2:25 3478:4:1:65 4000:16:2:12 5301:4:2:85 6790:17:2:25 6886:4:3:110 7390:16:2:9 8946:4:4:145 " +
-                "10928:17:2:25 11124:4:5:185 11528:16:3:8 12508:4:7:315 13673:17:3:25 14243:4:8:410 14273:16:2:30 17638:17:2:45 18183:4:9:670";   // 2026-11-21: sem a esteira (6) e Ferramentas +140; ate 11528 igual ao main
+                "10928:17:2:25 11124:4:5:185 11528:16:3:8 12389:4:7:315 13633:17:3:25 14071:4:8:410 14233:16:2:30 19053:4:9:670";   // 2026-11-21: sem a esteira (6), Ferramentas +140 (§50) e ajudantes pela fila (§51); ate 11528 igual ao main
             var s = new Sim(); var bot = new Bot();
             var ev = new List<string>();
             int tick = 0;
@@ -547,14 +551,14 @@ namespace FS.Tests
                 Assert.LessOrEqual(s.Encomendas.Vagas.Count, 1, "1 vaga so");
                 Assert.IsTrue(s.Encomendas.Vagas.TrueForAll(v => v.Tipo == OrderType.Common && v.Def.ClientId == null), "so Common");
             }
-            Assert.AreEqual(18183, tick);
+            Assert.AreEqual(19053, tick);
             Assert.AreEqual(golden, string.Join(" ", ev));
-            Assert.AreEqual(30L, s.Gold);
-            Assert.AreEqual(1610L, s.GoldEarned);
-            Assert.AreEqual(113, s.Sales);
-            Assert.AreEqual(5, s.OrderCount);
-            Assert.AreEqual(145L, s.OrderGold);
-            Assert.AreEqual(15L, s.Renome.Total);
+            Assert.AreEqual(55L, s.Gold);
+            Assert.AreEqual(1680L, s.GoldEarned);
+            Assert.AreEqual(108, s.Sales);
+            Assert.AreEqual(4, s.OrderCount);
+            Assert.AreEqual(100L, s.OrderGold);
+            Assert.AreEqual(14L, s.Renome.Total);
             Assert.AreEqual("7.38,5.80", s.Player.Pos.ToString());
         }
 
@@ -570,8 +574,10 @@ namespace FS.Tests
             Assert.GreaterOrEqual(s.OrderCount, 25, "ECONOMIA_WAVE_B §10: >= 25 em 60 min");
             long colecao = s.Colecao.Marcos.Where(m => s.Colecao.Pago(m)).Sum(m => (long)m.Renome)   // B-CORE-08: marcos da Collection e obras do Hall
                 + s.Hall.Defs.Where(d => s.Hall.Tem(d.Id)).Sum(d => (long)d.Renome);
-            Assert.AreEqual(s.Encomendas.RenomeGanho + 5L * s.Chests.Count(c => c.State == 2) + s.Renome.Superiores / RenomeDefs.SuperiorACada + colecao, s.Renome.Total,
-                "o Renome vem das encomendas (pelo tipo), dos baus e da Collection");
+            // BALANCE §51: com os ajudantes priorizando a fila o bot fecha uma meta com Renome (Metas.Renome, +20) dentro dos 100 min; a soma
+            // passa a contar essa fonte (ja existia: Metas.Paga -> Renome.Ganha), em vez de supor que nenhuma meta paga Renome ate la
+            Assert.AreEqual(s.Encomendas.RenomeGanho + 5L * s.Chests.Count(c => c.State == 2) + s.Renome.Superiores / RenomeDefs.SuperiorACada + colecao
+                + s.Metas.Renome, s.Renome.Total, "o Renome vem das encomendas (pelo tipo), dos baus, da Collection e das metas");
         }
 
         // ------------------------------------------------------------------ validator
