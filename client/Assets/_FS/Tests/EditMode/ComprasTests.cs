@@ -401,7 +401,7 @@ namespace FS.Tests
         public void RemoveAds_DoRecibo_VetaOIntersticial_ORewardedContinua()
         {
             var s = new Sim(new Tuning { Interstitial = true });
-            s.Buy(Upgrade.Tools);
+            s.Buy(Upgrade.Tools); s.Tutorial.Pular();   // FTUE: os passos guiados tambem vetam
             bool Transicao() => Estados.De(true, true, false, false, false, true) == Estado.Transition;
             Assert.IsNull(s.Anuncios.VetoIntersticial(Transicao(), false, 1e6f));
             Entrega(s, new LojaFalsa(null));

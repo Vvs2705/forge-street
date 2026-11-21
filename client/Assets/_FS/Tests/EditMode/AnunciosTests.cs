@@ -288,7 +288,7 @@ namespace FS.Tests
         static Sim Inter(bool tutorialFeito = true)
         {
             var s = new Sim(new Tuning { Interstitial = true });
-            if (tutorialFeito) s.Buy(Upgrade.Tools);
+            if (tutorialFeito) { s.Buy(Upgrade.Tools); s.Tutorial.Pular(); }   // FTUE: os passos guiados tambem vetam
             return s;
         }
 
