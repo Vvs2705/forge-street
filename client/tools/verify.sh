@@ -200,7 +200,7 @@ migracao() {  # migracao <apk-antigo> <apk-novo>
 # base = permissões do APK 0.6.0 (LevelPlay/Unity Ads, WorkManager, androidx). Permissão nova = revisar o Data safety antes de subir
 PERMS="android.permission.INTERNET android.permission.ACCESS_NETWORK_STATE android.permission.VIBRATE android.permission.WAKE_LOCK
   android.permission.RECEIVE_BOOT_COMPLETED android.permission.FOREGROUND_SERVICE com.google.android.gms.permission.AD_ID
-  android.permission.ACCESS_ADSERVICES_TOPICS android.permission.ACCESS_ADSERVICES_ATTRIBUTION $PKG.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+  android.permission.ACCESS_ADSERVICES_ATTRIBUTION $PKG.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
   com.android.vending.BILLING"   # Unity IAP 5 (2026-10-23): Data safety "Histórico de compras", docs/IAP.md §6
 
 # confere um .aab ou .apk pronto, sem abrir o Unity; lista tudo o que reprova e só então sai 1
@@ -273,6 +273,8 @@ release_check() {
   elif [[ "$sig" == *"CN=Android Debug"* ]]; then bad "assinado com a chave de DEBUG"
   else ok "assinado: $(echo "$sig" | grep -m1 -oE 'CN=[^,]*')"; fi
 
+  # D-PRIV-2: a API Topics (interesse do usuario para anuncio) sai do manifesto (Editor/ManifestPrivacidade.cs); se voltar, reprova
+  [[ " $(echo $perms) " == *" android.permission.ACCESS_ADSERVICES_TOPICS "* ]] && bad "ACCESS_ADSERVICES_TOPICS no manifesto (D-PRIV-2: o ManifestPrivacidade nao rodou?)"
   local p novas=() lista; lista=" $(echo $PERMS) "
   for p in $perms; do [[ "$lista" == *" $p "* ]] || novas+=("$p"); done
   echo "     permissões: $(echo "$perms" | sed 's/.*\.//' | paste -sd' ')"
