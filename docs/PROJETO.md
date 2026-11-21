@@ -99,11 +99,7 @@ Do `BACKLOG_V07.md`: D1 e D9 estão feitos; D3 resolvida pelo dado (input "Both"
 
 ## 7. Known issues
 
-<<<<<<< HEAD
-**Conferido no código em 2026-11-21:** 0 P0 e 0 P1 abertos. Abertos: 2 P2 (nome "Ajudantes ágeis", fome da Bigorna 2) e 1 item de design (zona morta reduzida); a cota do contrato foi decidida na V30.
-=======
-**Conferido no código em 2026-11-21:** os P0/P1 antigos da lista estão corrigidos. **Abertos: 2 P1 de experiência**, que vieram do jogo do Vinicius até o fim e da análise GDD × build de 2026-11-21 (fora do repositório, F6: todo achado do `BALANCE.md` vira known issue): o fim de jogo sem destino para o ouro e o calendário de LiveOps que acaba. Também abertos: 3 P2 de leitura (luxos invisíveis, nível de estação sem aparência, nome "Ajudantes ágeis"), a fome da Bigorna 2, a zona morta reduzida e a cota do contrato.
->>>>>>> docs/known-issues-fechados
+**Conferido no código em 2026-11-21:** os P0/P1 antigos da lista estão corrigidos. **Abertos: 2 P1 de experiência**, que vieram do jogo do Vinicius até o fim e da análise GDD × build de 2026-11-21 (fora do repositório, F6: todo achado do `BALANCE.md` vira known issue): o fim de jogo sem destino para o ouro e o calendário de LiveOps que acaba. Também abertos: 3 P2 de leitura (luxos invisíveis, nível de estação sem aparência, nome "Ajudantes ágeis"), a fome da Bigorna 2, e a zona morta reduzida; a cota do contrato foi decidida na V30.
 
 | Problema | Prioridade (§132) | Fonte | Correção |
 |---|---|---|---|
