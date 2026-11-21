@@ -24,6 +24,13 @@ namespace FS
         public const int Versao = 1;
         public const string Chave = "fs_privacidade";   // PlayerPrefs, fora do save de progresso (como as Configuracoes)
 
+        /// <summary>D-PUB-3 (docs/PUBLICACAO_PLAY.md §9): a politica publica no site da empresa (D-PUB-1, Vinicius 2026-11-21: o site da VStack).
+        /// A pagina e' o docs/politica/index.html, com uma secao por idioma (ids pt-BR, en, es). A Play exige o link dentro do app.</summary>
+        public const string UrlPolitica = "https://vstack-solutions.com.br/forgestreet/privacidade/";
+
+        /// <summary>A URL ja na secao do idioma do jogo.</summary>
+        public static string Url(Idioma i) => UrlPolitica + "#" + (i == Idioma.Pt ? "pt-BR" : i == Idioma.En ? "en" : "es");
+
         /// <summary>Botao da faixa no idioma atual ("Menos de 13", "13 a 17", "18 ou mais").</summary>
         public static string NomeFaixa(Faixa f) => Loc.T("priv.faixa." + (int)f);
 
@@ -128,6 +135,7 @@ namespace FS
         readonly RectTransform _root;
         readonly Text _title, _body, _foot, _backLabel;
         readonly GameObject _idade, _cons, _back;
+        readonly RectTransform _backRt, _politicaRt;
         readonly Action<Faixa, bool> _done;
         string _atual;   // null = 1a abertura; senao, o rodape da revisao
         bool _passo2;
@@ -170,6 +178,14 @@ namespace FS
             _backLabel = back.GetComponentInChildren<Text>();
             _backLabel.color = MenuBar.Cream;
             _back = back.gameObject;
+            _backRt = (RectTransform)back.transform;
+            // D-PUB-3: a politica completa no navegador, em toda abertura (inclusive a 1a, antes de responder). Nao entra no Texto: nao sobe a Versao
+            Button pol = Art.NewButton(f, Loc.T("priv.politica"), 36, MenuBar.Leather, new Vector2(0.3f, 0.015f), new Vector2(0.7f, 0.1f),
+                () => Application.OpenURL(Privacidade.Url(Loc.Atual)));
+            Text polTxt = pol.GetComponentInChildren<Text>();
+            polTxt.color = MenuBar.Cream;
+            polTxt.resizeTextForBestFit = true; polTxt.resizeTextMinSize = 22; polTxt.resizeTextMaxSize = 36;   // o rotulo curto (priv.politica) cabe em 1 linha no mesmo corpo do VOLTAR
+            _politicaRt = (RectTransform)pol.transform;
             _root.gameObject.SetActive(false);
         }
 
@@ -199,7 +215,11 @@ namespace FS
             _idade.SetActive(!consentimento);
             _cons.SetActive(consentimento);
             _foot.text = _atual ?? Loc.T("priv.rodape");
-            _back.SetActive(consentimento || _atual != null);
+            bool comVolta = consentimento || _atual != null;
+            _back.SetActive(comVolta);
+            // fileira de baixo: com VOLTAR/CANCELAR, os dois lado a lado; sem ele (1a abertura, passo 1), a POLITICA sozinha no meio
+            _backRt.anchorMin = new Vector2(0.06f, 0.015f); _backRt.anchorMax = new Vector2(0.48f, 0.1f);
+            _politicaRt.anchorMin = new Vector2(comVolta ? 0.52f : 0.3f, 0.015f); _politicaRt.anchorMax = new Vector2(comVolta ? 0.94f : 0.7f, 0.1f);
             _backLabel.text = Loc.T(consentimento ? "priv.voltar" : "priv.cancelar");
         }
 

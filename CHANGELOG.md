@@ -4,6 +4,7 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/); versões d
 
 ## [Unreleased]
 ### Mudado
+- **Link da política de privacidade no jogo (D-PUB-3):** a tela de privacidade (1ª pergunta de idade e Configurações > Privacidade) ganhou o botão VER POLÍTICA (PRIVACY POLICY em inglês), que abre `https://vstack-solutions.com.br/forgestreet/privacidade/` na seção do idioma do jogo. A política fica no site da VStack (D-PUB-1, decisão do Vinicius em 21/11). O botão não muda o texto da pergunta, então ninguém precisa responder de novo.
 - **Grand Forge volta a fechar o Charter sem a esteira:** a cratera estelar traz o Forjador, que leva o lingote da fornalha à forja estelar no lugar do trilho. Carregador de minério com a mão cheia de um minério que nenhuma fornalha aceita devolve ao monte e vai buscar outro: antes ficava parado para sempre e a Grand Forge travava inteira (BALANCE §54).
 - **Fim de jogo com destino: Obras do Reino, Decretos semanais e calendário de LiveOps infinito (`BALANCE.md` §53; os 2 P1 do `PROJETO.md` §7):**
 - **Ajudantes atendem a fila primeiro:** quem leva produto ao balcão e lingote às bancadas passa a escolher pelo que os clientes da fila estão esperando (`Sim.Demanda`), e só troca de alvo quando o atual não tem pedido e outro tem. Sem fila, nada muda. Medições no `BALANCE.md` §51.

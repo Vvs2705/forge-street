@@ -190,7 +190,7 @@ O manifesto é um só para todos: permissão não varia por usuário. O que vari
 
 ## 5. `app-ads.txt` (rascunho)
 
-Fica na raiz do domínio informado no campo "Site" da conta de desenvolvedor da Play Console, em `https://<<PREENCHER: domínio>>/app-ads.txt`. As linhas saem **do painel** (LevelPlay e Unity Ads), copiadas como estão. Nenhum ID abaixo foi inventado: todos estão como `<<PREENCHER>>`.
+Fica na raiz do domínio informado no campo "Site" da conta de desenvolvedor da Play Console, em `https://vstack-solutions.com.br/app-ads.txt` (D-PRIV-3). As linhas saem **do painel** (LevelPlay e Unity Ads), copiadas como estão. Nenhum ID abaixo foi inventado: todos estão como `<<PREENCHER>>`.
 
 ```text
 # app-ads.txt — Forge Street (br.com.vstack.forgestreet) — RASCUNHO, não publicar com marcadores
@@ -216,8 +216,8 @@ unity3d.com, <<PREENCHER: ID da organização/publisher no painel Unity Ads>>, D
 ## 6. Política de privacidade: onde fica e como o jogo liga a ela
 
 - Textos prontos para revisão: [`politica/privacidade.pt-BR.md`](politica/privacidade.pt-BR.md), [`.en.md`](politica/privacidade.en.md), [`.es.md`](politica/privacidade.es.md).
-- **URL pública** `<<PREENCHER>>` (D-PRIV-3): página HTML simples no domínio do §5, por exemplo `https://<<domínio>>/forgestreet/privacidade` com as 3 línguas. A Play exige URL ativa, pública, sem login e que não seja PDF.
-- **Link dentro do jogo** (pendente, ticket da raia de View): botão "Política de privacidade" em Configurações > Privacidade (`Application.OpenURL`). Um botão novo não muda o `Privacidade.Texto`, então não sobe a `Privacidade.Versao`. Já mudar o texto da tela (revisão jurídica) **sobe** a versão, e a pergunta volta para todo mundo.
+- **URL pública** `https://vstack-solutions.com.br/forgestreet/privacidade/` (D-PRIV-3 = D-PUB-1, decidida em 2026-11-21: site da VStack): a página `politica/index.html`, com as 3 línguas (seções `#pt-BR`, `#en`, `#es`). Falta subir. A Play exige URL ativa, pública, sem login e que não seja PDF.
+- **Link dentro do jogo** (D-PUB-3, feito): botão VER POLÍTICA (PRIVACY POLICY em inglês) na tela de privacidade, na 1ª pergunta e em Configurações > Privacidade (`Application.OpenURL(Privacidade.Url(Loc.Atual))`). O botão não muda o `Privacidade.Texto`, então não sobe a `Privacidade.Versao`. Já mudar o texto da tela (revisão jurídica) **sobe** a versão, e a pergunta volta para todo mundo.
 - A política entra também na ficha da loja (campo obrigatório) e no painel do LevelPlay, se ele pedir.
 
 ---
@@ -248,7 +248,7 @@ unity3d.com, <<PREENCHER: ID da organização/publisher no painel Unity Ads>>, D
 |---|---|---|---|
 | D-PRIV-1 | Público-alvo na Play Console | 13–15, 16–17 e 18+, sem "12 ou menos" (§3.2); responder com honestidade se o app pode atrair crianças | ficha da loja, Internal (P9) |
 | D-PRIV-2 | Tirar `ACCESS_ADSERVICES_TOPICS` (e `ATTRIBUTION`?) do manifesto | **feita 2026-11-21** (#195): Topics fora, Attribution mantida (§4) | — |
-| D-PRIV-3 | Domínio e hospedagem da política e do `app-ads.txt`; "Site" da conta de desenvolvedor | o domínio da VStack `<<CONFIRMAR>>`, página HTML com as 3 línguas | URL da política, §5 |
+| D-PRIV-3 | Domínio e hospedagem da política e do `app-ads.txt`; "Site" da conta de desenvolvedor | **decidida 2026-11-21**: `https://vstack-solutions.com.br/forgestreet/privacidade/` e o `app-ads.txt` na raiz de `vstack-solutions.com.br` | falta subir a página |
 | D-PRIV-4 | Dados do controlador: razão social, CNPJ, endereço, e-mail (`contato@vstack-solutions.com.br` `<<CONFIRMAR>>`) e encarregado (DPO) ou canal LGPD | o jurídico diz se precisa de encarregado (porte da empresa × dado de adolescente) | política |
 | D-PRIV-5 | Revisão jurídica da política e do texto da tela de idade | revisar antes do Closed. Mudar o texto da tela = `Privacidade.Versao` + 1 | publicação |
 | D-PRIV-6 | Declarar "IDs de usuário" e "Histórico de compras", que o Unity Ads declara e o jogo não tem | declarar (conservador) e reavaliar com o IAP | Data Safety |
