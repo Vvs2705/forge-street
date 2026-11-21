@@ -92,7 +92,7 @@ namespace FS
         MenuBar _menu;
         Camera _cam;
         float _speed = 1f, _saveT, _hintT, _minuteT, _adHold, _visW = VisibleWidth, _backT;
-        bool _botDrive, _headless, _firstSaleLogged, _testSession, _started, _pausedByAd, _paused;
+        bool _botDrive, _headless, _firstSaleLogged, _testSession, _semSave, _started, _pausedByAd, _paused;
         IAds _ads;
         Telemetria _diario;   // A-PLAT-09: diario local + analytics remoto (so depois da tela de idade)
         IRemoteConfig _rc; RemoteConfig.Resultado _rcr; string _rcOrigem;   // A-PLAT-08: o config desta abertura
@@ -176,7 +176,10 @@ namespace FS
             Application.targetFrameRate = 60;
             // DM §109: idioma antes de montar qualquer texto. -lang en|es|pt (dev, fotos) > Configuracoes > idioma do aparelho
             Loc.Atual = Loc.Escolher(Arg("-lang"), Ajustes.Idioma, Application.systemLanguage.ToString());
-            _testSession = Arg("-testsession") != null || Arg("-autoplay") != null || Arg("-record") != null;
+            _testSession = Sessao.Teste(Arg("-testsession") != null, Arg("-autoplay") != null, Arg("-record") != null);
+            // P1: o -bot sozinho nao le nem grava o save (no aparelho do testador o autosave de 5 s trocava o progresso pelo do bot);
+            // -botgrava = o bot grava (verify.sh --migracao). O resto do -bot (diario, rede, tela de idade) segue como jogo normal
+            _semSave = !Sessao.Persiste(_testSession, Arg("-bot") != null, Arg("-botgrava") != null);
             if (Arg("-record") != null) Time.captureFramerate = Mathf.Max(1, (int)ArgF("-recordfps", 30f));   // relogio do jogo = quadro do video
             // G-UA-02: fumaca, faiscas e poeira sorteiam no UnityEngine.Random; semente fixa = os mesmos quadros em 2 execucoes
             if (Arg("-record") != null || Arg("-preset") != null) UnityEngine.Random.InitState(Captura.Semente);
@@ -205,10 +208,10 @@ namespace FS
             Sfx.Init(gameObject);
             Sfx.Log = Arg("-somlog") != null;   // fix/mix-audio (dev): "SOM min=..." por minuto no Player.log
             // ponytail: fotos e smoke usam estado novo sem ler ou gravar o save/diario normal.
-            if (!_testSession && Arg("-reset") != null) _save.Apagar();
+            if (!_semSave && Arg("-reset") != null) _save.Apagar();
             bool renasceu = _proximo != null;   // troca de distrito: o mesmo Imperio, cena nova (o -distrito so vale na 1a cena)
             if (renasceu) { _imp = _proximo; _proximo = null; }
-            else _imp = _testSession ? new Imperio(new Sim(tuning), novoTuning) : _save.CarregarImperio(tuning, novoTuning);
+            else _imp = _semSave ? new Imperio(new Sim(tuning), novoTuning) : _save.CarregarImperio(tuning, novoTuning);
             _sim = _imp.Ativo; _raiz = _imp.Raiz;
             if (!renasceu) DistritoArg(novoTuning);   // -distrito id (dev, fotos)
             Textos.Distrito(_sim.Distrito); Art.Distrito(_sim.ItemDefs);   // C-CORE-01: textos e arte dos itens do distrito ativo
@@ -216,7 +219,7 @@ namespace FS
             // E-PLAT-04: loja so com SDK; hoje so a falsa, no build de desenvolvimento com -lojafalsa (no -testsession, so na memoria). A posse
             // sai dos recibos do save validados por ela; sem loja, nenhuma
             string lf = Debug.isDebugBuild ? Arg("-lojafalsa") : null;
-            if (lf != null) _loja = new LojaFalsa(_testSession ? null : Path.Combine(dir, LojaFalsa.Arquivo), LojaFalsa.Ler(lf));
+            if (lf != null) _loja = new LojaFalsa(_semSave ? null : Path.Combine(dir, LojaFalsa.Arquivo), LojaFalsa.Ler(lf));
 #if UNITY_ANDROID && !UNITY_EDITOR
             else if (!_testSession) _loja = LojaUnity.Criar();   // Unity IAP: so com a chave da Play no projeto (GooglePlayTangle, IAP.md §5); sem ela, sem LOJA
 #endif
@@ -1702,7 +1705,7 @@ namespace FS
             if (!_testSession) _rc.Buscar((e, a, b) => Log(e, a, b));
             if (_started && _loja != null && !(_loja is LojaFalsa)) IniciarLoja();   // respondida agora; numa abertura anterior, o Start ja iniciou
             // Cloud Save (docs/CLOUD_SAVE.md): flag desligada por padrao; so 18+ com aceite (menor nunca), fora do Editor e das fotos
-            if (!_testSession && !Application.isEditor && _raiz.T.CloudSave && Privacidade.Flags(f, aceitou).Consentimento) AbrirNuvem();
+            if (!_semSave && !Application.isEditor && _raiz.T.CloudSave && Privacidade.Flags(f, aceitou).Consentimento) AbrirNuvem();
         }
 
         SincroniaNuvem _nuvem;
@@ -1772,10 +1775,10 @@ namespace FS
         bool Save()
         {
             if (_headless || !Estados.Grava(EstadoAtual)) return false;
-            if (_testSession) return true;
+            if (_semSave) return true;
             bool ok = _save.Gravar(_imp, Now(), Application.version);
             if (ok && _nuvem != null) _ = _nuvem.Subir(_save.Atual, Time.realtimeSinceStartupAsDouble);   // Cloud Save: 1 a cada 60 s, nunca espera
-            return ok;   // E-PLAT-04: o -testsession nao persiste nada (nem a loja falsa): vale
+            return ok;   // E-PLAT-04: o -testsession (e o -bot sem -botgrava) nao persiste nada (nem a loja falsa): vale
         }
 
         // Voltar de outro app tambem paga o cofre (antes so a abertura pagava: quem trocava de app perdia o tempo fora).
