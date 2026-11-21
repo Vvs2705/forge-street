@@ -177,6 +177,7 @@ namespace FS.Tests
             var d = new Diario(p);
             d.Log("session_info", 12.34f, "os", "Android OS 13, API-33\nx");
             d.Log("first_sale", 40f, "40.0");
+            d.Flush();   // fix/gc-alocacao-por-quadro: grava em lote
             string[] l = File.ReadAllLines(p);
             Assert.AreEqual(2, l.Length);
             string[] c = l[0].Split(',');
@@ -191,9 +192,11 @@ namespace FS.Tests
         public void Diario_Desligado_NaoGravaNada()
         {
             string p = Pasta();
-            new Diario(null).Log("session_start", 0f, "0.7.0", "x");
+            var off = new Diario(null);
+            off.Log("session_start", 0f, "0.7.0", "x");
+            off.Flush();
             Assert.IsFalse(File.Exists(p));
-            Assert.DoesNotThrow(() => new Diario(Path.Combine(_dir, "nao", "existe.csv")).Log("x", 0f), "pasta que nao existe: best-effort");
+            Assert.DoesNotThrow(() => { var d = new Diario(Path.Combine(_dir, "nao", "existe.csv")); d.Log("x", 0f); d.Flush(); }, "pasta que nao existe: best-effort");
         }
 
         [Test]
@@ -212,8 +215,11 @@ namespace FS.Tests
             for (int i = 0; i < 200; i++)
             {
                 d.Log("product_sold", i, "espada", "10");
+                if (i % 7 == 0) d.Flush();   // lotes de tamanhos variados
                 Assert.LessOrEqual(new FileInfo(p).Length, Max, "escrevendo: nunca passa do teto");
             }
+            d.Flush();
+            Assert.LessOrEqual(new FileInfo(p).Length, Max, "depois do ultimo lote");
             l = File.ReadAllLines(p);
             StringAssert.EndsWith(",product_sold,199.0,espada,10", l[l.Length - 1]);
             foreach (string x in l) Assert.AreEqual(6, x.Split(',').Length, x);

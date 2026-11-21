@@ -413,7 +413,13 @@ namespace FS.Core
         /// <summary>B-CORE-07: o upgrade `u` nao exige projeto, ou o projeto que ele exige ja e' posse.</summary>
         public bool TemProjeto(int u) { string b = UpgradeDefs[u].Blueprint; return b == null || Projetos.Tem(b); }
         /// <summary>Algum cliente na fila quer `product` e nao ha nenhum no estoque (FASE7 §3: o que destrava a fila sem compra direta).</summary>
-        public bool Wanted(Item product) => Stock[(int)product] == 0 && QueueFor(product).Exists(c => c.Want == product);
+        public bool Wanted(Item product)
+        {
+            if (Stock[(int)product] != 0) return false;
+            List<Client> q = QueueFor(product);   // laco no lugar do Exists com lambda: a closure capturava `product` (1 objeto por chamada)
+            for (int i = 0; i < q.Count; i++) if (q[i].Want == product) return true;
+            return false;
+        }
         /// <summary>Fama: multiplicador (1 -> 0,4) do intervalo entre clientes, pela quantidade de vendas ate aqui.</summary>
         public float Fame => Math.Max(T.FameFloor, (float)Math.Pow(T.FamePer10Sales, Sales / 10));
         public float ClientInterval(Item product) => T.ClientInterval[(int)product] * Fame * (Has(Upgrade.CounterCapacity) ? T.VitrineClientMul : 1f)

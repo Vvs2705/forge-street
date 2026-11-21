@@ -138,6 +138,8 @@ namespace FS
         // v0.5c: botoes de anuncio, selo do boost e avisos curtos (VIP chegou / anuncio indisponivel)
         sealed class AdBtn { public Button B; public Image Face, Icon; public GameObject Video; public Text Label; }
         sealed class Banner { public RectTransform R; public CanvasGroup G; public Text T; public Image I; public float Age; }
+        // cache do chip "Trocar" (RefreshAdUi): a encomenda seguinte so e' gerada quando algo dela muda ou a 2 Hz
+        Encomenda _trocaPrincipal; int _trocaAbertas, _trocaVagas; Sim _trocaSim; float _trocaT;
         AdBtn _vipBtn, _speedBtn, _supplyBtn, _bonusChip, _trocaChip;   // E-PLAT-02: Supply na fornalha; bonus e trocar sobre o cartao da encomenda
         Button _panelAd; Text _panelAdText; RectTransform _panelOk;      // E-PLAT-02: "Cofre 2x" no painel do cofre, ao lado do PEGAR
         RectTransform _boostSeal; Text _boostMul, _boostTime;
@@ -590,13 +592,13 @@ namespace FS
                         _view.SaleFloat(new V2(e.Pos.X, e.Pos.Y - 0.9f), e.B);   // v0.5: pela frente do estande; v0.6d: vendas a < 0,4 s somam num "+N" so
                         _view.Sold(e.Pos, _sim.CounterFor((Item)e.A) == _sim.JewelShop);   // v0.5b: balao estoura com coracao e brilhos
                         FlyCoins(e.Pos, e.B);
-                        Log("product_sold", _sim.ItemDefs[e.A].Name, e.B.ToString());
+                        if (_diario.Ativo) Log("product_sold", _sim.ItemDefs[e.A].Name, e.B.ToString());   // o evento mais frequente: sem leitor, sem ToString
                         Source(vipSale ? "vip" : "venda", e.B);   // a unidade do VIP sai a preco x3
                         break;
                     // B-CORE-03: peca Fina/Superior na pilha (moeda aguda, "Fina!" e brilhos); obra-prima ao Hall (B-CORE-08)
                     case Ev.Graded:
                         _view.Graded(e.A, (Quality)e.B);
-                        Log("product_graded", _sim.Stations[e.A].Name, ((Quality)e.B).ToString());
+                        if (_diario.Ativo) Log("product_graded", _sim.Stations[e.A].Name, ((Quality)e.B).ToString());
                         break;
                     case Ev.Masterwork:
                         Ajustes.Pulso(60, 255);
@@ -1377,14 +1379,26 @@ namespace FS
             if (_trocaChip.B.gameObject.activeSelf != troca) _trocaChip.B.gameObject.SetActive(troca);
             if (troca)
             {
-                Encomenda prox = _sim.Anuncios.ProximaEncomenda();   // a que entra, mostrada antes (P5)
-                Item it = prox.Itens[0];
-                _trocaChip.Label.text = Loc.T("enc.troca", prox.Total);
                 _trocaChip.Video.SetActive(!_raiz.Compras.SemVideoEm(Anuncio.EncomendaTroca));   // E-PLAT-05: Pacote do Mestre, sem video
-                Sprite s = Art.ItemArt(it, true);
-                _trocaChip.Icon.sprite = s != null ? s : Art.ItemSprite(it);
-                _trocaChip.Icon.color = s != null ? Color.white : Art.ItemColor[(int)it];
+                // fix/gc-alocacao-por-quadro: a que entra (P5) e' uma encomenda inteira gerada (Encomendas.Gera) + o Loc.T: so quando muda a
+                // principal, o rodizio ou as vagas (ou o Sim, na troca de distrito), e no maximo a 2 Hz pelo resto (linha nova, idioma)
+                Encomendas enc = _sim.Encomendas;
+                Encomenda principal = enc.Principal;
+                float agora = Time.unscaledTime;
+                if (principal != _trocaPrincipal || enc.Abertas != _trocaAbertas || enc.Vagas.Count != _trocaVagas || _sim != _trocaSim
+                    || agora - _trocaT >= 0.5f)
+                {
+                    _trocaPrincipal = principal; _trocaAbertas = enc.Abertas; _trocaVagas = enc.Vagas.Count; _trocaSim = _sim; _trocaT = agora;
+                    Encomenda prox = _sim.Anuncios.ProximaEncomenda();   // a que entra, mostrada antes (P5)
+                    Item it = prox.Itens[0];
+                    string txt = Loc.T("enc.troca", prox.Total);
+                    if (txt != _trocaChip.Label.text) _trocaChip.Label.text = txt;
+                    Sprite s = Art.ItemArt(it, true);
+                    _trocaChip.Icon.sprite = s != null ? s : Art.ItemSprite(it);
+                    _trocaChip.Icon.color = s != null ? Color.white : Art.ItemColor[(int)it];
+                }
             }
+            else _trocaPrincipal = null;   // reaparecer = recalcula na hora
             Ofertou(Anuncio.EncomendaBonus, bonus, on);
             Ofertou(Anuncio.EncomendaTroca, troca, on);
             bool cofre = Painel && _panelRow.gameObject.activeSelf && Pode(Anuncio.Cofre);   // so o painel do cofre tem a linha do ouro
@@ -1784,7 +1798,7 @@ namespace FS
             while (_excecoes.TryDequeue(out var e)) _diario?.Excecao(e.Msg, e.Pilha, _sim != null ? _sim.Time : 0f);
         }
 
-        void OnDestroy() { Application.logMessageReceivedThreaded -= Excecao; EntregaExcecoes(); }
+        void OnDestroy() { Application.logMessageReceivedThreaded -= Excecao; EntregaExcecoes(); _diario?.Flush(); }   // troca de cena: o lote do diario vai ao disco
 
         /// <param name="gold">&gt; 0: linha da moeda com "+gold" grande (cofre); 0: so o texto.</param>
         void ShowPanel(string title, string body, string button, Action action, long gold = 0)
@@ -1837,6 +1851,7 @@ namespace FS
                 _pausedByAd = EstadoAtual == Estado.Ad;   // antes do _paused: Ad vence Paused (o anuncio real tira o app da frente)
                 _paused = true;
                 Save(); EndSession("pausa");
+                _diario?.Flush();   // o diario grava em lote: o sistema pode matar o app no segundo plano
             }
             else
             {
@@ -1846,10 +1861,11 @@ namespace FS
                 _metasT = 0f;   // D-CORE-01: voltar do segundo plano olha a virada do dia no proximo quadro
             }
         }
-        void OnApplicationFocus(bool focus) { if (!focus) Save(); }
+        void OnApplicationFocus(bool focus) { if (!focus) { Save(); _diario?.Flush(); } }
         void OnApplicationQuit()
         {
             Save(); EndSession("saiu");
+            _diario?.Flush();
             // No Placeholder Gate (DM §178, client/tools/placeholder_gate.sh): o que esta sessao pediu e caiu no procedural
             Debug.Log($"PLACEHOLDERS arte={SpriteSheet.Faltas.Count} [{string.Join(" ", SpriteSheet.Faltas)}] som={Sfx.Sintetizados.Count} [{string.Join(" ", Sfx.Sintetizados)}]");
         }

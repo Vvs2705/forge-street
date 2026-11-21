@@ -66,7 +66,7 @@ namespace FS.Tests
             Assert.AreEqual(18, Enumerable.Range(0, s.UpgradeDefs.Length).Count(s.IsProduction));
             CollectionAssert.AreEqual(new[] { 15, 12, 18, 20, 25, 22, 30 },
                 new[] { "lanterna_arcana", "anel_cristal", "amuleto_arcano", "lamina_runica", "escudo_runico", "cajado_liga", "liga_celeste" }.Select(id => s.T.CargaArcana[I(s, id)]).ToArray());
-            Assert.AreEqual((3900000L, 3000L, 4, 2), (AF.Abertura, AF.Charter.Renome, AF.Charter.Masterworks, AF.Charter.Contratos));
+            Assert.AreEqual((3900000L, 3500L, 4, 2), (AF.Abertura, AF.Charter.Renome, AF.Charter.Masterworks, AF.Charter.Contratos));
             Assert.AreEqual(AF.Id, Distritos.RoyalArsenal.Charter.Proximo, "o Charter do Arsenal libera a Foundry");
             Assert.AreEqual(Array.IndexOf(Distritos.All, AF), AF.Indice, "indice = posicao no mapa");
             CollectionAssert.AreEqual(new[] { "viajante", "aventureiro", "nobre", "colecionador" }, AF.Clientes.Select(c => c.Id).ToArray(), "§12");
@@ -419,7 +419,7 @@ namespace FS.Tests
                 Isis(s, 5);
                 Assert.AreEqual((105, 105), (s.QualityPoints(s.Est("altar_lanternas")), s.QualityPoints(s.Est("altar_laminas"))));
                 Assert.AreEqual("renome", imp.CharterFalta(AF.Id));
-                imp.Raiz.Renome.Ganha(3000 - imp.Raiz.Renome.Total);
+                imp.Raiz.Renome.Ganha(AF.Charter.Renome - imp.Raiz.Renome.Total);   // BALANCE §49: 3.500
                 Assert.AreEqual("masterwork", imp.CharterFalta(AF.Id));
                 s.SoldItems[I(s, "lanterna_arcana")] = 150; s.SoldItems[I(s, "anel_cristal")] = 300; s.SoldItems[I(s, "amuleto_arcano")] = 200;
                 s.SoldItems[I(s, "lamina_runica")] = 150;

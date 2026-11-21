@@ -52,7 +52,10 @@ namespace FS.Core
     public sealed class MarcoColecaoDef
     {
         public readonly string Id, Cosmetico; public readonly AbaColecao Aba; public readonly int N, Renome;
-        public MarcoColecaoDef(string id, AbaColecao aba, int n, int renome, string cosmetico = null) { Id = id; Aba = aba; N = n; Renome = renome; Cosmetico = cosmetico; }
+        /// <summary>ID de transacao no ledger do Renome (Colecao.Tx = "col:" + Id), montado 1x: o Colecao.Checa olha todo marco a cada passo.</summary>
+        public readonly string Tx;
+        public MarcoColecaoDef(string id, AbaColecao aba, int n, int renome, string cosmetico = null)
+        { Id = id; Aba = aba; N = n; Renome = renome; Cosmetico = cosmetico; Tx = Colecao.Prefixo + id; }
     }
 
     /// <summary>
