@@ -18,3 +18,8 @@ Se o arquivo acima não carregar (outro PC), o mínimo é: só este jogo; mudan�
 - Portões antes de qualquer PR de jogo: `client/tools/verify.sh full` (núcleo + viewcheck PC/Android + **EditMode no Unity** + BuildWindows + `-autoplay`; o `dotnet test` sozinho não pega a comparação de tupla int × long do NUnit 3.5 do Unity); economia mexida = números do bot em `docs/BALANCE.md` (`client/tools/econsim`). Worktree nova não tem `client/Library`: copie `Unity.InputSystem.dll`, `UnityEngine.UI.dll` e `Unity.LevelPlay.dll` de `client/Library/ScriptAssemblies` da pasta principal.
 - Build Android: use `Setup.BuildAndroidDev`/`BuildAndroidEmu` (já limpam a saída incremental do Gradle e tratam o `mainTemplate.gradle`). Aparelho: `client/tools/medir_aparelho.sh`; roteiro em `docs/ROTEIRO_TESTE_POCO.md`.
 - A `main` tem a regra "mudanças só por pull request": nunca dê push direto nela.
+
+<!-- TIME-JOGOS:INICIO -->
+## Time de Jogos (instalado por install-time — não edite este bloco; rode o instalador para atualizar)
+@.claude/time-jogos/CLAUDE-TIME.md
+<!-- TIME-JOGOS:FIM -->

@@ -5,3 +5,6 @@
 *.fbx binary
 *.blend binary
 *.wav binary
+# time-jogos: hooks bash exigem LF
+*.sh text eol=lf
+*.awk text eol=lf
