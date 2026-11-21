@@ -2776,3 +2776,70 @@ Perfis:
 - A Carta segue abaixo dos 31,5 h. O Renome 9 do F2PGolpe agora sai em todas as 4 partidas: os 300 a mais do Charter adiantam o Renome do Império.
 - **O resto não muda:** o econsim padrão (Old Forge, sem Charter) sai **idêntico ao byte** à `main` (`--minutos 60 --partidas 20`), então o Renome 2/3 do F2P (0:51 / 1:41) e o 0 deadlock em 1.000 partidas (§43) ficam como estavam.
 - **Próximo degrau do F2P sem golpe:** ele para na Row, cujo Charter pede 2 obras. Se o Closed mostrar muitos jogadores sem golpe, a mesma regra ("obra ou N Superiores") serve para a Row.
+
+## 49. Estação precisa de operador (decisão do Vinicius, 2026-11-21)
+**Regra:** nenhuma estação trabalha sozinha. Cada estação produtora tem `Station.Operador` (nível, hoje 0 ou 1).
+- **Sem operador:** a estação só produz enquanto o ferreiro (Player) está na boca dela (entrada ou saída, mesmo alcance de depositar e pegar, `MouthRadius`), na taxa normal. Se ele sai, a estação pausa e o progresso fica onde parou.
+- **Com operador:** produz sozinha, como antes. Os níveis da estação, o oficial (Smith), o mestre de obras e os boosts seguem somando velocidade e qualidade, sem mudança.
+- **Nível do operador:** fica em 1 por enquanto (`Sim.OperadorMax = 1`). A ideia de "operador nível 2 = mais quantidade" está adiada: hoje os níveis da estação e o oficial já cobrem velocidade, e um segundo eixo pago por estação pediria nova tabela de custo e mais um botão.
+- **Contratação:** com ouro, por estação. Há duas formas: o pad **"Contratar operador"** ao lado da estação, que drena o ouro como o pad de upgrade (`PadDrainSeconds`/`PadDwell`) e guarda o valor parcial no save, e o toque ou menu, com `Sim.ContratarOperador(st)`, que compra na hora.
+- **Custo** (dados, `DistrictDef`), calculado por `Sim.CustoOperador`:
+  - estações do kit do distrito: `OperadorKit`;
+  - demais: `max(OperadorKit, round5(OperadorFracao × custo do upgrade que abre a estação))`;
+  - override por estação: `Operadores = { ("id", custo) }`.
+
+| distrito | OperadorKit | OperadorFracao |
+|---|---|---|
+| Old Forge | 10 | 0,2 |
+| Rua dos Armeiros | 300 | 0,2 |
+| Artisan Quarter | 300 | 0,2 |
+| Royal Arsenal | 1700 | 0,2 |
+| Arcane Foundry | 3900 | 0,2 |
+| Grand Forge | 17000 | 0,2 |
+
+O kit de cada distrito custa cerca de um produto do próprio distrito.
+
+Custos no Old Forge:
+
+| estação | fornalha | bigorna | bigorna2 | escudos | ferramentas | fornalha2 | joalheria | bigorna_longa |
+|---|---|---|---|---|---|---|---|---|
+| custo do operador | 10 | 10 | 15 | 20 | 105 | 180 | 305 | 1200 |
+
+  O FTUE fica assim: o jogador forja a primeira espada à mão (minério, fornalha, bigorna, balcão) e contrata os dois primeiros operadores com o ouro dessa venda.
+- **Save** (schema 3, sem bump): uma nova linha `ops=id:nivel[:pago],...` é sempre gravada.
+  - **Save sem a linha** (0.5.1 publicada, ou a `main` de hoje): toda estação produtora já aberta ganha operador nível 1. Ninguém acorda com a forja parada. Estação aberta depois disso precisa de contratação.
+  - ID desconhecido conta em `UnknownIds` e devolve o parcial.
+  - Parcial em estação já contratada ou fechada é devolvido.
+  - Testes: `SaveAntigo_TodaEstacaoAbertaGanhaOperador`, que usa a fixture de 60 min da 0.5.1 (7 operadores, ouro 9586), e `SaveNovo_EstacaoAbertaDepoisDaMigracaoPrecisaContratar`.
+- **Flag de rollback:** `Tuning.OperadorObrigatorio = true`, que se ajusta por RemoteConfig pelo nome do campo. Com a flag em `false`, o econsim sai **idêntico ao byte** ao da `main` (`--minutos 60 --partidas 20`).
+- **Bot:**
+  - a 1ª prioridade é ir ao pad de operador pagável;
+  - enquanto houver operador pagável, ele não compra no menu nem worker;
+  - sem operador, forja à mão (`Bot.AMao`): fica na boca da estação ocupada ou com receita completa, de preferência a que faz produto;
+  - o ContentValidator checa se cada pad de operador é alcançável, pisável e longe das bocas e dos outros pads.
+
+**Antes → depois** (`--minutos 60 --partidas 20 --anuncio-seg 30`, mm:ss):
+
+| perfil | Fole | 2ª bigorna | Ajudante | Escudos | Esteira | produção completa |
+|---|---|---|---|---|---|---|
+| Ideal | 0:55 → 1:27 | 2:06 → 2:14 | 2:56 → 3:11 | 3:54 → 4:14 | 7:01 → 7:25 | 48:03 → 52:03 |
+| F2P | 1:03 → 1:49 | 1:57 → 2:35 | 2:53 → 3:37 | 3:46 → 4:37 | 6:56 → 7:38 | 47:40 → 51:07 |
+| Slow | 0:54 → 2:08 | 2:39 → 3:18 | 3:39 → 4:42 | 4:57 → 6:00 | 8:15 → 9:33 | 50:38 → 56:25 |
+| AdWatcher | 1:03 → 1:49 | 2:38 → 3:25 | 3:06 → 3:53 | 3:33 → 4:06 | 7:05 → 7:38 | 44:35 → 48:34 |
+
+- **1ª venda:** 0:16–0:27 (antes 0:19–0:38): a espada à mão sai mais cedo porque o Bot fica na boca em vez de ir ao menu.
+- **Primeiros 10 min (GDD §3, `BalanceTests`):** o F2P fica dentro de todos os tetos (Fole ≤ 2:30, 2ª bigorna ≤ 3:30, Ajudante ≤ 4:30, Escudos ≤ 5:30, Esteira ≤ 8:30), e nenhum marco fica abaixo do piso. O Slow passa do teto nos Escudos (6:00), mas não é perfil de portão.
+- **Deadlock:** 0 antes e depois.
+- **Operadores:** 8 de 8 contratados, com 1845 de ouro gasto. O 1º sai entre 0:19 e 0:32; o último, entre 44 e 51 min. Cada perfil passa 93–130 s forjando à mão.
+- **Opção medida e descartada:** `OperadorFracao = 0,1` só adianta a produção completa em cerca de 1,5 min (Ideal 50:30, F2P 49:21) e deixa o operador da bigorna_longa por 600. Fica 0,2, para o operador pesar como decisão.
+
+**Campanha** (`--campanha 40 --perfis F2PGolpe,F2P,Ideal --partidas 2 --anuncio-seg 30`, h acumuladas, antes → depois):
+
+| perfil | Charter OF | Row | Quarter | Arsenal | Foundry | Grand Forge | Renome 9 |
+|---|---|---|---|---|---|---|---|
+| F2PGolpe | 3,4 → 3,6 | 4,9 → 5,1 | 10,5 → 11,0 | 16,1 → 16,3 | 19,7 → 20,2 | 25,2 → 26,7 | 24,5 → 23,6 |
+| F2P sem golpe | 5,1 → 5,0 | — | — | — | — | — | — |
+| Ideal | 2,7 → 2,7 | 4,6 → 4,8 | 10,4 → 11,0 | 16,1 → 17,0 | 19,5 → 20,6 | 24,6 → 29,2 | 22,3 → 24,0 |
+
+- O Charter do Old Forge segue dentro de 3–6 h (`CONTEUDO_V1.md` §1), e todos os perfis que chegavam à Grand Forge continuam chegando.
+- O custo cresce nos distritos tardios, porque cada estação nova pede o operador pelo preço de cerca de um produto. O Ideal perde cerca de 4,6 h no Charter da Grand Forge; se o Closed mostrar isso como muro, o primeiro ajuste é baixar o `OperadorKit` da Grand Forge.
