@@ -2777,7 +2777,7 @@ Perfis:
 - **O resto não muda:** o econsim padrão (Old Forge, sem Charter) sai **idêntico ao byte** à `main` (`--minutos 60 --partidas 20`), então o Renome 2/3 do F2P (0:51 / 1:41) e o 0 deadlock em 1.000 partidas (§43) ficam como estavam.
 - **Próximo degrau do F2P sem golpe:** ele para na Row, cujo Charter pede 2 obras. Se o Closed mostrar muitos jogadores sem golpe, a mesma regra ("obra ou N Superiores") serve para a Row.
 
-## 49. Estação precisa de operador (decisão do Vinicius, 2026-11-21)
+## 52. Estação precisa de operador (decisão do Vinicius, 2026-11-21)
 **Regra:** nenhuma estação trabalha sozinha. Cada estação produtora tem `Station.Operador` (nível, hoje 0 ou 1).
 - **Sem operador:** a estação só produz enquanto o ferreiro (Player) está na boca dela (entrada ou saída, mesmo alcance de depositar e pegar, `MouthRadius`), na taxa normal. Se ele sai, a estação pausa e o progresso fica onde parou.
 - **Com operador:** produz sozinha, como antes. Os níveis da estação, o oficial (Smith), o mestre de obras e os boosts seguem somando velocidade e qualidade, sem mudança.
