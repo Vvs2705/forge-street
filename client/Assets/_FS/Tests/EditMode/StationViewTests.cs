@@ -93,5 +93,20 @@ namespace FS.Tests
             CollectionAssert.AreEqual(new[] { Quality.Superior, Quality.Fine, Quality.Fine, Quality.Normal },
                 new[] { QualidadeView.Nivel(0, q), QualidadeView.Nivel(1, q), QualidadeView.Nivel(2, q), QualidadeView.Nivel(3, q) });
         }
+
+        /// <summary>Nivel visivel da bancada (queixa 7 de 2026-11-21): nivel I nao desenha nada; cada nivel II..V acrescenta 1 camada; o numero e' o do menu.</summary>
+        [Test]
+        public void Bancada_NivelVisivel_UmaCamadaPorNivel()
+        {
+            var sim = new Sim();
+            foreach (Station s in sim.Stations)
+                if (s.Kind == Kind.Crafter) Assert.AreEqual(0, StationView.Camadas(s.Level), "jogo novo: bancada no nivel I, sem pedestal");
+            for (int n = 1; n <= 5; n++) Assert.AreEqual(n - 1, StationView.Camadas(n), $"nivel {n}");
+            Assert.AreEqual(4, StationView.Camadas(9), "acima do V (nivel futuro) fica no V");
+            Assert.AreEqual(0, StationView.Camadas(0));
+            Assert.AreEqual("III", StationView.Romano(3));
+            Assert.AreEqual("V", StationView.Romano(5));
+            Assert.AreEqual("6", StationView.Romano(6));
+        }
     }
 }

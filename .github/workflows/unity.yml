@@ -119,6 +119,36 @@ jobs:
           name: autoplay-log
           path: autoplay.log
 
+  fotos:
+    # Evidencia visual para o portao do creative-director (PRs de arte): o .exe com janela no runner (sem GPU: o D3D11 cai no
+    # renderizador de software) tira fotos -shot de cenarios fixos. Informativo: nao trava o PR enquanto nao provar que e' estavel.
+    name: fotos (-shot no .exe)
+    needs: windows
+    runs-on: windows-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: build-win
+          path: win
+      - name: fotos dos niveis da bancada (I, III com -buy, V com -projetos todos)
+        shell: bash
+        run: |
+          mkdir -p fotos; d=$(cygpath -w "$PWD/fotos")
+          foto() { n=$1; shift; timeout 180 ./win/ForgeStreet.exe -screen-fullscreen 0 -screen-width 540 -screen-height 960 -testsession \
+                     -logFile "fotos/$n.log" "$@" -shot "$d\\$n.png" || echo "::warning::foto $n saiu $?"; grep -m1 'SHOT' "fotos/$n.log" || true; }
+          foto 01_bancada_nivel1 -shotdelay 4
+          foto 02_bancada_nivel3 -buy 99 -warmup 20 -shotdelay 4
+          foto 03_bancada_nivel5 -projetos todos -buy 99 -warmup 20 -shotdelay 4
+          ls -la fotos
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: fotos
+          path: fotos
+          retention-days: 14
+
   android:
     name: build Android (Setup.BuildAndroidDev)
     needs: licenca
