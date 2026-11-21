@@ -219,6 +219,7 @@ namespace FS.Core
             SalvaBancadas(sb); SalvaFamilias(sb);   // C-CORE-06: ofcN=, fam= e ricos= (so no distrito que tem e fora do padrao)
             SaveCotas(sb);   // C-CORE-07: cota=/cotab=/cotap=/cotar= (so no distrito com patio e fora do padrao)
             SaveArcano(sb);  // C-CORE-08: arcN=/arce= (so no distrito com altar e fora do padrao)
+            SalvaOperadores(sb);   // Sim.Operador.cs: ops= sempre (sem ela o Load da a toda estacao aberta um operador)
             SaveRotas(sb);   // C-CORE-09: gf=/gfl=/gflq= (so no distrito com cais ou patio de exportacao e fora do padrao)
             sb.Append("stock=").Append(Stock[2]).Append(',').Append(Stock[3]).Append(',').Append(Stock[4]).Append(',').Append(Stock[5]).Append('\n');
             sb.Append("sold=").Append(SoldItems[2]).Append(',').Append(SoldItems[3]).Append(',').Append(SoldItems[4]).Append(',').Append(SoldItems[5]).Append('\n');
@@ -390,6 +391,7 @@ namespace FS.Core
             sim.UpgradesBought = 0;
             foreach (bool b in sim.Bought) if (b) sim.UpgradesBought++;
             sim.Recompute();
+            sim.CarregaOperadores(text);   // Sim.Operador.cs: depois do Recompute (quem esta aberto); save sem ops= = toda aberta com operador
             for (int i = 0; i < sim.Stock.Length; i++)   // teto so' e' conhecido depois dos upgrades; insumo nao fica no balcao nem conta venda
                 if (sim.IsProduct((Item)i)) sim.Stock[i] = Math.Min(sim.Stock[i], sim.CounterCap); else sim.Stock[i] = sim.SoldItems[i] = 0;
             for (int i = 0; i < sim.Player.Held.Length; i++) sim.Player.Held[i] = Math.Min(sim.Player.Held[i], sim.Player.Cap);   // teto por tipo (Mochila)

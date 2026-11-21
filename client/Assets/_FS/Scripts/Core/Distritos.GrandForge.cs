@@ -136,6 +136,7 @@ namespace FS.Core
         {
             // o 6o e ultimo do mapa: a Arcane Foundry libera a Grand Forge
             Id = GrandForgeId, Nome = "Grand Forge", Indice = 5,
+            OperadorKit = 17000,   // Sim.Operador.cs: operador da estacao do kit = o produto mais barato (17.000): forja o 1o a mao e contrata
             Itens = ItensGrandForge, Receitas = ReceitasGrandForge, Upgrades = UpgradesGrandForge, Projetos = ProjetosDefs.GrandForgeDefs,
             Masterworks = MasterworksDefs.GrandForgeDefs, MarcosColecao = MasterworksDefs.MarcosGrandForge,
             Clientes = ClientesGrandForge,

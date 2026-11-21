@@ -85,6 +85,12 @@ namespace FS.Core
         /// <summary>---- grand_forge (C-CORE-09, CONTEUDO_V1 §2.6 e a tabela de importados do §3.1): as rotas do Mensageiro, na ordem do catalogo
         /// (o desempate): o importado (ID do ItemDef, o mesmo nos dois distritos; insumo aqui) e o distrito de origem. null = sem rotas.</summary>
         public (string Item, string Origem)[] Importados;
+        /// <summary>Estacao precisa de operador (Sim.Operador.cs, Sim.CustoOperador): ouro do operador de cada estacao que produz. `Operadores` =
+        /// excecoes por ID da estacao; senao OperadorKit (estacao aberta desde o inicio) ou OperadorFracao x o custo do upgrade que a abre
+        /// (multiplo de 5, no minimo o Kit).</summary>
+        public long OperadorKit = 10;
+        public float OperadorFracao = 0.2f;
+        public (string Estacao, long Custo)[] Operadores;
     }
 
     /// <summary>C-CORE-01: os distritos do build, na ordem do mapa. Old Forge = as tabelas de sempre; Armorer's Row = CONTEUDO_V1 §2.2/§3/§5.2.</summary>
@@ -97,6 +103,8 @@ namespace FS.Core
         public static readonly DistrictDef OldForge = new DistrictDef
         {
             Id = OldForgeId, Nome = "Old Forge", Indice = 0,
+            // Sim.Operador.cs (FTUE): Fornalha e Bigorna a 10 (1 espada): o jogador forja a 1a espada a mao e contrata; as outras = 20% da compra
+            OperadorKit = 10, OperadorFracao = 0.2f,
             Itens = Items.All, Receitas = Recipes.All, Upgrades = FS.Core.Upgrades.All, Workers = WorkerDefs.All, Projetos = ProjetosDefs.All,
             Masterworks = MasterworksDefs.All, MarcosColecao = MasterworksDefs.Marcos,
             // Bocas (FASE5 §2b): (inX, inY) = lado da ENTRADA. Toda estacao que produz: entrada a esquerda, saida a direita. A 2a area foi
@@ -266,6 +274,7 @@ namespace FS.Core
         public static readonly DistrictDef ArmorersRow = new DistrictDef
         {
             Id = ArmorersRowId, Nome = "Armorer's Row", Indice = 1,
+            OperadorKit = 300,   // Sim.Operador.cs: operador da estacao do kit = ~o 1o produto (elmo 335): forja o 1o a mao e contrata
             Itens = ItensArmeiros, Receitas = ReceitasArmeiros, Upgrades = UpgradesArmeiros, Projetos = ProjetosDefs.RowDefs,
             // C-CORE-05: as 10 obras da Row (CONTEUDO_V1 §10.1) e os marcos da Collection dela; Superior alcancavel com a liga (BALANCE.md §35)
             Masterworks = MasterworksDefs.RowDefs, MarcosColecao = MasterworksDefs.MarcosRow,

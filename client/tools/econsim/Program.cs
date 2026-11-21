@@ -57,6 +57,8 @@ static partial class EconSim
         public float[] Renome; public long RenomeFim; public int Enc60, EncFim; public double Pct60, PctFim, Renda60; public int[] Tipos;
         // B-CORE-04: contratados pela Equipe, niveis subidos (ajudantes e equipe), ouro gasto e a 1a compra de worker (relogio)
         public int Contratados, NiveisWk; public long WkGasto; public float Wk1 = -1f;
+        // Estacao precisa de operador (BALANCE.md, secao final): operadores contratados, ouro gasto, relogio do 1o e do ultimo, s forjando a mao
+        public int Ops; public long OpsGasto; public float Op1 = -1f, OpUlt = -1f; public double Mao;
         // D-CORE-03/04 (--evento): GoldEarned ao fim de cada minuto, instante de relogio da entrada no evento e o que o evento deu
         public long[] EarnedMin; public float Entrou = -1f; public int Pontos, Missoes, Ordens; public long XpPasse, OuroEvento;
         // B-CORE-07: projetos possuidos, quando chegou o de mestre das bigornas, niveis IV-V (os com projeto), bigorna longa e o que a espada longa vendeu
@@ -199,6 +201,16 @@ static partial class EconSim
             Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
             float w1 = g.Where(r => r.Wk1 >= 0f).Select(r => r.Wk1).DefaultIfEmpty(-1f).Average();
             Console.WriteLine($"| {p.Name} | {g.Average(r => r.Contratados):0.#} | {g.Average(r => r.NiveisWk):0.#} | {g.Average(r => r.WkGasto):0} | {Clock(w1)} |");
+        }
+        // Estacao precisa de operador: contratados (das estacoes que produzem), ouro, o 1o e o ultimo, e o tempo do ferreiro forjando a mao
+        Console.WriteLine();
+        Console.WriteLine($"| perfil | operadores (de {new Sim().Stations.Count(st => st.Produces)}) | gasto em operadores | 1o operador | ultimo | s forjando a mao |");
+        Console.WriteLine("|---|---|---|---|---|---|");
+        foreach (BotProfile p in perfis)
+        {
+            Run[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            float o1 = g.Where(r => r.Op1 >= 0f).Select(r => r.Op1).DefaultIfEmpty(-1f).Average(), ou = g.Where(r => r.OpUlt >= 0f).Select(r => r.OpUlt).DefaultIfEmpty(-1f).Average();
+            Console.WriteLine($"| {p.Name} | {g.Average(r => r.Ops):0.#} | {g.Average(r => r.OpsGasto):0} | {Clock(o1)} | {Clock(ou)} | {g.Average(r => r.Mao):0} |");
         }
         // B-CORE-07: projetos (posse), niveis IV-V (os de projeto) e a linha da espada longa
         Console.WriteLine();
@@ -348,9 +360,11 @@ static partial class EconSim
                     else if (e.Kind == Ev.Blueprint && s.Projetos.Defs[e.A].Id == "bp_bigorna_mestra") r.BpMestre = s.Time + pausa;
                     else if (e.Kind == Ev.ContractDone && r.CtrFim1 < 0f) r.CtrFim1 = s.Time + pausa;   // D-CORE-04
                     if (e.Kind == Ev.WorkerUp || e.Kind == Ev.Hired && e.B != 0) { wk++; if (r.Wk1 < 0f) r.Wk1 = s.Time + pausa; }
+                    if (e.Kind == Ev.OperadorContratado) { r.Ops++; r.OpsGasto += e.B; if (r.Op1 < 0f) r.Op1 = s.Time + pausa; r.OpUlt = s.Time + pausa; }
                     if (e.Kind == Ev.Masterwork && e.B >= 0 && r.Mw1 < 0f) r.Mw1 = s.Time + pausa;   // B-CORE-08
                     if (e.Kind == Ev.Colecao) { r.MarcosCol++; r.RenomeCol += e.B; }
                 }
+                foreach (Station st in s.Stations) if (s.PrecisaOperador(st) && s.FerreiroNaBoca(st)) { r.Mao += dt; break; }
                 if (venda1 < 0f && s.FirstSaleTime >= 0f) venda1 = s.FirstSaleTime + pausa;
                 if (s.UpgradesBought != before)
                     for (int i = 0; i < rel.Length; i++) if (s.Bought[i] && rel[i] < 0f) rel[i] = s.UpgradeTime[i] + pausa;

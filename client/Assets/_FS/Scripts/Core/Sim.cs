@@ -325,6 +325,7 @@ namespace FS.Core
             foreach (PadDef p in Distrito.Pads)
                 Pads.Add(new Pad { Slot = Pads.Count, Pos = p.Pos, Chain = Array.ConvertAll(p.Cadeia, id => (Upgrade)Upgrades.IndexOf(id, UpgradeDefs)) });
             foreach (MilestoneDef m in Distrito.Marcos) Chests.Add(new Chest { Index = Chests.Count, Pos = m.Pos, Gold = m.Gold, Label = m.Label });
+            PreparaOperadores();   // Sim.Operador.cs: onde fica o pad do operador de cada estacao que produz
             PreparaBancadas(); PreparaFamilias();   // C-CORE-06 (Sim.Bancada, Sim.Clientes): sem bancada configuravel nem familia, nada muda
             Recompute();
         }

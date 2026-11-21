@@ -123,6 +123,7 @@ namespace FS.Core
         public static readonly DistrictDef ArtisanQuarter = new DistrictDef
         {
             Id = ArtisanQuarterId, Nome = "Artisan Quarter", Indice = 2,
+            OperadorKit = 300,   // Sim.Operador.cs: operador da estacao do kit = ~o 1o produto (330): forja o 1o a mao e contrata
             Itens = ItensArtisan, Receitas = ReceitasArtisan, Upgrades = UpgradesArtisan, Projetos = ProjetosDefs.ArtisanDefs,
             Masterworks = MasterworksDefs.ArtisanDefs, MarcosColecao = MasterworksDefs.MarcosArtisan,
             Workers = new[] { Dourado(1, 0), Dourado(2, 1), Dourado(3, 2), Lucia },

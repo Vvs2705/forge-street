@@ -84,7 +84,7 @@ namespace FS.Core
     /// concluido, 1x por ID (A = indice em Contratos.Defs, B = ouro pago). C-CORE-07 (anexado): QuotaBlock = bloco do patio de cotas fechado e
     /// pago (A = item, B = ouro; cada peca sai tambem como Sold). C-CORE-09 (anexado): ExportLot = o Mensageiro partiu com o lote (A = pecas,
     /// B = ouro; cada peca sai tambem como Sold).</summary>
-    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone, Graded, Masterwork, WorkerUp, Blueprint, Colecao, ContractDone, QuotaBlock, ExportLot }
+    public enum Ev { Picked, Deposited, Crafted, Sold, Bought, ClientArrived, ClientLeft, Bottleneck, Hired, Unlocked, Offline, Milestone, ChestOpened, VipArrived, VipServed, VipLeft, OrderNew, OrderDone, Graded, Masterwork, WorkerUp, Blueprint, Colecao, ContractDone, QuotaBlock, ExportLot, OperadorContratado }
 
     /// <summary>Dica contextual da HUD (a view so traduz). Arg = indice do pad (BuyPad), do item, do bau (OpenChest) ou do upgrade (BuyMenu).
     /// BuyMenu ANEXADO no fim (FASE6): a compra mais barata pagavel agora e' um upgrade do menu inferior.</summary>
@@ -341,6 +341,10 @@ namespace FS.Core
         /// <summary>D-CORE-04 (flag): Royal Contracts (Contratos). Desligada, nenhum contrato e' oferecido (o ativo continua e paga); com ela
         /// desligada desde o inicio o jogo e' o de antes do D-CORE-04 (o econsim --tuning Contratos=false, BALANCE.md §32).</summary>
         public bool Contratos = true;
+        /// <summary>Estacao precisa de operador (Vinicius, 2026-11-21; Sim.Operador.cs): ligada, estacao sem operador so produz com o ferreiro na
+        /// boca e o pad "Contratar operador" aparece. Rollback: desligada = toda estacao produz sozinha (o jogo de antes, ao byte; o econsim
+        /// --tuning OperadorObrigatorio=false). Quem ja contratou fica com o operador no save.</summary>
+        public bool OperadorObrigatorio = true;
 
         // offline (raia B §5 + coordenador 2026-10-06)
         public float OfflineFactor = 0.25f;                     // 25% da taxa online

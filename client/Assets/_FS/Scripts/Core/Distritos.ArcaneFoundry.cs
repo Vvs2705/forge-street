@@ -124,6 +124,7 @@ namespace FS.Core
         public static readonly DistrictDef ArcaneFoundry = new DistrictDef
         {
             Id = ArcaneFoundryId, Nome = "Arcane Foundry", Indice = 4,
+            OperadorKit = 3900,   // Sim.Operador.cs: operador da estacao do kit = o 1o produto (3.900): forja o 1o a mao e contrata
             Itens = ItensArcane, Receitas = ReceitasArcane, Upgrades = UpgradesArcane, Projetos = ProjetosDefs.ArcaneDefs,
             Masterworks = MasterworksDefs.ArcaneDefs, MarcosColecao = MasterworksDefs.MarcosArcane,
             Clientes = ClientesArcane,

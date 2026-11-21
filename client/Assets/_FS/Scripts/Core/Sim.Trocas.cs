@@ -82,6 +82,7 @@ namespace FS.Core
                     _padDwell += dt;
                     if (pad.Armed && (!c.Moving || _padDwell >= Balance.PadDwell)) Drain(pad, dt);
                 }
+                InteractOperador(c, dt);   // Sim.Operador.cs: o pad "Contratar operador" (so existe com PrecisaOperador)
             }
             Station s = StationAt(c.Pos, out bool outZone);
             Item it = Item.Ore;
