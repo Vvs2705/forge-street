@@ -30,8 +30,8 @@ namespace FS.Core
     /// nao pune (nada pago, o progresso recomeca). Contrato nunca bloqueia nada (V25): ninguem le os concluidos alem do Charter (Concluidos.Count).
     /// Save: linhas ctr= (concluidos, na ordem; ID que este build nao conhece fica) e ctr.v= (o ativo), so quando existem: sem contrato o texto
     /// e' o de antes; save sem elas = nenhum. Nada aqui le relogio: o prazo anda com o dt do Sim (relogio para tras nao reabre nem paga).
-    /// ponytail: a peca vendida no balcao conta para o contrato (e para a encomenda) em vez de ir a mesa do contrato; o seletor de cota
-    /// 0/25/50/100% por linha do CONTEUDO_V1 §8 e' o upgrade quando a decisao "vender ou cumprir" precisar de peso.
+    /// V30 (Conselho, 2026-11-21): a peca vendida conta para o contrato e para a encomenda de proposito; o seletor de cota 0/25/50/100% do
+    /// CONTEUDO_V1 §8 fica fora antes do Limited Release (ata docs/conselho/2026-11-21-cota-do-contrato.md). Se voltar, entra como desvio no Core.
     /// </summary>
     public sealed class Contratos
     {
