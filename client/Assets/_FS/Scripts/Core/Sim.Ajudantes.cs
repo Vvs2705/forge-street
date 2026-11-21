@@ -28,6 +28,7 @@ namespace FS.Core
                 else t = Reavalia(w, t);   // BALANCE §51: alvo sem demanda cede ao que tem cliente esperando
             }
             w.Target = t != null ? t.Index : -1;
+            if (t == null && w.Role == 0 && w.State == 1 && w.IdleT > Balance.WorkerPatience) { Devolve(w); return; }
             if (t == null) { w.Moving = false; return; }
             MoveTowards(w, w.State == 0 ? t.OutAt : t.InAt, dt, Balance.WorkerReach);   // buscando -> saida da fonte; entregando -> entrada do destino
         }
@@ -40,6 +41,7 @@ namespace FS.Core
             if (w.Role == 0) return s.Kind == Kind.Deposit && (w.Count == 0 || s.OutItem == w.Item);
             if (w.Count > 0 && s.OutItem != w.Item) return false;
             if (w.Role == 2 && !Fits(w, s)) return false;
+            if (Linha(w) is string l && !AbasteceLinha(l, s)) return false;   // BALANCE §54
             return s.Produces && (w.Role == 1 ? Intermediario(s.OutItem) : IsProduct(s.OutItem)) && (s.Out > 0 || w.Target == s.Index)
                 && FonteDeInsumo(w, s);   // row-pendencias (Sim.Transporte.cs): so com 2+ insumos
         }
@@ -51,6 +53,7 @@ namespace FS.Core
         bool IsDestFor(Carrier w, Station s)
         {
             // C-CORE-07 (CONTEUDO_V1 §2.4 regra 2): o produto vai ao patio quando ha faixa dele com vaga; senao ao balcao
+            if (Linha(w) is string l && (s.Recipe == null || s.Recipe.Station != l)) return false;   // BALANCE §54: so a familia dele
             if (w.Role == 2) return s.Kind == Kind.Quota || s.Kind == Kind.Export ? Destino(w.Item) == s : Sells(s, w.Item) && Stock[(int)w.Item] < CounterCap && !CotaAceita(w.Item);   // C-CORE-09: ou o de exportacao
             return s.Accepts(w.Item);
         }
@@ -58,12 +61,14 @@ namespace FS.Core
         Station PickSource(Carrier w)
         {
             if (w.Role == 0) return PickDeposit(w);
+            string linha = Linha(w);
             Station best = null; float bestScore = float.MinValue;
             foreach (Station s in Stations)
             {
                 if (!s.Unlocked || !s.Produces || (w.Role == 1 ? !Intermediario(s.OutItem) : !IsProduct(s.OutItem))) continue;
                 if (w.Count > 0 && s.OutItem != w.Item) continue;
                 if (w.Role == 2 && !Fits(w, s)) continue;
+                if (linha != null && !AbasteceLinha(linha, s)) continue;   // BALANCE §54
                 if (s.Out == 0 && w.Count == 0 && !(s.Busy && s.Progress > 0.5f)) continue;   // vale esperar o que esta quase pronto
                 if (!FonteDeInsumo(w, s)) continue;   // row-pendencias (Sim.Transporte.cs): so com 2+ insumos
                 float score = s.Out * 10f - V2.Dist(w.Pos, s.Pos) + (w.Role == 1 && Distrito.InsumoPorEspera ? 10f * Esperam(s.OutItem) : 0f)   // C-CORE-07
@@ -90,6 +95,27 @@ namespace FS.Core
             return n > 1 ? best : Deposit;
         }
 
+        /// <summary>BALANCE §54: o carregador de bruto (papel 0) com a mao cheia de um minerio que nenhuma estacao aceita (todas as fornalhas
+        /// dele cheias) devolve ao monte e vai buscar outro. Antes ele ficava parado com ele para sempre: na Grand Forge os dois do papel 0
+        /// seguravam minerio de ferro com as fornalhas travadas, a pedra estelar nunca chegava a forja e o distrito inteiro parava (a fila de
+        /// encomendas congelava por horas). O bruto e' de graca e infinito: devolver nao tira nada do jogador.</summary>
+        void Devolve(Carrier w)
+        {
+            for (int i = 0; i < w.Held.Length; i++) { w.Held[i] = 0; Array.Clear(w.HeldQ[i], 0, w.HeldQ[i].Length); }
+            w.State = 0; w.Target = -1; w.IdleT = 0f; w.Moving = false;
+        }
+
+        /// <summary>BALANCE §54: o ajudante de linha (WorkerDef.Station = a familia que ele abastece; o Forjador da Grand Forge, no lugar da
+        /// esteira) ou null. Ele so busca onde sai um insumo dessa familia e so entrega nela.</summary>
+        internal string Linha(Carrier w) => w.Wk >= 0 && w.Role == 1 ? Equipe.Defs[w.Wk].Station : null;
+
+        bool AbasteceLinha(string linha, Station fonte)
+        {
+            if (!fonte.Produces || fonte.Recipe.Station == linha) return false;
+            foreach (Station d in Stations) if (d.Unlocked && d.Produces && d.Recipe.Station == linha && d.InIndex(fonte.OutItem) >= 0) return true;
+            return false;
+        }
+
         Station PickDest(Carrier w)
         {
             if (w.Role == 2) return Destino(w.Item);   // C-CORE-07: o patio ou o balcao
@@ -98,6 +124,7 @@ namespace FS.Core
             {
                 int k = s.InIndex(w.Item);   // -1 = nao produz ou a receita nao usa
                 if (!s.Unlocked || k < 0) continue;
+                if (Linha(w) is string l && s.Recipe.Station != l) continue;   // BALANCE §54
                 int room = s.InCap - s.Ins[k];
                 if (room <= 0) continue;
                 float score = room * 4f + Need(s) - V2.Dist(w.Pos, s.Pos);

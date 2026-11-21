@@ -2969,3 +2969,30 @@ Os 10 eventos voltam a fechar no dia 4 a 5, e nenhum fecha numa sessão de 60 mi
 - O Ajudante 3 do bot padrão sai aos 25,4 min (antes, cerca de 19). O teste do ocioso de 15 min passou a jogar até ele sair e continua com 311 vendas, quando o mínimo é 150.
 - O preset `district_unlock` mudou para o Corredor aos 108 s.
 - A conta das obras-primas no teste do Hall agora inclui a espada longa.
+
+## 54. Grand Forge sem esteira: o Forjador e o minério devolvido (2026-11-21)
+
+Depois do #198 (esteira aposentada, §50) o F2PGolpe da campanha de 40 h parou de fechar o Charter da Grand Forge e terminava com cerca de 790 mi de ouro parado. Duas causas, as duas medidas no econsim.
+
+**1. Aço sem transporte.** O lingote da `fornalha_ferro` vai para a `forja_estelar`, que também é fornalha. Quem fazia essa ponte era a esteira. Sem ela só sobrava o papel 1 da turma (Estrela 2), que também leva o bronze dos 3 crisóis. Grand Forge sozinha, 240 min, F2PGolpe:
+
+| | antes do #198 | main | #196 | #196 + Forjador |
+|---|---|---|---|---|
+| Renome | 694 | 418 | 328 | 617 |
+| ouro de encomendas | 5,6% | 2,9% | 2,1% | 4,8% |
+| panóplia (% da receita) | 7,0% | 1,0% | 2,6% | 5,5% |
+| ciclos da forja estelar | 1127 | | | 1070 |
+
+O Forjador (`wk_forjador`) vem de graça com a `cratera_estelar`, como vinha o trilho. É um ajudante de linha: `WorkerDef.Station = "forja_estelar"`, e o `Sim.Linha` limita a busca às fontes de insumo dessa família e a entrega a ela. Ele não entra na conta de contratação da turma, porque o Estrela 2 tem que vir mesmo se for comprado depois da cratera (`GrandForgeTests`).
+
+**2. Travamento.** Com o Forjador, 1 de cada 3 partidas ainda não fechava. Nessas, a fila de encomendas congelava por mais de 15 h com Royal 0/9, Quality 0/3 e Rush 3/9. A foto do Sim mostrava os dois carregadores de minério parados com minério de ferro na mão, as duas fornalhas de ferro cheias e travadas, e a forja estelar com 6 lingotes e 0 pedra. A pedra nunca chegava, porque os únicos que a levam estavam segurando o ferro. Correção: o papel 0 com a mão cheia e sem destino, depois de `Balance.WorkerPatience`, devolve ao monte (`Sim.Devolve`) e volta a buscar. O bruto é de graça e infinito, então devolver não custa nada ao jogador. O teste `Carregador_MinerioSemDestino_DevolveEBuscaOutro` falha sem a correção.
+
+**Campanha de 40 h, 3 partidas por perfil (`--campanha 40 --perfis F2PGolpe --partidas 3`), Charter da Grand Forge:**
+
+| | antes do #198 | #196 + Forjador | #196 + Forjador + devolve | só devolve, sem Forjador |
+|---|---|---|---|---|
+| F2PGolpe | 26,3 h (3/3) | 24,2 h (2/3) | **23,9 h (3/3)** | 33,7 h (com falhas) |
+| Pagante | 30,4 h (3/3) | 21,4 h (2/3) | **23,4 h (3/3)** | 27,5 h |
+
+As 6 partidas fecharam com 86 a 113 Royal entregues (nas travadas eram 12 ou 13) e Renome 5.849 a 6.644. O ouro parado no fim continua alto (cerca de 900 mi). Quem gasta esse ouro são as Obras do Reino (§53), não esta correção.
+
