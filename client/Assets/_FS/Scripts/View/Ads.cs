@@ -287,6 +287,7 @@ namespace FS
             if (why != null) { Ads.Emit("ad_fail", p, why); onFail?.Invoke(); return; }
             _req = new Request { P = p, Ok = onReward, Fail = onFail };
             _shown = p;
+            _host.StartCoroutine(Vigia(_req));   // fix/anuncio-sem-retorno: SDK que nunca responde nao prende o jogo em Estado.Ad
             _ads[Units[p]].ShowAd();
         }
 
@@ -300,6 +301,7 @@ namespace FS
             if (why != null) { Ads.Emit("ad_fail", Ads.Intersticial, why); done?.Invoke(); return; }
             _interDone = done ?? (() => { });
             _shown = Ads.Intersticial;
+            _host.StartCoroutine(VigiaInter(_interDone));   // fix/anuncio-sem-retorno
             _inter.ShowAd();
         }
 
@@ -389,6 +391,30 @@ namespace FS
         {
             yield return new WaitForSecondsRealtime(wait);
             Load(unit);
+        }
+
+        /// <summary>fix/anuncio-sem-retorno: com o jogo na frente (o anuncio real tira o foco) e sem Closed/DisplayFailed por
+        /// VigiaAnuncio.LimiteSeg, o pedido vira falha "sem_retorno" (antes: Estado.Ad pelo resto da sessao).</summary>
+        IEnumerator Vigia(Request r)
+        {
+            var v = new VigiaAnuncio();
+            v.Inicia();
+            while (_req == r && !r.Done)
+            {
+                if (v.Tick(Time.unscaledDeltaTime, Application.isFocused)) { Finish(false, "sem_retorno"); yield break; }
+                yield return null;
+            }
+        }
+
+        IEnumerator VigiaInter(Action d)
+        {
+            var v = new VigiaAnuncio();
+            v.Inicia();
+            while (_interDone == d)
+            {
+                if (v.Tick(Time.unscaledDeltaTime, Application.isFocused)) { InterFim("sem_retorno"); yield break; }
+                yield return null;
+            }
         }
 
         // OnAdRewarded pode chegar DEPOIS do OnAdClosed (callbacks assincronos): espera um pouco antes de chamar de falha

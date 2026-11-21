@@ -1794,7 +1794,9 @@ namespace FS
             {
                 _paused = false;
                 _fpsN = 0; _fpsT = 0f;   // a janela de fps nao mede o tempo fora
-                if (_started && !_pausedByAd && _sim != null && _sim.SavedAt > 0 && Now() - _sim.SavedAt >= 60) Offline();
+                // fix/anuncio-sem-retorno: Home no meio do anuncio + muito tempo fora tambem paga (antes a pausa no anuncio nunca pagava e o
+                // autosave seguinte avancava o SavedAt: a hora fora se perdia)
+                if (_sim != null && _sim.SavedAt > 0 && CicloAnuncio.PagaCofreNaVolta(_started, _pausedByAd, Now() - _sim.SavedAt)) Offline();
                 _metasT = 0f;   // D-CORE-01: voltar do segundo plano olha a virada do dia no proximo quadro
             }
         }
