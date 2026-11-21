@@ -39,4 +39,16 @@ namespace FS
         /// <summary>Anuncio premiado so jogando: nem por cima de painel, nem com outro anuncio, nem fora da frente.</summary>
         public static bool Anuncia(Estado e) => e == Estado.Playing || e == Estado.Transition;
     }
+
+    /// <summary>Quem grava o save real. -testsession, -autoplay e -record nunca leem nem gravam; o -bot tambem nao, salvo com -botgrava
+    /// (o verify.sh --migracao, que precisa do save do bot): o -bot sozinho no aparelho do testador trocava o progresso dele pelo do bot
+    /// no autosave de 5 s. Sem UnityEngine: o coretests testa a tabela.</summary>
+    public static class Sessao
+    {
+        /// <summary>Sessao de teste: estado novo, sem diario, rede, loja nem abertura (as fotos e o smoke).</summary>
+        public static bool Teste(bool testsession, bool autoplay, bool record) => testsession || autoplay || record;
+
+        /// <summary>Le e grava o save do aparelho (arquivo, espelho, nuvem e a loja falsa).</summary>
+        public static bool Persiste(bool teste, bool bot, bool botGrava) => !teste && (!bot || botGrava);
+    }
 }

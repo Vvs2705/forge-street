@@ -3,9 +3,10 @@
 # uso: client/tools/verify.sh quick | full | android-emulator [--medir S] [--migracao <apk-antigo>] | release | release-check <arquivo.aab|apk>
 #   quick             núcleo (dotnet test) + viewcheck do PC e do Android, sem abrir o Unity
 #   full              quick + Unity batchmode: EditMode, Setup.BuildWindows e o .exe com -autoplay 10
-#   android-emulator  Setup.BuildAndroidEmu + emulador + adb install + abre com '-bot -speed 4' + BACK/HOME + logcat sem exceção;
+#   android-emulator  Setup.BuildAndroidEmu + emulador + adb install + abre com '-bot -botgrava -speed 4' + BACK/HOME + logcat sem exceção;
 #                     --medir S: depois, abertura a frio (am start -W) e medir_aparelho.sh com o bot jogando S s (linha de base pré-POCO);
-#                     --migracao: instala o APK antigo (x86_64), joga 90 s, instala o novo por cima e confere o save (schema 2, mesmas compras)
+#                     --migracao: instala o APK antigo (x86_64), joga 90 s com -bot -botgrava, instala o novo por cima e confere o save (schema 2,
+#                     mesmas compras). O adb fica fixo no serial emulator-N: com só o POCO no USB, aborta antes de instalar
 #   release           quick + Setup.BuildAndroidRelease (AAB assinado; exige FS_KEYSTORE, FS_KEYSTORE_PASS, FS_KEY_ALIAS, FS_KEY_PASS) + release-check
 #   release-check     só confere um artefato pronto: targetSdk, versionCode, debuggable, ABI, 16 KB, assinatura e permissões
 # Regra do PC (7,7 GB): um processo pesado por vez. Nunca Unity e emulador juntos; aborta se o Unity estiver aberto neste projeto.
@@ -21,7 +22,8 @@ T0=$SECONDS
 
 ok()   { echo "OK   $* [$((SECONDS - T0)) s]"; }
 fail() { echo "FALHOU: $*" >&2; exit 1; }
-adb()  { MSYS_NO_PATHCONV=1 "$ADB" "$@"; }   # sem isto o Git Bash troca /sdcard por C:/Program Files/Git/sdcard
+. "$(dirname "$0")/adb_emulador.sh"   # fixar_emulador/adb_emu (P0: com o POCO no USB, o adb sem -s instalava e desinstalava nele)
+adb()  { adb_emu "$@"; }   # só no emulador fixado, com MSYS_NO_PATHCONV=1 (sem ele o Git Bash troca /sdcard por C:/Program Files/Git/sdcard)
 
 quick() {
   local sa="$CLIENT/Library/ScriptAssemblies" d log p
@@ -72,7 +74,9 @@ dirty() {
 }
 
 build() {  # build <método> <log> <BuildTarget>
-  run_unity "$2" -quit -executeMethod "FS.EditorTools.Setup.$1"; local rc=$?
+  # Android: abre já no alvo, senão o domínio do Editor compila sem o UNITY_ANDROID e o hook ManifestPrivacidade (D-PRIV-2) fica de fora
+  local alvo=(); [[ "$3" == Android ]] && alvo=(-buildTarget Android)
+  run_unity "$2" "${alvo[@]}" -quit -executeMethod "FS.EditorTools.Setup.$1"; local rc=$?
   local sum; sum=$(grep -m1 -o "BuildSummary($3): .*" "$OUT/$2")
   [ $rc -eq 0 ] && [[ "$sum" == *result=Succeeded* ]] || fail "$1 (saída $rc, '${sum:-sem BuildSummary}', ver $OUT/$2)"
   ok "$1: $sum"
@@ -117,6 +121,7 @@ disco() {
 # - boot frio leva até 10 min neste PC (7,7 GB de RAM)
 # - o /sdcard monta depois do sys.boot_completed: esperar gravar nele e mais ~25 s antes de abrir o app
 # - MSYS_NO_PATHCONV=1 em todo adb (no adb() acima) e >= 6 GB livres no C: (disco())
+# - o adb fixo no serial do emulador (fixar_emulador): o wait-for-device sem -s voltava com o POCO e o uninstall apagava o save dele
 android_emulator() {
   local velho= medir=
   if [ "${1:-}" = --medir ]; then medir="${2:-120}"; shift 2; fi   # linha de base pre-POCO: abertura a frio e medir_aparelho.sh com o bot
@@ -135,10 +140,11 @@ android_emulator() {
   disco   # o build também gasta disco
   # só agora o emulador (o Unity já saiu); desliga ao sair, com ou sem falha, para liberar a RAM
   "$EMU" -avd "$AVD" -no-window -no-snapshot -crash-report-mode never -no-metrics > "$OUT/emulator.log" 2>&1 &
+  EMU_PID=$!
   # o guard provou que não havia emulador antes, então o qemu que sobrar é este
-  trap 'adb emu kill > /dev/null 2>&1 || taskkill /F /IM qemu-system-x86_64.exe > /dev/null 2>&1' EXIT
+  trap desligar_emulador EXIT
   local fim=$((SECONDS + 600)) sem="AVD sem boot ('Can't find service: package' = partição de dados corrompida): docs/ROTEIRO_TESTE_POCO.md §6"
-  timeout 600 "$ADB" wait-for-device || fail "o emulador não apareceu no adb em 10 min (ver $OUT/emulator.log)"
+  fixar_emulador "${EMU_ESPERA:-600}"   # o serial emulator-N (nunca o POCO no USB) ou aborta aqui, antes de qualquer install; ver $OUT/emulator.log
   until [ "$(adb shell getprop sys.boot_completed 2> /dev/null | tr -d '\r')" = 1 ]; do
     [ $SECONDS -lt $fim ] || fail "o emulador não terminou o boot em 10 min. $sem"; sleep 5
   done
@@ -149,14 +155,14 @@ android_emulator() {
   ok "emulador $AVD ligado"
   adb install -r "$apk" > /dev/null || fail "adb install"
   adb logcat -c
-  abrir '-bot -speed 4'
+  abrir '-bot -botgrava -speed 4'   # -botgrava: o smoke passa pelo save (autosave e HOME) como o jogo normal
   sleep 40
   adb shell pidof $PKG > /dev/null || fail "o jogo não está rodando 40 s depois de abrir"
   adb shell input keyevent KEYCODE_BACK; sleep 3
   adb shell input keyevent KEYCODE_HOME; sleep 3
   logcat_limpo "$OUT/logcat.txt"
   grep -q "ADS ad_init" "$OUT/logcat.txt" || fail "sem 'ADS ad_init' no logcat: o Game não chegou ao Awake"
-  ok "abriu com -bot -speed 4, BACK e HOME, logcat sem exceção"
+  ok "abriu com -bot -botgrava -speed 4, BACK e HOME, logcat sem exceção"
   if [ -n "$medir" ]; then
     adb shell am force-stop $PKG; sleep 3
     adb shell "am start -W -n $PKG/com.unity3d.player.UnityPlayerGameActivity -e unity '-bot'" | tr -d '\r' | tee "$OUT/abertura.txt" | grep -E 'TotalTime|WaitTime'
@@ -174,7 +180,7 @@ migracao() {  # migracao <apk-antigo> <apk-novo>
   local antigo="$OUT/migracao_antigo.xml" novo="$OUT/migracao_novo.txt" up n g0 g1 s; local -a ups
   adb uninstall $PKG > /dev/null 2>&1   # sem o save que o smoke acabou de deixar
   adb install "$1" > /dev/null || fail "adb install do APK antigo $1"
-  abrir '-bot -speed 4'; sleep 90
+  abrir '-bot -botgrava -speed 4'; sleep 90   # -botgrava: o -bot sozinho não grava (o APK antigo ignora a flag e grava como antes)
   adb shell input keyevent KEYCODE_HOME; sleep 3   # a pausa grava o save
   adb shell am force-stop $PKG
   adb exec-out run-as $PKG cat "shared_prefs/$PKG.v2.playerprefs.xml" > "$antigo"
@@ -200,7 +206,7 @@ migracao() {  # migracao <apk-antigo> <apk-novo>
 # base = permissões do APK 0.6.0 (LevelPlay/Unity Ads, WorkManager, androidx). Permissão nova = revisar o Data safety antes de subir
 PERMS="android.permission.INTERNET android.permission.ACCESS_NETWORK_STATE android.permission.VIBRATE android.permission.WAKE_LOCK
   android.permission.RECEIVE_BOOT_COMPLETED android.permission.FOREGROUND_SERVICE com.google.android.gms.permission.AD_ID
-  android.permission.ACCESS_ADSERVICES_TOPICS android.permission.ACCESS_ADSERVICES_ATTRIBUTION $PKG.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+  android.permission.ACCESS_ADSERVICES_ATTRIBUTION $PKG.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
   com.android.vending.BILLING"   # Unity IAP 5 (2026-10-23): Data safety "Histórico de compras", docs/IAP.md §6
 
 # confere um .aab ou .apk pronto, sem abrir o Unity; lista tudo o que reprova e só então sai 1
@@ -273,6 +279,8 @@ release_check() {
   elif [[ "$sig" == *"CN=Android Debug"* ]]; then bad "assinado com a chave de DEBUG"
   else ok "assinado: $(echo "$sig" | grep -m1 -oE 'CN=[^,]*')"; fi
 
+  # D-PRIV-2: a API Topics (interesse do usuario para anuncio) sai do manifesto (Editor/ManifestPrivacidade.cs); se voltar, reprova
+  [[ " $(echo $perms) " == *" android.permission.ACCESS_ADSERVICES_TOPICS "* ]] && bad "ACCESS_ADSERVICES_TOPICS no manifesto (D-PRIV-2: o ManifestPrivacidade nao rodou?)"
   local p novas=() lista; lista=" $(echo $PERMS) "
   for p in $perms; do [[ "$lista" == *" $p "* ]] || novas+=("$p"); done
   echo "     permissões: $(echo "$perms" | sed 's/.*\.//' | paste -sd' ')"

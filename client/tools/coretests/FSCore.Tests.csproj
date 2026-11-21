@@ -43,6 +43,8 @@
     <Compile Include="../../Assets/_FS/Scripts/View/Enquadramento.cs" />
     <!-- B-CORE-03: anel do golpe e brilho das pecas (puros) para o StationViewTests -->
     <Compile Include="../../Assets/_FS/Scripts/View/QualidadeView.cs" />
+    <!-- D-PRIV-2: XML do manifesto Android (puro, System.Xml) para o ManifestXmlTests; o hook do build fica no ManifestPrivacidade -->
+    <Compile Include="../../Assets/_FS/Editor/ManifestXml.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
