@@ -7,16 +7,17 @@ set -u
 SDK="${LOCALAPPDATA:-}/Android/Sdk"; ADB="${ADB:-$SDK/platform-tools/adb.exe}"; EMU="${EMULATOR:-$SDK/emulator/emulator.exe}"
 AVD="${AVD:-fs_base}"; PKG=br.com.vstack.forgestreet   # AVD: o fs_playstore segue sem boot (ROTEIRO_TESTE_POCO.md §6)
 OUT="${1:?pasta de saida}"; MIN="${2:-60}"
-APK="$(dirname "$0")/../Builds/android/ForgeStreet-emu.apk"
+APK="${APK:-$(dirname "$0")/../Builds/android/ForgeStreet-emu.apk}"
 mkdir -p "$OUT"
-adb() { "$ADB" "$@"; }
 fail() { echo "FALHOU: $*"; exit 1; }
+. "$(dirname "$0")/adb_emulador.sh"   # fixar_emulador/adb_emu: com o POCO no USB, o adb sem -s apagava o save dele
+adb() { adb_emu "$@"; }
 [ -f "$APK" ] || fail "APK nao achado: $APK"
 # EMU_ARGS: o Vulkan do emulador (vulkan.ranchu.so) derruba o build Development no vk::Image::SetLabel (SIGSEGV no UnityGfxDeviceW, minuto 8
 # do 1o soak, 2026-10-25); sem ele a Unity cai no GLES 3 com a GPU do host. O Vulkan de verdade se mede no POCO.
 "$EMU" -avd "$AVD" ${EMU_ARGS:--feature -Vulkan} -no-window -no-snapshot -crash-report-mode never -no-metrics > "$OUT/emulator.log" 2>&1 &
-trap 'adb emu kill > /dev/null 2>&1 || taskkill /F /IM qemu-system-x86_64.exe > /dev/null 2>&1' EXIT
-timeout 600 "$ADB" wait-for-device || fail "o emulador nao apareceu no adb em 10 min"
+trap desligar_emulador EXIT
+fixar_emulador "${EMU_ESPERA:-600}"   # aborta se so houver aparelho fisico: antes de qualquer uninstall
 fim=$((SECONDS + 600))
 until [ "$(adb shell getprop sys.boot_completed 2> /dev/null | tr -d '\r')" = 1 ]; do [ $SECONDS -lt $fim ] || fail "sem boot em 10 min"; sleep 5; done
 sleep 25
