@@ -2,7 +2,7 @@
 
 > Arquivo: `docs/conselho/2026-11-21-cota-do-contrato.md` · Aberta por: `producer` · Estado: **DECIDIDA**
 > Caminhos: a convenção do jogo vence (`CLAUDE-TIME.md`, resolução de caminhos 1). As decisões do Forge ficam na tabela V do `PROJETO.md` §4, então o ADR desta ata é a **V30**; a ata fica em `docs/conselho/` (padrão do time).
-> Conselho rodado no plano B da skill (o time ainda não estava instalado no repositório): cada diretor como agente lendo o próprio `.md` de papel.
+> Conselho do TIME DE JOGOS (o time fica no PC do estúdio, fora deste repositório): cada diretor como agente com o próprio papel.
 
 ## 0. Entrada
 - **Pedido original:** linha do `PROJETO.md` §7: "Contrato conta a mesma peça para a encomenda e para o contrato (sem o seletor de cota do CONTEUDO_V1 §8) | design | `Contratos.cs` | decidir se a cota entra antes do Limited Release".
