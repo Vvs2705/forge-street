@@ -1,0 +1,5 @@
+{
+  "_nota": "Forge Street: limite das texturas sem prefixo (fotos de loja, auditoria e Builds de até 6000 px) subido para não bloquear commit; os prefixos char_/prop_/env_/ui_ etc. seguem o padrão do time. Aprovado no Conselho do PR #180.",
+  "mobile": { "tex": { "default": 8192 } },
+  "pc": { "tex": { "default": 8192 } }
+}

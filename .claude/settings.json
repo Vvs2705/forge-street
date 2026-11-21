@@ -156,7 +156,11 @@
       "PowerShell(git restore .*)",
       "Edit(**/*.keystore)",
       "Read(**/keystore.properties)",
-      "Read(**/google-services.json)"
+      "Read(**/google-services.json)",
+      "Bash(gh pr merge --auto*)",
+      "Bash(gh pr merge * --auto*)",
+      "PowerShell(gh pr merge --auto*)",
+      "PowerShell(gh pr merge * --auto*)"
     ],
     "allow": [
       "Bash(dir *)",

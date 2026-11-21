@@ -33,9 +33,9 @@ Teste rodado e passando (local e CI) · algo visível tem screenshot/vídeo no c
    (ex.: ata/ADR/evidência em `design/`) e registre na ata o caminho escolhido.
 2. **`project.yaml` (opcional):** chaves `time_jogos.paths.ata`, `time_jogos.paths.adr`, `time_jogos.paths.evidencia` sobrescrevem os padrões.
 3. **Padrões** (só se 1 e 2 não decidirem): ata `docs/conselho/`, ADR `docs/architecture/`, evidência `production/qa/evidence/`.
-4. **Docs de referência do time** (`docs/PRATICAS_APROVADAS.md`, `docs/AUTORIZACOES.md`, `docs/engine-reference/**`, director-gates,
+4. **Docs de referência do time** (`docs/PRATICAS_APROVADAS.md`, `docs/engine-reference/**`, director-gates,
    templates): no jogo, leia da cópia instalada `.claude/time-jogos/` (`docs/`, `templates/`) ou `.claude/docs/` (director-gates); se
-   ausente, do repo do time `C:\Users\VINICIUS\Videos\MEUS PROJETOS\TIME DE JOGOS\time-jogos` (ou `gh repo clone Vvs2705/time-jogos`).
+   ausente, do repo do time (`gh repo clone Vvs2705/time-jogos`, privado).
    Doc não achado → `NÃO AVALIADO (doc ausente)`, nunca conteúdo inventado.
 
 ## Unity — pré-voo

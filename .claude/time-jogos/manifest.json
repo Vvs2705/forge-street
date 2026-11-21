@@ -1,6 +1,6 @@
 {
   "instalado_em": "2026-11-20T21:19:00",
-  "origem": "C:\\Users\\VINICIUS\\Videos\\MEUS PROJETOS\\TIME DE JOGOS\\time-jogos",
+  "origem": "<repo do time-jogos>",
   "commit_time": "7b4c0a6daea20dc867a0bbc6ead53be263244939",
   "files": {
     ".claude/agents/accessibility-specialist.md": "50ca6baafadfb7d41dc6c5e3618f5f247b15a8be42e24d496c33b2b2f0481910",
@@ -613,7 +613,6 @@
     ".claude/time-jogos/templates/EVIDENCIA_QA.md": "8711abec08d5910cc4d1b07becab79fdd122cd2a5a0b921536f7bbf8515432c9",
     ".claude/time-jogos/templates/GDD.md": "8631250debc1b322f6ae3795296ea7fdf18aba14b9430cfa21abd18e92629f43",
     ".claude/time-jogos/docs/PRATICAS_APROVADAS.md": "473af52e723f385dfcfac9d24d1fe40addfb4cb945472dd064ad4dc19e3f1743",
-    ".claude/time-jogos/docs/AUTORIZACOES.md": "140cde4ef1733f2b07161aed5a4934d3dd2d9dc4b87bdbc64de14e991d30cddc",
     ".claude/time-jogos/docs/engine-reference/godot/breaking-changes.md": "46f8ad3e6ff6a34132a583cc3d6857ca2a19968459152d7f4d8b3a12680866e0",
     ".claude/time-jogos/docs/engine-reference/godot/current-best-practices.md": "e1df917fab6ade979b183156f3f2d39fd94a96dde419d860d6babbd920637311",
     ".claude/time-jogos/docs/engine-reference/godot/deprecated-apis.md": "d1dd9282a11e6c5b65b8289695ddaaa4960a3b724e3ef937b08873b496a6b898",
@@ -667,6 +666,6 @@
     ".claude/time-jogos/docs/engine-reference/web/pixijs.md": "7b39818dbd53ba3b3b3289c650d2d224d7ad60a802dfb4f516362a51d4275ba3",
     ".claude/time-jogos/docs/engine-reference/web/threejs.md": "15911fc5f67710e6edef6e8dfa41a0fc5bc77a5291432dbd85ae325310637b82",
     ".claude/time-jogos/docs/engine-reference/web/VERSION.md": "31bff165e347e724f7ec1b4dd80e62eca7fcd625467578630bcc02e3e5176f1c",
-    ".claude/time-jogos/CLAUDE-TIME.md": "d59d7449841263b1255b3dedbba8c65a6c9a7ed998b5c31c8ca8dab9bab1ac49"
+    ".claude/time-jogos/CLAUDE-TIME.md": "38c2551275b75d56e85a05398bf31336facb42e53127c213dead3d1120dfcdc9"
   }
 }
