@@ -209,9 +209,15 @@ namespace FS.Core
             for (int k = 0; k < _hireBy.Length; k++)
             {
                 if (_hireBy[k] < 0 || !Bought[_hireBy[k]]) continue;
+                int def = _hireDef[k];
+                if (Equipe.Defs[def].Station != null)   // BALANCE §54: o ajudante de linha e' ele mesmo (nao entra na conta do papel)
+                {
+                    if (!Workers.Exists(w => w.Wk == def)) Workers.Add(new Carrier(ItemDefs.Length) { Pos = Contratacao, Role = _hireRole[k], Wk = def });
+                    continue;
+                }
                 int role = _hireRole[k], want = 0, have = 0;
-                for (int j = 0; j <= k; j++) if (_hireRole[j] == role && _hireBy[j] >= 0 && Bought[_hireBy[j]]) want++;
-                foreach (Carrier w in Workers) if (w.Role == role) have++;
+                for (int j = 0; j <= k; j++) if (_hireRole[j] == role && _hireBy[j] >= 0 && Bought[_hireBy[j]] && Equipe.Defs[_hireDef[j]].Station == null) want++;
+                foreach (Carrier w in Workers) if (w.Role == role && Linha(w) == null) have++;
                 if (have < want) Workers.Add(new Carrier(ItemDefs.Length) { Pos = Contratacao, Role = role, Wk = _hireDef[k] });
             }
             bool fast = Has(Upgrade.HelperSpeed);

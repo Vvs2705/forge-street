@@ -69,7 +69,7 @@ namespace FS.Core
             U(0, "fole_grande", -1, "Fole da catedral", "Crisóis e fornalhas", menu: true, efeito: Upgrade.FurnaceSpeed1),
             U(1, "crisol_bronze2", -1, "Crisol 2", "Mais barras de bronze"),
             U(2, "estrela1", -1, "Estrela 1", "Leva minérios aos crisóis"),
-            U(3, "cratera_estelar", -1, "Cratera estelar", "Aço e nova linha: estátua"),   // 2026-11: sem o trilho (o efeito Conveyor saiu do jogo)
+            U(3, "cratera_estelar", -1, "Cratera estelar", "Aço, estátua e o Forjador"),   // 2026-11: sem o trilho (o efeito Conveyor saiu do jogo)
             U(4, "estrela2", 2, "Estrela 2", "Leva bronze e aço"),
             U(5, Sim.Mensageiro, -1, "Mensageiro", "Rotas e exportação"),
             U(6, "forja_sintese", 5, "Lâmina estelar", "Nova linha: lâmina estelar"),
@@ -115,6 +115,12 @@ namespace FS.Core
 
         /// <summary>§6: o Mensageiro Felix (Courier) vem com o upgrade `mensageiro` (o major unlock) e nao carrega: as rotas (+Tuning.ImportNivel
         /// un/min) e o lote (+Tuning.ExportNivel pecas) sobem a cada nivel acima do 1 (Sim.Exportacao.cs). Niveis 2-10 = 150.000 x 1,6^(L-2).</summary>
+        /// <summary>2026-11 (BALANCE §54): o Forjador vem com a cratera estelar no lugar da esteira que saiu do jogo. Ajudante de linha (Station =
+        /// a familia que ele abastece): so leva o lingote da fornalha a forja estelar. Sem ele o lingote ficava na fornalha (o papel 1 da turma
+        /// tambem leva o bronze dos 3 crisois) e lamina, estatua e panoplia quase nao saiam: o Charter da Grand Forge nao fechava.</summary>
+        static readonly WorkerDef Forjador = new WorkerDef("wk_forjador", "Forjador", WorkerRole.Porter, Specialty.Carrying, GrandForgeId, "forja_estelar",
+            "cratera_estelar", 1, 0, null, TurmaEstrela, "ajudante", "velocidade", "carga");
+
         static readonly WorkerDef Felix = new WorkerDef("wk_felix", "Félix", WorkerRole.Courier, Specialty.Carrying, GrandForgeId, null, Sim.Mensageiro, -1,
             0, null, new long[] { 150000, 240000, 380000, 610000, 980000, 1600000, 2500000, 4000000, 6400000 }, "felix", "rotas", "lote");
 
@@ -143,7 +149,7 @@ namespace FS.Core
             // ponytail: a turma Estrela (§6) sao 4 Porters, como a Ferraz. Desvio do §6 (revisar; BALANCE.md §41): o 4o leva os brutos (papel 0:
             // cobre, ferro e pedra estelar), nao "importados -> bancadas": o Mensageiro ja entrega os importados na entrada (Sim.Exportacao.cs) e,
             // com um carregador de bruto so, o ferro e a pedra nunca saiam (o cobre ganhava sempre) e a cadeia do aco parava
-            Workers = new[] { Estrela(1, 0), Estrela(2, 1), Estrela(3, 2), Estrela(4, 0), Felix },
+            Workers = new[] { Estrela(1, 0), Estrela(2, 1), Estrela(3, 2), Estrela(4, 0), Forjador, Felix },
             // Fileiras (§2.6; entrada -> saida de baixo para cima, colunas de 3 m, a grade da Row): depositos e cais 1 -> crisois, fornalhas e forja
             // estelar 4 -> crisol 3 6,5 -> fundicoes e forja de sintese 9 -> bancadas de sintese 11 -> balcao e patio de exportacao 13. Entrada a
             // esquerda; o cobre na coluna 1, o ferro e a cratera a direita
