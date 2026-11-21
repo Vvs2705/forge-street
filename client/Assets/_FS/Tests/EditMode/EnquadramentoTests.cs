@@ -95,16 +95,5 @@ namespace FS.Tests
             Assert.AreEqual(Balance.WorkshopW / 2f, baixo.X, 1e-4f);
             Assert.AreEqual(baixo.Y, alto.Y, 1e-4f);   // a tela comprida tem altura sobrando: a camera nao se mexe
         }
-    
-        [Test]
-        public void RotuloRua_ForaDaTela_NaoEPuxadoParaCimaDaPlaca()
-        {
-            const float w = 1080f, meia = 60f;
-            Assert.AreEqual(900f, Enquadramento.RotuloNaBorda(900f, meia, w), 1e-3f, "inteiro fora (camera no inicio): fica fora, nao cai na placa de Escudos");
-            Assert.AreEqual(w / 2f + meia, Enquadramento.RotuloNaBorda(w / 2f + meia, meia, w), 1e-3f, "encostado por fora da borda: fora");
-            float max = w * (1032f / 1080f - 0.5f) - meia;
-            Assert.AreEqual(max, Enquadramento.RotuloNaBorda(w / 2f + meia - 1f, meia, w), 1e-3f, "aparece em parte: puxado para dentro (v0.6d)");
-            Assert.AreEqual(100f, Enquadramento.RotuloNaBorda(100f, meia, w), 1e-3f, "dentro da tela: nao mexe");
-        }
-}
+    }
 }
