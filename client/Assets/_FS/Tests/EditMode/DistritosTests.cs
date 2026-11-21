@@ -159,7 +159,7 @@ namespace FS.Tests
         [Test]
         public void Row_Montagem_SoComecaComTodosOsComponentes()
         {
-            Sim s = NovaRow();
+            Sim s = NovaRow().ComOperadores();
             Station m = E(s, "montagem_elmo");
             int placa = m.InIndex(I(s, "placa")), rebite = m.InIndex(I(s, "rebite"));
             m.Ins[placa] = 2; m.Ins[rebite] = 1;
@@ -180,7 +180,7 @@ namespace FS.Tests
         [Test]
         public void Row_Rebitadeira_QuatroRebitesPorLingote()
         {
-            Sim s = NovaRow();
+            Sim s = NovaRow().ComOperadores();
             Station r = E(s, "rebitadeira");
             Assert.AreEqual((6, 8, 32f), (r.InCap, r.OutCap, r.Time));
             r.In = 1;

@@ -13,6 +13,7 @@ namespace FS.Core
         void Produce(Station s, float dt)
         {
             if (!s.Unlocked || !s.Produces) return;
+            if (!OperandoAgora(s)) return;   // Sim.Operador.cs: sem operador, so com o ferreiro na boca (o ciclo pausa onde estava)
             if (s.Busy)
             {
                 if (s.Progress < 1f) s.Progress = Math.Min(1f, s.Progress + dt / s.Time);

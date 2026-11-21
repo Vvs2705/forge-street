@@ -540,7 +540,8 @@ namespace FS.Tests
         {
             const string golden = "2011:4:0:50 2031:16:2:5 3400:17:2:25 3478:4:1:65 4000:16:2:12 5301:4:2:85 6790:17:2:25 6886:4:3:110 7390:16:2:9 8946:4:4:145 " +
                 "10928:17:2:25 11124:4:5:185 11528:16:3:8 12389:4:7:315 13633:17:3:25 14071:4:8:410 14233:16:2:30 19053:4:9:670";   // 2026-11-21: sem a esteira (6), Ferramentas +140 (§50) e ajudantes pela fila (§51); ate 11528 igual ao main
-            var s = new Sim(); var bot = new Bot();
+            // Sim.Operador.cs: o golden e' o do main antes do operador obrigatorio; com a flag desligada o jogo e' aquele, tick a tick (rollback)
+            var s = new Sim(new Tuning { OperadorObrigatorio = false }); var bot = new Bot();
             var ev = new List<string>();
             int tick = 0;
             while (!s.Bought[(int)Upgrade.Tools] && tick < 30000)

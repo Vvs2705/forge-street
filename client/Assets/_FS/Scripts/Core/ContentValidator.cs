@@ -197,6 +197,8 @@ namespace FS.Core
                 }
                 foreach (Pad p in PadsInWorld(w))
                     if (!w.Stations.Exists(s => s.Unlocked && V2.Dist(s.Pos, p.Pos) < 0.01f)) alvos.Add(("pad " + w.UpgradeDefs[(int)p.Chain[0]].Id, p.Pos, Balance.PadRadius - 0.1f));
+                foreach (Station s in w.Stations)   // Sim.Operador.cs: o pad "Contratar operador" de toda estacao aberta que produz
+                    if (s.Unlocked && s.Produces) alvos.Add(("operador de " + s.Id, s.OperadorPos, Balance.PadRadius - 0.1f));
                 foreach (var (nome, pos, reach) in alvos)
                 {
                     var c = new Carrier(w.ItemDefs.Length) { Pos = d.Inicio, Speed = Balance.PlayerSpeed };
@@ -804,6 +806,20 @@ namespace FS.Core
             {
                 if (!InWalls(p)) yield return $"pisavel: {name} ({p}) fora das paredes";
                 if (Clearance(w, p) < Balance.CharRadius) yield return $"pisavel: {name} ({p}) dentro de um corpo";
+            }
+            // Sim.Operador.cs: o pad do operador cabe o personagem, fica fora de toda boca (forjar a mao nao paga sem querer) e longe dos outros pads
+            foreach (Station st in w.Stations)
+            {
+                if (!st.Produces) continue;
+                V2 p = st.OperadorPos; string at = $"pisavel: operador de {st.Id} ({p})";
+                if (!InWalls(p)) yield return at + " fora das paredes";
+                if (Clearance(w, p) < Balance.CharRadius) yield return at + " dentro de um corpo";
+                foreach (Station o in w.Stations)
+                    if (Math.Min(V2.Dist(p, o.InAt), o.Produces ? V2.Dist(p, o.OutAt) : float.MaxValue) < Balance.MouthRadius + Balance.PadRadius) yield return $"{at} na zona da boca de {o.Id}";
+                foreach (var (name, q) in spots)
+                    if (V2.Dist(p, q) < 2f * Balance.PadRadius) yield return $"{at} em cima do {name}";
+                foreach (Station o in w.Stations)
+                    if (o != st && o.Produces && V2.Dist(p, o.OperadorPos) < 2f * Balance.PadRadius) yield return $"{at} em cima do operador de {o.Id}";
             }
             for (int i = 0; i <= Balance.QueueCapMax; i++) if (Within(w, w.ClientSlot(i))) yield return $"pisavel: vaga {i} do balcao dentro de um corpo";
             for (int i = 0; i <= Balance.JewelQueueCapUp && w.JewelShop != null; i++) if (Within(w, w.JewelSlot(i))) yield return $"pisavel: vaga {i} da loja de joias dentro de um corpo";

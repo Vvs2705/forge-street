@@ -44,6 +44,7 @@ namespace FS
             public RecipeDef Receita;   // C-CORE-06: a receita com que as pilhas foram montadas (a bancada configuravel troca: a estacao e' refeita)
             public Text[] Faixas;   // C-CORE-07: uma linha por faixa do patio de cotas (o toque troca o produto dela, Game.Toque)
             public Text Medidor;    // C-CORE-08: o medidor do altar ("Estável · 45/100"; o toque na barra de qualidade troca o modo, Game.Toque)
+            public Text Op;         // 2026-11 (Sim.Operador.cs): "Parada: sem operador" / "Fique na estação e forje" embaixo da estacao sem operador
             public Text Linha;      // C-CORE-09: as rotas embaixo do cais e o lote embaixo do patio de exportacao (o toque troca o produto do lote)
         }
         /// <summary>Placa de obra: fundo escuro, enchimento de ouro, borda tracejada, icone do que constroi; preco (moeda + valor) e nome na HUD.</summary>
@@ -253,6 +254,7 @@ namespace FS
         readonly List<(Image P, Text T)> _placas = new List<(Image, Text)>();   // auditoria item 13: placa de couro atras do rotulo
         readonly List<StationV> _stations = new List<StationV>();
         readonly List<PadV> _pads = new List<PadV>();
+        readonly List<(Station S, PadV V)> _opPads = new List<(Station, PadV)>();   // 2026-11: pad "Contratar operador" de cada estacao que produz
         readonly List<ChestV> _chests = new List<ChestV>();
         CarrierV _player;
         readonly List<CarrierV> _workers = new List<CarrierV>();
@@ -337,6 +339,7 @@ namespace FS
             _jewelBubble = BuildBubble("BalaoJoias");
             foreach (Station s in sim.Stations) _stations.Add(BuildStation(s));
             foreach (Pad p in sim.Pads) _pads.Add(BuildPad(p));
+            foreach (Station s in sim.Stations) if (s.Produces) _opPads.Add((s, BuildOpPad(s)));
             foreach (Chest c in sim.Chests) _chests.Add(BuildChest(c));
             _player = BuildCarrier(sim.Player, Art.Player, 0.62f, Balance.PlayerCapUp * sim.Player.Held.Length);   // FASE7: ate o teto de CADA tipo
             // Mochila (feedback do POCO 2026-10-13, "item solto"): com a folha ferreiro_mochila (mesmo render, mochila presa ao Spine2) a compra
@@ -654,6 +657,12 @@ namespace FS
                 v.Medidor.fontStyle = FontStyle.Bold;
                 v.Medidor.enabled = false;
             }
+            if (s.Produces)   // 2026-11: estacao sem operador fica parada (Sim.PrecisaOperador)
+            {
+                v.Op = Art.Outlined(Art.FreeText(_labels, "Operador", 24, new Vector2(420f, 34f)), 2.5f, Edge);
+                v.Op.fontStyle = FontStyle.Bold;
+                v.Op.enabled = false;
+            }
             if (s.Kind == Kind.Import || s.Kind == Kind.Export)   // C-CORE-09: ponytail: texto, como as faixas do patio de cotas
             {
                 v.Linha = Art.Outlined(Art.FreeText(_labels, "Lote", 24, new Vector2(460f, 34f)), 2.5f, Edge);
@@ -762,9 +771,9 @@ namespace FS
 
         PadV BuildPad(Pad p)
         {
-            var v = new PadV { P = p, Root = new GameObject("Pad " + p.Slot).transform };
+            var v = new PadV { P = p, Root = new GameObject(p != null ? "Pad " + p.Slot : "Pad").transform };   // p == null: BuildOpPad
             v.Root.SetParent(transform, false);
-            v.Root.localPosition = W(p.Pos);
+            if (p != null) v.Root.localPosition = W(p.Pos);
             // placa de obra (P1-4; era anel tracejado com "+"): quadrado arredondado escuro, enchimento de ouro do centro para fora,
             // borda tracejada e o icone do que sera construido; preco (moeda + valor) e nome vivem na HUD (RefreshPad)
             // v0.6d: placa creme (era #2A2420, sumia no chao escuro) e enchimento de ouro mais forte para ler sobre ela
@@ -785,6 +794,63 @@ namespace FS
             v.Price.horizontalOverflow = HorizontalWrapMode.Overflow;
             v.Price.rectTransform.offsetMin = new Vector2(46f, 0f);
             return v;
+        }
+
+        /// <summary>2026-11 (Sim.Operador.cs): a placa "Contratar operador" ao lado da estacao (Station.OperadorPos), igual a placa de obra,
+        /// com o operador (folha "ajudante") como icone. So aparece enquanto Sim.PrecisaOperador; o ferreiro paga parado em cima dela.</summary>
+        PadV BuildOpPad(Station s)
+        {
+            var v = BuildPad(null);
+            v.Root.name = "Operador " + s.Id;
+            v.Root.localPosition = W(s.OperadorPos);
+            Sprite ic; Color tint = Color.white; float fill = 0.65f;
+            if (SpriteSheet.TryGet("ajudante", out SpriteSheet sh)) { sh.Scale = CharScale("ajudante"); ic = sh.Frame("Idle", 0, 0f); tint = AprendizTinta; }
+            else { ic = Art.Plus(); tint = Art.Accent; fill = 1f; }
+            Fit(v.Icon, ic, PadIconBox / fill, new Vector2(0f, PadIconY));
+            v.Icon.color = tint;
+            return v;
+        }
+
+        void RefreshOpPad(Station s, PadV v, float dt)
+        {
+            bool on = _sim.PrecisaOperador(s);
+            if (v.Root.gameObject.activeSelf != on) { v.Root.gameObject.SetActive(on); if (!on && Time.timeSinceLevelLoad > 1f) Poof(s.OperadorPos, 1.1f); }
+            if (v.PriceBox.gameObject.activeSelf != on) v.PriceBox.gameObject.SetActive(on);
+            if (!on) { v.Label.enabled = false; return; }
+            v.Root.localPosition = W(s.OperadorPos);
+            long cost = _sim.CustoOperador(s), remaining = cost - s.OperadorPago;
+            bool affordable = _sim.Gold >= remaining;
+            float frac = cost > 0 ? s.OperadorPago / (float)cost : 0f;
+            v.Fill.transform.localScale = Vector3.one * (PadSize * 0.92f * Mathf.Sqrt(frac));
+            if (affordable) { v.Root.localScale = Vector3.one * (1.025f + 0.025f * Mathf.Sin(Time.time * 6f)); v.Pulsing = true; }
+            else if (v.Pulsing) { v.Root.localScale = Vector3.one; v.Pulsing = false; }
+            v.Border.color = affordable ? PadOk : PadNo;
+            v.Icon.color = Art.ComAlfa(v.Icon.color, affordable ? 1f : 0.75f);
+            if (s.OperadorPago > v.LastPaid)
+            {
+                v.CoinT -= dt;
+                if (v.CoinT <= 0f)
+                {
+                    v.CoinT = PadCoinEvery;
+                    Vector3 a = W(_sim.Player.Pos) + new Vector3(0f, HeadY + 0.3f, 0f), b = W(s.OperadorPos);
+                    Spawn(_coin != null ? _coin : Art.Disc(), _coin != null ? Color.white : Art.Accent, a, (a + b) * 0.5f + new Vector3(0f, 1.6f, 0f), b, 0.32f, 0.44f, 0.26f, false);
+                }
+            }
+            v.LastPaid = s.OperadorPago;
+            if (remaining != v.LastRem || affordable != v.LastOk)
+            {
+                v.LastRem = remaining; v.LastOk = affordable;
+                v.Price.text = remaining.ToString();
+                v.Price.color = affordable ? Color.white : PriceNo;
+                v.PriceBox.sizeDelta = new Vector2(40f + 6f + v.Price.preferredWidth, 44f);
+            }
+            PlaceRect(v.PriceBox, W(s.OperadorPos) + new Vector3(0f, PadPriceY, 0f));
+            float la = _sim.Time < TutorialLabels ? 1f : Mathf.Clamp01((NearLabel - V2.Dist(_sim.Player.Pos, s.OperadorPos)) / LabelFade);
+            v.Label.enabled = la > 0.01f;
+            if (!v.Label.enabled) return;
+            v.Label.text = Loc.T("operador.placa");
+            v.Label.color = affordable ? Art.ComAlfa(Art.Accent, la) : Art.ComAlfa(Art.Ink, 0.85f * la);
+            PlaceLabel(v.Label, W(s.OperadorPos) + new Vector3(0f, PadSize / 2f + 0.22f, 0f), Vector2.zero);
         }
 
         /// <summary>
@@ -1214,6 +1280,7 @@ namespace FS
             }
             RefreshStand(dt);
             foreach (PadV v in _pads) RefreshPad(v, dt);
+            foreach ((Station S, PadV V) o in _opPads) RefreshOpPad(o.S, o.V, dt);
             foreach (ChestV v in _chests) RefreshChest(v);
             foreach (LuxV v in _lux) RefreshLux(v, dt);
 
@@ -1404,7 +1471,19 @@ namespace FS
                 v.Root.gameObject.SetActive(s.Unlocked);
                 if (s.Unlocked) { v.PopT = 0f; Poof(s.Pos, 1.6f); }   // comprou agora: nasce com pop e poeira (o save liga no Build, sem pop)
             }
-            if (!s.Unlocked) { v.Label.enabled = false; if (v.Medidor != null) v.Medidor.enabled = false; return; }
+            if (!s.Unlocked) { v.Label.enabled = false; if (v.Medidor != null) v.Medidor.enabled = false; if (v.Op != null) v.Op.enabled = false; return; }
+            if (v.Op != null)   // 2026-11: sem operador a estacao so produz com o ferreiro na boca dela
+            {
+                bool falta = _sim.PrecisaOperador(s);
+                v.Op.enabled = falta;
+                if (falta)
+                {
+                    bool mao = _sim.FerreiroNaBoca(s);
+                    v.Op.text = Loc.T(mao ? "operador.mao" : "operador.parada");
+                    v.Op.color = mao ? Art.Accent : Art.Bad;
+                    PlaceLabel(v.Op, W(s.Pos) + new Vector3(0f, -1.15f, 0f), Vector2.zero);
+                }
+            }
             if (v.Medidor != null)   // C-CORE-08: azul estabilizando, vermelho em sobrecarga, ouro no Forcado, claro no Estavel
             {
                 v.Medidor.enabled = true;
@@ -1977,8 +2056,10 @@ namespace FS
             {
                 bool promovido = false;   // o oficial/Vulcana contratado ocupa a boca desta estacao
                 foreach (PostoV p in _postos) if (!Ronda(_sim.Equipe.Defs[p.K]) && V2.Dist(p.P, Boca(a.S)) < 0.1f) { promovido = true; break; }
-                a.Root.gameObject.SetActive(!promovido);
-                if (promovido) continue;
+                bool opera = !_sim.PrecisaOperador(a.S);   // 2026-11: o aprendiz e' o operador; sem ele a estacao fica parada (Sim.Operador.cs)
+                bool mostra = !promovido && opera;
+                if (a.Root.gameObject.activeSelf != mostra) { a.Root.gameObject.SetActive(mostra); if (mostra && Time.timeSinceLevelLoad > 1f) Poof(Boca(a.S), 0.8f); }
+                if (!mostra) continue;
                 a.Root.localPosition = W(Boca(a.S));
                 if (a.Body == null) continue;
                 string clip = a.S.Out >= a.S.OutCap ? "Angry" : a.S.Busy ? "Idle" : "LookingAround";

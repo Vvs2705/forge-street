@@ -92,7 +92,8 @@ namespace FS.Core
             ConfiguraBancadas(s);   // C-CORE-06: receita das bancadas configuraveis (Bot.Bancada; sem elas, nada)
             Cotas(s);   // C-CORE-07: a regra fixa das faixas do patio (Bot.Cotas.cs; sem patio, nada)
             Arcano(s);   // C-CORE-08: o modo de cada altar (Bot.Arcano.cs; sem altar, nada)
-            int menu = s.CheapestAffordableMenu(), wk = Worker(s, menu);
+            bool op = s.OperadorPagavel() != null;   // Sim.Operador.cs: operador pagavel vem antes de tudo (estacao sem ele esta parada)
+            int menu = op ? -1 : s.CheapestAffordableMenu(), wk = op ? -1 : Worker(s, menu);
             bool buy = menu >= 0 || wk >= 0;   // B-CORE-04: o worker se compra como o menu (para, le a tela, toca)
             V2 t = buy ? s.Player.Pos : Target(s);
             if (!_has || buy != _menu || (!buy && V2.Dist(t, _target) > 0.01f)) { _target = t; _menu = buy; _has = true; _wait = Reaction; }
@@ -173,6 +174,8 @@ namespace FS.Core
         public static V2 Target(Sim s)
         {
             Carrier p = s.Player;
+            Station op = s.OperadorPagavel();   // Sim.Operador.cs: contrata o operador assim que o ouro paga (o pad ao lado da estacao)
+            if (op != null) return op.OperadorPos;
             Pad pad = s.CheapestAffordablePad();
             if (pad != null) return pad.Pos;
             Chest chest = null;   // bau disponivel mais perto: abre quando passa perto ou quando nao tem nada melhor (nao e' otimo)
@@ -194,6 +197,8 @@ namespace FS.Core
                 if (dest != null) return dest.InAt;
             }
 
+            Station mao = AMao(s);   // Sim.Operador.cs: estacao sem operador com o que fazer: o ferreiro fica na boca e forja a mao
+            if (mao != null) return mao.OutAt;
             Station pick = BestOutput(s, Kind.Crafter, p);   // produto pronto -> boca de SAIDA
             if (pick != null) return pick.OutAt;
             pick = BestOutput(s, Kind.Furnace, p);   // insumo pronto que tem para onde ir (lingote; na Row tambem placa e rebite)
@@ -207,6 +212,23 @@ namespace FS.Core
             foreach (Station st in s.Stations)
                 if (st.Unlocked && st.Kind == Kind.Furnace && st.Busy && (soon == null || st.Progress > soon.Progress)) soon = st;
             return soon != null ? soon.OutAt : s.FurnaceA.OutAt;
+        }
+
+        /// <summary>Sim.Operador.cs: estacao sem operador que tem ciclo em curso ou a receita inteira e espaco na saida (forjar a mao rende
+        /// agora); a de produto antes da de insumo, depois a mais perto. null = nenhuma (todas com operador, ou nada a fazer nelas).</summary>
+        static Station AMao(Sim s)
+        {
+            Station best = null; float bestScore = float.MinValue;
+            foreach (Station st in s.Stations)
+            {
+                if (!s.PrecisaOperador(st) || st.Out + st.Recipe.Qtd > st.OutCap) continue;
+                bool pronta = st.Busy;
+                if (!pronta) { pronta = true; for (int k = 0; k < st.Ins.Length; k++) if (st.Ins[k] < st.Recipe.Inputs[k].Qty) pronta = false; }
+                if (!pronta) continue;
+                float score = (s.IsProduct(st.OutItem) ? 100f : 0f) - V2.Dist(s.Player.Pos, st.OutAt);
+                if (score > bestScore) { bestScore = score; best = st; }
+            }
+            return best;
         }
 
         /// <summary>Estacao desbloqueada que aceita `item`, com mais espaco e mais necessidade; empate pela distancia.</summary>

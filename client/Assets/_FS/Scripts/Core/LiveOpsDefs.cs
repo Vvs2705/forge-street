@@ -162,9 +162,10 @@ namespace FS.Core
                 {
                     // raia H: o Royal Contract (D-CORE-04) no lugar dos 10 golpes de mestre (8 linhas no cartao). A referencia (D0, sem golpe)
                     // so chega ao Renome 3 no dia 5 e cumpre o ronda na sessao em que a trilha ja fecharia sem ele (BALANCE §36)
-                    M("vip5", "vip_served", 5, 100), M("royal2", "order_complete", 2, 120, "royal"), M("vende300", "product_sold", 300, 60),
-                    M("fina40", "quality_crafted", 40, 150), M("escudos50", "product_sold", 50, 60, "escudo"), M("dias3", "play_day", 3, 100),
-                    M("cofre2", "offline_claim", 2, 60), M("contrato1", "contract_complete", 1, 50),   // 2026-11-21 (BALANCE §50): sem a esteira o Renome 3 sai mais tarde; 50 pontos do contrato foram para as Finas
+                    M("vip5", "vip_served", 5, 100), M("royal2", "order_complete", 2, 120, "royal"), M("vende300", "product_sold", 300, 110),
+                    M("fina40", "quality_crafted", 40, 100), M("escudos50", "product_sold", 50, 60, "escudo"), M("dias3", "play_day", 3, 100),
+                    M("cofre2", "offline_claim", 2, 60), M("contrato1", "contract_complete", 1, 50),   // 2026-11-21 (BALANCE §50): sem a esteira o Renome 3 sai mais tarde; 50 pontos do contrato foram para as Finas. §52: com o operador as Finas
+                    // tambem atrasam; 50 delas foram para as 300 vendas
                 },
                 Trilha = Trilha(Cos("cos_ev_s1w1_selo"), "cos_ev_s1w1_tapete"), Encomenda = "ord_ev_royal_week", Tema = "royal", Modificadores = Vip75(),
             },

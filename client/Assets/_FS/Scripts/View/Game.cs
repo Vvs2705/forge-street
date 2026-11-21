@@ -641,6 +641,11 @@ namespace FS
                         Log("export_lot", e.A.ToString(CultureInfo.InvariantCulture), e.B.ToString(CultureInfo.InvariantCulture));
                         break;
                     case Ev.Bought: Bought(e.A, e.B, e.Pos); break;
+                    case Ev.OperadorContratado:   // 2026-11 (Sim.Operador.cs): A = estacao, B = custo; o aprendiz aparece com poeira no WorldView
+                        _view.Float(e.Pos, Loc.T("operador.contratado"), Art.Good);
+                        Ajustes.Pulso(30, 160);
+                        Log("operator_hired", _sim.Stations[e.A].Id, e.B.ToString(CultureInfo.InvariantCulture));
+                        break;
                     case Ev.ClientLeft:
                         if (e.B == 0) _view.Float(e.Pos, "...", Art.Bad);
                         else _view.TurnedAway(e.Pos, _sim.CounterFor((Item)e.A) == _sim.JewelShop);   // fila cheia: aparece passando e vai embora
@@ -1928,6 +1933,7 @@ namespace FS
                 for (int pass = 0; pass < 2; pass++)   // o Buy recusa luxo antes da producao completa, e ha produtivos (Mineiro, Joalheiro 2) depois dos luxos
                     for (int i = 0; i < Math.Min(n, _sim.UpgradeDefs.Length); i++)   // C-CORE-01: os do distrito ativo
                         if (_sim.UpgradeDefs[i].Luxury == (pass == 1)) _sim.Buy((Upgrade)i);
+            if (n > 0) Captura.Operados(_sim);   // Sim.Operador.cs: o estado montado ja vem com operador nas estacoes abertas
             // -buyids 1,5,0@300 (criativos): compra estes upgrades (indice do enum ou ID estavel, A-CORE-04) fora da ordem do -buy (ex.: 4 bancadas e 1 fornalha
             // sem fole); "id@t" compra quando o relogio do jogo passa de t s, na ordem dada, cobrando o preco (TimedBuys).
             _buyAt = Captura.Compras(_sim, Arg("-buyids"));

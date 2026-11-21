@@ -64,7 +64,7 @@ namespace FS.Tests
         [Test]
         public void FornalhaDeLiga_DoisLingotesUmaLigaEmSeisSegundos()
         {
-            Sim s = NovaRow();
+            Sim s = NovaRow().ComOperadores();
             Station f = s.Est("fornalha_liga");
             int u = U(s, "fornalha_liga");
             Assert.AreEqual((11, 9460L, "fornalha_armeiro2", true), (u, s.T.Cost(u), s.UpgradeDefs[s.UpgradeDefs[u].Requires].Id, s.IsProduction(u)));
@@ -88,7 +88,7 @@ namespace FS.Tests
         [Test]
         public void Montagem_LigaOpcional_Q30EConta()
         {
-            Sim s = NovaRow();
+            Sim s = NovaRow().ComOperadores();
             foreach (Station st in s.Stations.Where(x => x.Produces && s.IsProduct(x.OutItem)))
                 Assert.AreEqual(I(s, "liga"), st.Recipe.Inputs[st.Liga].Item, st.Id + ": slot de liga");
             Assert.AreEqual((-1, -1), (s.Est("prensa").Liga, s.Est("fornalha").Liga), "insumo nao tem slot");

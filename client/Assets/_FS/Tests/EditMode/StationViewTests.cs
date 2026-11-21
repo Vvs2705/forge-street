@@ -9,7 +9,7 @@ namespace FS.Tests
         [Test]
         public void Fornalha_SeisEstados()
         {
-            var sim = new Sim();
+            var sim = new Sim().ComOperadores();
             Station f = sim.FurnaceA;
             Assert.AreEqual(Fornalha.Fria, StationView.Estado(f, false, 0f), "nova, nunca acesa");
 
@@ -47,7 +47,7 @@ namespace FS.Tests
             Assert.IsFalse(StationView.Batida(0.95f, 1f, 11), "pronta esperando vaga nao bate");
             Assert.IsFalse(StationView.Batida(0.95f, 0.02f, 11), "peca nova nao bate");
 
-            var sim = new Sim();
+            var sim = new Sim().ComOperadores();
             Station a = sim.AnvilA;
             a.In = a.InCap;
             int n = StationView.Batidas(a.Time), batidas = 0, pecas = 0;

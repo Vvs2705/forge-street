@@ -197,7 +197,7 @@ namespace FS.Tests
         public void EspadaLonga_SoComProjeto_LinhaFazEVende()
         {
             // so a espada longa tem cliente (os outros nao enchem a fila de 4 vagas no meio do teste)
-            var s = new Sim(new Tuning { FirstClientAt = 9999f, ClientInterval = new[] { 0f, 0f, 9999f, 9999f, 9999f, 9999f, 12f } }) { Gold = 100000 };
+            var s = new Sim(new Tuning { FirstClientAt = 9999f, ClientInterval = new[] { 0f, 0f, 9999f, 9999f, 9999f, 9999f, 12f } }) { Gold = 100000 }.ComOperadores();
             s.Buy(Upgrade.HammerSpeed); s.Buy(Upgrade.Shields); s.Buy(Upgrade.Tools); s.Buy(Upgrade.AnvilsLv2);
             Pad pad = PadFor(s, Upgrade.LongAnvil);
             Assert.AreEqual(-1, pad.Current(s), "sem o projeto o pad nao aparece");
@@ -231,7 +231,7 @@ namespace FS.Tests
         [Test]
         public void Tecnica_SomaNaFamiliaToda_SemSorteio()
         {
-            var s = new Sim();
+            var s = new Sim().ComOperadores();
             s.Buy(Upgrade.Anvil2); s.Buy(Upgrade.Shields);
             Assert.AreEqual(0, s.QualityBreakdown(s.AnvilA)[(int)QualitySource.Blueprint]);
             Assert.IsTrue(s.Projetos.Ganha("bp_tecnica_espada", BlueprintSourceKind.OrderBlueprint));
@@ -252,7 +252,7 @@ namespace FS.Tests
                 }
                 return r.ToString();
             }
-            var o = new Sim(); o.Buy(Upgrade.Anvil2); o.Projetos.Ganha("bp_tecnica_espada", BlueprintSourceKind.OrderBlueprint);
+            var o = new Sim().ComOperadores(); o.Buy(Upgrade.Anvil2); o.Projetos.Ganha("bp_tecnica_espada", BlueprintSourceKind.OrderBlueprint);
             string a = Seq(s), b = Seq(o);
             Assert.AreEqual(a, b, "deterministico");
             Assert.AreEqual(2, a.Count(ch => ch == '1'), "q 20 = 1 Fina a cada 5: " + a);

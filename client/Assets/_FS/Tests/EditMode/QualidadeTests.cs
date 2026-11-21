@@ -26,7 +26,7 @@ namespace FS.Tests
         /// <summary>Sim com a qualidade revelada (Ferramentas) e `q` pontos na Bigorna (nivel 2 com NivelEstacaoQ = q).</summary>
         internal static Sim ComQ(int q)
         {
-            var s = new Sim(new Tuning { NivelEstacaoQ = q });
+            var s = new Sim(new Tuning { NivelEstacaoQ = q }).ComOperadores();   // a qualidade da peca, com a bigorna operada
             s.Buy(Upgrade.Tools);
             s.Buy(Upgrade.AnvilsLv2);
             return s;
@@ -541,7 +541,7 @@ namespace FS.Tests
             Assert.AreEqual(Quality.Fine, Peca(c), "75 + 25 = 100: a 2a depois do load sai Fina");
 
             // a carga dos ajudantes volta com o nivel, cada um na ordem do wks=
-            var h = new Sim();
+            var h = new Sim().ComOperadores();
             h.Buy(Upgrade.Helper1); h.Buy(Upgrade.Helper2); h.Buy(Upgrade.Shields); h.Buy(Upgrade.Helper3);
             Carrier w = h.Workers.Find(c => c.Role == 2);
             w.Held[(int)Item.Shield] = 2; w.HeldQ[(int)Item.Shield][(int)Quality.Superior] = 2;

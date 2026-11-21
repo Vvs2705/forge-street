@@ -122,6 +122,7 @@ namespace FS.Core
         public static readonly DistrictDef RoyalArsenal = new DistrictDef
         {
             Id = RoyalArsenalId, Nome = "Royal Arsenal", Indice = 3,
+            OperadorKit = 1700,   // Sim.Operador.cs: operador da estacao do kit = ~o 1o produto (1.705): forja o 1o a mao e contrata
             Itens = ItensArsenal, Receitas = ReceitasArsenal, Upgrades = UpgradesArsenal, Projetos = ProjetosDefs.ArsenalDefs,
             Masterworks = MasterworksDefs.ArsenalDefs, MarcosColecao = MasterworksDefs.MarcosArsenal,
             Clientes = ClientesArsenal,

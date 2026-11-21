@@ -449,14 +449,15 @@ namespace FS.Tests
         [Test]
         public void Bot_SemOsWorkersNovos_IdenticoAoDeAntes_E_ComEles_SoDepoisDaProducao()
         {
+            const float Min = 75f;
             // "antes" = flag desligada (nada da Equipe a venda). Com a flag ligada e o bot que nunca compra worker: o mesmo jogo, tick a tick
-            (Sim off, string logOff) = Joga(new Tuning { Workers = false }, 55f);   // B-CORE-07: a bigorna longa (6.000, ~45 min) leva a producao completa a ~49:55; 55 min deixa o 1o worker chegar
-            (Sim never, string logNever) = Joga(new Tuning(), 55f, -1f);
+            (Sim off, string logOff) = Joga(new Tuning { Workers = false }, Min);   // B-CORE-07: a bigorna longa (6.000, ~45 min); BALANCE §52: com o operador a producao completa sai mais tarde
+            (Sim never, string logNever) = Joga(new Tuning(), Min, -1f);
             Assert.AreEqual(logOff, logNever, "ganchos neutros sem ninguem novo");
             Assert.AreEqual(off.Save(1), never.Save(1));
             // o bot padrao (WorkerSegundos 0): a curva produtiva e' a mesma; o 1o worker so depois da producao completa
-            (Sim on, string logOn) = Joga(new Tuning(), 55f);
-            Assert.IsTrue(off.ProductionComplete, "premissa: producao completa em 55 min");
+            (Sim on, string logOn) = Joga(new Tuning(), Min);
+            Assert.IsTrue(off.ProductionComplete, $"premissa: producao completa em {Min} min");
             float prod = Enumerable.Range(0, Upgrades.Count).Where(Upgrades.IsProduction).Max(u => off.UpgradeTime[u]);
             for (int u = 0; u < Upgrades.Count; u++)
                 if (off.UpgradeTime[u] <= prod) Assert.AreEqual(off.UpgradeTime[u], on.UpgradeTime[u], "curva produtiva e niveis de estacao: " + (Upgrade)u);
