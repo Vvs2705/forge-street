@@ -130,7 +130,7 @@ Save, espelho, configurações, faixa de idade e diário: ficam no aparelho e ne
 
 ### 2.5 Quando refazer
 
-Toda permissão nova no `release-check`; SDK de anúncio atualizado ou rede nova no Network Manager (cada rede tem a sua tabela); provedor de analytics, crash, RemoteConfig ou atribuição (P8); IAP (Wave E: "Histórico de compras" passa a ser também do jogo e o IARC ganha "compras no app"); cloud save; e qualquer mudança na tela de idade.
+Toda permissão nova no `release-check`; SDK de anúncio atualizado ou rede nova no Network Manager (cada rede tem a sua tabela); provedor de analytics, crash, RemoteConfig ou atribuição (P8); IAP (Wave E: "Histórico de compras" passa a ser também do jogo e o IARC ganha "compras no app"); cloud save; a flag `Interstitial` (P3); e qualquer mudança na tela de idade.
 
 ### 2.6 Fontes (consultadas em 2026-10-12)
 
@@ -156,7 +156,7 @@ Categoria: **Jogo**. O certificado sai do questionário. A expectativa é a clas
 | Linguagem imprópria, humor grosseiro, discriminação | Não | — |
 | Drogas, álcool, tabaco | Não | não há taverna nem bebida |
 | Jogos de azar (simulados ou com dinheiro) | **Não** | nada aleatório: VIP por sequência de Weyl, encomendas em rodízio, baús de marco com ouro fixo |
-| Compras digitais / itens aleatórios pagos (loot box) | compras **Sim** desde o Unity IAP (2026-10-23, `PUBLICACAO_PLAY.md` §4.3); loot box **Não** |  loot box nunca (V4, ECA Digital art. 20). Refazer o questionário quando o IAP entrar (Wave E) |
+| Compras digitais / itens aleatórios pagos (loot box) | compras **Sim** desde o Unity IAP (2026-10-23, `PUBLICACAO_PLAY.md` §4.3); loot box **Não** | loot box nunca (V4, ECA Digital art. 20) |
 | Interação entre usuários, chat, conteúdo gerado por usuário | **Não** | single-player, sem chat (o art. 21 do ECA Digital não se aplica hoje) |
 | Compartilha a localização do usuário com outros usuários | Não | — |
 | Anúncios | Sim, na declaração "Contém anúncios" da Play Console (o IARC não classifica anúncio) | rewarded opcional |

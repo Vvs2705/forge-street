@@ -9,7 +9,7 @@ Version `<<PREENCHER: 1.0>>` · effective `<<PREENCHER: date>>`
 
 - Forge Street has no account, no login and no chat. We don't ask for your name, email or date of birth.
 - Your progress stays **on your device**. We don't run a server of our own.
-- The game shows ads **that you choose to watch** in exchange for a bonus. Those ads are delivered by Unity (LevelPlay and Unity Ads), which collects some device data, as explained below.
+- The game shows ads **that you choose to watch** in exchange for a bonus `<<CONFIRMAR: P3, revisit if ads between screens are turned on>>`. Those ads are delivered by Unity (LevelPlay and Unity Ads), which collects some device data, as explained below.
 - To tune the game and fix bugs we use Unity services (Unity Gaming Services). **The game only sends usage statistics and error reports from players who are 18 or older and agreed.**
 - Purchases are optional, go through Google Play, and the content of each one is fixed and shown before you pay.
 - The first time an ad bonus shows up, the game asks for your **age range**. For players under 18, the game asks partners for non-personalized ads and doesn't use the advertising ID.

@@ -19,26 +19,28 @@ O objetivo é que, no dia, o Vinicius só copie e cole. Cada campo da Play Conso
 | Item | Onde está | Situação |
 |---|---|---|
 | Número D-U-N-S e os dados da empresa iguais aos do pedido (razão social, CNPJ, endereço, telefone) | e-mail da CIAL | `<<VINICIUS>>` previsto para 25/11 |
-| Conta de organização da Play (dona `vinicius@vstack-solutions.com.br`, parada em "Perfil para pagamentos") | Play Console | já existe (`RELEASE.md` §3.5) |
-| AAB assinado com a chave de upload real | workflow `release` à mão (`gh workflow run release.yml --ref main`) ou `client/tools/verify.sh release` no PC | pipeline pronto (#178). Gerar no dia, a partir da `main` |
+| Conta de organização da Play (parada em "Perfil para pagamentos") | Play Console | já existe (`RELEASE.md` §3.5) |
+| Dados da conta de comerciante (perfil de pagamentos, para vender IAP): conta bancária PJ em nome da empresa, CNPJ e endereço fiscal iguais aos do D-U-N-S, e um responsável com documento | banco / contador | `<<VINICIUS>>`. O Google verifica a organização e o banco, e isso pode levar **dias**: o app e o teste interno andam enquanto isso, mas os produtos só ficam à venda depois |
+| AAB assinado com a chave de upload real | workflow `release` à mão (`gh workflow run release.yml --ref main`) ou `client/tools/verify.sh release` no PC | pipeline pronto (#178). Gerar **depois** dos PRs do bloco "Antes do dia" (§8), a partir da `main`. Conferir a assinatura antes de subir (§1 passo 7) |
 | SHA-1 do certificado de upload | `RELEASE.md` §3.1: `75:20:35:E8:BD:07:A5:59:A7:0C:16:4C:FE:9C:36:B3:1D:CD:D6:83` | pronto |
 | URL pública da política de privacidade | §5 deste doc | **falta hospedar** (decisão D-PUB-1) |
 | Ícone 512 × 512 | `arte/marca/icone_loja_512.png` (512 × 512, RGB, 298 KB) | pronto |
 | Feature graphic 1024 × 500 | `arte/marca/feature_graphic.png` (1024 × 500, RGB, 613 KB) | pronto |
-| Screenshots de celular | `arte/loja/screenshots/<pt\|en\|es>/1…8_*.jpg` (8 por idioma, 1080 × 1920) | prontas |
+| Screenshots de celular | `arte/loja/screenshots/<pt\|en\|es>/1…8_*.jpg` (8 por idioma, 1080 × 1920) | valem para o **teste interno**. São de 24/10 e só mostram o Old Forge: refazer antes do teste aberto ou da produção, com pelo menos 3 distritos, uma obra-prima e um contrato (a es/7 tem um rótulo cortado) |
 | Vídeo | `arte/loja/video/gameplay_30s.mp4` | a Play só aceita **link do YouTube**: subir como "Não listado" é publicação externa, então `<<VINICIUS>>` decide (opcional) |
 
 ## 1. Ordem do dia (passo a passo)
 
 Cada passo diz onde clicar e qual seção deste doc tem o valor. Os passos 1 a 3 são só do Vinicius, porque envolvem a conta, os dados da empresa e o banco. Do passo 4 em diante, a sessão pode acompanhar pela tela dele se ele pedir.
 
-1. **Perfil para pagamentos.** Retomar o cadastro onde parou e informar o D-U-N-S e os dados da empresa, iguais aos do pedido na CIAL. Esperar a verificação da organização: o Google pode pedir documento, e isso leva de horas a dias.
+1. **Perfil para pagamentos.** Retomar o cadastro onde parou e informar o D-U-N-S e os dados da empresa, iguais aos do pedido na CIAL, mais a conta bancária PJ e os dados fiscais (§0). Esperar a verificação da organização e do banco: o Google pode pedir documento, e isso leva de horas a dias. Os passos 2 a 7 não precisam esperar.
 2. **Criar o app.** Página inicial > **Criar app**.
    - Nome: `Forge Street: Tycoon de Forja`.
    - Idioma padrão: Português (Brasil) – pt-BR.
    - App ou jogo: **Jogo**.
    - Gratuito ou pago: **Gratuito**. Essa escolha não pode ser desfeita depois, e o jogo é gratuito com compras opcionais.
    - Marcar as duas declarações: Políticas do programa e leis de exportação dos EUA.
+   - O nome do pacote, `br.com.vstack.forgestreet`, vem do 1º AAB e **fica fixo para sempre**.
 3. **Play App Signing.** Fica ativo por padrão na criação. Confirmar em Testar e lançar > Configuração > **Integridade do app** > Assinatura do app que a chave do app é gerada pelo Google. A chave de upload é a nossa, a do SHA-1 acima.
 4. **Ficha da loja principal** (Expandir com a Play > Presença na loja > **Ficha da loja principal**; em inglês, *Grow users > Store presence > Main store listing*). Valores no §2.
    - Depois, adicionar as traduções `en-US` e `es-419` em **Gerenciar traduções > Adicionar suas próprias traduções**. Também no §2.
@@ -53,11 +55,13 @@ Cada passo diz onde clicar e qual seção deste doc tem o valor. Os passos 1 a 3
    7. ID de publicidade: §4.1.
    8. Apps governamentais, recursos financeiros, saúde e notícias: todos **Não**.
 7. **Teste interno.** Testar e lançar > Testes > **Teste interno** > Criar nova versão.
+   - **Antes de subir, conferir a assinatura:** `keytool -printcert -jarfile ForgeStreet-<versão>.aab` tem de mostrar o SHA-1 `75:20:35:E8:BD:07:A5:59:A7:0C:16:4C:FE:9C:36:B3:1D:CD:D6:83`. Se o AAB veio do CI, o resumo do run tem de dizer "chave de upload", e não o aviso da keystore de teste. O 1º upload fixa a chave de upload do app: um AAB com a chave de teste só sai com um pedido de reset ao suporte, que leva dias.
    - Subir o AAB e colar as notas da versão do §7.
    - Testadores: lista de e-mails `<<VINICIUS>>` (no mínimo ele mesmo).
    - A conta de organização **não** precisa do teste fechado de 14 dias com 12 testadores. Essa exigência é só da conta pessoal, e foi por isso que ela foi descartada.
 8. **Produtos únicos (IAP).** Monetizar com o Google Play > Produtos > **Produtos únicos** > Criar produto único. Os 3 produtos estão no §3.
    - O app precisa estar com o AAB que pede `com.android.vending.BILLING`, e o nosso pede (`verify.sh`, `PERMS`).
+   - Ativar só o Passe Comissão Real. O Festival da Brasa e o Pacote do Mestre ficam em rascunho.
 9. **Chave RSA da licença.** Monetizar com o Google Play > **Configuração da monetização** > Licenciamento.
    - Copiar a chave pública (base64) e mandar na thread. É chave pública, não é segredo.
    - Com ela, a sessão gera o `GooglePlayTangle.cs` (Unity > Services > In-App Purchasing > Receipt Validation Obfuscator) e abre o PR que liga a `LojaUnity` (`IAP.md` §5.1).
@@ -117,7 +121,7 @@ O **ID do produto não pode ser alterado nem reaproveitado** depois de criado, e
 | ID do produto | Tipo no jogo | Preço base (BRL) | Ativar no dia? |
 |---|---|---|---|
 | `iap_pass_s1_royal_commission` | não-consumível (o jogo nunca o consome) | **R$ 44,90** (definitivo, Vinicius 2026-10-24) | **Sim**. Só aparece no jogo com a flag `PassePremium` ligada pelo Remote Config |
-| `iap_pass_s2_ember_festival` | não-consumível | **R$ 44,90** | Sim, pela mesma flag |
+| `iap_pass_s2_ember_festival` | não-consumível | **R$ 44,90** | **Não**: criar como rascunho e ativar só quando a temporada S2 começar (D-PUB-5) |
 | `iap_pacote_mestre` | não-consumível | R$ 14,90 é **placeholder** (P3 / Wave E) | **Não**: criar como rascunho e não ativar até a D-PUB-2 |
 
 **Textos por idioma.** O nome é igual ao do `Loc.cs` (`iap.<id>.nome`). A descrição lista o conteúdo fixo, o mesmo que o cartão do jogo mostra antes de pagar (V4: nada aleatório).
@@ -125,16 +129,16 @@ O **ID do produto não pode ser alterado nem reaproveitado** depois de criado, e
 `iap_pass_s1_royal_commission`
 | | Nome | Descrição |
 |---|---|---|
-| pt-BR | `Passe Comissão Real` | `Libera a trilha premium da temporada Comissão Real do Passe. Você recebe na hora as recompensas dos níveis que já alcançou. Compra única, sem sorteio.` |
-| en-US | `Royal Commission Pass` | `Unlocks the premium track of the Royal Commission Pass season. You get the rewards for the levels you've already reached right away. One-time purchase, no random rewards.` |
-| es-419 | `Pase Comisión Real` | `Desbloquea la ruta premium de la temporada Comisión Real del Pase. Recibes al instante las recompensas de los niveles que ya alcanzaste. Compra única, sin sorteos.` |
+| pt-BR | `Passe Comissão Real` | `Trilha premium da temporada Comissão Real: 17 itens cosméticos, sem vantagem no jogo. Os níveis que você já alcançou pagam na hora. Compra única, sem sorteio.` |
+| en-US | `Royal Commission Pass` | `Premium track of the Royal Commission season: 17 cosmetic items, no gameplay advantage. Levels you've already reached pay out right away. One-time purchase, no random rewards.` |
+| es-419 | `Pase Comisión Real` | `Ruta premium de la temporada Comisión Real: 17 objetos cosméticos, sin ventaja en el juego. Los niveles que ya alcanzaste pagan al instante. Compra única, sin sorteos.` |
 
 `iap_pass_s2_ember_festival`
 | | Nome | Descrição |
 |---|---|---|
-| pt-BR | `Passe Festival da Brasa` | `Libera a trilha premium da temporada Festival da Brasa do Passe. Você recebe na hora as recompensas dos níveis que já alcançou. Compra única, sem sorteio.` |
-| en-US | `Ember Festival Pass` | `Unlocks the premium track of the Ember Festival Pass season. You get the rewards for the levels you've already reached right away. One-time purchase, no random rewards.` |
-| es-419 | `Pase Festival de Brasas` | `Desbloquea la ruta premium de la temporada Festival de Brasas del Pase. Recibes al instante las recompensas de los niveles que ya alcanzaste. Compra única, sin sorteos.` |
+| pt-BR | `Passe Festival da Brasa` | `Trilha premium da temporada Festival da Brasa: 17 itens cosméticos, sem vantagem no jogo. Os níveis que você já alcançou pagam na hora. Compra única, sem sorteio.` |
+| en-US | `Ember Festival Pass` | `Premium track of the Ember Festival season: 17 cosmetic items, no gameplay advantage. Levels you've already reached pay out right away. One-time purchase, no random rewards.` |
+| es-419 | `Pase Festival de Brasas` | `Ruta premium de la temporada Festival de Brasas: 17 objetos cosméticos, sin ventaja en el juego. Los niveles que ya alcanzaste pagan al instante. Compra única, sin sorteos.` |
 
 `iap_pacote_mestre` (rascunho, não ativar)
 | | Nome | Descrição |
@@ -143,12 +147,13 @@ O **ID do produto não pode ser alterado nem reaproveitado** depois de criado, e
 | en-US | `Master's Pack` | `Use Speed, Ingots and Swap order without watching the video, with the same cooldowns and limits. One-time purchase, no random rewards.` |
 | es-419 | `Paquete del Maestro` | `Usa Velocidad, Lingotes y Cambiar pedido sin ver el video, con las mismas recargas y límites. Compra única, sin sorteos.` |
 
-"Recebe na hora as recompensas dos níveis que já alcançou" é o comportamento testado em `LiveOpsTests.PassePremium_AtrasDaFlag_PagaOsAlcancadosUmaVez_SemProgressao`. A trilha premium não dá progressão (V20: sem ouro, Renome, XP nem Blueprint pagos), e a trilha free fecha sem pagar (#126).
+"17 itens cosméticos" é a trilha premium de cada temporada (`LiveOpsDefs.cs`, `Premium(...)` com 17 `cos_ps*p_`). "Os níveis que já alcançou pagam na hora" é o comportamento testado em `LiveOpsTests.PassePremium_AtrasDaFlag_PagaOsAlcancadosUmaVez_SemProgressao`. A trilha premium não dá progressão (V20: sem ouro, Renome, XP nem Blueprint pagos), e a trilha free fecha sem pagar (#126).
 
 **Por que o Pacote do Mestre espera (monetization-compliance):** o conteúdo dele tem duas posses.
 - `sem_video` é real: Velocidade, Lingotes e Trocar sem o vídeo.
 - `remove_ads` veta o intersticial, que está **desligado** (V10, flag `Interstitial` falsa até o A/B do Limited Release, P3). Hoje o cartão do jogo lista "Sem anúncio entre telas", uma vantagem que o comprador não percebe porque esse anúncio não existe. Isso é o risco de "descrição enganosa" da política de metadados da Play e do CDC.
 - A descrição acima só promete o que existe. Mesmo assim, o preço é placeholder e a linha do cartão continua no build. Por isso fica como rascunho até a D-PUB-2.
+- Rascunho na Play não tira o cartão do jogo: o `Compras.AVenda` sempre inclui o Pacote, e a `LojaUnity` mostraria um cartão que dá "indisponível" ao tocar. Por isso o PR que liga a `LojaUnity` precisa esconder o produto que a Play não devolve e filtrar o Passe pela temporada ativa (D-PUB-5).
 
 ## 4. Conteúdo do app
 
@@ -158,7 +163,7 @@ O **ID do produto não pode ser alterado nem reaproveitado** depois de criado, e
 |---|---|---|
 | Anúncios: "O app contém anúncios?" | **Sim** | rewarded opcional pelo LevelPlay + Unity Ads; intersticial atrás de flag desligada |
 | Acesso ao app | **Todas as funcionalidades estão disponíveis sem acesso especial** | sem login, sem conta |
-| ID de publicidade: "O app usa o ID de publicidade?" | **Sim**. Finalidades: Publicidade ou marketing; Análise; Prevenção de fraude, segurança e conformidade | `AD_ID` no manifesto, usado só para 18+ (`PRIVACIDADE.md` §4) |
+| ID de publicidade: "O app usa o ID de publicidade?" | **Sim**. Finalidades: Publicidade ou marketing; Análise; Prevenção de fraude, segurança e conformidade | `AD_ID` no manifesto, usado só para 18+ (`PRIVACIDADE.md` §4). A regra mínima do estúdio diz "anúncio sem `AD_ID`" (modelo do Dungeon Courier); o Forge Street diverge por decisão registrada no GDD, "Conflitos" item 1 (tela de idade mantida e movida, 2026-10-24) |
 | Apps governamentais / Recursos financeiros / Saúde / Notícias | Não / Não tem / Não / Não | — |
 | Declaração de serviço em primeiro plano (se o console pedir) | o jogo não usa. A permissão `FOREGROUND_SERVICE` vem do WorkManager dos SDKs | `PRIVACIDADE.md` §1.3. Se o console exigir um tipo, responder com o que o relatório do console mostrar e avisar na thread |
 
@@ -233,6 +238,7 @@ Perguntas por tipo:
 
 **Quando refazer** (`PRIVACIDADE.md` §2.5):
 - antes de ligar a flag `CloudSave` (entra o login anônimo e o save na nuvem; `CLOUD_SAVE.md` tem o rascunho);
+- antes de ligar a flag `Interstitial` (P3): a política deixa de poder dizer "anúncios que você escolhe assistir";
 - rede de anúncio nova;
 - permissão nova no `release-check`;
 - validação de recibo em servidor.
@@ -268,29 +274,36 @@ Primera versión de prueba de Forge Street: los 6 distritos, pedidos, contratos,
 </es-419>
 ```
 
-## 8. Checklist curto do Vinicius (o dia do D-U-N-S)
+## 8. Checklist curto do Vinicius
 
-1. [ ] Perfil para pagamentos com o D-U-N-S e os dados da empresa (§1 passo 1).
-2. [ ] Decidir o site/domínio da política e do `app-ads.txt` e mandar na thread (D-PUB-1). A sessão sobe a página e abre o PR do link no jogo.
-3. [ ] Criar o app "Forge Street: Tycoon de Forja", Jogo, Gratuito (§1 passo 2).
-4. [ ] Colar a ficha pt/en/es e as configurações (§2).
-5. [ ] Conteúdo do app (§4), na ordem do passo 6.
-6. [ ] Subir o AAB no teste interno (§1 passo 7).
-7. [ ] Criar os 2 Passes ativos e o Pacote do Mestre em rascunho (§3).
-8. [ ] Antes de a política ir ao ar: fechar a D-PRIV-2 (Topics) e a D-PRIV-8 (`submitAnalytics`), §9. São PRs pequenos que a sessão faz com o seu ok.
-9. [ ] Mandar na thread a chave RSA pública (§1 passo 9) e adicionar os testadores de licença.
+**Antes do dia (até 24/11), para o dia não travar:**
+1. [ ] Escolher onde a política e o `app-ads.txt` vão morar e mandar na thread (D-PUB-1). Quem sobe a página no site é você ou quem cuida do site; a sessão entrega o arquivo pronto.
+2. [ ] Decidir como a política vai ao ar no teste interno (D-PUB-6).
+3. [ ] Dar o ok para a sessão abrir e mesclar os PRs da D-PRIV-2 (Topics), da D-PRIV-8 (`submitAnalytics`) e da D-PUB-3 (link da política no jogo). Os três mudam o AAB, então o AAB do dia sai **depois** deles.
+4. [ ] Separar os dados da conta de comerciante: conta bancária PJ, CNPJ e endereço fiscal (§0).
+
+**No dia do D-U-N-S:**
+1. [ ] Perfil para pagamentos (§1 passo 1). Os passos seguintes não esperam a verificação.
+2. [ ] Criar o app "Forge Street: Tycoon de Forja", Jogo, Gratuito (§1 passo 2).
+3. [ ] Colar a ficha pt/en/es e as configurações (§2).
+4. [ ] Conteúdo do app (§4), na ordem do passo 6.
+5. [ ] Conferir o SHA-1 do AAB e subir no teste interno (§1 passo 7).
+6. [ ] Criar o Passe Comissão Real ativo, e o Festival da Brasa e o Pacote do Mestre em rascunho (§3).
+7. [ ] Mandar na thread a chave RSA pública (§1 passo 9) e adicionar os testadores de licença.
 
 ## 9. Decisões abertas
 
-| # | Decisão | Recomendação | Bloqueia |
-|---|---|---|---|
-| D-PUB-1 | Onde hospedar a política e o `app-ads.txt` (o "Site" da ficha) | `https://vstack-solutions.com.br/forgestreet/privacidade` com o `index.html` deste PR, e o `app-ads.txt` na raiz do mesmo domínio. Não usar GitHub Pages: o repositório é privado e torná-lo público é proibido pela regra do estúdio. A nuvem não conseguiu abrir o site (proxy 403), então não foi verificado se ele existe | URL da política, link no jogo, `app-ads.txt` |
-| D-PUB-2 | Pacote do Mestre: preço e conteúdo | não ativar no lançamento. Decidir junto com a P3 (A/B do intersticial). Se for ativar antes, tirar `remove_ads` do conteúdo ou a linha "Sem anúncio entre telas" do cartão | ativar `iap_pacote_mestre` |
-| D-PUB-3 | Link da política dentro do jogo | botão "Política de privacidade" em Configurações > Privacidade (`Application.OpenURL`), num PR pequeno assim que a D-PUB-1 der a URL. Não sobe a `Privacidade.Versao` (`PRIVACIDADE.md` §6) | aprovação da revisão da Play |
-| D-PUB-4 | Vídeo no YouTube (não listado) | opcional. A ficha vai ao ar sem ele | — |
-| D-PRIV-2 | Tirar `ACCESS_ADSERVICES_TOPICS` (segmentação por interesse) do manifesto | tirar, com `tools:node="remove"` (`PRIVACIDADE.md` §4). Enquanto estiver lá, a política não pode garantir "sem personalização para menores": as frases têm `<<CONFIRMAR: D-PRIV-2>>` | página pública da política; envio do Data safety |
-| D-PRIV-8 | `submitAnalytics: 1` (estatísticas de hardware do motor Unity, de todos) | desligar no `Setup.cs` ou medir com captura de rede | página pública da política; envio do Data safety |
-| D-PRIV-5 | Revisão jurídica da política | antes do teste aberto ou da produção. O teste interno não tem página pública | página pública |
+| # | Decisão | Dono | Recomendação | Bloqueia |
+|---|---|---|---|---|
+| D-PUB-1 | Onde hospedar a política e o `app-ads.txt` (o "Site" da ficha) | Vinicius | o site da empresa, em `https://<domínio da VStack>/forgestreet/privacidade`, com o `index.html` deste PR, e o `app-ads.txt` na raiz do mesmo domínio. Assim fica tudo em nome da empresa. Alternativa grátis e imediata: o GitHub Pages deste repositório, que é público (`https://vvs2705.github.io/forge-street/...`). Funciona para a Play, mas a URL fica no nome do usuário do GitHub, não da empresa, e ligar o Pages é publicação. A nuvem não conseguiu abrir o site da VStack (proxy 403), então não foi verificado se ele existe | o passo 6.1 do dia, a D-PUB-3, o `app-ads.txt` |
+| D-PUB-6 | A política no teste interno | Vinicius | publicar a versão sem o quadro de rascunho, com os dados do D-U-N-S preenchidos, antes da revisão jurídica (o teste interno só chega aos testadores). A D-PRIV-5 continua bloqueando o teste aberto e a produção | o passo 6.1 do dia |
+| D-PRIV-2 | Tirar `ACCESS_ADSERVICES_TOPICS` (segmentação por interesse) do manifesto | sessão, com o ok do Vinicius | tirar, com `tools:node="remove"` (`PRIVACIDADE.md` §4). Enquanto estiver lá, a política não pode garantir "sem personalização para menores", e as frases têm `<<CONFIRMAR: D-PRIV-2>>` | o texto público da política e o AAB do dia |
+| D-PRIV-8 | `submitAnalytics: 1` (estatísticas de hardware do motor Unity, de todos) | sessão, com o ok do Vinicius | desligar no `Setup.cs` ou medir com captura de rede | o texto público da política e o AAB do dia |
+| D-PUB-3 | Link da política dentro do jogo | sessão | botão "Política de privacidade" em Configurações > Privacidade (`Application.OpenURL`), num PR pequeno assim que a D-PUB-1 der a URL. Não sobe a `Privacidade.Versao` (`PRIVACIDADE.md` §6) | o AAB do dia; a revisão da Play exige o link |
+| D-PUB-5 | Loja do jogo só com o que está à venda | sessão | no PR que liga a `LojaUnity` (depois da chave RSA): esconder o produto que a Play não devolve, como o Pacote em rascunho, e mostrar só o Passe da temporada ativa | ligar a `LojaUnity` |
+| D-PUB-2 | Pacote do Mestre: preço e conteúdo | Vinicius | não ativar no lançamento. Decidir junto com a P3 (A/B do intersticial). Se for ativar antes, tirar `remove_ads` do conteúdo ou a linha "Sem anúncio entre telas" do cartão | ativar `iap_pacote_mestre` |
+| D-PRIV-5 | Revisão jurídica da política | Vinicius e jurídico | antes do teste aberto ou da produção | o teste aberto e a produção |
+| D-PUB-4 | Vídeo no YouTube (não listado) | Vinicius | opcional. A ficha vai ao ar sem ele | — |
 
 ## 10. Ata do TIME DE JOGOS (plano B)
 
@@ -316,7 +329,22 @@ O time não estava instalado no repo nesta sessão. Os papéis foram simulados p
 
 **localization-lead:** títulos e curtas dentro dos limites e com os termos do build. Os nomes dos produtos são os do `Loc.cs`.
 
-**Conselho do PR:** o veredito vai no PR e no relatório da thread.
+**Conselho do PR #182** (subagentes com os `.md` do time):
+- **lead-programmer:** VETOU na 1ª rodada. A política garantia "sem personalização para menores" e "estatísticas só de 18+", e o build não garante isso enquanto a D-PRIV-2 e a D-PRIV-8 estiverem abertas. Também havia uma citação do fim do arquivo perdida no gerador. Depois das correções, **APROVOU**.
+- **technical-director:** VETOU na 1ª rodada.
+  - O kit não mandava conferir o SHA-1 do AAB antes do 1º upload, que fixa a chave de upload.
+  - O §9 dizia que a D-PRIV-2 e a D-PRIV-8 bloqueavam o Data safety; elas bloqueiam o texto público da política.
+- **creative-director:** VETOU na 1ª rodada.
+  - A descrição do Passe não dizia o que o jogador recebe.
+  - O S2 seria vendido antes da temporada começar.
+  - A política não previa a flag `Interstitial`.
+  - As screenshots só mostram o Old Forge.
+- **producer:** VETOU na 1ª rodada.
+  - O que não depende do D-U-N-S estava misturado com o dia.
+  - O §9 não tinha dono.
+  - Faltavam os dados da conta de comerciante.
+  - A política no teste interno não tinha decisão.
+- Todas as correções estão neste PR. A 2ª rodada fica registrada no PR.
 
 ## 11. Fontes (ajuda da Play Console, lidas em 2026-11-21)
 

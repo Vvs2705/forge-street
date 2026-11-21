@@ -9,7 +9,7 @@ Versión `<<PREENCHER: 1.0>>` · vigente desde `<<PREENCHER: fecha>>`
 
 - Forge Street no tiene cuenta, inicio de sesión ni chat. No pedimos nombre, correo ni fecha de nacimiento.
 - Tu progreso se queda **en tu dispositivo**. No tenemos servidor propio.
-- El juego muestra anuncios **que tú eliges ver** a cambio de un bonus. Esos anuncios los entrega Unity (LevelPlay y Unity Ads), que recoge algunos datos del dispositivo, como se explica abajo.
+- El juego muestra anuncios **que tú eliges ver** a cambio de un bonus `<<CONFIRMAR: P3, revisar si se activan anuncios entre pantallas>>`. Esos anuncios los entrega Unity (LevelPlay y Unity Ads), que recoge algunos datos del dispositivo, como se explica abajo.
 - Para ajustar el juego y corregir errores usamos servicios de Unity (Unity Gaming Services). **El juego solo envía estadísticas de uso e informes de error de quien tiene 18 años o más y aceptó.**
 - Las compras son opcionales, pasan por Google Play, y el contenido de cada una es fijo y se muestra antes de pagar.
 - La primera vez que aparece un bonus por anuncio, el juego pregunta tu **rango de edad**. Para los menores de 18, el juego pide a los socios anuncios no personalizados y no usa el ID de publicidad.
