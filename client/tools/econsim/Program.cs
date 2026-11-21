@@ -75,6 +75,37 @@ static partial class EconSim
 
     /// <summary>--tuning "GolpeRecarga=30;NivelEstacaoCusto=500|1500|650|1900|500|1500|1000|3000|...": campos publicos do Tuning (NivelEstacaoCusto: os 16, II-III e IV-V)
     /// (int, long, float, bool e listas deles com |) por cima do padrao, para varrer knob sem recompilar. Campo ou valor ruim = null.</summary>
+    /// <summary>--charter "armorers_row=renome:1000,obras:2,sup:100,ctr:0,abertura:400000;arcane_foundry=renome:3500": troca o Charter e a
+    /// abertura dos DistrictDef antes da rodada (varredura de ritmo sem recompilar; BALANCE §49). Distrito ou chave ruim = false.</summary>
+    static bool Charters(string spec)
+    {
+        if (string.IsNullOrEmpty(spec)) return false;
+        foreach (string d in spec.Split(';'))
+        {
+            string[] kv = d.Split('=');
+            DistrictDef def = kv.Length == 2 ? Distritos.Find(kv[0].Trim()) : null;
+            if (def?.Charter == null) return false;
+            CharterDef c = def.Charter;
+            long renome = c.Renome; int obras = c.Masterworks, ctr = c.Contratos, sup = c.Superiores;
+            foreach (string par in kv[1].Split(','))
+            {
+                string[] p = par.Split(':');
+                if (p.Length != 2 || !long.TryParse(p[1], out long n)) return false;
+                switch (p[0].Trim())
+                {
+                    case "renome": renome = n; break;
+                    case "obras": obras = (int)n; break;
+                    case "ctr": ctr = (int)n; break;
+                    case "sup": sup = (int)n; break;
+                    case "abertura": def.Abertura = n; break;
+                    default: return false;
+                }
+            }
+            def.Charter = new CharterDef(c.Producao, renome, obras, c.Proximo, ctr, sup);
+        }
+        return true;
+    }
+
     static Tuning Knobs(string spec, Tuning t)
     {
         if (_rc != null) RemoteConfig.Aplicar(t, _rc, false);   // --rc primeiro, com as travas do jogo (build sem intersticial); o --tuning por cima
@@ -108,7 +139,7 @@ static partial class EconSim
         long renome = 0;       // C-CORE-05: --renome N = o Renome do Imperio na chegada (500 = o do Charter do Old Forge: 400 + 100)
         PoliticaBancada bancadas = PoliticaBancada.Regra; int? histerese = null;   // C-CORE-06
         int campanha = 0;      // BALANCE §46: --campanha H = o Imperio inteiro do zero por H horas de relogio (Campanha.cs)
-        string marcos = null; int horas = 40; string versao = "econsim";   // §8 (2026-11-21): --marcos pasta [--horas 40] [--versao x] = saves de marco (Marcos.cs)
+        string marcos = null, observador = null; int horas = 40; string versao = "econsim";   // §8 (2026-11-21): --marcos pasta [--horas 40] [--versao x] = saves de marco (Marcos.cs)
         for (int i = 0; i < args.Length; i += 2)
         {
             string v = i + 1 < args.Length ? args[i + 1] : null;
@@ -141,8 +172,10 @@ static partial class EconSim
                 case "--renome" when ok: ok = long.TryParse(v, out renome) && renome >= 0; break;
                 case "--bancadas" when ok: ok = Enum.TryParse(v, true, out bancadas) && Enum.IsDefined(typeof(PoliticaBancada), bancadas); break;
                 case "--histerese" when ok: ok = int.TryParse(v, out int h); histerese = h; break;
+                case "--charter" when ok: ok = Charters(v); break;
                 case "--campanha" when ok: ok = int.TryParse(v, out campanha) && campanha > 0; break;
                 case "--marcos" when ok: marcos = v; break;
+                case "--observador" when ok: observador = v; break;
                 case "--horas" when ok: ok = int.TryParse(v, out horas) && horas > 0; break;
                 case "--versao" when ok: versao = v; break;
                 case "--arcano" when ok: ok = Enum.TryParse(v, true, out _altares) && Enum.IsDefined(typeof(PoliticaArcana), _altares); break;   // C-CORE-08
@@ -154,6 +187,7 @@ static partial class EconSim
                 return 2;
             }
         }
+        if (observador != null) return Observador(observador, perfis.Length == 1 ? perfis[0] : BotProfile.F2PGolpe, horas, anuncioSeg, knobs);
         if (marcos != null) return Marcos(marcos, perfis.Length == 1 ? perfis[0] : BotProfile.F2PGolpe, horas, anuncioSeg, knobs, versao);
         if (campanha > 0) return Campanha(perfis, campanha, partidas, anuncioSeg, knobs);
         if (distrito != null && distrito.Indice > 0) return Distrito(distrito, perfis, minutos, partidas, anuncioSeg, knobs, workerSeg, fundoOF, gerente, saida, renome, bancadas, histerese);

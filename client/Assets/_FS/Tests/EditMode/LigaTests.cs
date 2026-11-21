@@ -226,7 +226,7 @@ namespace FS.Tests
             elmo.Ins[elmo.Liga] = 1;
             Assert.AreEqual((60, 15, 30, 105), (Q(s, elmo, QualitySource.StationLevel), Q(s, elmo, QualitySource.Worker), Q(s, elmo, QualitySource.Material), s.QualityPoints(elmo)));
             Assert.AreEqual("renome", imp.CharterFalta(Row.Id));
-            imp.Raiz.Renome.Ganha(750 - imp.Raiz.Renome.Total);
+            imp.Raiz.Renome.Ganha(Row.Charter.Renome - imp.Raiz.Renome.Total);   // BALANCE §49: 1.100
             Assert.AreEqual("masterwork", imp.CharterFalta(Row.Id));
             s.SoldItems[(int)I(s, "elmo")] = 100; s.SoldItems[(int)I(s, "peitoral")] = 150;
             s.Tick(Dt, 0f, 0f);

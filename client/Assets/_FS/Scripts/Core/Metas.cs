@@ -87,7 +87,23 @@ namespace FS.Core
         public long Semana => Calendario.Semana(Dia);
         public bool Aberto => _sim.Bought[AbreCom];
 
-        public static string Chave(string evento, int filtro) => filtro < 0 ? evento : evento + "." + filtro.ToString(CultureInfo.InvariantCulture);
+        /// <summary>"evento.filtro" (filtro &lt; 0 = so o evento). fix/gc-alocacao-por-quadro: a chave sai de um cache por thread (o mesmo texto de
+        /// antes; o econsim roda Sims em paralelo), em vez de 1 string por evento contado.</summary>
+        public static string Chave(string evento, int filtro)
+        {
+            if (filtro < 0) return evento;
+            if (filtro >= ChavesMax || evento == null) return evento + "." + filtro.ToString(CultureInfo.InvariantCulture);
+            var cache = _chaves ?? (_chaves = new Dictionary<string, string[]>());
+            if (!cache.TryGetValue(evento, out string[] f) || f.Length <= filtro)
+            {
+                var novo = new string[Math.Min(ChavesMax, Math.Max(filtro + 1, f == null ? 16 : f.Length * 2))];
+                if (f != null) Array.Copy(f, novo, f.Length);
+                cache[evento] = f = novo;
+            }
+            return f[filtro] ?? (f[filtro] = evento + "." + filtro.ToString(CultureInfo.InvariantCulture));
+        }
+        const int ChavesMax = 1024;   // filtro = indice de item, papel, nivel ou tipo: bem abaixo disso
+        [ThreadStatic] static Dictionary<string, string[]> _chaves;
 
         // ------------------------------------------------------------------ fluxo de eventos (gancho do Sim.Emit)
 

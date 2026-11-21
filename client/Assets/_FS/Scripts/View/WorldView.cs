@@ -296,7 +296,6 @@ namespace FS
         ClientV _vipWait;
         int _clientSeq, _bought;
         Floater _sale; int _saleSum;   // v0.6d: ultimo "+N" de venda (SaleFloat soma nele)
-        float _streetHalfW;
         /// <summary>Base da faixa da HUD de cima em px de tela (Game.Fit): o balao do 1o da fila fica 24 px abaixo (v0.6d).</summary>
         public float HudBottomPx = float.MaxValue;
 
@@ -323,7 +322,6 @@ namespace FS
             _streetLabel = Art.FreeText(_labels, "RuaLateral", 28, new Vector2(200f, 80f));
             _streetLabel.text = Loc.T("mundo.rua");   // 2 linhas: so 1,2 m da rua cabe na tela antes do Corredor
             _streetLabel.color = StreetInk;       // v0.6d: 28 px #E8D9B8 (era Ink a 55%, sumia na pedra)
-            _streetHalfW = _streetLabel.preferredWidth / 2f;
             // C-CORE-01: decoracao do Old Forge so onde o distrito tem a peca (carroca = o obstaculo dela; loja e luxo = o efeito/estacao)
             foreach (ObstacleDef o in sim.Distrito.Obstaculos) if (o.Name == "carroca") Deco("carroca", CartPos, CartCell, 1.3f);
             _shopTeaser = sim.JewelShop != null ? Deco("loja_joalheria", sim.JewelShop.Pos, StationCell, 1.3f) : null;   // mesma folha e celula da estacao
@@ -1334,10 +1332,10 @@ namespace FS
             if (!corridor)
             {
                 PlaceLabel(_streetLabel, new Vector3(Balance.WorkshopW + 0.6f, (Balance.SideWallOpenings[1] + Balance.SideWallOpenings[2]) / 2f, 0f), Vector2.zero);   // na parede entre a porta e o arco, nao em cima da porta
-                // v0.6d: inteiro dentro de x <= 1032 (px na largura 1080); o "lateral" saia pela borda direita
-                Vector2 at = _streetLabel.rectTransform.anchoredPosition;
-                float max = _labels.rect.width * (1032f / 1080f - 0.5f) - _streetHalfW;
-                if (at.x > max) _streetLabel.rectTransform.anchoredPosition = new Vector2(max, at.y);
+                // fix/rotulo-rua-lateral: o rotulo segue o mundo, sem trava na borda. A trava da v0.6d (inteiro dentro de 1032/1080) era da
+                // camera antiga; com a de 9 m (Enquadramento.Largura) ele cabe inteiro na parede com a camera no limite direito, e a trava
+                // o puxava ~2 m para cima da placa de Escudos com a camera no inicio (fotos 9:20 do POCO). Qualquer trava que o mantenha
+                // inteiro na tela salta a propria largura quando ele entra pela borda (Conselho do #191): sem trava, ele desliza com a camera.
             }
             if (_shopTeaser != null && _shopTeaser.transform.parent.gameObject.activeSelf != teaser) _shopTeaser.transform.parent.gameObject.SetActive(teaser);
             _shopLabel.enabled = teaser;

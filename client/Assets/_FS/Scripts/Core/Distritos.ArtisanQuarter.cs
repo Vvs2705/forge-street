@@ -181,7 +181,8 @@ namespace FS.Core
                 t.OrderRewardMin = 225;   // §7.2: Common do Quarter, 225 de minimo (x9 o do Old Forge)
             },
             Abertura = 430000,
-            Charter = new CharterDef(true, 1250, 3, RoyalArsenalId),   // §2.3: producao completa + Renome 6 (1.250) + 3 Masterworks; o proximo e' o Arsenal (C-CORE-07)
+            // §2.3: producao completa + Renome 6 (1.250) + 3 Masterworks OU 250 Superiores (BALANCE §49); o proximo e' o Arsenal (C-CORE-07)
+            Charter = new CharterDef(true, 1250, 3, RoyalArsenalId, superiores: 250),
         };
     }
 

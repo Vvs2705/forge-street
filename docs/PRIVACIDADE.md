@@ -62,7 +62,7 @@ Peças (`LEVELPLAY.md` §1): Ads Mediation `com.unity.services.levelplay` 9.5.1,
 | `VIBRATE` | o jogo (v0.6b) | vibração por importância | nenhum |
 | `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE` | WorkManager (androidx), trazido pelos SDKs | tarefas em segundo plano dos SDKs | nenhum dado novo. Se a Play Console pedir a declaração de serviço em primeiro plano: o jogo não usa; vem do WorkManager `<<CONFIRMAR no console>>` |
 | `com.google.android.gms.permission.AD_ID` | `play-services-ads-identifier` 18.1.0 | ler o ID de publicidade | "Dispositivo ou outros IDs" e a declaração "ID de publicidade" (§2.4) |
-| `ACCESS_ADSERVICES_TOPICS` | SDK (Privacy Sandbox) | API Topics: interesses do usuário para anúncio | perfilamento; ver §4 (recomendação: remover) |
+| ~~`ACCESS_ADSERVICES_TOPICS`~~ | SDK (Privacy Sandbox) | API Topics: interesses do usuário para anúncio | **removida** (D-PRIV-2, 2026-11-21): `Editor/ManifestPrivacidade.cs` põe `tools:node="remove"` no manifesto do launcher e o `release-check` reprova se ela voltar |
 | `ACCESS_ADSERVICES_ATTRIBUTION` | SDK (Privacy Sandbox) | medir conversão de anúncio sem ID entre apps | medição; ver §4 |
 | `br.com.vstack.forgestreet.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | androidx core | protege receivers internos não exportados (API 33+) | nenhum |
 
@@ -70,7 +70,7 @@ Não há localização, contatos, armazenamento compartilhado, câmera, microfon
 
 ### 1.4 Outros caminhos de saída a conferir
 
-- **Serviços da Unity:** os legados do `UnityConnectSettings.asset` (Analytics antigo, Cloud Diagnostics/Crash Reporting, Performance Reporting, Purchasing antigo e Unity Ads legado) continuam `m_Enabled: 0`; o Analytics e o Remote Config do UGS entram pelos pacotes novos (§1.5), e o `cloudProjectId` agora aponta para o projeto Forge Street. **Pendente:** o `ProjectSettings.asset` tem `submitAnalytics: 1` (estatísticas de hardware do motor). Não achei doc do Unity 6 que diga o que ele envia hoje. Ação: desligar ou medir com captura de rede antes do Closed (decisão D-PRIV-8).
+- **Serviços da Unity:** os legados do `UnityConnectSettings.asset` (Analytics antigo, Cloud Diagnostics/Crash Reporting, Performance Reporting, Purchasing antigo e Unity Ads legado) continuam `m_Enabled: 0`; o Analytics e o Remote Config do UGS entram pelos pacotes novos (§1.5), e o `cloudProjectId` agora aponta para o projeto Forge Street. **D-PRIV-8 (2026-11-21, decisão do time):** `submitAnalytics: 0` no `ProjectSettings.asset` (estatísticas de hardware do motor desligadas). Se a licença Personal ignorar a opção, só a captura de rede no POCO mostra; até lá o Data safety já declara "Diagnóstico" pela união. Ação restante: confirmar com captura de rede no POCO (`ROTEIRO_TESTE_POCO.md`) e, se nada sair, tirar o marcador D-PRIV-8 da política.
 - **Backup do Android:** se o manifesto mesclado tiver `android:allowBackup="true"`, o próprio Android pode copiar o save e as configurações para a conta Google do jogador (serviço do sistema, não do jogo). Conferir no AAB (`bundletool dump manifest`) e citar na política (D-PRIV-9).
 - **Apps instalados:** o Unity Ads declara "não". Há relato de app com LevelPlay em que a Play exigiu "sim" por causa de `<queries>` no manifesto. Se o relatório de pré-lançamento acusar, comparar os `<queries>` do manifesto mesclado com a tabela do §2.2.
 
@@ -181,10 +181,10 @@ O manifesto é um só para todos: permissão não varia por usuário. O que vari
 | Item | Hoje | Recomendação |
 |---|---|---|
 | `AD_ID` | no manifesto; menor de 18 vai com `is_deviceid_optout` (o SDK não usa o ID de publicidade) | **Manter** com o público 13+: o adulto que aceita precisa dele. Remover (`tools:node="remove"`) só se o app virar exclusivamente infantil. Verificar no aparelho que o opt-out funciona (pendente, §7) |
-| `ACCESS_ADSERVICES_TOPICS` | no manifesto para todos | **Remover** com `tools:node="remove"` (D-PRIV-2). Topics é segmentação por interesse: contraria o "nada personalizado" de menor de 18 e, para adulto, só valeria com aceite. Nada garante que o SDK respeita o COPPA/opt-out na API Topics, e quase nada se perde, porque o anúncio já é contextual para a maioria |
+| `ACCESS_ADSERVICES_TOPICS` | **removida** em 2026-11-21 (decisão do time, `ManifestPrivacidade.cs`) | Removida com `tools:node="remove"` (D-PRIV-2). Topics é segmentação por interesse: contraria o "nada personalizado" de menor de 18 e, para adulto, só valeria com aceite. Nada garante que o SDK respeita o COPPA/opt-out na API Topics, e quase nada se perde, porque o anúncio já é contextual para a maioria |
 | `ACCESS_ADSERVICES_ATTRIBUTION` | no manifesto para todos | **Manter** (medição de conversão, sem perfil no jogo) ou remover junto por simplicidade (D-PRIV-2) |
 
-**Como remover (ticket para a raia de plataforma; esta raia não toca em `client/Assets`):** um `client/Assets/Plugins/Android/AndroidManifest.xml` customizado com `xmlns:tools` e `<uses-permission android:name="android.permission.ACCESS_ADSERVICES_TOPICS" tools:node="remove"/>`. Também é preciso tirar a permissão do `PERMS` do `verify.sh`: permissão que some não dispara o aviso, mas a lista documenta o aprovado. Conferir com `release-check` e refazer o §1.3 e o Data Safety.
+**Como foi removida (2026-11-21, #195):** `Editor/ManifestPrivacidade.cs` acrescenta `tools:node="remove"` ao manifesto do launcher depois que o Gradle é gerado (o XML fica no `ManifestXml.cs`, com teste EditMode). A permissão saiu do `PERMS` do `verify.sh`, e o `release-check` reprova o AAB que a tiver. O AAB de release do CI saiu sem TOPICS e com ATTRIBUTION.
 
 ---
 
@@ -237,7 +237,7 @@ unity3d.com, <<PREENCHER: ID da organização/publisher no painel Unity Ads>>, D
 | O jogo não coleta dado pessoal | OK | §1.1 |
 | Política com URL e link no jogo | **Pendente** | §6 |
 | Data Safety, IARC e público-alvo preenchidos | **Pendente** | §2, §3 (depende da conta, P9) |
-| Topics removido para não perfilar menor | **Pendente** (D-PRIV-2) | §4 |
+| Topics removido para não perfilar menor | OK (D-PRIV-2) | §4: `ManifestPrivacidade.cs`; o `release-check` reprova |
 | A autodeclaração de faixa basta para o ECA Digital? | **Em aberto** (D-PRIV-10) | o texto oficial da lei não foi conferido nesta leva |
 
 ---
@@ -247,13 +247,13 @@ unity3d.com, <<PREENCHER: ID da organização/publisher no painel Unity Ads>>, D
 | # | Decisão | Recomendação | Bloqueia |
 |---|---|---|---|
 | D-PRIV-1 | Público-alvo na Play Console | 13–15, 16–17 e 18+, sem "12 ou menos" (§3.2); responder com honestidade se o app pode atrair crianças | ficha da loja, Internal (P9) |
-| D-PRIV-2 | Tirar `ACCESS_ADSERVICES_TOPICS` (e `ATTRIBUTION`?) do manifesto | Tirar Topics; manter Attribution (§4) | Data Safety final |
+| D-PRIV-2 | Tirar `ACCESS_ADSERVICES_TOPICS` (e `ATTRIBUTION`?) do manifesto | **feita 2026-11-21** (#195): Topics fora, Attribution mantida (§4) | — |
 | D-PRIV-3 | Domínio e hospedagem da política e do `app-ads.txt`; "Site" da conta de desenvolvedor | o domínio da VStack `<<CONFIRMAR>>`, página HTML com as 3 línguas | URL da política, §5 |
 | D-PRIV-4 | Dados do controlador: razão social, CNPJ, endereço, e-mail (`contato@vstack-solutions.com.br` `<<CONFIRMAR>>`) e encarregado (DPO) ou canal LGPD | o jurídico diz se precisa de encarregado (porte da empresa × dado de adolescente) | política |
 | D-PRIV-5 | Revisão jurídica da política e do texto da tela de idade | revisar antes do Closed. Mudar o texto da tela = `Privacidade.Versao` + 1 | publicação |
 | D-PRIV-6 | Declarar "IDs de usuário" e "Histórico de compras", que o Unity Ads declara e o jogo não tem | declarar (conservador) e reavaliar com o IAP | Data Safety |
 | D-PRIV-7 | "Usuários podem pedir exclusão": sim, com e-mail + canal da Unity | Sim (§2.1) | Data Safety |
-| D-PRIV-8 | `submitAnalytics: 1` (estatísticas de hardware da Unity) | desligar no `Setup.cs`, ou medir com captura de rede, antes do Closed | Data Safety |
+| D-PRIV-8 | `submitAnalytics: 1` (estatísticas de hardware da Unity) | **feita 2026-11-21** (#195): `submitAnalytics: 0` no `ProjectSettings.asset` (não no `Setup.cs`); falta a captura de rede no POCO | marcador D-PRIV-8 da política |
 | D-PRIV-9 | Backup automático do Android (`allowBackup`) | conferir no AAB. Manter ligado (o jogador recupera o save ao trocar de celular) e citar na política | política |
 | D-PRIV-10 | ECA Digital: a autodeclaração de faixa basta, ou a lei pede aferição de idade ou supervisão parental para este tipo de app? | consulta jurídica com o texto oficial da Lei 15.211/2025 | Limited Release (Brasil) |
 | D-PRIV-11 | *Acquire Optimization* no painel do Unity Ads | deixar desligado (menos dado: sem "tempo de uso") `<<CONFIRMAR o estado atual>>` | Data Safety |
