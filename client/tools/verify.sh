@@ -3,7 +3,7 @@
 # uso: client/tools/verify.sh quick | full | android-emulator [--medir S] [--migracao <apk-antigo>] | release | release-check <arquivo.aab|apk>
 #   quick             núcleo (dotnet test) + viewcheck do PC e do Android, sem abrir o Unity
 #   full              quick + Unity batchmode: EditMode, Setup.BuildWindows e o .exe com -autoplay 10
-#   android-emulator  Setup.BuildAndroidEmu + emulador + adb install + abre com '-bot -speed 4' + BACK/HOME + logcat sem exceção;
+#   android-emulator  Setup.BuildAndroidEmu + emulador + adb install + abre com '-bot -botgrava -speed 4' + BACK/HOME + logcat sem exceção;
 #                     --medir S: depois, abertura a frio (am start -W) e medir_aparelho.sh com o bot jogando S s (linha de base pré-POCO);
 #                     --migracao: instala o APK antigo (x86_64), joga 90 s com -bot -botgrava, instala o novo por cima e confere o save (schema 2,
 #                     mesmas compras). O adb fica fixo no serial emulator-N: com só o POCO no USB, aborta antes de instalar
@@ -134,6 +134,7 @@ android_emulator() {
   disco   # o build também gasta disco
   # só agora o emulador (o Unity já saiu); desliga ao sair, com ou sem falha, para liberar a RAM
   "$EMU" -avd "$AVD" -no-window -no-snapshot -crash-report-mode never -no-metrics > "$OUT/emulator.log" 2>&1 &
+  EMU_PID=$!
   # o guard provou que não havia emulador antes, então o qemu que sobrar é este
   trap desligar_emulador EXIT
   local fim=$((SECONDS + 600)) sem="AVD sem boot ('Can't find service: package' = partição de dados corrompida): docs/ROTEIRO_TESTE_POCO.md §6"
@@ -148,14 +149,14 @@ android_emulator() {
   ok "emulador $AVD ligado"
   adb install -r "$apk" > /dev/null || fail "adb install"
   adb logcat -c
-  abrir '-bot -speed 4'
+  abrir '-bot -botgrava -speed 4'   # -botgrava: o smoke passa pelo save (autosave e HOME) como o jogo normal
   sleep 40
   adb shell pidof $PKG > /dev/null || fail "o jogo não está rodando 40 s depois de abrir"
   adb shell input keyevent KEYCODE_BACK; sleep 3
   adb shell input keyevent KEYCODE_HOME; sleep 3
   logcat_limpo "$OUT/logcat.txt"
   grep -q "ADS ad_init" "$OUT/logcat.txt" || fail "sem 'ADS ad_init' no logcat: o Game não chegou ao Awake"
-  ok "abriu com -bot -speed 4, BACK e HOME, logcat sem exceção"
+  ok "abriu com -bot -botgrava -speed 4, BACK e HOME, logcat sem exceção"
   if [ -n "$medir" ]; then
     adb shell am force-stop $PKG; sleep 3
     adb shell "am start -W -n $PKG/com.unity3d.player.UnityPlayerGameActivity -e unity '-bot'" | tr -d '\r' | tee "$OUT/abertura.txt" | grep -E 'TotalTime|WaitTime'

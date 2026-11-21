@@ -38,5 +38,7 @@ desligar_emulador() {
   case "${ANDROID_SERIAL:-}" in
     emulator-*) "$ADB" -s "$ANDROID_SERIAL" emu kill > /dev/null 2>&1 && return ;;
   esac
-  taskkill /F /IM qemu-system-x86_64.exe > /dev/null 2>&1
+  # Conselho do #189: sem serial (o fixar abortou, p.ex. com 2 emuladores) mata so o emulador que ESTE script ligou, nunca todos
+  [ -n "${EMU_PID:-}" ] && kill "$EMU_PID" > /dev/null 2>&1
+  return 0
 }
