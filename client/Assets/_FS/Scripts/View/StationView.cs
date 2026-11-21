@@ -105,7 +105,7 @@ namespace FS
         readonly Vector3 _rest, _restPos; readonly Vector2 _top; readonly float _pitch;
         float _prog, _hitT = -1f; bool _blow;
         // nivel da bancada: pedestal (II), aro (III), brilho (IV), pulso e brasas (V); _nivelT = relogio da festa de subida (-1 parado)
-        static readonly Color[] NivelC = { Art.Hex(0xB0703A), Art.Hex(0xC9D1DC), Art.Gold, Art.Hex(0x9B6BFF) };   // bronze, prata, ouro, arcano
+        static readonly Color[] NivelC = { Art.Hex(0xD9944F), Art.Hex(0xC9D1DC), Art.Gold, Art.Hex(0x9B6BFF) };   // bronze, prata, ouro, arcano
         const float SobeS = 0.6f, BrasaEvery = 0.5f;
         SpriteRenderer _pedestal, _aro, _nivelGlow;
         readonly SpriteRenderer[] _pinos = new SpriteRenderer[5];
