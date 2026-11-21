@@ -93,7 +93,7 @@ jobs:
         with:
           name: build-win
           path: client/Builds/win
-          retention-days: 3
+          retention-days: 14
 
   autoplay:
     name: autoplay 10 min (bot no .exe)
@@ -162,4 +162,4 @@ jobs:
         with:
           name: apk-dev
           path: client/Builds/android/ForgeStreet-dev.apk
-          retention-days: 3
+          retention-days: 14

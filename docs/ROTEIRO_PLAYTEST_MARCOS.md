@@ -2,39 +2,45 @@
 
 Para a nota **E** (experiência) do placar do `PROJETO.md` §8 (régua S/E, V31). Sem sessão humana, a nota E de cada linha fica em no máximo 50; uma sessão deste roteiro, jogada por quem não fez a feature, é a evidência que a faz subir. O roteiro **não depende do POCO**: o build Windows sai do CI a cada PR.
 
-## 1. O que baixar (GitHub, aba Actions)
-1. **O jogo:** workflow `unity`, último run verde da `main` → artifact `build-win` (guardado 3 dias). Descompacte; o jogo é o `ForgeStreet.exe`.
-2. **Os saves:** workflow `saves-de-marco`, último run verde da `main` (ou "Run workflow" para gerar agora) → artifact `saves-de-marco` (guardado 30 dias). O `LEIA.md` dentro dele diz em que hora do relógio do bot cada save foi gravado, o distrito ativo, o Renome e o ouro.
+## 1. O que baixar (uma vez; sem clone, sem PowerShell digitado)
+1. Entre no GitHub com a sua conta e abra o repositório > aba **Actions**.
+2. **O jogo:** à esquerda, workflow `unity` > o último run verde da `main` > no fim da página, artifact `build-win` (fica 14 dias). Se não houver artifact, clique em **Run workflow** (branch `main`) e volte em ~25 min. Descompacte o zip numa pasta sua; o jogo é o `ForgeStreet.exe`.
+3. **Os saves:** workflow `saves-de-marco` > o último run verde > artifact `saves-de-marco` (fica 30 dias). Descompacte. Dentro vêm os `.save.txt`, o `LEIA.md` (a hora do relógio do bot em cada save, distrito, Renome e ouro) e três atalhos de clique duplo:
+   - `usar_save.bat`: arraste um `.save.txt` sobre ele;
+   - `do_zero.bat`: o jogo abre como na primeira vez;
+   - `voltar.bat`: devolve o save que você tinha antes.
 
-| save | o que você vai ver | itens do placar que ele mede |
-|---|---|---|
-| `01_old_forge_completo` | o Old Forge com a produção inteira, antes do Charter | Core, Workers, Quality, Orders, Arte, Áudio |
-| `NN_charter_<distrito>` | logo depois de cada Royal Charter: o mapa e o próximo distrito por abrir | 6 distritos, Reputation, Royal Contracts, Blueprints |
-| `NN_carta_mais_30min` | 30 min depois da Carta da Grande Forja | Masterworks, Collection, Events, Pass |
-| `NN_tudo_comprado` (ou `fim_40h`) | o fim de jogo: tudo comprado em todos os distritos | o P1 "fim de jogo morre" do §7 |
+## 2. Ordem dos saves
+A **ordem mínima são 4 sessões (cerca de 1 h)**. Os outros Charters são opcionais. Cada linha lista o que observar e marcar **SIM/NÃO** durante a sessão (são as 8 queixas de 2026-11-21 no `PROJETO.md` §0).
 
-## 2. Como trocar o save
-Feche o jogo. No PowerShell, na pasta do repositório:
+| ordem | save | o que você vai ver | observe (SIM/NÃO) |
+|---|---|---|---|
+| **1** | `00` = `do_zero.bat` | o primeiro minuto do jogo | Entendeu o que fazer nos primeiros 60 s sem ler nada? O joystick respondeu como esperado (andar, parar, virar)? |
+| **2** | `01_old_forge_completo` | o Old Forge com a produção inteira, antes do Charter | Algum ajudante ou funcionário ficou parado mais de 5 s sem motivo visível? A esteira fez alguma diferença? A estação mudou de cara ao subir de nível? |
+| opcional | `NN_charter_<distrito>` | logo depois de cada Royal Charter: o mapa e o próximo distrito | O distrito novo parece diferente do anterior? Os ajudantes parecem saber o que fazem? |
+| **3** | o último `NN_charter_…` (ou `NN_carta_mais_30min`, se existir) | o meio-fim: Masterworks, Collection, Events, Pass | As evoluções finais parecem um avanço ou "como chão"? |
+| **4** | `NN_tudo_comprado` (ou `fim_40h`) | o fim de jogo: tudo comprado em todos os distritos | Ao comprar a última melhoria, algo mudou na tela? Depois disso, há algo que você queira fazer? |
 
-```
-powershell -ExecutionPolicy Bypass -File client\tools\usar_save_marco.ps1 "<pasta do artifact>\01_old_forge_completo.save.txt"
-```
+Nota do gerador (run de 2026-11-21, perfil F2PGolpe): o bot compra tudo nos 6 distritos com **21,5 h** de relógio e 5 Charters, antes da Carta da Grande Forja. Por isso não sai o `carta_mais_30min`. Isso confirma o P1 "fim de jogo morre" do §7: a sessão 4 deve medir esse vazio, não contorná-lo.
 
-O script guarda o seu save atual (nada é apagado) e põe o de marco no lugar (`%USERPROFILE%\AppData\LocalLow\V-STACK\Forge Street\save.txt`). Para voltar ao seu: `usar_save_marco.ps1 -Voltar`. Ao abrir, o cofre offline pode pagar até 2 h, como para qualquer jogador que volta.
+Ao abrir um save, o cofre offline pode pagar até 2 h, como para qualquer jogador que volta.
 
 ## 3. A sessão (15 min por save)
-1. Comece a gravar a tela (Win + Alt + R, ou o OBS) antes de abrir o jogo: **vídeo de 30 s ou mais sem corte** é parte da evidência.
-2. Jogue 15 min sem ajuda e sem flags de teste.
-3. Responda as **5 perguntas fixas** (texto curto, pode ser por áudio):
+1. Feche o jogo. Use o atalho do save (seção 1). O atalho se recusa a rodar com o jogo aberto, porque o autosave regravaria o save.
+2. Comece a gravar a tela (Win + Alt + R, ou o OBS) antes de abrir o jogo. Um **vídeo de 30 s ou mais sem corte** é parte da evidência.
+3. Jogue 15 min sem ajuda e sem flags de teste, marcando os SIM/NÃO da tabela.
+4. Responda as **6 perguntas fixas** (texto curto, ou por áudio):
    1. O que você quer fazer agora?
    2. O que você não entendeu?
    3. O que parece inútil?
    4. O que você faria se tivesse mais 1 h?
    5. O que piorou desde a última vez?
-4. Anote o commit do build (o número da versão nas Configurações, ou o nome do run do Actions).
+   6. **De 0 a 10, quanto você quer continuar jogando?** (o número compara um build com o outro)
+5. Anote o commit do build: o número da versão nas Configurações, ou o nome do run do Actions.
+6. No fim, `voltar.bat` devolve o seu save.
 
 ## 4. Onde fica a evidência
-Mande as respostas e o vídeo na thread do projeto (ou ponha numa pasta `docs/playtest/<data>-<save>/` só com texto; vídeo não entra no repositório, que é público). O coordenador registra no §8: com 1 sessão sem queixa P0/P1 a linha vai a até 70–80; com 2 sessões em builds diferentes, a 90; queixa aberta segura a linha em 40.
+Mande os SIM/NÃO, as respostas e o vídeo na thread do projeto (ou ponha numa pasta `docs/playtest/<data>-<save>/` só com texto; vídeo não entra no repositório, que é público). O coordenador registra no §8: com 1 sessão sem queixa P0/P1 a linha vai a até 70–80; com 2 sessões em builds diferentes, a 90; queixa aberta segura a linha em 40.
 
 ## 5. Gerar os saves na mão (opcional)
-`dotnet run -c Release --project client/tools/econsim -- --marcos saves --perfis F2PGolpe --horas 40`. O gerador relê cada save como o jogo leria e sai 1 se algum não abrir igual.
+`dotnet run -c Release --project client/tools/econsim -- --marcos saves --perfis F2PGolpe --horas 40`. Os atalhos ficam em `client/tools/playtest/`. O gerador relê cada save como o jogo leria e sai 1 se algum não abrir igual.

@@ -81,6 +81,8 @@ static partial class EconSim
         File.WriteAllLines(Path.Combine(pasta, "LEIA.md"), new[] {
             "# Saves de marco do Forge Street", "",
             $"Gerados pelo econsim (perfil {perfil.Name}) na versao {versao}. Roteiro: docs/ROTEIRO_PLAYTEST_MARCOS.md no repositorio.", "",
+            "Com o jogo fechado: arraste um .save.txt sobre usar_save.bat; do_zero.bat = jogo como na primeira vez (marco 00); voltar.bat = devolve o seu save.",
+            "Ordem minima (cerca de 1 h): 00 (do_zero.bat), 01_old_forge_completo, o ultimo charter e o tudo_comprado (ou fim_). Os outros charters sao opcionais.", "",
             "| save | relogio (h) | distrito ativo | Renome (total) | Charters | abertos | ouro | relido |", "|---|---|---|---|---|---|---|---|" }.Concat(linhas));
         return falhas == 0 ? 0 : 1;
     }
