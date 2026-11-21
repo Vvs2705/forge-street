@@ -176,6 +176,10 @@ namespace FS
         public bool Em(Vector2 px) =>
             PainelVisivel && (Dentro(_pularBtn, px) || _okBtn.gameObject.activeSelf && Dentro(_okBtn, px));
 
+        /// <summary>fix/ui-fechar-ao-tocar-fora: o toque em `px` caiu no painel do passo (fundo ou botoes): nao e' "fora" (nao fecha a
+        /// bandeja) nem do mundo (nao golpeia, nao escolhe receita).</summary>
+        public bool NoPainel(Vector2 px) => PainelVisivel && Dentro(_passo, px);
+
         static bool Dentro(RectTransform r, Vector2 px) => RectTransformUtility.RectangleContainsScreenPoint(r, px, null);
 
         /// <summary>Voltar do Android: a boas-vindas comeca, o cartao fecha.</summary>

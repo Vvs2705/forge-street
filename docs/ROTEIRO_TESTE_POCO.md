@@ -43,6 +43,8 @@ P=br.com.vstack.forgestreet; ACT=$P/com.unity3d.player.UnityPlayerGameActivity; 
 V=0.7.0; G=playtest/gate_$V; mkdir -p $G      # evidências; playtest/ fica fora do git (dados de pessoa real)
 ```
 
+**Bot no POCO:** `-bot` (e `-testsession`, `-autoplay`, `-record`) não lê nem grava o save: o progresso do testador fica intacto. Só `-bot -botgrava` joga por cima do save real (o `verify.sh --migracao` usa no emulador); no POCO, só depois do backup abaixo.
+
 **Backup do save que está no POCO** (a instalação limpa da Fase B apaga o save do aparelho):
 ```
 adb shell dumpsys package $P | grep -E 'versionName|versionCode' > $G/antes_versao.txt
@@ -234,7 +236,7 @@ Bugs abertos (um por FAIL): passos · build · esperado × obtido · severidade 
 
 ## 5.1 Linha de base pré-POCO no emulador (2026-10-24)
 
-Medido para tirar do POCO o que dá para conferir antes: `AVD=fs_base bash client/tools/verify.sh android-emulator --medir 120`, que faz o build do `Setup.BuildAndroidEmu`, o smoke de sempre (`-bot -speed 4`, BACK/HOME, logcat sem exceção), a abertura a frio (`am start -W`) e o `medir_aparelho.sh` com o bot jogando 120 s. AVD `fs_base`: Pixel 7 1080×2400, Android 15 Google Play x86_64, 2 GB de RAM, criado com a mesma configuração do `fs_playstore` (que segue sem boot, §6; não foi apagado). PC de 7,7 GB, sem outro processo pesado.
+Medido para tirar do POCO o que dá para conferir antes: `AVD=fs_base bash client/tools/verify.sh android-emulator --medir 120`, que faz o build do `Setup.BuildAndroidEmu`, o smoke de sempre (`-bot -speed 4`, BACK/HOME, logcat sem exceção; o adb fica fixo no serial `emulator-N`, então o POCO pode ficar no USB), a abertura a frio (`am start -W`) e o `medir_aparelho.sh` com o bot jogando 120 s. AVD `fs_base`: Pixel 7 1080×2400, Android 15 Google Play x86_64, 2 GB de RAM, criado com a mesma configuração do `fs_playstore` (que segue sem boot, §6; não foi apagado). PC de 7,7 GB, sem outro processo pesado.
 
 | Medida | Emulador (`main` 2026-10-24, 0.6.0 dev) | Alvo no POCO |
 |---|---|---|

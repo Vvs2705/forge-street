@@ -61,7 +61,7 @@ namespace FS
     /// v0.6d (revisao de UX, docs/VALIDACAO_V06A.md s v0.6d): dica de 1 linha (Textos), botoes a 32 px das bordas, cartao "Venda 5
     /// espadas", compra no aviso da encomenda, moedas por baixo da dica, chaves e cofre no cartao creme.
     /// </summary>
-    public sealed class Game : MonoBehaviour
+    public sealed partial class Game : MonoBehaviour
     {
         const string SaveKey = "fs.save";
         /// <summary>P3/V10 (A-PLAT-08): este build deixa o RemoteConfig ligar o intersticial. false ate o build do A/B no Limited Release.</summary>
@@ -92,7 +92,7 @@ namespace FS
         MenuBar _menu;
         Camera _cam;
         float _speed = 1f, _saveT, _hintT, _minuteT, _adHold, _visW = VisibleWidth, _backT;
-        bool _botDrive, _headless, _firstSaleLogged, _testSession, _started, _pausedByAd, _paused;
+        bool _botDrive, _headless, _firstSaleLogged, _testSession, _semSave, _started, _pausedByAd, _paused;
         IAds _ads;
         Telemetria _diario;   // A-PLAT-09: diario local + analytics remoto (so depois da tela de idade)
         IRemoteConfig _rc; RemoteConfig.Resultado _rcr; string _rcOrigem;   // A-PLAT-08: o config desta abertura
@@ -128,6 +128,9 @@ namespace FS
         PainelTutorial _tut;     // FTUE: tutorial guiado do 1o ciclo e cartoes "o que e' isto" (Tutorial.cs)
         string _hintTut;         // texto do passo na pilula da dica (null = a dica de sempre)
         Action _panelAction;
+        long _panelOuro;         // fix/ui-fechar-ao-tocar-fora: cofre (recompensa pendente) nao fecha por toque fora
+        readonly BandejaFora _bandeja = new BandejaFora();   // fix/ui-fechar-ao-tocar-fora: tap no mundo fecha a bandeja de melhorias
+        Action _fechaMenu; Func<Vector2, bool> _noAnel, _noPainel;   // os delegates da bandeja, criados 1x (no Update seriam 3 alocacoes por quadro)
         Image _coinIcon;
         sealed class Coin { public Image I; public Vector3 From; public float T; public int Value; }   // T < 0: esperando a vez
         readonly System.Collections.Generic.List<Coin> _coins = new System.Collections.Generic.List<Coin>();
@@ -135,6 +138,8 @@ namespace FS
         // v0.5c: botoes de anuncio, selo do boost e avisos curtos (VIP chegou / anuncio indisponivel)
         sealed class AdBtn { public Button B; public Image Face, Icon; public GameObject Video; public Text Label; }
         sealed class Banner { public RectTransform R; public CanvasGroup G; public Text T; public Image I; public float Age; }
+        // cache do chip "Trocar" (RefreshAdUi): a encomenda seguinte so e' gerada quando algo dela muda ou a 2 Hz
+        Encomenda _trocaPrincipal; int _trocaAbertas, _trocaVagas; Sim _trocaSim; float _trocaT;
         AdBtn _vipBtn, _speedBtn, _supplyBtn, _bonusChip, _trocaChip;   // E-PLAT-02: Supply na fornalha; bonus e trocar sobre o cartao da encomenda
         Button _panelAd; Text _panelAdText; RectTransform _panelOk;      // E-PLAT-02: "Cofre 2x" no painel do cofre, ao lado do PEGAR
         RectTransform _boostSeal; Text _boostMul, _boostTime;
@@ -182,7 +187,10 @@ namespace FS
             Application.targetFrameRate = 60;
             // DM §109: idioma antes de montar qualquer texto. -lang en|es|pt (dev, fotos) > Configuracoes > idioma do aparelho
             Loc.Atual = Loc.Escolher(Arg("-lang"), Ajustes.Idioma, Application.systemLanguage.ToString());
-            _testSession = Arg("-testsession") != null || Arg("-autoplay") != null || Arg("-record") != null;
+            _testSession = Sessao.Teste(Arg("-testsession") != null, Arg("-autoplay") != null, Arg("-record") != null);
+            // P1: o -bot sozinho nao le nem grava o save (no aparelho do testador o autosave de 5 s trocava o progresso pelo do bot);
+            // -botgrava = o bot grava (verify.sh --migracao). O resto do -bot (diario, rede, tela de idade) segue como jogo normal
+            _semSave = !Sessao.Persiste(_testSession, Arg("-bot") != null, Arg("-botgrava") != null);
             if (Arg("-record") != null) Time.captureFramerate = Mathf.Max(1, (int)ArgF("-recordfps", 30f));   // relogio do jogo = quadro do video
             // G-UA-02: fumaca, faiscas e poeira sorteiam no UnityEngine.Random; semente fixa = os mesmos quadros em 2 execucoes
             if (Arg("-record") != null || Arg("-preset") != null) UnityEngine.Random.InitState(Captura.Semente);
@@ -211,10 +219,10 @@ namespace FS
             Sfx.Init(gameObject);
             Sfx.Log = Arg("-somlog") != null;   // fix/mix-audio (dev): "SOM min=..." por minuto no Player.log
             // ponytail: fotos e smoke usam estado novo sem ler ou gravar o save/diario normal.
-            if (!_testSession && Arg("-reset") != null) _save.Apagar();
+            if (!_semSave && Arg("-reset") != null) _save.Apagar();
             bool renasceu = _proximo != null;   // troca de distrito: o mesmo Imperio, cena nova (o -distrito so vale na 1a cena)
             if (renasceu) { _imp = _proximo; _proximo = null; }
-            else _imp = _testSession ? new Imperio(new Sim(tuning), novoTuning) : _save.CarregarImperio(tuning, novoTuning);
+            else _imp = _semSave ? new Imperio(new Sim(tuning), novoTuning) : _save.CarregarImperio(tuning, novoTuning);
             _sim = _imp.Ativo; _raiz = _imp.Raiz;
             if (!renasceu) DistritoArg(novoTuning);   // -distrito id (dev, fotos)
             // FTUE: fotos e smoke (-testsession, -record, -autoplay) sem tutorial nem cartoes; -tutorial o liga (save novo de teste)
@@ -224,7 +232,7 @@ namespace FS
             // E-PLAT-04: loja so com SDK; hoje so a falsa, no build de desenvolvimento com -lojafalsa (no -testsession, so na memoria). A posse
             // sai dos recibos do save validados por ela; sem loja, nenhuma
             string lf = Debug.isDebugBuild ? Arg("-lojafalsa") : null;
-            if (lf != null) _loja = new LojaFalsa(_testSession ? null : Path.Combine(dir, LojaFalsa.Arquivo), LojaFalsa.Ler(lf));
+            if (lf != null) _loja = new LojaFalsa(_semSave ? null : Path.Combine(dir, LojaFalsa.Arquivo), LojaFalsa.Ler(lf));
 #if UNITY_ANDROID && !UNITY_EDITOR
             else if (!_testSession) _loja = LojaUnity.Criar();   // Unity IAP: so com a chave da Play no projeto (GooglePlayTangle, IAP.md §5); sem ela, sem LOJA
 #endif
@@ -341,6 +349,8 @@ namespace FS
             _soak = Arg("-soak") != null;   // 1 linha SOAK por minuto no log (memoria, GC, fps) para o soak_emulador.sh
             string shot = Arg("-shot");
             if (!string.IsNullOrEmpty(shot)) StartCoroutine(Shot(shot));
+            string toque = Arg("-testetoque");   // fix/ui-fechar-ao-tocar-fora: teste de ponta a ponta (Game.TesteToque.cs)
+            if (!string.IsNullOrEmpty(toque) && _testSession && Debug.isDebugBuild) StartCoroutine(TesteToqueFora(toque));
             string rec = Arg("-record");
             if (!string.IsNullOrEmpty(rec)) StartCoroutine(Record(rec));
             string ad = Ads.Arg("-adtest");   // Ads.Arg tambem le o extra "unity" do intent no Android
@@ -435,9 +445,12 @@ namespace FS
             }
         }
 
+        long _foraS, _foraClaim;   // fix/anuncio-sem-retorno: cofre da volta adiado ate o anuncio acabar
+
         void Update()
         {
             EntregaExcecoes();   // DM 90: os erros que chegaram de qualquer thread
+            if (_foraS > 0 && EstadoAtual != Estado.Ad) { long fora = _foraS; _foraS = 0; PagaCofre(fora, _foraClaim); }
             if (_headless) return;
             // Input.GetKeyDown: com o GameActivity o voltar do Android nao chega ao Input System, so ao Input Manager legado (Setup: Both)
             bool back = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
@@ -470,7 +483,21 @@ namespace FS
 
             bool modal = OutroModal || TutAberto;
             Pointer ptr = Pointer.current;   // B-CORE-03: toque no anel do golpe ou na barra de qualidade (antes do joystick, que os ignora)
-            if (!modal && ptr != null && ptr.press.wasPressedThisFrame) Toque(ptr.position.ReadValue());
+            // fix/ui-fechar-ao-tocar-fora: com a bandeja aberta, o toque no mundo e' dela (fecha num tap) e nao age no mundo
+            bool daBandeja = false;
+            if (modal) _bandeja.Cancela();
+            // FTUE (#188): o passo "abra as Melhorias" segura a bandeja; o painel do passo e' "dentro" (nem fecha, nem vai ao mundo)
+            else
+            {
+                _fechaMenu ??= _menu.Toggle; _noAnel ??= _view.NoAnel; _noPainel ??= _tut.NoPainel;
+                daBandeja = _bandeja.Tick(ptr, ToqueFora.FechaMenu(EstadoAtual, _menu.IsOpen, _raiz.Tutorial.Ativo && _raiz.Tutorial.Passo == PassoTutorial.Menu),
+                    _menu.TopPx, _fechaMenu, _noAnel, _noPainel);
+            }
+            if (!modal && !daBandeja && ptr != null && ptr.press.wasPressedThisFrame)
+            {
+                Vector2 p = ptr.position.ReadValue();
+                if (!_tut.NoPainel(p) || _view.NoAnel(p)) Toque(p);   // o painel do passo nao vai ao mundo, salvo o anel do golpe por baixo dele
+            }
             _joy.Blocked = modal;
             _joy.BottomPx = _menu.TopPx;
             _joy.Tick();
@@ -568,13 +595,13 @@ namespace FS
                         _view.SaleFloat(new V2(e.Pos.X, e.Pos.Y - 0.9f), e.B);   // v0.5: pela frente do estande; v0.6d: vendas a < 0,4 s somam num "+N" so
                         _view.Sold(e.Pos, _sim.CounterFor((Item)e.A) == _sim.JewelShop);   // v0.5b: balao estoura com coracao e brilhos
                         FlyCoins(e.Pos, e.B);
-                        Log("product_sold", _sim.ItemDefs[e.A].Name, e.B.ToString());
+                        if (_diario.Ativo) Log("product_sold", _sim.ItemDefs[e.A].Name, e.B.ToString());   // o evento mais frequente: sem leitor, sem ToString
                         Source(vipSale ? "vip" : "venda", e.B);   // a unidade do VIP sai a preco x3
                         break;
                     // B-CORE-03: peca Fina/Superior na pilha (moeda aguda, "Fina!" e brilhos); obra-prima ao Hall (B-CORE-08)
                     case Ev.Graded:
                         _view.Graded(e.A, (Quality)e.B);
-                        Log("product_graded", _sim.Stations[e.A].Name, ((Quality)e.B).ToString());
+                        if (_diario.Ativo) Log("product_graded", _sim.Stations[e.A].Name, ((Quality)e.B).ToString());
                         break;
                     case Ev.Masterwork:
                         Ajustes.Pulso(60, 255);
@@ -985,7 +1012,8 @@ namespace FS
 
             // painel modal (cofre; no dev tambem o -adtest). v0.6d: cartao creme das configuracoes; "+N" grande com a moeda so no cofre
             _panel = Art.Node(_safe, "Painel", Vector2.zero, Vector2.one);
-            Art.Veu(_panel.gameObject);
+            // fix/ui-fechar-ao-tocar-fora: so o informativo (o botao so fecha) sem ouro fecha por toque fora; escolha e cofre so pelo botao
+            Art.Veu(_panel.gameObject, fecha: ClosePanel, pode: () => ToqueFora.FechaPainel(_panelAction == null || _panelAction == (Action)ClosePanel, _panelOuro));
             Image box = Art.Panel(_panel, "Caixa", MenuBar.Leather, new Vector2(0.08f, 0.35f), new Vector2(0.92f, 0.65f));
             Image card = Art.Panel(box.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             card.rectTransform.offsetMin = new Vector2(6f, 14f); card.rectTransform.offsetMax = new Vector2(-6f, -6f);   // chanfro de couro embaixo
@@ -1354,14 +1382,26 @@ namespace FS
             if (_trocaChip.B.gameObject.activeSelf != troca) _trocaChip.B.gameObject.SetActive(troca);
             if (troca)
             {
-                Encomenda prox = _sim.Anuncios.ProximaEncomenda();   // a que entra, mostrada antes (P5)
-                Item it = prox.Itens[0];
-                _trocaChip.Label.text = Loc.T("enc.troca", prox.Total);
                 _trocaChip.Video.SetActive(!_raiz.Compras.SemVideoEm(Anuncio.EncomendaTroca));   // E-PLAT-05: Pacote do Mestre, sem video
-                Sprite s = Art.ItemArt(it, true);
-                _trocaChip.Icon.sprite = s != null ? s : Art.ItemSprite(it);
-                _trocaChip.Icon.color = s != null ? Color.white : Art.ItemColor[(int)it];
+                // fix/gc-alocacao-por-quadro: a que entra (P5) e' uma encomenda inteira gerada (Encomendas.Gera) + o Loc.T: so quando muda a
+                // principal, o rodizio ou as vagas (ou o Sim, na troca de distrito), e no maximo a 2 Hz pelo resto (linha nova, idioma)
+                Encomendas enc = _sim.Encomendas;
+                Encomenda principal = enc.Principal;
+                float agora = Time.unscaledTime;
+                if (principal != _trocaPrincipal || enc.Abertas != _trocaAbertas || enc.Vagas.Count != _trocaVagas || _sim != _trocaSim
+                    || agora - _trocaT >= 0.5f)
+                {
+                    _trocaPrincipal = principal; _trocaAbertas = enc.Abertas; _trocaVagas = enc.Vagas.Count; _trocaSim = _sim; _trocaT = agora;
+                    Encomenda prox = _sim.Anuncios.ProximaEncomenda();   // a que entra, mostrada antes (P5)
+                    Item it = prox.Itens[0];
+                    string txt = Loc.T("enc.troca", prox.Total);
+                    if (txt != _trocaChip.Label.text) _trocaChip.Label.text = txt;
+                    Sprite s = Art.ItemArt(it, true);
+                    _trocaChip.Icon.sprite = s != null ? s : Art.ItemSprite(it);
+                    _trocaChip.Icon.color = s != null ? Color.white : Art.ItemColor[(int)it];
+                }
             }
+            else _trocaPrincipal = null;   // reaparecer = recalcula na hora
             Ofertou(Anuncio.EncomendaBonus, bonus, on);
             Ofertou(Anuncio.EncomendaTroca, troca, on);
             bool cofre = Painel && _panelRow.gameObject.activeSelf && Pode(Anuncio.Cofre);   // so o painel do cofre tem a linha do ouro
@@ -1419,6 +1459,7 @@ namespace FS
         /// </summary>
         void Toque(Vector2 px)
         {
+            _toques++;
             if (_view.NoAnel(px))
             {
                 Station at = _sim.StrikeStation;
@@ -1587,7 +1628,7 @@ namespace FS
             }
 
             _cfg = Art.Node(_safe, "Configuracoes", Vector2.zero, Vector2.one);
-            Art.Veu(_cfg.gameObject);   // escurece e segura os toques do resto
+            Art.Veu(_cfg.gameObject, fecha: () => _cfg.gameObject.SetActive(false));   // escurece e segura os toques do resto; tap fora fecha
             // DM §109: 4 linhas (o Idioma entrou): 0,40 -> 0,46 da tela, com linhas, titulo e botoes do mesmo tamanho em px
             Image edge = Art.Panel(_cfg, "Cartao", MenuBar.Leather, new Vector2(0.1f, 0.27f), new Vector2(0.9f, 0.73f));
             Image face = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
@@ -1725,7 +1766,7 @@ namespace FS
             if (!_testSession) _rc.Buscar((e, a, b) => Log(e, a, b));
             if (_started && _loja != null && !(_loja is LojaFalsa)) IniciarLoja();   // respondida agora; numa abertura anterior, o Start ja iniciou
             // Cloud Save (docs/CLOUD_SAVE.md): flag desligada por padrao; so 18+ com aceite (menor nunca), fora do Editor e das fotos
-            if (!_testSession && !Application.isEditor && _raiz.T.CloudSave && Privacidade.Flags(f, aceitou).Consentimento) AbrirNuvem();
+            if (!_semSave && !Application.isEditor && _raiz.T.CloudSave && Privacidade.Flags(f, aceitou).Consentimento) AbrirNuvem();
         }
 
         SincroniaNuvem _nuvem;
@@ -1760,7 +1801,7 @@ namespace FS
             while (_excecoes.TryDequeue(out var e)) _diario?.Excecao(e.Msg, e.Pilha, _sim != null ? _sim.Time : 0f);
         }
 
-        void OnDestroy() { Application.logMessageReceivedThreaded -= Excecao; EntregaExcecoes(); }
+        void OnDestroy() { Application.logMessageReceivedThreaded -= Excecao; EntregaExcecoes(); _diario?.Flush(); }   // troca de cena: o lote do diario vai ao disco
 
         /// <param name="gold">&gt; 0: linha da moeda com "+gold" grande (cofre); 0: so o texto.</param>
         void ShowPanel(string title, string body, string button, Action action, long gold = 0)
@@ -1770,6 +1811,7 @@ namespace FS
             _panelBody.text = body;
             _panelBtn.text = button;
             _panelAction = action;
+            _panelOuro = gold;
             _panelRow.gameObject.SetActive(gold > 0);
             _festaRaios.enabled = gold > 0;
             _festaT = gold > 0 ? 0f : -1f; _festaOuro = gold;
@@ -1795,10 +1837,10 @@ namespace FS
         bool Save()
         {
             if (_headless || !Estados.Grava(EstadoAtual)) return false;
-            if (_testSession) return true;
+            if (_semSave) return true;
             bool ok = _save.Gravar(_imp, Now(), Application.version);
             if (ok && _nuvem != null) _ = _nuvem.Subir(_save.Atual, Time.realtimeSinceStartupAsDouble);   // Cloud Save: 1 a cada 60 s, nunca espera
-            return ok;   // E-PLAT-04: o -testsession nao persiste nada (nem a loja falsa): vale
+            return ok;   // E-PLAT-04: o -testsession (e o -bot sem -botgrava) nao persiste nada (nem a loja falsa): vale
         }
 
         // Voltar de outro app tambem paga o cofre (antes so a abertura pagava: quem trocava de app perdia o tempo fora).
@@ -1812,19 +1854,29 @@ namespace FS
                 _pausedByAd = EstadoAtual == Estado.Ad;   // antes do _paused: Ad vence Paused (o anuncio real tira o app da frente)
                 _paused = true;
                 Save(); EndSession("pausa");
+                _diario?.Flush();   // o diario grava em lote: o sistema pode matar o app no segundo plano
             }
             else
             {
                 _paused = false;
                 _fpsN = 0; _fpsT = 0f;   // a janela de fps nao mede o tempo fora
-                if (_started && !_pausedByAd && _sim != null && _sim.SavedAt > 0 && Now() - _sim.SavedAt >= 60) Offline();
+                // fix/anuncio-sem-retorno: Home no meio do anuncio + muito tempo fora tambem paga (antes a pausa no anuncio nunca pagava e o
+                // autosave seguinte avancava o SavedAt: a hora fora se perdia)
+                if (_sim != null && _sim.SavedAt > 0 && CicloAnuncio.PagaCofreNaVolta(_started, _pausedByAd, Now() - _sim.SavedAt))
+                {
+                    // Conselho do #190: com o anuncio ainda aberto (o 2x do cofre, por exemplo), o cofre novo espera ele acabar; pagar agora
+                    // trocava o LastClaim e o 2x ja assistido caia em Pagar = -1. O tempo fora e o claim ficam guardados (o autosave avanca o SavedAt)
+                    if (EstadoAtual == Estado.Ad) { _foraS = Now() - _sim.SavedAt; _foraClaim = _sim.SavedAt; }
+                    else Offline();
+                }
                 _metasT = 0f;   // D-CORE-01: voltar do segundo plano olha a virada do dia no proximo quadro
             }
         }
-        void OnApplicationFocus(bool focus) { if (!focus) Save(); }
+        void OnApplicationFocus(bool focus) { if (!focus) { Save(); _diario?.Flush(); } }
         void OnApplicationQuit()
         {
             Save(); EndSession("saiu");
+            _diario?.Flush();
             // No Placeholder Gate (DM §178, client/tools/placeholder_gate.sh): o que esta sessao pediu e caiu no procedural
             Debug.Log($"PLACEHOLDERS arte={SpriteSheet.Faltas.Count} [{string.Join(" ", SpriteSheet.Faltas)}] som={Sfx.Sintetizados.Count} [{string.Join(" ", Sfx.Sintetizados)}]");
         }

@@ -69,7 +69,7 @@ Para cambiar tu respuesta: **Ajustes > Privacidad** en el juego. El cambio vale 
 
 El juego es para mayores de 13 años, y quien indique menos de 13 recibe la protección de la tabla anterior. Seguimos el Estatuto Digital del Niño y del Adolescente de Brasil (Ley 15.211/2025), la LGPD (art. 14) y la COPPA (EE. UU.):
 
-- para los menores de 18, el juego pide a los socios anuncios no personalizados, no usa el ID de publicidad y no envía estadísticas de uso `<<CONFIRMAR: D-PRIV-2, permiso Topics en el manifiesto>>`;
+- para los menores de 18, el juego pide a los socios anuncios no personalizados, no usa el ID de publicidad y no envía estadísticas de uso;
 - **nada aleatorio pagado**: el juego no tiene cajas de premio sorpresa (loot boxes), y lo que da cada compra o recompensa es fijo;
 - sin chat y sin contacto entre jugadores;
 - no pedimos ni guardamos nombre, contacto, foto ni ubicación de nadie.
