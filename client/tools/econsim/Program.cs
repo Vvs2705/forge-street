@@ -146,7 +146,7 @@ static partial class EconSim
                 case "--arcano" when ok: ok = Enum.TryParse(v, true, out _altares) && Enum.IsDefined(typeof(PoliticaArcana), _altares); break;   // C-CORE-08
                 default: ok = false; break;
             }
-            if (!ok || perfis.Any(p => p == null))
+            if (!ok || perfis.Any(p => p.Name == null))
             {
                 Console.Error.WriteLine("uso: econsim [--perfis " + string.Join(",", BotProfile.All.Select(p => p.Name)) + "] [--minutos 60] [--partidas 1] [--anuncio-seg 30] [--saida econsim.csv] [--rc config.json] [--tuning Knob=v;Lista=1|2|3] [--worker-seg 60] [--evento id] [--pacote 0|1] [--distrito " + string.Join("|", Distritos.All.Select(d => d.Id)) + "] [--fundo-of 2400] [--gerente 0|1] [--renome 500] [--bancadas regra|volume|margem] [--histerese 3] [--arcano regra|estavel|forcado]");
                 return 2;
