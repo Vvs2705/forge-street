@@ -47,7 +47,7 @@ namespace FS
             Art.Aro(_chipPsPonto.transform);
 
             // cartao do evento
-            _ev = Modal(safe, "Evento", new Vector2(0.06f, 0.12f), new Vector2(0.94f, 0.88f), out Transform f);
+            _ev = Modal(safe, "Evento", new Vector2(0.06f, 0.12f), new Vector2(0.94f, 0.88f), Fechar, out Transform f);
             _evNome = Texto(f, "Nome", 50, 0.04f, 0.9f, 0.96f, 0.985f, TextAnchor.MiddleCenter, true);
             _evTempo = Texto(f, "Tempo", 28, 0.04f, 0.85f, 0.96f, 0.9f);
             _evCheio = Barra(f, 0.06f, 0.785f, 0.94f, 0.84f, Art.Gold, out _evConta);
@@ -72,7 +72,7 @@ namespace FS
             fecha.GetComponentInChildren<Text>().color = MenuBar.Cream;
 
             // painel do Passe
-            _ps = Modal(safe, "Passe", new Vector2(0.04f, 0.07f), new Vector2(0.96f, 0.93f), out Transform g);
+            _ps = Modal(safe, "Passe", new Vector2(0.04f, 0.07f), new Vector2(0.96f, 0.93f), Fechar, out Transform g);
             _psTitulo = Texto(g, "Titulo", 46, 0.04f, 0.925f, 0.96f, 0.995f, TextAnchor.MiddleCenter, true);
             Art.Cabecalho(_psTitulo);
             _psNivel = Texto(g, "Nivel", 36, 0.04f, 0.87f, 0.5f, 0.925f, TextAnchor.MiddleLeft, true);
@@ -120,10 +120,10 @@ namespace FS
             return (r, t);
         }
 
-        static RectTransform Modal(RectTransform safe, string nome, Vector2 min, Vector2 max, out Transform face)
+        static RectTransform Modal(RectTransform safe, string nome, Vector2 min, Vector2 max, Action fecha, out Transform face)
         {
             RectTransform root = Art.Node(safe, nome, Vector2.zero, Vector2.one);
-            Art.Veu(root.gameObject);   // escurece e segura os toques
+            Art.Veu(root.gameObject, fecha: fecha);   // escurece e segura os toques; fix/ui-fechar-ao-tocar-fora: tap fora fecha
             Image edge = Art.Panel(root, "Cartao", MenuBar.Leather, min, max);
             Image card = Art.Panel(edge.transform, "Face", MenuBar.Cream, Vector2.zero, Vector2.one);
             card.rectTransform.offsetMin = new Vector2(6f, 14f); card.rectTransform.offsetMax = new Vector2(-6f, -6f);   // chanfro de couro embaixo

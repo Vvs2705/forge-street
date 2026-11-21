@@ -165,6 +165,13 @@ namespace FS
             _y0 = centro.Y - 1.2f * meiaA; _y1 = centro.Y + 1.2f * meiaA;
         }
 
+        // o _fila.Exists(f => f.Som == som) de antes, sem a closure (1 objeto por Pedir de Importante barrado)
+        bool NaFila(string som)
+        {
+            for (int i = 0; i < _fila.Count; i++) if (_fila[i].Som == som) return true;
+            return false;
+        }
+
         public bool NaTela(V2 p) => p.X >= _x0 && p.X <= _x1 && p.Y >= _y0 && p.Y <= _y1;
 
         /// <summary>
@@ -189,7 +196,7 @@ namespace FS
                 int i = Soando(Cat.Importante, t);
                 if (i >= 0 && _v[i].Som != som)
                 {
-                    if (!_fila.Exists(f => f.Som == som)) { _fila.Add((som, pitch)); Total.Fila++; }
+                    if (!NaFila(som)) { _fila.Add((som, pitch)); Total.Fila++; }
                     return false;
                 }
                 return Toca(som, r, pitch, g, t, i >= 0 ? i : Escolhe(r.Cat, t), out q);

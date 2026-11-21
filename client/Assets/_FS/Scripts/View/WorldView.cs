@@ -292,10 +292,8 @@ namespace FS
         RectTransform _ring; Image _ringOut, _ringTarget; float _ringT; Station _ringAt;   // B-CORE-03: anel do golpe (RefreshRing)
         Sprite _coin, _crown;
         ClientV _vipWait;
-        EsteiraView _esteira;   // B-ART-08: faixa, lingotes em transito, clac e particulas
         int _clientSeq, _bought;
         Floater _sale; int _saleSum;   // v0.6d: ultimo "+N" de venda (SaleFloat soma nele)
-        float _streetHalfW;
         /// <summary>Base da faixa da HUD de cima em px de tela (Game.Fit): o balao do 1o da fila fica 24 px abaixo (v0.6d).</summary>
         public float HudBottomPx = float.MaxValue;
 
@@ -322,7 +320,6 @@ namespace FS
             _streetLabel = Art.FreeText(_labels, "RuaLateral", 28, new Vector2(200f, 80f));
             _streetLabel.text = Loc.T("mundo.rua");   // 2 linhas: so 1,2 m da rua cabe na tela antes do Corredor
             _streetLabel.color = StreetInk;       // v0.6d: 28 px #E8D9B8 (era Ink a 55%, sumia na pedra)
-            _streetHalfW = _streetLabel.preferredWidth / 2f;
             // C-CORE-01: decoracao do Old Forge so onde o distrito tem a peca (carroca = o obstaculo dela; loja e luxo = o efeito/estacao)
             foreach (ObstacleDef o in sim.Distrito.Obstaculos) if (o.Name == "carroca") Deco("carroca", CartPos, CartCell, 1.3f);
             _shopTeaser = sim.JewelShop != null ? Deco("loja_joalheria", sim.JewelShop.Pos, StationCell, 1.3f) : null;   // mesma folha e celula da estacao
@@ -341,7 +338,6 @@ namespace FS
             foreach (Station s in sim.Stations) _stations.Add(BuildStation(s));
             foreach (Pad p in sim.Pads) _pads.Add(BuildPad(p));
             foreach (Chest c in sim.Chests) _chests.Add(BuildChest(c));
-            _esteira = new EsteiraView(this, sim, transform);
             _player = BuildCarrier(sim.Player, Art.Player, 0.62f, Balance.PlayerCapUp * sim.Player.Held.Length);   // FASE7: ate o teto de CADA tipo
             // Mochila (feedback do POCO 2026-10-13, "item solto"): com a folha ferreiro_mochila (mesmo render, mochila presa ao Spine2) a compra
             // troca a folha do corpo (RefreshCarrier). Sem ela, v0.6a (P2-2): icone do cartao nas costas (RefreshCarrier a poe do lado das costas)
@@ -1211,7 +1207,6 @@ namespace FS
             RefreshArea();
             for (int i = 0; i < _glows.Count; i++)   // tochas tremulam: 2 senos fora de fase por tocha
                 _glows[i].color = Art.ComAlfa(GlowColor, GlowAlpha + 0.05f * Mathf.Sin(Time.time * 9f + i * 2.1f) + 0.03f * Mathf.Sin(Time.time * 23f + i));
-            _esteira.Refresh();   // antes das estacoes: a pilha da Bigorna desconta o lingote em cima da faixa ja neste quadro
             for (int i = 0; i < _stations.Count; i++)
             {
                 if (_stations[i].Receita != _stations[i].S.Recipe) _stations[i] = Refaz(_stations[i]);   // C-CORE-06: trocou a receita
@@ -1233,6 +1228,7 @@ namespace FS
             }
             foreach (CarrierV v in _workers) RefreshCarrier(v, dt);
             RefreshPostos(dt);
+            RefreshAprendizes(dt);   // 2026-11: um funcionario em cada estacao
 
             RefreshClients(dt);
 
@@ -1269,10 +1265,10 @@ namespace FS
             if (!corridor)
             {
                 PlaceLabel(_streetLabel, new Vector3(Balance.WorkshopW + 0.6f, (Balance.SideWallOpenings[1] + Balance.SideWallOpenings[2]) / 2f, 0f), Vector2.zero);   // na parede entre a porta e o arco, nao em cima da porta
-                // v0.6d: inteiro dentro de x <= 1032 (px na largura 1080); o "lateral" saia pela borda direita
-                Vector2 at = _streetLabel.rectTransform.anchoredPosition;
-                float max = _labels.rect.width * (1032f / 1080f - 0.5f) - _streetHalfW;
-                if (at.x > max) _streetLabel.rectTransform.anchoredPosition = new Vector2(max, at.y);
+                // fix/rotulo-rua-lateral: o rotulo segue o mundo, sem trava na borda. A trava da v0.6d (inteiro dentro de 1032/1080) era da
+                // camera antiga; com a de 9 m (Enquadramento.Largura) ele cabe inteiro na parede com a camera no limite direito, e a trava
+                // o puxava ~2 m para cima da placa de Escudos com a camera no inicio (fotos 9:20 do POCO). Qualquer trava que o mantenha
+                // inteiro na tela salta a propria largura quando ele entra pela borda (Conselho do #191): sem trava, ele desliza com a camera.
             }
             if (_shopTeaser != null && _shopTeaser.transform.parent.gameObject.activeSelf != teaser) _shopTeaser.transform.parent.gameObject.SetActive(teaser);
             _shopLabel.enabled = teaser;
@@ -1452,7 +1448,7 @@ namespace FS
             }
             if (s.Produces)
             {
-                int inn = s == _sim.EsteiraPara ? s.In - _esteira.Levando : s.In;   // B-ART-08: o lingote da esteira so entra na pilha quando chega
+                int inn = s.In;   // 2026-11: sem esteira (a EsteiraView saiu com ela)
                 for (int i = 0; i < v.InPile.Length; i++) v.InPile[i].enabled = i < inn;
                 bool blocked = s.Blocked || (s.Out >= s.OutCap);
                 int pop = -1; float ps = 1f;   // v0.6a: o item que acabou de sair (Ev.Crafted) da pop 0 -> 1,15 -> 1
@@ -1720,7 +1716,7 @@ namespace FS
             float la = _sim.Time < TutorialLabels ? 1f : Mathf.Clamp01((NearLabel - V2.Dist(_sim.Player.Pos, v.P.Pos)) / LabelFade);
             v.Label.enabled = la > 0.01f;
             if (!v.Label.enabled) return;
-            v.Label.text = Textos.Nome(u);
+            v.Label.text = Textos.NomePad(u, _sim.T);   // 2026-11: luxo mostra o bonus
             v.Label.color = affordable ? Art.ComAlfa(Art.Accent, la) : Art.ComAlfa(Art.Ink, 0.85f * la);
             PlaceLabel(v.Label, W(v.P.Pos) + new Vector3(0f, PadSize / 2f + 0.22f, 0f), Vector2.zero);
         }
@@ -1852,16 +1848,24 @@ namespace FS
 
         // ------------------------------------------------------------------ workers de posto (B-CORE-04)
 
-        /// <summary>Worker da Equipe parado no posto (oficial, balconista, almoxarife, mestre de obras), com a folha da skin do WorkerDef (Lote 5A,
-        /// ASSETS s11; sem folha, disco na cor dos ajudantes com o aro do papel). PostoOlha s de Idle e um LookingAround inteiro, em ciclo.</summary>
-        sealed class PostoV { public int K; public Transform Root; public Body Body; public float T; }
+        /// <summary>Worker da Equipe no posto (oficial, balconista, almoxarife, mestre de obras, Vulcana, Felix), com a folha da skin do WorkerDef
+        /// (Lote 5A, ASSETS s11; sem folha, disco na cor dos ajudantes com o aro do papel). 2026-11 (Vinicius: "dois personagens sem movimento e sem
+        /// contexto do que ele faz"; "personagens fora das bancas"): o almoxarife e o mestre de obras tinham coordenadas fixas do Old Forge
+        /// ((3,2; 2,0) e (6,0; 7,5)) e, nos outros distritos, ficavam no meio do nada. Agora os dois fazem RONDA pelas estacoes do distrito
+        /// (Ronda): andam ate a boca de cada uma, param RondaPara s olhando (e soltam brilho na estacao) e seguem; o rotulo com o papel aparece
+        /// perto do ferreiro (Nome + o que ele faz). Quem tem posto fixo (oficial, Vulcana, balconista, Felix) fica na boca da estacao dele.</summary>
+        sealed class PostoV { public int K; public Transform Root; public Body Body; public float T; public V2 P; public int Alvo = -1; public float Parado; public Text Label; }
         readonly List<PostoV> _postos = new List<PostoV>();
-        const float PostoOlha = 6f;
+        readonly List<Station> _ronda = new List<Station>();
+        const float PostoOlha = 6f, RondaVel = 1.5f, RondaPara = 3.5f;
+
+        /// <summary>Faz ronda (almoxarife e mestre de obras): o efeito deles vale para o distrito todo, entao andam por ele.</summary>
+        static bool Ronda(WorkerDef d) => d.Papel == WorkerRole.Quartermaster || d.Papel == WorkerRole.Foreman;
 
         /// <summary>
-        /// Onde o worker fica: o oficial atras da 1a bancada aberta da familia, a balconista na ponta direita do balcao (lado da oficina), o
-        /// almoxarife ao lado do deposito e o mestre de obras no meio da oficina. So visual: o Sim nao tem o corpo dele (ninguem esbarra).
-        /// ponytail: posto fixo por papel; conferir na foto (-equipe) e mover aqui.
+        /// Posto fixo: o oficial e a Vulcana na boca de saida da 1a estacao aberta da familia (onde o ferreiro pega a peca: chao livre, ao lado
+        /// da bancada e nao atras dela), a balconista na ponta direita do balcao (lado da oficina), o Felix ao lado do patio de exportacao. A
+        /// ronda nasce no balcao. So visual: o Sim nao tem o corpo dele (ninguem esbarra).
         /// </summary>
         V2 Posto(WorkerDef d)
         {
@@ -1869,15 +1873,36 @@ namespace FS
             {
                 case WorkerRole.Smith:
                     Station st = _sim.Stations.Find(x => x.Unlocked && x.Produces && x.Recipe.Station == d.Station);
-                    return st != null ? new V2(st.Pos.X, st.Pos.Y + 0.62f) : _sim.Counter.Pos;
-                case WorkerRole.Smelter:   // C-CORE-05: a Vulcana em cima da fornalha que ela opera (a do Requer)
+                    return st != null ? Boca(st) : Balconista();
+                case WorkerRole.Smelter:   // C-CORE-05: a Vulcana na fornalha que ela opera (a do Requer)
                     Station f = _sim.Stations.Find(x => x.Unlocked && x.Produces && x.Recipe.Family == d.Requer);
-                    return f != null ? new V2(f.Pos.X, f.Pos.Y + 0.62f) : _sim.Counter.Pos;
-                case WorkerRole.Clerk: return new V2(_sim.Counter.Pos.X + _sim.Counter.Half.X - 0.35f, _sim.Counter.Pos.Y - 0.62f);
-                case WorkerRole.Quartermaster: return new V2(3.2f, 2.0f);
-                case WorkerRole.Courier: return _sim.Exportacao != null ? new V2(_sim.Exportacao.Pos.X + 1.2f, _sim.Exportacao.Pos.Y - 0.62f) : _sim.Counter.Pos;   // C-CORE-09: o Felix ao lado do patio de exportacao
-                default: return new V2(6.0f, 7.5f);
+                    return f != null ? Boca(f) : Balconista();
+                case WorkerRole.Courier: return _sim.Exportacao != null ? new V2(_sim.Exportacao.Pos.X + 1.2f, _sim.Exportacao.Pos.Y - 0.62f) : Balconista();   // C-CORE-09
+                case WorkerRole.Clerk: return Balconista();
+                default: return _sim.Counter.InAt;
             }
+        }
+
+        V2 Balconista() => new V2(_sim.Counter.Pos.X + _sim.Counter.Half.X - 0.35f, _sim.Counter.Pos.Y - 0.62f);
+
+        /// <summary>Ao lado da boca de saida, meio metro para o lado de fora da estacao (a boca e' onde o ferreiro e os ajudantes param).</summary>
+        static V2 Boca(Station s)
+        {
+            V2 d = s.OutAt - s.Pos; float len = d.Len;
+            V2 lado = len > 0.01f ? new V2(-d.Y / len, d.X / len) * 0.55f : new V2(0.55f, 0f);
+            return s.OutAt + lado;
+        }
+
+        /// <summary>Proxima parada da ronda: as estacoes abertas que o papel afeta (almoxarife: quem produz e o balcao; mestre de obras: as
+        /// bancadas), em ordem, depois da atual.</summary>
+        int ProximaParada(WorkerDef d, int atual)
+        {
+            _ronda.Clear();
+            foreach (Station s in _sim.Stations)
+                if (s.Unlocked && (d.Papel == WorkerRole.Foreman ? s.Kind == Kind.Crafter : s.Produces || s == _sim.Counter)) _ronda.Add(s);
+            if (_ronda.Count == 0) return -1;
+            int i = _ronda.FindIndex(x => x.Index == atual);
+            return _ronda[(i + 1) % _ronda.Count].Index;
         }
 
         void RefreshPostos(float dt)
@@ -1887,24 +1912,109 @@ namespace FS
             {
                 if (e.Defs[k].Papel == WorkerRole.Porter || e.Nivel(k) == 0 || _postos.Exists(p => p.K == k)) continue;
                 _postos.Add(BuildPosto(k));
-                if (Time.timeSinceLevelLoad > 1f) Poof(Posto(e.Defs[k]), 1f);   // contratou agora (o save carrega sem poeira)
+                if (Time.timeSinceLevelLoad > 1f) Poof(_postos[_postos.Count - 1].P, 1f);   // contratou agora (o save carrega sem poeira)
             }
             foreach (PostoV p in _postos)
             {
-                p.Root.localPosition = W(Posto(e.Defs[p.K]));   // o balcao alarga com as vagas
+                WorkerDef d = e.Defs[p.K];
+                Vector2 vel = Vector2.zero; bool andando = false;
+                if (!Ronda(d)) p.P = Posto(d);   // o balcao alarga com as vagas; a bancada da familia pode abrir depois
+                else
+                {
+                    if (p.Alvo < 0 || p.Alvo >= _sim.Stations.Count || !_sim.Stations[p.Alvo].Unlocked) { p.Alvo = ProximaParada(d, -1); p.Parado = 0f; }
+                    if (p.Alvo >= 0)
+                    {
+                        Station s = _sim.Stations[p.Alvo];
+                        V2 alvo = s == _sim.Counter ? Balconista() + new V2(-1.0f, 0f) : Boca(s), dv = alvo - p.P;
+                        float dist = dv.Len, passo = RondaVel * dt;
+                        if (dist > 0.05f)
+                        {
+                            andando = true;
+                            V2 m = dist <= passo ? dv : dv * (passo / dist);
+                            p.P = p.P + m; vel = new Vector2(m.X, m.Y);
+                        }
+                        else if ((p.Parado += dt) >= RondaPara)
+                        {
+                            p.Parado = 0f; p.Alvo = ProximaParada(d, p.Alvo);
+                            if (NaTela(p.Root)) Spawn(Art.Sparkle(), Art.Accent, W(s.Pos) + new Vector3(0f, 0.5f, 0f), W(s.Pos) + new Vector3(0f, 0.9f, 0f), W(s.Pos) + new Vector3(0f, 1.2f, 0f), 0.6f, 0.3f, 0.05f, true, 180f);   // "conferiu": brilho na estacao
+                        }
+                    }
+                }
+                p.Root.localPosition = W(p.P);
+                if (p.Label != null)   // contexto: quem e' e o que faz, perto do ferreiro (como os nomes das estacoes)
+                {
+                    float la = Mathf.Clamp01((NearLabel - V2.Dist(_sim.Player.Pos, p.P)) / LabelFade);
+                    p.Label.enabled = la > 0.01f;
+                    if (p.Label.enabled) { p.Label.color = Art.ComAlfa(Art.Ink, 0.95f * la); PlaceLabel(p.Label, W(p.P) + new Vector3(0f, 1.25f, 0f), Vector2.zero); }
+                }
                 if (p.Body == null) continue;
                 p.T += dt;
+                if (andando) { p.Body.Tick("Walking", dt, vel); continue; }
                 float look = p.Body.Sheet.Length("LookingAround");   // ~6,3 s no Lote 5A: PostoOlha de Idle e o LookingAround inteiro, em ciclo
-                p.Body.Tick(look > 0f && p.T % (PostoOlha + look) >= PostoOlha ? "LookingAround" : "Idle", dt, Vector2.zero);
+                p.Body.Tick(Ronda(d) || (look > 0f && p.T % (PostoOlha + look) >= PostoOlha) ? "LookingAround" : "Idle", dt, Vector2.zero);
             }
+        }
+
+        // ------------------------------------------------------------------ aprendiz de estacao (2026-11)
+
+        /// <summary>2026-11 (Vinicius: "nenhuma estacao trabalha sozinha; cada estacao precisa de um funcionario trabalhando"): toda estacao
+        /// aberta que produz (fornalha, bancada, prensa...) tem um aprendiz na boca dela. Trabalhando = Idle; sem insumo = LookingAround
+        /// (esperando material); pilha de saida cheia = Angry (ninguem levou). Onde o oficial ou a Vulcana contratados ficam, o aprendiz sai
+        /// (o oficial e' o aprendiz promovido). So visual: o ritmo continua o do Sim (niveis da estacao, oficial, mestre de obras).</summary>
+        sealed class AprendizV { public Station S; public Transform Root; public Body Body; }
+        readonly List<AprendizV> _aprendizes = new List<AprendizV>();
+        static readonly Color AprendizTinta = new Color(1f, 0.9f, 0.78f);
+
+        void RefreshAprendizes(float dt)
+        {
+            foreach (Station s in _sim.Stations)
+            {
+                if (!s.Unlocked || !s.Produces || s.Kind == Kind.Deposit || _aprendizes.Exists(a => a.S == s)) continue;
+                _aprendizes.Add(BuildAprendiz(s));
+                if (Time.timeSinceLevelLoad > 1f) Poof(Boca(s), 0.8f);
+            }
+            foreach (AprendizV a in _aprendizes)
+            {
+                bool promovido = false;   // o oficial/Vulcana contratado ocupa a boca desta estacao
+                foreach (PostoV p in _postos) if (!Ronda(_sim.Equipe.Defs[p.K]) && V2.Dist(p.P, Boca(a.S)) < 0.1f) { promovido = true; break; }
+                a.Root.gameObject.SetActive(!promovido);
+                if (promovido) continue;
+                a.Root.localPosition = W(Boca(a.S));
+                if (a.Body == null) continue;
+                string clip = a.S.Out >= a.S.OutCap ? "Angry" : a.S.Busy ? "Idle" : "LookingAround";
+                a.Body.Tick(clip, dt, Vector2.zero, clip != "Angry");
+            }
+        }
+
+        AprendizV BuildAprendiz(Station s)
+        {
+            var a = new AprendizV { S = s, Root = new GameObject("Aprendiz " + s.Id).transform };
+            a.Root.SetParent(transform, false);
+            a.Root.localPosition = W(Boca(s));
+            if (SpriteSheet.TryGet("ajudante", out SpriteSheet sh))
+            {
+                sh.Scale = CharScale("ajudante");
+                Art.NewSprite(a.Root, "Sombra", Art.Disc(), new Color(0f, 0f, 0f, 0.3f), 5, Vector2.zero, new Vector2(0.5f, 0.2f));
+                a.Body = new Body { Sheet = sh, R = Art.NewSprite(a.Root, "Corpo", null, AprendizTinta, 0, Vector2.zero, Vector2.one) };
+            }
+            else
+            {
+                int o = Depth(Boca(s).Y);
+                Art.NewSprite(a.Root, "Corpo", Art.Disc(), Art.Worker, o, Vector2.zero, Vector2.one * 0.44f);
+            }
+            return a;
         }
 
         PostoV BuildPosto(int k)
         {
             WorkerDef d = _sim.Equipe.Defs[k];
             var p = new PostoV { K = k, Root = new GameObject("Worker " + d.Id).transform, T = k * 1.3f };   // fases diferentes: nao olham todos juntos
+            p.P = Posto(d);
             p.Root.SetParent(transform, false);
-            p.Root.localPosition = W(Posto(d));
+            p.Root.localPosition = W(p.P);
+            p.Label = Placa(Art.Outlined(Art.FreeText(_labels, "Papel " + d.Id, 24, new Vector2(420f, 40f)), 2.5f, Edge));
+            p.Label.text = Loc.T("posto.rotulo", d.Nome, Loc.T("posto.papel." + d.Papel.ToString().ToLowerInvariant()));
+            p.Label.enabled = false;
             if (SpriteSheet.TryGet(d.Skin, out SpriteSheet sh))
             {
                 sh.Scale = CharScale(d.Skin);
@@ -1913,7 +2023,7 @@ namespace FS
             }
             else
             {
-                int o = Depth(Posto(d).Y);
+                int o = Depth(p.P.Y);
                 Art.NewSprite(p.Root, "Sombra", Art.Disc(), new Color(0f, 0f, 0f, 0.3f), 5, new Vector2(0.04f, -0.08f), Vector2.one * 0.52f);
                 Art.NewSprite(p.Root, "Corpo", Art.Disc(), Art.Worker, o, Vector2.zero, Vector2.one * 0.52f);
                 Art.NewSprite(p.Root, "Papel", Art.Ring(), Art.Accent, o + 1, Vector2.zero, Vector2.one * 0.52f);
@@ -2009,7 +2119,7 @@ namespace FS
         {
             var sb = new System.Text.StringBuilder();
             foreach (StationV v in _stations) if (v.Forno != null && v.S.Unlocked) sb.Append(v.S.Name).Append('=').Append(v.Forno.Atual).Append(' ');
-            if (_sim.HasConveyor) sb.Append("Esteira=").Append(_esteira.Levando > 0 ? "levando" + _esteira.Levando : "parada");
+
             return sb.ToString().TrimEnd();
         }
 

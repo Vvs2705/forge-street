@@ -87,7 +87,23 @@ namespace FS.Core
         public long Semana => Calendario.Semana(Dia);
         public bool Aberto => _sim.Bought[AbreCom];
 
-        public static string Chave(string evento, int filtro) => filtro < 0 ? evento : evento + "." + filtro.ToString(CultureInfo.InvariantCulture);
+        /// <summary>"evento.filtro" (filtro &lt; 0 = so o evento). fix/gc-alocacao-por-quadro: a chave sai de um cache por thread (o mesmo texto de
+        /// antes; o econsim roda Sims em paralelo), em vez de 1 string por evento contado.</summary>
+        public static string Chave(string evento, int filtro)
+        {
+            if (filtro < 0) return evento;
+            if (filtro >= ChavesMax || evento == null) return evento + "." + filtro.ToString(CultureInfo.InvariantCulture);
+            var cache = _chaves ?? (_chaves = new Dictionary<string, string[]>());
+            if (!cache.TryGetValue(evento, out string[] f) || f.Length <= filtro)
+            {
+                var novo = new string[Math.Min(ChavesMax, Math.Max(filtro + 1, f == null ? 16 : f.Length * 2))];
+                if (f != null) Array.Copy(f, novo, f.Length);
+                cache[evento] = f = novo;
+            }
+            return f[filtro] ?? (f[filtro] = evento + "." + filtro.ToString(CultureInfo.InvariantCulture));
+        }
+        const int ChavesMax = 1024;   // filtro = indice de item, papel, nivel ou tipo: bem abaixo disso
+        [ThreadStatic] static Dictionary<string, string[]> _chaves;
 
         // ------------------------------------------------------------------ fluxo de eventos (gancho do Sim.Emit)
 
@@ -296,7 +312,7 @@ namespace FS.Core
             if (d.Tipo == TipoMeta.Diaria && d.Pool == PoolC) return LivreC(d);
             switch (d.Evento)   // ponytail: "compre 3" com 2 a venda ainda aparece; o rodizio so pula quando nao ha mais nada
             {
-                case "upgrade_buy": case "currency_sink": return _sim.UpgradesBought < Upgrades.Count;
+                case "upgrade_buy": case "currency_sink": return _sim.UpgradesBought < Upgrades.Compraveis;   // 2026-11: sem a esteira aposentada
                 case "worker_hired": return _sim.Workers.Count < AjudantesOldForge || _sim.Equipe.FaltaContratar;   // B-CORE-04: ou um da Equipe
                 case "worker_upgrade": return _sim.Equipe.FaltaNivel;
                 case "chest_opened": return _sim.Chests.Exists(c => c.State < 2);

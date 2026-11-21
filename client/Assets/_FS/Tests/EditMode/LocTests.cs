@@ -141,7 +141,7 @@ namespace FS.Tests
             var ruins = new List<string>();
             foreach ((string arq, int linha, string cod) in Codigo())
             {
-                if (arq == "Captura.cs" || log.IsMatch(cod)) continue;   // Captura: ferramenta de dev dos criativos, so erro no log
+                if (arq == "Captura.cs" || arq == "Game.TesteToque.cs" || log.IsMatch(cod)) continue;   // Captura: ferramenta de dev dos criativos, so erro no log; TesteToque: o -testetoque (so build de dev), frases das regras no log
                 bool tela = sink.IsMatch(cod);
                 foreach (Match m in Literal.Matches(cod))
                 {

@@ -69,7 +69,7 @@ To change your answer: **Settings > Privacy** in the game. The change fully appl
 
 The game is meant for ages 13 and up, and anyone who answers under 13 gets the protection in the table above. We follow Brazil's Digital Statute of Children and Adolescents (Law 15.211/2025), the LGPD (art. 14) and COPPA (US):
 
-- for anyone under 18, the game asks partners for non-personalized ads, doesn't use the advertising ID and sends no usage statistics `<<CONFIRMAR: D-PRIV-2, Topics permission in the manifest>>`;
+- for anyone under 18, the game asks partners for non-personalized ads, doesn't use the advertising ID and sends no usage statistics;
 - **no paid randomness**: the game has no mystery prize boxes (loot boxes), and what each purchase or reward gives is fixed;
 - no chat and no contact between players;
 - we don't ask for or store anyone's name, contact details, photo or location.

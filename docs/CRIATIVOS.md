@@ -82,7 +82,7 @@ setsar=1[main];
 | `start` | Save novo, o bot começa a jogar (4 s) | `-bot` |
 | `huge_queue` | Balcão de 8 vagas com a fila 8/8 parada, sem produção (8 s). Sai com 1 se a fila não estiver cheia no 1º quadro | `-buyids 10,25,26,27,28 -warmup 45 -px 4.5,8.2 -recordfull` |
 | `first_worker` | A 1ª contratação ao vivo: o bot paga o Ajudante e ele começa a carregar. A gravação começa no `Hired` (t ≈ 29,7 s) e dura 10 s | `-bot -buyids 0,1,3,4,9 -hold 0,3,3,3,0,0 -recordhire` |
-| `conveyor` | Câmera perto (7 m) seguindo o ferreiro, com a esteira levando lingotes (12 s) | `-bot -buyids 0,1,2,3,4,5,6 -warmup 20 -cam 7` |
+| `conveyor` | Câmera perto (7 m) seguindo o ferreiro, com os ajudantes levando minério e lingotes (12 s; a esteira saiu do jogo em 2026-11, o nome do preset ficou pelos arquivos da loja) | `-bot -buyids 0,1,2,3,4,5 -warmup 20 -cam 7` |
 | `vip` | VIP chamado depois de vendas reais, como no FS-C-24 (30 s). Sai com 1 se o warmup não vendeu | `-buyids 1,2,3,5,6,10,12,14 -warmup 200 -px 4.5,8.2 -vipnow` |
 | `order` | Cartão "Venda 5 espadas" enchendo até "Encomenda entregue! +30" aos ~17 s (20 s) | `-buyids 0,…,14 -warmup 60 -px 4.5,8.2 -recordorder` |
 | `offline` | Painel "Bem-vindo de volta!" com o cofre real de 2 h fora: +1380, o teto de 2× o Corredor (4 s) | `-buyids 0,…,14,25,…,28 -warmup 120 -px 4.5,8.2 -offline 7200` |

@@ -78,7 +78,10 @@ namespace FS.Core
 
         /// <summary>Preco de `item` no nivel `l`: preco base x Tuning.QualidadePct, inteiro e meio para cima (espada 10/15/25, escudo 25/38/63).
         /// Masterwork = 0 (nao vende). B-CORE-08: familia completa no Hall, +5% (Hall.BonusPct) na mesma conta (sem bonus, o de antes ao byte).</summary>
-        public int PriceOf(Item item, Quality l) => (int)(((long)PriceOf(item) * T.QualidadePct[(int)l] * (100 + Hall.BonusPct(item)) + 5000) / 10000);
+        public int PriceOf(Item item, Quality l) => (int)(((long)PriceOf(item) * T.QualidadePct[(int)l] * (100 + Hall.BonusPct(item) + LuxoPct) + 5000) / 10000);
+
+        /// <summary>2026-11: % a mais no preco de venda pelos luxos comprados neste distrito (Tuning.LuxoPct cada; Recompute).</summary>
+        public int LuxoPct { get; private set; }
 
         /// <summary>
         /// Nivel da peca que sai agora da estacao (§1.3): parte inteira de q = nivel garantido; a fracao enche o acumulador e, ao passar de 100,

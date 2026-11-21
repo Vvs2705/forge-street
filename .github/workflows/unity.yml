@@ -93,7 +93,7 @@ jobs:
         with:
           name: build-win
           path: client/Builds/win
-          retention-days: 3
+          retention-days: 14
 
   autoplay:
     name: autoplay 10 min (bot no .exe)
@@ -118,6 +118,53 @@ jobs:
         with:
           name: autoplay-log
           path: autoplay.log
+
+  fotos:
+    # Evidencia visual para o portao do creative-director (PRs de arte): o .exe com janela no runner (sem GPU: o D3D11 cai no
+    # renderizador de software) tira fotos -shot de cenarios fixos. Informativo: nao trava o PR enquanto nao provar que e' estavel.
+    name: fotos (-shot no .exe)
+    needs: windows
+    runs-on: windows-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    permissions:
+      contents: write   # so para o ref refs/fotos/<sha> (abaixo); nenhum branch e' tocado
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: build-win
+          path: win
+      - name: fotos dos niveis da bancada (I; bigornas IV, escudos III, ferramentas II; tudo no V)
+        shell: bash
+        run: |
+          mkdir -p fotos; d=$(cygpath -w "$PWD/fotos")
+          foto() { n=$1; shift; timeout 180 ./win/ForgeStreet.exe -screen-fullscreen 0 -screen-width 432 -screen-height 768 -testsession \
+                     -logFile "fotos/$n.log" "$@" -shot "$d\\$n.png" || echo "::warning::foto $n saiu $?"; grep -m1 'SHOT' "fotos/$n.log" || true; }
+          foto 01_bancada_nivel1 -shotdelay 4
+          # niveis controlados (revisao do CD no #186): a oficina base (-buy 29 = indices 0-28, ate o balcao 8) e cada familia num nivel
+          base="-projetos dar -buy 29 -warmup 20 -shotdelay 4"
+          foto 02_bancada_niveis_2_3_4 $base -buyids bigornas_nivel2,bigornas_nivel3,bigornas_nivel4,escudos_nivel2,escudos_nivel3,ferramentas_nivel2
+          foto 03_bancada_nivel5 $base -buyids bigornas_nivel2,bigornas_nivel3,bigornas_nivel4,bigornas_nivel5,escudos_nivel2,escudos_nivel3,escudos_nivel4,escudos_nivel5,ferramentas_nivel2,ferramentas_nivel3,ferramentas_nivel4,ferramentas_nivel5
+          ls -la fotos
+      - name: fotos num ref git (refs/fotos/<sha>), para a revisao ler com git fetch sem baixar artifact
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          ls fotos/*.png >/dev/null 2>&1 || { echo "sem PNG"; exit 0; }
+          mkdir pub && cp fotos/*.png pub/ && cd pub
+          git init -q && git config user.name "fotos-ci" && git config user.email "fotos-ci@users.noreply.github.com"
+          git add -A && git commit -qm "fotos -shot de $SHA"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/fotos/$SHA
+          echo "git fetch origin refs/fotos/$SHA"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: fotos
+          path: fotos
+          retention-days: 14
 
   android:
     name: build Android (Setup.BuildAndroidDev)
@@ -162,4 +209,4 @@ jobs:
         with:
           name: apk-dev
           path: client/Builds/android/ForgeStreet-dev.apk
-          retention-days: 3
+          retention-days: 14

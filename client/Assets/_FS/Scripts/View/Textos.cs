@@ -102,6 +102,16 @@ namespace FS
             return _nome[u] ??= Loc.T("up." + _ups[u].Id + ".nome");
         }
 
+        /// <summary>2026-11: nome da placa no chao; luxo leva o bonus junto ("Piso de oficina · +5% vendas"), senao ninguem sabe o que ele faz.
+        /// Nome comprido demais: so o nome.</summary>
+        public static string NomePad(int u, Tuning t)
+        {
+            if (!_ups[u].Luxury) return Nome(u);
+            string c = Loc.T("pad.luxo", Nome(u), t.LuxoPct.ToString(CultureInfo.InvariantCulture));
+            return c.Length <= PadMax ? c : Nome(u);
+        }
+        public const int PadMax = 30;
+
         /// <summary>Melhoria do Old Forge (indice da tabela de sempre): metas e missoes, que sao do Imperio.</summary>
         public static string NomeOF(int u) => Loc.T("up." + Upgrades.All[u].Id + ".nome");
 
@@ -210,6 +220,7 @@ namespace FS
                 default:   // B-CORE-03, GDD §19: "Qualidade +0,15 · vel. +5%"
                     if (_ups[u].Id == Sim.TrocaRapidaId) return Loc.T("card.troca", Menos(Sim.TrocaSeg, Sim.TrocaRapidaSeg));   // C-CORE-06
                     if (_ups[u].Id == Sim.Condensador || _ups[u].Id == Sim.Condensador2) return Loc.T("card.dreno", N(t.DrenoCondensador / 100f));   // C-CORE-08
+                    if (_ups[u].Luxury) return Loc.T("card.luxo", t.LuxoPct.ToString(CultureInfo.InvariantCulture));   // 2026-11: o luxo vale em preco
                     return _ups[u].Station != null ? Loc.T("card.qualidade", Pontos(t.NivelEstacaoQ), Pct(t.NivelEstacaoVelocidade) + "%")
                         : _ups[u].Id == _selo ? Loc.T("card.selo", Pontos(t.SeloQ))   // C-CORE-07
                         : Loc.T("up." + _ups[u].Id + ".desc");

@@ -2777,6 +2777,132 @@ Perfis:
 - **O resto não muda:** o econsim padrão (Old Forge, sem Charter) sai **idêntico ao byte** à `main` (`--minutos 60 --partidas 20`), então o Renome 2/3 do F2P (0:51 / 1:41) e o 0 deadlock em 1.000 partidas (§43) ficam como estavam.
 - **Próximo degrau do F2P sem golpe:** ele para na Row, cujo Charter pede 2 obras. Se o Closed mostrar muitos jogadores sem golpe, a mesma regra ("obra ou N Superiores") serve para a Row.
 
+## 49. Ritmo da campanha: Charters da Row e da Foundry, abertura da Row e o caminho sem golpe (2026-11-21)
+
+**Problema** (análise de 2026-11-21: "o jogo não pode ser fácil demais nem difícil demais"). A campanha do §46/§48 (`--campanha 40 --perfis F2PGolpe,F2P,Ideal --partidas 4`) ganhou uma tabela de **ritmo por distrito** (`Campanha.cs`): horas no distrito (abertura paga → Charter), quando a produção completa sai, o tempo em que o Charter esperou cada condição depois dela e o ouro na carteira no Charter. Na `main` (3e2e355), F2PGolpe:
+
+| distrito | h no distrito | alvo (`CONTEUDO_V1.md` §1) | produção completa (h após chegar) | esperando Renome | esperando obra | ouro no Charter |
+|---|---|---|---|---|---|---|
+| Old Forge | 3,5 | 3–6 | 0,8 | 2,7 | 0 | 510 mil |
+| Row | **1,6** | 3–5 | **0,0** | 0 | 1,6 | 69 mil |
+| Quarter | 3,2 | 4–6 | 0,8 | 0 | 2,4 | 464 mil |
+| Arsenal | 3,4 | 4–6 | 0,9 | 0 | 2,5 | 5,3 mi |
+| Foundry | **2,7** | 5–7 | 0,7 | 0,6 | 1,4 | 7,8 mi |
+| Grand Forge | 4,7 | 6–8 | 0,7 | 2,7 | 1,3 | 110 mi |
+
+Três defeitos:
+1. **Fácil demais na Row.** O Charter do Old Forge pede 700 e paga +100, então os 750 da Row chegam pagos; e os ~510 mil que sobram na carteira (2,7 h esperando Renome no Old Forge, §48) pagam a abertura de 140 mil **e** os 180 mil de produtivos da Row na chegada (produção completa em 0,0 h). A Row virava só "2 obras".
+2. **Fácil demais na Foundry:** 2,2–2,7 h contra 5–7 (o Renome 3.000 chega quase pago pelos 2.000 + 100 do Arsenal).
+3. **Difícil demais sem golpe:** o F2P que nunca golpeia para na Row para sempre (o Charter pede 2 obras; o §48 só abriu o Old Forge com "obra ou 80 Superiores").
+
+### 49.1 Varredura (`--charter`, novo no econsim: troca Renome, obras, Superiores, contratos e abertura sem recompilar)
+
+| rodada | Row | Quarter | Arsenal | Foundry | Grand Forge | F2PGolpe: Charters acumulados (h) | F2P sem golpe |
+|---|---|---|---|---|---|---|---|
+| `main` | 750, 2 obras, abertura 140 mil | 3 obras | 3 obras | 3.000, 4 obras | 5 obras | 3,5 / 5,1 / 10,5 / 15,9 / 19,0 / 24,8 | para na Row (falta obra) |
+| v1 (3 partidas) | 1.000 ou 150 Sup., 400 mil | ou 250 | ou 350 | 3.500 ou 500 | ou 650 | 3,5 / 5,6 / 11,5 / 16,0 / 20,0 / 26,6 | Arsenal 10,9 h de distrito (350 Sup. demais) |
+| v2 (3 partidas) | 1.100 ou 150, 450 mil | ou 250 | ou 250 | 3.300 ou 350 | ou 450 | 3,5 / 6,4 / 11,7 / 17,5 / 19,7 / 26,0 | Foundry 2,2 h (3.300 pouco) |
+| **v3 = escolhida (4 partidas)** | **1.100 ou 150, 450 mil** | **ou 250** | **ou 250** | **3.500 ou 350** | **ou 450** | **3,5 / 6,2 / 11,9 / 17,8 / 21,1 / 27,2** | chega ao Charter do Arsenal (23,5 h) |
+
+Alvo acumulado (`CONTEUDO_V1.md` §1): 4,5 / 8,5 / 13,5 / 18,5 / 24,5 / 31,5. A Carta do F2PGolpe vai de −21% para **−14%** do alvo; o Ideal de 23,8 para 25,8 h; o Pagante de 25,4 para 26,0 h (V20: o pago segue sem ganhar Renome).
+
+### 49.2 Mudança
+
+- `Distritos.ArmorersRow`: **abertura 140.000 → 450.000** e Charter **Renome 750 → 1.100** (dentro do nível 5: 750 ≤ 1.100 < 1.250) + **2 obras OU 150 Superiores**. A regra "abertura = 90 min da renda do anterior" deixa de valer só aqui: o Charter do Old Forge passou a 700 no §48 e a carteira chega com ~3,5 h de Old Forge.
+- Quarter, Arsenal, Foundry e Grand Forge: obras **OU 250 / 250 / 350 / 450 Superiores** vendidas no distrito (`CharterDef.Superiores`, a regra do §48).
+- `Distritos.ArcaneFoundry`: Charter **Renome 3.000 → 3.500** (dentro do nível 8: 3.000 ≤ 3.500 < 4.200).
+- **Os limiares dos níveis não mudam** (ninguém perde nível nem desbloqueio; `RenomeTests` igual). Save com o Charter concedido segue concedido.
+- Old Forge intocado: o econsim padrão (`--perfis Ideal,F2P,Slow,AdWatcher --minutos 60 --partidas 4 --anuncio-seg 30`) sai **idêntico ao byte** à `main` (SHA-256 `67ca9cdf…1205ff57`). Os `--distrito` de cada distrito chegam pelo `Imperio.Chegada` (Charter forçado, abertura somada), então os portões de cada distrito (§35.3, §39, §41.3) não mudam.
+
+Depois (v3), ritmo por distrito:
+
+| distrito | F2PGolpe: h no distrito (produção após chegar) | F2P sem golpe | Ideal |
+|---|---|---|---|
+| Old Forge | 3,5 (0,8) | 5,0 (0,8) | 2,9 (0,8) |
+| Row | **2,2 (0,5)** + 0,5 h no Old Forge juntando a abertura | 3,6 (0,0) | 1,8 (0,7) |
+| Quarter | 3,5 (0,9) | 6,7 (0,4) | 3,1 (0,9) |
+| Arsenal | 3,8 (0,9) | 8,2 (0,0) | 2,8 (0,9) |
+| Foundry | **3,0 (0,6)** | Renome 8 aos 37 h; o Charter da Foundry depois das 40 h | 1,8 (0,5) |
+| Grand Forge | 5,6 (0,5) | — | 3,4 (0,5) |
+
+### 49.3 O que fica aberto
+
+- **Ouro sem destino** (known issue no `PROJETO.md` §7): em todo distrito a produção completa sai em 0,5–0,9 h e as 2–5 h seguintes esperam Renome ou obras sem compra que valha. Ouro na carteira no Charter (F2PGolpe): 510 mil / 87 mil / 245 mil / 6,8 mi / 15 mi / 129 mi (Ideal 62 mi, Pagante 174 mi na Carta). **Não se resolve com preço** (subir custo só empurra a mesma espera): é o ralo das Obras do Reino, que abrem no Charter do Old Forge com custo pela renda do distrito ativo (§50, thread do fim de jogo; alvo do ralo = estes números).
+- O Ideal (o melhor jogador) segue rápido na Row e na Foundry (1,8 h): o portão é do F2P de referência.
+- O F2P sem golpe é ~2× mais lento que quem golpeia (golpe continua o caminho bom; o sem golpe só não trava).
+- Revisar com jogador real no POCO (sessão humana gravada): o bot não sente tédio na espera.
+
+### 49.4 Missões e fontes de ganho: conferência (sem mudança)
+
+| fonte | portão | medido | onde |
+|---|---|---|---|
+| Diárias, semanais, conquistas e Pass (ouro) | ≤ 15% da venda do dia | 177 s de 1.200 (14,7%) | §27.3 |
+| Trilha free do Pass | fecha no dia 26–30 | dia 28 (27 no fim da sessão) | §44 |
+| Eventos (ouro/min do F2P) | ≤ +15% | +6 a +10,8% nos 5 perfis | §27.4 |
+| Encomendas (% da venda) | 4–12% | 4,5–5,8% na Grand Forge (4 perfis); 5,4% com os importados da Foundry | §41.1, §41.7 |
+| Contratos | nunca bloqueiam (V25) | 0 h esperando contrato em todos os Charters (o "ou N Royal" fecha antes) | §49.1 |
+
+As missões estão dentro dos portões; o desequilíbrio estava no ritmo dos Charters e na carteira parada, não nas recompensas.
+
+### 49.4b Por cima do operador (PR #197, `feat/estacao-operador` ec7fc74, merge local com este branch)
+
+`--campanha 40 --perfis F2PGolpe,F2P,Ideal --partidas 4`, Charters acumulados (h):
+
+| | F2PGolpe | F2P sem golpe | Ideal |
+|---|---|---|---|
+| só o operador | 3,7 / 5,3 / 11,0 / 16,5 / 19,8 / 27,0 | para na Row | 2,9 / 4,7 / 10,7 / 16,7 / 19,8 / 26,9 |
+| operador + §49 | 3,7 / 6,2 / 12,0 / 17,1 / 21,1 / 25,4 | 5,1 / 8,7 / 16,2 / 24,7 / — | 2,9 / 7,2 / 12,3 / 18,0 / 21,0 / 26,4 |
+| `main` 47c8474 (esteira fora e luxo +5%, §50) + §49 | 3,4 / 5,6 / 10,9 / 15,6 / 20,6 / 25,8* | 5,4 / 9,6 / 15,0 / 23,0 / — | 2,6 / 6,4 / 11,1 / 16,4 / 19,5 / 26,7 |
+
+Os dois juntos não criam muro: a Row e a Foundry seguem no alvo e o sem golpe segue até o Arsenal; a Carta varia ±1,5 h entre rodadas (espera de obra na Grand Forge). `coretests` com os dois: 631 verdes. Com a `main` 47c8474 (§50: luxo +5% na venda, sem esteira; o operador ainda não está nela) tudo adianta ~0,5 h e segue na mesma ordem; `coretests` 634 verdes.
+
+### 49.5 Testes e prova vermelha
+
+`DistritosTests.Charter_Ritmo_RenomeNaoChegaPagoESuperioresNoLugarDasObras` (na cadeia dos Charters, o Renome de cada um passa do anterior + 100; todo Charter com obra aceita Superiores, crescendo) e `DistritosTests.Charter_DaRow_SuperioresNoLugarDasObras` (na Row de verdade: a chegada não paga o Renome; 149 Superiores não bastam, 150 fecham). **Vistos vermelhos** com a Row de antes (750, sem Superiores). Ajustados: `ArcaneTests.Kit` (3.500), `ArcaneTests.Charter_PeloCaminhoReal_*` e `LigaTests.Charter_DaRow_*` (Renome pelo `Charter.Renome`). `coretests` 617 verdes.
+
+## 50. Esteira aposentada, luxos com +5% na venda e Ferramentas +140 (2026-11-21)
+
+Pedido do Vinicius depois de jogar até o fim: a esteira "não faz sentido" e os luxos finais (piso, estandarte, fachada) "não melhoraram nada". Mudanças:
+
+- **Esteira aposentada** (`Sim.Aposentado`): nunca entra à venda, não conta como produtiva (`Upgrades.Compraveis`, `ProductionCount` 26 → 25) e o save mantém o índice. Quem já tinha comprado continua com o bit e fica com o ouro. Um parcial no pad volta como ouro, como os pads que viraram menu. Old Forge, Rua dos Armeiros e a Cratera Estelar perderam `EsteiraDe/Para`.
+- **Luxo = +5% em todas as vendas** (`Tuning.LuxoPct`, somado ao bônus do Hall em `PriceOf(item, qualidade)`). O cartão e a placa mostram "+5% vendas". Assim, o luxo passa a valer o ouro que custa sem mexer em produção, demanda ou capacidade.
+- **Ferramentas +140 de ouro** (`Tuning.FerramentasExtra`): sem a esteira, o bot chegava às Ferramentas antes dos 10 min e a revelação de qualidade escapava do FTUE. Com +140, as Ferramentas saem por volta de 10:06 (+120 dava 601,5 s).
+
+Bot (`econsim`, 120 min, 1 partida, anúncio de 30 s), main → este PR:
+
+| perfil | Produção completa | Fachada | renda/min (0-60) | pós-produção | saldo final | zona morta |
+|---|---|---|---|---|---|---|
+| Ideal | 47:13 → 48:58 | 76:34 → 79:42 | 1148 → 1057 | 222642 → 239204 | 156609 → 173170 | 19 → 24 |
+| F2P | 49:23 → 50:30 | 79:24 → 81:42 | 1049 → 972 | 202611 → 211469 | 136614 → 145437 | 22 → 25 |
+| Slow | 50:07 → 52:18 | 80:50 → 83:31 | 1013 → 925 | 202544 → 206550 | 136572 → 140611 | 22 → 24 |
+| AdWatcher | 44:50 → 47:14 | 73:59 → 76:39 | 1256 → 1156 | 222049 → 244880 | 156066 → 178891 | 18 → 21 |
+
+Leitura:
+- Sem a esteira, o começo fica cerca de 8% mais lento (é o tempo que a esteira poupava de caminhada) e a produção completa chega 1 a 2 min depois.
+- Não há deadlock em nenhum perfil.
+- Depois da produção, o +5% dos luxos rende cerca de 4% a 10% a mais.
+- A zona morta cresceu 3 a 5 min. Quem resolve isso é o fim de jogo (Obras do Reino e Decretos), não este ajuste.
+- Os números do balanceamento de missões e ganhos ficam com a thread própria, que vai partir desta base.
+
+**Trilha de evento (raia H, `TrilhaDeEvento_...FechaNoDia4a5`):** sem a esteira, 3 eventos passavam a fechar no dia 6. Na Royal Week (main 541 → 524 pontos em 60 min), o contrato depende do Renome 3, que agora sai mais tarde. Nos dois Hunts (772 → 738), o F2P de referência nunca faz a missão de golpe. Ajuste com o total das missões mantido em 700:
+- Royal Week: o contrato passa de 100 para 50 pontos e as Finas de 100 para 150.
+- Hunts: o golpe passa de 100 para 70 pontos e os 3 dias de 100 para 130.
+
+Os 10 eventos voltam a fechar no dia 4 a 5, e nenhum fecha numa sessão de 60 min (máximo de 805 pontos):
+
+| evento | dia em que fecha (main → este PR) |
+|---|---|
+| Royal Week | 5 → 5 |
+| Forge Frenzy | 4 → 4 |
+| Armorers | 5 → 5 |
+| Hunt Sunblade | 5 → 5 |
+| Frenzy B | 4 → 4 |
+| Festival | 4 → 5 |
+| Ore Rush | 4 → 4 |
+| Caravan | 4 → 4 |
+| Hunt Ember | 5 → 5 |
+| Royal Week B | 4 → 4 |
+
 ## 53. Obras do Reino, Decretos semanais e calendário de LiveOps infinito (fim de jogo, 2026-11-21)
 
 **Por quê.** O Vinicius jogou até o fim e "o jogo morre" (os 2 P1 do `PROJETO.md` §7). Na campanha, em todo distrito a produção completa sai ~0,5–0,9 h depois da chegada e o resto é ouro na carteira esperando Renome, obra-prima ou contrato; depois da Carta tudo é finito, e o calendário de LiveOps acaba no dia 70 (2027-01-11). Decisão do Conselho: as Obras do Reino como ralo sem fim (abrem já no Charter do Old Forge), 3 Decretos por semana e o calendário que nunca fica vazio.

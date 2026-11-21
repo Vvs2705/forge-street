@@ -18,11 +18,15 @@ static partial class EconSim
     sealed class RunC
     {
         public string Perfil; public float[] Renome = Enumerable.Repeat(-1f, 11).ToArray(); public Dictionary<string, float> Charter = new Dictionary<string, float>(); public string Fim;
+        // Ritmo por distrito: relogio da producao completa, segundos de relogio em cada condicao que faltava ao Charter depois dela
+        // (renome / masterwork / contrato) e o ouro na carteira quando o Charter saiu (o que sobrou sem destino)
+        public Dictionary<string, float> Prod = new Dictionary<string, float>(), Chegou = new Dictionary<string, float>();
+        public Dictionary<string, Dictionary<string, float>> Falta = new Dictionary<string, Dictionary<string, float>>();
+        public Dictionary<string, long> OuroCharter = new Dictionary<string, long>();
         // BALANCE §47: no fim de cada dia do F2P de referencia (20 min de relogio, LIVEOPS_V1 §1), somando os distritos abertos
         public int[] Bp = new int[Dias.Length], BpTot = new int[Dias.Length], Col = new int[Dias.Length], ColTot = new int[Dias.Length], Mw = new int[Dias.Length];
         // BALANCE §53: producao completa de cada distrito (h), ouro na carteira e degraus das Obras no Charter; no fim, as Obras e a carteira
         public Dictionary<string, float> Producao = new Dictionary<string, float>();
-        public Dictionary<string, long> OuroCharter = new Dictionary<string, long>();
         public Dictionary<string, int> ObrasCharter = new Dictionary<string, int>();
         public int Degraus, Bonus; public long Gasto, RenomeObras, OuroFim;
     }
@@ -75,6 +79,23 @@ static partial class EconSim
             }
             Console.WriteLine($"| {p.Name} | " + string.Join(" | ", Distritos.All.Select(Cel)) +
                               $" | {g.Average(r => r.Degraus):0.#} / {Ouro(g.Average(r => (double)r.Gasto))} / {g.Average(r => r.RenomeObras):0} / +{g.Average(r => r.Bonus):0}% / {Ouro(g.Average(r => (double)r.OuroFim))} |");
+        }
+        // Ritmo: h no distrito (chegada -> Charter), producao completa, o que segurou o Charter depois dela e o ouro parado no Charter
+        foreach (BotProfile p in ps)
+        {
+            RunC[] g = runs.Where(r => r.Perfil == p.Name).ToArray();
+            Console.WriteLine();
+            Console.WriteLine($"{p.Name}, ritmo por distrito (media de quem chegou ao Charter; h de relogio):");
+            Console.WriteLine("| distrito | h no distrito | producao completa (h apos chegar) | esperando Renome (h) | esperando obra/Superiores (h) | esperando contrato (h) | ouro na carteira no Charter |");
+            Console.WriteLine("|---|---|---|---|---|---|---|");
+            foreach (DistrictDef d in Distritos.All)
+            {
+                RunC[] c = g.Where(r => r.Charter.ContainsKey(d.Id) && r.Chegou.ContainsKey(d.Id)).ToArray();
+                if (c.Length == 0) continue;
+                float F(RunC r, string k) => r.Falta.TryGetValue(d.Id, out var m) && m.TryGetValue(k, out float v) ? v : 0f;
+                string Hh(Func<RunC, float> f) => (c.Average(f) / 3600f).ToString("0.0");
+                Console.WriteLine($"| {d.Id} | {Hh(r => r.Charter[d.Id] - r.Chegou[d.Id])}{(c.Length < g.Length ? "*" : "")} | {Hh(r => r.Prod.TryGetValue(d.Id, out float t) ? t - r.Chegou[d.Id] : 0f)} | {Hh(r => F(r, "renome"))} | {Hh(r => F(r, "masterwork"))} | {Hh(r => F(r, "contrato"))} | {c.Average(r => (double)r.OuroCharter[d.Id]):N0} |");
+            }
         }
         // BALANCE §47: Blueprints (posse / os dos distritos abertos), marcos da Colecao pagos / os dos abertos e obras no Hall, por dia de 20 min
         foreach (BotProfile p in ps)
@@ -129,9 +150,17 @@ static partial class EconSim
             if (relogio - conferido < 10f) continue;   // Charter e abertura: a cada 10 s de relogio, como um jogador que olha o mapa
             conferido = relogio;
             string id = s.Distrito?.Id ?? Distritos.OldForgeId;
-            if (imp.CharterFalta(id) == null && imp.Charter(id)) { r.Charter[id] = relogio; r.OuroCharter[id] = imp.Ativo.Gold; r.ObrasCharter[id] = imp.Obras.Degraus; }
+            if (!r.Chegou.ContainsKey(id)) r.Chegou[id] = 0f;
+            if (!r.Prod.ContainsKey(id) && s.ProductionComplete) r.Prod[id] = relogio;
+            string falta = imp.CharterFalta(id);
+            if (falta == "renome" || falta == "masterwork" || falta == "contrato")
+            {
+                if (!r.Falta.TryGetValue(id, out var m)) r.Falta[id] = m = new Dictionary<string, float>();
+                m[falta] = (m.TryGetValue(falta, out float v) ? v : 0f) + 10f;
+            }
+            if (falta == null && imp.Charter(id)) { r.Charter[id] = relogio; r.OuroCharter[id] = s.Gold; r.ObrasCharter[id] = imp.Obras.Degraus; }
             string prox = Distritos.Find(id)?.Charter?.Proximo;
-            if (prox != null && !imp.Aberto(prox) && imp.Abrir(prox) && imp.Trocar(prox)) { bot = Novo(p); ads = 0; }
+            if (prox != null && !imp.Aberto(prox) && imp.Abrir(prox) && imp.Trocar(prox)) { bot = Novo(p); ads = 0; r.Chegou[prox] = relogio; }
         }
         string at = imp.Ativo.Distrito?.Id ?? Distritos.OldForgeId;
         r.Degraus = imp.Obras.Degraus; r.Gasto = imp.Obras.Gasto; r.Bonus = imp.Obras.BonusPct; r.OuroFim = imp.Ativo.Gold;
