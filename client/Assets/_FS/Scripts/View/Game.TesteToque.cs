@@ -16,7 +16,7 @@ namespace FS
     /// </summary>
     public sealed partial class Game
     {
-        int _toques;
+        int _toques;   // quantas vezes o toque chegou ao mundo (Game.Toque): o tap que fecha nao pode contar
 
         /// <summary>Centro (px de tela) do botao ativo cuja legenda e' `rotulo` (o de cima, se houver mais de um).</summary>
         static Vector2 CentroDoBotao(string rotulo)
@@ -32,7 +32,7 @@ namespace FS
                 c = (k[0] + k[2]) / 2f;
             }
             return c;
-        }   // quantas vezes o toque chegou ao mundo (Game.Toque): o tap que fecha nao pode contar
+        }
 
         IEnumerator TesteToqueFora(string pasta)
         {
