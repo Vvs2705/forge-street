@@ -66,6 +66,10 @@ namespace FS
         /// <summary>O numero do nivel como no menu ("Bigornas III"): I..V; fora disso, o numero.</summary>
         public static string Romano(int nivel) => nivel >= 1 && nivel <= 5 ? new[] { "I", "II", "III", "IV", "V" }[nivel - 1] : nivel.ToString();
 
+        /// <summary>Cravos na frente do pedestal: um por nivel (II = 2 ... V = 5), a contagem que se le sem cor nem texto. Nivel I: nenhum
+        /// (revisao do CD no #186: so as camadas sumiam em 432x768).</summary>
+        public static int Pinos(int nivel) => nivel <= 1 ? 0 : nivel >= 5 ? 5 : nivel;
+
 #if !FS_CORETESTS
         // Pontos medidos no PNG (celula 1,95 m / 256 px, a partir do pivo): chamine e boca acesa (v0.6a), brasa pintada na boca (x -0,31
         // a -0,08, y -0,18 a -0,14; a tampa de cinza a cobre parada) e o vao de cima a direita, fora do corpo (x > 0,35), onde fica a
@@ -104,6 +108,8 @@ namespace FS
         static readonly Color[] NivelC = { Art.Hex(0xB0703A), Art.Hex(0xC9D1DC), Art.Gold, Art.Hex(0x9B6BFF) };   // bronze, prata, ouro, arcano
         const float SobeS = 0.6f, BrasaEvery = 0.5f;
         SpriteRenderer _pedestal, _aro, _nivelGlow;
+        readonly SpriteRenderer[] _pinos = new SpriteRenderer[5];
+        const float PedH = 0.46f, PinoS = 0.13f, PinoDx = 0.2f;   // CD #186: pedestal mais alto (0,34 -> 0,46) para ~0,25 u aparecerem sob a arte
         Vector3 _pedestalS;
         Vector2 _pe;   // centro do pedestal (pe da arte)
         int _nivel;
@@ -262,21 +268,28 @@ namespace FS
             // do TD no #186). Arte procedural (Base Rounded com pivo no centro): o pe e' a borda de baixo do bounds.
             Vector3 sc = art.transform.localScale, p = art.transform.localPosition;
             float w;
-            if (_baked) { w = 1.4f; _pe = new Vector2(p.x, p.y - 0.06f); }
+            if (_baked) { w = 1.4f; _pe = new Vector2(p.x, p.y - 0.16f); }   // CD #186: desce 0,1 u, senao a arte cobria o pedestal
             else
             {
                 Bounds b = art.sprite != null ? art.sprite.bounds : new Bounds(Vector3.zero, Vector3.one);
                 w = Mathf.Clamp(b.size.x * Mathf.Abs(sc.x) * 0.92f, 0.9f, 1.6f);
-                _pe = new Vector2(p.x + b.center.x * sc.x, p.y + b.min.y * Mathf.Abs(sc.y) + 0.08f);
+                _pe = new Vector2(p.x + b.center.x * sc.x, p.y + b.min.y * Mathf.Abs(sc.y) - 0.02f);
             }
             const int chao = 0;   // no chao: acima do tapete (-1), abaixo das sombras e dos pads (1-4); quem passa na frente cobre
             _nivelGlow = Art.NewSprite(_root, "NivelBrilho", Art.Glow(), Color.clear, WorldView.GlowOrder, _pe + new Vector2(0f, 0.15f), new Vector2(w * 1.9f, 1.5f));
-            _aro = Art.NewSprite(_root, "NivelAro", Art.Rounded(), Color.clear, chao, _pe, new Vector2(w + 0.14f, 0.46f));
-            _pedestal = Art.NewSprite(_root, "NivelPedestal", Art.Rounded(), Color.clear, chao, _pe, new Vector2(w, 0.34f));
+            _aro = Art.NewSprite(_root, "NivelAro", Art.Rounded(), Color.clear, chao, _pe, new Vector2(w + 0.16f, PedH + 0.12f));
+            _pedestal = Art.NewSprite(_root, "NivelPedestal", Art.Rounded(), Color.clear, chao, _pe, new Vector2(w, PedH));
             // mesmo order 0 das bocas e da moldura do tapete: o z (mais longe da camera ortografica) poe aro < pedestal < bocas, sem empate
             _aro.transform.localPosition = new Vector3(_pe.x, _pe.y, 0.01f);
             _pedestal.transform.localPosition = new Vector3(_pe.x, _pe.y, 0.005f);
             _pedestalS = _pedestal.transform.localScale;
+            // cravos na faixa do pedestal que fica a mostra (abaixo do pe da arte), filhos do pedestal: saltam junto na subida. Order 2: acima da
+            // sombra (1), que cobriria a contagem; quem passa na frente (Depth) continua por cima
+            for (int i = 0; i < _pinos.Length; i++)
+            {
+                _pinos[i] = Art.NewSprite(_pedestal.transform, "NivelCravo", Art.Diamond(), Color.clear, 2, Vector2.zero, Vector2.one);
+                _pinos[i].transform.localScale = new Vector3(PinoS / w, PinoS / PedH, 1f);
+            }
             _nivel = _s.Level;   // save carregado: o nivel ja esta la, sem festa
             PintaNivel(1f);
         }
@@ -288,12 +301,22 @@ namespace FS
             _pedestal.enabled = k >= 1;
             _aro.enabled = k >= 2;
             _nivelGlow.enabled = k >= 3;
-            if (k >= 1) _pedestal.color = Color.Lerp(Art.Bg, c, 0.55f);   // escuro: a bancada continua sendo o que se le primeiro
-            if (k >= 2) _aro.color = Art.ComAlfa(Color.Lerp(c, Color.white, 0.35f), 0.9f);
+            if (k >= 1) _pedestal.color = Color.Lerp(Art.Bg, c, 0.8f);   // CD #186: 0,55 sumia no piso; a bancada segue por cima
+            if (k >= 2) _aro.color = Color.Lerp(c, Color.white, 0.35f);
             if (k >= 3)
             {
-                float a = k >= 4 ? 0.28f + 0.1f * Mathf.Sin(Time.time * 2.2f + _s.Index) : 0.26f;
-                _nivelGlow.color = Art.ComAlfa(c, Mathf.Min(0.6f, a * festa));
+                float a = k >= 4 ? 0.5f + 0.15f * Mathf.Sin(Time.time * 2.2f + _s.Index) : 0.45f;
+                _nivelGlow.color = Art.ComAlfa(c, Mathf.Min(0.85f, a * festa));
+            }
+            int n = Pinos(_nivel);
+            float y = (-0.5f * PedH + 0.11f) / PedH, x0 = -0.5f * (n - 1) * PinoDx;   // no espaco local do pedestal (escala w x PedH)
+            Color pc = k > 0 ? Color.Lerp(c, Color.white, 0.6f) : Color.clear;
+            for (int i = 0; i < _pinos.Length; i++)
+            {
+                _pinos[i].enabled = i < n;
+                if (i >= n) continue;
+                _pinos[i].color = pc;
+                _pinos[i].transform.localPosition = new Vector3((x0 + i * PinoDx) / _pedestalS.x, y, 0f);
             }
         }
 

@@ -107,6 +107,9 @@ namespace FS.Tests
             Assert.AreEqual("III", StationView.Romano(3));
             Assert.AreEqual("V", StationView.Romano(5));
             Assert.AreEqual("6", StationView.Romano(6));
+            Assert.AreEqual(0, StationView.Pinos(1), "nivel I sem cravo");
+            for (int n = 2; n <= 5; n++) Assert.AreEqual(n, StationView.Pinos(n), $"um cravo por nivel ({n})");
+            Assert.AreEqual(5, StationView.Pinos(9), "acima do V fica em 5");
         }
     }
 }
