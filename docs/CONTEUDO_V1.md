@@ -637,7 +637,7 @@ Medido (C-CORE-06, `BALANCE.md` §37): no jogo os 18 produtivos valem × 1,5 (2.
 | `fole_grande` | Production | 0 | Fole da catedral | Great Bellows | Fuelle mayor | crisóis e fornalhas ×0,625 (menu) | - | 39.000 |
 | `crisol_bronze2` | Production | 1 | Crisol 2 | Crucible 2 | Crisol 2 | 2º crisol de bronze | - | 51.000 |
 | `estrela1` | Production | 2 | Estrela 1 | Star 1 | Estrella 1 | turma Estrela, 1º corpo: minérios → crisóis e fornalha | - | 66.000 |
-| `cratera_estelar` | Production | 3 | Cratera estelar | Star Crater | Cráter estelar | depósito de pedra estelar + fornalha + forja estelar + nova linha estátua | - | 85.000 |
+| `cratera_estelar` | Production | 3 | Cratera estelar | Star Crater | Cráter estelar | depósito de pedra estelar + fornalha + forja estelar + nova linha estátua + o Forjador (leva o lingote da fornalha à forja; BALANCE §54) | - | 85.000 |
 | `estrela2` | Production | 4 | Estrela 2 | Star 2 | Estrella 2 | 2º corpo: bronze e aço → fundições e forjas | estrela1 | 110.000 |
 | `mensageiro` | Production | 5 | Mensageiro | Courier | Mensajero | MAJOR: contrata wk_felix — rotas de importação (6 un/min) e pátio de exportação (lote 10 a cada 90 s) | - | 140.000 |
 | `forja_sintese` | Production | 6 | Lâmina estelar | Starblades | Hojas estelares | nova linha: lâmina estelar | mensageiro + cratera_estelar | 190.000 |
@@ -715,6 +715,7 @@ Cada nível: **+15 de qualidade, +5% de velocidade das estações da família e 
 | `wk_aprendizes` | Aprendizes de Runa | Porter | Carrying | arcane_foundry | 4 | upgrades runa1–4 | - | 10 | 20.000 / 32.000 / 52.000 / 83.000 … L10 870.000 | velocidade +6%/nível | carga +1 nos níveis 3, 5 e 8 |
 | `wk_isis` | Ísis | Smith | Arcane | arcane_foundry | 1 | 190.000 | altar_laminas | 10 | 48.000 / 76.000 / 120.000 / 190.000 … L10 2.000.000 | dreno dos altares +1/s (+0,5/s a cada 2 níveis) | q +15 nos altares (nível 5: +25) |
 | `wk_estrela` | Turma Estrela | Porter | Carrying | grand_forge | 4 | upgrades estrela1–4 | - | 10 | 61.000 / 97.000 / 160.000 / 250.000 … L10 2.600.000 | velocidade +6%/nível | carga +1 nos níveis 3, 5 e 8 |
+| `wk_forjador` | Forjador | Porter | Carrying | grand_forge | 1 | upgrade cratera_estelar | - | 5 | os níveis da turma Estrela | velocidade | carga |
 | `wk_felix` | Félix | Courier | Carrying | grand_forge | 1 | upgrade mensageiro | - | 10 | 150.000 / 240.000 / 380.000 / 610.000 … L10 6.400.000 | rotas de importação +2 un/min por nível | lote de exportação +2 por nível |
 | `wk_anselmo` | Mestre Anselmo | Manager | None | old_forge | 1 | Charter do Old Forge | Charter | 5 | 32.000 / 64.000 / 130.000 / 260.000 | renda de fundo 25% → 30/33/36/40% da taxa do distrito | coleta o cofre do distrito sozinho |
 | `wk_gertrudes` | Dona Gertrudes | Manager | None | armorers_row | 1 | Charter da Armorer's Row | Charter | 5 | 96.000 / 190.000 / 380.000 / 770.000 | renda de fundo 25% → 30/33/36/40% | coleta o cofre do distrito sozinho |

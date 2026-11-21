@@ -640,7 +640,7 @@ namespace FS
             { "up.estrela1.nome", L("Estrela 1", "Star 1", "Estrella 1") },
             { "up.estrela1.desc", L("Leva minérios aos crisóis", "Carries ore to the crucibles", "Lleva mineral a los crisoles") },
             { "up.cratera_estelar.nome", L("Cratera estelar", "Star Crater", "Cráter estelar") },
-            { "up.cratera_estelar.desc", L("Aço e nova linha: estátua", "Steel and a new line: statue", "Acero y nueva línea: estatua") },
+            { "up.cratera_estelar.desc", L("Aço, estátua e o Forjador", "Steel, statue and the Smelter", "Acero, estatua y el Fundidor") },
             { "up.estrela2.nome", L("Estrela 2", "Star 2", "Estrella 2") },
             { "up.estrela2.desc", L("Leva bronze e aço", "Carries bronze and steel", "Lleva bronce y acero") },
             { "up.mensageiro.nome", L("Mensageiro", "Courier", "Mensajero") },
