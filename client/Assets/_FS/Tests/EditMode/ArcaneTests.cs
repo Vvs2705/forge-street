@@ -130,7 +130,7 @@ namespace FS.Tests
         [Test]
         public void Kit_EstavelEmpataComALanterna()
         {
-            Sim s = Novo();
+            Sim s = Novo().ComOperadores();
             Station l = s.Est("altar_lanternas");
             Assert.AreEqual(5f, l.Time, 1e-4f);
             int esperou = 0;
@@ -150,7 +150,7 @@ namespace FS.Tests
         [Test]
         public void Estavel_SoComecaComEspaco_ENuncaSobrecarrega()
         {
-            Sim s = Novo();
+            Sim s = Novo().ComOperadores();
             Station l = s.Est("altar_lanternas");
             l.Medidor = 9000;
             Enche(l, 2);
@@ -181,7 +181,7 @@ namespace FS.Tests
         [Test]
         public void Forcado_SobrecarregadoNaoPerdePeca()
         {
-            Sim s = Novo();
+            Sim s = Novo().ComOperadores();
             Station l = s.Est("altar_lanternas");
             int lanterna = I(s, "lanterna_arcana");
             Assert.IsTrue(s.ModoArcano(l, true));
@@ -208,7 +208,7 @@ namespace FS.Tests
         [Test]
         public void Energizada_Q20_ESequencia()
         {
-            Sim s = Novo();
+            Sim s = Novo().ComOperadores();
             Station l = s.Est("altar_lanternas");
             int lanterna = I(s, "lanterna_arcana");
             Assert.AreEqual(0, s.QualityBreakdown(l)[(int)QualitySource.Energizada]);

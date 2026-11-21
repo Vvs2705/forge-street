@@ -175,21 +175,21 @@ namespace FS.Tests
         [Test]
         public void Gargalo_FornalhaLenta_AcumulaFila_UpgradeResolve()
         {
-            var baseSim = new Sim();
+            var baseSim = new Sim().ComOperadores();
             baseSim.FurnaceA.In = Balance.FurnaceIn;
             Run(baseSim, 12f);
             int filaBase = baseSim.FurnaceA.In;
             Assert.Greater(filaBase, 2, "fornalha a 4 s deixa minerio esperando");
             Assert.Greater(baseSim.AnvilA.StarveSeconds, 5f, "a bigorna passa fome enquanto a fornalha e' o gargalo");
 
-            var fast = new Sim();
+            var fast = new Sim().ComOperadores();
             fast.Buy(Upgrade.FurnaceSpeed1);
             fast.FurnaceA.In = Balance.FurnaceIn;
             Run(fast, 12f);
             Assert.Less(fast.FurnaceA.In, filaBase, "o fole encurta a fila da fornalha");
 
             // saida cheia trava a estacao e emite gargalo uma vez
-            var blocked = new Sim();
+            var blocked = new Sim().ComOperadores();
             blocked.FurnaceA.In = Balance.FurnaceIn;
             int bottlenecks = 0;
             for (float t = 0f; t < 40f; t += Dt) { blocked.Tick(Dt, 0f, 0f); bottlenecks += Count(blocked, Ev.Bottleneck); }
@@ -201,7 +201,7 @@ namespace FS.Tests
         [Test]
         public void Worker_CompletaOCicloSozinho()
         {
-            var s = new Sim();
+            var s = new Sim().ComOperadores();
             s.Buy(Upgrade.Helper1);
             Assert.AreEqual(1, s.Workers.Count);
             Run(s, 60f);
@@ -255,7 +255,7 @@ namespace FS.Tests
         [Test]
         public void Escudo_Consome2Lingotes_EPaga25()
         {
-            var s = new Sim();
+            var s = new Sim().ComOperadores();
             s.Buy(Upgrade.Shields);
             s.ShieldBench.In = 3;
             Run(s, Tuning.Padrao.HammerTime0 * Tuning.Padrao.ShieldTimeMul + 0.2f);
@@ -623,7 +623,7 @@ namespace FS.Tests
         [Test]
         public void Joalheria_FechadaSemUpgrade_2LingotesViram1Joia()
         {
-            var s = new Sim();
+            var s = new Sim().ComOperadores();
             Assert.IsFalse(s.JewelBench.Unlocked || s.JewelShop.Unlocked || s.LineUnlocked(Item.Jewel), "fechada no inicio");
             Assert.AreEqual(-1, PadFor(s, Upgrade.Jewelry).Current(s), "pad da Joalheria invisivel sem o Corredor");
             s.Buy(Upgrade.SideCorridor);
@@ -816,13 +816,13 @@ namespace FS.Tests
         [Test]
         public void Joalheiro_NaoAtrapalhaOsPapeis0a2()
         {
-            var s = new Sim();
+            var s = new Sim().ComOperadores();
             s.Buy(Upgrade.Helper1); s.Buy(Upgrade.Helper2); s.Buy(Upgrade.SideCorridor); s.Buy(Upgrade.Jewelry); s.Buy(Upgrade.Jeweler); s.Buy(Upgrade.Helper3);
             CollectionAssert.AreEqual(new[] { 0, 1, 3, 2 }, Roles(s), "o Ajudante 3 comprado depois do Joalheiro continua papel 2 (lista na ordem da compra)");
             CollectionAssert.AreEqual(new[] { 0, 1, 2, 3 }, Roles(Sim.Load(s.Save(1))), "do save: papel = upgrade");
 
             // bancada de joias abastecida: o joalheiro nao tira lingote das outras linhas
-            var full = new Sim();
+            var full = new Sim().ComOperadores();
             full.Buy(Upgrade.SideCorridor); full.Buy(Upgrade.Jewelry); full.Buy(Upgrade.Jeweler);
             full.JewelBench.In = full.JewelBench.InCap; full.JewelBench.Busy = true; full.JewelBench.Progress = 0f;
             full.FurnaceA.Out = 4;
@@ -839,7 +839,7 @@ namespace FS.Tests
         [Test]
         public void Lupa_BancadaDeJoias_x06_SoNaJoalheria()
         {
-            var s = new Sim();
+            var s = new Sim().ComOperadores();
             s.Buy(Upgrade.SideCorridor); s.Buy(Upgrade.Jewelry);
             float anvil = s.AnvilA.Time, jewel = s.JewelBench.Time;
             Assert.AreEqual((-1, true), (PadFor(s, Upgrade.JewelSpeed).Current(s), s.MenuAvailable((int)Upgrade.JewelSpeed)), "a venda no menu, sem pad");
@@ -1438,7 +1438,7 @@ namespace FS.Tests
         [Test]
         public void Ajudantes_CompletamCiclos_10Min_SemTravar()
         {
-            var s = CompleteProduction();
+            var s = CompleteProduction().ComOperadores();
             s.Player.Pos = new V2(4.5f, 3.5f);
             int n = s.Workers.Count;
             var moved = new int[n];
@@ -1519,7 +1519,7 @@ namespace FS.Tests
         [Test]
         public void Mineiro_Papel0Extra_SoCarregaMinerioAsFornalhas()
         {
-            var s = new Sim();
+            var s = new Sim().ComOperadores();
             s.Buy(Upgrade.Furnace2); s.Buy(Upgrade.SideCorridor); s.Buy(Upgrade.Jewelry); s.Buy(Upgrade.Jeweler);
             s.Buy(Upgrade.Miner);
             CollectionAssert.AreEqual(new[] { 3, 0 }, Roles(s), "Mineiro = papel 0, mesmo sem o Ajudante 1");
@@ -1549,7 +1549,7 @@ namespace FS.Tests
         [Test]
         public void Joalheiro2_Papel3Extra_AbasteceAJoalheriaELevaJoias()
         {
-            var s = new Sim();
+            var s = new Sim().ComOperadores();
             s.Buy(Upgrade.SideCorridor); s.Buy(Upgrade.Jewelry); s.Buy(Upgrade.Jeweler); s.Buy(Upgrade.Miner); s.Buy(Upgrade.Jeweler2);
             CollectionAssert.AreEqual(new[] { 3, 0, 3 }, Roles(s), "Joalheiro 2 = 2o papel 3");
             var moves = new int[3]; var last = new int[3];
@@ -1802,7 +1802,7 @@ namespace FS.Tests
         {
             foreach (Bot bot in new[] { new Bot(), Bot.Ideal() })
             {
-                var s = new Sim();
+                var s = new Sim().ComOperadores();
                 V2 start = s.Player.Pos;
                 s.Gold = Tuning.Padrao.Cost(Upgrade.FurnaceSpeed1);   // 50: so o Fole (menu) e' pagavel
                 int ticks = 0, bought = 0;
@@ -1812,7 +1812,7 @@ namespace FS.Tests
                 Assert.LessOrEqual(ticks * Dt, bot.Reaction + 2f * Dt, "so o tempo de ler a tela (Reaction)");
             }
             // pad mais barato que o menu: o bot anda ate o pad, como antes
-            var t = new Sim();
+            var t = new Sim().ComOperadores();
             t.Buy(Upgrade.FurnaceSpeed1);
             t.Gold = Tuning.Padrao.Cost(Upgrade.Anvil2);   // 65: 2a bigorna (pad); Mochila (menu) custa 145
             var b = new Bot();
@@ -2011,7 +2011,7 @@ namespace FS.Tests
             Item cabo = (Item)Items.All.Length, machado = (Item)(Items.All.Length + 1);   // anexados depois dos reais
             ItemDef[] items = new List<ItemDef>(Items.All) { new ItemDef("cabo", "cabo", 2, false), new ItemDef("machado", "machado", 2, true) }.ToArray();
             RecipeDef[] recipes = Array.ConvertAll(Recipes.All, r => r.Station == "ferramentas" ? new RecipeDef("ferramentas", Kind.Crafter, machado, t => 1f, (cabo, 1), (Item.Ingot, 2)) : r);
-            var s = new Sim(null, items, recipes);
+            var s = new Sim(null, items, recipes).ComOperadores();
             s.Buy(Upgrade.Shields); s.Buy(Upgrade.Tools); s.Buy(Upgrade.PlayerCapacity);
             Station b = s.ToolBench;
             Assert.AreEqual((machado, 2), (b.OutItem, b.Ins.Length));
@@ -2349,7 +2349,7 @@ namespace FS.Tests
 
             Sim[] Trio() { var m = new[] { TuningTests.Liberado(), TuningTests.Liberado(), TuningTests.Liberado() }; m[1].StartBoost(); m[2].StartBoost(); m[2].StartBoost(); return m; }   // 1x, 2x, 3x
             Sim[] f = Trio();
-            foreach (Sim x in f) { x.FurnaceA.In = Balance.FurnaceIn; Run(x, Tuning.Padrao.FurnaceTime0 + 0.5f); }
+            foreach (Sim x in f) { x.ComOperadores(); x.FurnaceA.In = Balance.FurnaceIn; Run(x, Tuning.Padrao.FurnaceTime0 + 0.5f); }   // a fornalha operada
             Assert.AreEqual((1, 2, 3), (f[0].Crafted[(int)Item.Ingot], f[1].Crafted[(int)Item.Ingot], f[2].Crafted[(int)Item.Ingot]), "estacao: 2x e 3x");
             Sim[] p = Trio();
             foreach (Sim x in p) Run(x, 0.5f, 1f, 0f);

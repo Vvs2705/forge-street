@@ -101,7 +101,10 @@ namespace FS.Tests
         {
             var a = new Sim();
             string gravacao = Gravar(a, 5 * 60f, 11);
-            int i = gravacao.IndexOf('\n', gravacao.Length / 3) + 1;   // um tick no 1o terco: joystick para o lado oposto
+            // um tick perto do fim (9/10): joystick para o lado oposto. Sim.Operador.cs: com a regra do operador a rota mudou e o desvio de um
+            // tick no 1o terco (e na metade) se desfaz antes do fim: o ferreiro encosta na quina da Fornalha e as duas partidas voltam ao mesmo
+            // ponto, ao byte. Perto do fim nao da tempo de convergir; o teste mede que o replay le o toque, nao o trecho
+            int i = gravacao.IndexOf('\n', gravacao.Length / 10 * 9) + 1;
             int fim = gravacao.IndexOf('\n', i);
             string mexida = gravacao.Substring(0, i) + "-1 -1" + gravacao.Substring(fim);
             var b = new Sim();

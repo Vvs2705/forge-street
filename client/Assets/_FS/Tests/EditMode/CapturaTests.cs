@@ -123,6 +123,7 @@ namespace FS.Tests
                 for (int pass = 0; pass < 2; pass++)
                     for (int i = 0; i < Math.Min(n, Upgrades.Count); i++)
                         if (Upgrades.IsLuxury(i) == (pass == 1)) s.Buy((Upgrade)i);
+            if (n > 0) Captura.Operados(s);   // como o Game: o estado montado ja vem operado
             at = Captura.Compras(s, Captura.Valor(a, "-buyids"));
             string[] px = (Captura.Valor(a, "-px") ?? "").Split(',');
             if (px.Length == 2) s.Player.Pos = new V2(F(px[0]), F(px[1]));

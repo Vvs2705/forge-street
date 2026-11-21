@@ -139,6 +139,7 @@ namespace FS.Tests
         {
             Sim s = ComProjeto();
             for (int u = 0; u < Upgrades.Count; u++) if (Upgrades.IsProduction(u)) s.Buy((Upgrade)u);   // os 6 ajudantes trabalham
+            s.ComOperadores();   // e as estacoes tem operador (Sim.Operador.cs)
             s.Player.Pos = new V2(4.5f, 3.5f);
             for (float t = 0f; t < 600f; t += Dt) s.Tick(Dt, 0f, 0f);
             Assert.Greater(s.Colecao.Superiores[(int)Item.Sword], 0, "premissa: Superiores vendidas pelos ajudantes");

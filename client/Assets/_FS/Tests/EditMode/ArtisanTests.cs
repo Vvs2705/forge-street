@@ -116,7 +116,7 @@ namespace FS.Tests
         [Test]
         public void Troca_TerminaAPecaEsperaASaidaEParaQuatroSegundos()
         {
-            Sim s = NovoAq();
+            Sim s = NovoAq().ComOperadores();
             Station b = s.Est("bancada_ourives");
             Item fivela = I(s, "fivela"), cinzel = I(s, "cinzel");
             b.In = 2;
@@ -149,7 +149,7 @@ namespace FS.Tests
         [Test]
         public void Troca_NaoPerdeInsumo()
         {
-            Sim s = NovoAq();
+            Sim s = NovoAq().ComOperadores();
             Compra(s, "veio_ouro", "lapidario", "receita_caixa");
             Station b = s.Est("bancada_ourives");
             Item cobre = I(s, "lingote_cobre"), ouro = I(s, "lingote_ouro"), gema = I(s, "gema");
@@ -181,7 +181,7 @@ namespace FS.Tests
         [Test]
         public void Carregadores_SoEntregamOInsumoDaReceitaAtiva()
         {
-            Sim s = NovoAq();
+            Sim s = NovoAq().ComOperadores();
             Compra(s, "veio_ouro", "dourado2");   // sem o Dourado 1 (minerio): nada de cobre, a bancada fica parada
             Station b = s.Est("bancada_ourives"), co = s.Est("crisol_ouro");
             Item ouro = I(s, "lingote_ouro");
@@ -301,7 +301,7 @@ namespace FS.Tests
         [Test]
         public void Bot_ReceitaComMaisClientesNaFila()
         {
-            Sim s = NovoAq();
+            Sim s = NovoAq().ComOperadores();
             Compra(s, "receita_castical");
             Station b = s.Est("bancada_ourives");
             Item fivela = I(s, "fivela"), cinzel = I(s, "cinzel"), castical = I(s, "castical");
@@ -320,7 +320,7 @@ namespace FS.Tests
             s.Stock[(int)fivela] = 5; s.Stock[(int)castical] = 0;
             for (float t = 0f; t < 5f; t += Dt) { s.Queue.Clear(); bot.Step(s, Dt); }
             Assert.AreEqual(castical, (b.Proxima ?? b.Recipe).Output, "empate cinzel x castical (falta 0): o castical, 290 por insumo contra 285");
-            var of = new Sim();
+            var of = new Sim().ComOperadores();
             new Bot().Step(of, Dt);
             Assert.IsFalse(of.TemBancadas);
         }
@@ -446,7 +446,7 @@ namespace FS.Tests
         [Test]
         public void Obras_RicosGemasELapidacao()
         {
-            Sim s = NovoAq();
+            Sim s = NovoAq().ComOperadores();
             Compra(s, "veio_ouro", "lapidario", "lapidario2", "receita_caixa");
             MasterworkDef cond = Array.Find(s.Hall.Defs, d => d.Id == "mw_broche_condessa"), lag = Array.Find(s.Hall.Defs, d => d.Id == "mw_colar_lagrimas");
             Assert.AreEqual((CondicaoMw.ClientesRicos, 100, 0L), (cond.Condicoes[0].Kind, cond.Condicoes[0].N, s.Hall.Valor(cond.Condicoes[0])));
@@ -587,6 +587,7 @@ namespace FS.Tests
             Sim s = Imperio.Chegada(Aq).Ativo;
             Assert.AreEqual("colar", Captura.Receitas(s, "fivela,colar"), "colar travado (sem o lapidario)");
             Producao(s);
+            Captura.Operados(s);   // a foto monta a fabrica operada (Captura.Operados, como o -buy do Game)
             Assert.IsNull(Captura.Receitas(s, "fivela,colar,caixa_joias"));
             for (float t = 0f; t < 5f; t += Dt) s.Tick(Dt, 0f, 0f);
             Assert.AreEqual((I(s, "fivela"), I(s, "colar"), I(s, "caixa_joias")), (s.Est("bancada_ourives").OutItem, s.Est("bancada_ourives2").OutItem, s.Est("bancada_ourives3").OutItem));

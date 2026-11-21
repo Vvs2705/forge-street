@@ -278,8 +278,10 @@ namespace FS.Tests
             Assert.That(tF, Is.InRange(tProd, 4450f), "Fachada nobre depois da producao completa, ate ~medido + 30%");
             Assert.That(tW, Is.InRange(tF, 5320f), "Piso de oficina depois da Fachada, ate ~medido + 30%");
             Assert.That(tJ, Is.InRange(tW, M * 60f), "Joalheria real depois do Piso, dentro dos 90 min");
-            for (int m = 1; m * 60f <= tF; m++)
-                Assert.AreEqual((earnedP[m], salesP[m]), (earnedL[m], salesL[m]), $"identicas ate a 1a compra de luxo (minuto {m})");
+            // Sim.Operador.cs: ate a producao completa (o luxo ainda nao aparece). Dali ate a 1a compra o pad de luxo ja esta no chao e o bot,
+            // parado na Reaction em cima dele no caminho do pad do operador da Bigorna longa, paga parcial (o desvio do bot que o resto mede)
+            for (int m = 1; m * 60f <= tProd; m++)
+                Assert.AreEqual((earnedP[m], salesP[m]), (earnedL[m], salesL[m]), $"identicas ate a producao completa (minuto {m})");
             Assert.That(gL / gP, Is.InRange(0.97f, 1.03f), "luxo nao altera ouro/min (medido +0,5%)");
             Assert.That(sL / sP, Is.InRange(0.97f, 1.03f), "luxo nao altera vendas/min (medido +0,1%)");
             long luxuryCost = lux.T.Cost(Upgrade.WorkshopFacade) + lux.T.Cost(Upgrade.WorkshopFloor) + lux.T.Cost(Upgrade.JewelryDecor);
