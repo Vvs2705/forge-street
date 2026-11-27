@@ -1,1 +1,6 @@
 data,conta,id,tipo,task_id,creditos,arquivo,obs
+2026-11-27,A,estandartes_armeiro,img,-,8,arte/tripo/_prazo29/estandartes_armeiro/estandartes_armeiro_img_v01.png..v04.png,"F01; Nano Banana 2, 4 variacoes; escolhida a v02"
+2026-11-27,A,estandartes_armeiro,malha,b2977cdd-2641-49db-a2cd-f439cdff3621,60,arte/tripo/_prazo29/estandartes_armeiro/estandartes_armeiro_malha_v01.glb,"F01; H3.5, HD, 4K+PBR, 8K off, privado; GLB + FBX Blender 2K em estandartes_armeiro_malha_v01_fbx_blender_2k.zip"
+2026-11-27,A,rua_calcada,img,-,8,arte/tripo/_prazo29/rua_calcada/rua_calcada_img_v01.png..v04.png,"F02; Nano Banana 2, 4 variacoes; malha pendente (conta A zerou)"
+2026-11-27,A,manequins,img,-,8,arte/tripo/_prazo29/manequins/manequins_img_v01.png..v04.png,"F03; Nano Banana 2, 4 variacoes; malha pendente (conta A zerou)"
+2026-11-27,A,fachada_dourada,img,-,8,arte/tripo/_prazo29/fachada_dourada/fachada_dourada_img_v01.png..v04.png,"F04; Nano Banana 2, 4 variacoes; malha e var pendentes (conta A zerou)"
